@@ -49,7 +49,7 @@ type Environment struct {
 	// Terraform version to use for this environment
 	version string
 
-	environmentVariables []string
+	envs []string
 
 	// Environment context - should contain subject for authenticating to
 	// services
@@ -59,11 +59,11 @@ type Environment struct {
 }
 
 func NewEnvironment(
+	ctx context.Context,
 	logger logr.Logger,
 	app otf.Application,
 	run *otf.Run,
-	ctx context.Context,
-	environmentVariables []string,
+	envs []string,
 	downloader otf.Downloader,
 	cfg Config,
 ) (*Environment, error) {
@@ -88,7 +88,7 @@ func NewEnvironment(
 		return nil, errors.Wrap(err, "creating registry session")
 	}
 	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(app.Hostname()), session.Token())
-	environmentVariables = append(environmentVariables, tokenEnvVar)
+	envs = append(envs, tokenEnvVar)
 
 	// retrieve workspace variables and add them to the environment
 	variables, err := app.ListVariables(ctx, run.WorkspaceID())
@@ -98,7 +98,7 @@ func NewEnvironment(
 	for _, v := range variables {
 		if v.Category() == otf.CategoryEnv {
 			ev := fmt.Sprintf("%s=%s", v.Key(), v.Value())
-			environmentVariables = append(environmentVariables, ev)
+			envs = append(envs, ev)
 		}
 	}
 	if err := writeTerraformVariables(root, variables); err != nil {
@@ -109,17 +109,17 @@ func NewEnvironment(
 	ctx, cancel := context.WithCancel(ctx)
 
 	return &Environment{
-		Logger:               logger,
-		Application:          app,
-		Downloader:           downloader,
-		Terraform:            &TerraformPathFinder{},
-		version:              ws.TerraformVersion(),
-		out:                  otf.NewJobWriter(ctx, app, logger, run),
-		path:                 root,
-		environmentVariables: environmentVariables,
-		cancel:               cancel,
-		ctx:                  ctx,
-		Config:               cfg,
+		Logger:      logger,
+		Application: app,
+		Downloader:  downloader,
+		Terraform:   &TerraformPathFinder{},
+		version:     ws.TerraformVersion(),
+		out:         otf.NewJobWriter(ctx, app, logger, run),
+		path:        root,
+		envs:        envs,
+		cancel:      cancel,
+		ctx:         ctx,
+		Config:      cfg,
 	}, nil
 }
 
@@ -179,19 +179,7 @@ func (e *Environment) RunTerraform(cmd string, args ...string) error {
 
 	// optionally sandbox terraform apply using bubblewrap
 	if e.Sandbox && cmd == "apply" {
-		return e.RunCLI("bwrap", append([]string{
-			"--ro-bind", e.TerraformPath(), "/bin/terraform",
-			"--bind", e.path, "/workspace",
-			"--ro-bind", PluginCacheDir, PluginCacheDir,
-			// for DNS lookups
-			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-			// for verifying SSL connections
-			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
-			"--chdir", "/workspace",
-			// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
-			"--proc", "/proc",
-			"terraform", "apply",
-		}, args...)...)
+		return e.RunCLI("bwrap", e.buildSandboxArgs(args)...)
 	}
 
 	return e.RunCLI(e.TerraformPath(), append([]string{cmd}, args...)...)
@@ -208,7 +196,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = e.path
 	cmd.Stdout = e.out
-	cmd.Env = e.environmentVariables
+	cmd.Env = append(os.Environ(), e.envs...)
 
 	// send stderr to both environment output (for sending to client) and to
 	// local var so we can report on errors below
@@ -287,6 +275,24 @@ func (e *Environment) cancelFunc(force bool) {
 		return
 	}
 	e.cancel()
+}
+
+// buildBubblewrapArgs builds the args for running a terraform apply within a
+// bubblewrap sandbox.
+func (e *Environment) buildSandboxArgs(args []string) []string {
+	bargs := []string{
+		"--ro-bind", e.TerraformPath(), "/bin/terraform",
+		"--bind", e.path, "/workspace",
+		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
+		"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
+		"--chdir", "/workspace",
+		"--proc", "/proc",
+	}
+	if e.PluginCache {
+		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
+	}
+	bargs = append(bargs, "terraform", "apply")
+	return append(bargs, args...)
 }
 
 type Doer interface {

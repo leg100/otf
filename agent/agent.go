@@ -7,62 +7,75 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	DefaultID = "agent-001"
+	DefaultID          = "agent-001"
+	DefaultConcurrency = 5
+)
+
+var (
+	PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
+	DefaultEnvs    = []string{
+		"TF_IN_AUTOMATION=true",
+		"CHECKPOINT_DISABLE=true",
+	}
 )
 
 // Agent processes runs.
 type Agent struct {
-	Spooler
-	*Supervisor
-}
+	Config
+	otf.Application
+	logr.Logger
 
-// Config configures the agent.
-type Config struct {
-	Organization *string // only process runs belonging to org
-	External     bool    // dedicated agent (true) or otfd (false)
-	Concurrency  int     // number of workers
-	Sandbox      bool    // isolate privileged ops within sandbox
-	Debug        bool    // toggle debug mode
+	Spooler        // spools new run events
+	*Terminator    // terminates runs
+	otf.Downloader // terraform cli downloader
+
+	envs []string // terraform environment variables
 }
 
 // NewAgent is the constructor for an Agent
 func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, error) {
-	if cfg.Sandbox {
-		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
-			return nil, fmt.Errorf("sandbox requires bubblewrap: %w", err)
-		}
-		logger.Info("enabled sandbox mode")
+	agent := &Agent{
+		Application: app,
+		Config:      cfg,
+		Logger:      logger,
+		envs:        DefaultEnvs,
+		Spooler:     NewSpooler(app, logger, cfg),
+		Terminator:  NewTerminator(),
+		Downloader:  NewTerraformDownloader(),
 	}
 
+	if cfg.Sandbox {
+		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
+			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
+		}
+		logger.V(0).Info("enabled sandbox mode")
+	}
 	if cfg.Debug {
 		logger.V(0).Info("enabled debug mode")
 	}
+	if cfg.PluginCache {
+		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
+			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
+		}
+		agent.envs = append(agent.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
 
-	spooler := NewSpooler(app, logger, cfg)
-	return &Agent{
-		Spooler:    spooler,
-		Supervisor: NewSupervisor(spooler, app, logger, cfg),
-	}, nil
+		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
+	}
+
+	return agent, nil
 }
 
-func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
-	cfg := Config{}
-	flags.BoolVar(&cfg.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
-	flags.BoolVar(&cfg.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
-	flags.IntVar(&cfg.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
-	return &cfg
-}
-
-// Start starts the agent daemon
+// Start starts the agent daemon and its workers
 func (a *Agent) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -74,10 +87,19 @@ func (a *Agent) Start(ctx context.Context) error {
 	})
 
 	g.Go(func() error {
-		if err := a.Supervisor.Start(ctx); err != nil {
-			return fmt.Errorf("supervisor terminated: %w", err)
+		for i := 0; i < a.Concurrency; i++ {
+			w := &Worker{a}
+			go w.Start(ctx)
 		}
-		return nil
+
+		for {
+			select {
+			case cancelation := <-a.GetCancelation():
+				a.Cancel(cancelation.Run.ID(), cancelation.Forceful)
+			case <-ctx.Done():
+				return nil
+			}
+		}
 	})
 
 	return g.Wait()

@@ -8,7 +8,7 @@ import (
 
 // Worker sequentially executes runs on behalf of a supervisor.
 type Worker struct {
-	*Supervisor
+	*Agent
 }
 
 // Start starts the worker which waits for runs to execute.
@@ -35,11 +35,11 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 
 	env, err := NewEnvironment(
+		ctx,
 		log,
 		w.Application,
 		run,
-		ctx,
-		w.environmentVariables,
+		w.envs,
 		w.Downloader,
 		w.Config,
 	)
@@ -49,7 +49,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 	defer env.Close()
 
-	// Check run in with the supervisor so that it can cancel the run if a
+	// Check run in with the terminator so that it can cancel the run if a
 	// cancelation request arrives
 	w.CheckIn(run.ID(), env)
 	defer w.CheckOut(run.ID())
