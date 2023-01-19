@@ -61,25 +61,6 @@ And create a plan:
 terraform plan
 ```
 
-> NOTE: if you're using Mac or Windows, you may receive an error similar to the following error:
->
-> ```
-> Error: Failed to install provider from shared cache
->
-> Error while importing hashicorp/null v3.2.1 from the shared cache
-> directory: the provider cache at .terraform/providers has a copy of
-> registry.terraform.io/hashicorp/null 3.2.1 that doesn't match any of the
-> checksums recorded in the dependency lock file.
-> ```
-> 
-> If so, you need to update your lockfile (`.terraform.lock.hcl`) to include hashes for the platform that the OTF demo is hosted on (linux):
->
-> ```
-> terraform providers lock -platform=linux_amd64 
-> ```
->
-> Then re-run `terraform init` and `terraform plan` and it should succeed without error
-
 After you've invoked `terraform plan`, you'll see the plan output along with a link. Click on the link to the run to view the status and logs:
 
 <img src="https://user-images.githubusercontent.com/75728/198881848-0d7f42f9-18f7-418d-9474-a828da6982fe.png" width="600">
