@@ -76,3 +76,47 @@ images = {
 `
 	assert.Equal(t, want, string(got))
 }
+
+func TestBuildSandboxArgs(t *testing.T) {
+	t.Run("without plugin cache", func(t *testing.T) {
+		env := Environment{
+			Terraform: &fakeTerraform{"/bins"},
+			path:      "/root",
+		}
+		want := []string{
+			"--ro-bind", "/bins/terraform", "/bin/terraform",
+			"--bind", "/root", "/workspace",
+			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
+			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
+			"--chdir", "/workspace",
+			"--proc", "/proc",
+			"--tmpfs", "/tmp",
+			"terraform", "apply",
+			"-input=false", "-no-color",
+		}
+		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
+	})
+
+	t.Run("with plugin cache", func(t *testing.T) {
+		env := Environment{
+			Terraform: &fakeTerraform{"/bins"},
+			path:      "/root",
+			Config: Config{
+				PluginCache: true,
+			},
+		}
+		want := []string{
+			"--ro-bind", "/bins/terraform", "/bin/terraform",
+			"--bind", "/root", "/workspace",
+			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
+			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
+			"--chdir", "/workspace",
+			"--proc", "/proc",
+			"--tmpfs", "/tmp",
+			"--ro-bind", PluginCacheDir, PluginCacheDir,
+			"terraform", "apply",
+			"-input=false", "-no-color",
+		}
+		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
+	})
+}
