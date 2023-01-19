@@ -43,7 +43,7 @@ function cleanup()
         cat $logfile
     fi
 }
-trap cleanup EXIT ERR
+trap cleanup EXIT
 
 # wait for otfd to listen on port and capture port number
 tries=0

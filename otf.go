@@ -27,11 +27,13 @@ const (
 	ChunkEndMarker = byte(3)
 )
 
-// A regular expression used to validate common string ID patterns.
-var reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
+var (
+	// A regular expression used to validate common string ID patterns.
+	reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 
-// A regular expression used to validate semantic versions (major.minor.patch).
-var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
+	// A regular expression used to validate semantic versions (major.minor.patch).
+	reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
+)
 
 // Application provides access to the otf application services
 type Application interface {

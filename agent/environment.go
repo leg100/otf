@@ -78,11 +78,11 @@ func NewEnvironment(
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}
 
-	// create token for terraform for it to authenticate with the otf registry
-	// when retrieving modules and providers
+	// Create token for terraform for it to authenticate with the otf registry
+	// when retrieving modules and providers, and make it available to terraform
+	// via an environment variable.
 	//
-	// TODO: TF_TOKEN_* environment variables are only supported from terraform
-	// v1.20 onwards. We should set that as the min version for use with otf.
+	// NOTE: environment variable support is only available in terraform >= 1.2.0
 	session, err := app.CreateRegistrySession(ctx, ws.Organization())
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")

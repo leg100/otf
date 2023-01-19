@@ -103,17 +103,17 @@ func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to profile
 		chromedp.Click("#top-right-profile-link > a", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
+		screenshot(t),
 		// go to tokens
 		chromedp.Click("#user-tokens-link > a", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
+		screenshot(t),
 		// create new token
 		chromedp.Click("#new-user-token-button", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
+		screenshot(t),
 		chromedp.Focus("#description", chromedp.NodeVisible),
 		input.InsertText("e2e-test"),
 		chromedp.Submit("#description"),
-		chromedp.WaitReady(`body`),
+		screenshot(t),
 		// capture token
 		chromedp.Text(".flash-success > .data", &token, chromedp.NodeVisible),
 		// pass token to terraform login
