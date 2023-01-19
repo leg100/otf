@@ -32,6 +32,7 @@ func (a *authorizer) CanAccessSite(ctx context.Context, action otf.Action) (otf.
 	if subj.CanAccessSite(action) {
 		return subj, nil
 	}
+	a.Error(nil, "unauthorized action", "action", action, "subject", subj)
 	return nil, otf.ErrAccessNotPermitted
 }
 
