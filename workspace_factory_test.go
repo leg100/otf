@@ -50,6 +50,15 @@ func TestNewWorkspace(t *testing.T) {
 			},
 			want: ErrInvalidTerraformVersion,
 		},
+		{
+			name: "unsupported terraform version",
+			opts: CreateWorkspaceOptions{
+				Name:             String("my-workspace"),
+				Organization:     String("my-org"),
+				TerraformVersion: String("0.14.0"),
+			},
+			want: ErrUnsupportedTerraformVersion,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -251,6 +251,10 @@ table.variables tbody tr {
   gap: 1em;
 }
 
+input:invalid {
+  background-color: lightpink;
+}
+
 /* Free-form inputs need to accommodate more text */
 input.freeform {
   width: 30em;

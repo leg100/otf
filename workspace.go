@@ -6,12 +6,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/semver"
 )
 
 const (
 	DefaultAllowDestroyPlan    = true
 	DefaultFileTriggersEnabled = true
-	DefaultTerraformVersion    = "1.3.7"
+
+	MinTerraformVersion     = "1.2.0"
+	DefaultTerraformVersion = "1.3.7"
 
 	RemoteExecutionMode ExecutionMode = "remote"
 	LocalExecutionMode  ExecutionMode = "local"
@@ -223,6 +226,9 @@ func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
 func (ws *Workspace) setTerraformVersion(v string) error {
 	if !validSemanticVersion(v) {
 		return ErrInvalidTerraformVersion
+	}
+	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
+		return ErrUnsupportedTerraformVersion
 	}
 	ws.terraformVersion = v
 	return nil
