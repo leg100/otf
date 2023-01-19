@@ -1,0 +1,9 @@
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1mNo configuration files[0m
+[31m│[0m [0m
+[31m│[0m [0m[0mPlan requires configuration to be present. Planning without a configuration
+[31m│[0m [0mwould mark everything for destruction, which is normally not what is
+[31m│[0m [0mdesired. If you would like to destroy everything, run plan with the
+[31m│[0m [0m-destroy option. Otherwise, create a Terraform configuration file (.tf
+[31m│[0m [0mfile) and try again.
+[31m╵[0m[0m

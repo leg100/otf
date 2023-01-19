@@ -204,7 +204,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	cmd.Stderr = io.MultiWriter(e.out, stderr)
 
 	if err := cmd.Start(); err != nil {
-		logger.Error(err, "starting command", "stderr", stderr.String())
+		logger.Error(err, "starting command", "stderr", stripAnsiEscapes(stderr.String()))
 		return err
 	}
 	// store process so that it can be canceled
@@ -213,7 +213,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	logger.V(2).Info("running command")
 
 	if err := cmd.Wait(); err != nil {
-		logger.Error(err, "running command", "stderr", stderr.String())
+		logger.Error(err, "running command", "stderr", stripAnsiEscapes(stderr.String()))
 		return err
 	}
 
