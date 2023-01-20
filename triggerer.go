@@ -35,7 +35,7 @@ func (h *Triggerer) Start(ctx context.Context) {
 		select {
 		case event := <-h.events:
 			if err := h.handle(ctx, event); err != nil {
-				h.Error(err, "handling event")
+				h.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
 			return
@@ -81,6 +81,8 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 		branch = event.Branch
 		isPullRequest = true
 	}
+
+	h.Info("triggering run", "id", webhookID)
 
 	workspaces, err := h.ListWorkspacesByWebhookID(ctx, webhookID)
 	if err != nil {

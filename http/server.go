@@ -53,22 +53,16 @@ func (cfg *ServerConfig) Validate() error {
 
 // Server provides an HTTP/S server
 type Server struct {
-	ServerConfig
-
-	server *http.Server
-
 	logr.Logger
-
-	// provides access to otf services
-	otf.Application
+	otf.Application // provides access to otf services
+	ServerConfig
+	*Router      // http router, exported so that other pkgs can add routes
+	*surl.Signer // sign and validate signed URLs
 
 	CacheService *bigcache.BigCache
 
-	// server-side-events server
-	eventsServer *sse.Server
-	// the http router, exported so that other pkgs can add routes
-	*Router
-	*surl.Signer
+	eventsServer     *sse.Server
+	server           *http.Server
 	vcsEventsHandler *otf.Triggerer
 }
 

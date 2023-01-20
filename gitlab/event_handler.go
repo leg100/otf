@@ -42,7 +42,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &cloud.VCSPushEvent{
+		return cloud.VCSPushEvent{
 			WebhookID:  opts.WebhookID,
 			Branch:     refParts[2],
 			Identifier: event.Project.PathWithNamespace,
@@ -53,7 +53,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &cloud.VCSTagEvent{
+		return cloud.VCSTagEvent{
 			WebhookID: opts.WebhookID,
 			Tag:       refParts[2],
 			// Action:     action,

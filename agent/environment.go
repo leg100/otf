@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/fatih/color"
@@ -204,7 +205,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	cmd.Stderr = io.MultiWriter(e.out, stderr)
 
 	if err := cmd.Start(); err != nil {
-		logger.Error(err, "starting command", "stderr", stripAnsiEscapes(stderr.String()))
+		logger.Error(err, "starting command", "stderr", cleanStderr(stderr.String()))
 		return err
 	}
 	// store process so that it can be canceled
@@ -213,7 +214,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	logger.V(2).Info("running command")
 
 	if err := cmd.Wait(); err != nil {
-		logger.Error(err, "running command", "stderr", stripAnsiEscapes(stderr.String()))
+		logger.Error(err, "running command", "stderr", cleanStderr(stderr.String()))
 		return err
 	}
 
@@ -338,4 +339,15 @@ func writeTerraformVariables(dir string, vars []*otf.Variable) error {
 	f.WriteString(b.String())
 
 	return nil
+}
+
+var ascii = regexp.MustCompile("[[:^ascii:]]")
+
+// cleanStderr cleans up stderr output to make it suitable for logging:
+// newlines, ansi escape sequences, and non-ascii characters are removed
+func cleanStderr(stderr string) string {
+	stderr = stripAnsi(stderr)
+	stderr = ascii.ReplaceAllLiteralString(stderr, "")
+	stderr = strings.Join(strings.Fields(stderr), " ")
+	return stderr
 }

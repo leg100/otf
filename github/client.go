@@ -206,7 +206,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, topts cloud.GetRepoTarballO
 		return nil, err
 	}
 	if len(contents) != 1 {
-		return nil, fmt.Errorf("malformed tarball archive")
+		return nil, fmt.Errorf("expected only one top-level directory; instead got %s", contents)
 	}
 	parentDir := path.Join(untarpath, contents[0].Name())
 	return otf.Pack(parentDir)

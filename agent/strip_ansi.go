@@ -28,6 +28,6 @@ import "regexp"
 // ansiEscapes is a regex for ANSI escape codes
 var ansiEscapes = regexp.MustCompile("[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))")
 
-func stripAnsiEscapes(str string) string {
+func stripAnsi(str string) string {
 	return ansiEscapes.ReplaceAllString(str, "")
 }

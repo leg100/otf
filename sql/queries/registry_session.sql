@@ -18,7 +18,7 @@ AND   expiry > current_timestamp
 
 -- name: DeleteExpiredRegistrySessions :one
 DELETE
-FROM sessions
+FROM registry_sessions
 WHERE expiry < current_timestamp
 RETURNING token
 ;
