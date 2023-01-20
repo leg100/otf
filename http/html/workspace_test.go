@@ -410,6 +410,16 @@ func (f *fakeWorkspaceHandlerApp) ListTeams(context.Context, string) ([]*otf.Tea
 	return nil, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (f *fakeWorkspaceHandlerApp) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+	return &fakeWorkspaceHandlerCloudClient{repos: f.repos}, nil
+}
+
+type fakeWorkspaceHandlerCloudClient struct {
+	repos []cloud.Repo
+
+	cloud.Client
+}
+
+func (f *fakeWorkspaceHandlerCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
 	return f.repos, nil
 }

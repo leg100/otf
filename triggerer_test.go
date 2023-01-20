@@ -47,10 +47,6 @@ func (f *fakeTriggererApp) ListWorkspacesByWebhookID(ctx context.Context, id uui
 	return f.workspaces, nil
 }
 
-func (f *fakeTriggererApp) GetRepoTarball(context.Context, string, cloud.GetRepoTarballOptions) ([]byte, error) {
-	return nil, nil
-}
-
 func (f *fakeTriggererApp) CreateConfigurationVersion(ctx context.Context, wid string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv, err := NewConfigurationVersion(wid, opts)
 	if err != nil {
@@ -65,5 +61,17 @@ func (f *fakeTriggererApp) UploadConfig(context.Context, string, []byte) error {
 }
 
 func (f *fakeTriggererApp) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
+	return nil, nil
+}
+
+func (f *fakeTriggererApp) GetVCSClient(context.Context, string) (cloud.Client, error) {
+	return &fakeTriggererCloudClient{}, nil
+}
+
+type fakeTriggererCloudClient struct {
+	cloud.Client
+}
+
+func (f *fakeTriggererCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
 }

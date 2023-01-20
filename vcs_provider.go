@@ -27,7 +27,6 @@ func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
 func (t *VCSProvider) Name() string              { return t.name }
 func (t *VCSProvider) Organization() string      { return t.organization }
 func (t *VCSProvider) CloudConfig() cloud.Config { return t.cloudConfig }
-func (t *VCSProvider) VCSProviderID() string     { return t.id } // implement html.vcsProviderResource
 
 func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 	return t.cloudConfig.NewClient(ctx, cloud.Credentials{
@@ -111,16 +110,12 @@ type VCSProviderService interface {
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
-	SetStatus(ctx context.Context, providerID string, opts cloud.SetStatusOptions) error
-	GetRepository(ctx context.Context, providerID string, identifier string) (cloud.Repo, error)
-	GetRepoTarball(ctx context.Context, providerID string, opts cloud.GetRepoTarballOptions) ([]byte, error)
-	ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error)
-	ListTags(ctx context.Context, providerID string, opts cloud.ListTagsOptions) ([]string, error)
-
-	CreateWebhook(ctx context.Context, providerID string, opts cloud.CreateWebhookOptions) (string, error)
-	UpdateWebhook(ctx context.Context, providerID string, opts cloud.UpdateWebhookOptions) error
-	GetWebhook(ctx context.Context, providerID string, opts cloud.GetWebhookOptions) (cloud.Webhook, error)
-	DeleteWebhook(ctx context.Context, providerID string, opts cloud.DeleteWebhookOptions) error
+	// GetVCSClient combines retrieving a vcs provider and construct a cloud
+	// client from that provider.
+	//
+	// TODO: rename vcs provider to cloud client; the central purpose of the vcs
+	// provider is, after all, to construct a cloud client.
+	GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
 }
 
 // VCSProviderStore persists vcs providers

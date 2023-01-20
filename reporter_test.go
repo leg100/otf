@@ -66,7 +66,17 @@ func (f *fakeReporterApp) GetConfigurationVersion(context.Context, string) (*Con
 	return f.cv, nil
 }
 
-func (f *fakeReporterApp) SetStatus(ctx context.Context, id string, opts cloud.SetStatusOptions) error {
+func (f *fakeReporterApp) GetVCSClient(context.Context, string) (cloud.Client, error) {
+	return &fakeReporterCloudClient{statusUpdates: f.statusUpdates}, nil
+}
+
+type fakeReporterCloudClient struct {
+	statusUpdates chan cloud.SetStatusOptions
+
+	cloud.Client
+}
+
+func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
 	f.statusUpdates <- opts
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 )
 
 func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
@@ -78,4 +79,12 @@ func (a *Application) DeleteVCSProvider(ctx context.Context, id string) (*otf.VC
 	}
 	a.V(0).Info("deleted vcs provider", "provider", provider, "subject", subject)
 	return provider, nil
+}
+
+func (a *Application) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+	provider, err := a.GetVCSProvider(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	return provider.NewClient(ctx)
 }
