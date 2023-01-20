@@ -8,8 +8,6 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-var DefaultRegistrySessionCleanupInterval = 5 * time.Minute
-
 func (db *DB) CreateRegistrySession(ctx context.Context, session *otf.RegistrySession) error {
 	_, err := db.InsertRegistrySession(ctx, pggen.InsertRegistrySessionParams{
 		Token:            String(session.Token()),

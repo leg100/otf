@@ -114,11 +114,10 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	// Setup database(s)
 	db, err := sql.New(ctx, sql.Options{
-		Logger:          logger,
-		ConnString:      d.database,
-		Cache:           cache,
-		CleanupInterval: sql.DefaultSessionCleanupInterval,
-		CloudService:    cloudService,
+		Logger:       logger,
+		ConnString:   d.database,
+		Cache:        cache,
+		CloudService: cloudService,
 	})
 	if err != nil {
 		return err

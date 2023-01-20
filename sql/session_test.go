@@ -54,7 +54,7 @@ func TestSession_List(t *testing.T) {
 func TestSession_SessionCleanup(t *testing.T) {
 	ctx := context.Background()
 
-	db := newTestDB(t, 100*time.Millisecond)
+	db := newTestDB(t, overrideCleanupInterval(100*time.Millisecond))
 	user := createTestUser(t, db)
 
 	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))

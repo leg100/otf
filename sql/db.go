@@ -53,12 +53,13 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		},
 	}
 
-	if opts.CleanupInterval > 0 {
-		// purge expired user sessions
-		go db.startSessionExpirer(ctx, opts.CleanupInterval)
-		// purge expired registry sessions
-		go db.startRegistrySessionExpirer(ctx, opts.CleanupInterval)
+	if opts.CleanupInterval == 0 {
+		opts.CleanupInterval = DefaultSessionCleanupInterval
 	}
+	// purge expired user sessions
+	go db.startSessionExpirer(ctx, opts.CleanupInterval)
+	// purge expired registry sessions
+	go db.startRegistrySessionExpirer(ctx, opts.CleanupInterval)
 
 	return db, nil
 }
