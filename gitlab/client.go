@@ -1,11 +1,15 @@
 package gitlab
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"strconv"
+	"strings"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
@@ -144,6 +148,11 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+
 	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
 		Format: otf.String("tar.gz"),
 		SHA:    otf.String(opts.Ref),
@@ -152,7 +161,24 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 		return nil, err
 	}
 
-	return tarball, nil
+	// Gitlab tarball contents are contained within a top-level directory
+	// formatted <repo>-<ref>-<sha>. We want the tarball without this directory,
+	// so we re-tar the contents without the top-level directory.
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("gitlab-%s-%s-*", owner, name))
+	if err != nil {
+		return nil, err
+	}
+	if err := otf.Unpack(bytes.NewReader(tarball), untarpath); err != nil {
+		return nil, err
+	}
+	contents, err := os.ReadDir(untarpath)
+	if err != nil {
+		return nil, err
+	}
+	if len(contents) != 1 {
+		return nil, fmt.Errorf("expected only one top-level directory; instead got %s", contents)
+	}
+	return otf.Pack(path.Join(untarpath, contents[0].Name()))
 }
 
 func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {

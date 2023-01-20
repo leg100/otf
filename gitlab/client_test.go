@@ -1,7 +1,10 @@
 package gitlab
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -62,7 +65,9 @@ func TestClient(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 	t.Run("GetRepoTarball", func(t *testing.T) {
-		want := otf.NewTestTarball(t, `file1 contents`, `file2 contents`)
+		want, err := os.ReadFile("../testdata/gitlab.tar.gz")
+		require.NoError(t, err)
+
 		client := newTestClient(t,
 			WithGitlabRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
 			WithGitlabTarball(want),
@@ -74,7 +79,11 @@ func TestClient(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, want, got)
+		dst := t.TempDir()
+		err = otf.Unpack(bytes.NewReader(got), dst)
+		require.NoError(t, err)
+		assert.FileExists(t, path.Join(dst, "afile"))
+		assert.FileExists(t, path.Join(dst, "bfile"))
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/url"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -58,6 +59,7 @@ func TestGetRepoTarball(t *testing.T) {
 	dst := t.TempDir()
 	err = otf.Unpack(bytes.NewReader(got), dst)
 	require.NoError(t, err)
+	assert.FileExists(t, path.Join(dst, "main.tf"))
 }
 
 func TestCreateWebhook(t *testing.T) {

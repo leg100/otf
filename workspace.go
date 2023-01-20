@@ -284,6 +284,9 @@ type WorkspaceService interface {
 	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
+	//
+	// TODO: rename to ListConnectedWorkspaces
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
 	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
