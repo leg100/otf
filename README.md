@@ -14,6 +14,10 @@ https://demo.otf.ninja
 
 Once signed in you'll notice any github organization and team memberships are synchronised across automatically. Additionally, an organization matching your username is created.
 
+Now we'll login to the account in your terminal. You'll need terraform installed.
+
+NOTE: only terraform version 1.2.0 and later is supported.
+
 Setup local credentials:
 
 ```bash
