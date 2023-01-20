@@ -22,7 +22,7 @@ import (
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
-func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *DB {
+func newTestDB(t *testing.T, overrides ...newTestDBOption) *DB {
 	urlStr := os.Getenv(TestDatabaseURL)
 	if urlStr == "" {
 		t.Fatalf("%s must be set", TestDatabaseURL)
@@ -33,23 +33,31 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 
 	require.Equal(t, "postgres", u.Scheme)
 
-	interval := DefaultSessionCleanupInterval
-	if len(sessionCleanupIntervalOverride) > 0 {
-		interval = sessionCleanupIntervalOverride[0]
+	opts := Options{
+		Logger:       logr.Discard(),
+		ConnString:   u.String(),
+		Cache:        nil,
+		CloudService: inmem.NewTestCloudService(),
 	}
 
-	db, err := New(context.Background(), Options{
-		Logger:          logr.Discard(),
-		ConnString:      u.String(),
-		Cache:           nil,
-		CleanupInterval: interval,
-		CloudService:    inmem.NewTestCloudService(),
-	})
+	for _, or := range overrides {
+		or(&opts)
+	}
+
+	db, err := New(context.Background(), opts)
 	require.NoError(t, err)
 
 	t.Cleanup(func() { db.Close() })
 
 	return db
+}
+
+type newTestDBOption func(*Options)
+
+func overrideCleanupInterval(d time.Duration) newTestDBOption {
+	return func(o *Options) {
+		o.CleanupInterval = d
+	}
 }
 
 func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.Role) *otf.WorkspacePermission {
@@ -157,6 +165,17 @@ func createTestSession(t *testing.T, db otf.DB, userID string, opts ...otf.NewSe
 	t.Cleanup(func() {
 		db.DeleteSession(ctx, session.Token())
 	})
+	return session
+}
+
+func createTestRegistrySession(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestRegistrySessionOption) *otf.RegistrySession {
+	ctx := context.Background()
+
+	session := otf.NewTestRegistrySession(t, org, opts...)
+
+	err := db.CreateRegistrySession(ctx, session)
+	require.NoError(t, err)
+
 	return session
 }
 

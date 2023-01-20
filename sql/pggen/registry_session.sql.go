@@ -90,7 +90,7 @@ func (q *DBQuerier) FindRegistrySessionScan(results pgx.BatchResults) (FindRegis
 }
 
 const deleteExpiredRegistrySessionsSQL = `DELETE
-FROM sessions
+FROM registry_sessions
 WHERE expiry < current_timestamp
 RETURNING token
 ;`
