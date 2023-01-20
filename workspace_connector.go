@@ -22,7 +22,12 @@ type ConnectWorkspaceOptions struct {
 }
 
 func (wc *WorkspaceConnector) Connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*Workspace, error) {
-	repo, err := wc.GetRepository(ctx, opts.ProviderID, opts.Identifier)
+	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := client.GetRepository(ctx, opts.Identifier)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving repository info")
 	}
@@ -89,7 +94,11 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string
 			return err
 		}
 
-		err = app.DeleteWebhook(ctx, repo.ProviderID, cloud.DeleteWebhookOptions{
+		client, err := app.GetVCSClient(ctx, repo.ProviderID)
+		if err != nil {
+			return err
+		}
+		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
 			Identifier: repo.Identifier,
 			ID:         hook.VCSID,
 		})

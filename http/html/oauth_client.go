@@ -122,6 +122,7 @@ func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
 	return a.Exchange(ctx, resp.AuthCode)
 }
 
+// NewClient constructs a cloud client configured with the given oauth token for authentication.
 func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error) {
 	return a.cloudConfig.NewClient(ctx, cloud.Credentials{
 		OAuthToken: token,

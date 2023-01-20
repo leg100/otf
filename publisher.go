@@ -39,7 +39,12 @@ func NewPublisher(app Application) *Publisher {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions) (*Module, error) {
-	repo, err := p.GetRepository(ctx, opts.ProviderID, opts.Identifier)
+	client, err := p.GetVCSClient(ctx, opts.ProviderID)
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := client.GetRepository(ctx, opts.Identifier)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving repository info")
 	}
@@ -96,7 +101,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	}
 
 	// Make new version for each tag that looks like a semantic version.
-	tags, err := p.ListTags(ctx, opts.ProviderID, cloud.ListTagsOptions{
+	tags, err := client.ListTags(ctx, cloud.ListTagsOptions{
 		Identifier: opts.Identifier,
 	})
 	if err != nil {
@@ -199,7 +204,12 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 		return nil, nil, err
 	}
 
-	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, cloud.GetRepoTarballOptions{
+	client, err := p.GetVCSClient(ctx, opts.ProviderID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Identifier: opts.Identifier,
 		Ref:        opts.Ref,
 	})

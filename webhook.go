@@ -92,8 +92,13 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 		return nil, err
 	}
 
+	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
+	if err != nil {
+		return nil, err
+	}
+
 	// create webhook on vcs provider
-	id, err := wc.CreateWebhook(ctx, opts.ProviderID, cloud.CreateWebhookOptions{
+	id, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
 		Identifier: opts.Identifier,
 		Secret:     secret,
 		Events:     WebhookEvents,
@@ -131,21 +136,26 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 		Endpoint:   webhookEndpoint(wc.Hostname(), opts.WebhookID.String()),
 	}
 
+	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
+	if err != nil {
+		return "", err
+	}
+
 	// first retrieve webhook from vcs provider
-	vcsHook, err := wc.GetWebhook(ctx, opts.ProviderID, cloud.GetWebhookOptions{
+	vcsHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
 		Identifier: opts.Identifier,
 		ID:         opts.VCSID,
 	})
 	if errors.Is(err, ErrResourceNotFound) {
 		// webhook not found, need to create it
-		return wc.CreateWebhook(ctx, opts.ProviderID, createOpts)
+		return client.CreateWebhook(ctx, createOpts)
 	} else if err != nil {
 		return "", err
 	}
 
 	// webhook exists; check if it needs updating
 	if webhookDiff(vcsHook, opts.Webhook, wc.Hostname()) {
-		err := wc.UpdateWebhook(ctx, opts.ProviderID, cloud.UpdateWebhookOptions{
+		err = client.UpdateWebhook(ctx, cloud.UpdateWebhookOptions{
 			ID:                   vcsHook.ID,
 			CreateWebhookOptions: createOpts,
 		})

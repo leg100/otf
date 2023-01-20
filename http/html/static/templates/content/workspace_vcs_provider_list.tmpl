@@ -5,7 +5,7 @@
 {{ define "container-header" }}
   <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Content.ID }}">{{ .Content.WorkspaceName }}</a>
+  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
   /
   vcs providers
 {{ end }}

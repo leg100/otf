@@ -186,6 +186,16 @@ func (f *fakeModulesApp) ListVCSProviders(context.Context, string) ([]*otf.VCSPr
 	return []*otf.VCSProvider{f.provider}, nil
 }
 
-func (f *fakeModulesApp) ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (f *fakeModulesApp) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+	return &fakeModulesCloudClient{repos: f.repos}, nil
+}
+
+type fakeModulesCloudClient struct {
+	repos []cloud.Repo
+
+	cloud.Client
+}
+
+func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
 	return f.repos, nil
 }

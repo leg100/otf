@@ -275,7 +275,12 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 // NOTE: no pagination is performed, only matching results from the first page
 // are retrieved
 func ListModuleRepositories(ctx context.Context, app Application, providerID string) ([]cloud.Repo, error) {
-	list, err := app.ListRepositories(ctx, providerID, cloud.ListRepositoriesOptions{
+	client, err := app.GetVCSClient(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := client.ListRepositories(ctx, cloud.ListRepositoriesOptions{
 		PageSize: MaxPageSize,
 	})
 	if err != nil {

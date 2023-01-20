@@ -63,10 +63,6 @@ func (f *fakeStartRunApp) GetWorkspace(context.Context, string) (*Workspace, err
 	return f.workspace, nil
 }
 
-func (f *fakeStartRunApp) GetRepoTarball(context.Context, string, cloud.GetRepoTarballOptions) ([]byte, error) {
-	return nil, nil
-}
-
 func (f *fakeStartRunApp) CreateConfigurationVersion(context.Context, string, ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
@@ -85,4 +81,16 @@ func (f *fakeStartRunApp) UploadConfig(context.Context, string, []byte) error {
 
 func (f *fakeStartRunApp) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
 	return f.run, nil
+}
+
+func (f *fakeStartRunApp) GetVCSClient(context.Context, string) (cloud.Client, error) {
+	return &fakeStartRunCloudClient{}, nil
+}
+
+type fakeStartRunCloudClient struct {
+	cloud.Client
+}
+
+func (f *fakeStartRunCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
+	return nil, nil
 }

@@ -415,12 +415,12 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID)
+	client, err := app.GetVCSClient(r.Context(), opts.VCSProviderID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	repos, err := app.ListRepositories(r.Context(), opts.VCSProviderID, cloud.ListRepositoriesOptions{
+	repos, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
 		PageSize: 100,
 	})
 	if err != nil {
@@ -431,11 +431,11 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
 		Items []cloud.Repo
 		*otf.Workspace
-		Provider *otf.VCSProvider
+		VCSProviderID string
 	}{
-		Items:     repos,
-		Workspace: ws,
-		Provider:  provider,
+		Items:         repos,
+		Workspace:     ws,
+		VCSProviderID: opts.VCSProviderID,
 	})
 }
 

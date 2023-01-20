@@ -5,7 +5,7 @@
 {{ define "container-header" }}
   <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Content.ID }}">{{ .Content.WorkspaceName }}</a>
+  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
   /
   vcs repositories
 {{ end }}
@@ -15,7 +15,7 @@
     Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
   </div>
   <form action="{{ connectWorkspacePath .Content.ID }}" method="POST">
-    <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.Provider.ID }}">
+    <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.VCSProviderID }}">
     <input type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
     <button>connect</button>
   </form>
@@ -26,7 +26,7 @@
         <div class="item-heading">
           <span class="status">{{ .Identifier }}</span>
           <form action="{{ connectWorkspacePath $.Content.ID }}" method="POST">
-            <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.Content.Provider.ID }}">
+            <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.Content.VCSProviderID }}">
             <input type="hidden" name="identifier" id="identifier" value="{{ .Identifier }}">
             <button>connect</button>
           </form>
