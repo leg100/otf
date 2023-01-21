@@ -211,3 +211,41 @@ func createGithubVCSProviderTasks(t *testing.T, url, org, name string) chromedp.
 		matchText(t, ".flash-success", "created provider: github"),
 	}
 }
+
+func connectWorkspaceTasks(t *testing.T, url, org, name string) chromedp.Tasks {
+	return chromedp.Tasks{
+		// go to workspace
+		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", name)),
+		screenshot(t),
+		// navigate to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
+		// click connect button
+		chromedp.Click(`//button[text()='Connect to VCS']`, chromedp.NodeVisible),
+		screenshot(t),
+		// select provider
+		chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),
+		screenshot(t),
+		// connect to first repo in list (there should only be one)
+		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
+		screenshot(t),
+		// confirm connected
+		matchText(t, ".flash-success", "connected workspace to repo"),
+	}
+}
+
+func disconnectWorkspaceTasks(t *testing.T, url, org, name string) chromedp.Tasks {
+	return chromedp.Tasks{
+		// go to workspace
+		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", name)),
+		screenshot(t),
+		// navigate to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
+		// click disconnect button
+		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`, chromedp.NodeVisible),
+		screenshot(t),
+		// confirm disconnected
+		matchText(t, ".flash-success", "disconnected workspace from repo"),
+	}
+}

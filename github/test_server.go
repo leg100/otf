@@ -15,8 +15,9 @@ import (
 )
 
 type TestServer struct {
-	WebhookURL    *string // populated once a webhook is created
-	WebhookSecret *string // populated once a webhook is created
+	HookEndpoint *string  // populated upon creation
+	HookSecret   *string  // populated upon creation
+	HookEvents   []string // populated upon creation
 
 	statusCallback // callback invoked whenever a commit status is received
 
@@ -149,6 +150,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			// retrieve the webhook url
 			type options struct {
+				Events []string `json:"events"`
 				Config struct {
 					URL    string `json:"url"`
 					Secret string `json:"secret"`
@@ -159,8 +161,10 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 				return
 			}
-			srv.WebhookURL = &opts.Config.URL
-			srv.WebhookSecret = &opts.Config.Secret
+			// persist hook to the 'db'
+			srv.HookEndpoint = &opts.Config.URL
+			srv.HookEvents = opts.Events
+			srv.HookSecret = &opts.Config.Secret
 
 			hook := github.Hook{
 				ID: otf.Int64(123),
@@ -173,7 +177,27 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		})
 		// https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#delete-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
+			switch r.Method {
+			case "GET":
+				hook := github.Hook{
+					ID:     otf.Int64(123),
+					Events: srv.HookEvents,
+					URL:    srv.HookEndpoint,
+				}
+				out, err := json.Marshal(hook)
+				require.NoError(t, err)
+				w.Header().Add("Content-Type", "application/json")
+				w.Write(out)
+			case "DELETE":
+				// delete hook from 'db'
+				srv.HookEndpoint = nil
+				srv.HookEvents = nil
+				srv.HookSecret = nil
+
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
 		})
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/statuses/", func(w http.ResponseWriter, r *http.Request) {

@@ -16,8 +16,8 @@ type WorkspaceRepo struct {
 func NewWorkspaceRepo(opts NewWorkspaceRepoOptions) WorkspaceRepo {
 	return WorkspaceRepo{
 		ProviderID: opts.ProviderID,
-		WebhookID:  opts.WebhookID,
-		Identifier: opts.Identifier,
+		WebhookID:  opts.ID(),
+		Identifier: opts.Identifier(),
 		Branch:     opts.Branch,
 	}
 }
@@ -33,5 +33,3 @@ type NewWorkspaceRepoOptions struct {
 type WorkspaceUpdateRepoOptions struct {
 	Branch *string
 }
-
-// unmarshal workspace repo

@@ -34,7 +34,7 @@ type HandleEventOptions struct {
 
 // Webhook is a cloud's configuration for a webhook on OTF.
 type Webhook struct {
-	ID         string // vcs' ID
+	ID         string // cloud's webhook ID
 	Identifier string // identifier is <repo_owner>/<repo_name>
 	Events     []VCSEventType
 	Endpoint   string // the OTF URL that receives events

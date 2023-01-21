@@ -837,22 +837,19 @@ type Querier interface {
 	// DeleteVCSProviderByIDScan scans the result of an executed DeleteVCSProviderByIDBatch query.
 	DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	// FindOrInsertWebhook idempotently inserts a webhook,
-	// returning it if it already exists.
-	//
-	InsertWebhook(ctx context.Context, params InsertWebhookParams) (pgconn.CommandTag, error)
+	InsertWebhook(ctx context.Context, params InsertWebhookParams) (InsertWebhookRow, error)
 	// InsertWebhookBatch enqueues a InsertWebhook query into batch to be executed
 	// later by the batch.
 	InsertWebhookBatch(batch genericBatch, params InsertWebhookParams)
 	// InsertWebhookScan scans the result of an executed InsertWebhookBatch query.
-	InsertWebhookScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertWebhookScan(results pgx.BatchResults) (InsertWebhookRow, error)
 
-	UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, webhookID pgtype.UUID) (pgconn.CommandTag, error)
+	UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, webhookID pgtype.UUID) (UpdateWebhookVCSIDRow, error)
 	// UpdateWebhookVCSIDBatch enqueues a UpdateWebhookVCSID query into batch to be executed
 	// later by the batch.
 	UpdateWebhookVCSIDBatch(batch genericBatch, vcsID pgtype.Text, webhookID pgtype.UUID)
 	// UpdateWebhookVCSIDScan scans the result of an executed UpdateWebhookVCSIDBatch query.
-	UpdateWebhookVCSIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateWebhookVCSIDScan(results pgx.BatchResults) (UpdateWebhookVCSIDRow, error)
 
 	FindWebhookByID(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDRow, error)
 	// FindWebhookByIDBatch enqueues a FindWebhookByID query into batch to be executed
@@ -867,6 +864,13 @@ type Querier interface {
 	FindWebhookByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
 	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
 	FindWebhookByRepoScan(results pgx.BatchResults) (FindWebhookByRepoRow, error)
+
+	DisconnectWebhook(ctx context.Context, webhookID pgtype.UUID) (int, error)
+	// DisconnectWebhookBatch enqueues a DisconnectWebhook query into batch to be executed
+	// later by the batch.
+	DisconnectWebhookBatch(batch genericBatch, webhookID pgtype.UUID)
+	// DisconnectWebhookScan scans the result of an executed DisconnectWebhookBatch query.
+	DisconnectWebhookScan(results pgx.BatchResults) (int, error)
 
 	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (pgconn.CommandTag, error)
 	// DeleteWebhookBatch enqueues a DeleteWebhook query into batch to be executed
@@ -1486,6 +1490,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)
 	}
+	if _, err := p.Prepare(ctx, disconnectWebhookSQL, disconnectWebhookSQL); err != nil {
+		return fmt.Errorf("prepare query 'DisconnectWebhook': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteWebhookSQL, deleteWebhookSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhook': %w", err)
 	}
@@ -1688,6 +1695,7 @@ type Webhooks struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	Cloud      pgtype.Text `json:"cloud"`
+	Connected  int         `json:"connected"`
 }
 
 // WorkspaceRepos represents the Postgres composite type "workspace_repos".
@@ -1956,6 +1964,7 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
 		compositeField{"cloud", "text", &pgtype.Text{}},
+		compositeField{"connected", "int4", &pgtype.Int4{}},
 	)
 }
 

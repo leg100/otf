@@ -12,9 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -242,8 +240,8 @@ func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *
 	ws, err := db.CreateWorkspaceRepo(ctx, ws.ID(), otf.WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
-		WebhookID:  hook.WebhookID,
-		Identifier: hook.Identifier,
+		WebhookID:  hook.ID(),
+		Identifier: hook.Identifier(),
 	})
 	require.NoError(t, err)
 
@@ -266,22 +264,35 @@ func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 	return module
 }
 
-func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
+func createTestWebhook(t *testing.T, db *DB, repo cloud.Repo, cc cloud.Config) *otf.Webhook {
 	ctx := context.Background()
-	repo := cloud.NewTestRepo()
-	hook := otf.NewTestWebhook(repo, github.Defaults())
+	hook := otf.NewTestWebhook(t, repo, cc)
 
-	_, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{
-		WebhookID:  UUID(hook.WebhookID),
-		VCSID:      String(hook.VCSID),
-		Secret:     String(hook.Secret),
-		Identifier: String(hook.Identifier),
-		Cloud:      String(hook.CloudName()),
-	})
+	_, err := db.CreateUnsynchronisedWebhook(ctx, hook.UnsynchronisedWebhook)
+	require.NoError(t, err)
+
+	_, err = db.SynchroniseWebhook(ctx, hook.ID(), hook.VCSID())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteWebhook(ctx, hook.WebhookID)
+		db.DeleteWebhook(ctx, hook.ID())
 	})
 	return hook
+}
+
+func createTestUnsynchronisedWebhook(t *testing.T, db *DB, repo cloud.Repo, cc cloud.Config) *otf.UnsynchronisedWebhook {
+	ctx := context.Background()
+	unsynced, err := otf.NewUnsynchronisedWebhook(otf.NewUnsynchronisedWebhookOptions{
+		Identifier:  repo.Identifier,
+		CloudConfig: cc,
+	})
+	require.NoError(t, err)
+
+	_, err = db.CreateUnsynchronisedWebhook(ctx, unsynced)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteWebhook(ctx, unsynced.ID())
+	})
+	return unsynced
 }

@@ -11,8 +11,6 @@ import (
 // VCS events that trigger runs.
 type WorkspaceConnector struct {
 	Application
-	*WebhookCreator
-	*WebhookUpdater
 }
 
 type ConnectWorkspaceOptions struct {
@@ -37,21 +35,19 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, workspaceID string, o
 	// 2. create workspace repo in store
 	var ws *Workspace
 	err = wc.Tx(ctx, func(app Application) (err error) {
-		webhook, err := app.DB().SyncWebhook(ctx, SyncWebhookOptions{
-			Identifier:        opts.Identifier,
-			ProviderID:        opts.ProviderID,
-			Cloud:             opts.Cloud,
-			CreateWebhookFunc: wc.Create,
-			UpdateWebhookFunc: wc.Update,
+		webhook, err := app.CreateWebhook(ctx, SynchroniseWebhookOptions{
+			Identifier: opts.Identifier,
+			ProviderID: opts.ProviderID,
+			Cloud:      opts.Cloud,
 		})
 		if err != nil {
-			return errors.Wrap(err, "syncing webhook")
+			return errors.Wrap(err, "creating webhook")
 		}
 
 		ws, err = app.DB().CreateWorkspaceRepo(ctx, workspaceID, WorkspaceRepo{
 			Branch:     repo.Branch,
 			ProviderID: opts.ProviderID,
-			WebhookID:  webhook.WebhookID,
+			WebhookID:  webhook.ID(),
 		})
 		return errors.Wrap(err, "creating workspace repo")
 	})
@@ -87,7 +83,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string
 		}
 
 		err = app.DB().DeleteWebhook(ctx, repo.WebhookID)
-		if errors.Is(err, ErrForeignKeyViolation) {
+		if errors.Is(err, ErrWebhookConnected) {
 			// webhook is still in use by another workspace
 			return nil
 		} else if err != nil {
@@ -100,7 +96,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string
 		}
 		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
 			Identifier: repo.Identifier,
-			ID:         hook.VCSID,
+			ID:         hook.VCSID(),
 		})
 		if err != nil {
 			return err

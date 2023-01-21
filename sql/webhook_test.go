@@ -4,74 +4,49 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestWebhook_Sync_Create(t *testing.T) {
+func TestWebhook_CreateUnsynchronised(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	repo := cloud.NewTestRepo()
-	want := otf.NewTestWebhook(repo, github.Defaults())
-
-	createFunc := func(context.Context, otf.WebhookCreatorOptions) (*otf.Webhook, error) {
-		return want, nil
-	}
-
-	got, err := db.SyncWebhook(ctx, otf.SyncWebhookOptions{
-		CreateWebhookFunc: createFunc,
-		Identifier:        want.Identifier,
-		Cloud:             want.CloudName(),
+	want, err := otf.NewUnsynchronisedWebhook(otf.NewUnsynchronisedWebhookOptions{
+		Identifier:  repo.Identifier,
+		CloudConfig: github.Defaults(),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, want, got)
+
+	got, err := db.CreateUnsynchronisedWebhook(ctx, want)
+	require.NoError(t, err)
+	require.Nil(t, got)
 }
 
-func TestWebhook_Sync_Update(t *testing.T) {
+func TestWebhook_SynchroniseWebhook(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	webhook := createTestWebhook(t, db)
+	repo := cloud.NewTestRepo()
+	cc := github.Defaults()
+	unsynced := createTestUnsynchronisedWebhook(t, db, repo, cc)
 
-	updateFunc := func(context.Context, otf.WebhookUpdaterOptions) (string, error) {
-		return "updated-vcs-id", nil
-	}
-	opts := otf.SyncWebhookOptions{
-		UpdateWebhookFunc: updateFunc,
-		Identifier:        webhook.Identifier,
-		Cloud:             webhook.CloudName(),
-	}
-
-	got, err := db.SyncWebhook(ctx, opts)
+	cloudID := uuid.NewString()
+	hook, err := db.SynchroniseWebhook(ctx, unsynced.ID(), cloudID)
 	require.NoError(t, err)
-	assert.Equal(t, "updated-vcs-id", got.VCSID)
+	require.Equal(t, hook.VCSID(), cloudID)
 }
 
-func TestWebhook_Sync_NoChange(t *testing.T) {
+func TestWebhook_DeleteWebhook(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	want := createTestWebhook(t, db)
+	repo := cloud.NewTestRepo()
+	cc := github.Defaults()
+	hook1 := createTestWebhook(t, db, repo, cc)
+	_ = createTestWebhook(t, db, repo, cc)
 
-	updateFunc := func(context.Context, otf.WebhookUpdaterOptions) (string, error) {
-		return want.VCSID, nil
-	}
-	opts := otf.SyncWebhookOptions{
-		UpdateWebhookFunc: updateFunc,
-		Identifier:        want.Identifier,
-		Cloud:             want.CloudName(),
-	}
-
-	got, err := db.SyncWebhook(ctx, opts)
-	require.NoError(t, err)
-	assert.Equal(t, want, got)
-}
-
-func TestWebhook_Delete(t *testing.T) {
-	db := newTestDB(t)
-	hook := createTestWebhook(t, db)
-
-	err := db.DeleteWebhook(context.Background(), hook.WebhookID)
+	err := db.DeleteWebhook(ctx, hook1.ID())
 	require.NoError(t, err)
 }

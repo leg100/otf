@@ -16,154 +16,213 @@ import (
 	"github.com/jackc/pgtype"
 )
 
-// WebhookEvents are those events webhooks should subscribe to.
-var WebhookEvents = []cloud.VCSEventType{
-	cloud.VCSPushEventType,
-	cloud.VCSPullEventType,
-}
+var (
 
+	// DefaultWebhookEvents are VCS events webhooks should subscribe to.
+	DefaultWebhookEvents = []cloud.VCSEventType{
+		cloud.VCSPushEventType,
+		cloud.VCSPullEventType,
+	}
+	// ErrWebhookConnected is returned when an attempt is made to delete a
+	// webhook but the webhook is still connected e.g. to a module or a
+	// workspace.
+	ErrWebhookConnected = errors.New("webhook is still connected")
+)
+
+// Webhook is a VCS repo webhook configuration present on both a cloud (e.g.
+// github) as well as in OTF, i.e. it is synchronised.
 type Webhook struct {
-	WebhookID  uuid.UUID // otf's ID
-	VCSID      string    // vcs provider's webhook ID
-	Secret     string    // secret token
-	Identifier string    // identifier is <repo_owner>/<repo_name>
+	*UnsynchronisedWebhook
 
-	cloudConfig cloud.Config // provides handler for webhook's events
+	cloudID string // cloud's webhook ID
 }
 
-func (h *Webhook) ID() string        { return h.WebhookID.String() }
-func (h *Webhook) Owner() string     { return strings.Split(h.Identifier, "/")[0] }
-func (h *Webhook) Repo() string      { return strings.Split(h.Identifier, "/")[1] }
-func (h *Webhook) CloudName() string { return h.cloudConfig.Name }
+func (h *Webhook) VCSID() string { return h.cloudID }
 
 func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) cloud.VCSEvent {
 	return h.cloudConfig.HandleEvent(w, r, cloud.HandleEventOptions{
-		WebhookID: h.WebhookID,
-		Secret:    h.Secret,
+		WebhookID: h.id,
+		Secret:    h.secret,
 	})
 }
 
+// UnsynchronisedWebhook is a VCS repo webhook configuration that is yet to be
+// synchronised to a cloud e.g. github.
+type UnsynchronisedWebhook struct {
+	id          uuid.UUID    // otf's webhook ID
+	secret      string       // secret token
+	identifier  string       // identifier is <repo_owner>/<repo_name>
+	cloudConfig cloud.Config // identifies cloud and provides VCS event handler
+}
+
+func NewUnsynchronisedWebhook(opts NewUnsynchronisedWebhookOptions) (*UnsynchronisedWebhook, error) {
+	secret, err := GenerateToken()
+	if err != nil {
+		return nil, err
+	}
+	return &UnsynchronisedWebhook{
+		id:          uuid.New(),
+		secret:      secret,
+		identifier:  opts.Identifier,
+		cloudConfig: opts.CloudConfig,
+	}, nil
+}
+
+type NewUnsynchronisedWebhookOptions struct {
+	Identifier  string
+	CloudConfig cloud.Config
+}
+
+func (h *UnsynchronisedWebhook) ID() uuid.UUID      { return h.id }
+func (h *UnsynchronisedWebhook) Owner() string      { return strings.Split(h.identifier, "/")[0] }
+func (h *UnsynchronisedWebhook) Repo() string       { return strings.Split(h.identifier, "/")[1] }
+func (h *UnsynchronisedWebhook) Identifier() string { return h.identifier }
+func (h *UnsynchronisedWebhook) Secret() string     { return h.secret }
+func (h *UnsynchronisedWebhook) CloudName() string  { return h.cloudConfig.Name }
+
+// Endpoint returns the webhook's endpoint, using the otf host (hostname:[port])
+// to build the endpoint URL.
+func (h *UnsynchronisedWebhook) Endpoint(host string) string {
+	return (&url.URL{
+		Scheme: "https",
+		Host:   host,
+		Path:   path.Join("/webhooks/vcs", h.id.String()),
+	}).String()
+}
+
+type WebhookService interface {
+	CreateWebhook(ctx context.Context, opts SynchroniseWebhookOptions) (*Webhook, error)
+	GetWebhook(ctx context.Context, workspaceID string) (*Webhook, error)
+	GetWebhookByName(ctx context.Context, organization, workspace string) (*Webhook, error)
+	DeleteWebhook(ctx context.Context, workspaceID string) (*Webhook, error)
+}
+
 type WebhookStore interface {
-	// SyncWebhook ensures webhook configuration is present and
-	// equal in both the store and the VCS provider. The idUpdater is called
-	// after the webhook is created in the store (or retrieved if it already
-	// exists) and it should be used to ensure the webhook exists and is up to
-	// date in the VCS provider before returning the ID the provider uses to
-	// identify the webhook. SyncWebhook will then update the store with the ID if
-	// it differs from its present value in the store.
-	SyncWebhook(ctx context.Context, opts SyncWebhookOptions) (*Webhook, error)
+	// CreateWebhook idempotently persists an unsynchronised webhook to the
+	// store. If a (synchronised) webhook already exists then it is returned.
+	CreateUnsynchronisedWebhook(context.Context, *UnsynchronisedWebhook) (*Webhook, error)
+	// SynchroniseWebhook synchronises a webhook in the store, setting or updating its
+	// cloud ID, and returning the synchronised webhook.
+	SynchroniseWebhook(ctx context.Context, webhookID uuid.UUID, cloudID string) (*Webhook, error)
 	// GetWebhook retrieves a webhook by its ID
-	GetWebhook(ctx context.Context, id uuid.UUID) (*Webhook, error)
-	// DeleteWebhook deletes the webhook from the store.
-	DeleteWebhook(ctx context.Context, id uuid.UUID) error
+	GetWebhook(ctx context.Context, webhookID uuid.UUID) (*Webhook, error)
+	// DeleteWebhook deletes the webhook from the store. If the webhook is still
+	// connected (e.g. to a module or a workspace) then ErrWebhookConnected is
+	// returned.
+	DeleteWebhook(ctx context.Context, webhookID uuid.UUID) error
 }
 
-type SyncWebhookOptions struct {
-	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
-	ProviderID string `schema:"vcs_provider_id,required"`
-	Cloud      string // cloud that the webhook belongs to
-
-	CreateWebhookFunc func(context.Context, WebhookCreatorOptions) (*Webhook, error)
-	UpdateWebhookFunc func(context.Context, WebhookUpdaterOptions) (string, error)
-}
-
-type WebhookCreatorOptions struct {
+type SynchroniseWebhookOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	ProviderID string `schema:"vcs_provider_id,required"`
 	Cloud      string // cloud providing webhook
 }
 
-type WebhookCreator struct {
-	VCSProviderService // for creating webhook on vcs provider
-	cloud.Service      // for retrieving event handler
-	HostnameService    // for retrieving system hostname
+// WebhookSynchroniser synchronises a webhook, ensuring its config is present
+// and identical in both OTF and on the cloud.
+type WebhookSynchroniser struct {
+	Application
 }
 
-func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions) (*Webhook, error) {
-	webhookID := uuid.New()
-	secret, err := GenerateToken()
-	if err != nil {
-		return nil, err
-	}
-
-	// lookup event cloudConfig using cloud name
+func (wc *WebhookSynchroniser) Synchronise(ctx context.Context, opts SynchroniseWebhookOptions) (*Webhook, error) {
+	// lookup cloudConfig using cloud name
 	cloudConfig, err := wc.GetCloudConfig(opts.Cloud)
 	if err != nil {
 		return nil, err
 	}
 
+	unsynced, err := NewUnsynchronisedWebhook(NewUnsynchronisedWebhookOptions{
+		Identifier:  opts.Identifier,
+		CloudConfig: cloudConfig,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
 	if err != nil {
 		return nil, err
 	}
 
-	// create webhook on vcs provider
-	id, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
-		Identifier: opts.Identifier,
-		Secret:     secret,
-		Events:     WebhookEvents,
-		Endpoint:   webhookEndpoint(wc.Hostname(), webhookID.String()),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "creating webhook")
-	}
-	// return webhook for persistence to db
-	return &Webhook{
-		WebhookID:   webhookID,
-		VCSID:       id,
-		Secret:      secret,
-		Identifier:  opts.Identifier,
-		cloudConfig: cloudConfig,
-	}, nil
-}
+	// Wrap the process within a transaction to prevent hooks from being
+	// synchronised concurrently, which could lead to disparities in
+	// configuration.
+	var hook *Webhook
+	err = wc.Tx(ctx, func(app Application) (err error) {
+		hook, err = app.DB().CreateUnsynchronisedWebhook(ctx, unsynced)
+		if err != nil {
+			return err
+		}
+		if hook == nil {
+			// no existing hook; create in cloud and sync
+			cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+				Identifier: opts.Identifier,
+				Secret:     unsynced.secret,
+				Events:     DefaultWebhookEvents,
+				Endpoint:   unsynced.Endpoint(wc.Hostname()),
+			})
+			if err != nil {
+				return err
+			}
+			hook, err = app.DB().SynchroniseWebhook(ctx, unsynced.id, cloudID)
+			if err != nil {
+				return err
+			}
+			// synchronised
+			return nil
+		}
 
-type WebhookUpdater struct {
-	VCSProviderService // for creating webhook on vcs provider
-	HostnameService    // for retrieving system hostname
-}
+		// existing hook; check it exists in cloud and create/update
+		// accordingly
+		cloudHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
+			Identifier: opts.Identifier,
+			ID:         hook.cloudID,
+		})
+		if errors.Is(err, ErrResourceNotFound) {
+			// hook not found in cloud; create it
+			cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+				Identifier: opts.Identifier,
+				Secret:     hook.secret,
+				Events:     DefaultWebhookEvents,
+				Endpoint:   hook.Endpoint(wc.Hostname()),
+			})
+			if err != nil {
+				return err
+			}
+			hook, err = app.DB().SynchroniseWebhook(ctx, hook.id, cloudID)
+			if err != nil {
+				return err
+			}
+			// synchronised
+			return nil
+		}
 
-type WebhookUpdaterOptions struct {
-	ProviderID string `schema:"vcs_provider_id,required"`
+		// hook found in both DB and on cloud; check for differences and update
+		// accordingly
+		if reflect.DeepEqual(DefaultWebhookEvents, cloudHook.Events) &&
+			hook.Endpoint(wc.Hostname()) == cloudHook.Endpoint {
+			// synchronised
+			return nil
+		}
 
-	*Webhook
-}
-
-func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions) (string, error) {
-	createOpts := cloud.CreateWebhookOptions{
-		Identifier: opts.Identifier,
-		Secret:     opts.Secret,
-		Events:     WebhookEvents,
-		Endpoint:   webhookEndpoint(wc.Hostname(), opts.WebhookID.String()),
-	}
-
-	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
-	if err != nil {
-		return "", err
-	}
-
-	// first retrieve webhook from vcs provider
-	vcsHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
-		Identifier: opts.Identifier,
-		ID:         opts.VCSID,
-	})
-	if errors.Is(err, ErrResourceNotFound) {
-		// webhook not found, need to create it
-		return client.CreateWebhook(ctx, createOpts)
-	} else if err != nil {
-		return "", err
-	}
-
-	// webhook exists; check if it needs updating
-	if webhookDiff(vcsHook, opts.Webhook, wc.Hostname()) {
+		// differences found; update hook on cloud
 		err = client.UpdateWebhook(ctx, cloud.UpdateWebhookOptions{
-			ID:                   vcsHook.ID,
-			CreateWebhookOptions: createOpts,
+			ID: cloudHook.ID,
+			CreateWebhookOptions: cloud.CreateWebhookOptions{
+				Identifier: opts.Identifier,
+				Secret:     hook.secret,
+				Events:     DefaultWebhookEvents,
+				Endpoint:   hook.Endpoint(wc.Hostname()),
+			},
 		})
 		if err != nil {
-			return "", err
+			return err
 		}
-	}
-	return vcsHook.ID, nil
+
+		// synchronised
+		return nil
+	})
+	return hook, err
 }
 
 type WebhookRow struct {
@@ -172,6 +231,7 @@ type WebhookRow struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	Cloud      pgtype.Text `json:"cloud"`
+	Connected  int         `json:"connected"`
 }
 
 func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
@@ -181,34 +241,12 @@ func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
 	}
 
 	return &Webhook{
-		WebhookID:   row.WebhookID.Bytes,
-		VCSID:       row.VCSID.String,
-		Secret:      row.Secret.String,
-		Identifier:  row.Identifier.String,
-		cloudConfig: cloudConfig,
+		UnsynchronisedWebhook: &UnsynchronisedWebhook{
+			id:          row.WebhookID.Bytes,
+			secret:      row.Secret.String,
+			identifier:  row.Identifier.String,
+			cloudConfig: cloudConfig,
+		},
+		cloudID: row.VCSID.String,
 	}, nil
-}
-
-// webhookDiff determines whether the webhook config on the vcs provider differs from
-// what we expect the config to be.
-//
-// NOTE: we cannot determine whether secret has changed because cloud APIs tend
-// not to expose it
-func webhookDiff(vcs cloud.Webhook, db *Webhook, hostname string) bool {
-	if !reflect.DeepEqual(vcs.Events, WebhookEvents) {
-		return true
-	}
-
-	endpoint := webhookEndpoint(hostname, db.WebhookID.String())
-	return vcs.Endpoint != endpoint
-}
-
-// webhookEndpoint returns the URL to the webhook's endpoint. Host is the
-// externally-facing hostname[:port] of otfd.
-func webhookEndpoint(host, id string) string {
-	return (&url.URL{
-		Scheme: "https",
-		Host:   host,
-		Path:   path.Join("/webhooks/vcs", id),
-	}).String()
 }

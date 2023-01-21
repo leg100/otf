@@ -64,28 +64,8 @@ func TestConnectRepo(t *testing.T) {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
 		createGithubVCSProviderTasks(t, url, org, "github"),
-		// create workspace via UI
 		createWorkspaceTasks(t, hostname, org, workspaceName),
-		// connect workspace to vcs repo
-		chromedp.Tasks{
-			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
-			screenshot(t),
-			// navigate to workspace settings
-			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
-			screenshot(t),
-			// click connect button
-			chromedp.Click(`//button[text()='Connect to VCS']`, chromedp.NodeVisible),
-			screenshot(t),
-			// select provider
-			chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),
-			screenshot(t),
-			// connect to first repo in list (there should only be one)
-			chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
-			screenshot(t),
-			// confirm connected
-			matchText(t, ".flash-success", "connected workspace to repo"),
-		},
+		connectWorkspaceTasks(t, hostname, org, workspaceName),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
 		startRunTasks(t, hostname, org, workspaceName),
@@ -97,8 +77,8 @@ func TestConnectRepo(t *testing.T) {
 	// should trigger a run on the workspace.
 
 	// otfd should have registered a webhook with the github server
-	require.NotNil(t, daemon.githubServer.WebhookURL)
-	require.NotNil(t, daemon.githubServer.WebhookSecret)
+	require.NotNil(t, daemon.githubServer.HookEndpoint)
+	require.NotNil(t, daemon.githubServer.HookSecret)
 
 	// generate push event using template
 	pushTpl, err := os.ReadFile("fixtures/github_push.json")
@@ -106,7 +86,7 @@ func TestConnectRepo(t *testing.T) {
 	push := fmt.Sprintf(string(pushTpl), repo.Identifier)
 
 	// send push event
-	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.WebhookURL, *daemon.githubServer.WebhookSecret)
+	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)
 
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{

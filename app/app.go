@@ -30,6 +30,7 @@ type Application struct {
 	*otf.RunStarter
 	*otf.Publisher
 	*otf.ModuleVersionUploader
+	*otf.WebhookSynchroniser
 	cloud.Service
 	otf.PubSubService
 	logr.Logger
@@ -67,12 +68,9 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		},
 	}
 	app.Publisher = otf.NewPublisher(app)
-	app.RunStarter = &otf.RunStarter{
-		Application: app,
-	}
-	app.ModuleVersionUploader = &otf.ModuleVersionUploader{
-		Application: app,
-	}
+	app.WebhookSynchroniser = &otf.WebhookSynchroniser{app}
+	app.RunStarter = &otf.RunStarter{app}
+	app.ModuleVersionUploader = &otf.ModuleVersionUploader{app}
 
 	proxy, err := inmem.NewChunkProxy(app, opts.Logger, opts.Cache, opts.DB)
 	if err != nil {

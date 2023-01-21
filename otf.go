@@ -60,6 +60,7 @@ type Application interface {
 	ModuleVersionService
 	HostnameService
 	VariableService
+	WebhookService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
