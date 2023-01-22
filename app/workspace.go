@@ -10,7 +10,7 @@ import (
 func (a *Application) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
 	ws, err := otf.NewWorkspace(opts)
 	if err != nil {
-		a.error(err, "constructing workspace")
+		a.Error(err, "constructing workspace")
 		return nil, err
 	}
 

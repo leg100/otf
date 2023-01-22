@@ -837,12 +837,12 @@ type Querier interface {
 	// DeleteVCSProviderByIDScan scans the result of an executed DeleteVCSProviderByIDBatch query.
 	DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertWebhook(ctx context.Context, params InsertWebhookParams) (InsertWebhookRow, error)
-	// InsertWebhookBatch enqueues a InsertWebhook query into batch to be executed
+	UpsertWebhook(ctx context.Context, params UpsertWebhookParams) (UpsertWebhookRow, error)
+	// UpsertWebhookBatch enqueues a UpsertWebhook query into batch to be executed
 	// later by the batch.
-	InsertWebhookBatch(batch genericBatch, params InsertWebhookParams)
-	// InsertWebhookScan scans the result of an executed InsertWebhookBatch query.
-	InsertWebhookScan(results pgx.BatchResults) (InsertWebhookRow, error)
+	UpsertWebhookBatch(batch genericBatch, params UpsertWebhookParams)
+	// UpsertWebhookScan scans the result of an executed UpsertWebhookBatch query.
+	UpsertWebhookScan(results pgx.BatchResults) (UpsertWebhookRow, error)
 
 	UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, webhookID pgtype.UUID) (UpdateWebhookVCSIDRow, error)
 	// UpdateWebhookVCSIDBatch enqueues a UpdateWebhookVCSID query into batch to be executed
@@ -865,19 +865,19 @@ type Querier interface {
 	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
 	FindWebhookByRepoScan(results pgx.BatchResults) (FindWebhookByRepoRow, error)
 
-	DisconnectWebhook(ctx context.Context, webhookID pgtype.UUID) (int, error)
+	DisconnectWebhook(ctx context.Context, webhookID pgtype.UUID) (DisconnectWebhookRow, error)
 	// DisconnectWebhookBatch enqueues a DisconnectWebhook query into batch to be executed
 	// later by the batch.
 	DisconnectWebhookBatch(batch genericBatch, webhookID pgtype.UUID)
 	// DisconnectWebhookScan scans the result of an executed DisconnectWebhookBatch query.
-	DisconnectWebhookScan(results pgx.BatchResults) (int, error)
+	DisconnectWebhookScan(results pgx.BatchResults) (DisconnectWebhookRow, error)
 
-	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (pgconn.CommandTag, error)
+	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookRow, error)
 	// DeleteWebhookBatch enqueues a DeleteWebhook query into batch to be executed
 	// later by the batch.
 	DeleteWebhookBatch(batch genericBatch, webhookID pgtype.UUID)
 	// DeleteWebhookScan scans the result of an executed DeleteWebhookBatch query.
-	DeleteWebhookScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteWebhookScan(results pgx.BatchResults) (DeleteWebhookRow, error)
 
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
@@ -1478,8 +1478,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteVCSProviderByIDSQL, deleteVCSProviderByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVCSProviderByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertWebhookSQL, insertWebhookSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertWebhook': %w", err)
+	if _, err := p.Prepare(ctx, upsertWebhookSQL, upsertWebhookSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpsertWebhook': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateWebhookVCSIDSQL, updateWebhookVCSIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWebhookVCSID': %w", err)

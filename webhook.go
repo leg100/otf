@@ -34,13 +34,14 @@ var (
 type Webhook struct {
 	*UnsynchronisedWebhook
 
-	cloudID string // cloud's webhook ID
+	cloud.EventHandler        // handles incoming vcs events
+	cloudID            string // cloud's webhook ID
 }
 
 func (h *Webhook) VCSID() string { return h.cloudID }
 
 func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) cloud.VCSEvent {
-	return h.cloudConfig.HandleEvent(w, r, cloud.HandleEventOptions{
+	return h.EventHandler.HandleEvent(w, r, cloud.HandleEventOptions{
 		WebhookID: h.id,
 		Secret:    h.secret,
 	})
@@ -49,10 +50,10 @@ func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) cloud.VCSE
 // UnsynchronisedWebhook is a VCS repo webhook configuration that is yet to be
 // synchronised to a cloud e.g. github.
 type UnsynchronisedWebhook struct {
-	id          uuid.UUID    // otf's webhook ID
-	secret      string       // secret token
-	identifier  string       // identifier is <repo_owner>/<repo_name>
-	cloudConfig cloud.Config // identifies cloud and provides VCS event handler
+	id         uuid.UUID // otf's webhook ID
+	secret     string    // secret token
+	identifier string    // identifier is <repo_owner>/<repo_name>
+	cloud      string    // cloud name
 }
 
 func NewUnsynchronisedWebhook(opts NewUnsynchronisedWebhookOptions) (*UnsynchronisedWebhook, error) {
@@ -61,16 +62,16 @@ func NewUnsynchronisedWebhook(opts NewUnsynchronisedWebhookOptions) (*Unsynchron
 		return nil, err
 	}
 	return &UnsynchronisedWebhook{
-		id:          uuid.New(),
-		secret:      secret,
-		identifier:  opts.Identifier,
-		cloudConfig: opts.CloudConfig,
+		id:         uuid.New(),
+		secret:     secret,
+		identifier: opts.Identifier,
+		cloud:      opts.Cloud,
 	}, nil
 }
 
 type NewUnsynchronisedWebhookOptions struct {
-	Identifier  string
-	CloudConfig cloud.Config
+	Identifier string
+	Cloud      string
 }
 
 func (h *UnsynchronisedWebhook) ID() uuid.UUID      { return h.id }
@@ -78,7 +79,7 @@ func (h *UnsynchronisedWebhook) Owner() string      { return strings.Split(h.ide
 func (h *UnsynchronisedWebhook) Repo() string       { return strings.Split(h.identifier, "/")[1] }
 func (h *UnsynchronisedWebhook) Identifier() string { return h.identifier }
 func (h *UnsynchronisedWebhook) Secret() string     { return h.secret }
-func (h *UnsynchronisedWebhook) CloudName() string  { return h.cloudConfig.Name }
+func (h *UnsynchronisedWebhook) Cloud() string      { return h.cloud }
 
 // Endpoint returns the webhook's endpoint, using the otf host (hostname:[port])
 // to build the endpoint URL.
@@ -91,28 +92,29 @@ func (h *UnsynchronisedWebhook) Endpoint(host string) string {
 }
 
 type WebhookService interface {
-	CreateWebhook(ctx context.Context, opts SynchroniseWebhookOptions) (*Webhook, error)
-	GetWebhook(ctx context.Context, workspaceID string) (*Webhook, error)
-	GetWebhookByName(ctx context.Context, organization, workspace string) (*Webhook, error)
-	DeleteWebhook(ctx context.Context, workspaceID string) (*Webhook, error)
+	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (*Webhook, error)
+	GetWebhook(ctx context.Context, webhookID uuid.UUID) (*Webhook, error)
+	DeleteWebhook(ctx context.Context, providerID string, webhookID uuid.UUID) error
 }
 
 type WebhookStore interface {
-	// CreateWebhook idempotently persists an unsynchronised webhook to the
-	// store. If a (synchronised) webhook already exists then it is returned.
-	CreateUnsynchronisedWebhook(context.Context, *UnsynchronisedWebhook) (*Webhook, error)
-	// SynchroniseWebhook synchronises a webhook in the store, setting or updating its
-	// cloud ID, and returning the synchronised webhook.
-	SynchroniseWebhook(ctx context.Context, webhookID uuid.UUID, cloudID string) (*Webhook, error)
+	// SynchroniseWebhook performs the two-step task of synchronising a webhook:
+	// (1) The hook is created in the DB without a cloud ID
+	// (2) Callback is invoked. If a hook already exists in (1) it is passed in
+	// as an argument. The callback is expected to return a cloud ID which is
+	// persisted to the DB.
+	//
+	// Finally, the synchronised webhook is returned, complete with cloud ID.
+	SynchroniseWebhook(context.Context, *UnsynchronisedWebhook, func(*Webhook) (string, error)) (*Webhook, error)
 	// GetWebhook retrieves a webhook by its ID
 	GetWebhook(ctx context.Context, webhookID uuid.UUID) (*Webhook, error)
 	// DeleteWebhook deletes the webhook from the store. If the webhook is still
 	// connected (e.g. to a module or a workspace) then ErrWebhookConnected is
 	// returned.
-	DeleteWebhook(ctx context.Context, webhookID uuid.UUID) error
+	DeleteWebhook(ctx context.Context, webhookID uuid.UUID) (*Webhook, error)
 }
 
-type SynchroniseWebhookOptions struct {
+type CreateWebhookOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	ProviderID string `schema:"vcs_provider_id,required"`
 	Cloud      string // cloud providing webhook
@@ -121,108 +123,89 @@ type SynchroniseWebhookOptions struct {
 // WebhookSynchroniser synchronises a webhook, ensuring its config is present
 // and identical in both OTF and on the cloud.
 type WebhookSynchroniser struct {
-	Application
+	VCSProviderService
+	HostnameService
+	DB
 }
 
-func (wc *WebhookSynchroniser) Synchronise(ctx context.Context, opts SynchroniseWebhookOptions) (*Webhook, error) {
-	// lookup cloudConfig using cloud name
-	cloudConfig, err := wc.GetCloudConfig(opts.Cloud)
+func (s *WebhookSynchroniser) Synchronise(ctx context.Context, providerID string, unsynced *UnsynchronisedWebhook) (*Webhook, error) {
+	client, err := s.GetVCSClient(ctx, providerID)
 	if err != nil {
 		return nil, err
 	}
 
-	unsynced, err := NewUnsynchronisedWebhook(NewUnsynchronisedWebhookOptions{
-		Identifier:  opts.Identifier,
-		CloudConfig: cloudConfig,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Wrap the process within a transaction to prevent hooks from being
-	// synchronised concurrently, which could lead to disparities in
-	// configuration.
-	var hook *Webhook
-	err = wc.Tx(ctx, func(app Application) (err error) {
-		hook, err = app.DB().CreateUnsynchronisedWebhook(ctx, unsynced)
-		if err != nil {
-			return err
-		}
-		if hook == nil {
-			// no existing hook; create in cloud and sync
-			cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
-				Identifier: opts.Identifier,
+	return s.SynchroniseWebhook(ctx, unsynced, func(existing *Webhook) (string, error) {
+		if existing == nil {
+			return client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+				Identifier: unsynced.identifier,
 				Secret:     unsynced.secret,
 				Events:     DefaultWebhookEvents,
-				Endpoint:   unsynced.Endpoint(wc.Hostname()),
+				Endpoint:   unsynced.Endpoint(s.Hostname()),
 			})
-			if err != nil {
-				return err
-			}
-			hook, err = app.DB().SynchroniseWebhook(ctx, unsynced.id, cloudID)
-			if err != nil {
-				return err
-			}
-			// synchronised
-			return nil
 		}
 
 		// existing hook; check it exists in cloud and create/update
 		// accordingly
 		cloudHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
-			Identifier: opts.Identifier,
-			ID:         hook.cloudID,
+			Identifier: unsynced.identifier,
+			ID:         existing.cloudID,
 		})
 		if errors.Is(err, ErrResourceNotFound) {
 			// hook not found in cloud; create it
-			cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
-				Identifier: opts.Identifier,
-				Secret:     hook.secret,
+			return client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+				Identifier: unsynced.identifier,
+				Secret:     existing.secret,
 				Events:     DefaultWebhookEvents,
-				Endpoint:   hook.Endpoint(wc.Hostname()),
+				Endpoint:   existing.Endpoint(s.Hostname()),
 			})
-			if err != nil {
-				return err
-			}
-			hook, err = app.DB().SynchroniseWebhook(ctx, hook.id, cloudID)
-			if err != nil {
-				return err
-			}
-			// synchronised
-			return nil
 		}
 
 		// hook found in both DB and on cloud; check for differences and update
 		// accordingly
 		if reflect.DeepEqual(DefaultWebhookEvents, cloudHook.Events) &&
-			hook.Endpoint(wc.Hostname()) == cloudHook.Endpoint {
-			// synchronised
-			return nil
+			existing.Endpoint(s.Hostname()) == cloudHook.Endpoint {
+			// no differences
+			return existing.cloudID, nil
 		}
 
 		// differences found; update hook on cloud
 		err = client.UpdateWebhook(ctx, cloud.UpdateWebhookOptions{
 			ID: cloudHook.ID,
 			CreateWebhookOptions: cloud.CreateWebhookOptions{
-				Identifier: opts.Identifier,
-				Secret:     hook.secret,
+				Identifier: unsynced.identifier,
+				Secret:     existing.secret,
 				Events:     DefaultWebhookEvents,
-				Endpoint:   hook.Endpoint(wc.Hostname()),
+				Endpoint:   existing.Endpoint(s.Hostname()),
 			},
 		})
-		if err != nil {
+		return existing.cloudID, err
+	})
+}
+
+// WebhookDeleter deletes a webhook, deleting it from both DB and cloud.
+type WebhookDeleter struct {
+	VCSProviderService
+	DB
+}
+
+func (d *WebhookDeleter) Delete(ctx context.Context, providerID string, webhookID uuid.UUID) error {
+	return d.Tx(ctx, func(db DB) error {
+		hook, err := db.DeleteWebhook(ctx, webhookID)
+		if err == ErrWebhookConnected {
+			return nil
+		} else if err != nil {
 			return err
 		}
 
-		// synchronised
-		return nil
+		client, err := d.GetVCSClient(ctx, providerID)
+		if err != nil {
+			return err
+		}
+		return client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
+			Identifier: hook.Identifier(),
+			ID:         hook.VCSID(),
+		})
 	})
-	return hook, err
 }
 
 type WebhookRow struct {
@@ -242,11 +225,12 @@ func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
 
 	return &Webhook{
 		UnsynchronisedWebhook: &UnsynchronisedWebhook{
-			id:          row.WebhookID.Bytes,
-			secret:      row.Secret.String,
-			identifier:  row.Identifier.String,
-			cloudConfig: cloudConfig,
+			id:         row.WebhookID.Bytes,
+			secret:     row.Secret.String,
+			identifier: row.Identifier.String,
+			cloud:      row.Cloud.String,
 		},
-		cloudID: row.VCSID.String,
+		EventHandler: cloudConfig,
+		cloudID:      row.VCSID.String,
 	}, nil
 }

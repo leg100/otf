@@ -1,4 +1,4 @@
--- name: InsertWebhook :one
+-- name: UpsertWebhook :one
 INSERT INTO webhooks (
     webhook_id,
     secret,
@@ -39,10 +39,12 @@ AND   cloud = pggen.arg('cloud');
 UPDATE webhooks
 SET connected = connected - 1
 WHERE webhook_id = pggen.arg('webhook_id')
-RETURNING connected
+RETURNING *
 ;
 
--- name: DeleteWebhook :exec
+-- name: DeleteWebhook :one
 DELETE
 FROM webhooks
-WHERE webhook_id = pggen.arg('webhook_id');
+WHERE webhook_id = pggen.arg('webhook_id')
+RETURNING *
+;

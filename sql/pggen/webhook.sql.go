@@ -6,12 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
-const insertWebhookSQL = `INSERT INTO webhooks (
+const upsertWebhookSQL = `INSERT INTO webhooks (
     webhook_id,
     secret,
     identifier,
@@ -29,14 +28,14 @@ const insertWebhookSQL = `INSERT INTO webhooks (
 RETURNING *
 ;`
 
-type InsertWebhookParams struct {
+type UpsertWebhookParams struct {
 	WebhookID  pgtype.UUID
 	Secret     pgtype.Text
 	Identifier pgtype.Text
 	Cloud      pgtype.Text
 }
 
-type InsertWebhookRow struct {
+type UpsertWebhookRow struct {
 	WebhookID  pgtype.UUID `json:"webhook_id"`
 	VCSID      pgtype.Text `json:"vcs_id"`
 	Secret     pgtype.Text `json:"secret"`
@@ -45,28 +44,28 @@ type InsertWebhookRow struct {
 	Connected  int         `json:"connected"`
 }
 
-// InsertWebhook implements Querier.InsertWebhook.
-func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParams) (InsertWebhookRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWebhook")
-	row := q.conn.QueryRow(ctx, insertWebhookSQL, params.WebhookID, params.Secret, params.Identifier, params.Cloud)
-	var item InsertWebhookRow
+// UpsertWebhook implements Querier.UpsertWebhook.
+func (q *DBQuerier) UpsertWebhook(ctx context.Context, params UpsertWebhookParams) (UpsertWebhookRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpsertWebhook")
+	row := q.conn.QueryRow(ctx, upsertWebhookSQL, params.WebhookID, params.Secret, params.Identifier, params.Cloud)
+	var item UpsertWebhookRow
 	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
-		return item, fmt.Errorf("query InsertWebhook: %w", err)
+		return item, fmt.Errorf("query UpsertWebhook: %w", err)
 	}
 	return item, nil
 }
 
-// InsertWebhookBatch implements Querier.InsertWebhookBatch.
-func (q *DBQuerier) InsertWebhookBatch(batch genericBatch, params InsertWebhookParams) {
-	batch.Queue(insertWebhookSQL, params.WebhookID, params.Secret, params.Identifier, params.Cloud)
+// UpsertWebhookBatch implements Querier.UpsertWebhookBatch.
+func (q *DBQuerier) UpsertWebhookBatch(batch genericBatch, params UpsertWebhookParams) {
+	batch.Queue(upsertWebhookSQL, params.WebhookID, params.Secret, params.Identifier, params.Cloud)
 }
 
-// InsertWebhookScan implements Querier.InsertWebhookScan.
-func (q *DBQuerier) InsertWebhookScan(results pgx.BatchResults) (InsertWebhookRow, error) {
+// UpsertWebhookScan implements Querier.UpsertWebhookScan.
+func (q *DBQuerier) UpsertWebhookScan(results pgx.BatchResults) (UpsertWebhookRow, error) {
 	row := results.QueryRow()
-	var item InsertWebhookRow
+	var item UpsertWebhookRow
 	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
-		return item, fmt.Errorf("scan InsertWebhookBatch row: %w", err)
+		return item, fmt.Errorf("scan UpsertWebhookBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -194,15 +193,24 @@ func (q *DBQuerier) FindWebhookByRepoScan(results pgx.BatchResults) (FindWebhook
 const disconnectWebhookSQL = `UPDATE webhooks
 SET connected = connected - 1
 WHERE webhook_id = $1
-RETURNING connected
+RETURNING *
 ;`
 
+type DisconnectWebhookRow struct {
+	WebhookID  pgtype.UUID `json:"webhook_id"`
+	VCSID      pgtype.Text `json:"vcs_id"`
+	Secret     pgtype.Text `json:"secret"`
+	Identifier pgtype.Text `json:"identifier"`
+	Cloud      pgtype.Text `json:"cloud"`
+	Connected  int         `json:"connected"`
+}
+
 // DisconnectWebhook implements Querier.DisconnectWebhook.
-func (q *DBQuerier) DisconnectWebhook(ctx context.Context, webhookID pgtype.UUID) (int, error) {
+func (q *DBQuerier) DisconnectWebhook(ctx context.Context, webhookID pgtype.UUID) (DisconnectWebhookRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DisconnectWebhook")
 	row := q.conn.QueryRow(ctx, disconnectWebhookSQL, webhookID)
-	var item int
-	if err := row.Scan(&item); err != nil {
+	var item DisconnectWebhookRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
 		return item, fmt.Errorf("query DisconnectWebhook: %w", err)
 	}
 	return item, nil
@@ -214,10 +222,10 @@ func (q *DBQuerier) DisconnectWebhookBatch(batch genericBatch, webhookID pgtype.
 }
 
 // DisconnectWebhookScan implements Querier.DisconnectWebhookScan.
-func (q *DBQuerier) DisconnectWebhookScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) DisconnectWebhookScan(results pgx.BatchResults) (DisconnectWebhookRow, error) {
 	row := results.QueryRow()
-	var item int
-	if err := row.Scan(&item); err != nil {
+	var item DisconnectWebhookRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
 		return item, fmt.Errorf("scan DisconnectWebhookBatch row: %w", err)
 	}
 	return item, nil
@@ -225,16 +233,28 @@ func (q *DBQuerier) DisconnectWebhookScan(results pgx.BatchResults) (int, error)
 
 const deleteWebhookSQL = `DELETE
 FROM webhooks
-WHERE webhook_id = $1;`
+WHERE webhook_id = $1
+RETURNING *
+;`
+
+type DeleteWebhookRow struct {
+	WebhookID  pgtype.UUID `json:"webhook_id"`
+	VCSID      pgtype.Text `json:"vcs_id"`
+	Secret     pgtype.Text `json:"secret"`
+	Identifier pgtype.Text `json:"identifier"`
+	Cloud      pgtype.Text `json:"cloud"`
+	Connected  int         `json:"connected"`
+}
 
 // DeleteWebhook implements Querier.DeleteWebhook.
-func (q *DBQuerier) DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWebhook")
-	cmdTag, err := q.conn.Exec(ctx, deleteWebhookSQL, webhookID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteWebhook: %w", err)
+	row := q.conn.QueryRow(ctx, deleteWebhookSQL, webhookID)
+	var item DeleteWebhookRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
+		return item, fmt.Errorf("query DeleteWebhook: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteWebhookBatch implements Querier.DeleteWebhookBatch.
@@ -243,10 +263,11 @@ func (q *DBQuerier) DeleteWebhookBatch(batch genericBatch, webhookID pgtype.UUID
 }
 
 // DeleteWebhookScan implements Querier.DeleteWebhookScan.
-func (q *DBQuerier) DeleteWebhookScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteWebhookBatch: %w", err)
+func (q *DBQuerier) DeleteWebhookScan(results pgx.BatchResults) (DeleteWebhookRow, error) {
+	row := results.QueryRow()
+	var item DeleteWebhookRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
+		return item, fmt.Errorf("scan DeleteWebhookBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

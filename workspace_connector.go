@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 
-	"github.com/leg100/otf/cloud"
 	"github.com/pkg/errors"
 )
 
@@ -31,15 +30,11 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, workspaceID string, o
 	}
 
 	// Inside transaction:
-	// 1. synchronise webhook config
+	// 1. create webhook
 	// 2. create workspace repo in store
 	var ws *Workspace
 	err = wc.Tx(ctx, func(app Application) (err error) {
-		webhook, err := app.CreateWebhook(ctx, SynchroniseWebhookOptions{
-			Identifier: opts.Identifier,
-			ProviderID: opts.ProviderID,
-			Cloud:      opts.Cloud,
-		})
+		webhook, err := app.CreateWebhook(ctx, CreateWebhookOptions(opts))
 		if err != nil {
 			return errors.Wrap(err, "creating webhook")
 		}
@@ -77,31 +72,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string
 			return err
 		}
 
-		hook, err := app.DB().GetWebhook(ctx, repo.WebhookID)
-		if err != nil {
-			return err
-		}
-
-		err = app.DB().DeleteWebhook(ctx, repo.WebhookID)
-		if errors.Is(err, ErrWebhookConnected) {
-			// webhook is still in use by another workspace
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		client, err := app.GetVCSClient(ctx, repo.ProviderID)
-		if err != nil {
-			return err
-		}
-		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
-			Identifier: repo.Identifier,
-			ID:         hook.VCSID(),
-		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return app.DeleteWebhook(ctx, repo.ProviderID, repo.WebhookID)
 	})
 	return ws, err
 }

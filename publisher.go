@@ -56,13 +56,13 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 
 	var mod *Module
 	err = p.Tx(ctx, func(app Application) (err error) {
-		webhook, err := app.CreateWebhook(ctx, SynchroniseWebhookOptions{
+		webhook, err := app.CreateWebhook(ctx, CreateWebhookOptions{
 			Identifier: opts.Identifier,
 			ProviderID: opts.ProviderID,
 			Cloud:      vcsProvider.cloudConfig.Name,
 		})
 		if err != nil {
-			return errors.Wrap(err, "syncing webhook")
+			return errors.Wrap(err, "creating webhook")
 		}
 
 		mod = NewModule(CreateModuleOptions{

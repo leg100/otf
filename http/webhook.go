@@ -29,13 +29,13 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hook, err := h.DB().GetWebhook(r.Context(), opts.ID)
+	hook, err := h.GetWebhook(r.Context(), opts.ID)
 	if err != nil {
 		h.Error(err, "received vcs event")
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.Identifier, "cloud", hook.CloudName())
+	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.Identifier, "cloud", hook.Cloud())
 
 	if event := hook.HandleEvent(w, r); event != nil {
 		h.events <- event

@@ -19,10 +19,12 @@ var _ otf.Application = (*Application)(nil)
 // Application encompasses services for interacting between components of the
 // otf server
 type Application struct {
-	db       otf.DB
-	cache    otf.Cache
-	proxy    otf.ChunkStore
-	hostname string
+	db               otf.DB
+	cache            otf.Cache
+	proxy            otf.ChunkStore
+	hostname         string
+	hookSynchroniser *otf.WebhookSynchroniser
+	hookDeleter      *otf.WebhookDeleter
 
 	*otf.RunFactory
 	*otf.VCSProviderFactory
@@ -30,7 +32,6 @@ type Application struct {
 	*otf.RunStarter
 	*otf.Publisher
 	*otf.ModuleVersionUploader
-	*otf.WebhookSynchroniser
 	cloud.Service
 	otf.PubSubService
 	logr.Logger
@@ -57,18 +58,17 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 	}
 	app.WorkspaceConnector = &otf.WorkspaceConnector{
 		Application: app,
-		WebhookCreator: &otf.WebhookCreator{
-			VCSProviderService: app,
-			Service:            opts.CloudService,
-			HostnameService:    app,
-		},
-		WebhookUpdater: &otf.WebhookUpdater{
-			VCSProviderService: app,
-			HostnameService:    app,
-		},
 	}
 	app.Publisher = otf.NewPublisher(app)
-	app.WebhookSynchroniser = &otf.WebhookSynchroniser{app}
+	app.hookSynchroniser = &otf.WebhookSynchroniser{
+		VCSProviderService: app,
+		HostnameService:    app,
+		DB:                 app.DB(),
+	}
+	app.hookDeleter = &otf.WebhookDeleter{
+		VCSProviderService: app,
+		DB:                 app.DB(),
+	}
 	app.RunStarter = &otf.RunStarter{app}
 	app.ModuleVersionUploader = &otf.ModuleVersionUploader{app}
 

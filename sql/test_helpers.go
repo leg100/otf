@@ -266,33 +266,15 @@ func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 
 func createTestWebhook(t *testing.T, db *DB, repo cloud.Repo, cc cloud.Config) *otf.Webhook {
 	ctx := context.Background()
-	hook := otf.NewTestWebhook(t, repo, cc)
+	unsynced := otf.NewTestUnsynchronisedWebhook(t, repo, cc.String())
 
-	_, err := db.CreateUnsynchronisedWebhook(ctx, hook.UnsynchronisedWebhook)
-	require.NoError(t, err)
-
-	_, err = db.SynchroniseWebhook(ctx, hook.ID(), hook.VCSID())
+	hook, err := db.SynchroniseWebhook(ctx, unsynced, func(*otf.Webhook) (string, error) {
+		return "fake-hook-cloud-id", nil
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		db.DeleteWebhook(ctx, hook.ID())
 	})
 	return hook
-}
-
-func createTestUnsynchronisedWebhook(t *testing.T, db *DB, repo cloud.Repo, cc cloud.Config) *otf.UnsynchronisedWebhook {
-	ctx := context.Background()
-	unsynced, err := otf.NewUnsynchronisedWebhook(otf.NewUnsynchronisedWebhookOptions{
-		Identifier:  repo.Identifier,
-		CloudConfig: cc,
-	})
-	require.NoError(t, err)
-
-	_, err = db.CreateUnsynchronisedWebhook(ctx, unsynced)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteWebhook(ctx, unsynced.ID())
-	})
-	return unsynced
 }

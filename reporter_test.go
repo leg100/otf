@@ -26,7 +26,7 @@ func TestReporter_HandleRun(t *testing.T) {
 func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan cloud.SetStatusOptions) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
-	hook := NewTestWebhook(t, cloud.NewTestRepo(), NewTestCloudConfig(nil))
+	hook := NewTestWebhook(t, cloud.NewTestRepo(), "fake-cloud")
 	repo := NewTestWorkspaceRepo(provider, hook)
 	ws := NewTestWorkspace(t, org, WithRepo(repo))
 	cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{

@@ -117,17 +117,17 @@ func NewTestWorkspaceRepo(provider *VCSProvider, hook *Webhook) *WorkspaceRepo {
 	}
 }
 
-func NewTestWebhook(t *testing.T, repo cloud.Repo, cloudConfig cloud.Config) *Webhook {
+func NewTestWebhook(t *testing.T, repo cloud.Repo, cloud string) *Webhook {
 	return &Webhook{
 		cloudID:               uuid.NewString(),
-		UnsynchronisedWebhook: NewTestUnsynchronisedWebhook(t, repo, cloudConfig),
+		UnsynchronisedWebhook: NewTestUnsynchronisedWebhook(t, repo, cloud),
 	}
 }
 
-func NewTestUnsynchronisedWebhook(t *testing.T, repo cloud.Repo, cloudConfig cloud.Config) *UnsynchronisedWebhook {
+func NewTestUnsynchronisedWebhook(t *testing.T, repo cloud.Repo, cloud string) *UnsynchronisedWebhook {
 	unsynced, err := NewUnsynchronisedWebhook(NewUnsynchronisedWebhookOptions{
-		Identifier:  repo.Identifier,
-		CloudConfig: cloudConfig,
+		Identifier: repo.Identifier,
+		Cloud:      cloud,
 	})
 	require.NoError(t, err)
 	return unsynced
