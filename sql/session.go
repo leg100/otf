@@ -25,7 +25,7 @@ func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 func (db *DB) GetSessionByToken(ctx context.Context, token string) (*otf.Session, error) {
 	result, err := db.FindSessionByToken(ctx, String(token))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalSessionResult(otf.SessionResult(result)), nil
 }
@@ -46,7 +46,7 @@ func (db *DB) ListSessions(ctx context.Context, userID string) ([]*otf.Session, 
 func (db *DB) DeleteSession(ctx context.Context, token string) error {
 	_, err := db.DeleteSessionByToken(ctx, String(token))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (db *DB) startSessionExpirer(ctx context.Context, interval time.Duration) {
 func (db *DB) deleteExpired() error {
 	_, err := db.DeleteSessionsExpired(context.Background())
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

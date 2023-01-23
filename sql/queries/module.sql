@@ -136,7 +136,7 @@ JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 
--- name: UpdateModuleStatus :one
+-- name: UpdateModuleStatusByID :one
 UPDATE modules
 SET status = pggen.arg('status')
 WHERE module_id = pggen.arg('module_id')
@@ -159,7 +159,7 @@ FROM module_tarballs
 WHERE module_version_id = pggen.arg('module_version_id')
 ;
 
--- name: UpdateModuleVersionStatus :one
+-- name: UpdateModuleVersionStatusByID :one
 UPDATE module_versions
 SET
     status = pggen.arg('status'),

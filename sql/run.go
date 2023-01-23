@@ -57,7 +57,7 @@ func (db *DB) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) 
 		// select ...for update
 		result, err := tx.FindRunByIDForUpdate(ctx, String(runID))
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 		run, err = otf.UnmarshalRunResult(otf.RunResult(result))
 		if err != nil {
@@ -127,7 +127,7 @@ func (db *DB) CreatePlanReport(ctx context.Context, runID string, report otf.Res
 		Destructions: report.Destructions,
 	})
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return err
 }
@@ -140,7 +140,7 @@ func (db *DB) CreateApplyReport(ctx context.Context, runID string, report otf.Re
 		Destructions: report.Destructions,
 	})
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return err
 }
@@ -215,7 +215,7 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 func (db *DB) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	result, err := db.FindRunByID(ctx, String(runID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalRunResult(otf.RunResult(result))
 }
@@ -248,7 +248,7 @@ func (db *DB) GetPlanFile(ctx context.Context, runID string, format otf.PlanForm
 
 // GetLockFile retrieves the lock file for the run
 func (db *DB) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
-	return db.Querier.GetLockFile(ctx, String(runID))
+	return db.Querier.GetLockFileByID(ctx, String(runID))
 }
 
 // SetLockFile sets the lock file for the run

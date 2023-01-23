@@ -77,19 +77,19 @@ func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 	} else if spec.Username != nil {
 		result, err := db.FindUserByUsername(ctx, String(*spec.Username))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalUserResult(otf.UserResult(result)), nil
 	} else if spec.AuthenticationToken != nil {
 		result, err := db.FindUserByAuthenticationToken(ctx, String(*spec.AuthenticationToken))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalUserResult(otf.UserResult(result)), nil
 	} else if spec.SessionToken != nil {
 		result, err := db.FindUserBySessionToken(ctx, String(*spec.SessionToken))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalUserResult(otf.UserResult(result)), nil
 	} else {
@@ -100,7 +100,7 @@ func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 func (db *DB) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
 	_, err := db.InsertOrganizationMembership(ctx, String(id), String(orgID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func (db *DB) AddOrganizationMembership(ctx context.Context, id, orgID string) e
 func (db *DB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
 	_, err := db.DeleteOrganizationMembership(ctx, String(id), String(orgID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -118,12 +118,12 @@ func (db *DB) DeleteUser(ctx context.Context, spec otf.UserSpec) error {
 	if spec.UserID != nil {
 		_, err := db.DeleteUserByID(ctx, String(*spec.UserID))
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 	} else if spec.Username != nil {
 		_, err := db.DeleteUserByUsername(ctx, String(*spec.Username))
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 	} else {
 		return fmt.Errorf("unsupported user spec for deletion")

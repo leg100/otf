@@ -231,13 +231,13 @@ func (q *DBQuerier) DisconnectWebhookScan(results pgx.BatchResults) (DisconnectW
 	return item, nil
 }
 
-const deleteWebhookSQL = `DELETE
+const deleteWebhookByIDSQL = `DELETE
 FROM webhooks
 WHERE webhook_id = $1
 RETURNING *
 ;`
 
-type DeleteWebhookRow struct {
+type DeleteWebhookByIDRow struct {
 	WebhookID  pgtype.UUID `json:"webhook_id"`
 	VCSID      pgtype.Text `json:"vcs_id"`
 	Secret     pgtype.Text `json:"secret"`
@@ -246,28 +246,28 @@ type DeleteWebhookRow struct {
 	Connected  int         `json:"connected"`
 }
 
-// DeleteWebhook implements Querier.DeleteWebhook.
-func (q *DBQuerier) DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWebhook")
-	row := q.conn.QueryRow(ctx, deleteWebhookSQL, webhookID)
-	var item DeleteWebhookRow
+// DeleteWebhookByID implements Querier.DeleteWebhookByID.
+func (q *DBQuerier) DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWebhookByID")
+	row := q.conn.QueryRow(ctx, deleteWebhookByIDSQL, webhookID)
+	var item DeleteWebhookByIDRow
 	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
-		return item, fmt.Errorf("query DeleteWebhook: %w", err)
+		return item, fmt.Errorf("query DeleteWebhookByID: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteWebhookBatch implements Querier.DeleteWebhookBatch.
-func (q *DBQuerier) DeleteWebhookBatch(batch genericBatch, webhookID pgtype.UUID) {
-	batch.Queue(deleteWebhookSQL, webhookID)
+// DeleteWebhookByIDBatch implements Querier.DeleteWebhookByIDBatch.
+func (q *DBQuerier) DeleteWebhookByIDBatch(batch genericBatch, webhookID pgtype.UUID) {
+	batch.Queue(deleteWebhookByIDSQL, webhookID)
 }
 
-// DeleteWebhookScan implements Querier.DeleteWebhookScan.
-func (q *DBQuerier) DeleteWebhookScan(results pgx.BatchResults) (DeleteWebhookRow, error) {
+// DeleteWebhookByIDScan implements Querier.DeleteWebhookByIDScan.
+func (q *DBQuerier) DeleteWebhookByIDScan(results pgx.BatchResults) (DeleteWebhookByIDRow, error) {
 	row := results.QueryRow()
-	var item DeleteWebhookRow
+	var item DeleteWebhookByIDRow
 	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.Connected); err != nil {
-		return item, fmt.Errorf("scan DeleteWebhookBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteWebhookByIDBatch row: %w", err)
 	}
 	return item, nil
 }

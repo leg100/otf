@@ -36,7 +36,7 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 			OrganizationName:           String(ws.Organization()),
 		})
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 		if ws.Repo() != nil {
 			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
@@ -46,13 +46,13 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 				WorkspaceID:   String(ws.ID()),
 			})
 			if err != nil {
-				return databaseError(err)
+				return Error(err)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 		if err != nil {
@@ -103,28 +103,28 @@ func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo 
 		WorkspaceID:   String(workspaceID),
 	})
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, databaseError(err)
+	return ws, Error(err)
 }
 
 func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
 	_, err := db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), String(workspaceID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, databaseError(err)
+	return ws, Error(err)
 }
 
 func (db *DB) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	_, err := db.Querier.DeleteWorkspaceRepo(ctx, String(workspaceID))
+	_, err := db.Querier.DeleteWorkspaceRepoByID(ctx, String(workspaceID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, databaseError(err)
+	return ws, Error(err)
 }
 
 // LockWorkspace locks the specified workspace.
@@ -156,7 +156,7 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 		}
 		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 		return nil
 	})
@@ -168,7 +168,7 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) error {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, String(runID), String(workspaceID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -204,7 +204,7 @@ func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.
 		}
 		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 		return nil
 	})
@@ -316,7 +316,7 @@ func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organiz
 func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, String(runID))
 	if err != nil {
-		return "", databaseError(err)
+		return "", Error(err)
 	}
 	return workspaceID.String, nil
 }
@@ -324,7 +324,7 @@ func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, 
 func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByStateVersionID(ctx, String(svID))
 	if err != nil {
-		return "", databaseError(err)
+		return "", Error(err)
 	}
 	return workspaceID.String, nil
 }
@@ -332,7 +332,7 @@ func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (
 func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByCVID(ctx, String(cvID))
 	if err != nil {
-		return "", databaseError(err)
+		return "", Error(err)
 	}
 	return workspaceID.String, nil
 }
@@ -340,7 +340,7 @@ func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, er
 func (db *DB) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	result, err := db.FindWorkspaceByID(ctx, String(workspaceID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 }
@@ -348,7 +348,7 @@ func (db *DB) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Worksp
 func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
 	result, err := db.FindWorkspaceByName(ctx, String(workspace), String(organization))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 }
@@ -356,7 +356,7 @@ func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace st
 func (db *DB) DeleteWorkspace(ctx context.Context, workspaceID string) error {
 	_, err := db.Querier.DeleteWorkspaceByID(ctx, String(workspaceID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

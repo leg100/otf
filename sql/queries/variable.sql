@@ -37,7 +37,7 @@ FROM variables
 WHERE variable_id = pggen.arg('variable_id')
 FOR UPDATE;
 
--- name: UpdateVariable :one
+-- name: UpdateVariableByID :one
 UPDATE variables
 SET
     key = pggen.arg('key'),
@@ -50,7 +50,7 @@ WHERE variable_id = pggen.arg('variable_id')
 RETURNING variable_id
 ;
 
--- name: DeleteVariable :one
+-- name: DeleteVariableByID :one
 DELETE
 FROM variables
 WHERE variable_id = pggen.arg('variable_id')

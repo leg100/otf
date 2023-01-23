@@ -23,13 +23,13 @@ func (db *DB) CreateModuleVersion(ctx context.Context, version *otf.ModuleVersio
 }
 
 func (db *DB) UpdateModuleVersionStatus(ctx context.Context, opts otf.UpdateModuleVersionStatusOptions) (*otf.ModuleVersion, error) {
-	row, err := db.Querier.UpdateModuleVersionStatus(ctx, pggen.UpdateModuleVersionStatusParams{
+	row, err := db.Querier.UpdateModuleVersionStatusByID(ctx, pggen.UpdateModuleVersionStatusByIDParams{
 		ModuleVersionID: String(opts.ID),
 		Status:          String(string(opts.Status)),
 		StatusError:     String(opts.Error),
 	})
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalModuleVersionRow(otf.ModuleVersionRow(row)), nil
 }
@@ -45,7 +45,7 @@ func (db *DB) UploadModuleVersion(ctx context.Context, opts otf.UploadModuleVers
 func (db *DB) DownloadModuleVersion(ctx context.Context, opts otf.DownloadModuleOptions) ([]byte, error) {
 	tarball, err := db.FindModuleTarball(ctx, String(opts.ModuleVersionID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return tarball, nil
 }

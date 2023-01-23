@@ -61,7 +61,7 @@ SET
 WHERE name = pggen.arg('name')
 RETURNING organization_id;
 
--- name: DeleteOrganization :one
+-- name: DeleteOrganizationByName :one
 DELETE
 FROM organizations
 WHERE name = pggen.arg('name')

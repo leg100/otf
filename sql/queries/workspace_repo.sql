@@ -18,7 +18,7 @@ SET
 WHERE workspace_id = pggen.arg('workspace_id')
 RETURNING workspace_id;
 
--- name: DeleteWorkspaceRepo :one
+-- name: DeleteWorkspaceRepoByID :one
 DELETE
 FROM workspace_repos
 WHERE workspace_id = pggen.arg('workspace_id')

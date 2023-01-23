@@ -41,13 +41,13 @@ func (db *DB) SynchroniseWebhook(ctx context.Context, unsynced *otf.Unsynchronis
 		}
 		return err
 	})
-	return hook, databaseError(err)
+	return hook, Error(err)
 }
 
 func (db *DB) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error) {
 	result, err := db.FindWebhookByID(ctx, UUID(id))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	hook, err := db.UnmarshalWebhookRow(otf.WebhookRow(result))
 	if err != nil {
@@ -70,11 +70,11 @@ func (db *DB) DeleteWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, er
 		if row.Connected > 0 {
 			return nil
 		}
-		_, err = db.Querier.DeleteWebhook(ctx, UUID(id))
+		_, err = db.Querier.DeleteWebhookByID(ctx, UUID(id))
 		return err
 	})
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	if row.Connected > 0 {
 		return nil, otf.ErrWebhookConnected

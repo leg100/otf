@@ -23,7 +23,7 @@ func (db *DB) CreateVCSProvider(ctx context.Context, provider *otf.VCSProvider) 
 func (db *DB) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error) {
 	provider, err := db.FindVCSProvider(ctx, String(id))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return db.UnmarshalVCSProviderRow(otf.VCSProviderRow(provider))
 }
@@ -31,7 +31,7 @@ func (db *DB) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, 
 func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
 	rows, err := db.FindVCSProviders(ctx, String(organization))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	var providers []*otf.VCSProvider
 	for _, r := range rows {
@@ -48,7 +48,7 @@ func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf
 func (db *DB) DeleteVCSProvider(ctx context.Context, id string) error {
 	_, err := db.DeleteVCSProviderByID(ctx, String(id))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

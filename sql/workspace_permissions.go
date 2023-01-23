@@ -14,7 +14,7 @@ func (db *DB) SetWorkspacePermission(ctx context.Context, workspaceID, team stri
 		Role:        String(role.String()),
 	})
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -22,13 +22,13 @@ func (db *DB) SetWorkspacePermission(ctx context.Context, workspaceID, team stri
 func (db *DB) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*otf.WorkspacePermission, error) {
 	result, err := db.FindWorkspacePermissionsByID(ctx, String(workspaceID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	var perms []*otf.WorkspacePermission
 	for _, row := range result {
 		perm, err := otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		perms = append(perms, perm)
 	}
@@ -38,7 +38,7 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, workspaceID string) 
 func (db *DB) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
 	_, err := db.DeleteWorkspacePermissionByID(ctx, String(workspaceID), String(team))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

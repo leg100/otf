@@ -19,7 +19,7 @@ func (db *DB) CreateOrganization(ctx context.Context, org *otf.Organization) err
 		SessionTimeout:  org.SessionTimeout(),
 	})
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func (db *DB) ListOrganizationsByUser(ctx context.Context, userID string) ([]*ot
 func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
 	name, err := db.FindOrganizationNameByWorkspaceID(ctx, String(workspaceID))
 	if err != nil {
-		return "", databaseError(err)
+		return "", Error(err)
 	}
 	return name.String, nil
 }
@@ -105,7 +105,7 @@ func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID 
 func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, String(name))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalOrganizationRow(pggen.Organizations(r)), nil
 }
@@ -113,15 +113,15 @@ func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organizati
 func (db *DB) GetOrganizationByID(ctx context.Context, id string) (*otf.Organization, error) {
 	r, err := db.FindOrganizationByID(ctx, String(id))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalOrganizationRow(pggen.Organizations(r)), nil
 }
 
 func (db *DB) DeleteOrganization(ctx context.Context, name string) error {
-	_, err := db.Querier.DeleteOrganization(ctx, String(name))
+	_, err := db.Querier.DeleteOrganizationByName(ctx, String(name))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

@@ -214,7 +214,7 @@ func (q *DBQuerier) FindVariableForUpdateScan(results pgx.BatchResults) (FindVar
 	return item, nil
 }
 
-const updateVariableSQL = `UPDATE variables
+const updateVariableByIDSQL = `UPDATE variables
 SET
     key = $1,
     value = $2,
@@ -226,7 +226,7 @@ WHERE variable_id = $7
 RETURNING variable_id
 ;`
 
-type UpdateVariableParams struct {
+type UpdateVariableByIDParams struct {
 	Key         pgtype.Text
 	Value       pgtype.Text
 	Description pgtype.Text
@@ -236,39 +236,39 @@ type UpdateVariableParams struct {
 	VariableID  pgtype.Text
 }
 
-// UpdateVariable implements Querier.UpdateVariable.
-func (q *DBQuerier) UpdateVariable(ctx context.Context, params UpdateVariableParams) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateVariable")
-	row := q.conn.QueryRow(ctx, updateVariableSQL, params.Key, params.Value, params.Description, params.Category, params.Sensitive, params.HCL, params.VariableID)
+// UpdateVariableByID implements Querier.UpdateVariableByID.
+func (q *DBQuerier) UpdateVariableByID(ctx context.Context, params UpdateVariableByIDParams) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateVariableByID")
+	row := q.conn.QueryRow(ctx, updateVariableByIDSQL, params.Key, params.Value, params.Description, params.Category, params.Sensitive, params.HCL, params.VariableID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateVariable: %w", err)
+		return item, fmt.Errorf("query UpdateVariableByID: %w", err)
 	}
 	return item, nil
 }
 
-// UpdateVariableBatch implements Querier.UpdateVariableBatch.
-func (q *DBQuerier) UpdateVariableBatch(batch genericBatch, params UpdateVariableParams) {
-	batch.Queue(updateVariableSQL, params.Key, params.Value, params.Description, params.Category, params.Sensitive, params.HCL, params.VariableID)
+// UpdateVariableByIDBatch implements Querier.UpdateVariableByIDBatch.
+func (q *DBQuerier) UpdateVariableByIDBatch(batch genericBatch, params UpdateVariableByIDParams) {
+	batch.Queue(updateVariableByIDSQL, params.Key, params.Value, params.Description, params.Category, params.Sensitive, params.HCL, params.VariableID)
 }
 
-// UpdateVariableScan implements Querier.UpdateVariableScan.
-func (q *DBQuerier) UpdateVariableScan(results pgx.BatchResults) (pgtype.Text, error) {
+// UpdateVariableByIDScan implements Querier.UpdateVariableByIDScan.
+func (q *DBQuerier) UpdateVariableByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateVariableBatch row: %w", err)
+		return item, fmt.Errorf("scan UpdateVariableByIDBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const deleteVariableSQL = `DELETE
+const deleteVariableByIDSQL = `DELETE
 FROM variables
 WHERE variable_id = $1
 RETURNING *
 ;`
 
-type DeleteVariableRow struct {
+type DeleteVariableByIDRow struct {
 	VariableID  pgtype.Text `json:"variable_id"`
 	Key         pgtype.Text `json:"key"`
 	Value       pgtype.Text `json:"value"`
@@ -279,28 +279,28 @@ type DeleteVariableRow struct {
 	WorkspaceID pgtype.Text `json:"workspace_id"`
 }
 
-// DeleteVariable implements Querier.DeleteVariable.
-func (q *DBQuerier) DeleteVariable(ctx context.Context, variableID pgtype.Text) (DeleteVariableRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteVariable")
-	row := q.conn.QueryRow(ctx, deleteVariableSQL, variableID)
-	var item DeleteVariableRow
+// DeleteVariableByID implements Querier.DeleteVariableByID.
+func (q *DBQuerier) DeleteVariableByID(ctx context.Context, variableID pgtype.Text) (DeleteVariableByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteVariableByID")
+	row := q.conn.QueryRow(ctx, deleteVariableByIDSQL, variableID)
+	var item DeleteVariableByIDRow
 	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID); err != nil {
-		return item, fmt.Errorf("query DeleteVariable: %w", err)
+		return item, fmt.Errorf("query DeleteVariableByID: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteVariableBatch implements Querier.DeleteVariableBatch.
-func (q *DBQuerier) DeleteVariableBatch(batch genericBatch, variableID pgtype.Text) {
-	batch.Queue(deleteVariableSQL, variableID)
+// DeleteVariableByIDBatch implements Querier.DeleteVariableByIDBatch.
+func (q *DBQuerier) DeleteVariableByIDBatch(batch genericBatch, variableID pgtype.Text) {
+	batch.Queue(deleteVariableByIDSQL, variableID)
 }
 
-// DeleteVariableScan implements Querier.DeleteVariableScan.
-func (q *DBQuerier) DeleteVariableScan(results pgx.BatchResults) (DeleteVariableRow, error) {
+// DeleteVariableByIDScan implements Querier.DeleteVariableByIDScan.
+func (q *DBQuerier) DeleteVariableByIDScan(results pgx.BatchResults) (DeleteVariableByIDRow, error) {
 	row := results.QueryRow()
-	var item DeleteVariableRow
+	var item DeleteVariableByIDRow
 	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID); err != nil {
-		return item, fmt.Errorf("scan DeleteVariableBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteVariableByIDBatch row: %w", err)
 	}
 	return item, nil
 }

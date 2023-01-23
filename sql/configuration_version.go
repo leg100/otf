@@ -105,13 +105,13 @@ func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.Configuratio
 	if opts.ID != nil {
 		result, err := db.FindConfigurationVersionByID(ctx, String(*opts.ID))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 	} else {
@@ -126,7 +126,7 @@ func (db *DB) GetConfig(ctx context.Context, id string) ([]byte, error) {
 func (db *DB) DeleteConfigurationVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteConfigurationVersionByID(ctx, String(id))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

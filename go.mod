@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/allegro/bigcache v1.2.1
 	github.com/buildkite/terminal-to-html v3.2.0+incompatible
 	github.com/chromedp/cdproto v0.0.0-20220827030233-358ed4af73cf
@@ -13,6 +12,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zerologr v1.2.2
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20221013030248-663e2500819c
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/goexpect v0.0.0-20210430020637-ab937bf7fd6f
@@ -67,7 +67,6 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/itchyny/base58-go v0.2.0 // indirect

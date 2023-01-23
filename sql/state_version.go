@@ -83,13 +83,13 @@ func (db *DB) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOptio
 	if opts.ID != nil {
 		result, err := db.FindStateVersionByID(ctx, String(*opts.ID))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalStateVersionResult(otf.StateVersionResult(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindStateVersionLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
 		if err != nil {
-			return nil, databaseError(err)
+			return nil, Error(err)
 		}
 		return otf.UnmarshalStateVersionResult(otf.StateVersionResult(result))
 	} else {
@@ -105,7 +105,7 @@ func (db *DB) GetState(ctx context.Context, id string) ([]byte, error) {
 func (db *DB) DeleteStateVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteStateVersionByID(ctx, String(id))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

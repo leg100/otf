@@ -35,7 +35,7 @@ func (db *DB) ListTokens(ctx context.Context, userID string) ([]*otf.Token, erro
 func (db *DB) DeleteToken(ctx context.Context, id string) error {
 	_, err := db.DeleteTokenByID(ctx, String(id))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
