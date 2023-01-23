@@ -11,67 +11,69 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWebhook_Sync_Create(t *testing.T) {
+func TestWebhook_Synchronise(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	repo := cloud.NewTestRepo()
-	want := otf.NewTestWebhook(repo, github.Defaults())
-
-	createFunc := func(context.Context, otf.WebhookCreatorOptions) (*otf.Webhook, error) {
-		return want, nil
-	}
-
-	got, err := db.SyncWebhook(ctx, otf.SyncWebhookOptions{
-		CreateWebhookFunc: createFunc,
-		Identifier:        want.Identifier,
-		Cloud:             want.CloudName(),
+	unsynced, err := otf.NewUnsynchronisedWebhook(otf.NewUnsynchronisedWebhookOptions{
+		Identifier: repo.Identifier,
+		Cloud:      "github",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, want, got)
-}
 
-func TestWebhook_Sync_Update(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	webhook := createTestWebhook(t, db)
-
-	updateFunc := func(context.Context, otf.WebhookUpdaterOptions) (string, error) {
-		return "updated-vcs-id", nil
-	}
-	opts := otf.SyncWebhookOptions{
-		UpdateWebhookFunc: updateFunc,
-		Identifier:        webhook.Identifier,
-		Cloud:             webhook.CloudName(),
-	}
-
-	got, err := db.SyncWebhook(ctx, opts)
+	// first sync creates hook in the DB and sets cloud ID
+	got, err := db.SynchroniseWebhook(ctx, unsynced, func(hook *otf.Webhook) (string, error) {
+		require.Nil(t, hook) // there should be no existing hook in DB
+		return "123", nil
+	})
 	require.NoError(t, err)
-	assert.Equal(t, "updated-vcs-id", got.VCSID)
+	assert.Equal(t, "123", got.VCSID())
+	assert.Equal(t, unsynced, got.UnsynchronisedWebhook)
+
+	// second sync retrieves existing hook in the DB and updates its cloud ID
+	// (to mimic a hook having been re-created on the cloud and hence a new ID
+	// has been generated)
+	updated, err := db.SynchroniseWebhook(ctx, unsynced, func(hook *otf.Webhook) (string, error) {
+		assert.Equal(t, got, hook) // should be the same hook created first time round
+		return "456", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "456", updated.VCSID())                  // updated cloud ID
+	assert.Equal(t, unsynced, updated.UnsynchronisedWebhook) // rest of hook is the same
 }
 
-func TestWebhook_Sync_NoChange(t *testing.T) {
+func TestWebhook_Get(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	want := createTestWebhook(t, db)
+	repo := cloud.NewTestRepo()
+	cc := github.Defaults()
 
-	updateFunc := func(context.Context, otf.WebhookUpdaterOptions) (string, error) {
-		return want.VCSID, nil
-	}
-	opts := otf.SyncWebhookOptions{
-		UpdateWebhookFunc: updateFunc,
-		Identifier:        want.Identifier,
-		Cloud:             want.CloudName(),
-	}
+	want := createTestWebhook(t, db, repo, cc)
 
-	got, err := db.SyncWebhook(ctx, opts)
+	got, err := db.GetWebhook(ctx, want.ID())
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
 
 func TestWebhook_Delete(t *testing.T) {
+	ctx := context.Background()
 	db := newTestDB(t)
-	hook := createTestWebhook(t, db)
+	repo := cloud.NewTestRepo()
+	cc := github.Defaults()
 
-	err := db.DeleteWebhook(context.Background(), hook.WebhookID)
-	require.NoError(t, err)
+	hook1 := createTestWebhook(t, db, repo, cc)
+	// second call to create shouldn't create a hook but instead increments the
+	// 'connected' field and returns the same hook
+	hook2 := createTestWebhook(t, db, repo, cc)
+	assert.Equal(t, hook1, hook2)
+
+	// first call to delete should decrement connected field and return an error
+	// indicating hook is still connected.
+	_, err := db.DeleteWebhook(ctx, hook1.ID())
+	require.Equal(t, otf.ErrWebhookConnected, err)
+
+	// second call to delete should decrement connected field down to zero and
+	// now the hook is deleted.
+	_, err = db.DeleteWebhook(ctx, hook2.ID())
+	assert.NoError(t, err)
 }

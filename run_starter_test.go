@@ -32,7 +32,7 @@ func TestStartRun(t *testing.T) {
 
 	t.Run("connected to repo", func(t *testing.T) {
 		provider := NewTestVCSProvider(t, org)
-		hook := NewTestWebhook(cloud.NewTestRepo(), NewTestCloudConfig(nil))
+		hook := NewTestWebhook(t, cloud.NewTestRepo(), "fake-cloud")
 		repo := NewTestWorkspaceRepo(provider, hook)
 		ws := NewTestWorkspace(t, org, WithRepo(repo))
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})

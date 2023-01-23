@@ -16,13 +16,13 @@ import (
 func TestWebhookHandler(t *testing.T) {
 	got := make(chan cloud.VCSEvent, 1)
 	want := cloud.VCSPushEvent{}
+	hook := otf.NewTestWebhook(t, cloud.NewTestRepo(), "fake-cloud")
+	hook.EventHandler = &fakeCloud{event: want}
 	handler := webhookHandler{
 		events: got,
 		Logger: logr.Discard(),
 		Application: &fakeWebhookHandlerApp{
-			hook: otf.NewTestWebhook(cloud.NewTestRepo(), cloud.Config{
-				Cloud: &fakeCloud{event: &want},
-			}),
+			hook: hook,
 		},
 	}
 
@@ -31,7 +31,7 @@ func TestWebhookHandler(t *testing.T) {
 	handler.ServeHTTP(w, r)
 	assert.Equal(t, 200, w.Code)
 
-	assert.Equal(t, &want, <-got)
+	assert.Equal(t, want, <-got)
 }
 
 type fakeWebhookHandlerApp struct {
@@ -40,17 +40,7 @@ type fakeWebhookHandlerApp struct {
 	otf.Application
 }
 
-func (f *fakeWebhookHandlerApp) DB() otf.DB {
-	return &fakeWebhookHandlerDB{hook: f.hook}
-}
-
-type fakeWebhookHandlerDB struct {
-	hook *otf.Webhook
-
-	otf.DB
-}
-
-func (f *fakeWebhookHandlerDB) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error) {
+func (f *fakeWebhookHandlerApp) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error) {
 	return f.hook, nil
 }
 

@@ -30,6 +30,8 @@ type Application struct {
 	*otf.RunStarter
 	*otf.Publisher
 	*otf.ModuleVersionUploader
+	*otf.WebhookSynchroniser
+	*otf.WebhookDeleter
 	cloud.Service
 	otf.PubSubService
 	logr.Logger
@@ -45,34 +47,11 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		db:            opts.DB,
 		Logger:        opts.Logger,
 		Service:       opts.CloudService,
+		Authorizer:    &authorizer{opts.DB, opts.Logger},
 	}
-	app.Authorizer = &authorizer{opts.DB, opts.Logger}
-	app.RunFactory = &otf.RunFactory{
-		WorkspaceService:            app,
-		ConfigurationVersionService: app,
-	}
-	app.VCSProviderFactory = &otf.VCSProviderFactory{
-		Service: opts.CloudService,
-	}
-	app.WorkspaceConnector = &otf.WorkspaceConnector{
-		Application: app,
-		WebhookCreator: &otf.WebhookCreator{
-			VCSProviderService: app,
-			Service:            opts.CloudService,
-			HostnameService:    app,
-		},
-		WebhookUpdater: &otf.WebhookUpdater{
-			VCSProviderService: app,
-			HostnameService:    app,
-		},
-	}
-	app.Publisher = otf.NewPublisher(app)
-	app.RunStarter = &otf.RunStarter{
-		Application: app,
-	}
-	app.ModuleVersionUploader = &otf.ModuleVersionUploader{
-		Application: app,
-	}
+	// Any services that use transactions or advisory locks should be
+	// constructed via newApp
+	app = newChildApp(app, opts.DB)
 
 	proxy, err := inmem.NewChunkProxy(app, opts.Logger, opts.Cache, opts.DB)
 	if err != nil {
@@ -86,6 +65,48 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 	}()
 
 	return app, nil
+}
+
+// newChildApp constructs a child app with a specific db connection, e.g. a
+// transaction or one holding an advisory lock, assigning the connection to the
+// constituent services that comprise an app for the services to make use of
+// that connection. May be called multiple times e.g. for nesting transactions.
+func newChildApp(parent *Application, db otf.DB) *Application {
+	child := &Application{
+		PubSubService: parent.PubSubService,
+		cache:         parent.cache,
+		Logger:        parent.Logger,
+		RunFactory:    parent.RunFactory,
+		Authorizer:    parent.Authorizer,
+		proxy:         parent.proxy,
+		hostname:      parent.hostname,
+		Service:       parent.Service,
+		VCSProviderFactory: &otf.VCSProviderFactory{
+			Service: parent.Service,
+		},
+		db: db,
+	}
+	child.RunFactory = &otf.RunFactory{
+		WorkspaceService:            child,
+		ConfigurationVersionService: child,
+	}
+	child.WorkspaceConnector = &otf.WorkspaceConnector{
+		Application: child,
+	}
+	child.Publisher = otf.NewPublisher(child)
+	child.WebhookSynchroniser = &otf.WebhookSynchroniser{
+		VCSProviderService: child,
+		HostnameService:    child,
+		DB:                 db,
+	}
+	child.WebhookDeleter = &otf.WebhookDeleter{
+		VCSProviderService: child,
+		DB:                 db,
+	}
+	child.RunStarter = &otf.RunStarter{child}
+	child.ModuleVersionUploader = &otf.ModuleVersionUploader{child}
+
+	return child
 }
 
 type Options struct {
@@ -102,17 +123,8 @@ func (a *Application) DB() otf.DB { return a.db }
 // transaction. Useful for ensuring multiple service calls succeed together.
 func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) error {
 	return a.db.Tx(ctx, func(db otf.DB) error {
-		// make a copy of the app and assign a db tx wrapper
-		appTx := &Application{
-			PubSubService: a.PubSubService,
-			cache:         a.cache,
-			Logger:        a.Logger,
-			RunFactory:    a.RunFactory,
-			Authorizer:    a.Authorizer,
-			proxy:         a.proxy,
-			db:            db,
-		}
-		return tx(appTx)
+		// wrap copy of app inside tx
+		return tx(newChildApp(a, db))
 	})
 }
 
@@ -124,15 +136,6 @@ func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) 
 func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Application) error) error {
 	return a.db.WaitAndLock(ctx, id, func(db otf.DB) error {
 		// make a copy of the app and assign a db wrapped with a session-lock
-		appWithLock := &Application{
-			PubSubService: a.PubSubService,
-			cache:         a.cache,
-			Logger:        a.Logger,
-			RunFactory:    a.RunFactory,
-			Authorizer:    a.Authorizer,
-			proxy:         a.proxy,
-			db:            db,
-		}
-		return cb(appWithLock)
+		return cb(newChildApp(a, db))
 	})
 }

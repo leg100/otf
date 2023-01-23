@@ -46,6 +46,14 @@ type ListTagsOptions struct {
 	Prefix     string // only list tags that start with this string
 }
 
+// Webhook is a cloud's configuration for a webhook on OTF.
+type Webhook struct {
+	ID         string // cloud's webhook ID
+	Identifier string // identifier is <repo_owner>/<repo_name>
+	Events     []VCSEventType
+	Endpoint   string // the OTF URL that receives events
+}
+
 type CreateWebhookOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Secret     string // secret string for generating signature

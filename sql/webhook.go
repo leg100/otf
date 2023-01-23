@@ -3,78 +3,45 @@ package sql
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// SyncWebhook synchronises a webhook, creating it if it doesn't exist already,
-// or if it does exist it'll check for differences and update if necessary.
-func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*otf.Webhook, error) {
+func (db *DB) SynchroniseWebhook(ctx context.Context, unsynced *otf.UnsynchronisedWebhook, cb func(*otf.Webhook) (string, error)) (*otf.Webhook, error) {
 	var hook *otf.Webhook
-	err := db.tx(ctx, func(tx *DB) error {
-		// Prevent any modifications to table because we're checking first whether webhook with given
-		// url exists and if it does not then we're creating a webhook with that
-		// url, and we do not want another process to do the same thing
-		// in parallel and create a webhook in the intervening period...
-		_, err := tx.Exec(ctx, "LOCK webhooks IN EXCLUSIVE MODE")
+	err := db.tx(ctx, func(db *DB) error {
+		upsertResult, err := db.UpsertWebhook(ctx, pggen.UpsertWebhookParams{
+			WebhookID:  UUID(unsynced.ID()),
+			Secret:     String(unsynced.Secret()),
+			Identifier: String(unsynced.Identifier()),
+			Cloud:      String(unsynced.Cloud()),
+		})
 		if err != nil {
-			return errors.Wrap(err, "locking webhook table")
-		}
-		result, err := tx.FindWebhookByRepo(ctx, String(opts.Identifier), String(opts.Cloud))
-		if err != nil {
-			err = databaseError(err)
-			if errors.Is(err, otf.ErrResourceNotFound) {
-				// create webhook
-				hook, err = opts.CreateWebhookFunc(ctx, otf.WebhookCreatorOptions{
-					ProviderID: opts.ProviderID,
-					Identifier: opts.Identifier,
-					Cloud:      opts.Cloud,
-				})
-				if err != nil {
-					return err
-				}
-				// and persist
-				_, err = tx.InsertWebhook(ctx, pggen.InsertWebhookParams{
-					WebhookID:  UUID(hook.WebhookID),
-					VCSID:      String(hook.VCSID),
-					Secret:     String(hook.Secret),
-					Identifier: String(hook.Identifier),
-					Cloud:      String(hook.CloudName()),
-				})
-				if err != nil {
-					return databaseError(err)
-				}
-				return nil
-			}
 			return err
-		} else {
-			hook, err = db.UnmarshalWebhookRow(otf.WebhookRow(result))
-			if err != nil {
-				return err
-			}
-
-			id, err := opts.UpdateWebhookFunc(ctx, otf.WebhookUpdaterOptions{
-				ProviderID: opts.ProviderID,
-				Webhook:    hook,
-			})
-			if err != nil {
-				return err
-			}
-			// Update VCS' ID if has changed.
-			if hook.VCSID != id {
-				_, err = tx.UpdateWebhookVCSID(ctx, String(id), UUID(hook.WebhookID))
-				if err != nil {
-					return databaseError(err)
-				}
-				hook.VCSID = id
-			}
-			return nil
 		}
+		if upsertResult.VCSID.Status == pgtype.Present {
+			hook, err = db.UnmarshalWebhookRow(otf.WebhookRow(upsertResult))
+			if err != nil {
+				return err
+			}
+		}
+		cloudID, err := cb(hook)
+		if err != nil {
+			return err
+		}
+		updateResult, err := db.UpdateWebhookVCSID(ctx, String(cloudID), upsertResult.WebhookID)
+		if err != nil {
+			return err
+		}
+		hook, err = db.UnmarshalWebhookRow(otf.WebhookRow(updateResult))
+		if err != nil {
+			return err
+		}
+		return err
 	})
-	return hook, err
+	return hook, databaseError(err)
 }
 
 func (db *DB) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error) {
@@ -89,7 +56,28 @@ func (db *DB) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error
 	return hook, nil
 }
 
-func (db *DB) DeleteWebhook(ctx context.Context, id uuid.UUID) error {
-	_, err := db.Querier.DeleteWebhook(ctx, UUID(id))
-	return databaseError(err)
+// DeleteWebhook deletes the webhook from the database but not before it
+// decrements the number of 'connections' to the webhook and only if the number
+// is zero does it delete the webhook; otherwise it returns
+// ErrWebhookConnected.
+func (db *DB) DeleteWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error) {
+	var row pggen.DisconnectWebhookRow
+	err := db.tx(ctx, func(db *DB) (err error) {
+		row, err = db.DisconnectWebhook(ctx, UUID(id))
+		if err != nil {
+			return err
+		}
+		if row.Connected > 0 {
+			return nil
+		}
+		_, err = db.Querier.DeleteWebhook(ctx, UUID(id))
+		return err
+	})
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	if row.Connected > 0 {
+		return nil, otf.ErrWebhookConnected
+	}
+	return db.UnmarshalWebhookRow(otf.WebhookRow(row))
 }

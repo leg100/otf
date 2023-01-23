@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 
-	"github.com/leg100/otf/cloud"
 	"github.com/pkg/errors"
 )
 
@@ -11,8 +10,6 @@ import (
 // VCS events that trigger runs.
 type WorkspaceConnector struct {
 	Application
-	*WebhookCreator
-	*WebhookUpdater
 }
 
 type ConnectWorkspaceOptions struct {
@@ -33,25 +30,19 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, workspaceID string, o
 	}
 
 	// Inside transaction:
-	// 1. synchronise webhook config
+	// 1. create webhook
 	// 2. create workspace repo in store
 	var ws *Workspace
 	err = wc.Tx(ctx, func(app Application) (err error) {
-		webhook, err := app.DB().SyncWebhook(ctx, SyncWebhookOptions{
-			Identifier:        opts.Identifier,
-			ProviderID:        opts.ProviderID,
-			Cloud:             opts.Cloud,
-			CreateWebhookFunc: wc.Create,
-			UpdateWebhookFunc: wc.Update,
-		})
+		webhook, err := app.CreateWebhook(ctx, CreateWebhookOptions(opts))
 		if err != nil {
-			return errors.Wrap(err, "syncing webhook")
+			return errors.Wrap(err, "creating webhook")
 		}
 
 		ws, err = app.DB().CreateWorkspaceRepo(ctx, workspaceID, WorkspaceRepo{
 			Branch:     repo.Branch,
 			ProviderID: opts.ProviderID,
-			WebhookID:  webhook.WebhookID,
+			WebhookID:  webhook.ID(),
 		})
 		return errors.Wrap(err, "creating workspace repo")
 	})
@@ -64,48 +55,21 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, workspaceID string, o
 // Disconnect a repo from a workspace. The repo's webhook is deleted if no other
 // workspace is connected to the repo.
 func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string) (*Workspace, error) {
-	// Perform three operations within a transaction:
+	ws, err := wc.DB().GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	repo := ws.Repo()
+	// Perform multiple operations within a transaction:
 	// 1. delete workspace repo from db
 	// 2. delete webhook from db
-	// 3. delete webhook from vcs provider
-	var ws *Workspace
-	err := wc.Tx(ctx, func(app Application) (err error) {
-		ws, err = app.DB().GetWorkspace(ctx, workspaceID)
-		if err != nil {
-			return err
-		}
-		repo := ws.Repo()
-
+	err = wc.Tx(ctx, func(app Application) (err error) {
 		ws, err = app.DB().DeleteWorkspaceRepo(ctx, workspaceID)
 		if err != nil {
 			return err
 		}
 
-		hook, err := app.DB().GetWebhook(ctx, repo.WebhookID)
-		if err != nil {
-			return err
-		}
-
-		err = app.DB().DeleteWebhook(ctx, repo.WebhookID)
-		if errors.Is(err, ErrForeignKeyViolation) {
-			// webhook is still in use by another workspace
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		client, err := app.GetVCSClient(ctx, repo.ProviderID)
-		if err != nil {
-			return err
-		}
-		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
-			Identifier: repo.Identifier,
-			ID:         hook.VCSID,
-		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return app.DeleteWebhook(ctx, repo.ProviderID, repo.WebhookID)
 	})
 	return ws, err
 }

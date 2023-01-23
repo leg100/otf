@@ -14,8 +14,6 @@ import (
 type Publisher struct {
 	Application
 	*ModuleVersionUploader
-	*WebhookCreator
-	*WebhookUpdater
 }
 
 func NewPublisher(app Application) *Publisher {
@@ -23,15 +21,6 @@ func NewPublisher(app Application) *Publisher {
 		Application: app,
 		ModuleVersionUploader: &ModuleVersionUploader{
 			Application: app,
-		},
-		WebhookCreator: &WebhookCreator{
-			VCSProviderService: app,
-			Service:            app,
-			HostnameService:    app,
-		},
-		WebhookUpdater: &WebhookUpdater{
-			VCSProviderService: app,
-			HostnameService:    app,
 		},
 	}
 }
@@ -67,15 +56,13 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 
 	var mod *Module
 	err = p.Tx(ctx, func(app Application) (err error) {
-		webhook, err := app.DB().SyncWebhook(ctx, SyncWebhookOptions{
-			Identifier:        opts.Identifier,
-			ProviderID:        opts.ProviderID,
-			Cloud:             vcsProvider.cloudConfig.Name,
-			CreateWebhookFunc: p.Create,
-			UpdateWebhookFunc: p.Update,
+		webhook, err := app.CreateWebhook(ctx, CreateWebhookOptions{
+			Identifier: opts.Identifier,
+			ProviderID: opts.ProviderID,
+			Cloud:      vcsProvider.cloudConfig.Name,
 		})
 		if err != nil {
-			return errors.Wrap(err, "syncing webhook")
+			return errors.Wrap(err, "creating webhook")
 		}
 
 		mod = NewModule(CreateModuleOptions{
@@ -83,7 +70,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 			Provider:     provider,
 			Organization: opts.Organization,
 			Repo: &ModuleRepo{
-				WebhookID:  webhook.WebhookID,
+				WebhookID:  webhook.ID(),
 				ProviderID: opts.ProviderID,
 				Identifier: repo.Identifier,
 			},

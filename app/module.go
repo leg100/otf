@@ -124,6 +124,8 @@ func (a *Application) DeleteModule(ctx context.Context, id string) (*otf.Module,
 		return nil, err
 	}
 
+	// TODO: delete webhook
+
 	if err = a.db.DeleteModule(ctx, id); err != nil {
 		a.Error(err, "deleting module", "subject", subject, "module", module)
 		return nil, err

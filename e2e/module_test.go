@@ -98,14 +98,14 @@ func TestModule(t *testing.T) {
 	// should trigger a run on the workspace.
 
 	// otfd should have registered a webhook with the github server
-	require.NotNil(t, daemon.githubServer.WebhookURL)
-	require.NotNil(t, daemon.githubServer.WebhookSecret)
+	require.NotNil(t, daemon.githubServer.HookEndpoint)
+	require.NotNil(t, daemon.githubServer.HookSecret)
 
 	// generate and send push tag event for v1.0.0
 	pushTpl, err := os.ReadFile("fixtures/github_push_tag.json")
 	require.NoError(t, err)
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Identifier)
-	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.WebhookURL, *daemon.githubServer.WebhookSecret)
+	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)
 
 	// v1.0.0 should appear as latest module on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{

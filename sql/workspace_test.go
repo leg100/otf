@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,12 +53,12 @@ func TestWorkspace_CreateRepo(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db)
+	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
 	repo := otf.WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
-		WebhookID:  hook.WebhookID,
-		Identifier: hook.Identifier,
+		WebhookID:  hook.ID(),
+		Identifier: hook.Identifier(),
 	}
 
 	_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
@@ -74,7 +76,7 @@ func TestWorkspace_UpdateRepo(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db)
+	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
 	repo := createTestWorkspaceRepo(t, db, ws, provider, hook)
 
 	// update branch
@@ -93,7 +95,7 @@ func TestWorkspace_DeleteRepo(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db)
+	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
 	_ = createTestWorkspaceRepo(t, db, ws, provider, hook)
 
 	var err error
@@ -166,7 +168,7 @@ func TestWorkspace_ListByWebhookID(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db)
+	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
 	repo := otf.NewWorkspaceRepo(otf.NewWorkspaceRepoOptions{
 		ProviderID: provider.ID(),
 		Webhook:    hook,
@@ -182,7 +184,7 @@ func TestWorkspace_ListByWebhookID(t *testing.T) {
 	}{
 		{
 			name:      "list both workspaces",
-			webhookID: hook.WebhookID,
+			webhookID: hook.ID(),
 			want: func(t *testing.T, results []*otf.Workspace) {
 				assert.Equal(t, 2, len(results))
 				assert.Contains(t, results, ws1)
