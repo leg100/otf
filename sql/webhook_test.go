@@ -21,12 +21,25 @@ func TestWebhook_Synchronise(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// first sync creates hook in the DB and sets cloud ID
 	got, err := db.SynchroniseWebhook(ctx, unsynced, func(hook *otf.Webhook) (string, error) {
+		require.Nil(t, hook) // there should be no existing hook in DB
 		return "123", nil
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "123", got.VCSID())
 	assert.Equal(t, unsynced, got.UnsynchronisedWebhook)
+
+	// second sync retrieves existing hook in the DB and updates its cloud ID
+	// (to mimic a hook having been re-created on the cloud and hence a new ID
+	// has been generated)
+	updated, err := db.SynchroniseWebhook(ctx, unsynced, func(hook *otf.Webhook) (string, error) {
+		assert.Equal(t, got, hook) // should be the same hook created first time round
+		return "456", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "456", updated.VCSID())                  // updated cloud ID
+	assert.Equal(t, unsynced, updated.UnsynchronisedWebhook) // rest of hook is the same
 }
 
 func TestWebhook_Get(t *testing.T) {

@@ -158,6 +158,8 @@ func (s *WebhookSynchroniser) Synchronise(ctx context.Context, providerID string
 				Events:     DefaultWebhookEvents,
 				Endpoint:   existing.Endpoint(s.Hostname()),
 			})
+		} else if err != nil {
+			return "", errors.Wrap(err, "retrieving config from cloud")
 		}
 
 		// hook found in both DB and on cloud; check for differences and update

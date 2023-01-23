@@ -10,9 +10,7 @@ import (
 )
 
 func (db *DB) SynchroniseWebhook(ctx context.Context, unsynced *otf.UnsynchronisedWebhook, cb func(*otf.Webhook) (string, error)) (*otf.Webhook, error) {
-	hook := &otf.Webhook{
-		UnsynchronisedWebhook: unsynced,
-	}
+	var hook *otf.Webhook
 	err := db.tx(ctx, func(db *DB) error {
 		upsertResult, err := db.UpsertWebhook(ctx, pggen.UpsertWebhookParams{
 			WebhookID:  UUID(unsynced.ID()),
@@ -33,7 +31,7 @@ func (db *DB) SynchroniseWebhook(ctx context.Context, unsynced *otf.Unsynchronis
 		if err != nil {
 			return err
 		}
-		updateResult, err := db.UpdateWebhookVCSID(ctx, String(cloudID), UUID(hook.ID()))
+		updateResult, err := db.UpdateWebhookVCSID(ctx, String(cloudID), upsertResult.WebhookID)
 		if err != nil {
 			return err
 		}

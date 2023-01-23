@@ -16,13 +16,13 @@ func (a *Application) CreateWebhook(ctx context.Context, opts otf.CreateWebhookO
 		a.Error(err, "constructing webhook", "repo", opts.Identifier)
 		return nil, err
 	}
-	hook, err := a.hookSynchroniser.Synchronise(ctx, opts.ProviderID, unsynced)
+	hook, err := a.Synchronise(ctx, opts.ProviderID, unsynced)
 	if err != nil {
 		a.Error(err, "creating webhook", "repo", opts.Identifier)
 		return nil, err
 	}
 
-	a.V(0).Info("created webhook", "id", hook.ID, "repo", hook.Identifier())
+	a.V(0).Info("created webhook", "id", hook.ID(), "repo", hook.Identifier())
 
 	return hook, nil
 }
@@ -32,5 +32,5 @@ func (a *Application) GetWebhook(ctx context.Context, webhookID uuid.UUID) (*otf
 }
 
 func (a *Application) DeleteWebhook(ctx context.Context, providerID string, webhookID uuid.UUID) error {
-	return a.hookDeleter.Delete(ctx, providerID, webhookID)
+	return a.Delete(ctx, providerID, webhookID)
 }

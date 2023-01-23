@@ -55,18 +55,15 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, workspaceID string, o
 // Disconnect a repo from a workspace. The repo's webhook is deleted if no other
 // workspace is connected to the repo.
 func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string) (*Workspace, error) {
-	// Perform three operations within a transaction:
+	ws, err := wc.DB().GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	repo := ws.Repo()
+	// Perform multiple operations within a transaction:
 	// 1. delete workspace repo from db
 	// 2. delete webhook from db
-	// 3. delete webhook from vcs provider
-	var ws *Workspace
-	err := wc.Tx(ctx, func(app Application) (err error) {
-		ws, err = app.DB().GetWorkspace(ctx, workspaceID)
-		if err != nil {
-			return err
-		}
-		repo := ws.Repo()
-
+	err = wc.Tx(ctx, func(app Application) (err error) {
 		ws, err = app.DB().DeleteWorkspaceRepo(ctx, workspaceID)
 		if err != nil {
 			return err

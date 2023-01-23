@@ -6,16 +6,24 @@ ALTER TABLE webhooks ADD COLUMN connected INTEGER DEFAULT 0;
 
 -- account for connected workspaces
 UPDATE webhooks h
-SET connected = connected + 1
-FROM workspace_repos r
-WHERE r.webhook_id = h.webhook_id
+SET connected = connected + connections.total
+FROM (
+    SELECT webhook_id, count(*) AS total
+    FROM workspace_repos
+    GROUP BY webhook_id
+) AS connections
+WHERE connections.webhook_id = h.webhook_id
 ;
 
 -- account for connected modules
 UPDATE webhooks h
-SET connected = connected + 1
-FROM module_repos r
-WHERE r.webhook_id = h.webhook_id
+SET connected = connected + connections.total
+FROM (
+    SELECT webhook_id, count(*) AS total
+    FROM module_repos
+    GROUP BY webhook_id
+) AS connections
+WHERE connections.webhook_id = h.webhook_id
 ;
 
 -- remove webhooks with no connections

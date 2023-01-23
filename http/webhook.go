@@ -35,7 +35,7 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.Identifier, "cloud", hook.Cloud())
+	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.Identifier(), "cloud", hook.Cloud())
 
 	if event := hook.HandleEvent(w, r); event != nil {
 		h.events <- event
