@@ -65,7 +65,7 @@ func TestConnectRepo(t *testing.T) {
 		githubLoginTasks(t, hostname, user.Name),
 		createGithubVCSProviderTasks(t, url, org, "github"),
 		createWorkspaceTasks(t, hostname, org, workspaceName),
-		connectWorkspaceTasks(t, hostname, org, workspaceName),
+		connectWorkspaceTasks(t, url, org, workspaceName),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
 		startRunTasks(t, hostname, org, workspaceName),
