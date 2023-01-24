@@ -61,21 +61,21 @@ func (a *Application) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUI
 	return a.db.ListWorkspacesByWebhookID(ctx, id)
 }
 
-func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) (*otf.Workspace, error) {
+func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
 	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	ws, err := a.Connect(ctx, workspaceID, opts)
+	err = a.Connect(ctx, workspaceID, opts)
 	if err != nil {
 		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.Identifier)
-		return nil, err
+		return err
 	}
 
 	a.V(0).Info("connected workspace repo", "workspace", workspaceID, "subject", subject, "repo", opts)
 
-	return ws, nil
+	return nil
 }
 
 func (a *Application) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {

@@ -9,7 +9,11 @@ import (
 )
 
 func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
-	err := db.tx(ctx, func(tx *DB) error {
+	return CreateModule(ctx, db, mod)
+}
+
+func CreateModule(ctx context.Context, db otf.Database, mod *otf.Module) error {
+	err := db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
 			ID:             String(mod.ID()),
 			CreatedAt:      Timestamptz(mod.CreatedAt()),
@@ -34,10 +38,7 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 		}
 		return nil
 	})
-	if err != nil {
-		return Error(err)
-	}
-	return nil
+	return Error(err)
 }
 
 func (db *DB) UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) error {

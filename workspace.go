@@ -297,7 +297,7 @@ type WorkspaceService interface {
 }
 
 type WorkspaceConnectionService interface {
-	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*Workspace, error)
+	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
 	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
 	DisconnectWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 }

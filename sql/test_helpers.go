@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/inmem"
 	"github.com/stretchr/testify/require"
 
@@ -20,7 +19,7 @@ import (
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
-func newTestDB(t *testing.T, overrides ...newTestDBOption) *DB {
+func NewTestDB(t *testing.T, overrides ...newTestDBOption) *DB {
 	urlStr := os.Getenv(TestDatabaseURL)
 	if urlStr == "" {
 		t.Fatalf("%s must be set", TestDatabaseURL)
@@ -234,23 +233,6 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 	return provider
 }
 
-func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *otf.VCSProvider, hook *otf.Webhook) *otf.WorkspaceRepo {
-	ctx := context.Background()
-
-	ws, err := db.CreateWorkspaceRepo(ctx, ws.ID(), otf.WorkspaceRepo{
-		ProviderID: provider.ID(),
-		Branch:     "master",
-		WebhookID:  hook.ID(),
-		Identifier: hook.Identifier(),
-	})
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteWorkspaceRepo(ctx, ws.ID())
-	})
-	return ws.Repo()
-}
-
 func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 	ctx := context.Background()
 
@@ -262,19 +244,4 @@ func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 		db.DeleteModule(ctx, module.ID())
 	})
 	return module
-}
-
-func createTestWebhook(t *testing.T, db *DB, repo cloud.Repo, cc cloud.Config) *otf.Webhook {
-	ctx := context.Background()
-	unsynced := otf.NewTestUnsynchronisedWebhook(t, repo, cc.String())
-
-	hook, err := db.SynchroniseWebhook(ctx, unsynced, func(*otf.Webhook) (string, error) {
-		return "fake-hook-cloud-id", nil
-	})
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteWebhook(ctx, hook.ID())
-	})
-	return hook
 }

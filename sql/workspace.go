@@ -109,6 +109,16 @@ func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo 
 	return ws, Error(err)
 }
 
+func CreateWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string, repo otf.WorkspaceRepo) error {
+	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
+		Branch:        String(repo.Branch),
+		WebhookID:     UUID(repo.WebhookID),
+		VCSProviderID: String(repo.ProviderID),
+		WorkspaceID:   String(workspaceID),
+	})
+	return Error(err)
+}
+
 func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
 	_, err := db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), String(workspaceID))
 	if err != nil {
@@ -125,6 +135,11 @@ func (db *DB) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
 	return ws, Error(err)
+}
+
+func DeleteWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string) error {
+	_, err := db.DeleteWorkspaceRepoByID(ctx, String(workspaceID))
+	return Error(err)
 }
 
 // LockWorkspace locks the specified workspace.

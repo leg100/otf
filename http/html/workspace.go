@@ -457,14 +457,14 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 	}
 	params.Cloud = provider.CloudConfig().Name
 
-	ws, err := app.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
+	err = app.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	flashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {

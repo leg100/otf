@@ -119,7 +119,7 @@ type Tx interface {
 	Transaction(ctx context.Context, callback func(otf.Database) error) error
 }
 
-// Tx provides the caller with a callback in which all operations are conducted
+// Transaction provides the caller with a callback in which all operations are conducted
 // within a transaction.
 func (db *DB) Transaction(ctx context.Context, callback func(otf.Database) error) error {
 	return db.transaction(ctx, func(tx otf.Database) error {
@@ -155,14 +155,6 @@ func (db *DB) tx(ctx context.Context, callback func(*DB) error) error {
 
 // copy makes a copy of the DB object but with a new connection.
 func (db *DB) copy(conn conn) *DB {
-	return &DB{
-		conn:        conn,
-		Querier:     pggen.NewQuerier(conn),
-		Unmarshaler: db.Unmarshaler,
-	}
-}
-
-func (db *DB) dbCopy(conn conn) *DB {
 	return &DB{
 		conn:        conn,
 		Querier:     pggen.NewQuerier(conn),

@@ -10,7 +10,7 @@ import (
 )
 
 func TestUser_Create(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	user := otf.NewUser("mr-t")
 
 	defer db.DeleteUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
@@ -20,7 +20,7 @@ func TestUser_Create(t *testing.T) {
 }
 
 func TestUser_AddOrganizationMembership(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	ctx := context.Background()
 
 	org := createTestOrganization(t, db)
@@ -36,7 +36,7 @@ func TestUser_AddOrganizationMembership(t *testing.T) {
 }
 
 func TestUser_RemoveOrganizationMembership(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	ctx := context.Background()
 
 	org := createTestOrganization(t, db)
@@ -52,7 +52,7 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 }
 
 func TestUser_AddTeamMembership(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	ctx := context.Background()
 
 	org := createTestOrganization(t, db)
@@ -69,7 +69,7 @@ func TestUser_AddTeamMembership(t *testing.T) {
 }
 
 func TestUser_RemoveTeamMembership(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	ctx := context.Background()
 
 	org := createTestOrganization(t, db)
@@ -86,7 +86,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 }
 
 func TestUser_Get(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 
 	org1 := createTestOrganization(t, db)
 	org2 := createTestOrganization(t, db)
@@ -140,7 +140,7 @@ func TestUser_Get(t *testing.T) {
 }
 
 func TestUser_Get_NotFound(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 
 	_, err := db.GetUser(context.Background(), otf.UserSpec{Username: otf.String("does-not-exist")})
 	assert.Equal(t, otf.ErrResourceNotFound, err)
@@ -148,7 +148,7 @@ func TestUser_Get_NotFound(t *testing.T) {
 
 func TestUser_List(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	user1 := createTestUser(t, db)
@@ -185,7 +185,7 @@ func TestUser_List(t *testing.T) {
 
 func TestUser_Delete(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	user := createTestUser(t, db)
 
 	err := db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})

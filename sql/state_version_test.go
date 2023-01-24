@@ -10,7 +10,7 @@ import (
 )
 
 func TestStateVersion_Create(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
@@ -24,7 +24,7 @@ func TestStateVersion_Create(t *testing.T) {
 }
 
 func TestStateVersion_Get(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	sv := createTestStateVersion(t, db, ws,
@@ -79,7 +79,7 @@ func TestStateVersion_Get(t *testing.T) {
 }
 
 func TestStateVersion_List(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	sv1 := createTestStateVersion(t, db, ws)

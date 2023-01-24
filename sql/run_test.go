@@ -10,7 +10,7 @@ import (
 )
 
 func TestRun_Create(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
@@ -23,7 +23,7 @@ func TestRun_Create(t *testing.T) {
 func TestRun_UpdateStatus(t *testing.T) {
 	ctx := context.Background()
 
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
@@ -58,7 +58,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 }
 
 func TestRun_Get(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
@@ -73,7 +73,7 @@ func TestRun_Get(t *testing.T) {
 }
 
 func TestRun_List(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org1 := createTestOrganization(t, db)
 	org2 := createTestOrganization(t, db)
 	ws1 := createTestWorkspace(t, db, org1)
@@ -179,7 +179,7 @@ func TestRun_List(t *testing.T) {
 }
 
 func TestRun_CreatePlanReport(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})

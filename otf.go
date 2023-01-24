@@ -62,7 +62,7 @@ type Application interface {
 	ModuleVersionService
 	HostnameService
 	VariableService
-	WebhookService
+	HookService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -72,7 +72,8 @@ type LockableApplication interface {
 
 // DB provides access to otf database
 type DB interface {
-	// Tx provides a transaction within which to operate on the store.
+	Database
+
 	Tx(ctx context.Context, tx func(DB) error) error
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
@@ -90,7 +91,6 @@ type DB interface {
 	ChunkStore
 	AgentTokenStore
 	VCSProviderStore
-	WebhookStore
 	ModuleStore
 	ModuleVersionStore
 	VariableStore

@@ -11,19 +11,7 @@ import (
 
 func TestModule_Create(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
-	org := createTestOrganization(t, db)
-	module := otf.NewTestModule(org)
-
-	defer db.DeleteModule(ctx, module.ID())
-
-	err := db.CreateModule(ctx, module)
-	require.NoError(t, err)
-}
-
-func TestModule_Create_WithRepo(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	module := otf.NewTestModule(org)
 
@@ -35,7 +23,7 @@ func TestModule_Create_WithRepo(t *testing.T) {
 
 func TestModule_Get(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	want := createTestModule(t, db, org)
 
@@ -51,7 +39,7 @@ func TestModule_Get(t *testing.T) {
 
 func TestModule_GetByID(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	want := createTestModule(t, db, org)
 
@@ -63,7 +51,7 @@ func TestModule_GetByID(t *testing.T) {
 
 func TestModule_List(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	module1 := createTestModule(t, db, org)
 	module2 := createTestModule(t, db, org)
@@ -81,7 +69,7 @@ func TestModule_List(t *testing.T) {
 
 func TestModule_Delete(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	module := createTestModule(t, db, org)
 

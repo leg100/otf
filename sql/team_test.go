@@ -11,7 +11,7 @@ import (
 
 func TestTeam_Create(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	team := otf.NewTeam("team-awesome", org)
 
@@ -23,7 +23,7 @@ func TestTeam_Create(t *testing.T) {
 
 func TestTeam_Update_ByID(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
@@ -48,7 +48,7 @@ func TestTeam_Update_ByID(t *testing.T) {
 }
 
 func TestTeam_Get(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
@@ -60,7 +60,7 @@ func TestTeam_Get(t *testing.T) {
 }
 
 func TestTeam_GetByID(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 
 	org := createTestOrganization(t, db)
 	want := createTestTeam(t, db, org)
@@ -72,7 +72,7 @@ func TestTeam_GetByID(t *testing.T) {
 }
 
 func TestTeam_List(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	team1 := createTestTeam(t, db, org)
 	team2 := createTestTeam(t, db, org)
@@ -87,7 +87,7 @@ func TestTeam_List(t *testing.T) {
 }
 
 func TestTeam_ListTeamMembers(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	memberships := []otf.NewUserOption{

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 )
@@ -16,6 +17,14 @@ type handler struct {
 
 	events chan<- cloud.VCSEvent
 	db
+}
+
+func NewHandler(logger logr.Logger, events chan<- cloud.VCSEvent, app otf.Application) *handler {
+	return &handler{
+		Logger: logger,
+		events: events,
+		db:     newPGDB(app.DB(), newFactory(app, app)),
+	}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
