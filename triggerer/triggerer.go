@@ -86,7 +86,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 		isPullRequest = true
 	}
 
-	h.Info("triggering run", "id", webhookID)
+	h.Info("triggering run", "hook", webhookID)
 
 	workspaces, err := h.ListWorkspacesByWebhookID(ctx, webhookID)
 	if err != nil {
