@@ -234,6 +234,6 @@ func (a *Application) UnlockWorkspace(ctx context.Context, workspaceID string, o
 }
 
 // SetCurrentRun sets the current run for the workspace
-func (a *Application) SetCurrentRun(ctx context.Context, workspaceID, runID string) error {
+func (a *Application) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
 }

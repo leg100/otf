@@ -180,12 +180,12 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 }
 
 // SetCurrentRun sets the ID of the current run for the specified workspace.
-func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) error {
+func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, String(runID), String(workspaceID))
 	if err != nil {
-		return Error(err)
+		return nil, Error(err)
 	}
-	return nil
+	return db.GetWorkspace(ctx, workspaceID)
 }
 
 // UnlockWorkspace unlocks the specified workspace; the caller has the

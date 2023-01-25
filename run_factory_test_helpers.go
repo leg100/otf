@@ -16,6 +16,7 @@ type TestRunCreateOptions struct {
 	AutoApply         *bool
 	Repo              *WorkspaceRepo
 	IngressAttributes *IngressAttributes
+	Workspace         *Workspace // run's workspace; if nil a workspace is auto created
 }
 
 // NewTestRun creates a new run. Expressly for testing purposes.
@@ -23,12 +24,15 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	org, err := NewOrganization(OrganizationCreateOptions{Name: String("test-org")})
 	require.NoError(t, err)
 
-	ws, err := NewWorkspace(CreateWorkspaceOptions{
-		Name:         String("test-ws"),
-		Organization: String(org.Name()),
-		Repo:         opts.Repo,
-	})
-	require.NoError(t, err)
+	ws := opts.Workspace
+	if ws == nil {
+		ws, err = NewWorkspace(CreateWorkspaceOptions{
+			Name:         String("test-ws"),
+			Organization: String(org.Name()),
+			Repo:         opts.Repo,
+		})
+		require.NoError(t, err)
+	}
 
 	cv, err := NewConfigurationVersion(ws.ID(), ConfigurationVersionCreateOptions{
 		IngressAttributes: opts.IngressAttributes,
@@ -39,6 +43,7 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	run := NewRun(cv, ws, RunCreateOptions{
 		AutoApply: opts.AutoApply,
 	})
+
 	if opts.Status != RunStatus("") {
 		run.updateStatus(opts.Status)
 	}
