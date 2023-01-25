@@ -95,7 +95,7 @@ func TestModule(t *testing.T) {
 
 	// Now we test the webhook functionality by sending an event to the daemon
 	// (which would usually be triggered by a git push to github). The event
-	// should trigger a run on the workspace.
+	// should trigger a module version to be published.
 
 	// otfd should have registered a webhook with the github server
 	require.NotNil(t, daemon.githubServer.HookEndpoint)

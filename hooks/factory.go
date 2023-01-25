@@ -19,8 +19,6 @@ func newFactory(hostnameService otf.HostnameService, cloudService cloud.Service)
 	return factory{cloudService, hostnameService}
 }
 
-// newHook constructs an unsynchronised hook - a hook always begins its life
-// in an unsynchronised state.
 func (f factory) newHook(opts newHookOpts) (*hook, error) {
 	cloudConfig, err := f.GetCloudConfig(opts.cloud)
 	if err != nil {

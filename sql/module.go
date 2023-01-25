@@ -100,3 +100,8 @@ func (db *DB) DeleteModule(ctx context.Context, id string) error {
 	}
 	return nil
 }
+
+func DeleteModule(ctx context.Context, db otf.Database, id string) error {
+	_, err := db.DeleteModuleByID(ctx, String(id))
+	return Error(err)
+}

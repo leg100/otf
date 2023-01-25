@@ -59,6 +59,8 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 
 	var mod *otf.Module
 
+	// hook up module to a webhook - the callback establishes a relationship in
+	// the DB between the module and the webhook.
 	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
 		mod = otf.NewModule(otf.CreateModuleOptions{
 			Name:         name,

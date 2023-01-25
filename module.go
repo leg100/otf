@@ -150,6 +150,10 @@ type ModuleStore interface {
 	DeleteModule(ctx context.Context, id string) error
 }
 
+type ModuleDeleter interface {
+	Delete(ctx context.Context, moduleID string) error
+}
+
 type (
 	PublishModuleOptions struct {
 		Identifier   string

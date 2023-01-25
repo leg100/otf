@@ -69,8 +69,5 @@ func (c *Connector) Disconnect(ctx context.Context, workspaceID string) (*otf.Wo
 		Client:         client,
 		UnhookCallback: unhookCallback,
 	})
-	if err != nil {
-		return nil, err
-	}
 	return ws, err
 }
