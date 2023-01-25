@@ -84,6 +84,8 @@ func (ws *Workspace) Organization() string             { return ws.organization 
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
 
+func (ws *Workspace) SetLatestRun(runID string) { ws.latestRunID = String(runID) }
+
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
 	return []string{"local", "remote", "agent"}
@@ -347,7 +349,7 @@ type CurrentRunService interface {
 	// SetCurrentRun sets the ID of the latest run for a workspace.
 	//
 	// Take full run obj as param
-	SetCurrentRun(ctx context.Context, workspaceID, runID string) error
+	SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of

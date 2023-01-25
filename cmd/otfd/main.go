@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -181,7 +182,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Run scheduler - if there is another scheduler running already then
 	// this'll wait until the other scheduler exits.
 	g.Go(func() error {
-		return otf.ExclusiveScheduler(ctx, logger, app)
+		return scheduler.ExclusiveScheduler(ctx, logger, app)
 	})
 
 	// Run PR reporter - if there is another reporter running already then

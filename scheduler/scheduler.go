@@ -1,4 +1,4 @@
-package otf
+package scheduler
 
 import (
 	"context"
@@ -6,34 +6,36 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
-// Scheduler enqueues pending runs onto workspace queues and current runs onto
-// the global queue (for processing by agents).
-type Scheduler struct {
-	Application
+// scheduler performs two principle tasks :
+// (a) manages lifecycle of workspace queues, creating/destroying them
+// (b) relays run and workspace events onto queues.
+type scheduler struct {
+	otf.Application
 	logr.Logger
 	queues map[string]eventHandler
-	workspaceQueueFactory
+	queueFactory
 }
 
-// NewScheduler constructs and initialises the scheduler.
-func NewScheduler(logger logr.Logger, app Application) *Scheduler {
-	s := &Scheduler{
-		Application:           app,
-		Logger:                logger.WithValues("component", "scheduler"),
-		queues:                make(map[string]eventHandler),
-		workspaceQueueFactory: queueMaker{},
+// newScheduler constructs and initialises the scheduler.
+func newScheduler(logger logr.Logger, app otf.Application) *scheduler {
+	s := &scheduler{
+		Application:  app,
+		Logger:       logger.WithValues("component", "scheduler"),
+		queues:       make(map[string]eventHandler),
+		queueFactory: queueMaker{},
 	}
 	s.V(2).Info("started")
 
 	return s
 }
 
-// Start starts the scheduler daemon. Should be invoked in a go routine.
-func (s *Scheduler) Start(ctx context.Context) error {
-	ctx = AddSubjectToContext(ctx, &Superuser{"scheduler"})
+// start starts the scheduler daemon. Should be invoked in a go routine.
+func (s *scheduler) start(ctx context.Context) error {
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
 
 	op := func() error {
 		return s.reinitialize(ctx)
@@ -47,21 +49,21 @@ func (s *Scheduler) Start(ctx context.Context) error {
 // reinitialize retrieves workspaces and runs from the DB and listens to events,
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
-func (s *Scheduler) reinitialize(ctx context.Context) error {
+func (s *scheduler) reinitialize(ctx context.Context) error {
 	// Unsubscribe Watch() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// subscribe to run events and workspace unlock events
-	sub, err := s.Watch(ctx, WatchOptions{Name: String("scheduler")})
+	sub, err := s.Watch(ctx, otf.WatchOptions{Name: otf.String("scheduler")})
 	if err != nil {
 		return err
 	}
 
 	// retrieve existing workspaces, page by page
-	workspaces := []*Workspace{}
-	workspaceListOpts := WorkspaceListOptions{
-		ListOptions: ListOptions{PageSize: MaxPageSize},
+	workspaces := []*otf.Workspace{}
+	workspaceListOpts := otf.WorkspaceListOptions{
+		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
 	for {
 		page, err := s.ListWorkspaces(ctx, workspaceListOpts)
@@ -75,10 +77,10 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		workspaceListOpts.PageNumber = *page.NextPage()
 	}
 	// retrieve runs incomplete runs, page by page
-	runs := []*Run{}
-	runListOpts := RunListOptions{
-		Statuses:    IncompleteRun,
-		ListOptions: ListOptions{PageSize: MaxPageSize},
+	runs := []*otf.Run{}
+	runListOpts := otf.RunListOptions{
+		Statuses:    otf.IncompleteRun,
+		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
 	for {
 		page, err := s.ListRuns(ctx, runListOpts)
@@ -92,19 +94,19 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		runListOpts.PageNumber = *page.NextPage()
 	}
 	// feed in existing objects and then events to the scheduler for processing
-	queue := make(chan Event)
+	queue := make(chan otf.Event)
 	go func() {
 		for _, ws := range workspaces {
-			queue <- Event{
-				Type:    EventWorkspaceCreated,
+			queue <- otf.Event{
+				Type:    otf.EventWorkspaceCreated,
 				Payload: ws,
 			}
 		}
 		// spool existing runs in reverse order; ListRuns returns runs newest first,
 		// whereas we want oldest first.
 		for i := len(runs) - 1; i >= 0; i-- {
-			queue <- Event{
-				Type:    EventRunStatusUpdate,
+			queue <- otf.Event{
+				Type:    otf.EventRunStatusUpdate,
 				Payload: runs[i],
 			}
 		}
@@ -119,20 +121,21 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 			return ctx.Err()
 		case event := <-queue:
 			switch payload := event.Payload.(type) {
-			case *Workspace:
-				if event.Type == EventWorkspaceDeleted {
+			case *otf.Workspace:
+				if event.Type == otf.EventWorkspaceDeleted {
 					delete(s.queues, payload.ID())
 					continue
 				}
 				// create workspace queue if it doesn't exist
 				q, ok := s.queues[payload.ID()]
 				if !ok {
-					q = s.createQueue(ctx, payload)
+					q = s.newQueue(s.Application, s.Logger, payload)
+					s.queues[payload.ID()] = q
 				}
 				if err := q.handleEvent(ctx, event); err != nil {
 					return err
 				}
-			case *Run:
+			case *otf.Run:
 				q, ok := s.queues[payload.WorkspaceID()]
 				if !ok {
 					// should never happen
@@ -145,10 +148,4 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 			}
 		}
 	}
-}
-
-func (s *Scheduler) createQueue(ctx context.Context, ws *Workspace) eventHandler {
-	q := s.NewWorkspaceQueue(s.Application, s.Logger, ws)
-	s.queues[ws.ID()] = q
-	return q
 }

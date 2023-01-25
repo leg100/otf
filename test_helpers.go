@@ -20,17 +20,17 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-type NewTestWorkspaceOption func(*CreateWorkspaceOptions)
+type NewTestWorkspaceOption func(*Workspace)
 
 func AutoApply() NewTestWorkspaceOption {
-	return func(opts *CreateWorkspaceOptions) {
-		opts.AutoApply = Bool(true)
+	return func(ws *Workspace) {
+		ws.autoApply = true
 	}
 }
 
 func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
-	return func(opts *CreateWorkspaceOptions) {
-		opts.Repo = repo
+	return func(ws *Workspace) {
+		ws.repo = repo
 	}
 }
 
@@ -39,11 +39,11 @@ func NewTestWorkspace(t *testing.T, org *Organization, opts ...NewTestWorkspaceO
 		Name:         String(uuid.NewString()),
 		Organization: String(org.Name()),
 	}
-	for _, o := range opts {
-		o(&createOpts)
-	}
 	ws, err := NewWorkspace(createOpts)
 	require.NoError(t, err)
+	for _, fn := range opts {
+		fn(ws)
+	}
 	return ws
 }
 
