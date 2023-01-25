@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func (db *DB) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role otf.Role) error {
+func (db *DB) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
 	_, err := db.UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
 		WorkspaceID: String(workspaceID),
 		TeamName:    String(team),

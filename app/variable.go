@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 	"github.com/pkg/errors"
 )
 
 func (a *Application) CreateVariable(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*otf.Variable, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateVariableAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,7 @@ func (a *Application) CreateVariable(ctx context.Context, workspaceID string, op
 }
 
 func (a *Application) ListVariables(ctx context.Context, workspaceID string) ([]*otf.Variable, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.ListVariablesAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.ListVariablesAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +55,7 @@ func (a *Application) GetVariable(ctx context.Context, variableID string) (*otf.
 		return nil, err
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetVariableAction, variable.WorkspaceID())
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetVariableAction, variable.WorkspaceID())
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func (a *Application) UpdateVariable(ctx context.Context, variableID string, opt
 		return nil, errors.Wrap(err, "retrieving variable")
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateVariableAction, existing.WorkspaceID())
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateVariableAction, existing.WorkspaceID())
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func (a *Application) DeleteVariable(ctx context.Context, variableID string) (*o
 		return nil, errors.Wrap(err, "retrieving variable")
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.DeleteVariableAction, existing.WorkspaceID())
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteVariableAction, existing.WorkspaceID())
 	if err != nil {
 		return nil, err
 	}

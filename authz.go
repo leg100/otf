@@ -3,6 +3,8 @@ package otf
 import (
 	"context"
 	"fmt"
+
+	"github.com/leg100/otf/rbac"
 )
 
 // unexported key type prevents collisions
@@ -12,9 +14,9 @@ const subjectCtxKey subjectCtxKeyType = "subject"
 
 // Subject is an entity that carries out actions on resources.
 type Subject interface {
-	CanAccessSite(action Action) bool
-	CanAccessOrganization(action Action, name string) bool
-	CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool
+	CanAccessSite(action rbac.Action) bool
+	CanAccessOrganization(action rbac.Action, name string) bool
+	CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool
 
 	Identity
 }
@@ -29,7 +31,7 @@ type WorkspacePolicy struct {
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
 	Team *Team
-	Role Role
+	Role rbac.Role
 }
 
 // AddSubjectToContext adds a subject to a context
@@ -90,8 +92,8 @@ type Superuser struct {
 	Username string
 }
 
-func (*Superuser) CanAccessSite(action Action) bool                 { return true }
-func (*Superuser) CanAccessOrganization(Action, string) bool        { return true }
-func (*Superuser) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
-func (s *Superuser) String() string                                 { return s.Username }
-func (s *Superuser) ID() string                                     { return s.Username }
+func (*Superuser) CanAccessSite(action rbac.Action) bool                 { return true }
+func (*Superuser) CanAccessOrganization(rbac.Action, string) bool        { return true }
+func (*Superuser) CanAccessWorkspace(rbac.Action, *WorkspacePolicy) bool { return true }
+func (s *Superuser) String() string                                      { return s.Username }
+func (s *Superuser) ID() string                                          { return s.Username }

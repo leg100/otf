@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	jsonapi "github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/rbac"
 )
 
 // AgentToken is an long-lived authentication token for an external agent.
@@ -25,16 +26,16 @@ func (t *AgentToken) CreatedAt() time.Time { return t.createdAt }
 func (t *AgentToken) Description() string  { return t.description }
 func (t *AgentToken) Organization() string { return t.organization }
 
-func (*AgentToken) CanAccessSite(action Action) bool {
+func (*AgentToken) CanAccessSite(action rbac.Action) bool {
 	// agent cannot carry out site-level actions
 	return false
 }
 
-func (t *AgentToken) CanAccessOrganization(action Action, name string) bool {
+func (t *AgentToken) CanAccessOrganization(action rbac.Action, name string) bool {
 	return t.organization == name
 }
 
-func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+func (t *AgentToken) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool {
 	// agent can access anything within its organization
 	return t.organization == policy.Organization
 }

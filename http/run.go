@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/rbac"
 )
 
 type planFileOptions struct {
@@ -295,11 +296,11 @@ func (r *Run) ToJSONAPI() any {
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),
 		Permissions: &dto.RunPermissions{
-			CanDiscard:      subject.CanAccessWorkspace(otf.DiscardRunAction, policy),
-			CanForceExecute: subject.CanAccessWorkspace(otf.ApplyRunAction, policy),
-			CanForceCancel:  subject.CanAccessWorkspace(otf.CancelRunAction, policy),
-			CanCancel:       subject.CanAccessWorkspace(otf.CancelRunAction, policy),
-			CanApply:        subject.CanAccessWorkspace(otf.ApplyRunAction, policy),
+			CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
+			CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+			CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
+			CanCancel:       subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
+			CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 		},
 		PositionInQueue:  0,
 		Refresh:          r.Refresh(),

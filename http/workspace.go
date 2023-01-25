@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/rbac"
 )
 
 // Workspace assembles a workspace JSONAPI DTO
@@ -59,16 +60,16 @@ func (ws *Workspace) ToJSONAPI() any {
 		// Operations is deprecated but clients and go-tfe tests still use it
 		Operations: ws.ExecutionMode() == "remote",
 		Permissions: &dto.WorkspacePermissions{
-			CanLock:           subject.CanAccessWorkspace(otf.LockWorkspaceAction, policy),
-			CanUnlock:         subject.CanAccessWorkspace(otf.UnlockWorkspaceAction, policy),
-			CanForceUnlock:    subject.CanAccessWorkspace(otf.UnlockWorkspaceAction, policy),
-			CanQueueApply:     subject.CanAccessWorkspace(otf.ApplyRunAction, policy),
-			CanQueueDestroy:   subject.CanAccessWorkspace(otf.ApplyRunAction, policy),
-			CanQueueRun:       subject.CanAccessWorkspace(otf.CreateRunAction, policy),
-			CanDestroy:        subject.CanAccessWorkspace(otf.DeleteWorkspaceAction, policy),
-			CanReadSettings:   subject.CanAccessWorkspace(otf.GetWorkspaceAction, policy),
-			CanUpdate:         subject.CanAccessWorkspace(otf.UpdateWorkspaceAction, policy),
-			CanUpdateVariable: subject.CanAccessWorkspace(otf.UpdateWorkspaceAction, policy),
+			CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
+			CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
+			CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
+			CanQueueApply:     subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+			CanQueueDestroy:   subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+			CanQueueRun:       subject.CanAccessWorkspace(rbac.CreateRunAction, policy),
+			CanDestroy:        subject.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
+			CanReadSettings:   subject.CanAccessWorkspace(rbac.GetWorkspaceAction, policy),
+			CanUpdate:         subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+			CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		},
 		QueueAllRuns:               ws.QueueAllRuns(),
 		SpeculativeEnabled:         ws.SpeculativeEnabled(),

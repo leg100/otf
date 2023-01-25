@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateConfigurationVersionAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string
 }
 
 func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.ListConfigurationVersionsAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID
 }
 
 func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
-	subject, err := a.CanAccessConfigurationVersion(ctx, otf.GetConfigurationVersionAction, cvID)
+	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) 
 }
 
 func (a *Application) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetConfigurationVersionAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func (a *Application) UploadConfig(ctx context.Context, cvID string, config []by
 }
 
 func (a *Application) DownloadConfig(ctx context.Context, cvID string) ([]byte, error) {
-	subject, err := a.CanAccessConfigurationVersion(ctx, otf.DownloadConfigurationVersionAction, cvID)
+	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}

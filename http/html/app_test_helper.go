@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
 )
 
@@ -106,7 +107,7 @@ func (u *fakeApp) ListWorkspacePermissions(context.Context, string) ([]*otf.Work
 	return nil, nil
 }
 
-func (u *fakeApp) SetWorkspacePermission(context.Context, string, string, otf.Role) error {
+func (u *fakeApp) SetWorkspacePermission(context.Context, string, string, rbac.Role) error {
 	return nil
 }
 

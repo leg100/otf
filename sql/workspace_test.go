@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -110,8 +111,8 @@ func TestWorkspace_ListByUserID(t *testing.T) {
 	ws2 := createTestWorkspace(t, db, org)
 	team1 := createTestTeam(t, db, org)
 	team2 := createTestTeam(t, db, org)
-	_ = createTestWorkspacePermission(t, db, ws1, team1, otf.WorkspaceAdminRole)
-	_ = createTestWorkspacePermission(t, db, ws2, team2, otf.WorkspacePlanRole)
+	_ = createTestWorkspacePermission(t, db, ws1, team1, rbac.WorkspaceAdminRole)
+	_ = createTestWorkspacePermission(t, db, ws2, team2, rbac.WorkspacePlanRole)
 	user := createTestUser(t, db, otf.WithTeamMemberships(team1, team2))
 
 	tests := []struct {

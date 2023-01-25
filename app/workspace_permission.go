@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
-func (a *Application) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role otf.Role) error {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.SetWorkspacePermissionAction, workspaceID)
+func (a *Application) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func (a *Application) ListWorkspacePermissions(ctx context.Context, workspaceID 
 }
 
 func (a *Application) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UnsetWorkspacePermissionAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		a.Error(err, "unsetting workspace permission", "team", team, "subject", subject, "workspace", workspaceID)
 		return err

@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateStateVersionAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string
 }
 
 func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	subject, err := a.CanAccessWorkspaceByName(ctx, otf.ListStateVersionsAction, opts.Organization, opts.Workspace)
+	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +48,7 @@ func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersi
 }
 
 func (a *Application) CurrentStateVersion(ctx context.Context, workspaceID string) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetStateVersionAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (a *Application) CurrentStateVersion(ctx context.Context, workspaceID strin
 }
 
 func (a *Application) GetStateVersion(ctx context.Context, svID string) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessStateVersion(ctx, otf.GetStateVersionAction, svID)
+	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func (a *Application) GetStateVersion(ctx context.Context, svID string) (*otf.St
 
 // DownloadState retrieves base64-encoded terraform state from the db
 func (a *Application) DownloadState(ctx context.Context, svID string) ([]byte, error) {
-	subject, err := a.CanAccessStateVersion(ctx, otf.DownloadStateAction, svID)
+	subject, err := a.CanAccessStateVersion(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
 	}

@@ -5,18 +5,19 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 // Authorizer is capable of granting or denying access to resources based on the
 // subject contained within the context.
 type Authorizer interface {
-	CanAccessSite(ctx context.Context, action otf.Action) (otf.Subject, error)
-	CanAccessOrganization(ctx context.Context, action otf.Action, name string) (otf.Subject, error)
-	CanAccessWorkspaceByName(ctx context.Context, action otf.Action, organization, workspace string) (otf.Subject, error)
-	CanAccessWorkspaceByID(ctx context.Context, action otf.Action, workspaceID string) (otf.Subject, error)
-	CanAccessRun(ctx context.Context, action otf.Action, runID string) (otf.Subject, error)
-	CanAccessStateVersion(ctx context.Context, action otf.Action, svID string) (otf.Subject, error)
-	CanAccessConfigurationVersion(ctx context.Context, action otf.Action, cvID string) (otf.Subject, error)
+	CanAccessSite(ctx context.Context, action rbac.Action) (otf.Subject, error)
+	CanAccessOrganization(ctx context.Context, action rbac.Action, name string) (otf.Subject, error)
+	CanAccessWorkspaceByName(ctx context.Context, action rbac.Action, organization, workspace string) (otf.Subject, error)
+	CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error)
+	CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error)
+	CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error)
+	CanAccessConfigurationVersion(ctx context.Context, action rbac.Action, cvID string) (otf.Subject, error)
 }
 
 type authorizer struct {
@@ -24,7 +25,7 @@ type authorizer struct {
 	logr.Logger
 }
 
-func (a *authorizer) CanAccessSite(ctx context.Context, action otf.Action) (otf.Subject, error) {
+func (a *authorizer) CanAccessSite(ctx context.Context, action rbac.Action) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -36,7 +37,7 @@ func (a *authorizer) CanAccessSite(ctx context.Context, action otf.Action) (otf.
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *authorizer) CanAccessOrganization(ctx context.Context, action otf.Action, name string) (otf.Subject, error) {
+func (a *authorizer) CanAccessOrganization(ctx context.Context, action rbac.Action, name string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func (a *authorizer) CanAccessOrganization(ctx context.Context, action otf.Actio
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *authorizer) CanAccessWorkspaceByName(ctx context.Context, action otf.Action, organization, workspace string) (otf.Subject, error) {
+func (a *authorizer) CanAccessWorkspaceByName(ctx context.Context, action rbac.Action, organization, workspace string) (otf.Subject, error) {
 	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ func (a *authorizer) CanAccessWorkspaceByName(ctx context.Context, action otf.Ac
 	return a.CanAccessWorkspaceByID(ctx, action, ws.ID())
 }
 
-func (a *authorizer) CanAccessWorkspaceByID(ctx context.Context, action otf.Action, workspaceID string) (otf.Subject, error) {
+func (a *authorizer) CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -80,7 +81,7 @@ func (a *authorizer) CanAccessWorkspaceByID(ctx context.Context, action otf.Acti
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *authorizer) CanAccessRun(ctx context.Context, action otf.Action, runID string) (otf.Subject, error) {
+func (a *authorizer) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
 	workspaceID, err := a.db.GetWorkspaceIDByRunID(ctx, runID)
 	if err != nil {
 		return nil, err
@@ -88,7 +89,7 @@ func (a *authorizer) CanAccessRun(ctx context.Context, action otf.Action, runID 
 	return a.CanAccessWorkspaceByID(ctx, action, workspaceID)
 }
 
-func (a *authorizer) CanAccessConfigurationVersion(ctx context.Context, action otf.Action, cvID string) (otf.Subject, error) {
+func (a *authorizer) CanAccessConfigurationVersion(ctx context.Context, action rbac.Action, cvID string) (otf.Subject, error) {
 	workspaceID, err := a.db.GetWorkspaceIDByCVID(ctx, cvID)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func (a *authorizer) CanAccessConfigurationVersion(ctx context.Context, action o
 	return a.CanAccessWorkspaceByID(ctx, action, workspaceID)
 }
 
-func (a *authorizer) CanAccessStateVersion(ctx context.Context, action otf.Action, svID string) (otf.Subject, error) {
+func (a *authorizer) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error) {
 	workspaceID, err := a.db.GetWorkspaceIDByStateVersionID(ctx, svID)
 	if err != nil {
 		return nil, err

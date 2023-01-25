@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateTeamAction, opts.Organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +48,7 @@ func (a *Application) UpdateTeam(ctx context.Context, teamID string, opts otf.Up
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.CanAccessOrganization(ctx, otf.UpdateTeamAction, team.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.UpdateTeamAction, team.Organization())
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, er
 	}
 
 	// Check organization-wide authority
-	subject, err := a.CanAccessOrganization(ctx, otf.GetTeamAction, team.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetTeamAction, team.Organization())
 	if err != nil {
 		// Fallback to checking if they are member of the team
 		if user, ok := subject.(*otf.User); ok {
@@ -103,7 +104,7 @@ func (a *Application) ListTeams(ctx context.Context, organization string) ([]*ot
 		return user.TeamsByOrganization(organization), nil
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.ListTeamsAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +130,7 @@ func (a *Application) ListTeamMembers(ctx context.Context, teamID string) ([]*ot
 	}
 
 	// Check organization-wide authority
-	subject, err := a.CanAccessOrganization(ctx, otf.ListTeamsAction, team.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.ListTeamsAction, team.Organization())
 	if err != nil {
 		// Fallback to checking if they are member of the team
 		if user, ok := subject.(*otf.User); ok {

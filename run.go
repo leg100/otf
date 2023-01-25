@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/leg100/otf/rbac"
 )
 
 const (
@@ -240,17 +242,17 @@ func (r *Run) EnqueuePlan() error {
 	return nil
 }
 
-func (*Run) CanAccessSite(action Action) bool {
+func (*Run) CanAccessSite(action rbac.Action) bool {
 	// run cannot carry out site-level actions
 	return false
 }
 
-func (r *Run) CanAccessOrganization(action Action, name string) bool {
+func (r *Run) CanAccessOrganization(action rbac.Action, name string) bool {
 	// run cannot access organization-level resources
 	return false
 }
 
-func (r *Run) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+func (r *Run) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool {
 	// run can access anything within its workspace
 	return r.workspaceID == policy.WorkspaceID
 }

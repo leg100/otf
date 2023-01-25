@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -57,7 +58,7 @@ func overrideCleanupInterval(d time.Duration) newTestDBOption {
 	}
 }
 
-func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.Role) *otf.WorkspacePermission {
+func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role rbac.Role) *otf.WorkspacePermission {
 	ctx := context.Background()
 	err := db.SetWorkspacePermission(ctx, ws.ID(), team.Name(), role)
 	require.NoError(t, err)

@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 // CreateRun creates a run. Caller needs to have created a config version first.
 func (a *Application) CreateRun(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateRunAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +34,7 @@ func (a *Application) CreateRun(ctx context.Context, workspaceID string, opts ot
 
 // GetRun retrieves a run from the db.
 func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
-	subject, err := a.CanAccessRun(ctx, otf.GetRunAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,19 +56,19 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*o
 	var err error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, err = a.CanAccessWorkspaceByName(ctx, otf.GetWorkspaceAction,
+		subject, err = a.CanAccessWorkspaceByName(ctx, rbac.GetWorkspaceAction,
 			*opts.WorkspaceName,
 			*opts.Organization,
 		)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, err = a.CanAccessWorkspaceByID(ctx, otf.GetWorkspaceAction, *opts.WorkspaceID)
+		subject, err = a.CanAccessWorkspaceByID(ctx, rbac.GetWorkspaceAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, err = a.CanAccessOrganization(ctx, otf.ListRunsAction, *opts.Organization)
+		subject, err = a.CanAccessOrganization(ctx, rbac.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, err = a.CanAccessSite(ctx, otf.ListRunsAction)
+		subject, err = a.CanAccessSite(ctx, rbac.ListRunsAction)
 	}
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*o
 
 // ApplyRun enqueues an apply for the run.
 func (a *Application) ApplyRun(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
-	subject, err := a.CanAccessRun(ctx, otf.ApplyRunAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -107,7 +108,7 @@ func (a *Application) ApplyRun(ctx context.Context, runID string, opts otf.RunAp
 
 // DiscardRun the run.
 func (a *Application) DiscardRun(ctx context.Context, runID string, opts otf.RunDiscardOptions) error {
-	subject, err := a.CanAccessRun(ctx, otf.DiscardRunAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -130,7 +131,7 @@ func (a *Application) DiscardRun(ctx context.Context, runID string, opts otf.Run
 // CancelRun a run. If a run is in progress then a cancelation signal will be
 // sent out.
 func (a *Application) CancelRun(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
-	subject, err := a.CanAccessRun(ctx, otf.CancelRunAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,7 @@ func (a *Application) CancelRun(ctx context.Context, runID string, opts otf.RunC
 
 // ForceCancelRun forcefully cancels a run.
 func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts otf.RunForceCancelOptions) error {
-	subject, err := a.CanAccessRun(ctx, otf.CancelRunAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -178,7 +179,7 @@ func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts otf
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
 func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
-	subject, err := a.CanAccessRun(ctx, otf.EnqueuePlanAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.EnqueuePlanAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 
 // GetPlanFile returns the plan file for the run.
 func (a *Application) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
-	subject, err := a.CanAccessRun(ctx, otf.GetPlanFileAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +224,7 @@ func (a *Application) GetPlanFile(ctx context.Context, runID string, format otf.
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
 func (a *Application) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
-	subject, err := a.CanAccessRun(ctx, otf.UploadPlanFileAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
 	}
@@ -244,7 +245,7 @@ func (a *Application) UploadPlanFile(ctx context.Context, runID string, plan []b
 
 // GetLockFile returns the lock file for the run.
 func (a *Application) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
-	subject, err := a.CanAccessRun(ctx, otf.GetLockFileAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.GetLockFileAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +268,7 @@ func (a *Application) GetLockFile(ctx context.Context, runID string) ([]byte, er
 
 // UploadLockFile persists the lock file for a run.
 func (a *Application) UploadLockFile(ctx context.Context, runID string, plan []byte) error {
-	subject, err := a.CanAccessRun(ctx, otf.UploadLockFileAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.UploadLockFileAction, runID)
 	if err != nil {
 		return err
 	}
@@ -285,7 +286,7 @@ func (a *Application) UploadLockFile(ctx context.Context, runID string, plan []b
 
 // DeleteRun deletes a run.
 func (a *Application) DeleteRun(ctx context.Context, runID string) error {
-	subject, err := a.CanAccessRun(ctx, otf.DeleteRunAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.DeleteRunAction, runID)
 	if err != nil {
 		return err
 	}
@@ -306,7 +307,7 @@ func (a *Application) DeleteRun(ctx context.Context, runID string) error {
 
 // StartPhase starts a run phase.
 func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error) {
-	subject, err := a.CanAccessRun(ctx, otf.StartPhaseAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +327,7 @@ func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.Ph
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
 func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
-	subject, err := a.CanAccessRun(ctx, otf.FinishPhaseAction, runID)
+	subject, err := a.CanAccessRun(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +377,7 @@ func (a *Application) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (o
 
 // PutChunk writes a chunk of logs for a phase.
 func (a *Application) PutChunk(ctx context.Context, chunk otf.Chunk) error {
-	_, err := a.CanAccessRun(ctx, otf.PutChunkAction, chunk.RunID)
+	_, err := a.CanAccessRun(ctx, rbac.PutChunkAction, chunk.RunID)
 	if err != nil {
 		return err
 	}
@@ -399,7 +400,7 @@ func (a *Application) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (a *Application) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
-	subject, err := a.CanAccessRun(ctx, otf.TailLogsAction, opts.RunID)
+	subject, err := a.CanAccessRun(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
 )
 
@@ -305,7 +306,7 @@ type WorkspaceConnectionService interface {
 }
 
 type WorkspacePermissionService interface {
-	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role Role) error
+	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
 	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
 	UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 }

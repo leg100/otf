@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -163,16 +164,16 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		*otf.Workspace
 		Permissions []*otf.WorkspacePermission
 		Teams       []*otf.Team
-		Roles       []otf.Role
+		Roles       []rbac.Role
 	}{
 		Workspace:   workspace,
 		Permissions: perms,
 		Teams:       teams,
-		Roles: []otf.Role{
-			otf.WorkspaceReadRole,
-			otf.WorkspacePlanRole,
-			otf.WorkspaceWriteRole,
-			otf.WorkspaceAdminRole,
+		Roles: []rbac.Role{
+			rbac.WorkspaceReadRole,
+			rbac.WorkspacePlanRole,
+			rbac.WorkspaceWriteRole,
+			rbac.WorkspaceAdminRole,
 		},
 	})
 }
