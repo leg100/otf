@@ -1,4 +1,4 @@
-package otf
+package triggerer
 
 import (
 	"context"
@@ -6,21 +6,21 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTriggerer(t *testing.T) {
-	org := NewTestOrganization(t)
-	provider := NewTestVCSProvider(t, org)
-	hook := NewTestWebhook(t, cloud.NewTestRepo(), "fake-cloud")
-	repo := NewTestWorkspaceRepo(provider, hook)
+	org := otf.NewTestOrganization(t)
+	provider := otf.NewTestVCSProvider(t, org)
+	repo := otf.NewTestWorkspaceRepo(provider)
 	app := &fakeTriggererApp{
-		workspaces: []*Workspace{
-			NewTestWorkspace(t, org, WithRepo(repo)),
-			NewTestWorkspace(t, org, WithRepo(repo)),
-			NewTestWorkspace(t, org, WithRepo(repo)),
+		workspaces: []*otf.Workspace{
+			otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
 		},
 	}
 	triggerer := Triggerer{
@@ -37,18 +37,18 @@ func TestTriggerer(t *testing.T) {
 }
 
 type fakeTriggererApp struct {
-	workspaces []*Workspace
-	created    []*ConfigurationVersion // created config versions
+	workspaces []*otf.Workspace
+	created    []*otf.ConfigurationVersion // created config versions
 
-	Application
+	otf.Application
 }
 
-func (f *fakeTriggererApp) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+func (f *fakeTriggererApp) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
 	return f.workspaces, nil
 }
 
-func (f *fakeTriggererApp) CreateConfigurationVersion(ctx context.Context, wid string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
-	cv, err := NewConfigurationVersion(wid, opts)
+func (f *fakeTriggererApp) CreateConfigurationVersion(ctx context.Context, wid string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+	cv, err := otf.NewConfigurationVersion(wid, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (f *fakeTriggererApp) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeTriggererApp) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
+func (f *fakeTriggererApp) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
 	return nil, nil
 }
 

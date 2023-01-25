@@ -21,7 +21,7 @@ func (db *DB) PutChunk(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk
 		Offset: chunk.Offset,
 	})
 	if err != nil {
-		return otf.PersistedChunk{}, databaseError(err)
+		return otf.PersistedChunk{}, Error(err)
 	}
 	return otf.PersistedChunk{
 		ChunkID: id,
@@ -43,7 +43,7 @@ func (db *DB) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk
 		Limit:  opts.Limit,
 	})
 	if err != nil {
-		return otf.Chunk{}, databaseError(err)
+		return otf.Chunk{}, Error(err)
 	}
 	return otf.Chunk{
 		RunID:  opts.RunID,
@@ -57,7 +57,7 @@ func (db *DB) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk
 func (db *DB) GetChunkByID(ctx context.Context, chunkID int) (otf.PersistedChunk, error) {
 	chunk, err := db.FindLogChunkByID(ctx, chunkID)
 	if err != nil {
-		return otf.PersistedChunk{}, databaseError(err)
+		return otf.PersistedChunk{}, Error(err)
 	}
 	return otf.PersistedChunk{
 		ChunkID: chunkID,

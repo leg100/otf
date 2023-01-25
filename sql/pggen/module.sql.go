@@ -563,34 +563,34 @@ func (q *DBQuerier) FindModuleByWebhookIDScan(results pgx.BatchResults) (FindMod
 	return item, nil
 }
 
-const updateModuleStatusSQL = `UPDATE modules
+const updateModuleStatusByIDSQL = `UPDATE modules
 SET status = $1
 WHERE module_id = $2
 RETURNING module_id
 ;`
 
-// UpdateModuleStatus implements Querier.UpdateModuleStatus.
-func (q *DBQuerier) UpdateModuleStatus(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateModuleStatus")
-	row := q.conn.QueryRow(ctx, updateModuleStatusSQL, status, moduleID)
+// UpdateModuleStatusByID implements Querier.UpdateModuleStatusByID.
+func (q *DBQuerier) UpdateModuleStatusByID(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateModuleStatusByID")
+	row := q.conn.QueryRow(ctx, updateModuleStatusByIDSQL, status, moduleID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateModuleStatus: %w", err)
+		return item, fmt.Errorf("query UpdateModuleStatusByID: %w", err)
 	}
 	return item, nil
 }
 
-// UpdateModuleStatusBatch implements Querier.UpdateModuleStatusBatch.
-func (q *DBQuerier) UpdateModuleStatusBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text) {
-	batch.Queue(updateModuleStatusSQL, status, moduleID)
+// UpdateModuleStatusByIDBatch implements Querier.UpdateModuleStatusByIDBatch.
+func (q *DBQuerier) UpdateModuleStatusByIDBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text) {
+	batch.Queue(updateModuleStatusByIDSQL, status, moduleID)
 }
 
-// UpdateModuleStatusScan implements Querier.UpdateModuleStatusScan.
-func (q *DBQuerier) UpdateModuleStatusScan(results pgx.BatchResults) (pgtype.Text, error) {
+// UpdateModuleStatusByIDScan implements Querier.UpdateModuleStatusByIDScan.
+func (q *DBQuerier) UpdateModuleStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateModuleStatusBatch row: %w", err)
+		return item, fmt.Errorf("scan UpdateModuleStatusByIDBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -661,7 +661,7 @@ func (q *DBQuerier) FindModuleTarballScan(results pgx.BatchResults) ([]byte, err
 	return item, nil
 }
 
-const updateModuleVersionStatusSQL = `UPDATE module_versions
+const updateModuleVersionStatusByIDSQL = `UPDATE module_versions
 SET
     status = $1,
     status_error = $2
@@ -669,13 +669,13 @@ WHERE module_version_id = $3
 RETURNING *
 ;`
 
-type UpdateModuleVersionStatusParams struct {
+type UpdateModuleVersionStatusByIDParams struct {
 	Status          pgtype.Text
 	StatusError     pgtype.Text
 	ModuleVersionID pgtype.Text
 }
 
-type UpdateModuleVersionStatusRow struct {
+type UpdateModuleVersionStatusByIDRow struct {
 	ModuleVersionID pgtype.Text        `json:"module_version_id"`
 	Version         pgtype.Text        `json:"version"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
@@ -685,28 +685,28 @@ type UpdateModuleVersionStatusRow struct {
 	ModuleID        pgtype.Text        `json:"module_id"`
 }
 
-// UpdateModuleVersionStatus implements Querier.UpdateModuleVersionStatus.
-func (q *DBQuerier) UpdateModuleVersionStatus(ctx context.Context, params UpdateModuleVersionStatusParams) (UpdateModuleVersionStatusRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateModuleVersionStatus")
-	row := q.conn.QueryRow(ctx, updateModuleVersionStatusSQL, params.Status, params.StatusError, params.ModuleVersionID)
-	var item UpdateModuleVersionStatusRow
+// UpdateModuleVersionStatusByID implements Querier.UpdateModuleVersionStatusByID.
+func (q *DBQuerier) UpdateModuleVersionStatusByID(ctx context.Context, params UpdateModuleVersionStatusByIDParams) (UpdateModuleVersionStatusByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateModuleVersionStatusByID")
+	row := q.conn.QueryRow(ctx, updateModuleVersionStatusByIDSQL, params.Status, params.StatusError, params.ModuleVersionID)
+	var item UpdateModuleVersionStatusByIDRow
 	if err := row.Scan(&item.ModuleVersionID, &item.Version, &item.CreatedAt, &item.UpdatedAt, &item.Status, &item.StatusError, &item.ModuleID); err != nil {
-		return item, fmt.Errorf("query UpdateModuleVersionStatus: %w", err)
+		return item, fmt.Errorf("query UpdateModuleVersionStatusByID: %w", err)
 	}
 	return item, nil
 }
 
-// UpdateModuleVersionStatusBatch implements Querier.UpdateModuleVersionStatusBatch.
-func (q *DBQuerier) UpdateModuleVersionStatusBatch(batch genericBatch, params UpdateModuleVersionStatusParams) {
-	batch.Queue(updateModuleVersionStatusSQL, params.Status, params.StatusError, params.ModuleVersionID)
+// UpdateModuleVersionStatusByIDBatch implements Querier.UpdateModuleVersionStatusByIDBatch.
+func (q *DBQuerier) UpdateModuleVersionStatusByIDBatch(batch genericBatch, params UpdateModuleVersionStatusByIDParams) {
+	batch.Queue(updateModuleVersionStatusByIDSQL, params.Status, params.StatusError, params.ModuleVersionID)
 }
 
-// UpdateModuleVersionStatusScan implements Querier.UpdateModuleVersionStatusScan.
-func (q *DBQuerier) UpdateModuleVersionStatusScan(results pgx.BatchResults) (UpdateModuleVersionStatusRow, error) {
+// UpdateModuleVersionStatusByIDScan implements Querier.UpdateModuleVersionStatusByIDScan.
+func (q *DBQuerier) UpdateModuleVersionStatusByIDScan(results pgx.BatchResults) (UpdateModuleVersionStatusByIDRow, error) {
 	row := results.QueryRow()
-	var item UpdateModuleVersionStatusRow
+	var item UpdateModuleVersionStatusByIDRow
 	if err := row.Scan(&item.ModuleVersionID, &item.Version, &item.CreatedAt, &item.UpdatedAt, &item.Status, &item.StatusError, &item.ModuleID); err != nil {
-		return item, fmt.Errorf("scan UpdateModuleVersionStatusBatch row: %w", err)
+		return item, fmt.Errorf("scan UpdateModuleVersionStatusByIDBatch row: %w", err)
 	}
 	return item, nil
 }

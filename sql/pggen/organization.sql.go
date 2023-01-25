@@ -403,33 +403,33 @@ func (q *DBQuerier) UpdateOrganizationByNameScan(results pgx.BatchResults) (pgty
 	return item, nil
 }
 
-const deleteOrganizationSQL = `DELETE
+const deleteOrganizationByNameSQL = `DELETE
 FROM organizations
 WHERE name = $1
 RETURNING organization_id;`
 
-// DeleteOrganization implements Querier.DeleteOrganization.
-func (q *DBQuerier) DeleteOrganization(ctx context.Context, name pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteOrganization")
-	row := q.conn.QueryRow(ctx, deleteOrganizationSQL, name)
+// DeleteOrganizationByName implements Querier.DeleteOrganizationByName.
+func (q *DBQuerier) DeleteOrganizationByName(ctx context.Context, name pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteOrganizationByName")
+	row := q.conn.QueryRow(ctx, deleteOrganizationByNameSQL, name)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query DeleteOrganization: %w", err)
+		return item, fmt.Errorf("query DeleteOrganizationByName: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteOrganizationBatch implements Querier.DeleteOrganizationBatch.
-func (q *DBQuerier) DeleteOrganizationBatch(batch genericBatch, name pgtype.Text) {
-	batch.Queue(deleteOrganizationSQL, name)
+// DeleteOrganizationByNameBatch implements Querier.DeleteOrganizationByNameBatch.
+func (q *DBQuerier) DeleteOrganizationByNameBatch(batch genericBatch, name pgtype.Text) {
+	batch.Queue(deleteOrganizationByNameSQL, name)
 }
 
-// DeleteOrganizationScan implements Querier.DeleteOrganizationScan.
-func (q *DBQuerier) DeleteOrganizationScan(results pgx.BatchResults) (pgtype.Text, error) {
+// DeleteOrganizationByNameScan implements Querier.DeleteOrganizationByNameScan.
+func (q *DBQuerier) DeleteOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan DeleteOrganizationBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteOrganizationByNameBatch row: %w", err)
 	}
 	return item, nil
 }

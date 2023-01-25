@@ -14,7 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 const (
@@ -60,7 +62,7 @@ type Application interface {
 	ModuleVersionService
 	HostnameService
 	VariableService
-	WebhookService
+	HookService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -70,7 +72,8 @@ type LockableApplication interface {
 
 // DB provides access to otf database
 type DB interface {
-	// Tx provides a transaction within which to operate on the store.
+	Database
+
 	Tx(ctx context.Context, tx func(DB) error) error
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
@@ -88,10 +91,20 @@ type DB interface {
 	ChunkStore
 	AgentTokenStore
 	VCSProviderStore
-	WebhookStore
 	ModuleStore
 	ModuleVersionStore
 	VariableStore
+}
+
+// Database provides access to generated SQL queries as well as wrappers for
+// performing queries within a transaction or a lock.
+type Database interface {
+	pggen.Querier // generated SQL queries
+
+	// Tx provides a transaction within which to operate on the store.
+	Transaction(ctx context.Context, tx func(Database) error) error
+	// WaitAndLock obtains a DB with a session-level advisory lock.
+	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 }
 
 // Unmarshaler unmarshals database rows
@@ -113,6 +126,7 @@ func Int64(i int64) *int64        { return &i }
 func UInt(i uint) *uint           { return &i }
 func Bool(b bool) *bool           { return &b }
 func Time(t time.Time) *time.Time { return &t }
+func UUID(u uuid.UUID) *uuid.UUID { return &u }
 
 // CurrentTimestamp is *the* way to get a current timestamps in otf and
 // time.Now() should be avoided.

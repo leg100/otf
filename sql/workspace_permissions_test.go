@@ -11,7 +11,7 @@ import (
 
 func TestWorkspacePermissions_Set(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	team := createTestTeam(t, db, org)
@@ -27,7 +27,7 @@ func TestWorkspacePermissions_Set(t *testing.T) {
 
 func TestWorkspacePermissions_List(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	team1 := createTestTeam(t, db, org)
@@ -45,7 +45,7 @@ func TestWorkspacePermissions_List(t *testing.T) {
 
 func TestWorkspacePermissions_Unset(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	team := createTestTeam(t, db, org)

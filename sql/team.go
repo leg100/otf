@@ -15,7 +15,7 @@ func (db *DB) CreateTeam(ctx context.Context, team *otf.Team) error {
 		CreatedAt:        Timestamptz(team.CreatedAt()),
 		OrganizationName: String(team.Organization()),
 	})
-	return databaseError(err)
+	return Error(err)
 }
 
 func (db *DB) UpdateTeam(ctx context.Context, teamID string, fn func(*otf.Team) error) (*otf.Team, error) {
@@ -53,7 +53,7 @@ func (db *DB) UpdateTeam(ctx context.Context, teamID string, fn func(*otf.Team) 
 func (db *DB) GetTeam(ctx context.Context, name, organization string) (*otf.Team, error) {
 	result, err := db.FindTeamByName(ctx, String(name), String(organization))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
 }
@@ -62,7 +62,7 @@ func (db *DB) GetTeam(ctx context.Context, name, organization string) (*otf.Team
 func (db *DB) GetTeamByID(ctx context.Context, id string) (*otf.Team, error) {
 	result, err := db.FindTeamByID(ctx, String(id))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
 }
@@ -96,7 +96,7 @@ func (db *DB) ListTeamMembers(ctx context.Context, teamID string) ([]*otf.User, 
 func (db *DB) AddTeamMembership(ctx context.Context, userID, teamID string) error {
 	_, err := db.InsertTeamMembership(ctx, String(userID), String(teamID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func (db *DB) AddTeamMembership(ctx context.Context, userID, teamID string) erro
 func (db *DB) RemoveTeamMembership(ctx context.Context, userID, teamID string) error {
 	_, err := db.DeleteTeamMembership(ctx, String(userID), String(teamID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (db *DB) RemoveTeamMembership(ctx context.Context, userID, teamID string) e
 func (db *DB) DeleteTeam(ctx context.Context, teamID string) error {
 	_, err := db.DeleteTeamByID(ctx, String(teamID))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

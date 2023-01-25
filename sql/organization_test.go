@@ -11,7 +11,7 @@ import (
 )
 
 func TestOrganization_Create(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := otf.NewTestOrganization(t)
 
 	t.Cleanup(func() {
@@ -28,7 +28,7 @@ func TestOrganization_Create(t *testing.T) {
 }
 
 func TestOrganization_Update(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 
 	newName := uuid.NewString()
@@ -43,7 +43,7 @@ func TestOrganization_Update(t *testing.T) {
 
 func TestOrganization_Get(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 
 	t.Run("by name", func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestOrganization_Get(t *testing.T) {
 }
 
 func TestOrganization_List(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 
 	ol, err := db.ListOrganizations(context.Background(), otf.OrganizationListOptions{})
@@ -74,7 +74,7 @@ func TestOrganization_List(t *testing.T) {
 }
 
 func TestOrganization_ListWithPagination(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	_ = createTestOrganization(t, db)
 	_ = createTestOrganization(t, db)
 
@@ -101,7 +101,7 @@ func TestOrganization_ListWithPagination(t *testing.T) {
 }
 
 func TestListUserOrganizations(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org1 := createTestOrganization(t, db)
 	org2 := createTestOrganization(t, db)
 	user := createTestUser(t, db,
@@ -115,7 +115,7 @@ func TestListUserOrganizations(t *testing.T) {
 }
 
 func TestOrganization_Delete(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 
 	require.NoError(t, db.DeleteOrganization(context.Background(), org.Name()))
@@ -125,7 +125,7 @@ func TestOrganization_Delete(t *testing.T) {
 }
 
 func TestOrganization_DeleteError(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	_ = createTestOrganization(t, db)
 
 	err := db.DeleteOrganization(context.Background(), "non-existent-org")

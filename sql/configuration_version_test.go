@@ -10,7 +10,7 @@ import (
 )
 
 func TestConfigurationVersion_Create(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
@@ -20,7 +20,7 @@ func TestConfigurationVersion_Create(t *testing.T) {
 }
 
 func TestConfigurationVersion_Update(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
@@ -38,7 +38,7 @@ func TestConfigurationVersion_Update(t *testing.T) {
 }
 
 func TestConfigurationVersion_Get(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
@@ -67,7 +67,7 @@ func TestConfigurationVersion_Get(t *testing.T) {
 }
 
 func TestConfigurationVersion_List(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 

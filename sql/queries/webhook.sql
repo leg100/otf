@@ -42,7 +42,7 @@ WHERE webhook_id = pggen.arg('webhook_id')
 RETURNING *
 ;
 
--- name: DeleteWebhook :one
+-- name: DeleteWebhookByID :one
 DELETE
 FROM webhooks
 WHERE webhook_id = pggen.arg('webhook_id')

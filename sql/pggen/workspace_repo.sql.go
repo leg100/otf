@@ -86,41 +86,41 @@ func (q *DBQuerier) UpdateWorkspaceRepoByIDScan(results pgx.BatchResults) (pgtyp
 	return item, nil
 }
 
-const deleteWorkspaceRepoSQL = `DELETE
+const deleteWorkspaceRepoByIDSQL = `DELETE
 FROM workspace_repos
 WHERE workspace_id = $1
 RETURNING *
 ;`
 
-type DeleteWorkspaceRepoRow struct {
+type DeleteWorkspaceRepoByIDRow struct {
 	Branch        pgtype.Text `json:"branch"`
 	WebhookID     pgtype.UUID `json:"webhook_id"`
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	WorkspaceID   pgtype.Text `json:"workspace_id"`
 }
 
-// DeleteWorkspaceRepo implements Querier.DeleteWorkspaceRepo.
-func (q *DBQuerier) DeleteWorkspaceRepo(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceRepoRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceRepo")
-	row := q.conn.QueryRow(ctx, deleteWorkspaceRepoSQL, workspaceID)
-	var item DeleteWorkspaceRepoRow
+// DeleteWorkspaceRepoByID implements Querier.DeleteWorkspaceRepoByID.
+func (q *DBQuerier) DeleteWorkspaceRepoByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceRepoByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceRepoByID")
+	row := q.conn.QueryRow(ctx, deleteWorkspaceRepoByIDSQL, workspaceID)
+	var item DeleteWorkspaceRepoByIDRow
 	if err := row.Scan(&item.Branch, &item.WebhookID, &item.VCSProviderID, &item.WorkspaceID); err != nil {
-		return item, fmt.Errorf("query DeleteWorkspaceRepo: %w", err)
+		return item, fmt.Errorf("query DeleteWorkspaceRepoByID: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteWorkspaceRepoBatch implements Querier.DeleteWorkspaceRepoBatch.
-func (q *DBQuerier) DeleteWorkspaceRepoBatch(batch genericBatch, workspaceID pgtype.Text) {
-	batch.Queue(deleteWorkspaceRepoSQL, workspaceID)
+// DeleteWorkspaceRepoByIDBatch implements Querier.DeleteWorkspaceRepoByIDBatch.
+func (q *DBQuerier) DeleteWorkspaceRepoByIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(deleteWorkspaceRepoByIDSQL, workspaceID)
 }
 
-// DeleteWorkspaceRepoScan implements Querier.DeleteWorkspaceRepoScan.
-func (q *DBQuerier) DeleteWorkspaceRepoScan(results pgx.BatchResults) (DeleteWorkspaceRepoRow, error) {
+// DeleteWorkspaceRepoByIDScan implements Querier.DeleteWorkspaceRepoByIDScan.
+func (q *DBQuerier) DeleteWorkspaceRepoByIDScan(results pgx.BatchResults) (DeleteWorkspaceRepoByIDRow, error) {
 	row := results.QueryRow()
-	var item DeleteWorkspaceRepoRow
+	var item DeleteWorkspaceRepoByIDRow
 	if err := row.Scan(&item.Branch, &item.WebhookID, &item.VCSProviderID, &item.WorkspaceID); err != nil {
-		return item, fmt.Errorf("scan DeleteWorkspaceRepoBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteWorkspaceRepoByIDBatch row: %w", err)
 	}
 	return item, nil
 }

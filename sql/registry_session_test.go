@@ -13,7 +13,7 @@ import (
 func TestRegistrySession_Create(t *testing.T) {
 	ctx := context.Background()
 
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 
 	session := otf.NewTestRegistrySession(t, org)
@@ -25,7 +25,7 @@ func TestRegistrySession_Create(t *testing.T) {
 func TestRegistrySession_Get(t *testing.T) {
 	ctx := context.Background()
 
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	want := createTestRegistrySession(t, db, org)
 
@@ -38,7 +38,7 @@ func TestRegistrySession_Get(t *testing.T) {
 func TestRegistrySession_Cleanup(t *testing.T) {
 	ctx := context.Background()
 
-	db := newTestDB(t, overrideCleanupInterval(100*time.Millisecond))
+	db := NewTestDB(t, overrideCleanupInterval(100*time.Millisecond))
 	org := createTestOrganization(t, db)
 
 	session1 := createTestRegistrySession(t, db, org, otf.OverrideTestRegistrySessionExpiry(time.Now()))

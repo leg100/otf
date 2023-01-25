@@ -22,7 +22,7 @@ func (db *DB) CreateAgentToken(ctx context.Context, token *otf.AgentToken) error
 func (db *DB) ListAgentTokens(ctx context.Context, organizationName string) ([]*otf.AgentToken, error) {
 	rows, err := db.FindAgentTokens(ctx, String(organizationName))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	var unmarshalled []*otf.AgentToken
 	for _, r := range rows {
@@ -34,7 +34,7 @@ func (db *DB) ListAgentTokens(ctx context.Context, organizationName string) ([]*
 func (db *DB) GetAgentTokenByID(ctx context.Context, id string) (*otf.AgentToken, error) {
 	r, err := db.FindAgentTokenByID(ctx, String(id))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalAgentTokenResult(otf.AgentTokenRow(r)), nil
 }
@@ -42,7 +42,7 @@ func (db *DB) GetAgentTokenByID(ctx context.Context, id string) (*otf.AgentToken
 func (db *DB) GetAgentTokenByToken(ctx context.Context, token string) (*otf.AgentToken, error) {
 	r, err := db.FindAgentTokenByToken(ctx, String(token))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalAgentTokenResult(otf.AgentTokenRow(r)), nil
 }
@@ -51,7 +51,7 @@ func (db *DB) GetAgentTokenByToken(ctx context.Context, token string) (*otf.Agen
 func (db *DB) DeleteAgentToken(ctx context.Context, id string) error {
 	_, err := db.DeleteAgentTokenByID(ctx, String(id))
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }

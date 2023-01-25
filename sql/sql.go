@@ -29,7 +29,7 @@ func Timestamptz(t time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t, Status: pgtype.Present}
 }
 
-func databaseError(err error) error {
+func Error(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
 	case noRowsInResultError(err):

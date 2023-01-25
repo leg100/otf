@@ -14,13 +14,13 @@ func (db *DB) CreateRegistrySession(ctx context.Context, session *otf.RegistrySe
 		Expiry:           Timestamptz(session.Expiry()),
 		OrganizationName: String(session.Organization()),
 	})
-	return databaseError(err)
+	return Error(err)
 }
 
 func (db *DB) GetRegistrySession(ctx context.Context, token string) (*otf.RegistrySession, error) {
 	row, err := db.FindRegistrySession(ctx, String(token))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalRegistrySessionRow(otf.RegistrySessionRow(row)), nil
 }

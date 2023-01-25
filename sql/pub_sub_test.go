@@ -14,7 +14,7 @@ import (
 // TestPubSub_E2E tests that one pubsub process can publish a message and that
 // another pubsub process can receive it.
 func TestPubSub_E2E(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})

@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/allegro/bigcache v1.2.1
 	github.com/buildkite/terminal-to-html v3.2.0+incompatible
 	github.com/chromedp/cdproto v0.0.0-20220827030233-358ed4af73cf

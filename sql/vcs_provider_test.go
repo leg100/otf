@@ -10,7 +10,7 @@ import (
 
 func TestVCSProvider_Create(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	provider := newTestVCSProvider(t, org)
 
@@ -22,7 +22,7 @@ func TestVCSProvider_Create(t *testing.T) {
 
 func TestVCSProvider_Get(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	want := createTestVCSProvider(t, db, org)
 
@@ -34,7 +34,7 @@ func TestVCSProvider_Get(t *testing.T) {
 
 func TestVCSProvider_List(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	provider1 := createTestVCSProvider(t, db, org)
 	provider2 := createTestVCSProvider(t, db, org)
@@ -50,7 +50,7 @@ func TestVCSProvider_List(t *testing.T) {
 
 func TestVCSProvider_Delete(t *testing.T) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	provider := createTestVCSProvider(t, db, org)
 

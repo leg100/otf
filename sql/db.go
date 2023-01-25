@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"time"
 
@@ -88,16 +89,12 @@ func (db *DB) Close() {
 	}
 }
 
-func (db *DB) Pool() *pgxpool.Pool {
-	pool, ok := db.conn.(*pgxpool.Pool)
-	if ok {
-		return pool
-	}
-	return nil
-}
-
 func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) error {
-	conn, err := db.Pool().Acquire(ctx)
+	pool, ok := db.conn.(*pgxpool.Pool)
+	if !ok {
+		return errors.New("db connection must be a pool")
+	}
+	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
@@ -116,6 +113,31 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 	return db.tx(ctx, func(tx *DB) error {
 		return callback(tx)
 	})
+}
+
+type Tx interface {
+	Transaction(ctx context.Context, callback func(otf.Database) error) error
+}
+
+// Transaction provides the caller with a callback in which all operations are conducted
+// within a transaction.
+func (db *DB) Transaction(ctx context.Context, callback func(otf.Database) error) error {
+	return db.transaction(ctx, func(tx otf.Database) error {
+		return callback(tx)
+	})
+}
+
+func (db *DB) transaction(ctx context.Context, callback func(otf.Database) error) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if err := callback(db.copy(tx)); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (db *DB) tx(ctx context.Context, callback func(*DB) error) error {

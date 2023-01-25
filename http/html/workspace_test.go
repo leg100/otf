@@ -268,7 +268,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
+		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
 	}
 }
 
@@ -370,8 +370,8 @@ func (f *fakeWorkspaceHandlerApp) ListVCSProviders(context.Context, string) ([]*
 	return f.providers, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ConnectWorkspace(context.Context, string, otf.ConnectWorkspaceOptions) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
+func (f *fakeWorkspaceHandlerApp) ConnectWorkspace(context.Context, string, otf.ConnectWorkspaceOptions) error {
+	return nil
 }
 
 func (f *fakeWorkspaceHandlerApp) DisconnectWorkspace(context.Context, string) (*otf.Workspace, error) {

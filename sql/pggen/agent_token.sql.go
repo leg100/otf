@@ -214,12 +214,12 @@ type Querier interface {
 	// FindModuleByWebhookIDScan scans the result of an executed FindModuleByWebhookIDBatch query.
 	FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error)
 
-	UpdateModuleStatus(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
-	// UpdateModuleStatusBatch enqueues a UpdateModuleStatus query into batch to be executed
+	UpdateModuleStatusByID(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
+	// UpdateModuleStatusByIDBatch enqueues a UpdateModuleStatusByID query into batch to be executed
 	// later by the batch.
-	UpdateModuleStatusBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text)
-	// UpdateModuleStatusScan scans the result of an executed UpdateModuleStatusBatch query.
-	UpdateModuleStatusScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateModuleStatusByIDBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text)
+	// UpdateModuleStatusByIDScan scans the result of an executed UpdateModuleStatusByIDBatch query.
+	UpdateModuleStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error)
 	// InsertModuleTarballBatch enqueues a InsertModuleTarball query into batch to be executed
@@ -235,12 +235,12 @@ type Querier interface {
 	// FindModuleTarballScan scans the result of an executed FindModuleTarballBatch query.
 	FindModuleTarballScan(results pgx.BatchResults) ([]byte, error)
 
-	UpdateModuleVersionStatus(ctx context.Context, params UpdateModuleVersionStatusParams) (UpdateModuleVersionStatusRow, error)
-	// UpdateModuleVersionStatusBatch enqueues a UpdateModuleVersionStatus query into batch to be executed
+	UpdateModuleVersionStatusByID(ctx context.Context, params UpdateModuleVersionStatusByIDParams) (UpdateModuleVersionStatusByIDRow, error)
+	// UpdateModuleVersionStatusByIDBatch enqueues a UpdateModuleVersionStatusByID query into batch to be executed
 	// later by the batch.
-	UpdateModuleVersionStatusBatch(batch genericBatch, params UpdateModuleVersionStatusParams)
-	// UpdateModuleVersionStatusScan scans the result of an executed UpdateModuleVersionStatusBatch query.
-	UpdateModuleVersionStatusScan(results pgx.BatchResults) (UpdateModuleVersionStatusRow, error)
+	UpdateModuleVersionStatusByIDBatch(batch genericBatch, params UpdateModuleVersionStatusByIDParams)
+	// UpdateModuleVersionStatusByIDScan scans the result of an executed UpdateModuleVersionStatusByIDBatch query.
+	UpdateModuleVersionStatusByIDScan(results pgx.BatchResults) (UpdateModuleVersionStatusByIDRow, error)
 
 	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
 	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
@@ -312,12 +312,12 @@ type Querier interface {
 	// UpdateOrganizationByNameScan scans the result of an executed UpdateOrganizationByNameBatch query.
 	UpdateOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteOrganization(ctx context.Context, name pgtype.Text) (pgtype.Text, error)
-	// DeleteOrganizationBatch enqueues a DeleteOrganization query into batch to be executed
+	DeleteOrganizationByName(ctx context.Context, name pgtype.Text) (pgtype.Text, error)
+	// DeleteOrganizationByNameBatch enqueues a DeleteOrganizationByName query into batch to be executed
 	// later by the batch.
-	DeleteOrganizationBatch(batch genericBatch, name pgtype.Text)
-	// DeleteOrganizationScan scans the result of an executed DeleteOrganizationBatch query.
-	DeleteOrganizationScan(results pgx.BatchResults) (pgtype.Text, error)
+	DeleteOrganizationByNameBatch(batch genericBatch, name pgtype.Text)
+	// DeleteOrganizationByNameScan scans the result of an executed DeleteOrganizationByNameBatch query.
+	DeleteOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
 	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
@@ -480,12 +480,12 @@ type Querier interface {
 	// PutLockFileScan scans the result of an executed PutLockFileBatch query.
 	PutLockFileScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	GetLockFile(ctx context.Context, runID pgtype.Text) ([]byte, error)
-	// GetLockFileBatch enqueues a GetLockFile query into batch to be executed
+	GetLockFileByID(ctx context.Context, runID pgtype.Text) ([]byte, error)
+	// GetLockFileByIDBatch enqueues a GetLockFileByID query into batch to be executed
 	// later by the batch.
-	GetLockFileBatch(batch genericBatch, runID pgtype.Text)
-	// GetLockFileScan scans the result of an executed GetLockFileBatch query.
-	GetLockFileScan(results pgx.BatchResults) ([]byte, error)
+	GetLockFileByIDBatch(batch genericBatch, runID pgtype.Text)
+	// GetLockFileByIDScan scans the result of an executed GetLockFileByIDBatch query.
+	GetLockFileByIDScan(results pgx.BatchResults) ([]byte, error)
 
 	UpdateRunStatus(ctx context.Context, status pgtype.Text, id pgtype.Text) (pgtype.Text, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
@@ -795,19 +795,19 @@ type Querier interface {
 	// FindVariableForUpdateScan scans the result of an executed FindVariableForUpdateBatch query.
 	FindVariableForUpdateScan(results pgx.BatchResults) (FindVariableForUpdateRow, error)
 
-	UpdateVariable(ctx context.Context, params UpdateVariableParams) (pgtype.Text, error)
-	// UpdateVariableBatch enqueues a UpdateVariable query into batch to be executed
+	UpdateVariableByID(ctx context.Context, params UpdateVariableByIDParams) (pgtype.Text, error)
+	// UpdateVariableByIDBatch enqueues a UpdateVariableByID query into batch to be executed
 	// later by the batch.
-	UpdateVariableBatch(batch genericBatch, params UpdateVariableParams)
-	// UpdateVariableScan scans the result of an executed UpdateVariableBatch query.
-	UpdateVariableScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateVariableByIDBatch(batch genericBatch, params UpdateVariableByIDParams)
+	// UpdateVariableByIDScan scans the result of an executed UpdateVariableByIDBatch query.
+	UpdateVariableByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteVariable(ctx context.Context, variableID pgtype.Text) (DeleteVariableRow, error)
-	// DeleteVariableBatch enqueues a DeleteVariable query into batch to be executed
+	DeleteVariableByID(ctx context.Context, variableID pgtype.Text) (DeleteVariableByIDRow, error)
+	// DeleteVariableByIDBatch enqueues a DeleteVariableByID query into batch to be executed
 	// later by the batch.
-	DeleteVariableBatch(batch genericBatch, variableID pgtype.Text)
-	// DeleteVariableScan scans the result of an executed DeleteVariableBatch query.
-	DeleteVariableScan(results pgx.BatchResults) (DeleteVariableRow, error)
+	DeleteVariableByIDBatch(batch genericBatch, variableID pgtype.Text)
+	// DeleteVariableByIDScan scans the result of an executed DeleteVariableByIDBatch query.
+	DeleteVariableByIDScan(results pgx.BatchResults) (DeleteVariableByIDRow, error)
 
 	InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error)
 	// InsertVCSProviderBatch enqueues a InsertVCSProvider query into batch to be executed
@@ -872,12 +872,12 @@ type Querier interface {
 	// DisconnectWebhookScan scans the result of an executed DisconnectWebhookBatch query.
 	DisconnectWebhookScan(results pgx.BatchResults) (DisconnectWebhookRow, error)
 
-	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookRow, error)
-	// DeleteWebhookBatch enqueues a DeleteWebhook query into batch to be executed
+	DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookByIDRow, error)
+	// DeleteWebhookByIDBatch enqueues a DeleteWebhookByID query into batch to be executed
 	// later by the batch.
-	DeleteWebhookBatch(batch genericBatch, webhookID pgtype.UUID)
-	// DeleteWebhookScan scans the result of an executed DeleteWebhookBatch query.
-	DeleteWebhookScan(results pgx.BatchResults) (DeleteWebhookRow, error)
+	DeleteWebhookByIDBatch(batch genericBatch, webhookID pgtype.UUID)
+	// DeleteWebhookByIDScan scans the result of an executed DeleteWebhookByIDBatch query.
+	DeleteWebhookByIDScan(results pgx.BatchResults) (DeleteWebhookByIDRow, error)
 
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
@@ -1047,12 +1047,12 @@ type Querier interface {
 	// UpdateWorkspaceRepoByIDScan scans the result of an executed UpdateWorkspaceRepoByIDBatch query.
 	UpdateWorkspaceRepoByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteWorkspaceRepo(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceRepoRow, error)
-	// DeleteWorkspaceRepoBatch enqueues a DeleteWorkspaceRepo query into batch to be executed
+	DeleteWorkspaceRepoByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceRepoByIDRow, error)
+	// DeleteWorkspaceRepoByIDBatch enqueues a DeleteWorkspaceRepoByID query into batch to be executed
 	// later by the batch.
-	DeleteWorkspaceRepoBatch(batch genericBatch, workspaceID pgtype.Text)
-	// DeleteWorkspaceRepoScan scans the result of an executed DeleteWorkspaceRepoBatch query.
-	DeleteWorkspaceRepoScan(results pgx.BatchResults) (DeleteWorkspaceRepoRow, error)
+	DeleteWorkspaceRepoByIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// DeleteWorkspaceRepoByIDScan scans the result of an executed DeleteWorkspaceRepoByIDBatch query.
+	DeleteWorkspaceRepoByIDScan(results pgx.BatchResults) (DeleteWorkspaceRepoByIDRow, error)
 }
 
 type DBQuerier struct {
@@ -1211,8 +1211,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateModuleStatusSQL, updateModuleStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateModuleStatus': %w", err)
+	if _, err := p.Prepare(ctx, updateModuleStatusByIDSQL, updateModuleStatusByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleStatusByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleTarballSQL, insertModuleTarballSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModuleTarball': %w", err)
@@ -1220,8 +1220,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findModuleTarballSQL, findModuleTarballSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleTarball': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateModuleVersionStatusSQL, updateModuleVersionStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateModuleVersionStatus': %w", err)
+	if _, err := p.Prepare(ctx, updateModuleVersionStatusByIDSQL, updateModuleVersionStatusByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleVersionStatusByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
@@ -1253,8 +1253,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateOrganizationByNameSQL, updateOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateOrganizationByName': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteOrganizationSQL, deleteOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteOrganization': %w", err)
+	if _, err := p.Prepare(ctx, deleteOrganizationByNameSQL, deleteOrganizationByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteOrganizationByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertOrganizationMembershipSQL, insertOrganizationMembershipSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertOrganizationMembership': %w", err)
@@ -1325,8 +1325,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, putLockFileSQL, putLockFileSQL); err != nil {
 		return fmt.Errorf("prepare query 'PutLockFile': %w", err)
 	}
-	if _, err := p.Prepare(ctx, getLockFileSQL, getLockFileSQL); err != nil {
-		return fmt.Errorf("prepare query 'GetLockFile': %w", err)
+	if _, err := p.Prepare(ctx, getLockFileByIDSQL, getLockFileByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'GetLockFileByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
@@ -1460,11 +1460,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findVariableForUpdateSQL, findVariableForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableForUpdate': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateVariableSQL, updateVariableSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateVariable': %w", err)
+	if _, err := p.Prepare(ctx, updateVariableByIDSQL, updateVariableByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateVariableByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteVariableSQL, deleteVariableSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteVariable': %w", err)
+	if _, err := p.Prepare(ctx, deleteVariableByIDSQL, deleteVariableByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteVariableByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertVCSProviderSQL, insertVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertVCSProvider': %w", err)
@@ -1493,8 +1493,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, disconnectWebhookSQL, disconnectWebhookSQL); err != nil {
 		return fmt.Errorf("prepare query 'DisconnectWebhook': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteWebhookSQL, deleteWebhookSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWebhook': %w", err)
+	if _, err := p.Prepare(ctx, deleteWebhookByIDSQL, deleteWebhookByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWebhookByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertWorkspaceSQL, insertWorkspaceSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspace': %w", err)
@@ -1568,8 +1568,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateWorkspaceRepoByIDSQL, updateWorkspaceRepoByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceRepoByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteWorkspaceRepoSQL, deleteWorkspaceRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspaceRepo': %w", err)
+	if _, err := p.Prepare(ctx, deleteWorkspaceRepoByIDSQL, deleteWorkspaceRepoByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWorkspaceRepoByID': %w", err)
 	}
 	return nil
 }

@@ -228,7 +228,7 @@ WHERE run_id = pggen.arg('run_id')
 RETURNING run_id
 ;
 
--- name: GetLockFile :one
+-- name: GetLockFileByID :one
 SELECT lock_file
 FROM runs
 WHERE run_id = pggen.arg('run_id')

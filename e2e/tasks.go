@@ -12,6 +12,7 @@ import (
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -118,20 +119,25 @@ func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 		chromedp.Text(".flash-success > .data", &token, chromedp.NodeVisible),
 		// pass token to terraform login
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			tfpath, err := exec.LookPath("terraform")
-			require.NoErrorf(t, err, "terraform executable not found in path")
+			out, err := os.CreateTemp(t.TempDir(), "terraform-login.out")
+			require.NoError(t, err)
 
-			// nullifying PATH makes `terraform login` skip opening a browser
-			// window
+			// prevent terraform from automatically opening a browser
+			wd, err := os.Getwd()
+			require.NoError(t, err)
+			killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
+
 			path := os.Getenv("PATH")
-			os.Setenv("PATH", "")
+			os.Setenv("PATH", killBrowserPath+":"+path)
 			defer os.Setenv("PATH", path)
 
 			e, tferr, err := expect.SpawnWithArgs(
-				[]string{tfpath, "login", hostname},
+				[]string{"terraform", "login", hostname},
 				time.Minute,
 				expect.PartialMatch(true),
-				expect.Verbose(testing.Verbose()))
+				expect.Verbose(testing.Verbose()),
+				expect.Tee(out),
+			)
 			require.NoError(t, err)
 			defer e.Close()
 
@@ -140,7 +146,14 @@ func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 				&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
 				&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
 			}, time.Minute)
-			return <-tferr
+			err = <-tferr
+			if !assert.NoError(t, err) || t.Failed() {
+				logs, err := os.ReadFile(out.Name())
+				require.NoError(t, err)
+				t.Log("--- terraform login output ---")
+				t.Log(string(logs))
+			}
+			return err
 		}),
 	}
 }

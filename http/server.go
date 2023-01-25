@@ -16,6 +16,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/hooks"
+	"github.com/leg100/otf/triggerer"
 	"github.com/leg100/surl"
 )
 
@@ -63,7 +65,7 @@ type Server struct {
 
 	eventsServer     *sse.Server
 	server           *http.Server
-	vcsEventsHandler *otf.Triggerer
+	vcsEventsHandler *triggerer.Triggerer
 }
 
 // NewServer is the constructor for Server
@@ -102,12 +104,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// VCS event handling
 	//
 	events := make(chan cloud.VCSEvent, 100)
-	r.Handle("/webhooks/vcs/{webhook_id}", &webhookHandler{
-		events:      events,
-		Logger:      logger,
-		Application: app,
-	})
-	s.vcsEventsHandler = otf.NewTriggerer(app, logger, events)
+	r.Handle("/webhooks/vcs/{webhook_id}", hooks.NewHandler(logger, events, s.Application))
+	s.vcsEventsHandler = triggerer.NewTriggerer(app, logger, events)
 
 	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {

@@ -19,7 +19,7 @@ func (db *DB) CreateVariable(ctx context.Context, ws *otf.Variable) error {
 		WorkspaceID: String(ws.WorkspaceID()),
 	})
 	if err != nil {
-		return databaseError(err)
+		return Error(err)
 	}
 	return nil
 }
@@ -31,7 +31,7 @@ func (db *DB) UpdateVariable(ctx context.Context, variableID string, fn func(*ot
 		// retrieve variable
 		row, err := tx.FindVariableForUpdate(ctx, String(variableID))
 		if err != nil {
-			return databaseError(err)
+			return Error(err)
 		}
 		variable = otf.UnmarshalVariableRow(otf.VariableRow(row))
 
@@ -40,7 +40,7 @@ func (db *DB) UpdateVariable(ctx context.Context, variableID string, fn func(*ot
 			return err
 		}
 		// persist variable
-		_, err = tx.Querier.UpdateVariable(ctx, pggen.UpdateVariableParams{
+		_, err = tx.Querier.UpdateVariableByID(ctx, pggen.UpdateVariableByIDParams{
 			VariableID:  String(variableID),
 			Key:         String(variable.Key()),
 			Value:       String(variable.Value()),
@@ -77,9 +77,9 @@ func (db *DB) GetVariable(ctx context.Context, variableID string) (*otf.Variable
 }
 
 func (db *DB) DeleteVariable(ctx context.Context, variableID string) (*otf.Variable, error) {
-	row, err := db.Querier.DeleteVariable(ctx, String(variableID))
+	row, err := db.Querier.DeleteVariableByID(ctx, String(variableID))
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, Error(err)
 	}
 	return otf.UnmarshalVariableRow(otf.VariableRow(row)), nil
 }

@@ -701,33 +701,33 @@ func (q *DBQuerier) PutLockFileScan(results pgx.BatchResults) (pgtype.Text, erro
 	return item, nil
 }
 
-const getLockFileSQL = `SELECT lock_file
+const getLockFileByIDSQL = `SELECT lock_file
 FROM runs
 WHERE run_id = $1
 ;`
 
-// GetLockFile implements Querier.GetLockFile.
-func (q *DBQuerier) GetLockFile(ctx context.Context, runID pgtype.Text) ([]byte, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "GetLockFile")
-	row := q.conn.QueryRow(ctx, getLockFileSQL, runID)
+// GetLockFileByID implements Querier.GetLockFileByID.
+func (q *DBQuerier) GetLockFileByID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "GetLockFileByID")
+	row := q.conn.QueryRow(ctx, getLockFileByIDSQL, runID)
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query GetLockFile: %w", err)
+		return item, fmt.Errorf("query GetLockFileByID: %w", err)
 	}
 	return item, nil
 }
 
-// GetLockFileBatch implements Querier.GetLockFileBatch.
-func (q *DBQuerier) GetLockFileBatch(batch genericBatch, runID pgtype.Text) {
-	batch.Queue(getLockFileSQL, runID)
+// GetLockFileByIDBatch implements Querier.GetLockFileByIDBatch.
+func (q *DBQuerier) GetLockFileByIDBatch(batch genericBatch, runID pgtype.Text) {
+	batch.Queue(getLockFileByIDSQL, runID)
 }
 
-// GetLockFileScan implements Querier.GetLockFileScan.
-func (q *DBQuerier) GetLockFileScan(results pgx.BatchResults) ([]byte, error) {
+// GetLockFileByIDScan implements Querier.GetLockFileByIDScan.
+func (q *DBQuerier) GetLockFileByIDScan(results pgx.BatchResults) ([]byte, error) {
 	row := results.QueryRow()
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan GetLockFileBatch row: %w", err)
+		return item, fmt.Errorf("scan GetLockFileByIDBatch row: %w", err)
 	}
 	return item, nil
 }

@@ -4,16 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspace_Create(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := otf.NewTestWorkspace(t, org)
 
@@ -27,7 +24,7 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestWorkspace_Update(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	ctx := context.Background()
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
@@ -47,66 +44,8 @@ func TestWorkspace_Update(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestWorkspace_CreateRepo(t *testing.T) {
-	db := newTestDB(t)
-	ctx := context.Background()
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
-	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
-	repo := otf.WorkspaceRepo{
-		ProviderID: provider.ID(),
-		Branch:     "master",
-		WebhookID:  hook.ID(),
-		Identifier: hook.Identifier(),
-	}
-
-	_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
-	require.NoError(t, err)
-
-	t.Run("Duplicate", func(t *testing.T) {
-		_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
-		require.Equal(t, otf.ErrResourceAlreadyExists, err)
-	})
-}
-
-func TestWorkspace_UpdateRepo(t *testing.T) {
-	db := newTestDB(t)
-	ctx := context.Background()
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
-	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
-	repo := createTestWorkspaceRepo(t, db, ws, provider, hook)
-
-	// update branch
-	repo.Branch = "dev"
-
-	var err error
-	ws, err = db.UpdateWorkspaceRepo(ctx, ws.ID(), *repo)
-	require.NoError(t, err)
-
-	assert.Equal(t, "dev", ws.Repo().Branch)
-}
-
-func TestWorkspace_DeleteRepo(t *testing.T) {
-	db := newTestDB(t)
-	ctx := context.Background()
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
-	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
-	_ = createTestWorkspaceRepo(t, db, ws, provider, hook)
-
-	var err error
-	ws, err = db.DeleteWorkspaceRepo(ctx, ws.ID())
-	require.NoError(t, err)
-
-	assert.Nil(t, ws.Repo())
-}
-
 func TestWorkspace_GetByID(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	want := createTestWorkspace(t, db, org)
 
@@ -116,7 +55,7 @@ func TestWorkspace_GetByID(t *testing.T) {
 }
 
 func TestWorkspace_GetByName(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	want := createTestWorkspace(t, db, org)
 
@@ -126,7 +65,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 }
 
 func TestWorkspace_Lock(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	user := createTestUser(t, db)
 	ctx := otf.AddSubjectToContext(context.Background(), user)
@@ -164,47 +103,8 @@ func TestWorkspace_Lock(t *testing.T) {
 	})
 }
 
-func TestWorkspace_ListByWebhookID(t *testing.T) {
-	db := newTestDB(t)
-	org := createTestOrganization(t, db)
-	provider := createTestVCSProvider(t, db, org)
-	hook := createTestWebhook(t, db, cloud.NewTestRepo(), github.Defaults())
-	repo := otf.NewWorkspaceRepo(otf.NewWorkspaceRepoOptions{
-		ProviderID: provider.ID(),
-		Webhook:    hook,
-		Branch:     "master",
-	})
-	ws1 := createTestWorkspace(t, db, org, otf.WithRepo(&repo))
-	ws2 := createTestWorkspace(t, db, org, otf.WithRepo(&repo))
-
-	tests := []struct {
-		name      string
-		webhookID uuid.UUID
-		want      func(*testing.T, []*otf.Workspace)
-	}{
-		{
-			name:      "list both workspaces",
-			webhookID: hook.ID(),
-			want: func(t *testing.T, results []*otf.Workspace) {
-				assert.Equal(t, 2, len(results))
-				assert.Contains(t, results, ws1)
-				assert.Contains(t, results, ws2)
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			results, err := db.ListWorkspacesByWebhookID(context.Background(), tt.webhookID)
-			require.NoError(t, err)
-
-			tt.want(t, results)
-		})
-	}
-}
-
 func TestWorkspace_ListByUserID(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws1 := createTestWorkspace(t, db, org)
 	ws2 := createTestWorkspace(t, db, org)
@@ -273,7 +173,7 @@ func TestWorkspace_ListByUserID(t *testing.T) {
 }
 
 func TestWorkspace_List(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	org := createTestOrganization(t, db)
 	ws1 := createTestWorkspace(t, db, org)
 	ws2 := createTestWorkspace(t, db, org)
@@ -347,7 +247,7 @@ func TestWorkspace_List(t *testing.T) {
 }
 
 func TestWorkspace_Delete(t *testing.T) {
-	db := newTestDB(t)
+	db := NewTestDB(t)
 	ctx := context.Background()
 	org := createTestOrganization(t, db)
 
