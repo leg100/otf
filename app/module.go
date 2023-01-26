@@ -5,10 +5,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateModuleAction, opts.Organization.Name())
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateModuleAction, opts.Organization.Name())
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +24,7 @@ func (a *Application) PublishModule(ctx context.Context, opts otf.PublishModuleO
 }
 
 func (a *Application) CreateModule(ctx context.Context, opts otf.CreateModuleOptions) (*otf.Module, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateModuleAction, opts.Organization.Name())
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateModuleAction, opts.Organization.Name())
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func (a *Application) UpdateModuleStatus(ctx context.Context, opts otf.UpdateMod
 	}
 	organization := module.Organization().Name()
 
-	subject, err := a.CanAccessOrganization(ctx, otf.UpdateModuleAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.UpdateModuleAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (a *Application) UpdateModuleStatus(ctx context.Context, opts otf.UpdateMod
 }
 
 func (a *Application) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*otf.Module, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.ListModulesAction, opts.Organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.ListModulesAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func (a *Application) ListModules(ctx context.Context, opts otf.ListModulesOptio
 }
 
 func (a *Application) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.GetModuleAction, opts.Organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetModuleAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (a *Application) GetModuleByID(ctx context.Context, id string) (*otf.Module
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.GetModuleAction, module.Organization().Name())
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetModuleAction, module.Organization().Name())
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func (a *Application) DeleteModule(ctx context.Context, id string) (*otf.Module,
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteModuleAction, module.Organization().Name())
+	subject, err := a.CanAccessOrganization(ctx, rbac.DeleteModuleAction, module.Organization().Name())
 	if err != nil {
 		return nil, err
 	}

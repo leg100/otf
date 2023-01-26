@@ -3,9 +3,9 @@ package html
 import (
 	"net/http"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
 )
 
 func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	role, err := otf.WorkspaceRoleFromString(params.Role)
+	role, err := rbac.WorkspaceRoleFromString(params.Role)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

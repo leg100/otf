@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 // CreateRegistrySession creates and persists a registry session.
 func (a *Application) CreateRegistrySession(ctx context.Context, organization string) (*otf.RegistrySession, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateRegistrySessionAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateRegistrySessionAction, organization)
 	if err != nil {
 		return nil, err
 	}

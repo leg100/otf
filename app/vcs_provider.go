@@ -5,10 +5,11 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateVCSProviderAction, opts.Organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +37,7 @@ func (a *Application) GetVCSProvider(ctx context.Context, id string) (*otf.VCSPr
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.GetVCSProviderAction, provider.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetVCSProviderAction, provider.Organization())
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func (a *Application) GetVCSProvider(ctx context.Context, id string) (*otf.VCSPr
 }
 
 func (a *Application) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.ListVCSProvidersAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func (a *Application) DeleteVCSProvider(ctx context.Context, id string) (*otf.VC
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteVCSProviderAction, provider.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.DeleteVCSProviderAction, provider.Organization())
 	if err != nil {
 		return nil, err
 	}

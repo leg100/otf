@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 // Watch provides authenticated access to a stream of events.
@@ -14,10 +15,10 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = a.CanAccessWorkspaceByID(ctx, otf.WatchAction, *opts.WorkspaceID)
+		_, err = a.CanAccessWorkspaceByID(ctx, rbac.WatchAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.Organization)
+		_, err = a.CanAccessOrganization(ctx, rbac.WatchAction, *opts.Organization)
 	}
 	if err != nil {
 		return nil, err

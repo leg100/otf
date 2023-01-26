@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
@@ -14,7 +15,7 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.CreateWorksp
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateWorkspaceAction, ws.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateWorkspaceAction, ws.Organization())
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.CreateWorksp
 }
 
 func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (a *Application) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUI
 }
 
 func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, 
 }
 
 func (a *Application) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (a *Application) UpdateWorkspaceRepo(ctx context.Context, workspaceID strin
 }
 
 func (a *Application) DisconnectWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,13 +116,13 @@ func (a *Application) DisconnectWorkspace(ctx context.Context, workspaceID strin
 func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err := a.CanAccessSite(ctx, otf.ListWorkspacesAction)
+		_, err := a.CanAccessSite(ctx, rbac.ListWorkspacesAction)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := a.CanAccessOrganization(ctx, otf.ListWorkspacesAction, *opts.Organization)
+		_, err := a.CanAccessOrganization(ctx, rbac.ListWorkspacesAction, *opts.Organization)
 		if err == otf.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
@@ -141,7 +142,7 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 }
 
 func (a *Application) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +159,7 @@ func (a *Application) GetWorkspace(ctx context.Context, workspaceID string) (*ot
 }
 
 func (a *Application) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByName(ctx, otf.GetWorkspaceAction, organization, workspace)
+	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.GetWorkspaceAction, organization, workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +176,7 @@ func (a *Application) GetWorkspaceByName(ctx context.Context, organization, work
 }
 
 func (a *Application) DeleteWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.DeleteWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func (a *Application) DeleteWorkspace(ctx context.Context, workspaceID string) (
 }
 
 func (a *Application) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.LockWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +217,7 @@ func (a *Application) LockWorkspace(ctx context.Context, workspaceID string, opt
 }
 
 func (a *Application) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.LockWorkspaceAction, workspaceID)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}

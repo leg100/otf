@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	jsonapi "github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/rbac"
 )
 
 const (
@@ -40,21 +41,21 @@ func (t *RegistrySession) Token() string        { return t.token }
 func (t *RegistrySession) Organization() string { return t.organization }
 func (t *RegistrySession) Expiry() time.Time    { return t.expiry }
 
-func (*RegistrySession) CanAccessSite(action Action) bool {
+func (*RegistrySession) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 
-func (t *RegistrySession) CanAccessOrganization(action Action, name string) bool {
+func (t *RegistrySession) CanAccessOrganization(action rbac.Action, name string) bool {
 	// registry session is only allowed read-access to its organization's module registry
 	switch action {
-	case GetModuleAction, ListModulesAction:
+	case rbac.GetModuleAction, rbac.ListModulesAction:
 		return t.organization == name
 	default:
 		return false
 	}
 }
 
-func (t *RegistrySession) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+func (t *RegistrySession) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool {
 	return false
 }
 

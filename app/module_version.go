@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateModuleVersion(ctx context.Context, opts otf.CreateModuleVersionOptions) (*otf.ModuleVersion, error) {
@@ -14,7 +15,7 @@ func (a *Application) CreateModuleVersion(ctx context.Context, opts otf.CreateMo
 	}
 	organization := module.Organization().Name()
 
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateModuleAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateModuleAction, organization)
 	if err != nil {
 		return nil, err
 	}

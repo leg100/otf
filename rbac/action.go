@@ -1,4 +1,4 @@
-package otf
+package rbac
 
 // Action identifies an action a subject carries out on a resource for
 // authorization purposes.

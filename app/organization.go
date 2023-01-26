@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 // CreateOrganization creates an organization. Needs admin permission.
 func (a *Application) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	subject, err := a.CanAccessSite(ctx, otf.CreateOrganizationAction)
+	subject, err := a.CanAccessSite(ctx, rbac.CreateOrganizationAction)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func (a *Application) CreateOrganization(ctx context.Context, opts otf.Organizat
 // TODO: merge this into CreatedOrganization and add an option to toggle
 // idempotency
 func (a *Application) EnsureCreatedOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	subject, err := a.CanAccessSite(ctx, otf.GetOrganizationAction)
+	subject, err := a.CanAccessSite(ctx, rbac.GetOrganizationAction)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func (a *Application) EnsureCreatedOrganization(ctx context.Context, opts otf.Or
 
 // GetOrganization retrieves an organization by name.
 func (a *Application) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.GetOrganizationAction, name)
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func (a *Application) ListOrganizations(ctx context.Context, opts otf.Organizati
 }
 
 func (a *Application) UpdateOrganization(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.UpdateOrganizationAction, name)
+	subject, err := a.CanAccessOrganization(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (a *Application) UpdateOrganization(ctx context.Context, name string, opts 
 }
 
 func (a *Application) DeleteOrganization(ctx context.Context, name string) error {
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteOrganizationAction, name)
+	subject, err := a.CanAccessOrganization(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
 		return err
 	}
@@ -126,7 +127,7 @@ func (a *Application) DeleteOrganization(ctx context.Context, name string) error
 }
 
 func (a *Application) GetEntitlements(ctx context.Context, organization string) (*otf.Entitlements, error) {
-	_, err := a.CanAccessOrganization(ctx, otf.GetEntitlementsAction, organization)
+	_, err := a.CanAccessOrganization(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return nil, err
 	}

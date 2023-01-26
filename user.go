@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/leg100/otf/rbac"
 )
 
 const (
@@ -72,12 +74,12 @@ func (u *User) IsUnprivilegedUser(organization string) bool {
 
 func (u *User) IsSiteAdmin() bool { return u.id == SiteAdminID }
 
-func (u *User) CanAccessSite(action Action) bool {
+func (u *User) CanAccessSite(action rbac.Action) bool {
 	// Only site admin can perform actions on the site
 	return u.IsSiteAdmin()
 }
 
-func (u *User) CanAccessOrganization(action Action, name string) bool {
+func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 	// Site admin can perform any action on any organization
 	if u.IsSiteAdmin() {
 		return true
@@ -89,21 +91,21 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 				// owner team members can perform all actions on organization
 				return true
 			}
-			if OrganizationGuestRole.IsAllowed(action) {
+			if rbac.OrganizationGuestRole.IsAllowed(action) {
 				return true
 			}
 			if team.access.ManageWorkspaces {
-				if WorkspaceManagerRole.IsAllowed(action) {
+				if rbac.WorkspaceManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
 			if team.access.ManageVCS {
-				if VCSManagerRole.IsAllowed(action) {
+				if rbac.VCSManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
 			if team.access.ManageRegistry {
-				if VCSManagerRole.IsAllowed(action) {
+				if rbac.VCSManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
@@ -112,7 +114,7 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool {
 	// Site admin can access any workspace
 	if u.IsSiteAdmin() {
 		return true

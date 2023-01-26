@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -176,7 +177,7 @@ type WorkspacePermissionResult struct {
 }
 
 func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) (*WorkspacePermission, error) {
-	role, err := WorkspaceRoleFromString(row.Role.String)
+	role, err := rbac.WorkspaceRoleFromString(row.Role.String)
 	if err != nil {
 		return nil, err
 	}

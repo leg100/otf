@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateAgentTokenAction, opts.Organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +26,7 @@ func (a *Application) CreateAgentToken(ctx context.Context, opts otf.CreateAgent
 }
 
 func (a *Application) ListAgentTokens(ctx context.Context, organization string) ([]*otf.AgentToken, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.ListAgentTokensAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (a *Application) DeleteAgentToken(ctx context.Context, id string) (*otf.Age
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteAgentTokenAction, at.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.DeleteAgentTokenAction, at.Organization())
 	if err != nil {
 		return nil, err
 	}

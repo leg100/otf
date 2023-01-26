@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
 func (a *Application) CreateUser(ctx context.Context, username string) (*otf.User, error) {
@@ -54,10 +55,10 @@ func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) (
 
 	if opts.Organization != nil {
 		// subject needs perms on org to list users in org
-		_, err = a.CanAccessOrganization(ctx, otf.ListUsersAction, *opts.Organization)
+		_, err = a.CanAccessOrganization(ctx, rbac.ListUsersAction, *opts.Organization)
 	} else {
 		// subject needs perms on site to list users across site
-		_, err = a.CanAccessSite(ctx, otf.ListRunsAction)
+		_, err = a.CanAccessSite(ctx, rbac.ListRunsAction)
 	}
 	if err != nil {
 		return nil, err
