@@ -8,18 +8,6 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// Authorizer is capable of granting or denying access to resources based on the
-// subject contained within the context.
-type Authorizer interface {
-	CanAccessSite(ctx context.Context, action rbac.Action) (otf.Subject, error)
-	CanAccessOrganization(ctx context.Context, action rbac.Action, name string) (otf.Subject, error)
-	CanAccessWorkspaceByName(ctx context.Context, action rbac.Action, organization, workspace string) (otf.Subject, error)
-	CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error)
-	CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error)
-	CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error)
-	CanAccessConfigurationVersion(ctx context.Context, action rbac.Action, cvID string) (otf.Subject, error)
-}
-
 type authorizer struct {
 	db otf.DB
 	logr.Logger
