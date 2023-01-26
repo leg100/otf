@@ -34,6 +34,12 @@ func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
 	}
 }
 
+func WorkingDirectory(relativePath string) NewTestWorkspaceOption {
+	return func(ws *Workspace) {
+		ws.workingDirectory = relativePath
+	}
+}
+
 func NewTestWorkspace(t *testing.T, org *Organization, opts ...NewTestWorkspaceOption) *Workspace {
 	createOpts := CreateWorkspaceOptions{
 		Name:         String(uuid.NewString()),

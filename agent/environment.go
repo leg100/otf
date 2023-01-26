@@ -25,38 +25,20 @@ var _ otf.Environment = (*Environment)(nil)
 // directory, services, capturing logs etc.
 type Environment struct {
 	otf.Application
-
 	logr.Logger
-
-	// Current working directory
-	path string
-
-	// Whether cancelation has been triggered
-	canceled bool
-
-	// Cancel context func for currently running func
-	cancel context.CancelFunc
-
-	// Current process
-	proc *os.Process
-
-	// CLI process output is written to this
-	out io.WriteCloser
-
-	// Downloader for workers to download terraform cli on demand
-	otf.Downloader
-	// For looking up path to terraform cli
-	Terraform
-	// Terraform version to use for this environment
-	version string
-
-	envs []string
-
-	// Environment context - should contain subject for authenticating to
-	// services
-	ctx context.Context
-
+	otf.Downloader // Downloader for workers to download terraform cli on demand
+	Terraform      // For looking up path to terraform cli
 	Config
+
+	configRoot string             // absolute path of tf config
+	workingDir string             // path relative to configRoot in which tf ops are invoked
+	canceled   bool               // Whether cancelation has been triggered
+	cancel     context.CancelFunc // Cancel context func for currently running func
+	proc       *os.Process        // Current process
+	out        io.WriteCloser     // captures CLI process output
+	version    string             // terraform version
+	envs       []string           // environment variables
+	ctx        context.Context    // contains subject for authenticating to services
 }
 
 func NewEnvironment(
@@ -68,15 +50,21 @@ func NewEnvironment(
 	downloader otf.Downloader,
 	cfg Config,
 ) (*Environment, error) {
-	// create dedicated directory for environment
-	root, err := os.MkdirTemp("", "otf-plan")
-	if err != nil {
-		return nil, err
-	}
-
 	ws, err := app.GetWorkspace(ctx, run.WorkspaceID())
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
+	}
+
+	// create dedicated directory for environment
+	configRoot, err := os.MkdirTemp("", "otf-config-")
+	if err != nil {
+		return nil, err
+	}
+	// create working directory in case user has specified a non-existent
+	// working directory
+	err = os.MkdirAll(path.Join(configRoot, ws.WorkingDirectory()), 0o755)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create token for terraform for it to authenticate with the otf registry
@@ -102,7 +90,7 @@ func NewEnvironment(
 			envs = append(envs, ev)
 		}
 	}
-	if err := writeTerraformVariables(root, variables); err != nil {
+	if err := writeTerraformVariables(configRoot, variables); err != nil {
 		return nil, errors.Wrap(err, "writing terraform variables")
 	}
 
@@ -116,7 +104,8 @@ func NewEnvironment(
 		Terraform:   &TerraformPathFinder{},
 		version:     ws.TerraformVersion(),
 		out:         otf.NewJobWriter(ctx, app, logger, run),
-		path:        root,
+		configRoot:  configRoot,
+		workingDir:  ws.WorkingDirectory(),
 		envs:        envs,
 		cancel:      cancel,
 		ctx:         ctx,
@@ -124,8 +113,12 @@ func NewEnvironment(
 	}, nil
 }
 
+func (e *Environment) Path() string       { return e.configRoot }
+func (e *Environment) WorkingDir() string { return path.Join(e.configRoot, e.workingDir) }
+
 func (e *Environment) Close() error {
-	return os.RemoveAll(e.path)
+	// return os.RemoveAll(e.configRoot)
+	return nil
 }
 
 // Execute executes a phase and regardless of whether it fails, it'll close the
@@ -143,10 +136,6 @@ func (e *Environment) Execute(phase Doer) (err error) {
 	}
 
 	return errors.ErrorOrNil()
-}
-
-func (e *Environment) Path() string {
-	return e.path
 }
 
 // Cancel terminates execution. Force controls whether termination is graceful
@@ -186,16 +175,17 @@ func (e *Environment) RunTerraform(cmd string, args ...string) error {
 	return e.RunCLI(e.TerraformPath(), append([]string{cmd}, args...)...)
 }
 
-// RunCLI executes a CLI process in the executor.
+// RunCLI executes a CLI process in the executor. The path is set to the
+// workspace's working directory.
 func (e *Environment) RunCLI(name string, args ...string) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
 
-	logger := e.Logger.WithValues("name", name, "args", args, "path", e.path)
+	logger := e.Logger.WithValues("name", name, "args", args, "path", e.WorkingDir())
 
 	cmd := exec.Command(name, args...)
-	cmd.Dir = e.path
+	cmd.Dir = e.WorkingDir()
 	cmd.Stdout = e.out
 	cmd.Env = append(os.Environ(), e.envs...)
 
@@ -283,12 +273,12 @@ func (e *Environment) cancelFunc(force bool) {
 func (e *Environment) buildSandboxArgs(args []string) []string {
 	bargs := []string{
 		"--ro-bind", e.TerraformPath(), "/bin/terraform",
-		"--bind", e.path, "/workspace",
+		"--bind", e.configRoot, "/config",
 		// for DNS lookups
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 		// for verifying SSL connections
 		"--ro-bind", otf.SSLCertsDir(), otf.SSLCertsDir(),
-		"--chdir", "/workspace",
+		"--chdir", path.Join("/config", e.workingDir),
 		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
 		"--proc", "/proc",
 		// avoids provider error "failed to read schema..."
