@@ -5,11 +5,13 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
-	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/leg100/otf/rbac"
 )
@@ -488,12 +490,8 @@ func (r *Run) setupEnv(env Environment) error {
 		return err
 	}
 	if r.status == RunApplying {
-		// Download lock file in apply phase - the user *should* have pushed
-		// their own lock file and otf then treats it as immutable and respects
-		// the provider versions it specifies. However, to cover the instances
-		// in which they don't push a lock file, then otf generates the lock
-		// file in the plan phase and the same file is persisted here to ensure
-		// the exact same providers are used in both phases.
+		// Download lock file from plan phase for the apply phase, to ensure
+		// same providers are used in both phases.
 		if err := env.RunFunc(r.downloadLockFile); err != nil {
 			return err
 		}
@@ -579,6 +577,9 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	return nil
 }
 
+// downloadLockFile downloads the .terraform.lock.hcl file into the working
+// directory. If one has not been uploaded then this will simply write an empty
+// file, which is harmless.
 func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
 	lockFile, err := env.GetLockFile(ctx, r.id)
 	if err != nil {
@@ -589,8 +590,11 @@ func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
 
 func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
 	lockFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), LockFilename))
-	if err != nil {
-		return err
+	if errors.Is(err, fs.ErrNotExist) {
+		// there is no lock file to upload, which is ok
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "reading lock file")
 	}
 	if err := env.UploadLockFile(ctx, r.id, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
