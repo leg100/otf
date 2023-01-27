@@ -8,17 +8,23 @@ import (
 )
 
 type fakeClientFactory struct {
-	ws *otf.Workspace
+	ws      *otf.Workspace
+	run     *otf.Run
+	tarball []byte
 }
 
 func (f fakeClientFactory) NewClient() (otfhttp.Client, error) {
 	return &fakeClient{
-		ws: f.ws,
+		ws:      f.ws,
+		run:     f.run,
+		tarball: f.tarball,
 	}, nil
 }
 
 type fakeClient struct {
-	ws *otf.Workspace
+	ws      *otf.Workspace
+	run     *otf.Run
+	tarball []byte
 	otf.Application
 }
 
@@ -52,6 +58,14 @@ func (f *fakeClient) LockWorkspace(context.Context, string, otf.WorkspaceLockOpt
 
 func (f *fakeClient) UnlockWorkspace(context.Context, string, otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	return f.ws, nil
+}
+
+func (f *fakeClient) GetRun(context.Context, string) (*otf.Run, error) {
+	return f.run, nil
+}
+
+func (f *fakeClient) DownloadConfig(context.Context, string) ([]byte, error) {
+	return f.tarball, nil
 }
 
 func (f *fakeClient) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {

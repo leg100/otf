@@ -448,6 +448,7 @@ Available Commands:
   agents        Agent management
   help          Help about any command
   organizations Organization management
+  runs          Runs management
   workspaces    Workspace management
 
 Flags:
