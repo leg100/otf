@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/hooks"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/module"
+	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -38,7 +39,8 @@ type Application struct {
 	cloud.Service
 	otf.PubSubService
 	logr.Logger
-	Authorizer
+	otf.Authorizer
+	otf.StateVersionService
 }
 
 // NewApplication constructs an application, initialising various services and
@@ -84,6 +86,9 @@ func newChildApp(parent *Application, db otf.DB) *Application {
 		proxy:         parent.proxy,
 		hostname:      parent.hostname,
 		Service:       parent.Service,
+		StateVersionService: state.NewApp(state.AppOptions{
+			Database: db,
+		}),
 		VCSProviderFactory: &otf.VCSProviderFactory{
 			Service: parent.Service,
 		},

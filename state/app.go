@@ -6,16 +6,35 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
-type Application struct {
+type app struct {
+	otf.Authorizer // authorize access
+	logr.Logger
+
 	db    *pgdb     // access to state version database
 	cache otf.Cache // cache state file
+}
+
+func NewApp(opts AppOptions) *app {
+	return &app{
+		Authorizer: opts.Authorizer,
+		Logger:     opts.Logger,
+		db:         newPGDB(opts.Database),
+		cache:      opts.Cache,
+	}
+}
+
+type AppOptions struct {
+	otf.Authorizer
+	otf.Database
+	otf.Cache
 	logr.Logger
 }
 
-func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateStateVersionAction, workspaceID)
+func (a *app) CreateStateVersion(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +57,8 @@ func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string
 	return sv, nil
 }
 
-func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	subject, err := a.CanAccessWorkspaceByName(ctx, otf.ListStateVersionsAction, opts.Organization, opts.Workspace)
+func (a *app) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*StateVersionList, error) {
+	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +72,8 @@ func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersi
 	return svl, nil
 }
 
-func (a *Application) CurrentStateVersion(ctx context.Context, workspaceID string) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetStateVersionAction, workspaceID)
+func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error) {
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +87,8 @@ func (a *Application) CurrentStateVersion(ctx context.Context, workspaceID strin
 	return sv, nil
 }
 
-func (a *Application) GetStateVersion(ctx context.Context, svID string) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessStateVersion(ctx, otf.GetStateVersionAction, svID)
+func (a *app) GetStateVersion(ctx context.Context, svID string) (*StateVersion, error) {
+	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +103,8 @@ func (a *Application) GetStateVersion(ctx context.Context, svID string) (*otf.St
 }
 
 // DownloadState retrieves base64-encoded terraform state from the db
-func (a *Application) DownloadState(ctx context.Context, svID string) ([]byte, error) {
-	subject, err := a.CanAccessStateVersion(ctx, otf.DownloadStateAction, svID)
+func (a *app) DownloadState(ctx context.Context, svID string) ([]byte, error) {
+	subject, err := a.CanAccessStateVersion(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
 	}
