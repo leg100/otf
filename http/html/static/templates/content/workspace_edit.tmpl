@@ -52,8 +52,12 @@
       <label for="auto_apply">Auto apply</label>
     </div>
     <div class="field">
-      <label for="terraform_version">Terraform Version</label>
+      <label for="terraform_version">Terraform version</label>
       <input type="text" name="terraform_version" id="terraform_version" value="{{ .Content.TerraformVersion }}" required pattern="^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$">
+    </div>
+    <div class="field">
+      <label for="working_directory">Working directory</label>
+      <input type="text" name="working_directory" id="working_directory" value="{{ .Content.WorkingDirectory }}">
     </div>
     <div class="field">
       <button>Save changes</button>

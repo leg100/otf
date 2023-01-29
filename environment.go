@@ -10,10 +10,17 @@ import (
 // Invoking commands and functions via the environment means the environment can
 // handle canceling them if necessary.
 type Environment interface {
+	// Path returns absolute root path
 	Path() string
+	// WorkingDir returns relative path for terraform operations
+	WorkingDir() string
+	// RunTerraform invokes a terraform command
 	RunTerraform(cmd string, args ...string) error
+	// RunCLI runs an arbitrary command
 	RunCLI(name string, args ...string) error
+	// RunFunc runs a go func with access to the env
 	RunFunc(fn EnvironmentFunc) error
+	// TerraformPath is the path to the terraform bin
 	TerraformPath() string
 
 	// All app services should be made available to the environment

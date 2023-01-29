@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"context"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -19,6 +21,24 @@ func TestEnvironment(t *testing.T) {
 	}
 	err := env.Execute(&fakeJob{"sleep", []string{"1"}})
 	require.NoError(t, err)
+}
+
+func TestEnvironment_WorkingDir(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org, otf.WorkingDirectory("subdir"))
+	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
+	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+	env, err := NewEnvironment(
+		context.Background(),
+		logr.Discard(),
+		&fakeEnvironmentApp{ws: ws},
+		run,
+		nil,
+		nil,
+		Config{},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "subdir", filepath.Base(env.WorkingDir()))
 }
 
 func TestEnvironment_Cancel(t *testing.T) {
@@ -80,15 +100,15 @@ images = {
 func TestBuildSandboxArgs(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
 		env := Environment{
-			Terraform: &fakeTerraform{"/bins"},
-			path:      "/root",
+			Terraform:  &fakeTerraform{"/bins"},
+			configRoot: "/root",
 		}
 		want := []string{
 			"--ro-bind", "/bins/terraform", "/bin/terraform",
-			"--bind", "/root", "/workspace",
+			"--bind", "/root", "/config",
 			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
-			"--chdir", "/workspace",
+			"--chdir", "/config",
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
 			"terraform", "apply",
@@ -99,18 +119,42 @@ func TestBuildSandboxArgs(t *testing.T) {
 
 	t.Run("with plugin cache", func(t *testing.T) {
 		env := Environment{
-			Terraform: &fakeTerraform{"/bins"},
-			path:      "/root",
+			Terraform:  &fakeTerraform{"/bins"},
+			configRoot: "/root",
 			Config: Config{
 				PluginCache: true,
 			},
 		}
 		want := []string{
 			"--ro-bind", "/bins/terraform", "/bin/terraform",
-			"--bind", "/root", "/workspace",
+			"--bind", "/root", "/config",
 			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
-			"--chdir", "/workspace",
+			"--chdir", "/config",
+			"--proc", "/proc",
+			"--tmpfs", "/tmp",
+			"--ro-bind", PluginCacheDir, PluginCacheDir,
+			"terraform", "apply",
+			"-input=false", "-no-color",
+		}
+		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
+	})
+
+	t.Run("with working directory set", func(t *testing.T) {
+		env := Environment{
+			Terraform:  &fakeTerraform{"/bins"},
+			configRoot: "/root",
+			workingDir: "/relative",
+			Config: Config{
+				PluginCache: true,
+			},
+		}
+		want := []string{
+			"--ro-bind", "/bins/terraform", "/bin/terraform",
+			"--bind", "/root", "/config",
+			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
+			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
+			"--chdir", "/config/relative",
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
 			"--ro-bind", PluginCacheDir, PluginCacheDir,
@@ -120,3 +164,22 @@ func TestBuildSandboxArgs(t *testing.T) {
 		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
 	})
 }
+
+type fakeEnvironmentApp struct {
+	ws *otf.Workspace
+	otf.Application
+}
+
+func (f *fakeEnvironmentApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+	return f.ws, nil
+}
+
+func (f *fakeEnvironmentApp) CreateRegistrySession(context.Context, string) (*otf.RegistrySession, error) {
+	return otf.NewRegistrySession("fake-org")
+}
+
+func (f *fakeEnvironmentApp) ListVariables(context.Context, string) ([]*otf.Variable, error) {
+	return nil, nil
+}
+
+func (f *fakeEnvironmentApp) Hostname() string { return "fake-host.org" }

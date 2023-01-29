@@ -100,13 +100,13 @@ header nav {
  */
 .navbar {
   display: flex;
-  align-items: center;
-  gap: 2em;
+  flex-wrap: wrap;
+  align-items: center; /* center align text and svg icons */
+  gap: 2em; /* put gap between logo and current org */
 }
 
-/* the little black rectangular main logo in the top left */
+/* little black rectangular main logo in the top left */
 .logo {
-  flex: initial;
   padding: 0.4em;
   line-height: 1em;
   background-color: black;
@@ -119,22 +119,12 @@ header nav {
 }
 
 .navbar .nav-links {
-  /* nav-links consume remainder of navbar */
-  flex-grow: 1;
-  align-items: center;
+  margin-left: auto; /* shift nav-links to right */
 }
 
 .navbar .nav-links ul {
   display: flex;
   gap: 1em;
-}
-
-/*
- * current organization link is left-aligned, next to logo, whereas
- * remainder of links are right-aligned
- */
-.navbar .nav-links li.current-organization {
-  margin-right: auto;
 }
 
 .inline-heading {
@@ -333,7 +323,8 @@ a.show-underline {
 /* content-header: title + links */
 .content-header {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: center; /* align text and buttons */
   gap: 1em;
 
   padding-bottom: 0.5em;
@@ -437,6 +428,7 @@ a.show-underline {
 .workspace-info {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1.5em;
 }
 
@@ -630,4 +622,75 @@ button.delete:hover {
   display: flex;
   align-items: center;
   gap: 1.5em;
+}
+
+.hamburger-container {
+  display: none; /* hide by default */
+  cursor: pointer;
+}
+
+#hamburger-toggle {
+  display: none; /* hide checkbox */
+}
+
+/* mobile-last */
+@media (max-width: 700px) {
+  /*
+   * Three items in navigation menu:
+   * left: hamburger
+   * center: current org
+   * right: logo
+   */
+  .navbar {
+    justify-content: space-between;
+    gap: 0; /* unset gap */
+  }
+  .hamburger-container {
+    display: flex; /* show hamburger */
+    order: -2; /* position to the left */
+  }
+  .nav-links {
+    flex-direction: column; /* row -> column */
+    width: 100%; /* force onto new row within navbar */
+    display: none; /* hide menu by default */
+  }
+  /* hide menu when unchecked */
+  #hamburger-toggle ~ .nav-links {
+    display: none;
+  }
+  /* show menu when checked */
+  #hamburger-toggle:checked ~ .nav-links {
+    display: block;
+    padding: 0.5em;
+  }
+  /* show hamburger when unchecked */
+  #hamburger-toggle ~ .hamburger-container .hamburger-icon {
+    display: block;
+  }
+  /* hide cross when unchecked */
+  #hamburger-toggle ~ .hamburger-container .cross-icon {
+    display: none;
+  }
+  #hamburger-toggle:checked ~ .nav-links {
+    display: block;
+    padding: 0.5em;
+  }
+  /* hide hamburger when checked */
+  #hamburger-toggle:checked ~ .hamburger-container .hamburger-icon {
+    display: none;
+  }
+  /* show cross when checked */
+  #hamburger-toggle:checked ~ .hamburger-container .cross-icon {
+    display: block;
+  }
+  .nav-links ul {
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.5em 0; /* gap between navbar and links */
+    color: black;
+    background-color: var(--faint-grey);
+  }
+  .current-organization {
+    order: -1; /* reposition to center of navbar */
+  }
 }

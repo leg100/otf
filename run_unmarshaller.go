@@ -81,7 +81,7 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 }
 
 func UnmarshalRunJSONAPI(d *dto.Run) *Run {
-	run := &Run{
+	return &Run{
 		id:                     d.ID,
 		createdAt:              d.CreatedAt,
 		forceCancelAvailableAt: d.ForceCancelAvailableAt,
@@ -99,8 +99,6 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 		configurationVersionID: d.ConfigurationVersion.ID,
 		// TODO: unmarshal plan and apply relations
 	}
-
-	return run
 }
 
 // UnmarshalRunListJSONAPI converts a DTO into a run list

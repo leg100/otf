@@ -185,6 +185,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		Description      *string
 		ExecutionMode    *otf.ExecutionMode `schema:"execution_mode"`
 		TerraformVersion *string            `schema:"terraform_version"`
+		WorkingDirectory *string            `schema:"working_directory"`
 		WorkspaceID      string             `schema:"workspace_id,required"`
 	}
 	var params parameters
@@ -200,6 +201,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		Description:      params.Description,
 		ExecutionMode:    params.ExecutionMode,
 		TerraformVersion: params.TerraformVersion,
+		WorkingDirectory: params.WorkingDirectory,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

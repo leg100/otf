@@ -5,11 +5,13 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
-	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/leg100/otf/rbac"
 )
@@ -488,12 +490,8 @@ func (r *Run) setupEnv(env Environment) error {
 		return err
 	}
 	if r.status == RunApplying {
-		// Download lock file in apply phase - the user *should* have pushed
-		// their own lock file and otf then treats it as immutable and respects
-		// the provider versions it specifies. However, to cover the instances
-		// in which they don't push a lock file, then otf generates the lock
-		// file in the plan phase and the same file is persisted here to ensure
-		// the exact same providers are used in both phases.
+		// Download lock file from plan phase for the apply phase, to ensure
+		// same providers are used in both phases.
 		if err := env.RunFunc(r.downloadLockFile); err != nil {
 			return err
 		}
@@ -505,7 +503,7 @@ func (r *Run) setupEnv(env Environment) error {
 }
 
 func (r *Run) deleteBackendConfig(ctx context.Context, env Environment) error {
-	if err := rewriteHCL(env.Path(), removeBackendBlock); err != nil {
+	if err := rewriteHCL(env.WorkingDir(), removeBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
@@ -529,7 +527,7 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
-	// Decompress and untar config
+	// Decompress and untar config into environment root
 	if err := Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
@@ -549,14 +547,14 @@ func (r *Run) downloadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(env.WorkingDir(), LocalStateFilename), statefile, 0o644); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 	return nil
 }
 
 func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
-	file, err := os.ReadFile(filepath.Join(env.Path(), PlanFilename))
+	file, err := os.ReadFile(filepath.Join(env.WorkingDir(), PlanFilename))
 	if err != nil {
 		return err
 	}
@@ -569,7 +567,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
-	jsonFile, err := os.ReadFile(filepath.Join(env.Path(), JSONPlanFilename))
+	jsonFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), JSONPlanFilename))
 	if err != nil {
 		return err
 	}
@@ -579,18 +577,24 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	return nil
 }
 
+// downloadLockFile downloads the .terraform.lock.hcl file into the working
+// directory. If one has not been uploaded then this will simply write an empty
+// file, which is harmless.
 func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
 	lockFile, err := env.GetLockFile(ctx, r.id)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(env.Path(), LockFilename), lockFile, 0o644)
+	return os.WriteFile(filepath.Join(env.WorkingDir(), LockFilename), lockFile, 0o644)
 }
 
 func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
-	lockFile, err := os.ReadFile(filepath.Join(env.Path(), LockFilename))
-	if err != nil {
-		return err
+	lockFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), LockFilename))
+	if errors.Is(err, fs.ErrNotExist) {
+		// there is no lock file to upload, which is ok
+		return nil
+	} else if err != nil {
+		return errors.Wrap(err, "reading lock file")
 	}
 	if err := env.UploadLockFile(ctx, r.id, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
@@ -604,12 +608,12 @@ func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(env.Path(), PlanFilename), plan, 0o644)
+	return os.WriteFile(filepath.Join(env.WorkingDir(), PlanFilename), plan, 0o644)
 }
 
 // uploadState reads, parses, and uploads terraform state
 func (r *Run) uploadState(ctx context.Context, env Environment) error {
-	f, err := os.ReadFile(filepath.Join(env.Path(), LocalStateFilename))
+	f, err := os.ReadFile(filepath.Join(env.WorkingDir(), LocalStateFilename))
 	if err != nil {
 		return err
 	}
