@@ -2,25 +2,25 @@ package state
 
 import (
 	"context"
-	"encoding/base64"
+	"errors"
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 	jsonapi "github.com/leg100/otf/http/dto"
 	"github.com/leg100/otf/sql/pggen"
-	"github.com/stretchr/testify/require"
 )
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	id        string
-	createdAt time.Time
-	serial    int64
-	state     []byte                // json-encoded state file
-	outputs   []*StateVersionOutput // State version has many outputs
+	id          string
+	createdAt   time.Time
+	serial      int64
+	state       []byte                // json-encoded state file
+	outputs     []*StateVersionOutput // State version has many outputs
+	workspaceID string                // state version belongs to a workspace
 }
 
 func (sv *StateVersion) ID() string                     { return sv.id }
@@ -30,10 +30,41 @@ func (sv *StateVersion) Serial() int64                  { return sv.serial }
 func (sv *StateVersion) State() []byte                  { return sv.state }
 func (sv *StateVersion) Outputs() []*StateVersionOutput { return sv.outputs }
 
+// ToJSONAPI assembles a JSON-API DTO.
+func (sv *StateVersion) ToJSONAPI() any {
+	obj := &dto.StateVersion{
+		ID:          sv.ID(),
+		CreatedAt:   sv.CreatedAt(),
+		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
+		Serial:      sv.Serial(),
+	}
+	for _, out := range sv.Outputs() {
+		obj.Outputs = append(obj.Outputs, &dto.StateVersionOutput{
+			ID:        out.ID(),
+			Name:      out.Name,
+			Sensitive: out.Sensitive,
+			Type:      out.Type,
+			Value:     out.Value,
+		})
+	}
+	return obj
+}
+
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
 	*otf.Pagination
 	Items []*StateVersion
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *StateVersionList) ToJSONAPI() any {
+	obj := &dto.StateVersionList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&StateVersion{item}).ToJSONAPI().(*dto.StateVersion))
+	}
+	return obj
 }
 
 type StateVersionService interface {
@@ -78,31 +109,25 @@ type StateVersionCreateOptions struct {
 	Run     *otf.Run
 }
 
-// Valid validates state version create options
-//
-// TODO: perform validation, check md5, etc
-func (opts *StateVersionCreateOptions) Valid() error {
-	return nil
-}
-
 // NewStateVersion constructs a new state version.
-func NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
-	if err := opts.Valid(); err != nil {
-		return nil, fmt.Errorf("invalid create options: %w", err)
+func NewStateVersion(opts otf.CreateStateVersionOptions) (*StateVersion, error) {
+	if opts.State == nil {
+		return nil, errors.New("state file required")
 	}
-	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
+	if opts.WorkspaceID == nil {
+		return nil, errors.New("workspace ID required")
+	}
+
+	state, err := otf.UnmarshalState(opts.State)
 	if err != nil {
 		return nil, err
 	}
 	sv := StateVersion{
-		id:        otf.NewID("sv"),
-		serial:    *opts.Serial,
-		createdAt: otf.CurrentTimestamp(),
-		state:     decoded,
-	}
-	state, err := otf.UnmarshalState(decoded)
-	if err != nil {
-		return nil, err
+		id:          otf.NewID("sv"),
+		createdAt:   otf.CurrentTimestamp(),
+		serial:      state.Serial,
+		state:       opts.State,
+		workspaceID: *opts.WorkspaceID,
 	}
 	for k, v := range state.Outputs {
 		sv.outputs = append(sv.outputs, &StateVersionOutput{
@@ -113,19 +138,6 @@ func NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
 		})
 	}
 	return &sv, nil
-}
-
-func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
-	state := NewState(StateCreateOptions{}, outputs...)
-	encoded, err := state.Marshal()
-	require.NoError(t, err)
-
-	sv, err := NewStateVersion(StateVersionCreateOptions{
-		Serial: otf.Int64(1),
-		State:  &encoded,
-	})
-	require.NoError(t, err)
-	return sv
 }
 
 // StateVersionResult represents the result of a database query for a state

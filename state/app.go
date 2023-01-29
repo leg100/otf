@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -33,18 +34,21 @@ type AppOptions struct {
 	logr.Logger
 }
 
-func (a *app) CreateStateVersion(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateStateVersionAction, workspaceID)
+func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*otf.StateVersion, error) {
+	if opts.WorkspaceID == nil {
+		return nil, errors.New("workspace ID is required")
+	}
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateStateVersionAction, *opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	sv, err := otf.NewStateVersion(opts)
+	sv, err := NewStateVersion(opts)
 	if err != nil {
 		a.Error(err, "constructing state version")
 		return nil, err
 	}
-	if err := a.db.CreateStateVersion(ctx, workspaceID, sv); err != nil {
+	if err := a.db.CreateStateVersion(ctx, sv); err != nil {
 		a.Error(err, "creating state version", "subject", subject)
 		return nil, err
 	}

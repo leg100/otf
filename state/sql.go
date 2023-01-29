@@ -20,14 +20,14 @@ func newPGDB(db otf.Database) *pgdb {
 }
 
 // CreateStateVersion persists a StateVersion to the DB.
-func (db *pgdb) CreateStateVersion(ctx context.Context, workspaceID string, sv *otf.StateVersion) error {
-	return db.Transaction(ctx, func(tx otf.Database) error {
-		_, err := tx.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
-			ID:          sql.String(sv.ID()),
-			CreatedAt:   sql.Timestamptz(sv.CreatedAt()),
-			Serial:      int(sv.Serial()),
-			State:       sv.State(),
-			WorkspaceID: sql.String(workspaceID),
+func (db *pgdb) CreateStateVersion(ctx context.Context, sv *StateVersion) error {
+	return db.Transaction(ctx, func(db otf.Database) error {
+		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
+			ID:          sql.String(sv.id),
+			CreatedAt:   sql.Timestamptz(sv.createdAt),
+			Serial:      int(sv.serial),
+			State:       sv.state,
+			WorkspaceID: sql.String(sv.workspaceID),
 		})
 		if err != nil {
 			return err
@@ -35,13 +35,13 @@ func (db *pgdb) CreateStateVersion(ctx context.Context, workspaceID string, sv *
 
 		// Insert state_version_outputs
 		for _, svo := range sv.Outputs() {
-			_, err := tx.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
-				ID:             sql.String(svo.ID()),
+			_, err := db.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
+				ID:             sql.String(svo.id),
 				Name:           sql.String(svo.Name),
 				Sensitive:      svo.Sensitive,
 				Type:           sql.String(svo.Type),
 				Value:          sql.String(svo.Value),
-				StateVersionID: sql.String(sv.ID()),
+				StateVersionID: sql.String(sv.id),
 			})
 			if err != nil {
 				return err

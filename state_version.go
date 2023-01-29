@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -48,6 +47,14 @@ type StateVersionService interface {
 	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
 }
 
+type JSONAPIStateVersionService interface {
+	CreateStateVersion(ctx context.Context, workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
+	CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error)
+	GetStateVersion(ctx context.Context, id string) (*StateVersion, error)
+	DownloadState(ctx context.Context, id string) ([]byte, error)
+	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+}
+
 type StateVersionStore interface {
 	CreateStateVersion(ctx context.Context, workspaceID string, sv *StateVersion) error
 	GetStateVersion(ctx context.Context, opts StateVersionGetOptions) (*StateVersion, error)
@@ -82,18 +89,13 @@ type StateVersionCreateOptions struct {
 	Run     *Run
 }
 
-// Valid validates state version create options
-//
-// TODO: perform validation, check md5, etc
-func (opts *StateVersionCreateOptions) Valid() error {
-	return nil
+type CreateStateVersionOptions struct {
+	State       []byte  // Raw terraform state file. Required.
+	WorkspaceID *string // ID of state version's workspace. Required.
 }
 
 // NewStateVersion constructs a new state version.
 func NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
-	if err := opts.Valid(); err != nil {
-		return nil, fmt.Errorf("invalid create options: %w", err)
-	}
 	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
 		return nil, err
