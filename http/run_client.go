@@ -96,6 +96,22 @@ func (c *client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Ru
 	return otf.UnmarshalRunListJSONAPI(wl), nil
 }
 
+func (c *client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
+	req, err := c.newRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	run := &dto.Run{}
+	err = c.do(ctx, req, run)
+	if err != nil {
+		return nil, err
+	}
+
+	return otf.UnmarshalRunJSONAPI(run), nil
+}
+
 func (c *client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/start/%s",
 		url.QueryEscape(id),
