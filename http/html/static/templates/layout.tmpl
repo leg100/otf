@@ -13,29 +13,43 @@
 <body>
   <header>
     <nav class="navbar">
+      {{ with .CurrentUser }}
+        <input id="hamburger-toggle" type="checkbox" />
+        <label class="hamburger-container" for="hamburger-toggle">
+          <div class="hamburger-icon">
+            <img src="/static/images/hamburger.svg" alt="open menu">
+          </div>
+          <div class="cross-icon">
+            <img src="/static/images/cross.svg" alt="close menu">
+          </div>
+        </label>
+      {{ end }}
+
       <div class="logo">
         <a href="/">otf</a>
       </div>
-      <div class="nav-links">
-        <ul>
-          {{ with .CurrentUser }}
-          <li class="current-organization">
-            {{ if $.CurrentOrganization }}
-            <a href="{{ organizationPath $.CurrentOrganization }}">
-              {{ template "building_icon" }}
-              <span>{{ $.CurrentOrganization }}</span>
-            </a>
-            {{ end }}
-          </li>
-          <li>
-            <a href="{{ organizationsPath }}">organizations</a>
-          </li>
-          <li id="top-right-profile-link" class="profile">
-            <a href="{{ profilePath }}"><span class="current-user">{{ .Username }}</span></a>
-          </li>
+
+      {{ with .CurrentUser }}
+        <div class="current-organization">
+          {{ if $.CurrentOrganization }}
+          <a href="{{ organizationPath $.CurrentOrganization }}">
+            {{ template "building_icon" }}
+            <span>{{ $.CurrentOrganization }}</span>
+          </a>
           {{ end }}
-        </ul>
-      </div>
+        </div>
+
+        <div class="nav-links">
+          <ul>
+            <li>
+              <a href="{{ organizationsPath }}">organizations</a>
+            </li>
+            <li id="top-right-profile-link" class="profile">
+              <a href="{{ profilePath }}"><span class="current-user">{{ .Username }}</span></a>
+            </li>
+          </ul>
+        </div>
+      {{ end }}
     </nav>
   </header>
   <main>
