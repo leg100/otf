@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
@@ -83,7 +84,7 @@ func (db *pgdb) ListStateVersions(ctx context.Context, opts otf.StateVersionList
 
 	var items []*Version
 	for _, r := range rows {
-		sv, err := UnmarshalStateVersionResult(StateVersionResult(r))
+		sv, err := unmarshalVersionRow(versionRow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -102,13 +103,13 @@ func (db *pgdb) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOpt
 		if err != nil {
 			return nil, sql.Error(err)
 		}
-		return UnmarshalStateVersionResult(StateVersionResult(result))
+		return unmarshalVersionRow(versionRow(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindStateVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
-		return UnmarshalStateVersionResult(StateVersionResult(result))
+		return unmarshalVersionRow(versionRow(result))
 	} else {
 		return nil, fmt.Errorf("no state version spec provided")
 	}
@@ -125,4 +126,30 @@ func (db *pgdb) DeleteStateVersion(ctx context.Context, id string) error {
 		return sql.Error(err)
 	}
 	return nil
+}
+
+// versionRow represents the result of a database query for a state
+// version.
+type versionRow struct {
+	StateVersionID      pgtype.Text                 `json:"state_version_id"`
+	CreatedAt           pgtype.Timestamptz          `json:"created_at"`
+	Serial              int                         `json:"serial"`
+	State               []byte                      `json:"state"`
+	WorkspaceID         pgtype.Text                 `json:"workspace_id"`
+	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
+}
+
+// unmarshalVersionRow unmarshals a database row into a state version.
+func unmarshalVersionRow(row versionRow) (*Version, error) {
+	sv := Version{
+		id:          row.StateVersionID.String,
+		createdAt:   row.CreatedAt.Time.UTC(),
+		serial:      int64(row.Serial),
+		state:       row.State,
+		workspaceID: row.WorkspaceID.String,
+	}
+	for _, r := range row.StateVersionOutputs {
+		sv.outputs = append(sv.outputs, UnmarshalStateVersionOutputRow(r))
+	}
+	return &sv, nil
 }

@@ -1,9 +1,16 @@
 package state
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+
+	"github.com/leg100/otf"
+	"github.com/stretchr/testify/require"
+)
 
 // newTestVersion creates a new state.Version for testing purposes
-func newTestVersion(t *testing.T, outputs ...StateOutput) *State {
+func newTestVersion(t *testing.T, ws *otf.Workspace, outputs ...StateOutput) *Version {
+	// create empty terraform state
 	state := State{
 		Version: DefaultStateVersion,
 		Serial:  1,
@@ -12,5 +19,16 @@ func newTestVersion(t *testing.T, outputs ...StateOutput) *State {
 	for _, out := range outputs {
 		state.Outputs[out.Name] = out
 	}
-	return &state
+
+	// marshal it into json
+	js, err := json.Marshal(state)
+	require.NoError(t, err)
+
+	// wrap it in a version and return
+	version, err := NewStateVersion(otf.CreateStateVersionOptions{
+		State:       js,
+		WorkspaceID: otf.String(ws.ID()),
+	})
+	require.NoError(t, err)
+	return version
 }

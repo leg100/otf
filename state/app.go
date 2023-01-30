@@ -56,7 +56,7 @@ func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersio
 		a.Error(err, "constructing state version")
 		return nil, err
 	}
-	if err := a.db.CreateStateVersion(ctx, sv); err != nil {
+	if err := a.db.createVersion(ctx, sv); err != nil {
 		a.Error(err, "creating state version", "subject", subject)
 		return nil, err
 	}

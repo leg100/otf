@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/sql/pggen"
 )
 
 // Version represents a Terraform Enterprise state version.
@@ -118,31 +116,6 @@ func NewStateVersion(opts otf.CreateStateVersionOptions) (*Version, error) {
 			Type:  v.Type,
 			Value: v.Value,
 		})
-	}
-	return &sv, nil
-}
-
-// StateVersionResult represents the result of a database query for a state
-// version.
-type StateVersionResult struct {
-	StateVersionID      pgtype.Text                 `json:"state_version_id"`
-	CreatedAt           pgtype.Timestamptz          `json:"created_at"`
-	Serial              int                         `json:"serial"`
-	State               []byte                      `json:"state"`
-	WorkspaceID         pgtype.Text                 `json:"workspace_id"`
-	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
-}
-
-// UnmarshalStateVersionResult unmarshals a database result query into a state version.
-func UnmarshalStateVersionResult(row StateVersionResult) (*Version, error) {
-	sv := Version{
-		id:        row.StateVersionID.String,
-		createdAt: row.CreatedAt.Time.UTC(),
-		serial:    int64(row.Serial),
-		state:     row.State,
-	}
-	for _, r := range row.StateVersionOutputs {
-		sv.outputs = append(sv.outputs, UnmarshalStateVersionOutputRow(r))
 	}
 	return &sv, nil
 }
