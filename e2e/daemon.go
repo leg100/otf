@@ -67,6 +67,7 @@ func (d *daemon) start(t *testing.T) string {
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
+		"--plugin-cache", // speed up tests by caching providers
 		"--database", database,
 	)
 

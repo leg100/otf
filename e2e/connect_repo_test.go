@@ -146,8 +146,10 @@ func TestConnectRepo(t *testing.T) {
 		matchText(t, ".flash-success", "disconnected workspace from repo"),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
 		// delete workspace
 		chromedp.Click(`//button[text()='Delete workspace']`, chromedp.NodeVisible),
+		screenshot(t),
 		// confirm deletion
 		matchText(t, ".flash-success", "deleted workspace: "+workspaceName),
 		//
@@ -155,6 +157,7 @@ func TestConnectRepo(t *testing.T) {
 		//
 		// go to org
 		chromedp.Navigate(path.Join(url, "organizations", org)),
+		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		screenshot(t),
