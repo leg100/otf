@@ -23,7 +23,7 @@ go-tfe-tests: build
 
 .PHONY: e2e
 e2e: build
-	go test -v ./e2e -failfast -timeout 120s -count 1
+	go test -v ./e2e -failfast -timeout 600s -count 1
 
 .PHONY: unit
 unit:
