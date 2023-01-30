@@ -11,8 +11,8 @@ import (
 
 func TestLog_PutChunk(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 	ctx := context.Background()
@@ -48,8 +48,8 @@ func TestLog_PutChunk(t *testing.T) {
 
 func TestLog_GetChunk(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 	ctx := context.Background()
@@ -142,8 +142,8 @@ func TestLog_GetChunk(t *testing.T) {
 
 func TestLog_GetChunkByID(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 	ctx := context.Background()

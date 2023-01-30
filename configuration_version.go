@@ -107,7 +107,7 @@ type ConfigurationVersionStatusTimestamp struct {
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a
-// configuration version. See dto.ConfigurationVersionCreateOptions for more
+// configuration version. See jsonapi.ConfigurationVersionCreateOptions for more
 // details.
 type ConfigurationVersionCreateOptions struct {
 	AutoQueueRuns *bool

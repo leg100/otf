@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
 // OTF is free and therefore the user is entitled to all currently supported

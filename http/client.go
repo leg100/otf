@@ -17,9 +17,8 @@ import (
 	"time"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/r3labs/sse/v2"
 	"golang.org/x/time/rate"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -476,15 +475,15 @@ func checkResponseCode(r *http.Response) error {
 	return fmt.Errorf(strings.Join(errs, "\n"))
 }
 
-func parsePagination(body io.Reader) (*dto.Pagination, error) {
+func parsePagination(body io.Reader) (*jsonapi.Pagination, error) {
 	var raw struct {
 		Meta struct {
-			Pagination dto.Pagination `jsonapi:"pagination"`
+			Pagination jsonapi.Pagination `jsonapi:"pagination"`
 		} `jsonapi:"meta"`
 	}
 	// JSON decode the raw response.
 	if err := json.NewDecoder(body).Decode(&raw); err != nil {
-		return &dto.Pagination{}, err
+		return &jsonapi.Pagination{}, err
 	}
 	return &raw.Meta.Pagination, nil
 }

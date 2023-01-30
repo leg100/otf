@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // Apply represents a Terraform Enterprise apply.
 type Apply struct {

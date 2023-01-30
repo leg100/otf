@@ -1,78 +1,91 @@
 package state
 
 import (
+	"encoding/base64"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 type Server struct {
-	otf.Application
+	Application
 }
 
 func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := versionJSONAPICreateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		dto.Error(w, http.StatusUnprocessableEntity, err)
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	// convert from json-api to domain
-	sv, err := s.Application.CreateStateVersion(r.Context(), vars["workspace_id"], otf.StateVersionCreateOptions{
-		Lineage: opts.Lineage,
-		Serial:  opts.Serial,
-		State:   opts.State,
+
+	opts := jsonapiCreateVersionOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	// TODO: validate lineage, serial, md5
+
+	// base64-decode state to []byte
+	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	sv, err := s.Application.CreateStateVersion(r.Context(), otf.CreateStateVersionOptions{
+		WorkspaceID: otf.String(workspaceID),
+		State:       decoded,
 	})
 	if err != nil {
-		dto.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	dto.WriteResponse(w, r, sv)
+	jsonapi.WriteResponse(w, r, sv)
 }
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
-	var opts otf.StateVersionListOptions
+	var opts StateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		dto.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	svl, err := s.Application.ListStateVersions(r.Context(), opts)
 	if err != nil {
-		dto.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	dto.WriteResponse(w, r, &StateVersionList{svl})
+	jsonapi.WriteResponse(w, r, svl)
 }
 
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sv, err := s.Application.CurrentStateVersion(r.Context(), vars["workspace_id"])
 	if err != nil {
-		dto.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	dto.WriteResponse(w, r, &StateVersion{sv})
+	jsonapi.WriteResponse(w, r, sv)
 }
 
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sv, err := s.Application.GetStateVersion(r.Context(), vars["id"])
 	if err != nil {
-		dto.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	dto.WriteResponse(w, r, &StateVersion{sv})
+	jsonapi.WriteResponse(w, r, sv)
 }
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	resp, err := s.DownloadState(r.Context(), vars["id"])
 	if err != nil {
-		dto.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 	w.Write(resp)

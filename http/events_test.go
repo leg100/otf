@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/surl"
 	"github.com/r3labs/sse/v2"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +62,7 @@ func TestWatch(t *testing.T) {
 	assert.Equal(t, "run_created", string(got.Event))
 
 	// check event payload is what we expect
-	gotRun := dto.Run{}
+	gotRun := jsonapi.Run{}
 	err = jsonapi.UnmarshalPayload(bytes.NewReader(got.Data), &gotRun)
 	require.NoError(t, err)
 	assert.Equal(t, wantRun.ID(), gotRun.ID)

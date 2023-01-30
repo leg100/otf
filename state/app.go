@@ -10,6 +10,14 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
+type Application interface {
+	CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error)
+	CurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
+	GetStateVersion(ctx context.Context, id string) (*Version, error)
+	DownloadState(ctx context.Context, id string) ([]byte, error)
+	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+}
+
 type app struct {
 	otf.Authorizer // authorize access
 	logr.Logger
@@ -34,7 +42,7 @@ type AppOptions struct {
 	logr.Logger
 }
 
-func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*otf.StateVersion, error) {
+func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error) {
 	if opts.WorkspaceID == nil {
 		return nil, errors.New("workspace ID is required")
 	}
@@ -57,7 +65,7 @@ func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersio
 		return nil, fmt.Errorf("caching state version: %w", err)
 	}
 
-	a.V(0).Info("created state version", "id", sv.ID(), "workspace", workspaceID, "serial", sv.Serial(), "subject", subject)
+	a.V(0).Info("created state version", "id", sv.ID(), "workspace", *opts.WorkspaceID, "serial", sv.Serial(), "subject", subject)
 	return sv, nil
 }
 
@@ -76,7 +84,7 @@ func (a *app) ListStateVersions(ctx context.Context, opts otf.StateVersionListOp
 	return svl, nil
 }
 
-func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error) {
+func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -91,7 +99,7 @@ func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*Sta
 	return sv, nil
 }
 
-func (a *app) GetStateVersion(ctx context.Context, svID string) (*StateVersion, error) {
+func (a *app) GetStateVersion(ctx context.Context, svID string) (*Version, error) {
 	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, svID)
 	if err != nil {
 		return nil, err

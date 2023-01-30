@@ -15,8 +15,8 @@ import (
 // another pubsub process can receive it.
 func TestPubSub_E2E(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 

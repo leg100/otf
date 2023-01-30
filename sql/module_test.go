@@ -12,7 +12,7 @@ import (
 func TestModule_Create(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	module := otf.NewTestModule(org)
 
 	defer db.DeleteModule(ctx, module.ID())
@@ -24,7 +24,7 @@ func TestModule_Create(t *testing.T) {
 func TestModule_Get(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	want := createTestModule(t, db, org)
 
 	got, err := db.GetModule(ctx, otf.GetModuleOptions{
@@ -40,7 +40,7 @@ func TestModule_Get(t *testing.T) {
 func TestModule_GetByID(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	want := createTestModule(t, db, org)
 
 	got, err := db.GetModuleByID(ctx, want.ID())
@@ -52,7 +52,7 @@ func TestModule_GetByID(t *testing.T) {
 func TestModule_List(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	module1 := createTestModule(t, db, org)
 	module2 := createTestModule(t, db, org)
 	module3 := createTestModule(t, db, org)
@@ -70,7 +70,7 @@ func TestModule_List(t *testing.T) {
 func TestModule_Delete(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	module := createTestModule(t, db, org)
 
 	err := db.DeleteModule(ctx, module.ID())

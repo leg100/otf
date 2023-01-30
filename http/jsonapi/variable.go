@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // Variable represents a Terraform Enterprise variable.
 type Variable struct {

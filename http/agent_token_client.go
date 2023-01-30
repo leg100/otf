@@ -4,19 +4,19 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // CreateOrganization creates a new organization with the given options.
 func (c *client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
-	req, err := c.newRequest("POST", "agent/create", &dto.AgentTokenCreateOptions{
+	req, err := c.newRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
 		Description:  options.Description,
 		Organization: options.Organization,
 	})
 	if err != nil {
 		return nil, err
 	}
-	at := &dto.AgentToken{}
+	at := &jsonapi.AgentToken{}
 	err = c.do(ctx, req, at)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (c *client) GetAgentToken(ctx context.Context, token string) (*otf.AgentTok
 		return nil, err
 	}
 
-	at := &dto.AgentToken{}
+	at := &jsonapi.AgentToken{}
 	err = c.do(ctx, req, at)
 	if err != nil {
 		return nil, err

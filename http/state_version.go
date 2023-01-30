@@ -5,15 +5,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	opts := dto.StateVersionCreateOptions{}
+	opts := jsonapi.StateVersionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -27,7 +26,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &StateVersion{sv})
+	jsonapi.WriteResponse(w, r, &StateVersion{sv})
 }
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +40,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &StateVersionList{svl})
+	jsonapi.WriteResponse(w, r, &StateVersionList{svl})
 }
 
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +50,7 @@ func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &StateVersion{sv})
+	jsonapi.WriteResponse(w, r, &StateVersion{sv})
 }
 
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +60,7 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &StateVersion{sv})
+	jsonapi.WriteResponse(w, r, &StateVersion{sv})
 }
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -80,14 +79,14 @@ type StateVersion struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (sv *StateVersion) ToJSONAPI() any {
-	obj := &dto.StateVersion{
+	obj := &jsonapi.StateVersion{
 		ID:          sv.ID(),
 		CreatedAt:   sv.CreatedAt(),
 		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
 		Serial:      sv.Serial(),
 	}
 	for _, out := range sv.Outputs() {
-		obj.Outputs = append(obj.Outputs, &dto.StateVersionOutput{
+		obj.Outputs = append(obj.Outputs, &jsonapi.StateVersionOutput{
 			ID:        out.ID(),
 			Name:      out.Name,
 			Sensitive: out.Sensitive,
@@ -104,11 +103,11 @@ type StateVersionList struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *StateVersionList) ToJSONAPI() any {
-	obj := &dto.StateVersionList{
+	obj := &jsonapi.StateVersionList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&StateVersion{item}).ToJSONAPI().(*dto.StateVersion))
+		obj.Items = append(obj.Items, (&StateVersion{item}).ToJSONAPI().(*jsonapi.StateVersion))
 	}
 	return obj
 }

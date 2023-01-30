@@ -4,10 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -40,9 +39,9 @@ func (ws *Workspace) ToJSONAPI() any {
 		Permissions:  perms,
 	}
 
-	obj := &dto.Workspace{
+	obj := &jsonapi.Workspace{
 		ID: ws.ID(),
-		Actions: &dto.WorkspaceActions{
+		Actions: &jsonapi.WorkspaceActions{
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     ws.AllowDestroyPlan(),
@@ -59,7 +58,7 @@ func (ws *Workspace) ToJSONAPI() any {
 		Name:                 ws.Name(),
 		// Operations is deprecated but clients and go-tfe tests still use it
 		Operations: ws.ExecutionMode() == "remote",
-		Permissions: &dto.WorkspacePermissions{
+		Permissions: &jsonapi.WorkspacePermissions{
 			CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
 			CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
 			CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
@@ -80,7 +79,7 @@ func (ws *Workspace) ToJSONAPI() any {
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
-		Organization:               &dto.Organization{Name: ws.Organization()},
+		Organization:               &jsonapi.Organization{Name: ws.Organization()},
 	}
 
 	// Support including related resources:
@@ -98,7 +97,7 @@ func (ws *Workspace) ToJSONAPI() any {
 				if err != nil {
 					panic(err.Error()) // throws HTTP500
 				}
-				obj.Organization = (&Organization{org}).ToJSONAPI().(*dto.Organization)
+				obj.Organization = (&Organization{org}).ToJSONAPI().(*jsonapi.Organization)
 			}
 		}
 	}
@@ -113,17 +112,17 @@ type WorkspaceList struct {
 }
 
 func (l *WorkspaceList) ToJSONAPI() any {
-	obj := &dto.WorkspaceList{
+	obj := &jsonapi.WorkspaceList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Workspace{l.r, l.Application, item}).ToJSONAPI().(*dto.Workspace))
+		obj.Items = append(obj.Items, (&Workspace{l.r, l.Application, item}).ToJSONAPI().(*jsonapi.Workspace))
 	}
 	return obj
 }
 
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
-	var opts dto.WorkspaceCreateOptions
+	var opts jsonapi.WorkspaceCreateOptions
 	if err := decode.Route(&opts, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -160,7 +159,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws}, withCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +174,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws})
+	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +189,7 @@ func (s *Server) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws})
+	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +207,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &WorkspaceList{r, s.Application, wsl})
+	jsonapi.WriteResponse(w, r, &WorkspaceList{r, s.Application, wsl})
 }
 
 // UpdateWorkspace updates a workspace using its ID.
@@ -259,7 +258,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws})
+	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -278,7 +277,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws})
+	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -317,7 +316,7 @@ func (s *Server) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	opts := dto.WorkspaceUpdateOptions{}
+	opts := jsonapi.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -346,5 +345,5 @@ func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request, workspa
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws})
+	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
 }

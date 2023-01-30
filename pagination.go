@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
-	jsonapi "github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 const (

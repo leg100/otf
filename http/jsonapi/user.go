@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // User represents a Terraform Enterprise user.
 type User struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -121,7 +121,7 @@ func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceResult) error {
 	return nil
 }
 
-func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
+func UnmarshalWorkspaceJSONAPI(w *jsonapi.Workspace) *Workspace {
 	domain := Workspace{
 		id:                         w.ID,
 		allowDestroyPlan:           w.AllowDestroyPlan,
@@ -157,7 +157,7 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 }
 
 // UnmarshalWorkspaceListJSONAPI converts a DTO into a workspace list
-func UnmarshalWorkspaceListJSONAPI(json *dto.WorkspaceList) *WorkspaceList {
+func UnmarshalWorkspaceListJSONAPI(json *jsonapi.WorkspaceList) *WorkspaceList {
 	wl := WorkspaceList{
 		Pagination: UnmarshalPaginationJSONAPI(json.Pagination),
 	}

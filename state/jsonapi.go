@@ -3,13 +3,13 @@ package state
 import (
 	"time"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // StateVersion represents a Terraform Enterprise state version.
 
-// versionJSONAPI is a state version suitable for marshaling into JSONAPI
-type versionJSONAPI struct {
+// jsonapiVersion is a state version suitable for marshaling into JSONAPI
+type jsonapiVersion struct {
 	ID           string    `jsonapi:"primary,state-versions"`
 	CreatedAt    time.Time `jsonapi:"attr,created-at,iso8601"`
 	DownloadURL  string    `jsonapi:"attr,hosted-state-download-url"`
@@ -18,19 +18,27 @@ type versionJSONAPI struct {
 	VCSCommitURL string    `jsonapi:"attr,vcs-commit-url"`
 
 	// Relations
-	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
+	Outputs []*jsonapiVersionOutput `jsonapi:"relation,outputs"`
 }
 
-// versionListJSONAPI is a list of state versions suitable for marshaling into
+// jsonapiVersionList is a list of state versions suitable for marshaling into
 // JSONAPI
-type versionListJSONAPI struct {
-	*otf.Pagination
-	Items []*StateVersion
+type jsonapiVersionList struct {
+	*jsonapi.Pagination
+	Items []*jsonapiVersion
 }
 
-// versionJSONAPICreateOptions are options for creating a state version via
+type jsonapiVersionOutput struct {
+	ID        string `jsonapi:"primary,state-version-outputs"`
+	Name      string `jsonapi:"attr,name"`
+	Sensitive bool   `jsonapi:"attr,sensitive"`
+	Type      string `jsonapi:"attr,type"`
+	Value     string `jsonapi:"attr,value"`
+}
+
+// jsonapiCreateVersionOptions are options for creating a state version via
 // JSONAPI
-type versionJSONAPICreateOptions struct {
+type jsonapiCreateVersionOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -51,8 +59,8 @@ type versionJSONAPICreateOptions struct {
 	// Run *Run `jsonapi:"relation,run,omitempty"`
 }
 
-func unmarshalJSONAPI(japi *versionJSONAPI) *StateVersion {
-	return &StateVersion{
+func unmarshalJSONAPI(japi *jsonapiVersion) *Version {
+	return &Version{
 		id:        japi.ID,
 		createdAt: japi.CreatedAt,
 		serial:    japi.Serial,

@@ -1,20 +1,18 @@
 package state
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
-	jsonapi "github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// StateVersion represents a Terraform Enterprise state version.
-type StateVersion struct {
+// Version represents a Terraform Enterprise state version.
+type Version struct {
 	id          string
 	createdAt   time.Time
 	serial      int64
@@ -23,23 +21,23 @@ type StateVersion struct {
 	workspaceID string                // state version belongs to a workspace
 }
 
-func (sv *StateVersion) ID() string                     { return sv.id }
-func (sv *StateVersion) CreatedAt() time.Time           { return sv.createdAt }
-func (sv *StateVersion) String() string                 { return sv.id }
-func (sv *StateVersion) Serial() int64                  { return sv.serial }
-func (sv *StateVersion) State() []byte                  { return sv.state }
-func (sv *StateVersion) Outputs() []*StateVersionOutput { return sv.outputs }
+func (sv *Version) ID() string                     { return sv.id }
+func (sv *Version) CreatedAt() time.Time           { return sv.createdAt }
+func (sv *Version) String() string                 { return sv.id }
+func (sv *Version) Serial() int64                  { return sv.serial }
+func (sv *Version) State() []byte                  { return sv.state }
+func (sv *Version) Outputs() []*StateVersionOutput { return sv.outputs }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (sv *StateVersion) ToJSONAPI() any {
-	obj := &dto.StateVersion{
+func (sv *Version) ToJSONAPI() any {
+	obj := &jsonapiVersion{
 		ID:          sv.ID(),
 		CreatedAt:   sv.CreatedAt(),
 		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
 		Serial:      sv.Serial(),
 	}
 	for _, out := range sv.Outputs() {
-		obj.Outputs = append(obj.Outputs, &dto.StateVersionOutput{
+		obj.Outputs = append(obj.Outputs, &jsonapiVersionOutput{
 			ID:        out.ID(),
 			Name:      out.Name,
 			Sensitive: out.Sensitive,
@@ -53,34 +51,18 @@ func (sv *StateVersion) ToJSONAPI() any {
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
 	*otf.Pagination
-	Items []*StateVersion
+	Items []*Version
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *StateVersionList) ToJSONAPI() any {
-	obj := &dto.StateVersionList{
+	obj := &jsonapiVersionList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&StateVersion{item}).ToJSONAPI().(*dto.StateVersion))
+		obj.Items = append(obj.Items, item.ToJSONAPI().(*jsonapiVersion))
 	}
 	return obj
-}
-
-type StateVersionService interface {
-	CreateStateVersion(ctx context.Context, workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
-	CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error)
-	GetStateVersion(ctx context.Context, id string) (*StateVersion, error)
-	DownloadState(ctx context.Context, id string) ([]byte, error)
-	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
-}
-
-type StateVersionStore interface {
-	CreateStateVersion(ctx context.Context, workspaceID string, sv *StateVersion) error
-	GetStateVersion(ctx context.Context, opts StateVersionGetOptions) (*StateVersion, error)
-	GetState(ctx context.Context, id string) ([]byte, error)
-	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
-	DeleteStateVersion(ctx context.Context, id string) error
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.
@@ -110,7 +92,7 @@ type StateVersionCreateOptions struct {
 }
 
 // NewStateVersion constructs a new state version.
-func NewStateVersion(opts otf.CreateStateVersionOptions) (*StateVersion, error) {
+func NewStateVersion(opts otf.CreateStateVersionOptions) (*Version, error) {
 	if opts.State == nil {
 		return nil, errors.New("state file required")
 	}
@@ -118,11 +100,11 @@ func NewStateVersion(opts otf.CreateStateVersionOptions) (*StateVersion, error) 
 		return nil, errors.New("workspace ID required")
 	}
 
-	state, err := otf.UnmarshalState(opts.State)
+	state, err := unmarshalState(opts.State)
 	if err != nil {
 		return nil, err
 	}
-	sv := StateVersion{
+	sv := Version{
 		id:          otf.NewID("sv"),
 		createdAt:   otf.CurrentTimestamp(),
 		serial:      state.Serial,
@@ -152,8 +134,8 @@ type StateVersionResult struct {
 }
 
 // UnmarshalStateVersionResult unmarshals a database result query into a state version.
-func UnmarshalStateVersionResult(row StateVersionResult) (*StateVersion, error) {
-	sv := StateVersion{
+func UnmarshalStateVersionResult(row StateVersionResult) (*Version, error) {
+	sv := Version{
 		id:        row.StateVersionID.String,
 		createdAt: row.CreatedAt.Time.UTC(),
 		serial:    int64(row.Serial),
@@ -165,8 +147,8 @@ func UnmarshalStateVersionResult(row StateVersionResult) (*StateVersion, error) 
 	return &sv, nil
 }
 
-func UnmarshalStateVersionJSONAPI(dto *jsonapi.StateVersion) *StateVersion {
-	return &StateVersion{
+func UnmarshalStateVersionJSONAPI(dto *jsonapi.StateVersion) *Version {
+	return &Version{
 		id:        dto.ID,
 		createdAt: dto.CreatedAt,
 		serial:    dto.Serial,

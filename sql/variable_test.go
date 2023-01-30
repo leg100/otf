@@ -12,8 +12,8 @@ import (
 func TestVariable_Create(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	v := otf.NewTestVariable(t, ws, otf.CreateVariableOptions{
 		Key:      otf.String("foo"),
 		Value:    otf.String("bar"),
@@ -29,8 +29,8 @@ func TestVariable_Create(t *testing.T) {
 func TestVariable_Update(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	country := createTestVariable(t, db, ws, otf.CreateVariableOptions{
 		Key:      otf.String("country"),
 		Value:    otf.String("belgium"),
@@ -50,8 +50,8 @@ func TestVariable_Update(t *testing.T) {
 func TestVariable_List(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	country := createTestVariable(t, db, ws, otf.CreateVariableOptions{
 		Key:      otf.String("country"),
 		Value:    otf.String("belgium"),
@@ -75,8 +75,8 @@ func TestVariable_List(t *testing.T) {
 func TestVariable_Get(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	want := createTestVariable(t, db, ws, otf.CreateVariableOptions{
 		Key:      otf.String("country"),
 		Value:    otf.String("belgium"),
@@ -92,8 +92,8 @@ func TestVariable_Get(t *testing.T) {
 func TestVariable_Delete(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	want := createTestVariable(t, db, ws, otf.CreateVariableOptions{
 		Key:      otf.String("country"),
 		Value:    otf.String("belgium"),

@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {

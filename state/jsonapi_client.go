@@ -15,9 +15,11 @@ type jsonapiClient struct {
 }
 
 // Create a new state version for the given workspace.
-func (c *jsonapiClient) CreateStateVersion(ctx context.Context, workspaceID string, opts versionJSONAPICreateOptions) (*StateVersion, error) {
+func (c *jsonapiClient) CreateStateVersion(ctx context.Context, workspaceID string, opts jsonapiCreateVersionOptions) (*Version, error) {
+	// TODO: validate lineage, serial, md5
+
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(workspaceID))
-	req, err := c.NewRequest("POST", u, &versionJSONAPICreateOptions{
+	req, err := c.NewRequest("POST", u, &jsonapiCreateVersionOptions{
 		Lineage: opts.Lineage,
 		MD5:     opts.MD5,
 		Serial:  opts.Serial,
@@ -27,7 +29,7 @@ func (c *jsonapiClient) CreateStateVersion(ctx context.Context, workspaceID stri
 		return nil, err
 	}
 
-	sv := &versionJSONAPI{}
+	sv := &jsonapiVersion{}
 	err = c.Do(ctx, req, sv)
 	if err != nil {
 		return nil, err
@@ -36,14 +38,14 @@ func (c *jsonapiClient) CreateStateVersion(ctx context.Context, workspaceID stri
 	return unmarshalJSONAPI(sv), nil
 }
 
-func (c *jsonapiClient) CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error) {
+func (c *jsonapiClient) CurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	sv := &versionJSONAPI{}
+	sv := &jsonapiVersion{}
 	err = c.Do(ctx, req, sv)
 	if err != nil {
 		return nil, err

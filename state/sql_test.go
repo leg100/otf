@@ -1,35 +1,41 @@
-package sql
+package state
 
 import (
 	"context"
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStateVersion_Create(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
+	ctx := context.Background()
+	db := sql.NewTestDB(t)
+	stateDB := &pgdb{db}
+	org := sql.CreateTestOrganization(t, db)
+	ws := sql.CreateTestWorkspace(t, db, org)
 
-	sv := otf.NewTestStateVersion(t,
-		otf.StateOutput{"out1", "string", "val1", false},
-		otf.StateOutput{"out2", "string", "val2", false},
+	sv := newTestVersion(t,
+		StateOutput{"out1", "string", "val1", false},
+		StateOutput{"out2", "string", "val2", false},
 	)
 
-	err := db.CreateStateVersion(context.Background(), ws.ID(), sv)
+	err := stateDB.createVersion(ctx, sv)
 	require.NoError(t, err)
 }
 
 func TestStateVersion_Get(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
-	sv := createTestStateVersion(t, db, ws,
-		otf.StateOutput{"out1", "string", "val1", false},
+	ctx := context.Background()
+	db := newTestDB(t)
+	org := sql.CreateTestOrganization(t, db)
+	ws := sql.CreateTestWorkspace(t, db, org)
+	sv := newTestVersion(t,
+		StateOutput{"out1", "string", "val1", false},
 	)
+	err := db.CreateStateVersion(ctx, ws.ID(), sv)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name string
@@ -72,16 +78,17 @@ func TestStateVersion_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetStateVersion(context.Background(), tt.opts)
+			got, err := db.GetStateVersion(ctx, tt.opts)
 			tt.want(t, got, err)
 		})
 	}
 }
 
 func TestStateVersion_List(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
+	ctx := context.Background()
+	db := newTestDB(t)
+	org := sql.CreateTestOrganization(t, db)
+	ws := sql.CreateTestWorkspace(t, db, org)
 	sv1 := createTestStateVersion(t, db, ws)
 	sv2 := createTestStateVersion(t, db, ws)
 
@@ -111,7 +118,7 @@ func TestStateVersion_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := db.ListStateVersions(context.Background(), tt.opts)
+			results, err := db.ListStateVersions(ctx, tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, results, sv1, sv2)

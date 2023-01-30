@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (c *client) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
@@ -87,7 +87,7 @@ func (c *client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Ru
 		return nil, err
 	}
 
-	wl := &dto.RunList{}
+	wl := &jsonapi.RunList{}
 	err = c.do(ctx, req, wl)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (c *client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 		return nil, err
 	}
 
-	run := &dto.Run{}
+	run := &jsonapi.Run{}
 	err = c.do(ctx, req, run)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (c *client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 		return nil, err
 	}
 
-	run := &dto.Run{}
+	run := &jsonapi.Run{}
 	err = c.do(ctx, req, run)
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (c *client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 		return nil, err
 	}
 
-	run := &dto.Run{}
+	run := &jsonapi.Run{}
 	err = c.do(ctx, req, run)
 	if err != nil {
 		return nil, err

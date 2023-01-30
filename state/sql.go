@@ -10,38 +10,45 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// pgdb is the hook database on postgres
-type pgdb struct {
+// db is a state database
+type db interface {
 	otf.Database
+
+	createVersion(context.Context, *Version) error
+	ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*StateVersionList, error)
+}
+
+// pgdb is the state database on postgres
+type pgdb struct {
+	otf.Database // provides access to generated SQL queries
 }
 
 func newPGDB(db otf.Database) *pgdb {
 	return &pgdb{db}
 }
 
-// CreateStateVersion persists a StateVersion to the DB.
-func (db *pgdb) CreateStateVersion(ctx context.Context, sv *StateVersion) error {
+func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	return db.Transaction(ctx, func(db otf.Database) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
-			ID:          sql.String(sv.id),
-			CreatedAt:   sql.Timestamptz(sv.createdAt),
-			Serial:      int(sv.serial),
-			State:       sv.state,
-			WorkspaceID: sql.String(sv.workspaceID),
+			ID:          sql.String(v.id),
+			CreatedAt:   sql.Timestamptz(v.createdAt),
+			Serial:      int(v.serial),
+			State:       v.state,
+			WorkspaceID: sql.String(v.workspaceID),
 		})
 		if err != nil {
 			return err
 		}
 
 		// Insert state_version_outputs
-		for _, svo := range sv.Outputs() {
+		for _, svo := range v.Outputs() {
 			_, err := db.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
 				ID:             sql.String(svo.id),
 				Name:           sql.String(svo.Name),
 				Sensitive:      svo.Sensitive,
 				Type:           sql.String(svo.Type),
 				Value:          sql.String(svo.Value),
-				StateVersionID: sql.String(sv.id),
+				StateVersionID: sql.String(v.id),
 			})
 			if err != nil {
 				return err
@@ -74,7 +81,7 @@ func (db *pgdb) ListStateVersions(ctx context.Context, opts otf.StateVersionList
 		return nil, err
 	}
 
-	var items []*StateVersion
+	var items []*Version
 	for _, r := range rows {
 		sv, err := UnmarshalStateVersionResult(StateVersionResult(r))
 		if err != nil {
@@ -89,7 +96,7 @@ func (db *pgdb) ListStateVersions(ctx context.Context, opts otf.StateVersionList
 	}, nil
 }
 
-func (db *pgdb) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*StateVersion, error) {
+func (db *pgdb) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*Version, error) {
 	if opts.ID != nil {
 		result, err := db.FindStateVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {

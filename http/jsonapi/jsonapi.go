@@ -1,4 +1,5 @@
-package dto
+// Package jsonapi handles marshaling/unmarshaling into/from json-api
+package jsonapi
 
 import (
 	"encoding/json"
@@ -11,6 +12,8 @@ import (
 	"github.com/leg100/jsonapi"
 )
 
+type ErrorsPayload jsonapi.ErrorsPayload
+
 // Pagination is used to return the pagination details of an API request.
 type Pagination struct {
 	CurrentPage  int  `json:"current-page"`
@@ -18,6 +21,10 @@ type Pagination struct {
 	NextPage     *int `json:"next-page"`
 	TotalPages   int  `json:"total-pages"`
 	TotalCount   int  `json:"total-count"`
+}
+
+func UnmarshalPayload(in io.Reader, model interface{}) error {
+	return jsonapi.UnmarshalPayload(in, model)
 }
 
 // MarshalPayload marshals the models object into a JSON-API response.
@@ -61,6 +68,14 @@ func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
 	manyPayload.Meta = &jsonapi.Meta{"pagination": pagination.Interface()}
 
 	return json.NewEncoder(w).Encode(payload)
+}
+
+func MarshalPayloadWithoutIncluded(w io.Writer, model interface{}) error {
+	return jsonapi.MarshalPayloadWithoutIncluded(w, model)
+}
+
+func UnmarshalManyPayload(in io.Reader, t reflect.Type) ([]interface{}, error) {
+	return jsonapi.UnmarshalManyPayload(in, t)
 }
 
 func marshalSinglePayload(w io.Writer, model interface{}, include ...string) error {

@@ -12,7 +12,7 @@ func TestState_UnmarshalState(t *testing.T) {
 	data, err := os.ReadFile("testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	state, err := UnmarshalState(data)
+	state, err := unmarshalState(data)
 	require.NoError(t, err)
 
 	assert.Equal(t, state, &State{

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (c *client) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
@@ -22,7 +22,7 @@ func (c *client) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOp
 		return nil, err
 	}
 
-	w := &dto.Workspace{}
+	w := &jsonapi.Workspace{}
 	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (c *client) GetWorkspaceByName(ctx context.Context, organization, workspace
 		return nil, err
 	}
 
-	w := &dto.Workspace{}
+	w := &jsonapi.Workspace{}
 	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (c *client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Wor
 		return nil, err
 	}
 
-	w := &dto.Workspace{}
+	w := &jsonapi.Workspace{}
 	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOp
 		return nil, err
 	}
 
-	wl := &dto.WorkspaceList{}
+	wl := &jsonapi.WorkspaceList{}
 	err = c.do(ctx, req, wl)
 	if err != nil {
 		return nil, err
@@ -98,14 +98,14 @@ func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 	}
 
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.newRequest("PATCH", path, &dto.WorkspaceUpdateOptions{
+	req, err := c.newRequest("PATCH", path, &jsonapi.WorkspaceUpdateOptions{
 		ExecutionMode: (*string)(options.ExecutionMode),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	w := &dto.Workspace{}
+	w := &jsonapi.Workspace{}
 	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (c *client) LockWorkspace(ctx context.Context, workspaceID string, opts otf
 		return nil, err
 	}
 
-	w := &dto.Workspace{}
+	w := &jsonapi.Workspace{}
 	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (c *client) UnlockWorkspace(ctx context.Context, workspaceID string, _ otf.
 		return nil, err
 	}
 
-	w := &dto.Workspace{}
+	w := &jsonapi.Workspace{}
 	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err

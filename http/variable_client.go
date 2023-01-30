@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (c *client) ListVariables(ctx context.Context, workspaceID string) ([]*otf.Variable, error) {
@@ -15,7 +15,7 @@ func (c *client) ListVariables(ctx context.Context, workspaceID string) ([]*otf.
 		return nil, err
 	}
 
-	list := &dto.VariableList{}
+	list := &jsonapi.VariableList{}
 	err = c.do(ctx, req, list)
 	if err != nil {
 		return nil, err

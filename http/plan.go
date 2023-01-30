@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	jsonapi "github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // These endpoints implement the documented plan API:
@@ -27,7 +27,7 @@ func (s *Server) getPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &plan{run.Plan(), r, s})
+	jsonapi.WriteResponse(w, r, &plan{run.Plan(), r, s})
 }
 
 // getPlanJSON retrieves a plan object's plan file in JSON format.

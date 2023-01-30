@@ -69,7 +69,7 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 	return &otf.WorkspacePermission{Team: team, Role: role}
 }
 
-func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
+func CreateTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	org := otf.NewTestOrganization(t)
 	err := db.CreateOrganization(context.Background(), org)
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 	return team
 }
 
-func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestWorkspaceOption) *otf.Workspace {
+func CreateTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestWorkspaceOption) *otf.Workspace {
 	ctx := context.Background()
 	ws := otf.NewTestWorkspace(t, org, opts...)
 	err := db.CreateWorkspace(ctx, ws)

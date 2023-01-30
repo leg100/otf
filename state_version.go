@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	jsonapi "github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 )
@@ -80,7 +80,7 @@ type StateVersionListOptions struct {
 }
 
 // StateVersionCreateOptions represents the options for creating a state
-// version. See dto.StateVersionCreateOptions for more details.
+// version. See jsonapi.StateVersionCreateOptions for more details.
 type StateVersionCreateOptions struct {
 	Lineage *string
 	Serial  *int64
@@ -90,7 +90,7 @@ type StateVersionCreateOptions struct {
 }
 
 type CreateStateVersionOptions struct {
-	State       []byte  // Raw terraform state file. Required.
+	State       []byte  // Terraform state file. Required.
 	WorkspaceID *string // ID of state version's workspace. Required.
 }
 

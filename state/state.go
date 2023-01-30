@@ -1,9 +1,9 @@
+// Package state manages terraform state files.
 package state
 
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 
 	"github.com/leg100/otf"
 )
@@ -28,8 +28,8 @@ type StateOutput struct {
 	Sensitive bool
 }
 
-// UnmarshalState unmarshals terraform state from a raw byte slice.
-func UnmarshalState(data []byte) (*State, error) {
+// unmarshalState unmarshals terraform state from a raw byte slice.
+func unmarshalState(data []byte) (*State, error) {
 	state := State{}
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, err
@@ -38,13 +38,7 @@ func UnmarshalState(data []byte) (*State, error) {
 }
 
 // NewState constructs a new state
-func NewState(opts otf.CreateStateVersionOptions) (*State, error) {
-	if opts.State == nil {
-		return nil, errors.New("state file required")
-	}
-	if opts.WorkspaceID == nil {
-		return nil, errors.New("workspace ID required")
-	}
+func NewState(opts otf.StateCreateOptions, outputs ...StateOutput) *State {
 	state := State{
 		Version: DefaultStateVersion,
 		Serial:  1,

@@ -3,13 +3,12 @@ package http
 import (
 	"net/http"
 
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) CreateRegistrySession(w http.ResponseWriter, r *http.Request) {
-	opts := dto.RegistrySessionCreateOptions{}
+	opts := jsonapi.RegistrySessionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -19,7 +18,7 @@ func (s *Server) CreateRegistrySession(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &RegistrySession{session})
+	jsonapi.WriteResponse(w, r, &RegistrySession{session})
 }
 
 type RegistrySession struct {
@@ -28,7 +27,7 @@ type RegistrySession struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (t *RegistrySession) ToJSONAPI() any {
-	return &dto.RegistrySession{
+	return &jsonapi.RegistrySession{
 		Token:            t.Token(),
 		OrganizationName: t.Organization(),
 	}
