@@ -11,15 +11,18 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// db is a state database
+// db is a database of state and state versions
 type db interface {
 	otf.Database
 
 	createVersion(context.Context, *Version) error
-	ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*StateVersionList, error)
+	listVersions(ctx context.Context, opts otf.StateVersionListOptions) (*VersionList, error)
+	getVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*Version, error)
+	getState(ctx context.Context, versionID string) ([]byte, error)
+	deleteVersion(ctx context.Context, versionID string) error
 }
 
-// pgdb is the state database on postgres
+// pgdb is a state/state-version database on postgres
 type pgdb struct {
 	otf.Database // provides access to generated SQL queries
 }
@@ -59,7 +62,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*StateVersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, opts otf.StateVersionListOptions) (*VersionList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
@@ -91,13 +94,13 @@ func (db *pgdb) ListStateVersions(ctx context.Context, opts otf.StateVersionList
 		items = append(items, sv)
 	}
 
-	return &StateVersionList{
+	return &VersionList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*Version, error) {
+func (db *pgdb) getVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*Version, error) {
 	if opts.ID != nil {
 		result, err := db.FindStateVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
@@ -115,12 +118,12 @@ func (db *pgdb) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOpt
 	}
 }
 
-func (db *pgdb) GetState(ctx context.Context, id string) ([]byte, error) {
+func (db *pgdb) getState(ctx context.Context, id string) ([]byte, error) {
 	return db.FindStateVersionStateByID(ctx, sql.String(id))
 }
 
-// DeleteStateVersion deletes a state version from the DB
-func (db *pgdb) DeleteStateVersion(ctx context.Context, id string) error {
+// deleteVersion deletes a state version from the DB
+func (db *pgdb) deleteVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteStateVersionByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)

@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 )
 
-// Version represents a Terraform Enterprise state version.
+// Version is a specific version of terraform state. It includes important
+// metadata as well as the state data itself.
+//
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 type Version struct {
 	id          string
 	createdAt   time.Time
@@ -19,23 +21,23 @@ type Version struct {
 	workspaceID string                // state version belongs to a workspace
 }
 
-func (sv *Version) ID() string                     { return sv.id }
-func (sv *Version) CreatedAt() time.Time           { return sv.createdAt }
-func (sv *Version) String() string                 { return sv.id }
-func (sv *Version) Serial() int64                  { return sv.serial }
-func (sv *Version) State() []byte                  { return sv.state }
-func (sv *Version) Outputs() []*StateVersionOutput { return sv.outputs }
+func (v *Version) ID() string                     { return v.id }
+func (v *Version) CreatedAt() time.Time           { return v.createdAt }
+func (v *Version) String() string                 { return v.id }
+func (v *Version) Serial() int64                  { return v.serial }
+func (v *Version) State() []byte                  { return v.state }
+func (v *Version) Outputs() []*StateVersionOutput { return v.outputs }
 
-// ToJSONAPI assembles a JSON-API DTO.
-func (sv *Version) ToJSONAPI() any {
-	obj := &jsonapiVersion{
-		ID:          sv.ID(),
-		CreatedAt:   sv.CreatedAt(),
-		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
-		Serial:      sv.Serial(),
+// ToJSONAPI assembles a struct suitable for marshalling into json-api
+func (v *Version) ToJSONAPI() any {
+	j := &jsonapiVersion{
+		ID:          v.ID(),
+		CreatedAt:   v.CreatedAt(),
+		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", v.ID()),
+		Serial:      v.Serial(),
 	}
-	for _, out := range sv.Outputs() {
-		obj.Outputs = append(obj.Outputs, &jsonapiVersionOutput{
+	for _, out := range v.Outputs() {
+		j.Outputs = append(j.Outputs, &jsonapiVersionOutput{
 			ID:        out.ID(),
 			Name:      out.Name,
 			Sensitive: out.Sensitive,
@@ -43,24 +45,24 @@ func (sv *Version) ToJSONAPI() any {
 			Value:     out.Value,
 		})
 	}
-	return obj
+	return j
 }
 
-// StateVersionList represents a list of state versions.
-type StateVersionList struct {
+// VersionList represents a list of state versions.
+type VersionList struct {
 	*otf.Pagination
 	Items []*Version
 }
 
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *StateVersionList) ToJSONAPI() any {
-	obj := &jsonapiVersionList{
+// ToJSONAPI assembles a struct suitable for marshalling into json-api
+func (l *VersionList) ToJSONAPI() any {
+	jl := &jsonapiVersionList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, item.ToJSONAPI().(*jsonapiVersion))
+		jl.Items = append(jl.Items, item.ToJSONAPI().(*jsonapiVersion))
 	}
-	return obj
+	return jl
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.
@@ -118,13 +120,4 @@ func NewStateVersion(opts otf.CreateStateVersionOptions) (*Version, error) {
 		})
 	}
 	return &sv, nil
-}
-
-func UnmarshalStateVersionJSONAPI(dto *jsonapi.StateVersion) *Version {
-	return &Version{
-		id:        dto.ID,
-		createdAt: dto.CreatedAt,
-		serial:    dto.Serial,
-		// TODO: unmarshal outputs
-	}
 }

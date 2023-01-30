@@ -15,14 +15,14 @@ type Application interface {
 	CurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
 	GetStateVersion(ctx context.Context, id string) (*Version, error)
 	DownloadState(ctx context.Context, id string) ([]byte, error)
-	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
 }
 
 type app struct {
 	otf.Authorizer // authorize access
 	logr.Logger
 
-	db    *pgdb     // access to state version database
+	db              // access to state version database
 	cache otf.Cache // cache state file
 }
 
@@ -69,13 +69,13 @@ func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersio
 	return sv, nil
 }
 
-func (a *app) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*StateVersionList, error) {
+func (a *app) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*VersionList, error) {
 	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
 	}
 
-	svl, err := a.db.ListStateVersions(ctx, opts)
+	svl, err := a.db.listVersions(ctx, opts)
 	if err != nil {
 		a.Error(err, "listing state versions", "organization", opts.Organization, "workspace", opts.Workspace, "subject", subject)
 		return nil, err
@@ -90,7 +90,7 @@ func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*Ver
 		return nil, err
 	}
 
-	sv, err := a.db.GetStateVersion(ctx, otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
+	sv, err := a.db.getVersion(ctx, otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -105,7 +105,7 @@ func (a *app) GetStateVersion(ctx context.Context, svID string) (*Version, error
 		return nil, err
 	}
 
-	sv, err := a.db.GetStateVersion(ctx, otf.StateVersionGetOptions{ID: &svID})
+	sv, err := a.db.getVersion(ctx, otf.StateVersionGetOptions{ID: &svID})
 	if err != nil {
 		a.Error(err, "retrieving state version", "id", svID, "subject", subject)
 		return nil, err
@@ -125,7 +125,7 @@ func (a *app) DownloadState(ctx context.Context, svID string) ([]byte, error) {
 		a.V(2).Info("downloaded state", "id", svID, "subject", subject)
 		return state, nil
 	}
-	state, err := a.db.GetState(ctx, svID)
+	state, err := a.db.getState(ctx, svID)
 	if err != nil {
 		a.Error(err, "downloading state", "id", svID, "subject", subject)
 		return nil, err
