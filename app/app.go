@@ -27,6 +27,8 @@ type Application struct {
 	proxy    otf.ChunkStore
 	hostname string
 
+	opts Options // keep reference for creating child apps
+
 	*otf.RunFactory
 	*otf.VCSProviderFactory
 	otf.WorkspaceConnector
@@ -45,18 +47,9 @@ type Application struct {
 // NewApplication constructs an application, initialising various services and
 // daemons.
 func NewApplication(ctx context.Context, opts Options) (*Application, error) {
-	app := &Application{
-		PubSubService:       opts.PubSub,
-		cache:               opts.Cache,
-		db:                  opts.DB,
-		Logger:              opts.Logger,
-		Service:             opts.CloudService,
-		Authorizer:          opts.Authorizer,
-		StateVersionService: opts.StateVersionService,
-	}
 	// Any services that use transactions or advisory locks should be
 	// constructed via newApp
-	app = newChildApp(app, opts.DB)
+	app := newChildApp(&Application{}, opts, opts.DB)
 
 	proxy, err := inmem.NewChunkProxy(app, opts.Logger, opts.Cache, opts.DB)
 	if err != nil {
@@ -76,21 +69,22 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 // transaction or one holding an advisory lock, assigning the connection to the
 // constituent services that comprise an app for the services to make use of
 // that connection. May be called multiple times e.g. for nesting transactions.
-func newChildApp(parent *Application, db otf.DB) *Application {
+func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 	child := &Application{
-		PubSubService:       parent.PubSubService,
-		cache:               parent.cache,
-		Logger:              parent.Logger,
+		Logger:              opts.Logger,
+		cache:               opts.Cache,
+		PubSubService:       opts.PubSub,
+		Service:             opts.CloudService,
+		Authorizer:          opts.Authorizer,
+		StateVersionService: opts.StateVersionService,
 		RunFactory:          parent.RunFactory,
-		Authorizer:          parent.Authorizer,
 		proxy:               parent.proxy,
 		hostname:            parent.hostname,
-		Service:             parent.Service,
-		StateVersionService: parent.StateVersionService,
 		VCSProviderFactory: &otf.VCSProviderFactory{
 			Service: parent.Service,
 		},
-		db: db,
+		db:   db,
+		opts: opts,
 	}
 	child.RunFactory = &otf.RunFactory{
 		WorkspaceService:            child,
@@ -131,7 +125,7 @@ func (a *Application) DB() otf.DB { return a.db }
 func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) error {
 	return a.db.Tx(ctx, func(db otf.DB) error {
 		// wrap copy of app inside tx
-		return tx(newChildApp(a, db))
+		return tx(newChildApp(a, a.opts, db))
 	})
 }
 
@@ -143,6 +137,6 @@ func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) 
 func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Application) error) error {
 	return a.db.WaitAndLock(ctx, id, func(db otf.DB) error {
 		// make a copy of the app and assign a db wrapped with a session-lock
-		return cb(newChildApp(a, db))
+		return cb(newChildApp(a, a.opts, db))
 	})
 }

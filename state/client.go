@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -25,8 +26,8 @@ type Client struct {
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) error {
-	state, err := unmarshalState(opts.State)
-	if err != nil {
+	var state State
+	if err := json.Unmarshal(opts.State, &state); err != nil {
 		return err
 	}
 

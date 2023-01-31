@@ -2,9 +2,6 @@
 package state
 
 import (
-	"encoding/base64"
-	"encoding/json"
-
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
@@ -63,15 +60,6 @@ type StateCreateOptions struct {
 	Lineage *string
 }
 
-// unmarshalState unmarshals terraform state from a raw byte slice.
-func unmarshalState(data []byte) (*State, error) {
-	state := State{}
-	if err := json.Unmarshal(data, &state); err != nil {
-		return nil, err
-	}
-	return &state, nil
-}
-
 // NewState constructs a new state
 func NewState(opts StateCreateOptions, outputs ...StateOutput) *State {
 	state := State{
@@ -92,13 +80,4 @@ func NewState(opts StateCreateOptions, outputs ...StateOutput) *State {
 		state.Outputs[out.Name] = out
 	}
 	return &state
-}
-
-// Marshal serializes state as a base64-encoded json string.
-func (s *State) Marshal() (string, error) {
-	js, err := json.Marshal(s)
-	if err != nil {
-		return "", nil
-	}
-	return base64.StdEncoding.EncodeToString(js), nil
 }

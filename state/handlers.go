@@ -2,6 +2,8 @@ package state
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -39,7 +41,15 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: validate lineage, serial, md5
+	// required options
+	if opts.Serial == nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, errors.New("missing serial number"))
+		return
+	}
+	if opts.MD5 == nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, errors.New("missing md5"))
+		return
+	}
 
 	// base64-decode state to []byte
 	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
@@ -47,6 +57,28 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
+
+	// The docs (linked above) state the serial in the create options must match the
+	// serial in the state file. However, the go-tfe integration tests we use
+	// send different values for each and expect the serial in the create
+	// options to take precedence, without error. We've opted to support that
+	// behaviour and therefore we need to update the state file with whatever serial
+	// is sent before forwarding it onto the app.
+	var state State
+	if err := json.Unmarshal(decoded, &state); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	if *opts.Serial != state.Serial {
+		state.Serial = *opts.Serial
+		decoded, err = json.Marshal(state)
+		if err != nil {
+			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+	}
+
+	// TODO: validate md5, lineage
 
 	sv, err := h.app.createVersion(r.Context(), otf.CreateStateVersionOptions{
 		WorkspaceID: otf.String(workspaceID),

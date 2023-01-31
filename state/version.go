@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -100,10 +101,11 @@ func NewStateVersion(opts otf.CreateStateVersionOptions) (*Version, error) {
 		return nil, errors.New("workspace ID required")
 	}
 
-	state, err := unmarshalState(opts.State)
-	if err != nil {
+	var state State
+	if err := json.Unmarshal(opts.State, &state); err != nil {
 		return nil, err
 	}
+
 	sv := Version{
 		id:          otf.NewID("sv"),
 		createdAt:   otf.CurrentTimestamp(),

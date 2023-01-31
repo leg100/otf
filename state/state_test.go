@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -12,7 +13,8 @@ func TestState_UnmarshalState(t *testing.T) {
 	data, err := os.ReadFile("testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	state, err := unmarshalState(data)
+	var state State
+	err = json.Unmarshal(data, &state)
 	require.NoError(t, err)
 
 	assert.Equal(t, state, &State{
