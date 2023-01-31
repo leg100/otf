@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/state"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -131,20 +132,32 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up pub sub broker")
 	}
 
+	// Setup authorizer
+	authorizer := otf.NewAuthorizer(logger, db)
+
+	stateService := state.NewService(state.ServiceOptions{
+		Authorizer: authorizer,
+		Logger:     logger,
+		Database:   db,
+		Cache:      cache,
+	})
+
 	// Setup application services
 	app, err := app.NewApplication(ctx, app.Options{
-		Logger:       logger,
-		DB:           db,
-		Cache:        cache,
-		PubSub:       pubsub,
-		CloudService: cloudService,
+		Logger:              logger,
+		DB:                  db,
+		Cache:               cache,
+		PubSub:              pubsub,
+		CloudService:        cloudService,
+		Authorizer:          authorizer,
+		StateVersionService: stateService,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}
 
 	// Setup http server and web app
-	server, err := http.NewServer(logger, *d.ServerConfig, app, db, cache)
+	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}

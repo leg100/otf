@@ -1,16 +1,44 @@
-// Package state manages terraform state files.
+// Package state manages terraform state.
 package state
 
 import (
 	"encoding/base64"
 	"encoding/json"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
 const (
 	DefaultStateVersion = 4
 )
+
+var _ otf.StateVersionService = (*service)(nil)
+
+type service struct {
+	*app
+	*handlers
+}
+
+func NewService(opts ServiceOptions) *service {
+	app := &app{
+		Authorizer: opts.Authorizer,
+		Logger:     opts.Logger,
+		db:         newPGDB(opts.Database),
+		cache:      opts.Cache,
+	}
+	return &service{
+		app:      app,
+		handlers: &handlers{app},
+	}
+}
+
+type ServiceOptions struct {
+	otf.Authorizer
+	otf.Database
+	otf.Cache
+	logr.Logger
+}
 
 // State is terraform state.
 type State struct {
@@ -28,6 +56,13 @@ type StateOutput struct {
 	Sensitive bool
 }
 
+// StateCreateOptions are options for creating state
+type StateCreateOptions struct {
+	Version *int
+	Serial  *int64
+	Lineage *string
+}
+
 // unmarshalState unmarshals terraform state from a raw byte slice.
 func unmarshalState(data []byte) (*State, error) {
 	state := State{}
@@ -38,7 +73,7 @@ func unmarshalState(data []byte) (*State, error) {
 }
 
 // NewState constructs a new state
-func NewState(opts otf.StateCreateOptions, outputs ...StateOutput) *State {
+func NewState(opts StateCreateOptions, outputs ...StateOutput) *State {
 	state := State{
 		Version: DefaultStateVersion,
 		Serial:  1,

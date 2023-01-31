@@ -24,7 +24,7 @@ var _ otf.Environment = (*Environment)(nil)
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
 type Environment struct {
-	otf.Application
+	otf.Client
 	logr.Logger
 	otf.Downloader // Downloader for workers to download terraform cli on demand
 	Terraform      // For looking up path to terraform cli
@@ -44,7 +44,7 @@ type Environment struct {
 func NewEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
-	app otf.Application,
+	app otf.Client,
 	run *otf.Run,
 	envs []string,
 	downloader otf.Downloader,
@@ -98,18 +98,18 @@ func NewEnvironment(
 	ctx, cancel := context.WithCancel(ctx)
 
 	return &Environment{
-		Logger:      logger,
-		Application: app,
-		Downloader:  downloader,
-		Terraform:   &TerraformPathFinder{},
-		version:     ws.TerraformVersion(),
-		out:         otf.NewJobWriter(ctx, app, logger, run),
-		configRoot:  configRoot,
-		workingDir:  ws.WorkingDirectory(),
-		envs:        envs,
-		cancel:      cancel,
-		ctx:         ctx,
-		Config:      cfg,
+		Logger:     logger,
+		Client:     app,
+		Downloader: downloader,
+		Terraform:  &TerraformPathFinder{},
+		version:    ws.TerraformVersion(),
+		out:        otf.NewJobWriter(ctx, app, logger, run),
+		configRoot: configRoot,
+		workingDir: ws.WorkingDirectory(),
+		envs:       envs,
+		cancel:     cancel,
+		ctx:        ctx,
+		Config:     cfg,
 	}, nil
 }
 

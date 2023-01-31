@@ -37,7 +37,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	env, err := NewEnvironment(
 		ctx,
 		log,
-		w.Application,
+		w.Client,
 		run,
 		w.envs,
 		w.Downloader,

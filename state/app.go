@@ -10,14 +10,16 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type Application interface {
-	CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error)
-	CurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
-	GetStateVersion(ctx context.Context, id string) (*Version, error)
-	DownloadState(ctx context.Context, id string) ([]byte, error)
-	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+// appService is the application service for state
+type appService interface {
+	createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error)
+	currentVersion(ctx context.Context, workspaceID string) (*Version, error)
+	getVersion(ctx context.Context, versionID string) (*Version, error)
+	downloadState(ctx context.Context, versionID string) ([]byte, error)
+	listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
 }
 
+// app is the implementation of appService
 type app struct {
 	otf.Authorizer // authorize access
 	logr.Logger
@@ -26,23 +28,20 @@ type app struct {
 	cache otf.Cache // cache state file
 }
 
-func NewApp(opts AppOptions) *app {
-	return &app{
-		Authorizer: opts.Authorizer,
-		Logger:     opts.Logger,
-		db:         newPGDB(opts.Database),
-		cache:      opts.Cache,
+func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) error {
+	_, err := a.createVersion(ctx, opts)
+	return err
+}
+
+func (a *app) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
+	v, err := a.currentVersion(ctx, workspaceID)
+	if err != nil {
+		return nil, err
 	}
+	return a.downloadState(ctx, v.id)
 }
 
-type AppOptions struct {
-	otf.Authorizer
-	otf.Database
-	otf.Cache
-	logr.Logger
-}
-
-func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error) {
+func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error) {
 	if opts.WorkspaceID == nil {
 		return nil, errors.New("workspace ID is required")
 	}
@@ -69,7 +68,7 @@ func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersio
 	return sv, nil
 }
 
-func (a *app) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*VersionList, error) {
+func (a *app) listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error) {
 	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
@@ -84,13 +83,13 @@ func (a *app) ListStateVersions(ctx context.Context, opts otf.StateVersionListOp
 	return svl, nil
 }
 
-func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
+func (a *app) currentVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	sv, err := a.db.getVersion(ctx, otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
+	sv, err := a.db.getVersion(ctx, StateVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -99,23 +98,23 @@ func (a *app) CurrentStateVersion(ctx context.Context, workspaceID string) (*Ver
 	return sv, nil
 }
 
-func (a *app) GetStateVersion(ctx context.Context, svID string) (*Version, error) {
-	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, svID)
+func (a *app) getVersion(ctx context.Context, versionID string) (*Version, error) {
+	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
 
-	sv, err := a.db.getVersion(ctx, otf.StateVersionGetOptions{ID: &svID})
+	sv, err := a.db.getVersion(ctx, StateVersionGetOptions{ID: &versionID})
 	if err != nil {
-		a.Error(err, "retrieving state version", "id", svID, "subject", subject)
+		a.Error(err, "retrieving state version", "id", versionID, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("retrieved state version", "id", svID, "subject", subject)
+	a.V(2).Info("retrieved state version", "id", versionID, "subject", subject)
 	return sv, nil
 }
 
 // DownloadState retrieves base64-encoded terraform state from the db
-func (a *app) DownloadState(ctx context.Context, svID string) ([]byte, error) {
+func (a *app) downloadState(ctx context.Context, svID string) ([]byte, error) {
 	subject, err := a.CanAccessStateVersion(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err

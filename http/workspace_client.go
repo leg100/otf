@@ -17,13 +17,13 @@ func (c *client) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOp
 	}
 
 	u := fmt.Sprintf("organizations/%s/workspaces", *opts.Organization)
-	req, err := c.newRequest("POST", u, &opts)
+	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &jsonapi.Workspace{}
-	err = c.do(ctx, req, w)
+	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -35,13 +35,13 @@ func (c *client) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOp
 // name.
 func (c *client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
-	req, err := c.newRequest("GET", path, nil)
+	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &jsonapi.Workspace{}
-	err = c.do(ctx, req, w)
+	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +56,13 @@ func (c *client) GetWorkspaceByName(ctx context.Context, organization, workspace
 // GetWorkspace retrieves a workspace by its ID
 func (c *client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.newRequest("GET", path, nil)
+	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &jsonapi.Workspace{}
-	err = c.do(ctx, req, w)
+	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +76,13 @@ func (c *client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Wor
 
 func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
-	req, err := c.newRequest("GET", u, &options)
+	req, err := c.NewRequest("GET", u, &options)
 	if err != nil {
 		return nil, err
 	}
 
 	wl := &jsonapi.WorkspaceList{}
-	err = c.do(ctx, req, wl)
+	err = c.Do(ctx, req, wl)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 	}
 
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.newRequest("PATCH", path, &jsonapi.WorkspaceUpdateOptions{
+	req, err := c.NewRequest("PATCH", path, &jsonapi.WorkspaceUpdateOptions{
 		ExecutionMode: (*string)(options.ExecutionMode),
 	})
 	if err != nil {
@@ -106,7 +106,7 @@ func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 	}
 
 	w := &jsonapi.Workspace{}
-	err = c.do(ctx, req, w)
+	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -116,13 +116,13 @@ func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 
 func (c *client) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
-	req, err := c.newRequest("POST", path, &opts)
+	req, err := c.NewRequest("POST", path, &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &jsonapi.Workspace{}
-	err = c.do(ctx, req, w)
+	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -132,28 +132,16 @@ func (c *client) LockWorkspace(ctx context.Context, workspaceID string, opts otf
 
 func (c *client) UnlockWorkspace(ctx context.Context, workspaceID string, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
-	req, err := c.newRequest("POST", path, nil)
+	req, err := c.NewRequest("POST", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &jsonapi.Workspace{}
-	err = c.do(ctx, req, w)
+	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
 
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
-}
-
-func (c *client) GetWorkspaceQueue(workspaceID string) ([]*otf.Run, error) {
-	return nil, fmt.Errorf("unimplemented")
-}
-
-func (c *client) UpdateWorkspaceQueue(run *otf.Run) error {
-	return fmt.Errorf("unimplemented")
-}
-
-func (c *client) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
-	return fmt.Errorf("unimplemented")
 }

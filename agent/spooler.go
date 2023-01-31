@@ -16,10 +16,8 @@ var _ Spooler = (*SpoolerDaemon)(nil)
 type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
-
 	// GetRun receives spooled runs
 	GetRun() <-chan *otf.Run
-
 	// GetCancelation receives requests to cancel runs
 	GetCancelation() <-chan Cancelation
 }
@@ -27,13 +25,9 @@ type Spooler interface {
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
-	// Queue of queued jobs
-	queue chan *otf.Run
-	// Queue of cancelation requests
-	cancelations chan Cancelation
-	// Application for retrieving queued runs
-	otf.Application
-	// Logger for logging various events
+	queue        chan *otf.Run    // Queue of queued jobs
+	cancelations chan Cancelation // Queue of cancelation requests
+	otf.Client                  // Application for retrieving queued runs
 	logr.Logger
 	Config
 }
@@ -47,11 +41,11 @@ type Cancelation struct {
 const SpoolerCapacity = 100
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(app otf.Application, logger logr.Logger, cfg Config) *SpoolerDaemon {
+func NewSpooler(app otf.Client, logger logr.Logger, cfg Config) *SpoolerDaemon {
 	return &SpoolerDaemon{
 		queue:        make(chan *otf.Run, SpoolerCapacity),
 		cancelations: make(chan Cancelation, SpoolerCapacity),
-		Application:  app,
+		Client:     app,
 		Logger:       logger,
 		Config:       cfg,
 	}

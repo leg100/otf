@@ -10,28 +10,25 @@ import (
 //
 // TODO: rename to LogWriter or PhaseWriter
 type JobWriter struct {
-	// ID of run to write logs on behalf of.
-	ID string
-	// run phase
-	Phase PhaseType
-	// LogService for uploading logs to server
-	LogService
+	ID     string    // ID of run to write logs on behalf of.
+	Phase  PhaseType // run phase
+	Client           // for uploading logs to server
+	logr.Logger
+
 	// started is used internally by the writer to determine whether the first
 	// write has been prefixed with the start marker (STX).
 	started bool
-	// current position in stream
-	offset int
-	logr.Logger
-	ctx context.Context
+	offset  int             // current position in stream
+	ctx     context.Context // permits canceling mid-flow
 }
 
-func NewJobWriter(ctx context.Context, app Application, logger logr.Logger, run *Run) *JobWriter {
+func NewJobWriter(ctx context.Context, app Client, logger logr.Logger, run *Run) *JobWriter {
 	return &JobWriter{
-		ID:         run.ID(),
-		Phase:      run.Phase(),
-		LogService: app,
-		Logger:     logger,
-		ctx:        ctx,
+		ID:     run.ID(),
+		Phase:  run.Phase(),
+		Client: app,
+		Logger: logger,
+		ctx:    ctx,
 	}
 }
 

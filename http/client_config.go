@@ -10,6 +10,8 @@ import (
 
 	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/state"
 )
 
 var _ ClientFactory = (*Config)(nil)
@@ -70,7 +72,7 @@ func NewConfig(opts ...ConfigOption) (*Config, error) {
 }
 
 // NewClient creates a new Terraform Enterprise API client.
-func (config *Config) NewClient() (Client, error) {
+func (config *Config) NewClient() (otf.Client, error) {
 	// Override config with option args
 	for _, o := range config.options {
 		if err := o(config); err != nil {
@@ -120,6 +122,10 @@ func (config *Config) NewClient() (Client, error) {
 	// Save the API version so we can return it from the RemoteAPIVersion method
 	// later.
 	client.remoteAPIVersion = meta.APIVersion
+
+	// Add services
+	client.stateClient = &state.Client{client}
+
 	return client, nil
 }
 

@@ -115,18 +115,6 @@ func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, 
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
-	ctx := context.Background()
-	sv := otf.NewTestStateVersion(t, outputs...)
-	err := db.CreateStateVersion(ctx, ws.ID(), sv)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteStateVersion(ctx, sv.ID())
-	})
-	return sv
-}
-
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	ctx := context.Background()
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})

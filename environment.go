@@ -23,12 +23,9 @@ type Environment interface {
 	// TerraformPath is the path to the terraform bin
 	TerraformPath() string
 
-	// All app services should be made available to the environment
-	Application
-	// For downloading TF CLI
-	Downloader
-	// Permits job to write to output that'll be shown to the user
-	io.Writer
+	Client     // All client services should be made available to the environment
+	Downloader // For downloading TF CLI
+	io.Writer  // Permits job to write to output that'll be shown to the user
 }
 
 // EnvironmentFunc is a go func that is invoked within an environment (and with

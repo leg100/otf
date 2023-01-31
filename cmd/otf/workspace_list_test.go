@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +37,7 @@ type fakeWorkspaceListClientFactory struct {
 	workspaces []*otf.Workspace
 }
 
-func (f fakeWorkspaceListClientFactory) NewClient() (otfhttp.Client, error) {
+func (f fakeWorkspaceListClientFactory) NewClient() (otf.Client, error) {
 	return &fakeWorkspaceListClient{
 		workspaces: f.workspaces,
 	}, nil

@@ -3,8 +3,6 @@ package otf
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/base64"
 	"fmt"
 	"io/fs"
 	"os"
@@ -537,14 +535,10 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.CurrentStateVersion(ctx, r.workspaceID)
+	statefile, err := env.DownloadCurrentState(ctx, r.workspaceID)
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("retrieving current state version: %w", err)
-	}
-	statefile, err := env.DownloadState(ctx, state.ID())
-	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
 	if err := os.WriteFile(filepath.Join(env.WorkingDir(), LocalStateFilename), statefile, 0o644); err != nil {
@@ -613,25 +607,15 @@ func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 
 // uploadState reads, parses, and uploads terraform state
 func (r *Run) uploadState(ctx context.Context, env Environment) error {
-	f, err := os.ReadFile(filepath.Join(env.WorkingDir(), LocalStateFilename))
+	state, err := os.ReadFile(filepath.Join(env.WorkingDir(), LocalStateFilename))
 	if err != nil {
 		return err
 	}
-	state, err := UnmarshalState(f)
-	if err != nil {
-		return err
-	}
-	_, err = env.CreateStateVersion(ctx, r.workspaceID, StateVersionCreateOptions{
-		State:   String(base64.StdEncoding.EncodeToString(f)),
-		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
-		Lineage: &state.Lineage,
-		Serial:  Int64(state.Serial),
-		Run:     r,
+	err = env.CreateStateVersion(ctx, CreateStateVersionOptions{
+		WorkspaceID: &r.workspaceID,
+		State:       state,
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 type RunStatusTimestamp struct {

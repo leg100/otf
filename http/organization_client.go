@@ -12,7 +12,7 @@ func (c *client) CreateOrganization(ctx context.Context, options otf.Organizatio
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}
-	req, err := c.newRequest("POST", "organizations", &jsonapi.OrganizationCreateOptions{
+	req, err := c.NewRequest("POST", "organizations", &jsonapi.OrganizationCreateOptions{
 		Name:            options.Name,
 		SessionRemember: options.SessionRemember,
 		SessionTimeout:  options.SessionTimeout,
@@ -21,7 +21,7 @@ func (c *client) CreateOrganization(ctx context.Context, options otf.Organizatio
 		return nil, err
 	}
 	org := &jsonapi.Organization{}
-	err = c.do(ctx, req, org)
+	err = c.Do(ctx, req, org)
 	if err != nil {
 		return nil, err
 	}

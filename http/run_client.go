@@ -12,13 +12,13 @@ import (
 
 func (c *client) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
-	req, err := c.newRequest("GET", u, &planFileOptions{Format: format})
+	req, err := c.NewRequest("GET", u, &planFileOptions{Format: format})
 	if err != nil {
 		return nil, err
 	}
 
 	buf := bytes.Buffer{}
-	err = c.do(ctx, req, &buf)
+	err = c.Do(ctx, req, &buf)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (c *client) GetPlanFile(ctx context.Context, runID string, format otf.PlanF
 
 func (c *client) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
-	req, err := c.newRequest("PUT", u, plan)
+	req, err := c.NewRequest("PUT", u, plan)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (c *client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 	}
 	req.URL.RawQuery = q.Encode()
 
-	err = c.do(ctx, req, nil)
+	err = c.Do(ctx, req, nil)
 	if err != nil {
 		return err
 	}
@@ -52,13 +52,13 @@ func (c *client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 
 func (c *client) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
-	req, err := c.newRequest("GET", u, nil)
+	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	buf := bytes.Buffer{}
-	err = c.do(ctx, req, &buf)
+	err = c.Do(ctx, req, &buf)
 	if err != nil {
 		return nil, err
 	}
@@ -68,12 +68,12 @@ func (c *client) GetLockFile(ctx context.Context, runID string) ([]byte, error) 
 
 func (c *client) UploadLockFile(ctx context.Context, runID string, lockfile []byte) error {
 	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
-	req, err := c.newRequest("PUT", u, lockfile)
+	req, err := c.NewRequest("PUT", u, lockfile)
 	if err != nil {
 		return err
 	}
 
-	err = c.do(ctx, req, nil)
+	err = c.Do(ctx, req, nil)
 	if err != nil {
 		return err
 	}
@@ -82,13 +82,13 @@ func (c *client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 }
 
 func (c *client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
-	req, err := c.newRequest("GET", "runs", &opts)
+	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	wl := &jsonapi.RunList{}
-	err = c.do(ctx, req, wl)
+	err = c.Do(ctx, req, wl)
 	if err != nil {
 		return nil, err
 	}
@@ -98,13 +98,13 @@ func (c *client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Ru
 
 func (c *client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
-	req, err := c.newRequest("GET", u, nil)
+	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	run := &jsonapi.Run{}
-	err = c.do(ctx, req, run)
+	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
 	}
@@ -117,13 +117,13 @@ func (c *client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
 	)
-	req, err := c.newRequest("POST", u, &opts)
+	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	run := &jsonapi.Run{}
-	err = c.do(ctx, req, run)
+	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
 	}
@@ -136,13 +136,13 @@ func (c *client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
 	)
-	req, err := c.newRequest("POST", u, &opts)
+	req, err := c.NewRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	run := &jsonapi.Run{}
-	err = c.do(ctx, req, run)
+	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
 	}

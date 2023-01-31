@@ -16,8 +16,8 @@ type db interface {
 	otf.Database
 
 	createVersion(context.Context, *Version) error
-	listVersions(ctx context.Context, opts otf.StateVersionListOptions) (*VersionList, error)
-	getVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*Version, error)
+	listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+	getVersion(ctx context.Context, opts StateVersionGetOptions) (*Version, error)
 	getState(ctx context.Context, versionID string) ([]byte, error)
 	deleteVersion(ctx context.Context, versionID string) error
 }
@@ -62,7 +62,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, opts otf.StateVersionListOptions) (*VersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
@@ -100,7 +100,7 @@ func (db *pgdb) listVersions(ctx context.Context, opts otf.StateVersionListOptio
 	}, nil
 }
 
-func (db *pgdb) getVersion(ctx context.Context, opts otf.StateVersionGetOptions) (*Version, error) {
+func (db *pgdb) getVersion(ctx context.Context, opts StateVersionGetOptions) (*Version, error) {
 	if opts.ID != nil {
 		result, err := db.FindStateVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {

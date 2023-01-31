@@ -86,7 +86,6 @@ type DB interface {
 	RunStore
 	SessionStore
 	RegistrySessionStore
-	StateVersionStore
 	TokenStore
 	ConfigurationVersionStore
 	ChunkStore

@@ -58,12 +58,3 @@ type jsonapiCreateVersionOptions struct {
 	// Specifies the run to associate the state with.
 	// Run *Run `jsonapi:"relation,run,omitempty"`
 }
-
-func unmarshalJSONAPI(japi *jsonapiVersion) *Version {
-	return &Version{
-		id:        japi.ID,
-		createdAt: japi.CreatedAt,
-		serial:    japi.Serial,
-		// TODO: unmarshal outputs
-	}
-}

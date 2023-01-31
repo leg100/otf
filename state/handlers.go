@@ -10,11 +10,23 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type Server struct {
-	Application
+type handlers struct {
+	app appService
 }
 
-func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
+// Implements TFC state versions API:
+//
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
+//
+func (h *handlers) AddHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion)
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion)
+	r.HandleFunc("/state-versions/{id}", h.getVersion)
+	r.HandleFunc("/state-versions", h.listVersions)
+	r.HandleFunc("/state-versions/{id}/download", h.downloadState)
+}
+
+func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -36,7 +48,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sv, err := s.Application.CreateStateVersion(r.Context(), otf.CreateStateVersionOptions{
+	sv, err := h.app.createVersion(r.Context(), otf.CreateStateVersionOptions{
 		WorkspaceID: otf.String(workspaceID),
 		State:       decoded,
 	})
@@ -47,13 +59,13 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
+func (s *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
 	var opts StateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	svl, err := s.Application.ListStateVersions(r.Context(), opts)
+	svl, err := s.app.listVersions(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -61,9 +73,14 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, svl)
 }
 
-func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sv, err := s.Application.CurrentStateVersion(r.Context(), vars["workspace_id"])
+func (s *handlers) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	sv, err := s.app.currentVersion(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -71,9 +88,13 @@ func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sv, err := s.Application.GetStateVersion(r.Context(), vars["id"])
+func (s *handlers) getVersion(w http.ResponseWriter, r *http.Request) {
+	versionID, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	sv, err := s.app.getVersion(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -81,9 +102,13 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	resp, err := s.DownloadState(r.Context(), vars["id"])
+func (s *handlers) downloadState(w http.ResponseWriter, r *http.Request) {
+	versionID, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	resp, err := s.app.downloadState(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

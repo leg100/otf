@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/hooks"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/module"
-	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -47,12 +46,13 @@ type Application struct {
 // daemons.
 func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 	app := &Application{
-		PubSubService: opts.PubSub,
-		cache:         opts.Cache,
-		db:            opts.DB,
-		Logger:        opts.Logger,
-		Service:       opts.CloudService,
-		Authorizer:    &authorizer{opts.DB, opts.Logger},
+		PubSubService:       opts.PubSub,
+		cache:               opts.Cache,
+		db:                  opts.DB,
+		Logger:              opts.Logger,
+		Service:             opts.CloudService,
+		Authorizer:          opts.Authorizer,
+		StateVersionService: opts.StateVersionService,
 	}
 	// Any services that use transactions or advisory locks should be
 	// constructed via newApp
@@ -78,17 +78,15 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 // that connection. May be called multiple times e.g. for nesting transactions.
 func newChildApp(parent *Application, db otf.DB) *Application {
 	child := &Application{
-		PubSubService: parent.PubSubService,
-		cache:         parent.cache,
-		Logger:        parent.Logger,
-		RunFactory:    parent.RunFactory,
-		Authorizer:    parent.Authorizer,
-		proxy:         parent.proxy,
-		hostname:      parent.hostname,
-		Service:       parent.Service,
-		StateVersionService: state.NewApp(state.AppOptions{
-			Database: db,
-		}),
+		PubSubService:       parent.PubSubService,
+		cache:               parent.cache,
+		Logger:              parent.Logger,
+		RunFactory:          parent.RunFactory,
+		Authorizer:          parent.Authorizer,
+		proxy:               parent.proxy,
+		hostname:            parent.hostname,
+		Service:             parent.Service,
+		StateVersionService: parent.StateVersionService,
 		VCSProviderFactory: &otf.VCSProviderFactory{
 			Service: parent.Service,
 		},
@@ -117,11 +115,13 @@ func newChildApp(parent *Application, db otf.DB) *Application {
 }
 
 type Options struct {
-	Logger       logr.Logger
-	DB           otf.DB
-	Cache        *bigcache.BigCache
-	PubSub       otf.PubSubService
-	CloudService cloud.Service
+	Logger              logr.Logger
+	DB                  otf.DB
+	Cache               *bigcache.BigCache
+	PubSub              otf.PubSubService
+	CloudService        cloud.Service
+	Authorizer          otf.Authorizer
+	StateVersionService otf.StateVersionService
 }
 
 func (a *Application) DB() otf.DB { return a.db }
