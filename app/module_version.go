@@ -13,7 +13,7 @@ func (a *Application) CreateModuleVersion(ctx context.Context, opts otf.CreateMo
 	if err != nil {
 		return nil, err
 	}
-	organization := module.Organization().Name()
+	organization := module.Organization()
 
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateModuleAction, organization)
 	if err != nil {

@@ -18,7 +18,7 @@ const insertModuleSQL = `INSERT INTO modules (
     name,
     provider,
     status,
-    organization_id
+    organization_name
 ) VALUES (
     $1,
     $2,
@@ -30,19 +30,19 @@ const insertModuleSQL = `INSERT INTO modules (
 );`
 
 type InsertModuleParams struct {
-	ID             pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	Name           pgtype.Text
-	Provider       pgtype.Text
-	Status         pgtype.Text
-	OrganizationID pgtype.Text
+	ID               pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+	UpdatedAt        pgtype.Timestamptz
+	Name             pgtype.Text
+	Provider         pgtype.Text
+	Status           pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 // InsertModule implements Querier.InsertModule.
 func (q *DBQuerier) InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertModule")
-	cmdTag, err := q.conn.Exec(ctx, insertModuleSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Provider, params.Status, params.OrganizationID)
+	cmdTag, err := q.conn.Exec(ctx, insertModuleSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Provider, params.Status, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertModule: %w", err)
 	}
@@ -51,7 +51,7 @@ func (q *DBQuerier) InsertModule(ctx context.Context, params InsertModuleParams)
 
 // InsertModuleBatch implements Querier.InsertModuleBatch.
 func (q *DBQuerier) InsertModuleBatch(batch genericBatch, params InsertModuleParams) {
-	batch.Queue(insertModuleSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Provider, params.Status, params.OrganizationID)
+	batch.Queue(insertModuleSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Provider, params.Status, params.OrganizationName)
 }
 
 // InsertModuleScan implements Querier.InsertModuleScan.
@@ -172,7 +172,7 @@ const listModulesByOrganizationSQL = `SELECT
     m.name,
     m.provider,
     m.status,
-    (o.*)::"organizations" AS organization,
+    m.organization_name,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
     (
@@ -181,22 +181,21 @@ const listModulesByOrganizationSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN organizations o USING (organization_id)
 LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
-WHERE o.name = $1
+WHERE m.organization_name = $1
 ;`
 
 type ListModulesByOrganizationRow struct {
-	ModuleID     pgtype.Text        `json:"module_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	Name         pgtype.Text        `json:"name"`
-	Provider     pgtype.Text        `json:"provider"`
-	Status       pgtype.Text        `json:"status"`
-	Organization *Organizations     `json:"organization"`
-	ModuleRepo   *ModuleRepos       `json:"module_repo"`
-	Webhook      *Webhooks          `json:"webhook"`
-	Versions     []ModuleVersions   `json:"versions"`
+	ModuleID         pgtype.Text        `json:"module_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Name             pgtype.Text        `json:"name"`
+	Provider         pgtype.Text        `json:"provider"`
+	Status           pgtype.Text        `json:"status"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+	ModuleRepo       *ModuleRepos       `json:"module_repo"`
+	Webhook          *Webhooks          `json:"webhook"`
+	Versions         []ModuleVersions   `json:"versions"`
 }
 
 // ListModulesByOrganization implements Querier.ListModulesByOrganization.
@@ -208,17 +207,13 @@ func (q *DBQuerier) ListModulesByOrganization(ctx context.Context, organizationN
 	}
 	defer rows.Close()
 	items := []ListModulesByOrganizationRow{}
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
 	for rows.Next() {
 		var item ListModulesByOrganizationRow
-		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 			return nil, fmt.Errorf("scan ListModulesByOrganization row: %w", err)
-		}
-		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
 		}
 		if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
@@ -250,17 +245,13 @@ func (q *DBQuerier) ListModulesByOrganizationScan(results pgx.BatchResults) ([]L
 	}
 	defer rows.Close()
 	items := []ListModulesByOrganizationRow{}
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
 	for rows.Next() {
 		var item ListModulesByOrganizationRow
-		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 			return nil, fmt.Errorf("scan ListModulesByOrganizationBatch row: %w", err)
-		}
-		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
 		}
 		if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
@@ -286,7 +277,7 @@ const findModuleByNameSQL = `SELECT
     m.name,
     m.provider,
     m.status,
-    (o.*)::"organizations" AS organization,
+    m.organization_name,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
     (
@@ -295,46 +286,41 @@ const findModuleByNameSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN organizations o USING (organization_id)
 LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
-WHERE o.name = $1
+WHERE m.organization_name = $1
 AND   m.name = $2
 AND   m.provider = $3
 ;`
 
 type FindModuleByNameParams struct {
-	OrganizatonName pgtype.Text
-	Name            pgtype.Text
-	Provider        pgtype.Text
+	OrganizationName pgtype.Text
+	Name             pgtype.Text
+	Provider         pgtype.Text
 }
 
 type FindModuleByNameRow struct {
-	ModuleID     pgtype.Text        `json:"module_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	Name         pgtype.Text        `json:"name"`
-	Provider     pgtype.Text        `json:"provider"`
-	Status       pgtype.Text        `json:"status"`
-	Organization *Organizations     `json:"organization"`
-	ModuleRepo   *ModuleRepos       `json:"module_repo"`
-	Webhook      *Webhooks          `json:"webhook"`
-	Versions     []ModuleVersions   `json:"versions"`
+	ModuleID         pgtype.Text        `json:"module_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Name             pgtype.Text        `json:"name"`
+	Provider         pgtype.Text        `json:"provider"`
+	Status           pgtype.Text        `json:"status"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+	ModuleRepo       *ModuleRepos       `json:"module_repo"`
+	Webhook          *Webhooks          `json:"webhook"`
+	Versions         []ModuleVersions   `json:"versions"`
 }
 
 // FindModuleByName implements Querier.FindModuleByName.
 func (q *DBQuerier) FindModuleByName(ctx context.Context, params FindModuleByNameParams) (FindModuleByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindModuleByName")
-	row := q.conn.QueryRow(ctx, findModuleByNameSQL, params.OrganizatonName, params.Name, params.Provider)
+	row := q.conn.QueryRow(ctx, findModuleByNameSQL, params.OrganizationName, params.Name, params.Provider)
 	var item FindModuleByNameRow
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("query FindModuleByName: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
 	}
 	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
@@ -350,22 +336,18 @@ func (q *DBQuerier) FindModuleByName(ctx context.Context, params FindModuleByNam
 
 // FindModuleByNameBatch implements Querier.FindModuleByNameBatch.
 func (q *DBQuerier) FindModuleByNameBatch(batch genericBatch, params FindModuleByNameParams) {
-	batch.Queue(findModuleByNameSQL, params.OrganizatonName, params.Name, params.Provider)
+	batch.Queue(findModuleByNameSQL, params.OrganizationName, params.Name, params.Provider)
 }
 
 // FindModuleByNameScan implements Querier.FindModuleByNameScan.
 func (q *DBQuerier) FindModuleByNameScan(results pgx.BatchResults) (FindModuleByNameRow, error) {
 	row := results.QueryRow()
 	var item FindModuleByNameRow
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("scan FindModuleByNameBatch row: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
 	}
 	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
@@ -386,7 +368,7 @@ const findModuleByIDSQL = `SELECT
     m.name,
     m.provider,
     m.status,
-    (o.*)::"organizations" AS organization,
+    m.organization_name,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
     (
@@ -395,22 +377,21 @@ const findModuleByIDSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN organizations o USING (organization_id)
 LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE m.module_id = $1
 ;`
 
 type FindModuleByIDRow struct {
-	ModuleID     pgtype.Text        `json:"module_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	Name         pgtype.Text        `json:"name"`
-	Provider     pgtype.Text        `json:"provider"`
-	Status       pgtype.Text        `json:"status"`
-	Organization *Organizations     `json:"organization"`
-	ModuleRepo   *ModuleRepos       `json:"module_repo"`
-	Webhook      *Webhooks          `json:"webhook"`
-	Versions     []ModuleVersions   `json:"versions"`
+	ModuleID         pgtype.Text        `json:"module_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Name             pgtype.Text        `json:"name"`
+	Provider         pgtype.Text        `json:"provider"`
+	Status           pgtype.Text        `json:"status"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+	ModuleRepo       *ModuleRepos       `json:"module_repo"`
+	Webhook          *Webhooks          `json:"webhook"`
+	Versions         []ModuleVersions   `json:"versions"`
 }
 
 // FindModuleByID implements Querier.FindModuleByID.
@@ -418,15 +399,11 @@ func (q *DBQuerier) FindModuleByID(ctx context.Context, id pgtype.Text) (FindMod
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindModuleByID")
 	row := q.conn.QueryRow(ctx, findModuleByIDSQL, id)
 	var item FindModuleByIDRow
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("query FindModuleByID: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindModuleByID row: %w", err)
 	}
 	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 		return item, fmt.Errorf("assign FindModuleByID row: %w", err)
@@ -449,15 +426,11 @@ func (q *DBQuerier) FindModuleByIDBatch(batch genericBatch, id pgtype.Text) {
 func (q *DBQuerier) FindModuleByIDScan(results pgx.BatchResults) (FindModuleByIDRow, error) {
 	row := results.QueryRow()
 	var item FindModuleByIDRow
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("scan FindModuleByIDBatch row: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindModuleByID row: %w", err)
 	}
 	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 		return item, fmt.Errorf("assign FindModuleByID row: %w", err)
@@ -478,7 +451,7 @@ const findModuleByWebhookIDSQL = `SELECT
     m.name,
     m.provider,
     m.status,
-    (o.*)::"organizations" AS organization,
+    m.organization_name,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
     (
@@ -487,22 +460,21 @@ const findModuleByWebhookIDSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN organizations o USING (organization_id)
 JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE h.webhook_id = $1
 ;`
 
 type FindModuleByWebhookIDRow struct {
-	ModuleID     pgtype.Text        `json:"module_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	Name         pgtype.Text        `json:"name"`
-	Provider     pgtype.Text        `json:"provider"`
-	Status       pgtype.Text        `json:"status"`
-	Organization *Organizations     `json:"organization"`
-	ModuleRepo   *ModuleRepos       `json:"module_repo"`
-	Webhook      *Webhooks          `json:"webhook"`
-	Versions     []ModuleVersions   `json:"versions"`
+	ModuleID         pgtype.Text        `json:"module_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Name             pgtype.Text        `json:"name"`
+	Provider         pgtype.Text        `json:"provider"`
+	Status           pgtype.Text        `json:"status"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+	ModuleRepo       *ModuleRepos       `json:"module_repo"`
+	Webhook          *Webhooks          `json:"webhook"`
+	Versions         []ModuleVersions   `json:"versions"`
 }
 
 // FindModuleByWebhookID implements Querier.FindModuleByWebhookID.
@@ -510,15 +482,11 @@ func (q *DBQuerier) FindModuleByWebhookID(ctx context.Context, webhookID pgtype.
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindModuleByWebhookID")
 	row := q.conn.QueryRow(ctx, findModuleByWebhookIDSQL, webhookID)
 	var item FindModuleByWebhookIDRow
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("query FindModuleByWebhookID: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
 	}
 	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
@@ -541,15 +509,11 @@ func (q *DBQuerier) FindModuleByWebhookIDBatch(batch genericBatch, webhookID pgt
 func (q *DBQuerier) FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error) {
 	row := results.QueryRow()
 	var item FindModuleByWebhookIDRow
-	organizationRow := q.types.newOrganizations()
 	moduleRepoRow := q.types.newModuleRepos()
 	webhookRow := q.types.newWebhooks()
 	versionsArray := q.types.newModuleVersionsArray()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("scan FindModuleByWebhookIDBatch row: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
 	}
 	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
 		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
