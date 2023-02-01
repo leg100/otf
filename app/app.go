@@ -81,7 +81,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		proxy:               parent.proxy,
 		hostname:            parent.hostname,
 		VCSProviderFactory: &otf.VCSProviderFactory{
-			Service: parent.Service,
+			Service: opts.CloudService,
 		},
 		db:   db,
 		opts: opts,
