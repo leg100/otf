@@ -12,11 +12,11 @@ import (
 
 // appService is the application service for state
 type appService interface {
-	createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error)
-	currentVersion(ctx context.Context, workspaceID string) (*Version, error)
-	getVersion(ctx context.Context, versionID string) (*Version, error)
+	createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*version, error)
+	currentVersion(ctx context.Context, workspaceID string) (*version, error)
+	getVersion(ctx context.Context, versionID string) (*version, error)
 	downloadState(ctx context.Context, versionID string) ([]byte, error)
-	listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+	listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
 }
 
 // app is the implementation of appService
@@ -26,6 +26,22 @@ type app struct {
 
 	db              // access to state version database
 	cache otf.Cache // cache state file
+}
+
+// stateVersionGetOptions are options for retrieving a single StateVersion.
+// Either ID *or* WorkspaceID must be specfiied.
+type stateVersionGetOptions struct {
+	// ID of state version to retrieve
+	ID *string
+	// Get current state version belonging to workspace with this ID
+	WorkspaceID *string
+}
+
+// stateVersionListOptions represents the options for listing state versions.
+type stateVersionListOptions struct {
+	otf.ListOptions
+	Organization string `schema:"filter[organization][name],required"`
+	Workspace    string `schema:"filter[workspace][name],required"`
 }
 
 func (a *app) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) error {
@@ -41,7 +57,7 @@ func (a *app) DownloadCurrentState(ctx context.Context, workspaceID string) ([]b
 	return a.downloadState(ctx, v.id)
 }
 
-func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*Version, error) {
+func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*version, error) {
 	if opts.WorkspaceID == nil {
 		return nil, errors.New("workspace ID is required")
 	}
@@ -50,7 +66,7 @@ func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOpti
 		return nil, err
 	}
 
-	sv, err := NewStateVersion(opts)
+	sv, err := newVersion(opts)
 	if err != nil {
 		a.Error(err, "constructing state version")
 		return nil, err
@@ -68,7 +84,7 @@ func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOpti
 	return sv, nil
 }
 
-func (a *app) listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error) {
+func (a *app) listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error) {
 	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
@@ -83,13 +99,13 @@ func (a *app) listVersions(ctx context.Context, opts StateVersionListOptions) (*
 	return svl, nil
 }
 
-func (a *app) currentVersion(ctx context.Context, workspaceID string) (*Version, error) {
+func (a *app) currentVersion(ctx context.Context, workspaceID string) (*version, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	sv, err := a.db.getVersion(ctx, StateVersionGetOptions{WorkspaceID: &workspaceID})
+	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -98,13 +114,13 @@ func (a *app) currentVersion(ctx context.Context, workspaceID string) (*Version,
 	return sv, nil
 }
 
-func (a *app) getVersion(ctx context.Context, versionID string) (*Version, error) {
+func (a *app) getVersion(ctx context.Context, versionID string) (*version, error) {
 	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
 	}
 
-	sv, err := a.db.getVersion(ctx, StateVersionGetOptions{ID: &versionID})
+	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{ID: &versionID})
 	if err != nil {
 		a.Error(err, "retrieving state version", "id", versionID, "subject", subject)
 		return nil, err

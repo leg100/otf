@@ -17,7 +17,7 @@ func TestState_UnmarshalState(t *testing.T) {
 	err = json.Unmarshal(data, &state)
 	require.NoError(t, err)
 
-	assert.Equal(t, state, &State{
+	assert.Equal(t, state, State{
 		Version: 4,
 		Serial:  2,
 		Lineage: "b2b54b23-e7ea-5500-7b15-fcb68c1d92bb",

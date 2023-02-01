@@ -6,8 +6,6 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-// StateVersion represents a Terraform Enterprise state version.
-
 // jsonapiVersion is a state version suitable for marshaling into JSONAPI
 type jsonapiVersion struct {
 	ID           string    `jsonapi:"primary,state-versions"`

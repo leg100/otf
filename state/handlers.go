@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -58,31 +57,17 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: validate md5, lineage
+
 	// The docs (linked above) state the serial in the create options must match the
 	// serial in the state file. However, the go-tfe integration tests we use
 	// send different values for each and expect the serial in the create
 	// options to take precedence, without error. We've opted to support that
-	// behaviour and therefore we need to update the state file with whatever serial
-	// is sent before forwarding it onto the app.
-	var state State
-	if err := json.Unmarshal(decoded, &state); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	if *opts.Serial != state.Serial {
-		state.Serial = *opts.Serial
-		decoded, err = json.Marshal(state)
-		if err != nil {
-			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
-			return
-		}
-	}
-
-	// TODO: validate md5, lineage
-
+	// behaviour.
 	sv, err := h.app.createVersion(r.Context(), otf.CreateStateVersionOptions{
 		WorkspaceID: otf.String(workspaceID),
 		State:       decoded,
+		Serial:      opts.Serial,
 	})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
@@ -92,7 +77,7 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
-	var opts StateVersionListOptions
+	var opts stateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return

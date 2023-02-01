@@ -9,7 +9,7 @@ import (
 )
 
 // newTestVersion creates a new state.Version for testing purposes
-func newTestVersion(t *testing.T, ws *otf.Workspace, outputs ...StateOutput) *Version {
+func newTestVersion(t *testing.T, ws *otf.Workspace, outputs ...StateOutput) *version {
 	// create empty terraform state
 	state := State{
 		Version: DefaultStateVersion,
@@ -25,7 +25,7 @@ func newTestVersion(t *testing.T, ws *otf.Workspace, outputs ...StateOutput) *Ve
 	require.NoError(t, err)
 
 	// wrap it in a version and return
-	version, err := NewStateVersion(otf.CreateStateVersionOptions{
+	version, err := newVersion(otf.CreateStateVersionOptions{
 		State:       js,
 		WorkspaceID: otf.String(ws.ID()),
 	})

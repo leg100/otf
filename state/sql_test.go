@@ -38,13 +38,13 @@ func TestStateVersion_Get(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts StateVersionGetOptions
-		want func(t *testing.T, got *Version, err error)
+		opts stateVersionGetOptions
+		want func(t *testing.T, got *version, err error)
 	}{
 		{
 			name: "by id",
-			opts: StateVersionGetOptions{ID: otf.String(sv.ID())},
-			want: func(t *testing.T, got *Version, err error) {
+			opts: stateVersionGetOptions{ID: otf.String(sv.ID())},
+			want: func(t *testing.T, got *version, err error) {
 				if assert.NoError(t, err) {
 					assert.Equal(t, sv, got)
 				}
@@ -52,15 +52,15 @@ func TestStateVersion_Get(t *testing.T) {
 		},
 		{
 			name: "by id - missing",
-			opts: StateVersionGetOptions{ID: otf.String("sv-does-not-exist")},
-			want: func(t *testing.T, got *Version, err error) {
+			opts: stateVersionGetOptions{ID: otf.String("sv-does-not-exist")},
+			want: func(t *testing.T, got *version, err error) {
 				assert.Equal(t, otf.ErrResourceNotFound, err)
 			},
 		},
 		{
 			name: "by workspace",
-			opts: StateVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
-			want: func(t *testing.T, got *Version, err error) {
+			opts: stateVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
+			want: func(t *testing.T, got *version, err error) {
 				if assert.NoError(t, err) {
 					assert.Equal(t, sv, got)
 				}
@@ -68,8 +68,8 @@ func TestStateVersion_Get(t *testing.T) {
 		},
 		{
 			name: "by workspace - missing",
-			opts: StateVersionGetOptions{WorkspaceID: otf.String("ws-does-not-exist")},
-			want: func(t *testing.T, got *Version, err error) {
+			opts: stateVersionGetOptions{WorkspaceID: otf.String("ws-does-not-exist")},
+			want: func(t *testing.T, got *version, err error) {
 				assert.Equal(t, otf.ErrResourceNotFound, err)
 			},
 		},
@@ -95,13 +95,13 @@ func TestStateVersion_List(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts StateVersionListOptions
-		want func(*testing.T, *VersionList, ...*Version)
+		opts stateVersionListOptions
+		want func(*testing.T, *versionList, ...*version)
 	}{
 		{
 			name: "filter by workspace",
-			opts: StateVersionListOptions{Workspace: ws.Name(), Organization: org.Name()},
-			want: func(t *testing.T, l *VersionList, created ...*Version) {
+			opts: stateVersionListOptions{Workspace: ws.Name(), Organization: org.Name()},
+			want: func(t *testing.T, l *versionList, created ...*version) {
 				assert.Equal(t, 2, len(l.Items))
 				for _, c := range created {
 					assert.Contains(t, l.Items, c)
@@ -110,8 +110,8 @@ func TestStateVersion_List(t *testing.T) {
 		},
 		{
 			name: "filter by non-existent workspace",
-			opts: StateVersionListOptions{Workspace: "non-existent", Organization: "non-existent"},
-			want: func(t *testing.T, l *VersionList, created ...*Version) {
+			opts: stateVersionListOptions{Workspace: "non-existent", Organization: "non-existent"},
+			want: func(t *testing.T, l *versionList, created ...*version) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
@@ -127,7 +127,7 @@ func TestStateVersion_List(t *testing.T) {
 	}
 }
 
-func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *otf.Workspace, outputs ...StateOutput) *Version {
+func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *otf.Workspace, outputs ...StateOutput) *version {
 	ctx := context.Background()
 	sv := newTestVersion(t, ws, outputs...)
 	err := stateDB.createVersion(ctx, sv)
