@@ -29,8 +29,8 @@ type Module struct {
 	updatedAt    time.Time
 	name         string
 	provider     string
-	organization *Organization // Module belongs to an organization
-	repo         *ModuleRepo   // Module optionally connected to vcs repo
+	organization string      // Module belongs to an organization
+	repo         *ModuleRepo // Module optionally connected to vcs repo
 	status       ModuleStatus
 	versions     SortedModuleVersions
 }
@@ -57,7 +57,7 @@ func (m *Module) Repo() *ModuleRepo              { return m.repo }
 func (m *Module) Status() ModuleStatus           { return m.status }
 func (m *Module) Versions() SortedModuleVersions { return m.versions }
 func (m *Module) Latest() *ModuleVersion         { return m.versions.latest() }
-func (m *Module) Organization() *Organization    { return m.organization }
+func (m *Module) Organization() string           { return m.organization }
 
 func (m *Module) UpdateStatus(status ModuleStatus) { m.status = status }
 
@@ -89,7 +89,7 @@ func (m *Module) MarshalLog() any {
 		Provider     string `json:"provider"`
 	}{
 		ID:           m.id,
-		Organization: m.organization.name,
+		Organization: m.organization,
 		Name:         m.name,
 		Provider:     m.provider,
 	}
@@ -163,7 +163,7 @@ type (
 	CreateModuleOptions struct {
 		Name         string
 		Provider     string
-		Organization *Organization
+		Organization string
 		Repo         *ModuleRepo
 	}
 	UpdateModuleStatusOptions struct {
@@ -236,16 +236,16 @@ func (l SortedModuleVersions) Less(i, j int) bool {
 
 // ModuleRow is a row from a database query for modules.
 type ModuleRow struct {
-	ModuleID     pgtype.Text            `json:"module_id"`
-	CreatedAt    pgtype.Timestamptz     `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz     `json:"updated_at"`
-	Name         pgtype.Text            `json:"name"`
-	Provider     pgtype.Text            `json:"provider"`
-	Status       pgtype.Text            `json:"status"`
-	Organization *pggen.Organizations   `json:"organization"`
-	ModuleRepo   *pggen.ModuleRepos     `json:"module_repo"`
-	Webhook      *pggen.Webhooks        `json:"webhook"`
-	Versions     []pggen.ModuleVersions `json:"versions"`
+	ModuleID         pgtype.Text            `json:"module_id"`
+	CreatedAt        pgtype.Timestamptz     `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz     `json:"updated_at"`
+	Name             pgtype.Text            `json:"name"`
+	Provider         pgtype.Text            `json:"provider"`
+	Status           pgtype.Text            `json:"status"`
+	OrganizationName pgtype.Text            `json:"organization_name"`
+	ModuleRepo       *pggen.ModuleRepos     `json:"module_repo"`
+	Webhook          *pggen.Webhooks        `json:"webhook"`
+	Versions         []pggen.ModuleVersions `json:"versions"`
 }
 
 // UnmarshalModuleRow unmarshals a database row into a module
@@ -257,7 +257,7 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 		name:         row.Name.String,
 		provider:     row.Provider.String,
 		status:       ModuleStatus(row.Status.String),
-		organization: UnmarshalOrganizationRow(*row.Organization),
+		organization: row.OrganizationName.String,
 	}
 	if row.ModuleRepo != nil {
 		module.repo = &ModuleRepo{

@@ -65,7 +65,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 		mod = otf.NewModule(otf.CreateModuleOptions{
 			Name:         name,
 			Provider:     provider,
-			Organization: opts.Organization,
+			Organization: opts.Organization.Name(),
 			Repo: &otf.ModuleRepo{
 				WebhookID:  hookID,
 				ProviderID: opts.ProviderID,

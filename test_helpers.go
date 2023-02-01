@@ -125,7 +125,7 @@ func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
 
 func NewTestModule(org *Organization, opts ...NewTestModuleOption) *Module {
 	createOpts := CreateModuleOptions{
-		Organization: org,
+		Organization: org.Name(),
 		Provider:     uuid.NewString(),
 		Name:         uuid.NewString(),
 	}

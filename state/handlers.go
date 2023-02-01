@@ -76,13 +76,13 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (s *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
 	var opts stateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	svl, err := s.app.listVersions(r.Context(), opts)
+	svl, err := h.app.listVersions(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -90,14 +90,14 @@ func (s *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, svl)
 }
 
-func (s *handlers) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	sv, err := s.app.currentVersion(r.Context(), workspaceID)
+	sv, err := h.app.currentVersion(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -105,13 +105,13 @@ func (s *handlers) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (s *handlers) getVersion(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) getVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	sv, err := s.app.getVersion(r.Context(), versionID)
+	sv, err := h.app.getVersion(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -119,13 +119,13 @@ func (s *handlers) getVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (s *handlers) downloadState(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) downloadState(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	resp, err := s.app.downloadState(r.Context(), versionID)
+	resp, err := h.app.downloadState(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

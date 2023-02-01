@@ -239,5 +239,5 @@ func (app *Application) deleteModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	flashSuccess(w, "deleted module: "+deleted.Name())
-	http.Redirect(w, r, paths.Modules(deleted.Organization().Name()), http.StatusFound)
+	http.Redirect(w, r, paths.Modules(deleted.Organization()), http.StatusFound)
 }

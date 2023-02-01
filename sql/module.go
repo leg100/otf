@@ -15,13 +15,13 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 func CreateModule(ctx context.Context, db otf.Database, mod *otf.Module) error {
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
-			ID:             String(mod.ID()),
-			CreatedAt:      Timestamptz(mod.CreatedAt()),
-			UpdatedAt:      Timestamptz(mod.UpdatedAt()),
-			Name:           String(mod.Name()),
-			Provider:       String(mod.Provider()),
-			Status:         String(string(mod.Status())),
-			OrganizationID: String(mod.Organization().ID()),
+			ID:               String(mod.ID()),
+			CreatedAt:        Timestamptz(mod.CreatedAt()),
+			UpdatedAt:        Timestamptz(mod.UpdatedAt()),
+			Name:             String(mod.Name()),
+			Provider:         String(mod.Provider()),
+			Status:           String(string(mod.Status())),
+			OrganizationName: String(mod.Organization()),
 		})
 		if err != nil {
 			return err
@@ -64,9 +64,9 @@ func (db *DB) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*
 
 func (db *DB) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
 	row, err := db.FindModuleByName(ctx, pggen.FindModuleByNameParams{
-		Name:            String(opts.Name),
-		Provider:        String(opts.Provider),
-		OrganizatonName: String(opts.Organization),
+		Name:             String(opts.Name),
+		Provider:         String(opts.Provider),
+		OrganizationName: String(opts.Organization),
 	})
 	if err != nil {
 		return nil, Error(err)

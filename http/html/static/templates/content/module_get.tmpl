@@ -3,7 +3,7 @@
 {{ define "title" }}module: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ modulesPath .Content.Organization.Name }}">modules</a> / {{ .Content.Name }}
+  <a href="{{ modulesPath .Content.Organization }}">modules</a> / {{ .Content.Name }}
 {{ end }}
 
 {{ define "content" }}
@@ -32,7 +32,7 @@
         <label for="usage">Usage</label>
         <textarea id="usage" cols="42" rows="5" readonly wrap="off">
 module "{{ .Content.Name }}" {
-  source  = "{{ .Content.Hostname }}/{{ .Content.Organization.Name }}/{{ .Content.Name }}/{{ .Content.Provider }}"
+  source  = "{{ .Content.Hostname }}/{{ .Content.Organization }}/{{ .Content.Name }}/{{ .Content.Provider }}"
   version = "{{ .Content.CurrentVersion.Version }}"
 }
         </textarea>
