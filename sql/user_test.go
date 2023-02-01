@@ -23,7 +23,7 @@ func TestUser_AddOrganizationMembership(t *testing.T) {
 	db := NewTestDB(t)
 	ctx := context.Background()
 
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	user := createTestUser(t, db)
 
 	err := db.AddOrganizationMembership(ctx, user.ID(), org.Name())
@@ -39,7 +39,7 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	db := NewTestDB(t)
 	ctx := context.Background()
 
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
 
 	err := db.RemoveOrganizationMembership(ctx, user.ID(), org.Name())
@@ -55,7 +55,7 @@ func TestUser_AddTeamMembership(t *testing.T) {
 	db := NewTestDB(t)
 	ctx := context.Background()
 
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
 
@@ -72,7 +72,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 	db := NewTestDB(t)
 	ctx := context.Background()
 
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
 
@@ -88,8 +88,8 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 func TestUser_Get(t *testing.T) {
 	db := NewTestDB(t)
 
-	org1 := createTestOrganization(t, db)
-	org2 := createTestOrganization(t, db)
+	org1 := CreateTestOrganization(t, db)
+	org2 := CreateTestOrganization(t, db)
 	team1 := createTestTeam(t, db, org1)
 	team2 := createTestTeam(t, db, org2)
 
@@ -149,7 +149,7 @@ func TestUser_Get_NotFound(t *testing.T) {
 func TestUser_List(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	user1 := createTestUser(t, db)
 	user2 := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))

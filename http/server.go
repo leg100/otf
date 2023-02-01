@@ -12,7 +12,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/r3labs/sse/v2"
 
-	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
@@ -61,15 +60,13 @@ type Server struct {
 	*Router      // http router, exported so that other pkgs can add routes
 	*surl.Signer // sign and validate signed URLs
 
-	CacheService *bigcache.BigCache
-
 	eventsServer     *sse.Server
 	server           *http.Server
 	vcsEventsHandler *triggerer.Triggerer
 }
 
 // NewServer is the constructor for Server
-func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, cache *bigcache.BigCache) (*Server, error) {
+func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, stateService otf.StateVersionService) (*Server, error) {
 	s := &Server{
 		server:       &http.Server{},
 		Logger:       logger,
@@ -174,11 +171,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			r.DEL("/workspaces/{workspace_id}/vars/{variable_id}", s.DeleteVariable)
 
 			// StateVersion routes
-			r.PST("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion)
-			r.GET("/workspaces/{workspace_id}/current-state-version", s.CurrentStateVersion)
-			r.GET("/state-versions/{id}", s.GetStateVersion)
-			r.GET("/state-versions", s.ListStateVersions)
-			r.GET("/state-versions/{id}/download", s.DownloadStateVersion)
+			stateService.AddHandlers(r.Router)
 
 			// ConfigurationVersion routes
 			r.PST("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)

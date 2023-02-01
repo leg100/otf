@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // VariableCategory is the category of variable
@@ -256,7 +256,7 @@ func UnmarshalVariableRow(result VariableRow) *Variable {
 	}
 }
 
-func UnmarshalVariableJSONAPI(json *dto.Variable) *Variable {
+func UnmarshalVariableJSONAPI(json *jsonapi.Variable) *Variable {
 	return &Variable{
 		id:          json.ID,
 		key:         json.Key,
@@ -270,7 +270,7 @@ func UnmarshalVariableJSONAPI(json *dto.Variable) *Variable {
 }
 
 // UnmarshalVariableListJSONAPI converts a DTO into a workspace list
-func UnmarshalVariableListJSONAPI(json *dto.VariableList) []*Variable {
+func UnmarshalVariableListJSONAPI(json *jsonapi.VariableList) []*Variable {
 	var list []*Variable
 	for _, i := range json.Items {
 		list = append(list, UnmarshalVariableJSONAPI(i))

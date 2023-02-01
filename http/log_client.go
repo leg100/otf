@@ -11,7 +11,7 @@ import (
 
 func (c *client) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 	u := fmt.Sprintf("runs/%s/logs/%s", url.QueryEscape(chunk.RunID), url.QueryEscape(string(chunk.Phase)))
-	req, err := c.newRequest("PUT", u, chunk.Data)
+	req, err := c.NewRequest("PUT", u, chunk.Data)
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func (c *client) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 	q.Add("offset", strconv.Itoa(chunk.Offset))
 	req.URL.RawQuery = q.Encode()
 
-	err = c.do(ctx, req, nil)
+	err = c.Do(ctx, req, nil)
 	if err != nil {
 		return err
 	}

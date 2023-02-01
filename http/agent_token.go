@@ -3,13 +3,12 @@ package http
 import (
 	"net/http"
 
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
-	opts := dto.AgentTokenCreateOptions{}
+	opts := jsonapi.AgentTokenCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -22,7 +21,7 @@ func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &AgentToken{at, true})
+	jsonapi.WriteResponse(w, r, &AgentToken{at, true})
 }
 
 func (s *Server) GetCurrentAgent(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +30,7 @@ func (s *Server) GetCurrentAgent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &AgentToken{agent, false})
+	jsonapi.WriteResponse(w, r, &AgentToken{agent, false})
 }
 
 type AgentToken struct {
@@ -41,7 +40,7 @@ type AgentToken struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (t *AgentToken) ToJSONAPI() any {
-	json := dto.AgentToken{
+	json := jsonapi.AgentToken{
 		ID:           t.ID(),
 		Organization: t.Organization(),
 	}

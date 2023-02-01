@@ -3,10 +3,9 @@ package http
 import (
 	"net/http"
 
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // Variable assembles a workspace JSONAPI DTO
@@ -15,7 +14,7 @@ type Variable struct {
 }
 
 func (v *Variable) ToJSONAPI() any {
-	to := dto.Variable{
+	to := jsonapi.Variable{
 		ID:          v.ID(),
 		Key:         v.Key(),
 		Value:       v.Value(),
@@ -23,7 +22,7 @@ func (v *Variable) ToJSONAPI() any {
 		Category:    string(v.Category()),
 		Sensitive:   v.Sensitive(),
 		HCL:         v.HCL(),
-		Workspace: &dto.Workspace{
+		Workspace: &jsonapi.Workspace{
 			ID: v.WorkspaceID(),
 		},
 	}
@@ -39,9 +38,9 @@ type VariableList struct {
 }
 
 func (l *VariableList) ToJSONAPI() any {
-	variables := &dto.VariableList{}
+	variables := &jsonapi.VariableList{}
 	for _, v := range l.variables {
-		variables.Items = append(variables.Items, (&Variable{v}).ToJSONAPI().(*dto.Variable))
+		variables.Items = append(variables.Items, (&Variable{v}).ToJSONAPI().(*jsonapi.Variable))
 	}
 	return variables
 }
@@ -52,7 +51,7 @@ func (s *Server) CreateVariable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var opts dto.VariableCreateOptions
+	var opts jsonapi.VariableCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -69,7 +68,7 @@ func (s *Server) CreateVariable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Variable{variable}, withCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, &Variable{variable}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetVariable(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +82,7 @@ func (s *Server) GetVariable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Variable{variable})
+	jsonapi.WriteResponse(w, r, &Variable{variable})
 }
 
 func (s *Server) ListVariables(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +96,7 @@ func (s *Server) ListVariables(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &VariableList{variables})
+	jsonapi.WriteResponse(w, r, &VariableList{variables})
 }
 
 func (s *Server) UpdateVariable(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +105,7 @@ func (s *Server) UpdateVariable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var opts dto.VariableUpdateOptions
+	var opts jsonapi.VariableUpdateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -123,7 +122,7 @@ func (s *Server) UpdateVariable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Variable{updated})
+	jsonapi.WriteResponse(w, r, &Variable{updated})
 }
 
 func (s *Server) DeleteVariable(w http.ResponseWriter, r *http.Request) {

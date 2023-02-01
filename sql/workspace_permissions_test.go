@@ -12,8 +12,8 @@ import (
 func TestWorkspacePermissions_Set(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	team := createTestTeam(t, db, org)
 
 	err := db.SetWorkspacePermission(ctx, ws.ID(), team.Name(), rbac.WorkspacePlanRole)
@@ -28,8 +28,8 @@ func TestWorkspacePermissions_Set(t *testing.T) {
 func TestWorkspacePermissions_List(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	team1 := createTestTeam(t, db, org)
 	team2 := createTestTeam(t, db, org)
 	perm1 := createTestWorkspacePermission(t, db, ws, team1, rbac.WorkspaceAdminRole)
@@ -46,8 +46,8 @@ func TestWorkspacePermissions_List(t *testing.T) {
 func TestWorkspacePermissions_Unset(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	team := createTestTeam(t, db, org)
 	_ = createTestWorkspacePermission(t, db, ws, team, rbac.WorkspaceAdminRole)
 

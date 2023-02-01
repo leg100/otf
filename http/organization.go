@@ -4,14 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	opts := dto.OrganizationCreateOptions{}
+	opts := jsonapi.OrganizationCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -25,7 +24,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Organization{org}, withCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, &Organization{org}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +34,7 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Organization{org})
+	jsonapi.WriteResponse(w, r, &Organization{org})
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -49,12 +48,12 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &OrganizationList{list})
+	jsonapi.WriteResponse(w, r, &OrganizationList{list})
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	opts := dto.OrganizationUpdateOptions{}
+	opts := jsonapi.OrganizationUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -68,7 +67,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Organization{org})
+	jsonapi.WriteResponse(w, r, &Organization{org})
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +86,7 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Entitlements{entitlements})
+	jsonapi.WriteResponse(w, r, &Entitlements{entitlements})
 }
 
 type Organization struct {
@@ -96,11 +95,11 @@ type Organization struct {
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (org *Organization) ToJSONAPI() any {
-	return &dto.Organization{
+	return &jsonapi.Organization{
 		Name:            org.Name(),
 		CreatedAt:       org.CreatedAt(),
 		ExternalID:      org.ID(),
-		Permissions:     &dto.DefaultOrganizationPermissions,
+		Permissions:     &jsonapi.DefaultOrganizationPermissions,
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
 	}
@@ -112,11 +111,11 @@ type OrganizationList struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *OrganizationList) ToJSONAPI() any {
-	obj := &dto.OrganizationList{
+	obj := &jsonapi.OrganizationList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Organization{item}).ToJSONAPI().(*dto.Organization))
+		obj.Items = append(obj.Items, (&Organization{item}).ToJSONAPI().(*jsonapi.Organization))
 	}
 	return obj
 }
@@ -127,5 +126,5 @@ type Entitlements struct {
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (e *Entitlements) ToJSONAPI() any {
-	return (*dto.Entitlements)(e.Entitlements)
+	return (*jsonapi.Entitlements)(e.Entitlements)
 }

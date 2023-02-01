@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // AgentToken represents an otf agent token
 type AgentToken struct {

@@ -1,4 +1,4 @@
-package dto
+package jsonapi
 
 // RegistrySession is an unmarshalled JSONAPI representation of an otf registry session
 type RegistrySession struct {

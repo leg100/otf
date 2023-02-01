@@ -12,7 +12,7 @@ import (
 
 func TestWorkspace_Create(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	ws := otf.NewTestWorkspace(t, org)
 
 	err := db.CreateWorkspace(context.Background(), ws)
@@ -27,8 +27,8 @@ func TestWorkspace_Create(t *testing.T) {
 func TestWorkspace_Update(t *testing.T) {
 	db := NewTestDB(t)
 	ctx := context.Background()
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 
 	got, err := db.UpdateWorkspace(ctx, ws.ID(), func(ws *otf.Workspace) error {
 		return ws.Update(otf.UpdateWorkspaceOptions{
@@ -47,8 +47,8 @@ func TestWorkspace_Update(t *testing.T) {
 
 func TestWorkspace_GetByID(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	want := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	want := CreateTestWorkspace(t, db, org)
 
 	got, err := db.GetWorkspace(context.Background(), want.ID())
 	require.NoError(t, err)
@@ -57,8 +57,8 @@ func TestWorkspace_GetByID(t *testing.T) {
 
 func TestWorkspace_GetByName(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	want := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	want := CreateTestWorkspace(t, db, org)
 
 	got, err := db.GetWorkspaceByName(context.Background(), org.Name(), want.Name())
 	require.NoError(t, err)
@@ -67,26 +67,26 @@ func TestWorkspace_GetByName(t *testing.T) {
 
 func TestWorkspace_Lock(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 	user := createTestUser(t, db)
 	ctx := otf.AddSubjectToContext(context.Background(), user)
 
 	t.Run("lock by id", func(t *testing.T) {
-		ws := createTestWorkspace(t, db, org)
+		ws := CreateTestWorkspace(t, db, org)
 		got, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("lock by name", func(t *testing.T) {
-		ws := createTestWorkspace(t, db, org)
+		ws := CreateTestWorkspace(t, db, org)
 		got, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("unlock by id", func(t *testing.T) {
-		ws := createTestWorkspace(t, db, org)
+		ws := CreateTestWorkspace(t, db, org)
 		_, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		got, err := db.UnlockWorkspace(ctx, ws.ID(), otf.WorkspaceUnlockOptions{})
@@ -95,7 +95,7 @@ func TestWorkspace_Lock(t *testing.T) {
 	})
 
 	t.Run("unlock by name", func(t *testing.T) {
-		ws := createTestWorkspace(t, db, org)
+		ws := CreateTestWorkspace(t, db, org)
 		_, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		got, err := db.UnlockWorkspace(ctx, ws.ID(), otf.WorkspaceUnlockOptions{})
@@ -106,9 +106,9 @@ func TestWorkspace_Lock(t *testing.T) {
 
 func TestWorkspace_ListByUserID(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws1 := createTestWorkspace(t, db, org)
-	ws2 := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws1 := CreateTestWorkspace(t, db, org)
+	ws2 := CreateTestWorkspace(t, db, org)
 	team1 := createTestTeam(t, db, org)
 	team2 := createTestTeam(t, db, org)
 	_ = createTestWorkspacePermission(t, db, ws1, team1, rbac.WorkspaceAdminRole)
@@ -175,9 +175,9 @@ func TestWorkspace_ListByUserID(t *testing.T) {
 
 func TestWorkspace_List(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws1 := createTestWorkspace(t, db, org)
-	ws2 := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws1 := CreateTestWorkspace(t, db, org)
+	ws2 := CreateTestWorkspace(t, db, org)
 
 	tests := []struct {
 		name string
@@ -250,9 +250,9 @@ func TestWorkspace_List(t *testing.T) {
 func TestWorkspace_Delete(t *testing.T) {
 	db := NewTestDB(t)
 	ctx := context.Background()
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 
-	ws := createTestWorkspace(t, db, org)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	_ = createTestRun(t, db, ws, cv)
 

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -85,7 +86,6 @@ type DB interface {
 	RunStore
 	SessionStore
 	RegistrySessionStore
-	StateVersionStore
 	TokenStore
 	ConfigurationVersionStore
 	ChunkStore
@@ -99,6 +99,9 @@ type DB interface {
 // Database provides access to generated SQL queries as well as wrappers for
 // performing queries within a transaction or a lock.
 type Database interface {
+	// Send batches of SQL queries over the wire.
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+
 	pggen.Querier // generated SQL queries
 
 	// Tx provides a transaction within which to operate on the store.

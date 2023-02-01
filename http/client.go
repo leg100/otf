@@ -17,9 +17,9 @@ import (
 	"time"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/state"
 	"github.com/r3labs/sse/v2"
 	"golang.org/x/time/rate"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -29,10 +29,8 @@ const (
 	DefaultAddress = "localhost:8080"
 )
 
-// Client implements all the application services, for client-side usage.
-type Client interface {
-	otf.Application
-}
+// alias to provide more meaningful name when embedded in client
+type stateClient = state.Client
 
 type client struct {
 	baseURL           *url.URL
@@ -47,7 +45,7 @@ type client struct {
 	// for testing purposes. NOTE: Only takes effect on SSE connections.
 	insecure bool
 
-	otf.Application // client is an implementation of the otf app
+	*stateClient // state service client
 }
 
 // Hostname returns the server host:port.
@@ -110,7 +108,7 @@ func (c *client) configureLimiter(rawLimit string) {
 	c.limiter = rate.NewLimiter(limit, burst)
 }
 
-// newRequest creates an API request with proper headers and serialization.
+// NewRequest creates an API request with proper headers and serialization.
 //
 // A relative URL path can be provided, in which case it is resolved relative to the baseURL
 // of the Client. Relative URL paths should always be specified without a preceding slash. Adding a
@@ -119,7 +117,7 @@ func (c *client) configureLimiter(rawLimit string) {
 // If v is supplied, the value will be JSONAPI encoded and included as the
 // request body. If the method is GET, the value will be parsed and added as
 // query parameters.
-func (c *client) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+func (c *client) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -268,7 +266,7 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 //
 // The provided ctx must be non-nil. If it is canceled or times out, ctx.Err()
 // will be returned.
-func (c *client) do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
+func (c *client) Do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
 	// Wait will block until the limiter can obtain a new token
 	// or returns an error if the given context is canceled.
 	if err := c.limiter.Wait(ctx); err != nil {
@@ -476,15 +474,15 @@ func checkResponseCode(r *http.Response) error {
 	return fmt.Errorf(strings.Join(errs, "\n"))
 }
 
-func parsePagination(body io.Reader) (*dto.Pagination, error) {
+func parsePagination(body io.Reader) (*jsonapi.Pagination, error) {
 	var raw struct {
 		Meta struct {
-			Pagination dto.Pagination `jsonapi:"pagination"`
+			Pagination jsonapi.Pagination `jsonapi:"pagination"`
 		} `jsonapi:"meta"`
 	}
 	// JSON decode the raw response.
 	if err := json.NewDecoder(body).Decode(&raw); err != nil {
-		return &dto.Pagination{}, err
+		return &jsonapi.Pagination{}, err
 	}
 	return &raw.Meta.Pagination, nil
 }

@@ -32,7 +32,7 @@ var (
 // Agent processes runs.
 type Agent struct {
 	Config
-	otf.Application
+	otf.Client
 	logr.Logger
 
 	Spooler        // spools new run events
@@ -43,15 +43,15 @@ type Agent struct {
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, error) {
+func NewAgent(logger logr.Logger, app otf.Client, cfg Config) (*Agent, error) {
 	agent := &Agent{
-		Application: app,
-		Config:      cfg,
-		Logger:      logger,
-		envs:        DefaultEnvs,
-		Spooler:     NewSpooler(app, logger, cfg),
-		Terminator:  NewTerminator(),
-		Downloader:  NewTerraformDownloader(),
+		Client:   app,
+		Config:     cfg,
+		Logger:     logger,
+		envs:       DefaultEnvs,
+		Spooler:    NewSpooler(app, logger, cfg),
+		Terminator: NewTerminator(),
+		Downloader: NewTerraformDownloader(),
 	}
 
 	if cfg.Sandbox {

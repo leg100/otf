@@ -1,11 +1,13 @@
-package dto
+package state
 
 import (
 	"time"
+
+	"github.com/leg100/otf/http/jsonapi"
 )
 
-// StateVersion represents a Terraform Enterprise state version.
-type StateVersion struct {
+// jsonapiVersion is a state version suitable for marshaling into JSONAPI
+type jsonapiVersion struct {
 	ID           string    `jsonapi:"primary,state-versions"`
 	CreatedAt    time.Time `jsonapi:"attr,created-at,iso8601"`
 	DownloadURL  string    `jsonapi:"attr,hosted-state-download-url"`
@@ -14,19 +16,27 @@ type StateVersion struct {
 	VCSCommitURL string    `jsonapi:"attr,vcs-commit-url"`
 
 	// Relations
-	Run     *Run                  `jsonapi:"relation,run"`
-	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
+	Outputs []*jsonapiVersionOutput `jsonapi:"relation,outputs"`
 }
 
-// StateVersionList represents a list of state versions.
-type StateVersionList struct {
-	*Pagination
-	Items []*StateVersion
+// jsonapiVersionList is a list of state versions suitable for marshaling into
+// JSONAPI
+type jsonapiVersionList struct {
+	*jsonapi.Pagination
+	Items []*jsonapiVersion
 }
 
-// StateVersionCreateOptions represents the options for creating a state
-// version.
-type StateVersionCreateOptions struct {
+type jsonapiVersionOutput struct {
+	ID        string `jsonapi:"primary,state-version-outputs"`
+	Name      string `jsonapi:"attr,name"`
+	Sensitive bool   `jsonapi:"attr,sensitive"`
+	Type      string `jsonapi:"attr,type"`
+	Value     string `jsonapi:"attr,value"`
+}
+
+// jsonapiCreateVersionOptions are options for creating a state version via
+// JSONAPI
+type jsonapiCreateVersionOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -44,5 +54,5 @@ type StateVersionCreateOptions struct {
 	// cause data loss, so USE WITH CAUTION!
 	Force *bool `jsonapi:"attr,force"`
 	// Specifies the run to associate the state with.
-	Run *Run `jsonapi:"relation,run,omitempty"`
+	// Run *Run `jsonapi:"relation,run,omitempty"`
 }

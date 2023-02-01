@@ -13,7 +13,6 @@ import (
 
 	"github.com/gorilla/schema"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/otf/http/dto"
 )
 
 // Query schema Encoder, caches structs, and safe for sharing
@@ -102,24 +101,6 @@ func writeError(w http.ResponseWriter, code int, err error) {
 			Detail: err.Error(),
 		},
 	})
-}
-
-// writeResponse writes an HTTP response with a JSON-API marshalled payload.
-func writeResponse(w http.ResponseWriter, r *http.Request, obj dto.Assembler, opts ...func(http.ResponseWriter)) {
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	for _, o := range opts {
-		o(w)
-	}
-	// Only sideline relationships for responses to GET requests
-	var err error
-	if r.Method == "GET" {
-		err = MarshalPayload(w, r, obj.ToJSONAPI())
-	} else {
-		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj.ToJSONAPI())
-	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-	}
 }
 
 // withCode is a helper func for writing an HTTP status code to a response

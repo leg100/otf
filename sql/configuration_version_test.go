@@ -11,8 +11,8 @@ import (
 
 func TestConfigurationVersion_Create(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 
 	err := db.CreateConfigurationVersion(context.Background(), cv)
@@ -21,8 +21,8 @@ func TestConfigurationVersion_Create(t *testing.T) {
 
 func TestConfigurationVersion_Update(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	err := db.UploadConfigurationVersion(context.Background(), cv.ID(), func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
@@ -39,8 +39,8 @@ func TestConfigurationVersion_Update(t *testing.T) {
 
 func TestConfigurationVersion_Get(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	tests := []struct {
@@ -68,8 +68,8 @@ func TestConfigurationVersion_Get(t *testing.T) {
 
 func TestConfigurationVersion_List(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 
 	cv1 := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	cv2 := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})

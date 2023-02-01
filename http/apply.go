@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	jsonapi "github.com/leg100/otf/http/dto"
+	 "github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +17,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &apply{run.Apply(), r, s})
+	jsonapi.WriteResponse(w, r, &apply{run.Apply(), r, s})
 }
 
 type apply struct {

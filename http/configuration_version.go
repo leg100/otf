@@ -6,15 +6,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	opts := dto.ConfigurationVersionCreateOptions{}
+	opts := jsonapi.ConfigurationVersionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -27,7 +26,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &ConfigurationVersion{cv, s}, withCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, &ConfigurationVersion{cv, s}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +36,7 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &ConfigurationVersion{cv, s})
+	jsonapi.WriteResponse(w, r, &ConfigurationVersion{cv, s})
 }
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +51,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &ConfigurationVersionList{cvl, s})
+	jsonapi.WriteResponse(w, r, &ConfigurationVersionList{cvl, s})
 }
 
 func (s *Server) UploadConfigurationVersion() http.HandlerFunc {
@@ -88,13 +87,13 @@ type ConfigurationVersion struct {
 
 // ToJSONAPI assembles a JSONAPI DTO.
 func (cv *ConfigurationVersion) ToJSONAPI() any {
-	obj := &dto.ConfigurationVersion{
+	obj := &jsonapi.ConfigurationVersion{
 		ID:               cv.ID(),
 		AutoQueueRuns:    cv.AutoQueueRuns(),
 		Speculative:      cv.Speculative(),
 		Source:           string(cv.Source()),
 		Status:           string(cv.Status()),
-		StatusTimestamps: &dto.CVStatusTimestamps{},
+		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
 		UploadURL:        cv.signedUploadURL(cv.ID()),
 	}
 	for _, ts := range cv.StatusTimestamps() {
@@ -117,11 +116,11 @@ type ConfigurationVersionList struct {
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (l *ConfigurationVersionList) ToJSONAPI() any {
-	obj := &dto.ConfigurationVersionList{
+	obj := &jsonapi.ConfigurationVersionList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&ConfigurationVersion{item, l.Server}).ToJSONAPI().(*dto.ConfigurationVersion))
+		obj.Items = append(obj.Items, (&ConfigurationVersion{item, l.Server}).ToJSONAPI().(*jsonapi.ConfigurationVersion))
 	}
 	return obj
 }

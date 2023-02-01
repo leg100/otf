@@ -2,7 +2,7 @@ package otf
 
 import (
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -80,7 +80,7 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 	return &run, nil
 }
 
-func UnmarshalRunJSONAPI(d *dto.Run) *Run {
+func UnmarshalRunJSONAPI(d *jsonapi.Run) *Run {
 	return &Run{
 		id:                     d.ID,
 		createdAt:              d.CreatedAt,
@@ -102,7 +102,7 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 }
 
 // UnmarshalRunListJSONAPI converts a DTO into a run list
-func UnmarshalRunListJSONAPI(json *dto.RunList) *RunList {
+func UnmarshalRunListJSONAPI(json *jsonapi.RunList) *RunList {
 	wl := RunList{
 		Pagination: UnmarshalPaginationJSONAPI(json.Pagination),
 	}

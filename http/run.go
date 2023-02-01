@@ -8,10 +8,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -20,7 +19,7 @@ type planFileOptions struct {
 }
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
-	opts := dto.RunCreateOptions{}
+	opts := jsonapi.RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -47,7 +46,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r, s}, withCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, &Run{run, r, s}, withCode(http.StatusCreated))
 }
 
 func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +65,7 @@ func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r, s})
+	jsonapi.WriteResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +84,7 @@ func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r, s})
+	jsonapi.WriteResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +94,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r, s})
+	jsonapi.WriteResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +121,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &RunList{rl, r, s})
+	jsonapi.WriteResponse(w, r, &RunList{rl, r, s})
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -281,9 +280,9 @@ func (r *Run) ToJSONAPI() any {
 		Permissions:  perms,
 	}
 
-	obj := &dto.Run{
+	obj := &jsonapi.Run{
 		ID: r.ID(),
-		Actions: &dto.RunActions{
+		Actions: &jsonapi.RunActions{
 			IsCancelable:      r.Cancelable(),
 			IsConfirmable:     r.Confirmable(),
 			IsForceCancelable: r.ForceCancelAvailableAt() != nil,
@@ -295,7 +294,7 @@ func (r *Run) ToJSONAPI() any {
 		HasChanges:             r.Plan().HasChanges(),
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),
-		Permissions: &dto.RunPermissions{
+		Permissions: &jsonapi.RunPermissions{
 			CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
 			CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 			CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
@@ -308,20 +307,20 @@ func (r *Run) ToJSONAPI() any {
 		ReplaceAddrs:     r.ReplaceAddrs(),
 		Source:           otf.DefaultConfigurationSource,
 		Status:           string(r.Status()),
-		StatusTimestamps: &dto.RunStatusTimestamps{},
+		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
-		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*dto.Apply),
-		Plan:  (&plan{r.Plan(), r.req, r.Server}).ToJSONAPI().(*dto.Plan),
+		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*jsonapi.Apply),
+		Plan:  (&plan{r.Plan(), r.req, r.Server}).ToJSONAPI().(*jsonapi.Plan),
 		// Hardcoded anonymous user until authorization is introduced
-		CreatedBy: &dto.User{
+		CreatedBy: &jsonapi.User{
 			ID:       otf.DefaultUserID,
 			Username: otf.DefaultUsername,
 		},
-		ConfigurationVersion: &dto.ConfigurationVersion{
+		ConfigurationVersion: &jsonapi.ConfigurationVersion{
 			ID: r.ConfigurationVersionID(),
 		},
-		Workspace: &dto.Workspace{ID: r.WorkspaceID()},
+		Workspace: &jsonapi.Workspace{ID: r.WorkspaceID()},
 	}
 
 	// Support including related resources:
@@ -339,7 +338,7 @@ func (r *Run) ToJSONAPI() any {
 				if err != nil {
 					panic(err.Error()) // throws HTTP500
 				}
-				obj.Workspace = (&Workspace{r.req, r.Application, ws}).ToJSONAPI().(*dto.Workspace)
+				obj.Workspace = (&Workspace{r.req, r.Application, ws}).ToJSONAPI().(*jsonapi.Workspace)
 			}
 		}
 	}
@@ -383,11 +382,11 @@ type RunList struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *RunList) ToJSONAPI() any {
-	obj := &dto.RunList{
+	obj := &jsonapi.RunList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*dto.Run))
+		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*jsonapi.Run))
 	}
 	return obj
 }

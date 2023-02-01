@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +13,7 @@ func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	writeResponse(w, r, &User{user})
+	jsonapi.WriteResponse(w, r, &User{user})
 }
 
 type User struct {
@@ -22,7 +22,7 @@ type User struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (u *User) ToJSONAPI() any {
-	return &dto.User{
+	return &jsonapi.User{
 		ID:       u.ID(),
 		Username: u.Username(),
 	}

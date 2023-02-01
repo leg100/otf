@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
 )
 
 type fakeClientFactory struct {
@@ -13,7 +12,7 @@ type fakeClientFactory struct {
 	tarball []byte
 }
 
-func (f fakeClientFactory) NewClient() (otfhttp.Client, error) {
+func (f fakeClientFactory) NewClient() (otf.Client, error) {
 	return &fakeClient{
 		ws:      f.ws,
 		run:     f.run,

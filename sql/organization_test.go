@@ -29,7 +29,7 @@ func TestOrganization_Create(t *testing.T) {
 
 func TestOrganization_Update(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 
 	newName := uuid.NewString()
 	org, err := db.UpdateOrganization(context.Background(), org.Name(), func(org *otf.Organization) error {
@@ -44,7 +44,7 @@ func TestOrganization_Update(t *testing.T) {
 func TestOrganization_Get(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 
 	t.Run("by name", func(t *testing.T) {
 		got, err := db.GetOrganization(ctx, org.Name())
@@ -65,7 +65,7 @@ func TestOrganization_Get(t *testing.T) {
 
 func TestOrganization_List(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 
 	ol, err := db.ListOrganizations(context.Background(), otf.OrganizationListOptions{})
 	require.NoError(t, err)
@@ -75,8 +75,8 @@ func TestOrganization_List(t *testing.T) {
 
 func TestOrganization_ListWithPagination(t *testing.T) {
 	db := NewTestDB(t)
-	_ = createTestOrganization(t, db)
-	_ = createTestOrganization(t, db)
+	_ = CreateTestOrganization(t, db)
+	_ = CreateTestOrganization(t, db)
 
 	t.Run("page one, two items per page", func(t *testing.T) {
 		orgs, err := db.ListOrganizations(context.Background(), otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
@@ -102,8 +102,8 @@ func TestOrganization_ListWithPagination(t *testing.T) {
 
 func TestListUserOrganizations(t *testing.T) {
 	db := NewTestDB(t)
-	org1 := createTestOrganization(t, db)
-	org2 := createTestOrganization(t, db)
+	org1 := CreateTestOrganization(t, db)
+	org2 := CreateTestOrganization(t, db)
 	user := createTestUser(t, db,
 		otf.WithOrganizationMemberships(org1.Name(), org2.Name()))
 
@@ -116,7 +116,7 @@ func TestListUserOrganizations(t *testing.T) {
 
 func TestOrganization_Delete(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
+	org := CreateTestOrganization(t, db)
 
 	require.NoError(t, db.DeleteOrganization(context.Background(), org.Name()))
 
@@ -126,7 +126,7 @@ func TestOrganization_Delete(t *testing.T) {
 
 func TestOrganization_DeleteError(t *testing.T) {
 	db := NewTestDB(t)
-	_ = createTestOrganization(t, db)
+	_ = CreateTestOrganization(t, db)
 
 	err := db.DeleteOrganization(context.Background(), "non-existent-org")
 

@@ -11,8 +11,8 @@ import (
 
 func TestRun_Create(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
@@ -24,8 +24,8 @@ func TestRun_UpdateStatus(t *testing.T) {
 	ctx := context.Background()
 
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	t.Run("update status", func(t *testing.T) {
@@ -59,8 +59,8 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 func TestRun_Get(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	want := createTestRun(t, db, ws, cv)
@@ -74,10 +74,10 @@ func TestRun_Get(t *testing.T) {
 
 func TestRun_List(t *testing.T) {
 	db := NewTestDB(t)
-	org1 := createTestOrganization(t, db)
-	org2 := createTestOrganization(t, db)
-	ws1 := createTestWorkspace(t, db, org1)
-	ws2 := createTestWorkspace(t, db, org2)
+	org1 := CreateTestOrganization(t, db)
+	org2 := CreateTestOrganization(t, db)
+	ws1 := CreateTestWorkspace(t, db, org1)
+	ws2 := CreateTestWorkspace(t, db, org2)
 	cv1 := createTestConfigurationVersion(t, db, ws1, otf.ConfigurationVersionCreateOptions{})
 	cv2 := createTestConfigurationVersion(t, db, ws2, otf.ConfigurationVersionCreateOptions{
 		Speculative: otf.Bool(true),
@@ -180,8 +180,8 @@ func TestRun_List(t *testing.T) {
 
 func TestRun_CreatePlanReport(t *testing.T) {
 	db := NewTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	org := CreateTestOrganization(t, db)
+	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 
