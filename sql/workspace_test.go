@@ -68,7 +68,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 func TestWorkspace_Lock(t *testing.T) {
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 	ctx := otf.AddSubjectToContext(context.Background(), user)
 
 	t.Run("lock by id", func(t *testing.T) {
@@ -113,7 +113,7 @@ func TestWorkspace_ListByUserID(t *testing.T) {
 	team2 := createTestTeam(t, db, org)
 	_ = createTestWorkspacePermission(t, db, ws1, team1, rbac.WorkspaceAdminRole)
 	_ = createTestWorkspacePermission(t, db, ws2, team2, rbac.WorkspacePlanRole)
-	user := createTestUser(t, db, otf.WithTeamMemberships(team1, team2))
+	user := CreateTestUser(t, db, otf.WithTeamMemberships(team1, team2))
 
 	tests := []struct {
 		name         string

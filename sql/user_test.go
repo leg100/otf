@@ -24,7 +24,7 @@ func TestUser_AddOrganizationMembership(t *testing.T) {
 	ctx := context.Background()
 
 	org := CreateTestOrganization(t, db)
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 
 	err := db.AddOrganizationMembership(ctx, user.ID(), org.Name())
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	ctx := context.Background()
 
 	org := CreateTestOrganization(t, db)
-	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
+	user := CreateTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
 
 	err := db.RemoveOrganizationMembership(ctx, user.ID(), org.Name())
 	require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestUser_AddTeamMembership(t *testing.T) {
 
 	org := CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
-	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
+	user := CreateTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
 
 	err := db.AddTeamMembership(ctx, user.ID(), team.ID())
 	require.NoError(t, err)
@@ -74,7 +74,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 
 	org := CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
-	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
+	user := CreateTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
 
 	err := db.RemoveTeamMembership(ctx, user.ID(), team.ID())
 	require.NoError(t, err)
@@ -93,7 +93,7 @@ func TestUser_Get(t *testing.T) {
 	team1 := createTestTeam(t, db, org1)
 	team2 := createTestTeam(t, db, org2)
 
-	user := createTestUser(t, db,
+	user := CreateTestUser(t, db,
 		otf.WithOrganizationMemberships(org1.Name(), org2.Name()),
 		otf.WithTeamMemberships(team1, team2))
 
@@ -151,9 +151,9 @@ func TestUser_List(t *testing.T) {
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
-	user1 := createTestUser(t, db)
-	user2 := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
-	user3 := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
+	user1 := CreateTestUser(t, db)
+	user2 := CreateTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
+	user3 := CreateTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
 
 	// Retrieve all users
 	users, err := db.ListUsers(ctx, otf.UserListOptions{})
@@ -186,7 +186,7 @@ func TestUser_List(t *testing.T) {
 func TestUser_Delete(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 
 	err := db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)

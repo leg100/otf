@@ -94,8 +94,8 @@ func TestTeam_ListTeamMembers(t *testing.T) {
 		otf.WithOrganizationMemberships(org.Name()),
 		otf.WithTeamMemberships(team),
 	}
-	user1 := createTestUser(t, db, memberships...)
-	user2 := createTestUser(t, db, memberships...)
+	user1 := CreateTestUser(t, db, memberships...)
+	user2 := CreateTestUser(t, db, memberships...)
 
 	got, err := db.ListTeamMembers(context.Background(), team.ID())
 	require.NoError(t, err)

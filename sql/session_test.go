@@ -12,7 +12,7 @@ import (
 
 func TestSession_CreateSession(t *testing.T) {
 	db := NewTestDB(t)
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 	session := otf.NewTestSession(t, user.ID())
 
 	defer db.DeleteSession(context.Background(), session.Token())
@@ -24,7 +24,7 @@ func TestSession_CreateSession(t *testing.T) {
 func TestSession_GetByToken(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 	want := createTestSession(t, db, user.ID())
 
 	got, err := db.GetSessionByToken(ctx, want.Token())
@@ -36,7 +36,7 @@ func TestSession_GetByToken(t *testing.T) {
 func TestSession_List(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 	session1 := createTestSession(t, db, user.ID())
 	session2 := createTestSession(t, db, user.ID())
 
@@ -55,7 +55,7 @@ func TestSession_SessionCleanup(t *testing.T) {
 	ctx := context.Background()
 
 	db := NewTestDB(t, overrideCleanupInterval(100*time.Millisecond))
-	user := createTestUser(t, db)
+	user := CreateTestUser(t, db)
 
 	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))
 	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))

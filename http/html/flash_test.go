@@ -10,7 +10,7 @@ import (
 
 func TestFlash(t *testing.T) {
 	w := httptest.NewRecorder()
-	flashSuccess(w, "great news")
+	FlashSuccess(w, "great news")
 	cookies := w.Result().Cookies()
 	if assert.Equal(t, 1, len(cookies)) {
 		t.Run("pop flash", func(t *testing.T) {

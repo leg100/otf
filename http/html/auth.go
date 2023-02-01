@@ -11,13 +11,13 @@ import (
 )
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("login.tmpl", w, r, app.authenticators)
+	app.Render("login.tmpl", w, r, app.authenticators)
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := sessionFromContext(r.Context())
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := app.DeleteSession(r.Context(), session.Token()); err != nil {
@@ -30,15 +30,15 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("profile.tmpl", w, r, user)
+	app.Render("profile.tmpl", w, r, user)
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (app *Application) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("site_admin_login.tmpl", w, r, nil)
+	app.Render("site_admin_login.tmpl", w, r, nil)
 }
 
 // adminLoginHandler logs in a site admin
@@ -49,17 +49,17 @@ func (app *Application) adminLoginHandler(w http.ResponseWriter, r *http.Request
 	}
 	var form adminLoginForm
 	if err := decode.Form(&form, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	if *form.Token != app.siteToken {
-		flashError(w, "incorrect token")
+		FlashError(w, "incorrect token")
 		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
 		return
 	}
 
 	if err := createSession(app, w, r, otf.SiteAdminID); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -1,4 +1,4 @@
-package app
+package organization
 
 import (
 	"strconv"
@@ -11,9 +11,9 @@ import (
 
 func TestNewOrganizationList(t *testing.T) {
 	// create a dozen orgs
-	var orgs []*otf.Organization
+	var orgs []*Organization
 	for i := 0; i < 12; i++ {
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+		org, err := NewOrganization(OrganizationCreateOptions{
 			Name: otf.String(strconv.Itoa(i)),
 		})
 		require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestNewOrganizationList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := otf.OrganizationListOptions{ListOptions: tt.opts}
+			opts := OrganizationListOptions{ListOptions: tt.opts}
 			list := newOrganizationList(opts, orgs)
 			assert.Equal(t, tt.wantTotal, list.TotalCount())
 			assert.Equal(t, tt.wantItems, len(list.Items))

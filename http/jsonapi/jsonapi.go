@@ -109,3 +109,11 @@ func WriteResponse(w http.ResponseWriter, r *http.Request, obj Assembler, opts .
 		Error(w, http.StatusInternalServerError, err)
 	}
 }
+
+// WithCode is a helper func for writing an HTTP status code to a response
+// stream.  For use with WriteResponse.
+func WithCode(code int) func(w http.ResponseWriter) {
+	return func(w http.ResponseWriter) {
+		w.WriteHeader(code)
+	}
+}

@@ -21,17 +21,17 @@ const (
 func (app *Application) listModules(w http.ResponseWriter, r *http.Request) {
 	var opts otf.ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	modules, err := app.ListModules(r.Context(), opts)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_list.tmpl", w, r, struct {
+	app.Render("module_list.tmpl", w, r, struct {
 		Items        []*otf.Module
 		Organization string
 	}{
@@ -47,13 +47,13 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	module, err := app.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -65,18 +65,18 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 			ModuleVersionID: module.Version(params.Version).ID(),
 		})
 		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
+			Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		tfmod, err = otf.UnmarshalTerraformModule(tarball)
 		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
+			Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		readme = markdownToHTML(tfmod.Readme())
 	}
 
-	app.render("module_get.tmpl", w, r, struct {
+	app.Render("module_get.tmpl", w, r, struct {
 		*otf.Module
 		TerraformModule *otf.TerraformModule
 		Readme          template.HTML
@@ -97,7 +97,7 @@ func (app *Application) newModule(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -114,17 +114,17 @@ func (app *Application) newModule(w http.ResponseWriter, r *http.Request) {
 func (app *Application) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	providers, err := app.ListVCSProviders(r.Context(), org)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		Organization string
 		Step         newModuleStep
@@ -143,17 +143,17 @@ func (app *Application) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	repos, err := otf.ListModuleRepositories(r.Context(), app, params.VCSProviderID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		Items []cloud.Repo
 		parameters
 		Step newModuleStep
@@ -172,17 +172,17 @@ func (app *Application) newModuleConfirm(w http.ResponseWriter, r *http.Request)
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := app.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		parameters
 		Step newModuleStep
 		*otf.VCSProvider
@@ -201,13 +201,13 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	org, err := app.GetOrganization(r.Context(), params.Organization)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -217,27 +217,27 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 		Organization: org,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "published module: "+module.Name())
+	FlashSuccess(w, "published module: "+module.Name())
 	http.Redirect(w, r, paths.Module(module.ID()), http.StatusFound)
 }
 
 func (app *Application) deleteModule(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("module_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	deleted, err := app.DeleteModule(r.Context(), id)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "deleted module: "+deleted.Name())
+	FlashSuccess(w, "deleted module: "+deleted.Name())
 	http.Redirect(w, r, paths.Modules(deleted.Organization()), http.StatusFound)
 }

@@ -11,17 +11,17 @@ import (
 func (app *Application) newVariable(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("variable_new.tmpl", w, r, struct {
+	app.Render("variable_new.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
 		Variable   *otf.Variable
 		EditMode   bool
@@ -46,7 +46,7 @@ func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -59,33 +59,33 @@ func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
 		HCL:         &params.HCL,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "added variable: "+variable.Key())
+	FlashSuccess(w, "added variable: "+variable.Key())
 	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
 }
 
 func (app *Application) listVariables(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variables, err := app.ListVariables(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("variable_list.tmpl", w, r, struct {
+	app.Render("variable_list.tmpl", w, r, struct {
 		Workspace *otf.Workspace
 		Variables []*otf.Variable
 	}{
@@ -97,22 +97,22 @@ func (app *Application) listVariables(w http.ResponseWriter, r *http.Request) {
 func (app *Application) editVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variable, err := app.GetVariable(r.Context(), variableID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := app.GetWorkspace(r.Context(), variable.WorkspaceID())
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("variable_edit.tmpl", w, r, struct {
+	app.Render("variable_edit.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
 		Variable   *otf.Variable
 		EditMode   bool
@@ -137,7 +137,7 @@ func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -158,27 +158,27 @@ func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 		HCL:         &params.HCL,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "updated variable: "+variable.Key())
+	FlashSuccess(w, "updated variable: "+variable.Key())
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID()), http.StatusFound)
 }
 
 func (app *Application) deleteVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variable, err := app.DeleteVariable(r.Context(), variableID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "deleted variable: "+variable.Key())
+	FlashSuccess(w, "deleted variable: "+variable.Key())
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID()), http.StatusFound)
 }

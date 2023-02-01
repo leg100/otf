@@ -18,12 +18,12 @@ func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
-	app.render(tmpl, w, r, params)
+	app.Render(tmpl, w, r, params)
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,7 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -46,26 +46,26 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 		Cloud:        params.Cloud,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "created provider: "+provider.Name())
+	FlashSuccess(w, "created provider: "+provider.Name())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
 }
 
 func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request) {
 	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	providers, err := app.ListVCSProviders(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("vcs_provider_list.tmpl", w, r, struct {
+	app.Render("vcs_provider_list.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		CloudConfigs []cloud.Config
 		*otf.Organization
@@ -79,15 +79,15 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 func (app *Application) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("vcs_provider_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := app.DeleteVCSProvider(r.Context(), id)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "deleted provider: "+provider.Name())
+	FlashSuccess(w, "deleted provider: "+provider.Name())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
 }
