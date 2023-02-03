@@ -7,8 +7,17 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 )
+
+// htmlHandlers provides handlers for the webui
+type htmlHandlers struct {
+	otf.Signer
+	otf.Renderer
+
+	app appService
+}
 
 type newModuleStep string
 
@@ -18,20 +27,20 @@ const (
 	newModuleConfirmStep newModuleStep = "confirm-selection"
 )
 
-func (app *Application) listModules(w http.ResponseWriter, r *http.Request) {
+func (h *htmlHandlers) listModules(w http.ResponseWriter, r *http.Request) {
 	var opts otf.ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	modules, err := app.ListModules(r.Context(), opts)
+	modules, err := h.app.ListModules(r.Context(), opts)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_list.tmpl", w, r, struct {
+	h.render("module_list.tmpl", w, r, struct {
 		Items        []*otf.Module
 		Organization string
 	}{
@@ -70,7 +79,7 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 		}
 		tfmod, err = otf.UnmarshalTerraformModule(tarball)
 		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
+			htmlHandlers.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		readme = markdownToHTML(tfmod.Readme())

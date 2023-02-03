@@ -213,7 +213,7 @@ func (a *app) UploadModuleVersion(ctx context.Context, opts UploadModuleVersionO
 		return nil, err
 	}
 
-	_, modver, err := a.ModuleVersionUploader.Upload(ctx, opts)
+	err = module.upload(opts.Version, opts.TarballGetter)
 	if err != nil {
 		a.Error(err, "uploading module version", "module_version_id", opts.ModuleVersionID)
 		return nil, err

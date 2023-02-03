@@ -35,7 +35,7 @@ type Module struct {
 	organization string      // Module belongs to an organization
 	repo         *ModuleRepo // Module optionally connected to vcs repo
 	status       ModuleStatus
-	versions     SortedModuleVersions
+	versions     map[string]*ModuleVersion
 	latest       *ModuleVersion
 }
 
@@ -52,29 +52,29 @@ func NewModule(opts CreateModuleOptions) *Module {
 	}
 }
 
-func (m *Module) ID() string                     { return m.id }
-func (m *Module) CreatedAt() time.Time           { return m.createdAt }
-func (m *Module) UpdatedAt() time.Time           { return m.updatedAt }
-func (m *Module) Name() string                   { return m.name }
-func (m *Module) Provider() string               { return m.provider }
-func (m *Module) Repo() *ModuleRepo              { return m.repo }
-func (m *Module) Status() ModuleStatus           { return m.status }
-func (m *Module) Versions() SortedModuleVersions { return m.versions }
-func (m *Module) Latest() *ModuleVersion         { return m.versions.latest() }
-func (m *Module) Organization() string           { return m.organization }
+func (m *Module) ID() string                          { return m.id }
+func (m *Module) CreatedAt() time.Time                { return m.createdAt }
+func (m *Module) UpdatedAt() time.Time                { return m.updatedAt }
+func (m *Module) Name() string                        { return m.name }
+func (m *Module) Provider() string                    { return m.provider }
+func (m *Module) Repo() *ModuleRepo                   { return m.repo }
+func (m *Module) Status() ModuleStatus                { return m.status }
+func (m *Module) Versions() map[string]*ModuleVersion { return m.versions }
+func (m *Module) Latest() *ModuleVersion              { return m.latest }
+func (m *Module) Organization() string                { return m.organization }
 
 func (m *Module) UpdateStatus(status ModuleStatus) { m.status = status }
 
 // addNewVersion creates a new module version and adds it to the module
 func (m *Module) addNewVersion(opts CreateModuleVersionOptions) (*ModuleVersion, error) {
-	if m.Latest() != nil {
+	if m.latest != nil {
 		// can only add a version greater than current version
-		if cmp := semver.Compare(m.Latest().version, opts.Version); cmp >= 0 {
+		if cmp := semver.Compare(m.latest.version, opts.Version); cmp >= 0 {
 			return nil, errors.New("can only add version newer than current latest version")
 		}
 	}
 
-	version := &ModuleVersion{
+	modVer := &ModuleVersion{
 		id:        otf.NewID("modver"),
 		createdAt: otf.CurrentTimestamp(),
 		updatedAt: otf.CurrentTimestamp(),
@@ -82,74 +82,60 @@ func (m *Module) addNewVersion(opts CreateModuleVersionOptions) (*ModuleVersion,
 		version:   opts.Version,
 		status:    ModuleVersionStatusPending,
 	}
-	m.versions = m.versions.add(version)
+	m.versions[modVer.version] = modVer
 
-	return version, nil
+	return modVer, nil
 }
 
-// upload tarball for the module version: the callback should
-// return the tarball to upload. The status of the module and the module version
-// are set to reflect the success or failure of the callback
+// upload tarball for a version; the callback returns the tarball to be
+// uploaded. Statuses are set to reflect the success of the callback and whether
+// the tarball is valid.
 func (m *Module) upload(version string, tarballGetter func() ([]byte, error)) error {
-	var modVer *ModuleVersion
-	for _, v := range m.versions {
-		if v.version == version {
-			modVer = v
-			break
-		}
-	}
-	if modVer == nil {
+	modVer, ok := m.versions[version]
+	if !ok {
 		return errors.New("version does not exist")
 	}
 
 	tarball, err := tarballGetter()
 	if err != nil {
-		modVer.status = ModuleVersionStatusRegIngressFailed
+		modVer.status = ModuleVersionStatusCloneFailed
 		modVer.statusError = err.Error()
+		m.setLatest()
 		return err
 	}
 
 	_, err = UnmarshalTerraformModule(tarball)
 	if err != nil {
-		modVer.status = ModuleVersionStatusCloneFailed
+		modVer.status = ModuleVersionStatusRegIngressFailed
 		modVer.statusError = err.Error()
+		m.setLatest()
 		return err
 	}
 
 	modVer.status = ModuleVersionStatusOk
+	m.setLatest()
 
 	return nil
 }
 
-// setStatus updates the module status to reflect the status of the given
-// version
-func (m *Module) setStatus(status ModuleVersionStatus) {
-	if m.status == ModuleStatusSetupComplete {
-		return
+// setLatest sets the latest version, which is the greatest version with a
+// healthy status. The module status is updated to reflect the latest version.
+func (m *Module) setLatest() {
+	versions := make([]string, len(m.versions))
+	for v := range m.versions {
+		versions = append(versions, v)
 	}
-	if status == ModuleVersionStatusOk {
-		m.status = ModuleStatusSetupComplete
-		return nil
-	}
-	if ver.status == ModuleVersionStatusPending {
-		return nil
-	}
-	m.status = ModuleStatusSetupFailed
-}
-
-// Version returns the specified module version. If the empty string, then the
-// latest version is returned. If there is no matching version or no versions at
-// all then nil is returned.
-func (m *Module) Version(version string) *ModuleVersion {
-	if version == "" {
-		return m.versions.latest()
-	}
-	for _, v := range m.versions {
-		if v.version == version {
-			return v
+	semver.Sort(versions)
+	for i := len(versions) - 1; i >= 0; i-- {
+		if m.versions[versions[i]].Status() == ModuleVersionStatusOk {
+			m.latest = m.versions[versions[i]]
+			m.status = ModuleStatus(ModuleVersionStatusOk)
+			return
 		}
 	}
-	return nil
+	if m.latest == nil {
+		m.status = ModuleStatusPending
+	}
 }
 
 func (m *Module) MarshalLog() any {
@@ -255,17 +241,6 @@ func (l SortedModuleVersions) add(modver *ModuleVersion) SortedModuleVersions {
 	newl := append(l, modver)
 	sort.Sort(newl)
 	return newl
-}
-
-// LatestVersion returns the latest ok version
-func (l SortedModuleVersions) latest() *ModuleVersion {
-	// starting from the
-	for i := len(l) - 1; i >= 0; i-- {
-		if l[i].Status() == ModuleVersionStatusOk {
-			return l[i]
-		}
-	}
-	return nil
 }
 
 func (l SortedModuleVersions) Len() int { return len(l) }
