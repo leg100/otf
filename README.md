@@ -62,7 +62,7 @@ terraform init
 > NOTE: if you're using Mac or Windows, you may receive an error similar to the following error:
 >
 > > Error: Failed to install provider
->
+> >
 > > Error while installing hashicorp/null v3.2.1: the current package for registry.terraform.io/hashicorp/null 3.2.1
 > > doesn't match any of the checksums previously recorded in the dependency lock file; for more information:
 > > https://www.terraform.io/language/provider-checksum-verification
@@ -75,7 +75,7 @@ terraform init
 >
 > Then re-run `terraform init`
 
-And create a plan:
+Now create a plan:
 
 ```bash
 terraform plan
