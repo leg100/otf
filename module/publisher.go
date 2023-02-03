@@ -9,20 +9,18 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
-	"github.com/leg100/otf/sql"
 	"github.com/pkg/errors"
 )
 
 // Publisher publishes terraform modules.
 type Publisher struct {
-	*otf.ModuleVersionUploader
-	otf.HookService // for registering and unregistering connections to webhooks
+	otf.HookService // registering/de-registering webhook
 }
 
 func NewPublisher(app otf.Application) *Publisher {
 	return &Publisher{
 		HookService: app,
-		ModuleVersionUploader: &otf.ModuleVersionUploader{
+		ModuleVersionUploader: &ModuleVersionUploader{
 			Application: app,
 		},
 	}
@@ -30,7 +28,7 @@ func NewPublisher(app otf.Application) *Publisher {
 
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
-func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
+func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions) (*Module, error) {
 	client, err := p.GetVCSClient(ctx, opts.ProviderID)
 	if err != nil {
 		return nil, err
@@ -57,23 +55,23 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 	provider := parts[1]
 	name := parts[2]
 
-	var mod *otf.Module
+	var mod *Module
 
 	// hook up module to a webhook - the callback establishes a relationship in
 	// the DB between the module and the webhook.
 	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
-		mod = otf.NewModule(otf.CreateModuleOptions{
+		mod = NewModule(CreateModuleOptions{
 			Name:         name,
 			Provider:     provider,
 			Organization: opts.Organization.Name(),
-			Repo: &otf.ModuleRepo{
+			Repo: &ModuleRepo{
 				WebhookID:  hookID,
 				ProviderID: opts.ProviderID,
 				Identifier: repo.Identifier,
 			},
 		})
 
-		return sql.CreateModule(ctx, tx, mod)
+		return createModule(ctx, tx, mod)
 	}
 	err = p.Hook(ctx, otf.HookOptions{
 		Identifier:   opts.Identifier,
@@ -93,9 +91,9 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 		return nil, err
 	}
 	if len(tags) == 0 {
-		return p.UpdateModuleStatus(ctx, otf.UpdateModuleStatusOptions{
+		return p.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
 			ID:     mod.ID(),
-			Status: otf.ModuleStatusNoVersionTags,
+			Status: ModuleStatusNoVersionTags,
 		})
 	}
 
@@ -180,8 +178,8 @@ type PublishModuleVersionOptions struct {
 
 // PublishVersion publishes a module version, retrieving its contents from a repository and
 // uploading it to the module store.
-func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*otf.Module, *otf.ModuleVersion, error) {
-	modver, err := p.CreateModuleVersion(ctx, otf.CreateModuleVersionOptions{
+func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*Module, *ModuleVersion, error) {
+	modver, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
 		ModuleID: opts.ModuleID,
 		Version:  opts.Version,
 	})
@@ -199,14 +197,14 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 		Ref:        opts.Ref,
 	})
 	if err != nil {
-		return otf.UpdateModuleVersionStatus(ctx, p, otf.UpdateModuleVersionStatusOptions{
+		return UpdateModuleVersionStatus(ctx, p, UpdateModuleVersionStatusOptions{
 			ID:     modver.ID(),
-			Status: otf.ModuleVersionStatusCloneFailed,
+			Status: ModuleVersionStatusCloneFailed,
 			Error:  err.Error(),
 		})
 	}
 
-	return p.Upload(ctx, otf.UploadModuleVersionOptions{
+	return p.Upload(ctx, UploadModuleVersionOptions{
 		ModuleVersionID: modver.ID(),
 		Tarball:         tarball,
 	})
