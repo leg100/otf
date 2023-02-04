@@ -1,3 +1,4 @@
+// Package variable is responsible for workspace variables
 package variable
 
 import (

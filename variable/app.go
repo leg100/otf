@@ -9,17 +9,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// app is the implementation of appService
-type Application struct {
+type app struct {
 	otf.Authorizer
 	logr.Logger
 
 	db
 	*handlers
+	*htmlApp
 }
 
-func NewApplication(opts ApplicationOptions) *Application {
-	app := &Application{
+func NewApplication(opts ApplicationOptions) *app {
+	app := &app{
 		Authorizer: opts.Authorizer,
 		db:         newPGDB(opts.Database),
 		Logger:     opts.Logger,
@@ -27,16 +27,23 @@ func NewApplication(opts ApplicationOptions) *Application {
 	app.handlers = &handlers{
 		app: app,
 	}
+	app.htmlApp = &htmlApp{
+		app:              app,
+		Renderer:         opts.Renderer,
+		WorkspaceService: opts.WorkspaceService,
+	}
 	return app
 }
 
 type ApplicationOptions struct {
 	otf.Authorizer
 	otf.Database
+	otf.Renderer
+	otf.WorkspaceService
 	logr.Logger
 }
 
-func (a *Application) ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error) {
+func (a *app) ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error) {
 	vars, err := a.list(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -49,7 +56,7 @@ func (a *Application) ListVariables(ctx context.Context, workspaceID string) ([]
 	return iVars, nil
 }
 
-func (a *Application) create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*Variable, error) {
+func (a *app) create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*Variable, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -71,7 +78,7 @@ func (a *Application) create(ctx context.Context, workspaceID string, opts otf.C
 	return v, nil
 }
 
-func (a *Application) get(ctx context.Context, variableID string) (*Variable, error) {
+func (a *app) get(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve variable first in order to retrieve workspace ID for authorization
 	variable, err := a.db.get(ctx, variableID)
 	if err != nil {
@@ -89,7 +96,7 @@ func (a *Application) get(ctx context.Context, variableID string) (*Variable, er
 	return variable, nil
 }
 
-func (a *Application) update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*Variable, error) {
+func (a *app) update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := a.db.get(ctx, variableID)
 	if err != nil {
@@ -113,7 +120,7 @@ func (a *Application) update(ctx context.Context, variableID string, opts otf.Up
 	return updated, nil
 }
 
-func (a *Application) delete(ctx context.Context, variableID string) (*Variable, error) {
+func (a *app) delete(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := a.db.get(ctx, variableID)
 	if err != nil {
@@ -135,7 +142,7 @@ func (a *Application) delete(ctx context.Context, variableID string) (*Variable,
 	return deleted, nil
 }
 
-func (a *Application) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
+func (a *app) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.ListVariablesAction, workspaceID)
 	if err != nil {
 		return nil, err

@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-// CreateOrganization creates a new organization with the given options.
 func (c *Client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	req, err := c.NewRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
 		Description:  options.Description,

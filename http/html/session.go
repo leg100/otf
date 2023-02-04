@@ -30,7 +30,7 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		return sessions[i].CreatedAt().After(sessions[j].CreatedAt())
 	})
 
-	app.render("session_list.tmpl", w, r, struct {
+	app.Render("session_list.tmpl", w, r, struct {
 		Items  []*otf.Session
 		Active *otf.Session
 	}{

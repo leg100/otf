@@ -25,7 +25,7 @@ func (app *Application) getTeam(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("team_get.tmpl", w, r, struct {
+	app.Render("team_get.tmpl", w, r, struct {
 		*otf.Team
 		Members []*otf.User
 	}{
@@ -67,5 +67,5 @@ func (app *Application) listTeams(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("team_list.tmpl", w, r, teams)
+	app.Render("team_list.tmpl", w, r, teams)
 }

@@ -306,10 +306,10 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	}
 }
 
-// do sends an API request and returns the API response. The API response
+// Do sends an API request and returns the API response. The API response
 // is JSONAPI decoded and the document's primary data is stored in the value
 // pointed to by v, or returned as an error if an API error has occurred.
-
+//
 // If v implements the io.Writer interface, the raw response body will be
 // written to v, without attempting to first decode it.
 //

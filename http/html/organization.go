@@ -10,7 +10,7 @@ import (
 )
 
 func (app *Application) newOrganization(w http.ResponseWriter, r *http.Request) {
-	app.render("organization_new.tmpl", w, r, nil)
+	app.Render("organization_new.tmpl", w, r, nil)
 }
 
 func (app *Application) createOrganization(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,7 @@ func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("organization_list.tmpl", w, r, struct {
+	app.Render("organization_list.tmpl", w, r, struct {
 		*otf.OrganizationList
 		otf.OrganizationListOptions
 	}{
@@ -59,7 +59,7 @@ func (app *Application) getOrganization(w http.ResponseWriter, r *http.Request) 
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("organization_get.tmpl", w, r, org)
+	app.Render("organization_get.tmpl", w, r, org)
 }
 
 func (app *Application) editOrganization(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func (app *Application) editOrganization(w http.ResponseWriter, r *http.Request)
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("organization_edit.tmpl", w, r, organization)
+	app.Render("organization_edit.tmpl", w, r, organization)
 }
 
 func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -103,5 +103,5 @@ func (app *Application) listOrganizationPermissions(w http.ResponseWriter, r *ht
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("organization_get.tmpl", w, r, org)
+	app.Render("organization_get.tmpl", w, r, org)
 }

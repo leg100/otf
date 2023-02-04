@@ -16,5 +16,5 @@ func (app *Application) listUsers(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("users_list.tmpl", w, r, users)
+	app.Render("users_list.tmpl", w, r, users)
 }

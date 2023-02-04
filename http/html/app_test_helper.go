@@ -25,7 +25,7 @@ func withAuthenticators(authenticators []*Authenticator) fakeAppOption {
 }
 
 func newFakeWebApp(t *testing.T, app otf.Application, opts ...fakeAppOption) *Application {
-	views, err := newViewEngine(viewEngineOptions{})
+	views, err := NewViewEngine(false)
 	require.NoError(t, err)
 
 	a := &Application{

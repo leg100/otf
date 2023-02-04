@@ -18,6 +18,8 @@ type VariableService interface {
 	// AddHandlers adds http handlers for to the given mux. The handlers
 	// implement the variable service API.
 	AddHandlers(*mux.Router)
+	// AddHTMLHandlers adds handlers for the web app.
+	AddHTMLHandlers(*mux.Router)
 
 	VariableApp
 }

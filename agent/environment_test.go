@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,23 +65,23 @@ func TestWriteTerraformVariables(t *testing.T) {
 
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org)
-	v1 := otf.NewTestVariable(t, ws, otf.CreateVariableOptions{
+	v1 := variable.NewTestVariable(t, ws, otf.CreateVariableOptions{
 		Key:      otf.String("foo"),
 		Value:    otf.String("bar"),
-		Category: otf.VariableCategoryPtr(otf.CategoryTerraform),
+		Category: variable.VariableCategoryPtr(otf.CategoryTerraform),
 	})
-	v2 := otf.NewTestVariable(t, ws, otf.CreateVariableOptions{
+	v2 := variable.NewTestVariable(t, ws, otf.CreateVariableOptions{
 		Key: otf.String("images"),
 		Value: otf.String(`{
     us-east-1 = "image-1234"
     us-west-2 = "image-4567"
 }
 `),
-		Category: otf.VariableCategoryPtr(otf.CategoryTerraform),
+		Category: variable.VariableCategoryPtr(otf.CategoryTerraform),
 		HCL:      otf.Bool(true),
 	})
 
-	err := writeTerraformVariables(dir, []*otf.Variable{v1, v2})
+	err := writeTerraformVariables(dir, []otf.Variable{v1, v2})
 	require.NoError(t, err)
 
 	tfvars := path.Join(dir, "terraform.tfvars")
@@ -178,7 +179,7 @@ func (f *fakeEnvironmentApp) CreateRegistrySession(context.Context, string) (*ot
 	return otf.NewRegistrySession("fake-org")
 }
 
-func (f *fakeEnvironmentApp) ListVariables(context.Context, string) ([]*otf.Variable, error) {
+func (f *fakeEnvironmentApp) ListVariables(context.Context, string) ([]otf.Variable, error) {
 	return nil, nil
 }
 

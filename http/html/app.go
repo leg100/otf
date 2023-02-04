@@ -44,9 +44,8 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 	if opts.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	views, err := newViewEngine(viewEngineOptions{
-		devMode: opts.DevMode,
-	})
+
+	viewEngine, err := NewViewEngine(opts.DevMode)
 	if err != nil {
 		return err
 	}
@@ -63,7 +62,7 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 		variableService: opts.VariableService,
 		staticServer:    newStaticServer(opts.DevMode),
 		pathPrefix:      DefaultPathPrefix,
-		viewEngine:      views,
+		viewEngine:      viewEngine,
 		Logger:          logger,
 		Server:          sseServer,
 		siteToken:       opts.SiteToken,
@@ -165,7 +164,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/workspaces/{workspace_id}/start-run", app.startRun)
 
 		// Variables routes
-		app.variableService.AddHandlers(r.Router)
+		app.variableService.AddHTMLHandlers(r.Router)
 
 		r.GET("/workspaces/{workspace_id}/watch", app.watchWorkspace)
 		r.GET("/workspaces/{workspace_id}/runs", app.listRuns)

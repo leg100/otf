@@ -16,7 +16,7 @@ func (app *Application) newAgentToken(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("agent_token_new.tmpl", w, r, org)
+	app.Render("agent_token_new.tmpl", w, r, org)
 }
 
 func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	app.render("agent_token_list.tmpl", w, r, struct {
+	app.Render("agent_token_list.tmpl", w, r, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination

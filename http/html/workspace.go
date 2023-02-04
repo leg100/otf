@@ -29,7 +29,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_list.tmpl", w, r, struct {
+	app.Render("workspace_list.tmpl", w, r, struct {
 		*otf.WorkspaceList
 		*otf.Organization
 	}{
@@ -50,7 +50,7 @@ func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_new.tmpl", w, r, org)
+	app.Render("workspace_new.tmpl", w, r, org)
 }
 
 func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +96,7 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	app.render("workspace_get.tmpl", w, r, struct {
+	app.Render("workspace_get.tmpl", w, r, struct {
 		*otf.Workspace
 		LatestRun      *otf.Run
 		LatestStreamID string
@@ -160,7 +160,7 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	app.render("workspace_edit.tmpl", w, r, struct {
+	app.Render("workspace_edit.tmpl", w, r, struct {
 		*otf.Workspace
 		Permissions []*otf.WorkspacePermission
 		Teams       []*otf.Team
@@ -391,7 +391,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 		return
 	}
 
-	app.render("workspace_vcs_provider_list.tmpl", w, r, struct {
+	app.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
 		Items []*otf.VCSProvider
 		*otf.Workspace
 	}{
@@ -431,7 +431,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
+	app.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
 		Items []cloud.Repo
 		*otf.Workspace
 		VCSProviderID string

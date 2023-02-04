@@ -23,7 +23,7 @@ func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
-	app.render(tmpl, w, r, params)
+	app.Render(tmpl, w, r, params)
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	app.render("vcs_provider_list.tmpl", w, r, struct {
+	app.Render("vcs_provider_list.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		CloudConfigs []cloud.Config
 		*otf.Organization

@@ -59,7 +59,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.render("run_list.tmpl", w, r, struct {
+	app.Render("run_list.tmpl", w, r, struct {
 		*otf.RunList
 		*otf.Workspace
 		StreamID string
@@ -105,7 +105,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("run_get.tmpl", w, r, struct {
+	app.Render("run_get.tmpl", w, r, struct {
 		*otf.Run
 		Workspace *otf.Workspace
 		PlanLogs  *htmlLogChunk

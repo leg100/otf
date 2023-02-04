@@ -31,7 +31,7 @@ func (app *Application) listModules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.render("module_list.tmpl", w, r, struct {
+	app.Render("module_list.tmpl", w, r, struct {
 		Items        []*otf.Module
 		Organization string
 	}{
@@ -76,7 +76,7 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 		readme = markdownToHTML(tfmod.Readme())
 	}
 
-	app.render("module_get.tmpl", w, r, struct {
+	app.Render("module_get.tmpl", w, r, struct {
 		*otf.Module
 		TerraformModule *otf.TerraformModule
 		Readme          template.HTML
@@ -124,7 +124,7 @@ func (app *Application) newModuleConnect(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		Organization string
 		Step         newModuleStep
@@ -153,7 +153,7 @@ func (app *Application) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		Items []cloud.Repo
 		parameters
 		Step newModuleStep
@@ -182,7 +182,7 @@ func (app *Application) newModuleConfirm(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		parameters
 		Step newModuleStep
 		*otf.VCSProvider

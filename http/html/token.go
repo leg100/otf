@@ -19,7 +19,7 @@ type tokenList struct {
 }
 
 func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("token_new.tmpl", w, r, nil)
+	app.Render("token_new.tmpl", w, r, nil)
 }
 
 func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,7 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt().After(tokens[j].CreatedAt())
 	})
 
-	app.render("token_list.tmpl", w, r, tokenList{
+	app.Render("token_list.tmpl", w, r, tokenList{
 		Pagination: &otf.Pagination{},
 		Items:      tokens,
 	})

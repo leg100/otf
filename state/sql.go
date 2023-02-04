@@ -87,11 +87,7 @@ func (db *pgdb) listVersions(ctx context.Context, opts stateVersionListOptions) 
 
 	var items []*version
 	for _, r := range rows {
-		sv, err := unmarshalVersionRow(versionRow(r))
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, sv)
+		items = append(items, pgRow(r).toVersion())
 	}
 
 	return &versionList{
@@ -106,13 +102,13 @@ func (db *pgdb) getVersion(ctx context.Context, opts stateVersionGetOptions) (*v
 		if err != nil {
 			return nil, sql.Error(err)
 		}
-		return unmarshalVersionRow(versionRow(result))
+		return pgRow(result).toVersion(), nil
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindStateVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
-		return unmarshalVersionRow(versionRow(result))
+		return pgRow(result).toVersion(), nil
 	} else {
 		return nil, fmt.Errorf("no state version spec provided")
 	}
@@ -131,9 +127,8 @@ func (db *pgdb) deleteVersion(ctx context.Context, id string) error {
 	return nil
 }
 
-// versionRow represents the result of a database query for a state
-// version.
-type versionRow struct {
+// pgRow is a row from a postgres query for a state version.
+type pgRow struct {
 	StateVersionID      pgtype.Text                 `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz          `json:"created_at"`
 	Serial              int                         `json:"serial"`
@@ -142,8 +137,7 @@ type versionRow struct {
 	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 }
 
-// unmarshalVersionRow unmarshals a database row into a state version.
-func unmarshalVersionRow(row versionRow) (*version, error) {
+func (row pgRow) toVersion() *version {
 	sv := version{
 		id:          row.StateVersionID.String,
 		createdAt:   row.CreatedAt.Time.UTC(),
@@ -154,7 +148,7 @@ func unmarshalVersionRow(row versionRow) (*version, error) {
 	for _, r := range row.StateVersionOutputs {
 		sv.outputs = append(sv.outputs, unmarshalVersionOutputRow(r))
 	}
-	return &sv, nil
+	return &sv
 }
 
 // unmarshalVersionOutputRow unmarshals a database row into a state version
@@ -163,7 +157,7 @@ func unmarshalVersionOutputRow(row pggen.StateVersionOutputs) *output {
 	return &output{
 		id:        row.StateVersionOutputID.String,
 		sensitive: row.Sensitive,
-		typ:      row.Type.String,
+		typ:       row.Type.String,
 		value:     row.Value.String,
 		name:      row.Name.String,
 	}

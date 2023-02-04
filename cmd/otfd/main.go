@@ -143,12 +143,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Cache:      cache,
 	})
 
-	variableService := variable.NewApplication(variable.ApplicationOptions{
-		Authorizer: authorizer,
-		Logger:     logger,
-		Database:   db,
-	})
-
 	// Setup application services
 	app, err := app.NewApplication(ctx, app.Options{
 		Logger:              logger,
@@ -162,6 +156,19 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}
+
+	renderer, err := html.NewViewEngine(d.ApplicationOptions.DevMode)
+	if err != nil {
+		return fmt.Errorf("setting up renderer: %w", err)
+	}
+
+	variableService := variable.NewApplication(variable.ApplicationOptions{
+		Authorizer:       authorizer,
+		Logger:           logger,
+		Database:         db,
+		WorkspaceService: app.WorkspaceService,
+		Renderer:         renderer,
+	})
 
 	// Setup http server and web app
 	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService)

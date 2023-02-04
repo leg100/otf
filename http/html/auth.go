@@ -11,7 +11,7 @@ import (
 )
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("login.tmpl", w, r, app.authenticators)
+	app.Render("login.tmpl", w, r, app.authenticators)
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,12 +33,12 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("profile.tmpl", w, r, user)
+	app.Render("profile.tmpl", w, r, user)
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (app *Application) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("site_admin_login.tmpl", w, r, nil)
+	app.Render("site_admin_login.tmpl", w, r, nil)
 }
 
 // adminLoginHandler logs in a site admin
