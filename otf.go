@@ -62,7 +62,6 @@ type Application interface {
 	ModuleService
 	ModuleVersionService
 	HostnameService
-	VariableService
 	HookService
 }
 
@@ -93,7 +92,6 @@ type DB interface {
 	VCSProviderStore
 	ModuleStore
 	ModuleVersionStore
-	VariableStore
 }
 
 // Database provides access to generated SQL queries as well as wrappers for

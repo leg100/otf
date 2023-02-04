@@ -55,7 +55,7 @@ func TestMain(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := new(bytes.Buffer)
-			err := run(ctx, tt.args, got)
+			err := fakeApp().run(ctx, tt.args, got)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				return

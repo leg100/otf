@@ -13,10 +13,10 @@ import (
 func TestRunDownload(t *testing.T) {
 	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
 	tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
-	factory := &fakeClientFactory{run: run, tarball: tarball}
 	require.NoError(t, err)
+	app := fakeApp(withFakeRun(run), withFakeTarball(tarball))
 
-	cmd := RunDownloadCommand(factory)
+	cmd := app.runDownloadCommand()
 	cmd.SetArgs([]string{"run-123"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)

@@ -16,26 +16,26 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 	}
 	params := parameters{}
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	role, err := rbac.WorkspaceRoleFromString(params.Role)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.SetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName, role)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "updated workspace permissions")
+	FlashSuccess(w, "updated workspace permissions")
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
 }
 
@@ -46,20 +46,20 @@ func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.UnsetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "deleted workspace permission")
+	FlashSuccess(w, "deleted workspace permission")
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
 }

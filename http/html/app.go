@@ -14,11 +14,12 @@ const DefaultPathPrefix = "/"
 
 // Application is the otf web app.
 type Application struct {
-	staticServer   http.FileSystem  // Static asset server
-	pathPrefix     string           // path prefix for all URLs
-	authenticators []*Authenticator // enabled authenticators
-	siteToken      string           // site admin's authentication token
-	secret         string           // secret for webhook signatures
+	staticServer    http.FileSystem  // Static asset server
+	pathPrefix      string           // path prefix for all URLs
+	authenticators  []*Authenticator // enabled authenticators
+	siteToken       string           // site admin's authentication token
+	secret          string           // secret for webhook signatures
+	variableService otf.VariableService
 
 	otf.Application // otf service accessors
 	*viewEngine     // view engine populates and renders templates
@@ -34,6 +35,7 @@ type ApplicationOptions struct {
 	*otfhttp.ServerConfig
 	*otfhttp.Router
 	otf.Application
+	otf.VariableService
 }
 
 // AddRoutes adds routes for the html web app.
@@ -57,14 +59,15 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 	sseServer.AutoReplay = false
 
 	app := &Application{
-		Application:  opts.Application,
-		staticServer: newStaticServer(opts.DevMode),
-		pathPrefix:   DefaultPathPrefix,
-		viewEngine:   views,
-		Logger:       logger,
-		Server:       sseServer,
-		siteToken:    opts.SiteToken,
-		secret:       opts.Secret,
+		Application:     opts.Application,
+		variableService: opts.VariableService,
+		staticServer:    newStaticServer(opts.DevMode),
+		pathPrefix:      DefaultPathPrefix,
+		viewEngine:      views,
+		Logger:          logger,
+		Server:          sseServer,
+		siteToken:       opts.SiteToken,
+		secret:          opts.Secret,
 	}
 
 	app.authenticators, err = newAuthenticators(logger, opts.Application, opts.CloudConfigs)
@@ -161,12 +164,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/workspaces/{workspace_id}/disconnect", app.disconnectWorkspace)
 		r.PST("/workspaces/{workspace_id}/start-run", app.startRun)
 
-		r.GET("/workspaces/{workspace_id}/variables", app.listVariables)
-		r.GET("/workspaces/{workspace_id}/variables/new", app.newVariable)
-		r.PST("/workspaces/{workspace_id}/variables/create", app.createVariable)
-		r.GET("/variables/{variable_id}/edit", app.editVariable)
-		r.PST("/variables/{variable_id}/update", app.updateVariable)
-		r.PST("/variables/{variable_id}/delete", app.deleteVariable)
+		// Variables routes
+		app.variableService.AddHandlers(r.Router)
 
 		r.GET("/workspaces/{workspace_id}/watch", app.watchWorkspace)
 		r.GET("/workspaces/{workspace_id}/runs", app.listRuns)

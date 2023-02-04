@@ -16,17 +16,17 @@ import (
 func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
 	if err := decode.All(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	org, err := app.GetOrganization(r.Context(), *opts.Organization)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	workspaces, err := app.ListWorkspaces(r.Context(), opts)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.render("workspace_list.tmpl", w, r, struct {
@@ -41,13 +41,13 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	org, err := app.GetOrganization(r.Context(), organization)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.render("workspace_new.tmpl", w, r, org)
@@ -56,34 +56,34 @@ func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
 func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var opts otf.CreateWorkspaceOptions
 	if err := decode.All(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.CreateWorkspace(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
-		flashError(w, "workspace already exists: "+*opts.Name)
+		FlashError(w, "workspace already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewWorkspace(*opts.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "created workspace: "+ws.Name())
+	FlashSuccess(w, "created workspace: "+ws.Name())
 	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), id)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	if ws.LatestRunID() != nil {
 		latest, err = app.GetRun(r.Context(), *ws.LatestRunID())
 		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
+			Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -114,13 +114,13 @@ func (app *Application) getWorkspaceByName(w http.ResponseWriter, r *http.Reques
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -130,24 +130,24 @@ func (app *Application) getWorkspaceByName(w http.ResponseWriter, r *http.Reques
 func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	workspace, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Get existing perms as well as all teams in org
 	perms, err := app.ListWorkspacePermissions(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	teams, err := app.ListTeams(r.Context(), workspace.Organization())
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Filter teams, removing those already assigned perms
@@ -190,7 +190,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -204,11 +204,11 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		WorkingDirectory: params.WorkingDirectory,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "updated workspace")
+	FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
 }
@@ -216,29 +216,29 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "deleted workspace: "+ws.Name())
+	FlashSuccess(w, "deleted workspace: "+ws.Name())
 	http.Redirect(w, r, paths.Workspaces(ws.Organization()), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.LockWorkspace(r.Context(), id, otf.WorkspaceLockOptions{})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
@@ -247,13 +247,13 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.UnlockWorkspace(r.Context(), id, otf.WorkspaceUnlockOptions{})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
@@ -266,20 +266,20 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	events, err := app.Watch(r.Context(), otf.WatchOptions{
 		WorkspaceID: otf.String(ws.ID()),
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	go func() {
@@ -376,18 +376,18 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	providers, err := app.ListVCSProviders(r.Context(), ws.Organization())
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -409,25 +409,25 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), opts.WorkspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	client, err := app.GetVCSClient(r.Context(), opts.VCSProviderID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	repos, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
 		PageSize: 100,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -449,41 +449,41 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := app.GetVCSProvider(r.Context(), params.ProviderID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	params.Cloud = provider.CloudConfig().Name
 
 	err = app.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "connected workspace to repo")
+	FlashSuccess(w, "connected workspace to repo")
 	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
 func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.DisconnectWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "disconnected workspace from repo")
+	FlashSuccess(w, "disconnected workspace from repo")
 	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
@@ -494,7 +494,7 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -505,20 +505,20 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 	case "plan-and-apply":
 		speculative = false
 	default:
-		writeError(w, "invalid strategy", http.StatusUnprocessableEntity)
+		Error(w, "invalid strategy", http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	run, err := app.StartRun(r.Context(), params.WorkspaceID, otf.ConfigurationVersionCreateOptions{
 		Speculative: otf.Bool(speculative),
 	})
 	if err != nil {
-		flashError(w, err.Error())
+		FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 		return
 	}

@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/variable"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -142,6 +143,12 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Cache:      cache,
 	})
 
+	variableService := variable.NewApplication(variable.ApplicationOptions{
+		Authorizer: authorizer,
+		Logger:     logger,
+		Database:   db,
+	})
+
 	// Setup application services
 	app, err := app.NewApplication(ctx, app.Options{
 		Logger:              logger,
@@ -157,7 +164,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Setup http server and web app
-	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService)
+	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
@@ -176,6 +183,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	d.ApplicationOptions.Application = app
 	d.ApplicationOptions.Router = server.Router
 	d.ApplicationOptions.CloudConfigs = d.OAuthConfigs
+	d.ApplicationOptions.VariableService = variableService
 	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
 		return err
 	}

@@ -1,21 +1,201 @@
 package main
 
 import (
-	"github.com/leg100/otf/http"
+	"encoding/json"
+	"fmt"
+
+	"github.com/leg100/otf"
 	"github.com/spf13/cobra"
 )
 
-func WorkspaceCommand(factory http.ClientFactory) *cobra.Command {
+func (a *application) workspaceCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspaces",
 		Short: "Workspace management",
 	}
 
-	cmd.AddCommand(WorkspaceListCommand(factory))
-	cmd.AddCommand(WorkspaceShowCommand(factory))
-	cmd.AddCommand(WorkspaceEditCommand(factory))
-	cmd.AddCommand(WorkspaceLockCommand(factory))
-	cmd.AddCommand(WorkspaceUnlockCommand(factory))
+	cmd.AddCommand(a.workspaceListCommand())
+	cmd.AddCommand(a.workspaceShowCommand())
+	cmd.AddCommand(a.workspaceEditCommand())
+	cmd.AddCommand(a.workspaceLockCommand())
+	cmd.AddCommand(a.workspaceUnlockCommand())
+
+	return cmd
+}
+
+func (a *application) workspaceListCommand() *cobra.Command {
+	var opts otf.WorkspaceListOptions
+
+	cmd := &cobra.Command{
+		Use:           "list",
+		Short:         "List workspaces",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			for {
+				list, err := a.ListWorkspaces(cmd.Context(), opts)
+				if err != nil {
+					return err
+				}
+				for _, ws := range list.Items {
+					fmt.Fprintln(cmd.OutOrStdout(), ws.Name())
+				}
+				if list.NextPage() != nil {
+					opts.PageNumber = *list.NextPage()
+				} else {
+					break
+				}
+			}
+
+			return nil
+		},
+	}
+
+	opts.Organization = cmd.Flags().String("organization", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
+
+	return cmd
+}
+
+func (a *application) workspaceShowCommand() *cobra.Command {
+	var organization string
+
+	cmd := &cobra.Command{
+		Use:           "show [name]",
+		Short:         "Show a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace := args[0]
+
+			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			if err != nil {
+				return err
+			}
+			out, err := json.MarshalIndent(ws, "", "    ")
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintln(cmd.OutOrStdout(), string(out))
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
+
+	return cmd
+}
+
+func (a *application) workspaceEditCommand() *cobra.Command {
+	var (
+		organization string
+		opts         otf.UpdateWorkspaceOptions
+		mode         *string
+	)
+
+	cmd := &cobra.Command{
+		Use:           "edit [name]",
+		Short:         "Edit a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace := args[0]
+
+			if mode != nil && *mode != "" {
+				opts.ExecutionMode = (*otf.ExecutionMode)(mode)
+			}
+
+			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			if err != nil {
+				return err
+			}
+			ws, err = a.UpdateWorkspace(cmd.Context(), ws.ID(), opts)
+			if err != nil {
+				return err
+			}
+
+			if opts.ExecutionMode != nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode())
+			}
+
+			return nil
+		},
+	}
+
+	mode = cmd.Flags().StringP("execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
+
+	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
+
+	return cmd
+}
+
+func (a *application) workspaceLockCommand() *cobra.Command {
+	var organization string
+
+	cmd := &cobra.Command{
+		Use:           "lock [name]",
+		Short:         "Lock a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace := args[0]
+
+			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			if err != nil {
+				return err
+			}
+			ws, err = a.LockWorkspace(cmd.Context(), ws.ID(), otf.WorkspaceLockOptions{})
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully locked workspace %s\n", ws.Name())
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
+
+	return cmd
+}
+
+func (a *application) workspaceUnlockCommand() *cobra.Command {
+	var organization string
+
+	cmd := &cobra.Command{
+		Use:           "unlock [name]",
+		Short:         "Unlock a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace := args[0]
+
+			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			if err != nil {
+				return err
+			}
+			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID(), otf.WorkspaceUnlockOptions{})
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully unlocked workspace %s\n", ws.Name())
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }

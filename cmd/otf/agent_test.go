@@ -10,7 +10,7 @@ import (
 )
 
 func TestAgentTokenNewCommand(t *testing.T) {
-	cmd := AgentTokenNewCommand(&fakeClientFactory{})
+	cmd := fakeApp().agentTokenNewCommand()
 	cmd.SetArgs([]string{"testing", "--organization", "automatize"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)

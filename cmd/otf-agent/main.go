@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
+	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
@@ -43,14 +44,14 @@ func run(ctx context.Context, args []string) error {
 				return err
 			}
 
-			// NewClient sends unauthenticated ping to server
-			client, err := clientCfg.NewClient()
+			// Sends unauthenticated ping to server
+			app, err := client.New(*clientCfg)
 			if err != nil {
 				return err
 			}
 
 			// Confirm token validity
-			at, err := client.GetAgentToken(ctx, "")
+			at, err := app.GetAgentToken(ctx, "")
 			if err != nil {
 				return fmt.Errorf("attempted authentication: %w", err)
 			}
@@ -59,7 +60,7 @@ func run(ctx context.Context, args []string) error {
 			// Ensure agent only process runs for this org
 			cfg.Organization = otf.String(at.Organization())
 
-			agent, err := agent.NewAgent(logger, client, *cfg)
+			agent, err := agent.NewAgent(logger, app, *cfg)
 			if err != nil {
 				return fmt.Errorf("unable to start agent: %w", err)
 			}

@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-func (c *client) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+func (c *Client) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, &planFileOptions{Format: format})
 	if err != nil {
@@ -26,7 +26,7 @@ func (c *client) GetPlanFile(ctx context.Context, runID string, format otf.PlanF
 	return buf.Bytes(), nil
 }
 
-func (c *client) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
+func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("PUT", u, plan)
 	if err != nil {
@@ -50,7 +50,7 @@ func (c *client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 	return nil
 }
 
-func (c *client) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
+func (c *Client) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -66,7 +66,7 @@ func (c *client) GetLockFile(ctx context.Context, runID string) ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
-func (c *client) UploadLockFile(ctx context.Context, runID string, lockfile []byte) error {
+func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []byte) error {
 	u := fmt.Sprintf("runs/%s/lockfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("PUT", u, lockfile)
 	if err != nil {
@@ -81,7 +81,7 @@ func (c *client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 	return nil
 }
 
-func (c *client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (c *Client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (c *client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Ru
 	return otf.UnmarshalRunListJSONAPI(wl), nil
 }
 
-func (c *client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -112,7 +112,7 @@ func (c *client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	return otf.UnmarshalRunJSONAPI(run), nil
 }
 
-func (c *client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
+func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/start/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
@@ -131,7 +131,7 @@ func (c *client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 	return otf.UnmarshalRunJSONAPI(run), nil
 }
 
-func (c *client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/finish/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),

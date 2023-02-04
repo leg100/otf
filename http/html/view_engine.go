@@ -37,7 +37,7 @@ func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request
 		Version:     otf.Version,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

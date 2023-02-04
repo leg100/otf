@@ -19,7 +19,6 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/state"
 	"github.com/r3labs/sse/v2"
 	"golang.org/x/time/rate"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -29,10 +28,7 @@ const (
 	DefaultAddress = "localhost:8080"
 )
 
-// alias to provide more meaningful name when embedded in client
-type stateClient = state.Client
-
-type client struct {
+type Client struct {
 	baseURL           *url.URL
 	token             string
 	headers           http.Header
@@ -44,16 +40,69 @@ type client struct {
 	// insecure skips verification of upstream TLS certs. Should only be used
 	// for testing purposes. NOTE: Only takes effect on SSE connections.
 	insecure bool
+}
 
-	*stateClient // state service client
+func NewClient(config Config) (*Client, error) {
+	// Override config with option args
+	for _, o := range config.options {
+		if err := o(&config); err != nil {
+			return nil, err
+		}
+	}
+
+	addr, err := SanitizeAddress(config.Address)
+	if err != nil {
+		return nil, err
+	}
+	baseURL, err := url.Parse(addr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid address: %v", err)
+	}
+	baseURL.Path = config.BasePath
+	if !strings.HasSuffix(baseURL.Path, "/") {
+		baseURL.Path += "/"
+	}
+
+	// This value must be provided by the user.
+	if config.Token == "" {
+		return nil, fmt.Errorf("missing API token")
+	}
+
+	// Create the client.
+	client := &Client{
+		baseURL:      baseURL,
+		token:        config.Token,
+		headers:      config.Headers,
+		retryLogHook: config.RetryLogHook,
+	}
+	client.http = &retryablehttp.Client{
+		Backoff:      client.retryHTTPBackoff,
+		CheckRetry:   client.retryHTTPCheck,
+		ErrorHandler: retryablehttp.PassthroughErrorHandler,
+		HTTPClient:   config.HTTPClient,
+		RetryWaitMin: 100 * time.Millisecond,
+		RetryWaitMax: 400 * time.Millisecond,
+		RetryMax:     30,
+	}
+	meta, err := client.getRawAPIMetadata()
+	if err != nil {
+		return nil, err
+	}
+	// Configure the rate limiter.
+	client.configureLimiter(meta.RateLimit)
+	// Save the API version so we can return it from the RemoteAPIVersion method
+	// later.
+	client.remoteAPIVersion = meta.APIVersion
+
+	return client, nil
 }
 
 // Hostname returns the server host:port.
-func (c *client) Hostname() string {
+func (c *Client) Hostname() string {
 	return c.baseURL.Host
 }
 
-func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {
+func (c *Client) getRawAPIMetadata() (rawAPIMetadata, error) {
 	var meta rawAPIMetadata
 
 	// Create a new request.
@@ -87,7 +136,7 @@ func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {
 }
 
 // configureLimiter configures the rate limiter.
-func (c *client) configureLimiter(rawLimit string) {
+func (c *Client) configureLimiter(rawLimit string) {
 	// Set default values for when rate limiting is disabled.
 	limit := rate.Inf
 	burst := 0
@@ -117,7 +166,7 @@ func (c *client) configureLimiter(rawLimit string) {
 // If v is supplied, the value will be JSONAPI encoded and included as the
 // request body. If the method is GET, the value will be parsed and added as
 // query parameters.
-func (c *client) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -172,7 +221,7 @@ func (c *client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 	return req, nil
 }
 
-func (c *client) newSSEClient(path string, errch chan otf.Event) (*sse.Client, error) {
+func (c *Client) newSSEClient(path string, errch chan otf.Event) (*sse.Client, error) {
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -266,7 +315,7 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 //
 // The provided ctx must be non-nil. If it is canceled or times out, ctx.Err()
 // will be returned.
-func (c *client) Do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
+func (c *Client) Do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
 	// Wait will block until the limiter can obtain a new token
 	// or returns an error if the given context is canceled.
 	if err := c.limiter.Wait(ctx); err != nil {
@@ -311,13 +360,13 @@ func (c *client) Do(ctx context.Context, req *retryablehttp.Request, v interface
 
 // RetryServerErrors configures the retry HTTP check to also retry unexpected
 // errors or requests that failed with a server error.
-func (c *client) RetryServerErrors(retry bool) {
+func (c *Client) RetryServerErrors(retry bool) {
 	c.retryServerErrors = retry
 }
 
 // retryHTTPCheck provides a callback for Client.CheckRetry which
 // will retry both rate limit (429) and server (>= 500) errors.
-func (c *client) retryHTTPCheck(ctx context.Context, resp *http.Response, err error) (bool, error) {
+func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	if ctx.Err() != nil {
 		return false, ctx.Err()
 	}
@@ -332,7 +381,7 @@ func (c *client) retryHTTPCheck(ctx context.Context, resp *http.Response, err er
 
 // retryHTTPBackoff provides a generic callback for Client.Backoff which
 // will pass through all calls based on the status code of the response.
-func (c *client) retryHTTPBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+func (c *Client) retryHTTPBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 	if c.retryLogHook != nil {
 		c.retryLogHook(attemptNum, resp)
 	}
@@ -487,10 +536,10 @@ func parsePagination(body io.Reader) (*jsonapi.Pagination, error) {
 	return &raw.Meta.Pagination, nil
 }
 
-func newTestClient(srv string) (*client, error) {
+func newTestClient(srv string) (*Client, error) {
 	u, err := url.Parse(srv)
 	if err != nil {
 		return nil, err
 	}
-	return &client{insecure: true, baseURL: u}, nil
+	return &Client{insecure: true, baseURL: u}, nil
 }

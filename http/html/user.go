@@ -13,7 +13,7 @@ func (app *Application) listUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	users, err := app.ListUsers(r.Context(), opts)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.render("users_list.tmpl", w, r, users)
