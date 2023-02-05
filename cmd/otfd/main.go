@@ -73,19 +73,6 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	return cmd.ExecuteContext(ctx)
 }
 
-type clientApp struct {
-	otf.OrganizationService
-	otf.AgentTokenService
-	otf.VariableApp
-	otf.StateVersionApp
-	otf.WorkspaceService
-	otf.HostnameService
-	otf.ConfigurationVersionService
-	otf.RegistrySessionService
-	otf.RunService
-	otf.EventService
-}
-
 type daemon struct {
 	address, hostname, database string
 
@@ -183,19 +170,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Renderer:         renderer,
 	})
 
-	client := clientApp{
-		AgentTokenService:           app,
-		WorkspaceService:            app.WorkspaceService,
-		OrganizationService:         app,
-		VariableApp:                 variableService,
-		StateVersionApp:             stateService,
-		HostnameService:             app,
-		ConfigurationVersionService: app,
-		RegistrySessionService:      app,
-		RunService:                  app,
-		EventService:                app,
-	}
-
 	// Setup http server and web app
 	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService)
 	if err != nil {
@@ -219,6 +193,31 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	d.ApplicationOptions.VariableService = variableService
 	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
 		return err
+	}
+
+	// Setup client app for use by agent
+	client := struct {
+		otf.OrganizationService
+		otf.AgentTokenService
+		otf.VariableApp
+		otf.StateVersionApp
+		otf.WorkspaceService
+		otf.HostnameService
+		otf.ConfigurationVersionService
+		otf.RegistrySessionService
+		otf.RunService
+		otf.EventService
+	}{
+		AgentTokenService:           app,
+		WorkspaceService:            app.WorkspaceService,
+		OrganizationService:         app,
+		VariableApp:                 variableService,
+		StateVersionApp:             stateService,
+		HostnameService:             app,
+		ConfigurationVersionService: app,
+		RegistrySessionService:      app,
+		RunService:                  app,
+		EventService:                app,
 	}
 
 	// Setup agent
