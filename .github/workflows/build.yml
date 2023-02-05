@@ -49,6 +49,7 @@ jobs:
       -
         name: Lint check
         run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
           make lint
       -
         name: Unit tests
