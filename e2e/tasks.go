@@ -190,18 +190,6 @@ func terraformInitTasks(t *testing.T, path string) chromedp.Action {
 	})
 }
 
-func terraformPlanTasks(t *testing.T, root string) chromedp.Action {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		cmd := exec.Command("terraform", "plan", "-no-color")
-		cmd.Dir = root
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
-		return nil
-	})
-}
-
 func createGithubVCSProviderTasks(t *testing.T, url, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to org

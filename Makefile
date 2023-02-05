@@ -56,7 +56,7 @@ install-latest-release:
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
-	staticcheck . ./agent ./app ./cloud ./cmd/... ./github ./gitlab ./http/... ./inmem ./module ./sql ./state
+	go list ./... | grep -v pggen | xargs staticcheck
 
 # Run go fmt against code
 .PHONY: fmt

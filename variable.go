@@ -15,10 +15,9 @@ const (
 )
 
 type VariableService interface {
-	// AddHandlers adds http handlers for to the given mux. The handlers
-	// implement the variable service API.
+	// AddHandlers adds handlers for the http api.
 	AddHandlers(*mux.Router)
-	// AddHTMLHandlers adds handlers for the web app.
+	// AddHTMLHandlers adds handlers for the web ui.
 	AddHTMLHandlers(*mux.Router)
 
 	VariableApp

@@ -73,6 +73,19 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	return cmd.ExecuteContext(ctx)
 }
 
+type clientApp struct {
+	otf.OrganizationService
+	otf.AgentTokenService
+	otf.VariableApp
+	otf.StateVersionApp
+	otf.WorkspaceService
+	otf.HostnameService
+	otf.ConfigurationVersionService
+	otf.RegistrySessionService
+	otf.RunService
+	otf.EventService
+}
+
 type daemon struct {
 	address, hostname, database string
 
@@ -170,6 +183,19 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Renderer:         renderer,
 	})
 
+	client := clientApp{
+		AgentTokenService:           app,
+		WorkspaceService:            app.WorkspaceService,
+		OrganizationService:         app,
+		VariableApp:                 variableService,
+		StateVersionApp:             stateService,
+		HostnameService:             app,
+		ConfigurationVersionService: app,
+		RegistrySessionService:      app,
+		RunService:                  app,
+		EventService:                app,
+	}
+
 	// Setup http server and web app
 	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService)
 	if err != nil {
@@ -198,7 +224,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Setup agent
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
-		app,
+		client,
 		*d.Config)
 	if err != nil {
 		return fmt.Errorf("initializing agent: %w", err)

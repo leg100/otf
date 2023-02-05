@@ -1,3 +1,4 @@
+// Package rbac is concerned with authorization
 package rbac
 
 import "fmt"

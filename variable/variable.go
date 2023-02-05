@@ -40,6 +40,47 @@ type Variable struct {
 	workspaceID string
 }
 
+func NewVariable(workspaceID string, opts otf.CreateVariableOptions) (*Variable, error) {
+	v := Variable{
+		id:          otf.NewID("var"),
+		workspaceID: workspaceID,
+	}
+
+	// Required fields
+	if opts.Key == nil {
+		return nil, errors.New("missing key")
+	}
+	if err := v.setKey(*opts.Key); err != nil {
+		return nil, err
+	}
+	if opts.Category == nil {
+		return nil, errors.New("missing category")
+	}
+	if err := v.setCategory(*opts.Category); err != nil {
+		return nil, err
+	}
+
+	// Optional fields
+	if opts.Value != nil {
+		if err := v.setValue(*opts.Value); err != nil {
+			return nil, err
+		}
+	}
+	if opts.Description != nil {
+		if err := v.setDescription(*opts.Description); err != nil {
+			return nil, err
+		}
+	}
+	if opts.Sensitive != nil {
+		v.sensitive = *opts.Sensitive
+	}
+	if opts.HCL != nil {
+		v.hcl = *opts.HCL
+	}
+
+	return &v, nil
+}
+
 func (v *Variable) ID() string                     { return v.id }
 func (v *Variable) Key() string                    { return v.key }
 func (v *Variable) Value() string                  { return v.value }
@@ -184,47 +225,6 @@ type VariableStore interface {
 	GetVariable(ctx context.Context, variableID string) (*Variable, error)
 	UpdateVariable(ctx context.Context, variableID string, updateFn func(*Variable) error) (*Variable, error)
 	DeleteVariable(ctx context.Context, variableID string) (*Variable, error)
-}
-
-func NewVariable(workspaceID string, opts otf.CreateVariableOptions) (*Variable, error) {
-	v := Variable{
-		id:          otf.NewID("var"),
-		workspaceID: workspaceID,
-	}
-
-	// Required fields
-	if opts.Key == nil {
-		return nil, errors.New("missing key")
-	}
-	if err := v.setKey(*opts.Key); err != nil {
-		return nil, err
-	}
-	if opts.Category == nil {
-		return nil, errors.New("missing category")
-	}
-	if err := v.setCategory(*opts.Category); err != nil {
-		return nil, err
-	}
-
-	// Optional fields
-	if opts.Value != nil {
-		if err := v.setValue(*opts.Value); err != nil {
-			return nil, err
-		}
-	}
-	if opts.Description != nil {
-		if err := v.setDescription(*opts.Description); err != nil {
-			return nil, err
-		}
-	}
-	if opts.Sensitive != nil {
-		v.sensitive = *opts.Sensitive
-	}
-	if opts.HCL != nil {
-		v.hcl = *opts.HCL
-	}
-
-	return &v, nil
 }
 
 func UnmarshalVariableJSONAPI(json *jsonapiVariable) *Variable {

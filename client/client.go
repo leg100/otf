@@ -1,3 +1,4 @@
+// Package client allows remote interaction with the otf application
 package client
 
 import (

@@ -78,7 +78,6 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		Service:             opts.CloudService,
 		Authorizer:          opts.Authorizer,
 		StateVersionService: opts.StateVersionService,
-		VariableApp:         opts.VariableApp,
 		RunFactory:          parent.RunFactory,
 		proxy:               parent.proxy,
 		hostname:            parent.hostname,
@@ -118,7 +117,6 @@ type Options struct {
 	CloudService        cloud.Service
 	Authorizer          otf.Authorizer
 	StateVersionService otf.StateVersionService
-	VariableApp         otf.VariableApp
 }
 
 func (a *Application) DB() otf.DB { return a.db }
