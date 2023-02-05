@@ -2,7 +2,6 @@
 package variable
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -209,42 +208,4 @@ func (v *Variable) setSensitive(sensitive bool) error {
 	}
 	v.sensitive = sensitive
 	return nil
-}
-
-type service interface {
-	create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*Variable, error)
-	list(ctx context.Context, workspaceID string) ([]*Variable, error)
-	get(ctx context.Context, variableID string) (*Variable, error)
-	update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*Variable, error)
-	delete(ctx context.Context, variableID string) (*Variable, error)
-}
-
-type VariableStore interface {
-	CreateVariable(ctx context.Context, variable *Variable) error
-	ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
-	GetVariable(ctx context.Context, variableID string) (*Variable, error)
-	UpdateVariable(ctx context.Context, variableID string, updateFn func(*Variable) error) (*Variable, error)
-	DeleteVariable(ctx context.Context, variableID string) (*Variable, error)
-}
-
-func UnmarshalVariableJSONAPI(json *jsonapiVariable) *Variable {
-	return &Variable{
-		id:          json.ID,
-		key:         json.Key,
-		value:       json.Value,
-		description: json.Description,
-		category:    otf.VariableCategory(json.Category),
-		sensitive:   json.Sensitive,
-		hcl:         json.HCL,
-		workspaceID: json.Workspace.ID,
-	}
-}
-
-// UnmarshalVariableListJSONAPI converts a DTO into a workspace list
-func UnmarshalVariableListJSONAPI(json *jsonapiList) []*Variable {
-	var list []*Variable
-	for _, i := range json.Items {
-		list = append(list, UnmarshalVariableJSONAPI(i))
-	}
-	return list
 }

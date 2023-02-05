@@ -9,6 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+type service interface {
+	create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*Variable, error)
+	list(ctx context.Context, workspaceID string) ([]*Variable, error)
+	get(ctx context.Context, variableID string) (*Variable, error)
+	update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*Variable, error)
+	delete(ctx context.Context, variableID string) (*Variable, error)
+}
+
 type app struct {
 	otf.Authorizer
 	logr.Logger

@@ -26,7 +26,7 @@ func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]otf.V
 
 	var variables []otf.Variable
 	for _, v := range list.Items {
-		variables = append(variables, UnmarshalVariableJSONAPI(v))
+		variables = append(variables, v.toVariable())
 	}
 	return variables, nil
 }

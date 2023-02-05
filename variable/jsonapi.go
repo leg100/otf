@@ -1,6 +1,9 @@
 package variable
 
-import "github.com/leg100/otf/http/jsonapi"
+import (
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
+)
 
 // jsonapiVariable is a variable suitable for marshaling into jsonapi
 type jsonapiVariable struct {
@@ -14,6 +17,19 @@ type jsonapiVariable struct {
 
 	// Relations
 	Workspace *jsonapi.Workspace `jsonapi:"relation,configurable"`
+}
+
+func (j *jsonapiVariable) toVariable() *Variable {
+	return &Variable{
+		id:          j.ID,
+		key:         j.Key,
+		value:       j.Value,
+		description: j.Description,
+		category:    otf.VariableCategory(j.Category),
+		sensitive:   j.Sensitive,
+		hcl:         j.HCL,
+		workspaceID: j.Workspace.ID,
+	}
 }
 
 // jsonapiList represents a list of variables.
