@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/rbac"
@@ -178,33 +177,6 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 		db.DeleteToken(ctx, token.Token())
 	})
 	return token
-}
-
-func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
-	factory := &otf.VCSProviderFactory{inmem.NewTestCloudService()}
-	provider, err := factory.NewVCSProvider(otf.VCSProviderCreateOptions{
-		Organization: org.Name(),
-		// unit tests require a legitimate cloud name to avoid invalid foreign
-		// key error upon insert/update
-		Cloud: "github",
-		Name:  uuid.NewString(),
-		Token: uuid.NewString(),
-	})
-	require.NoError(t, err)
-	return provider
-}
-
-func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
-	provider := newTestVCSProvider(t, organization)
-	ctx := context.Background()
-
-	err := db.CreateVCSProvider(ctx, provider)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteVCSProvider(ctx, provider.ID())
-	})
-	return provider
 }
 
 func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {

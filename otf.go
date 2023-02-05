@@ -89,7 +89,6 @@ type DB interface {
 	ConfigurationVersionStore
 	ChunkStore
 	AgentTokenStore
-	VCSProviderStore
 	ModuleStore
 	ModuleVersionStore
 }

@@ -25,12 +25,12 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.delete).Methods("DELETE")
 }
 
-// VariableList assembles a workspace list JSONAPI DTO
-type VariableList struct {
+// variableList assembles a workspace list JSONAPI DTO
+type variableList struct {
 	variables []*Variable
 }
 
-func (l *VariableList) ToJSONAPI() any {
+func (l *variableList) ToJSONAPI() any {
 	variables := &jsonapiList{}
 	for _, v := range l.variables {
 		variables.Items = append(variables.Items, v.ToJSONAPI().(*jsonapiVariable))
@@ -89,7 +89,7 @@ func (h *handlers) list(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &VariableList{variables})
+	jsonapi.WriteResponse(w, r, &variableList{variables})
 }
 
 func (h *handlers) update(w http.ResponseWriter, r *http.Request) {
