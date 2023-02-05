@@ -61,25 +61,25 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	// along with flash error.
 	token, err := a.CallbackHandler(r)
 	if err != nil {
-		flashError(w, err.Error())
+		FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
 
 	client, err := a.NewClient(r.Context(), token)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	user, err := a.synchronise(r.Context(), client)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := createSession(a.Application, w, r, user.ID()); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -13,22 +13,22 @@ import (
 func (app *Application) newAgentToken(w http.ResponseWriter, r *http.Request) {
 	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("agent_token_new.tmpl", w, r, org)
+	app.Render("agent_token_new.tmpl", w, r, org)
 }
 
 func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts otf.CreateAgentTokenOptions
 	if err := decode.All(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	token, err := app.CreateAgentToken(r.Context(), opts)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -37,10 +37,10 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 	// TODO: replace with a helper func, 'flashTemplate'
 	buf := new(bytes.Buffer)
 	if err := app.renderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, buf.String())
+	FlashSuccess(w, buf.String())
 
 	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
 }
@@ -48,17 +48,17 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	tokens, err := app.ListAgentTokens(r.Context(), organization)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("agent_token_list.tmpl", w, r, struct {
+	app.Render("agent_token_list.tmpl", w, r, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
@@ -74,16 +74,16 @@ func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) 
 func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("agent_token_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	at, err := app.DeleteAgentToken(r.Context(), id)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "Deleted token: "+at.Description())
+	FlashSuccess(w, "Deleted token: "+at.Description())
 	http.Redirect(w, r, paths.AgentTokens(at.Organization()), http.StatusFound)
 }

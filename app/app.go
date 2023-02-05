@@ -42,6 +42,7 @@ type Application struct {
 	logr.Logger
 	otf.Authorizer
 	otf.StateVersionService
+	otf.VariableApp
 }
 
 // NewApplication constructs an application, initialising various services and

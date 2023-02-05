@@ -300,7 +300,7 @@ type Doer interface {
 // writeTerraformVariables writes workspace variables to a file named
 // terraform.tfvars located in the given path. If the file already exists it'll
 // be appended to.
-func writeTerraformVariables(dir string, vars []*otf.Variable) error {
+func writeTerraformVariables(dir string, vars []otf.Variable) error {
 	path := path.Join(dir, "terraform.tfvars")
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {

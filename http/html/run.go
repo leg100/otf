@@ -40,13 +40,13 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	runs, err := app.ListRuns(r.Context(), otf.RunListOptions{
@@ -55,11 +55,11 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: &params.WorkspaceID,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("run_list.tmpl", w, r, struct {
+	app.Render("run_list.tmpl", w, r, struct {
 		*otf.RunList
 		*otf.Workspace
 		StreamID string
@@ -73,18 +73,18 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := app.GetWorkspace(r.Context(), run.WorkspaceID())
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Get existing logs thus far received for each phase. If none are found then don't treat
@@ -94,7 +94,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		Phase: otf.PlanPhase,
 	})
 	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	applyLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
@@ -102,10 +102,10 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		Phase: otf.ApplyPhase,
 	})
 	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("run_get.tmpl", w, r, struct {
+	app.Render("run_get.tmpl", w, r, struct {
 		*otf.Run
 		Workspace *otf.Workspace
 		PlanLogs  *htmlLogChunk
@@ -121,18 +121,18 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.DeleteRun(r.Context(), runID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Workspace(run.WorkspaceID()), http.StatusFound)
@@ -141,18 +141,18 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.CancelRun(r.Context(), runID, otf.RunCancelOptions{})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -162,12 +162,12 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.ApplyRun(r.Context(), mux.Vars(r)["run_id"], otf.RunApplyOptions{})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Run(run.ID())+"#apply", http.StatusFound)
@@ -176,12 +176,12 @@ func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
 func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.DiscardRun(r.Context(), mux.Vars(r)["run_id"], otf.RunDiscardOptions{})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
@@ -197,7 +197,7 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 		StreamID string `schema:"stream,required"`
 	}{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	ch, err := app.Tail(r.Context(), otf.GetChunkOptions{
@@ -206,7 +206,7 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 		Offset: opts.Offset,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	go func() {

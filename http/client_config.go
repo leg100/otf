@@ -1,20 +1,11 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/hashicorp/go-cleanhttp"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/state"
 )
-
-var _ ClientFactory = (*Config)(nil)
 
 const (
 	userAgent        = "go-tfe"
@@ -69,64 +60,6 @@ func NewConfig(opts ...ConfigOption) (*Config, error) {
 	// Set the default user agent.
 	config.Headers.Set("User-Agent", userAgent)
 	return config, nil
-}
-
-// NewClient creates a new Terraform Enterprise API client.
-func (config *Config) NewClient() (otf.Client, error) {
-	// Override config with option args
-	for _, o := range config.options {
-		if err := o(config); err != nil {
-			return nil, err
-		}
-	}
-	var err error
-	config.Address, err = SanitizeAddress(config.Address)
-	if err != nil {
-		return nil, err
-	}
-	// Parse the address to make sure its a valid URL.
-	baseURL, err := url.Parse(config.Address)
-	if err != nil {
-		return nil, fmt.Errorf("invalid address: %v", err)
-	}
-	baseURL.Path = config.BasePath
-	if !strings.HasSuffix(baseURL.Path, "/") {
-		baseURL.Path += "/"
-	}
-	// This value must be provided by the user.
-	if config.Token == "" {
-		return nil, fmt.Errorf("missing API token")
-	}
-	// Create the client.
-	client := &client{
-		baseURL:      baseURL,
-		token:        config.Token,
-		headers:      config.Headers,
-		retryLogHook: config.RetryLogHook,
-	}
-	client.http = &retryablehttp.Client{
-		Backoff:      client.retryHTTPBackoff,
-		CheckRetry:   client.retryHTTPCheck,
-		ErrorHandler: retryablehttp.PassthroughErrorHandler,
-		HTTPClient:   config.HTTPClient,
-		RetryWaitMin: 100 * time.Millisecond,
-		RetryWaitMax: 400 * time.Millisecond,
-		RetryMax:     30,
-	}
-	meta, err := client.getRawAPIMetadata()
-	if err != nil {
-		return nil, err
-	}
-	// Configure the rate limiter.
-	client.configureLimiter(meta.RateLimit)
-	// Save the API version so we can return it from the RemoteAPIVersion method
-	// later.
-	client.remoteAPIVersion = meta.APIVersion
-
-	// Add services
-	client.stateClient = &state.Client{client}
-
-	return client, nil
 }
 
 type rawAPIMetadata struct {

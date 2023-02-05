@@ -9,7 +9,7 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
+func (c *Client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
 	// TODO: why buffered chan of size 1?
 	ch := make(chan otf.Event, 1)
 	sseClient, err := c.newSSEClient("watch", ch)

@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/variable"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -156,8 +157,21 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up services: %w", err)
 	}
 
+	renderer, err := html.NewViewEngine(d.ApplicationOptions.DevMode)
+	if err != nil {
+		return fmt.Errorf("setting up renderer: %w", err)
+	}
+
+	variableService := variable.NewApplication(variable.ApplicationOptions{
+		Authorizer:       authorizer,
+		Logger:           logger,
+		Database:         db,
+		WorkspaceService: app.WorkspaceService,
+		Renderer:         renderer,
+	})
+
 	// Setup http server and web app
-	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService)
+	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
@@ -176,14 +190,40 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	d.ApplicationOptions.Application = app
 	d.ApplicationOptions.Router = server.Router
 	d.ApplicationOptions.CloudConfigs = d.OAuthConfigs
+	d.ApplicationOptions.VariableService = variableService
 	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
 		return err
+	}
+
+	// Setup client app for use by agent
+	client := struct {
+		otf.OrganizationService
+		otf.AgentTokenService
+		otf.VariableApp
+		otf.StateVersionApp
+		otf.WorkspaceService
+		otf.HostnameService
+		otf.ConfigurationVersionService
+		otf.RegistrySessionService
+		otf.RunService
+		otf.EventService
+	}{
+		AgentTokenService:           app,
+		WorkspaceService:            app.WorkspaceService,
+		OrganizationService:         app,
+		VariableApp:                 variableService,
+		StateVersionApp:             stateService,
+		HostnameService:             app,
+		ConfigurationVersionService: app,
+		RegistrySessionService:      app,
+		RunService:                  app,
+		EventService:                app,
 	}
 
 	// Setup agent
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
-		app,
+		client,
 		*d.Config)
 	if err != nil {
 		return fmt.Errorf("initializing agent: %w", err)

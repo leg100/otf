@@ -10,7 +10,7 @@ type fakeSpoolerApp struct {
 	runs   []*otf.Run
 	events chan otf.Event
 
-	otf.Application
+	otf.Client
 }
 
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {

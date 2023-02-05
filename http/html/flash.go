@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	FlashSuccess flashType = "success"
-	FlashError   flashType = "error"
+	FlashSuccessType flashType = "success"
+	FlashErrorType   flashType = "error"
 	// name of flash cookie
 	flashCookie = "flash"
 )
@@ -36,14 +36,14 @@ func setFlash(w http.ResponseWriter, f flash) {
 	setCookie(w, flashCookie, encoded, nil)
 }
 
-// flashSuccess helper
-func flashSuccess(w http.ResponseWriter, msg string) {
-	setFlash(w, flash{Type: FlashSuccess, Message: msg})
+// FlashSuccess helper
+func FlashSuccess(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashSuccessType, Message: msg})
 }
 
-// flashError helper
-func flashError(w http.ResponseWriter, msg string) {
-	setFlash(w, flash{Type: FlashError, Message: msg})
+// FlashError helper
+func FlashError(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashErrorType, Message: msg})
 }
 
 // popFlashFunc returns a func to pop a flash message for the current session - for

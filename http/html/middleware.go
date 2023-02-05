@@ -25,13 +25,13 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 			SessionToken: &cookie.Value,
 		})
 		if err != nil {
-			flashError(w, "unable to find user: "+err.Error())
+			FlashError(w, "unable to find user: "+err.Error())
 			sendUserToLoginPage(w, r)
 			return
 		}
 		session, err := m.GetSessionByToken(r.Context(), cookie.Value)
 		if err != nil {
-			flashError(w, "unable to find session: "+err.Error())
+			FlashError(w, "unable to find session: "+err.Error())
 			sendUserToLoginPage(w, r)
 			return
 		}

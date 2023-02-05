@@ -102,6 +102,7 @@ func TestCluster(t *testing.T) {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to org main menu
 		chromedp.Navigate("https://" + userHostname + "/organizations/" + org),
+		screenshot(t),
 		// go to list of agent tokens
 		chromedp.Click("#agent_tokens > a", chromedp.NodeVisible),
 		screenshot(t),

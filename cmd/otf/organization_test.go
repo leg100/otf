@@ -9,7 +9,7 @@ import (
 )
 
 func TestOrganizationCommand(t *testing.T) {
-	cmd := OrganizationNewCommand(&fakeClientFactory{})
+	cmd := fakeApp().organizationNewCommand()
 	cmd.SetArgs([]string{"automatize"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
@@ -18,7 +18,7 @@ func TestOrganizationCommand(t *testing.T) {
 }
 
 func TestOrganizationCommandMissingName(t *testing.T) {
-	cmd := OrganizationNewCommand(&fakeClientFactory{})
+	cmd := fakeApp().organizationNewCommand()
 	cmd.SetArgs([]string{})
 	err := cmd.Execute()
 	assert.EqualError(t, err, "accepts 1 arg(s), received 0")

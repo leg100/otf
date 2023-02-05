@@ -1,28 +1,58 @@
 package main
 
 import (
-	"github.com/leg100/otf/http"
+	"fmt"
+
+	"github.com/leg100/otf"
 	"github.com/spf13/cobra"
 )
 
-func AgentCommand(factory http.ClientFactory) *cobra.Command {
+func (a *application) agentCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agents",
 		Short: "Agent management",
 	}
 
-	cmd.AddCommand(AgentTokenCommand(factory))
+	cmd.AddCommand(a.agentTokenCommand())
 
 	return cmd
 }
 
-func AgentTokenCommand(factory http.ClientFactory) *cobra.Command {
+func (a *application) agentTokenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tokens",
 		Short: "Agent token management",
 	}
 
-	cmd.AddCommand(AgentTokenNewCommand(factory))
+	cmd.AddCommand(a.agentTokenNewCommand())
+
+	return cmd
+}
+
+func (a *application) agentTokenNewCommand() *cobra.Command {
+	opts := otf.CreateAgentTokenOptions{}
+
+	cmd := &cobra.Command{
+		Use:           "new [description]",
+		Short:         "Create a new agent token",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Description = args[0]
+
+			at, err := a.CreateAgentToken(cmd.Context(), opts)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created agent token: %s\n", *at.Token())
+
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&opts.Organization, "organization", "", "Organization in which to create agent token.")
+	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }

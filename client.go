@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// Client are those services supported by the client application, used in the
+// Client is those services supported by the client application, used in the
 // CLI and the agent.
 type Client interface {
 	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
@@ -15,7 +15,7 @@ type Client interface {
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 
-	ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
+	ListVariables(ctx context.Context, workspaceID string) ([]Variable, error)
 
 	CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error)
 	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
