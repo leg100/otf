@@ -18,11 +18,11 @@ type handlers struct {
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 //
 func (h *handlers) AddHandlers(r *mux.Router) {
-	r.HandleFunc("/workspaces/{workspace_id}/vars", h.create)
-	r.HandleFunc("/workspaces/{workspace_id}/vars", h.list)
-	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.get)
-	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.update)
-	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.delete)
+	r.HandleFunc("/workspaces/{workspace_id}/vars", h.create).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/vars", h.list).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.get).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.update).Methods("PATCH")
+	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.delete).Methods("DELETE")
 }
 
 // VariableList assembles a workspace list JSONAPI DTO
