@@ -125,3 +125,8 @@ tunnel:
 paths:
 	go generate ./http/html/paths
 	goimports -w ./http/html/paths
+
+# Install staticcheck linter
+.PHONY: install-linter
+install-linter:
+	go install honnef.co/go/tools/cmd/staticcheck@2022.1.3
