@@ -12,12 +12,8 @@ type viewEngine struct {
 	renderer // render templates
 }
 
-type viewEngineOptions struct {
-	devMode bool
-}
-
-func newViewEngine(opts viewEngineOptions) (*viewEngine, error) {
-	renderer, err := newRenderer(opts.devMode)
+func NewViewEngine(devmode bool) (*viewEngine, error) {
+	renderer, err := newRenderer(devmode)
 	if err != nil {
 		return nil, err
 	}

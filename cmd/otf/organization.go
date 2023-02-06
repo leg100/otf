@@ -1,17 +1,45 @@
 package main
 
 import (
-	"github.com/leg100/otf/http"
+	"fmt"
+
+	"github.com/leg100/otf"
 	"github.com/spf13/cobra"
 )
 
-func OrganizationCommand(factory http.ClientFactory) *cobra.Command {
+func (a *application) organizationCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "organizations",
 		Short: "Organization management",
 	}
 
-	cmd.AddCommand(OrganizationNewCommand(factory))
+	cmd.AddCommand(a.organizationNewCommand())
+
+	return cmd
+}
+
+func (a *application) organizationNewCommand() *cobra.Command {
+	opts := otf.OrganizationCreateOptions{}
+
+	cmd := &cobra.Command{
+		Use:           "new [name]",
+		Short:         "Create a new organization",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Name = otf.String(args[0])
+
+			org, err := a.CreateOrganization(cmd.Context(), opts)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created organization %s\n", org.Name())
+
+			return nil
+		},
+	}
 
 	return cmd
 }

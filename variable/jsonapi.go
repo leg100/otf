@@ -1,7 +1,12 @@
-package jsonapi
+package variable
 
-// Variable represents a Terraform Enterprise variable.
-type Variable struct {
+import (
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
+)
+
+// jsonapiVariable is a variable suitable for marshaling into jsonapi
+type jsonapiVariable struct {
 	ID          string `jsonapi:"primary,vars"`
 	Key         string `jsonapi:"attr,key"`
 	Value       string `jsonapi:"attr,value"`
@@ -11,17 +16,30 @@ type Variable struct {
 	Sensitive   bool   `jsonapi:"attr,sensitive"`
 
 	// Relations
-	Workspace *Workspace `jsonapi:"relation,configurable"`
+	Workspace *jsonapi.Workspace `jsonapi:"relation,configurable"`
 }
 
-// VariableList represents a list of variables.
-type VariableList struct {
-	*Pagination
-	Items []*Variable
+func (j *jsonapiVariable) toVariable() *Variable {
+	return &Variable{
+		id:          j.ID,
+		key:         j.Key,
+		value:       j.Value,
+		description: j.Description,
+		category:    otf.VariableCategory(j.Category),
+		sensitive:   j.Sensitive,
+		hcl:         j.HCL,
+		workspaceID: j.Workspace.ID,
+	}
+}
+
+// jsonapiList represents a list of variables.
+type jsonapiList struct {
+	*jsonapi.Pagination
+	Items []*jsonapiVariable
 }
 
 // VariableCreateOptions represents the options for creating a new variable.
-type VariableCreateOptions struct {
+type jsonapiVariableCreateOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.
@@ -48,7 +66,7 @@ type VariableCreateOptions struct {
 }
 
 // VariableUpdateOptions represents the options for updating a variable.
-type VariableUpdateOptions struct {
+type jsonapiVariableUpdateOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.

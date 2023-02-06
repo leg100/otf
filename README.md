@@ -59,7 +59,23 @@ Initialize terraform:
 terraform init
 ```
 
-And create a plan:
+> NOTE: if you're using Mac or Windows, you may receive an error similar to the following error:
+>
+> > Error: Failed to install provider
+> >
+> > Error while installing hashicorp/null v3.2.1: the current package for registry.terraform.io/hashicorp/null 3.2.1
+> > doesn't match any of the checksums previously recorded in the dependency lock file; for more information:
+> > https://www.terraform.io/language/provider-checksum-verification
+>
+> If so, you need to update your lockfile (`.terraform.lock.hcl`) to include hashes for the platform that the OTF demo is hosted on (linux):
+>
+> ```
+> terraform providers lock -platform=linux_amd64
+> ```
+>
+> Then re-run `terraform init`
+
+Now create a plan:
 
 ```bash
 terraform plan

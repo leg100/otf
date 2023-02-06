@@ -8,7 +8,7 @@ import (
 )
 
 // CreateOrganization creates a new organization with the given options.
-func (c *client) CreateOrganization(ctx context.Context, options otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (c *Client) CreateOrganization(ctx context.Context, options otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}

@@ -51,7 +51,6 @@ type Application interface {
 	EventService
 	UserService
 	SessionService
-	RegistrySessionService
 	TokenService
 	TeamService
 	AgentTokenService
@@ -62,7 +61,6 @@ type Application interface {
 	ModuleService
 	ModuleVersionService
 	HostnameService
-	VariableService
 	HookService
 }
 
@@ -85,7 +83,6 @@ type DB interface {
 	WorkspaceStore
 	RunStore
 	SessionStore
-	RegistrySessionStore
 	TokenStore
 	ConfigurationVersionStore
 	ChunkStore
@@ -93,7 +90,6 @@ type DB interface {
 	VCSProviderStore
 	ModuleStore
 	ModuleVersionStore
-	VariableStore
 }
 
 // Database provides access to generated SQL queries as well as wrappers for

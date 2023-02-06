@@ -1,3 +1,4 @@
+// Package workspace is responsible for workspaces
 package workspace
 
 import (
@@ -15,8 +16,8 @@ type Connector struct {
 	otf.VCSProviderService // for retrieving cloud client
 }
 
-func (wc *Connector) Connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
-	client, err := wc.GetVCSClient(ctx, opts.ProviderID)
+func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
+	client, err := c.GetVCSClient(ctx, opts.ProviderID)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func (wc *Connector) Connect(ctx context.Context, workspaceID string, opts otf.C
 			WebhookID:  hookID,
 		})
 	}
-	err = wc.Hook(ctx, otf.HookOptions{
+	err = c.Hook(ctx, otf.HookOptions{
 		Identifier:   opts.Identifier,
 		Cloud:        opts.Cloud,
 		HookCallback: hookCallback,

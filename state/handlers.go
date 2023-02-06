@@ -20,11 +20,11 @@ type handlers struct {
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 //
 func (h *handlers) AddHandlers(r *mux.Router) {
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion)
-	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion)
-	r.HandleFunc("/state-versions/{id}", h.getVersion)
-	r.HandleFunc("/state-versions", h.listVersions)
-	r.HandleFunc("/state-versions/{id}/download", h.downloadState)
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion).Methods("GET")
+	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
+	r.HandleFunc("/state-versions", h.listVersions).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/download", h.downloadState).Methods("GET")
 }
 
 func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {

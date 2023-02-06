@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
@@ -80,25 +79,6 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	}
 
 	return session
-}
-
-func NewTestRegistrySession(t *testing.T, org *Organization, opts ...NewTestRegistrySessionOption) *RegistrySession {
-	session, err := NewRegistrySession(org.Name())
-	require.NoError(t, err)
-
-	for _, o := range opts {
-		o(session)
-	}
-
-	return session
-}
-
-type NewTestRegistrySessionOption func(*RegistrySession)
-
-func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestRegistrySessionOption {
-	return func(session *RegistrySession) {
-		session.expiry = expiry
-	}
 }
 
 func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
@@ -181,12 +161,6 @@ func NewTestAgentToken(t *testing.T, org *Organization) *AgentToken {
 	})
 	require.NoError(t, err)
 	return token
-}
-
-func NewTestVariable(t *testing.T, ws *Workspace, opts CreateVariableOptions) *Variable {
-	v, err := NewVariable(ws.ID(), opts)
-	require.NoError(t, err)
-	return v
 }
 
 // NewTestTarball creates a tarball (.tar.gz) consisting of files respectively populated with the

@@ -6,25 +6,39 @@ import (
 	"github.com/leg100/otf"
 )
 
-type fakeClientFactory struct {
-	ws      *otf.Workspace
-	run     *otf.Run
-	tarball []byte
+func fakeApp(opts ...fakeOption) *application {
+	client := fakeClient{}
+	for _, fn := range opts {
+		fn(&client)
+	}
+	return &application{&client}
 }
 
-func (f fakeClientFactory) NewClient() (otf.Client, error) {
-	return &fakeClient{
-		ws:      f.ws,
-		run:     f.run,
-		tarball: f.tarball,
-	}, nil
+type fakeOption func(*fakeClient)
+
+func withFakeWorkspaces(workspaces ...*otf.Workspace) fakeOption {
+	return func(c *fakeClient) {
+		c.workspaces = workspaces
+	}
+}
+
+func withFakeRun(run *otf.Run) fakeOption {
+	return func(c *fakeClient) {
+		c.run = run
+	}
+}
+
+func withFakeTarball(tarball []byte) fakeOption {
+	return func(c *fakeClient) {
+		c.tarball = tarball
+	}
 }
 
 type fakeClient struct {
-	ws      *otf.Workspace
-	run     *otf.Run
-	tarball []byte
-	otf.Application
+	workspaces []*otf.Workspace
+	run        *otf.Run
+	tarball    []byte
+	otf.Client
 }
 
 func (f *fakeClient) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
@@ -32,31 +46,35 @@ func (f *fakeClient) CreateOrganization(ctx context.Context, opts otf.Organizati
 }
 
 func (f *fakeClient) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
-	return f.ws, nil
+	return f.workspaces[0], nil
 }
 
 func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
-	return f.ws, nil
+	return f.workspaces[0], nil
 }
 
 func (f *fakeClient) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
-		Items:      []*otf.Workspace{f.ws},
-		Pagination: otf.NewPagination(otf.ListOptions{}, 1),
+		Items:      f.workspaces,
+		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.workspaces)),
 	}, nil
 }
 
+func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error) {
+	return nil, nil
+}
+
 func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
-	f.ws.Update(opts)
-	return f.ws, nil
+	f.workspaces[0].Update(opts)
+	return f.workspaces[0], nil
 }
 
 func (f *fakeClient) LockWorkspace(context.Context, string, otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return f.ws, nil
+	return f.workspaces[0], nil
 }
 
 func (f *fakeClient) UnlockWorkspace(context.Context, string, otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	return f.ws, nil
+	return f.workspaces[0], nil
 }
 
 func (f *fakeClient) GetRun(context.Context, string) (*otf.Run, error) {

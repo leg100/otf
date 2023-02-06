@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (c *client) PutChunk(ctx context.Context, chunk otf.Chunk) error {
+func (c *Client) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 	u := fmt.Sprintf("runs/%s/logs/%s", url.QueryEscape(chunk.RunID), url.QueryEscape(string(chunk.Phase)))
 	req, err := c.NewRequest("PUT", u, chunk.Data)
 	if err != nil {

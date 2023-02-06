@@ -78,20 +78,6 @@ func UnmarshalManyPayload(in io.Reader, t reflect.Type) ([]interface{}, error) {
 	return jsonapi.UnmarshalManyPayload(in, t)
 }
 
-func marshalSinglePayload(w io.Writer, model interface{}, include ...string) error {
-	if err := jsonapi.MarshalPayload(w, model, include); err != nil {
-		return fmt.Errorf("unable to marshal payload: %w", err)
-	}
-	return nil
-}
-
-func sanitizeIncludes(includes []string) (sanitized []string) {
-	for _, i := range includes {
-		sanitized = append(sanitized, strings.ReplaceAll(i, "_", "-"))
-	}
-	return
-}
-
 // WriteResponse writes an HTTP response with a JSON-API marshalled payload.
 func WriteResponse(w http.ResponseWriter, r *http.Request, obj Assembler, opts ...func(http.ResponseWriter)) {
 	w.Header().Set("Content-type", jsonapi.MediaType)
@@ -116,4 +102,18 @@ func WithCode(code int) func(w http.ResponseWriter) {
 	return func(w http.ResponseWriter) {
 		w.WriteHeader(code)
 	}
+}
+
+func marshalSinglePayload(w io.Writer, model interface{}, include ...string) error {
+	if err := jsonapi.MarshalPayload(w, model, include); err != nil {
+		return fmt.Errorf("unable to marshal payload: %w", err)
+	}
+	return nil
+}
+
+func sanitizeIncludes(includes []string) (sanitized []string) {
+	for _, i := range includes {
+		sanitized = append(sanitized, strings.ReplaceAll(i, "_", "-"))
+	}
+	return
 }

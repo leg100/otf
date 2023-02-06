@@ -154,17 +154,6 @@ func createTestSession(t *testing.T, db otf.DB, userID string, opts ...otf.NewSe
 	return session
 }
 
-func createTestRegistrySession(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestRegistrySessionOption) *otf.RegistrySession {
-	ctx := context.Background()
-
-	session := otf.NewTestRegistrySession(t, org, opts...)
-
-	err := db.CreateRegistrySession(ctx, session)
-	require.NoError(t, err)
-
-	return session
-}
-
 func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
 	ctx := context.Background()
 
@@ -178,21 +167,6 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 		db.DeleteToken(ctx, token.Token())
 	})
 	return token
-}
-
-func createTestVariable(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.CreateVariableOptions) *otf.Variable {
-	ctx := context.Background()
-
-	v, err := otf.NewVariable(ws.ID(), opts)
-	require.NoError(t, err)
-
-	err = db.CreateVariable(ctx, v)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteToken(ctx, v.ID())
-	})
-	return v
 }
 
 func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {

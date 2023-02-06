@@ -66,7 +66,7 @@ type Server struct {
 }
 
 // NewServer is the constructor for Server
-func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, stateService otf.StateVersionService) (*Server, error) {
+func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, stateService otf.StateVersionService, variableService otf.VariableService, registrySessionService otf.RegistrySessionService) (*Server, error) {
 	s := &Server{
 		server:       &http.Server{},
 		Logger:       logger,
@@ -117,7 +117,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	authMiddleware := &authTokenMiddleware{
 		UserService:            app,
 		AgentTokenService:      app,
-		RegistrySessionService: app,
+		RegistrySessionService: registrySessionService,
 		siteToken:              cfg.SiteToken,
 	}
 
@@ -163,12 +163,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			r.PST("/workspaces/{workspace_id}/actions/lock", s.LockWorkspace)
 			r.PST("/workspaces/{workspace_id}/actions/unlock", s.UnlockWorkspace)
 
-			// Variable routes
-			r.PST("/workspaces/{workspace_id}/vars", s.CreateVariable)
-			r.GET("/workspaces/{workspace_id}/vars", s.ListVariables)
-			r.GET("/workspaces/{workspace_id}/vars/{variable_id}", s.GetVariable)
-			r.PTC("/workspaces/{workspace_id}/vars/{variable_id}", s.UpdateVariable)
-			r.DEL("/workspaces/{workspace_id}/vars/{variable_id}", s.DeleteVariable)
+			// Variables routes
+			variableService.AddHandlers(r.Router)
 
 			// StateVersion routes
 			stateService.AddHandlers(r.Router)
@@ -217,7 +213,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			r.PST("/agent/create", s.CreateAgentToken)
 
 			// Registry session routes
-			r.PST("/organizations/{organization_name}/registry/sessions/create", s.CreateRegistrySession)
+			registrySessionService.AddHandlers(r.Router)
 		})
 	})
 

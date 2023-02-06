@@ -1,3 +1,4 @@
+// Package scheduler is responsible for the scheduling of runs
 package scheduler
 
 import (

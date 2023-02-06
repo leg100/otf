@@ -47,7 +47,7 @@ func (db *pgdb) create(ctx context.Context, unsynced *hook, client cloud.Client)
 		if err != nil {
 			return err
 		}
-		unsynced, err = db.unmarshal(row(upsertResult))
+		unsynced, err = db.unmarshal(pgRow(upsertResult))
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func (db *pgdb) create(ctx context.Context, unsynced *hook, client cloud.Client)
 		if err != nil {
 			return err
 		}
-		hook, err = db.unmarshal(row(updateResult))
+		hook, err = db.unmarshal(pgRow(updateResult))
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (db *pgdb) get(ctx context.Context, id uuid.UUID) (*hook, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	hook, err := db.unmarshal(row(result))
+	hook, err := db.unmarshal(pgRow(result))
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (db *pgdb) delete(ctx context.Context, id uuid.UUID) (*hook, error) {
 	if r.Connected > 0 {
 		return nil, errConnected
 	}
-	return db.unmarshal(row(r))
+	return db.unmarshal(pgRow(r))
 }
 
 // tx constructs a new pgdb within a transaction.
@@ -112,7 +112,7 @@ func (db *pgdb) tx(ctx context.Context, callback func(db) error) error {
 	})
 }
 
-type row struct {
+type pgRow struct {
 	WebhookID  pgtype.UUID `json:"webhook_id"`
 	VCSID      pgtype.Text `json:"vcs_id"`
 	Secret     pgtype.Text `json:"secret"`
@@ -121,15 +121,15 @@ type row struct {
 	Connected  int         `json:"connected"`
 }
 
-func (db *pgdb) unmarshal(r row) (*hook, error) {
+func (db *pgdb) unmarshal(row pgRow) (*hook, error) {
 	opts := newHookOpts{
-		id:         otf.UUID(r.WebhookID.Bytes),
-		secret:     otf.String(r.Secret.String),
-		identifier: r.Identifier.String,
-		cloud:      r.Cloud.String,
+		id:         otf.UUID(row.WebhookID.Bytes),
+		secret:     otf.String(row.Secret.String),
+		identifier: row.Identifier.String,
+		cloud:      row.Cloud.String,
 	}
-	if r.VCSID.Status == pgtype.Present {
-		opts.cloudID = otf.String(r.VCSID.String)
+	if row.VCSID.Status == pgtype.Present {
+		opts.cloudID = otf.String(row.VCSID.String)
 	}
 	return db.newHook(opts)
 }

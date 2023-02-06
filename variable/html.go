@@ -1,40 +1,58 @@
-package html
+package variable
 
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 )
 
-func (app *Application) newVariable(w http.ResponseWriter, r *http.Request) {
+type htmlApp struct {
+	otf.Renderer
+	otf.WorkspaceService
+
+	app service
+}
+
+func (a *htmlApp) AddHTMLHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/variables", a.list)
+	r.HandleFunc("/workspaces/{workspace_id}/variables/new", a.new)
+	r.HandleFunc("/workspaces/{workspace_id}/variables/create", a.create)
+	r.HandleFunc("/variables/{variable_id}/edit", a.edit)
+	r.HandleFunc("/variables/{variable_id}/update", a.update)
+	r.HandleFunc("/variables/{variable_id}/delete", a.delete)
+}
+
+func (a *htmlApp) new(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), workspaceID)
+	ws, err := a.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("variable_new.tmpl", w, r, struct {
+	a.Render("variable_new.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
-		Variable   *otf.Variable
+		Variable   *Variable
 		EditMode   bool
 		FormAction string
 	}{
 		Workspace:  ws,
-		Variable:   &otf.Variable{},
+		Variable:   &Variable{},
 		EditMode:   false,
 		FormAction: paths.CreateVariable(workspaceID),
 	})
 }
 
-func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
+func (a *htmlApp) create(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Key         *string `schema:"key,required"`
 		Value       *string
@@ -46,11 +64,11 @@ func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	variable, err := app.CreateVariable(r.Context(), params.WorkspaceID, otf.CreateVariableOptions{
+	variable, err := a.app.create(r.Context(), params.WorkspaceID, otf.CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -59,62 +77,62 @@ func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
 		HCL:         &params.HCL,
 	})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	FlashSuccess(w, "added variable: "+variable.Key())
+	html.FlashSuccess(w, "added variable: "+variable.Key())
 	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
 }
 
-func (app *Application) listVariables(w http.ResponseWriter, r *http.Request) {
+func (a *htmlApp) list(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	variables, err := app.ListVariables(r.Context(), workspaceID)
+	variables, err := a.app.list(r.Context(), workspaceID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), workspaceID)
+	ws, err := a.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("variable_list.tmpl", w, r, struct {
+	a.Render("variable_list.tmpl", w, r, struct {
 		Workspace *otf.Workspace
-		Variables []*otf.Variable
+		Variables []*Variable
 	}{
 		Workspace: ws,
 		Variables: variables,
 	})
 }
 
-func (app *Application) editVariable(w http.ResponseWriter, r *http.Request) {
+func (a *htmlApp) edit(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	variable, err := app.GetVariable(r.Context(), variableID)
+	variable, err := a.app.get(r.Context(), variableID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), variable.WorkspaceID())
+	ws, err := a.GetWorkspace(r.Context(), variable.WorkspaceID())
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("variable_edit.tmpl", w, r, struct {
+	a.Render("variable_edit.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
-		Variable   *otf.Variable
+		Variable   *Variable
 		EditMode   bool
 		FormAction string
 	}{
@@ -125,7 +143,7 @@ func (app *Application) editVariable(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
+func (a *htmlApp) update(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Key         *string `schema:"key,required"`
 		Value       *string
@@ -137,7 +155,7 @@ func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -149,7 +167,7 @@ func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 		params.Value = nil
 	}
 
-	variable, err := app.UpdateVariable(r.Context(), params.VariableID, otf.UpdateVariableOptions{
+	variable, err := a.app.update(r.Context(), params.VariableID, otf.UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -158,27 +176,27 @@ func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 		HCL:         &params.HCL,
 	})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	FlashSuccess(w, "updated variable: "+variable.Key())
+	html.FlashSuccess(w, "updated variable: "+variable.Key())
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID()), http.StatusFound)
 }
 
-func (app *Application) deleteVariable(w http.ResponseWriter, r *http.Request) {
+func (a *htmlApp) delete(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	variable, err := app.DeleteVariable(r.Context(), variableID)
+	variable, err := a.app.delete(r.Context(), variableID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	FlashSuccess(w, "deleted variable: "+variable.Key())
+	html.FlashSuccess(w, "deleted variable: "+variable.Key())
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID()), http.StatusFound)
 }
