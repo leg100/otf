@@ -8,11 +8,11 @@ import (
 )
 
 type RegistrySession interface {
-	String() string
-	ID() string
 	Token() string
 	Organization() string
 	Expiry() time.Time
+
+	Subject
 }
 
 type RegistrySessionService interface {

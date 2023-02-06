@@ -117,7 +117,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	authMiddleware := &authTokenMiddleware{
 		UserService:            app,
 		AgentTokenService:      app,
-		RegistrySessionService: app,
+		RegistrySessionService: registrySessionService,
 		siteToken:              cfg.SiteToken,
 	}
 

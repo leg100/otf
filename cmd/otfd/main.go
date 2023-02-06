@@ -171,7 +171,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Renderer:         renderer,
 	})
 
-	registrySessionService := registry.NewApplication(registry.ApplicationOptions{
+	registrySessionService := registry.NewApplication(ctx, registry.ApplicationOptions{
 		Authorizer: authorizer,
 		Logger:     logger,
 		Database:   db,
@@ -222,7 +222,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		StateVersionApp:             stateService,
 		HostnameService:             app,
 		ConfigurationVersionService: app,
-		RegistrySessionService:      app,
+		RegistrySessionService:      registrySessionService,
 		RunService:                  app,
 		EventService:                app,
 	}

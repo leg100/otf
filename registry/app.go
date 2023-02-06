@@ -47,7 +47,7 @@ func (a *app) CreateRegistrySession(ctx context.Context, organization string) (o
 
 // GetRegistrySession retrieves a registry session using a token. Useful for
 // checking token is valid.
-func (a *app) GetRegistrySession(ctx context.Context, token string) (*Session, error) {
+func (a *app) GetRegistrySession(ctx context.Context, token string) (otf.RegistrySession, error) {
 	return a.get(ctx, token)
 }
 

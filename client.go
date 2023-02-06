@@ -35,7 +35,7 @@ type Client interface {
 
 	Watch(context.Context, WatchOptions) (<-chan Event, error)
 
-	CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error)
+	CreateRegistrySession(ctx context.Context, organization string) (RegistrySession, error)
 
 	WorkspaceLockService
 	StateVersionApp

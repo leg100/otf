@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestSession(t *testing.T, org *otf.Organization, opts ...NewTestRegistrySessionOption) *Session {
+func NewTestSession(t *testing.T, org *otf.Organization, opts ...NewTestRegistrySessionOption) *Session {
 	session, err := newSession(org.Name())
 	require.NoError(t, err)
 

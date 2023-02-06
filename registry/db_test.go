@@ -18,7 +18,7 @@ func TestRegistrySession_Create(t *testing.T) {
 	sessionDB := newDB(ctx, db, 0)
 	org := sql.CreateTestOrganization(t, db)
 
-	session := newTestSession(t, org)
+	session := NewTestSession(t, org)
 
 	err := sessionDB.create(ctx, session)
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestRegistrySession_Cleanup(t *testing.T) {
 func createTestRegistrySession(t *testing.T, sessionDB db, org *otf.Organization, opts ...NewTestRegistrySessionOption) *Session {
 	ctx := context.Background()
 
-	session := newTestSession(t, org, opts...)
+	session := NewTestSession(t, org, opts...)
 
 	err := sessionDB.create(ctx, session)
 	require.NoError(t, err)
