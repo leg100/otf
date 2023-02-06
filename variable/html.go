@@ -39,7 +39,7 @@ func (a *htmlApp) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("variable_new.tmpl", w, r, struct {
+	app.Render("variable_new.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
 		Variable   *Variable
 		EditMode   bool
