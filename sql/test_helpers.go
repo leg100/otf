@@ -154,17 +154,6 @@ func createTestSession(t *testing.T, db otf.DB, userID string, opts ...otf.NewSe
 	return session
 }
 
-func createTestRegistrySession(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestRegistrySessionOption) *otf.RegistrySession {
-	ctx := context.Background()
-
-	session := otf.NewTestRegistrySession(t, org, opts...)
-
-	err := db.CreateRegistrySession(ctx, session)
-	require.NoError(t, err)
-
-	return session
-}
-
 func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
 	ctx := context.Background()
 

@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/registry"
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
@@ -170,8 +171,14 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Renderer:         renderer,
 	})
 
+	registrySessionService := registry.NewApplication(registry.ApplicationOptions{
+		Authorizer: authorizer,
+		Logger:     logger,
+		Database:   db,
+	})
+
 	// Setup http server and web app
-	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService)
+	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService, registrySessionService)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
