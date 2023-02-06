@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultSessionExpiry = 10 * time.Minute
+	defaultExpiry = 10 * time.Minute
 )
 
 // Session provides access to the module registry for a short period.
@@ -28,7 +28,7 @@ func newSession(organization string) (*Session, error) {
 	}
 	return &Session{
 		token:        token,
-		expiry:       otf.CurrentTimestamp().Add(defaultSessionExpiry),
+		expiry:       otf.CurrentTimestamp().Add(defaultExpiry),
 		organization: organization,
 	}, nil
 }

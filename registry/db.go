@@ -27,10 +27,10 @@ func newDB(ctx context.Context, database otf.Database, cleanupInterval time.Dura
 	db := &pgdb{database}
 
 	if cleanupInterval == 0 {
-		cleanupInterval = defaultSessionExpiry
+		cleanupInterval = defaultExpiry
 	}
 	// purge expired registry sessions
-	go db.startRegistrySessionExpirer(ctx, cleanupInterval)
+	go db.startExpirer(ctx, cleanupInterval)
 
 	return db
 }
@@ -52,7 +52,7 @@ func (db *pgdb) get(ctx context.Context, token string) (*Session, error) {
 	return pgRow(row).toSession(), nil
 }
 
-func (db *pgdb) startRegistrySessionExpirer(ctx context.Context, interval time.Duration) {
+func (db *pgdb) startExpirer(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	for {
 		select {

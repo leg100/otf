@@ -26,7 +26,7 @@ func NewApplication(ctx context.Context, opts ApplicationOptions) *app {
 	app := &app{
 		Authorizer: opts.Authorizer,
 		Logger:     opts.Logger,
-		db:         newDB(ctx, opts.Database, defaultSessionExpiry),
+		db:         newDB(ctx, opts.Database, defaultExpiry),
 	}
 	app.handlers = &handlers{
 		app: app,
