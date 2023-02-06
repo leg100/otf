@@ -50,7 +50,7 @@ func (a *app) EnsureCreatedOrganization(ctx context.Context, opts OrganizationCr
 		return "", err
 	}
 
-	_, err = a.db.GetOrganization(ctx, *opts.Name)
+	_, err = a.db.get(ctx, *opts.Name)
 	if err == nil {
 		return "", nil
 	}
@@ -77,7 +77,7 @@ func (a *app) createOrganization(ctx context.Context, opts OrganizationCreateOpt
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	if err := a.db.CreateOrganization(ctx, org); err != nil {
+	if err := a.db.create(ctx, org); err != nil {
 		a.Error(err, "creating organization", "id", org.ID(), "subject", subject)
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (a *app) GetOrganization(ctx context.Context, name string) (*Organization, 
 		return nil, err
 	}
 
-	org, err := a.db.GetOrganization(ctx, name)
+	org, err := a.db.get(ctx, name)
 	if err != nil {
 		a.Error(err, "retrieving organization", "name", name, "subject", subject)
 		return nil, err
@@ -115,13 +115,13 @@ func (a *app) ListOrganizations(ctx context.Context, opts OrganizationListOption
 		return nil, err
 	}
 	if user, ok := subj.(*otf.User); ok && !user.IsSiteAdmin() {
-		orgs, err := a.db.ListOrganizationsByUser(ctx, user.ID())
+		orgs, err := a.db.listByUser(ctx, user.ID())
 		if err != nil {
 			return nil, err
 		}
 		return newOrganizationList(opts, orgs), nil
 	}
-	return a.db.ListOrganizations(ctx, opts)
+	return a.db.list(ctx, opts)
 }
 
 func (a *app) UpdateOrganization(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error) {
@@ -130,7 +130,7 @@ func (a *app) UpdateOrganization(ctx context.Context, name string, opts *Organiz
 		return nil, err
 	}
 
-	org, err := a.db.UpdateOrganization(ctx, name, func(org *Organization) error {
+	org, err := a.db.update(ctx, name, func(org *Organization) error {
 		return org.Update(*opts)
 	})
 	if err != nil {
@@ -149,7 +149,7 @@ func (a *app) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = a.db.DeleteOrganization(ctx, name)
+	err = a.db.delete(ctx, name)
 	if err != nil {
 		a.Error(err, "deleting organization", "name", name, "subject", subject)
 		return err
@@ -159,7 +159,7 @@ func (a *app) DeleteOrganization(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *app) GetEntitlements(ctx context.Context, organization string) (*otf.Entitlements, error) {
+func (a *app) GetEntitlements(ctx context.Context, organization string) (*Entitlements, error) {
 	_, err := a.CanAccessOrganization(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (a *app) GetEntitlements(ctx context.Context, organization string) (*otf.En
 	if err != nil {
 		return nil, err
 	}
-	return otf.DefaultEntitlements(org.ID()), nil
+	return DefaultEntitlements(org.ID()), nil
 }
 
 // newOrganizationList constructs a paginated OrganizationList given the list
