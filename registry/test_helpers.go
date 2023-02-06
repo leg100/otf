@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestSession(t *testing.T, org *otf.Organization, opts ...NewTestRegistrySessionOption) *Session {
+func NewTestSession(t *testing.T, org *otf.Organization, opts ...NewTestSessionOption) *Session {
 	session, err := newSession(org.Name())
 	require.NoError(t, err)
 
@@ -19,9 +19,9 @@ func NewTestSession(t *testing.T, org *otf.Organization, opts ...NewTestRegistry
 	return session
 }
 
-type NewTestRegistrySessionOption func(*Session)
+type NewTestSessionOption func(*Session)
 
-func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestRegistrySessionOption {
+func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestSessionOption {
 	return func(session *Session) {
 		session.expiry = expiry
 	}
