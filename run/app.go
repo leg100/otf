@@ -358,45 +358,6 @@ func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.P
 	return run, nil
 }
 
-// GetChunk reads a chunk of logs for a phase.
-//
-// NOTE: unauthenticated - access granted only via signed URL
-func (a *Application) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	logs, err := a.proxy.GetChunk(ctx, opts)
-	if err == otf.ErrResourceNotFound {
-		// ignore resource not found because no log chunks may not have been
-		// written yet
-		return otf.Chunk{}, nil
-	} else if err != nil {
-		a.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset, "limit", opts.Limit)
-		return otf.Chunk{}, err
-	}
-	a.V(2).Info("read logs", "id", opts.RunID, "offset", opts.Offset, "limit", opts.Limit)
-	return logs, nil
-}
-
-// PutChunk writes a chunk of logs for a phase.
-func (a *Application) PutChunk(ctx context.Context, chunk otf.Chunk) error {
-	_, err := a.CanAccessRun(ctx, rbac.PutChunkAction, chunk.RunID)
-	if err != nil {
-		return err
-	}
-
-	persisted, err := a.db.PutChunk(ctx, chunk)
-	if err != nil {
-		a.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
-		return err
-	}
-	a.V(2).Info("written logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
-
-	a.Publish(otf.Event{
-		Type:    otf.EventLogChunk,
-		Payload: persisted,
-	})
-
-	return nil
-}
-
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
 func (a *Application) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {

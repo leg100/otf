@@ -11,7 +11,7 @@ type Client interface {
 
 	GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
-	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 
 	ListVariables(ctx context.Context, workspaceID string) ([]Variable, error)

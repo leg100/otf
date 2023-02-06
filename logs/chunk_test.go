@@ -1,4 +1,4 @@
-package otf
+package logs
 
 import (
 	"testing"

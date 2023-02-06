@@ -1,9 +1,11 @@
-package otf
+package logs
 
 import (
 	"context"
 	"fmt"
 	"strconv"
+
+	"github.com/leg100/otf"
 )
 
 // Chunk is a section of logs.
@@ -11,7 +13,7 @@ type Chunk struct {
 	// ID of run that generated the chunk
 	RunID string `schema:"run_id,required"`
 	// Phase that generated the chunk
-	Phase PhaseType `schema:"phase,required"`
+	Phase otf.PhaseType `schema:"phase,required"`
 	// Position within logs.
 	Offset int `schema:"offset,required"`
 	// The chunk of logs

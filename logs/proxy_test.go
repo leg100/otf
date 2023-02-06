@@ -1,4 +1,4 @@
-package inmem
+package logs
 
 import (
 	"context"
@@ -20,11 +20,11 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 		// existing cache content
 		cache map[string][]byte
 		// chunk to be written
-		chunk otf.Chunk
+		chunk Chunk
 	}{
 		{
 			name: "first chunk",
-			chunk: otf.Chunk{
+			chunk: Chunk{
 				RunID: "run-123",
 				Phase: otf.PlanPhase,
 				Data:  []byte("\x02hello"),
@@ -34,7 +34,7 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 		},
 		{
 			name: "second chunk",
-			chunk: otf.Chunk{
+			chunk: Chunk{
 				RunID: "run-123",
 				Phase: otf.PlanPhase,
 				Data:  []byte(" world"),
@@ -44,7 +44,7 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 		},
 		{
 			name: "third and final chunk",
-			chunk: otf.Chunk{
+			chunk: Chunk{
 				RunID: "run-123",
 				Phase: otf.PlanPhase,
 				Data:  []byte{0x03},
@@ -78,7 +78,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 		backend map[string][]byte
 		// existing cache content
 		cache map[string][]byte
-		opts  otf.GetChunkOptions
+		opts  GetChunkOptions
 		want  string
 	}{
 		{
@@ -89,7 +89,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 			cache: map[string][]byte{
 				"run-123.plan.log": []byte("\x02hello world\x03"),
 			},
-			opts: otf.GetChunkOptions{
+			opts: GetChunkOptions{
 				RunID: "run-123",
 				Phase: otf.PlanPhase,
 			},
@@ -101,7 +101,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 				"run-123.plan.log": []byte("\x02hello world\x03"),
 			},
 			cache: map[string][]byte{},
-			opts: otf.GetChunkOptions{
+			opts: GetChunkOptions{
 				RunID: "run-123",
 				Phase: otf.PlanPhase,
 			},
@@ -115,7 +115,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 			cache: map[string][]byte{
 				"run-123.plan.log": []byte("\x02hello world\x03"),
 			},
-			opts: otf.GetChunkOptions{
+			opts: GetChunkOptions{
 				RunID:  "run-123",
 				Phase:  otf.PlanPhase,
 				Offset: 3,
@@ -129,7 +129,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 				"run-123.plan.log": []byte("\x02hello world\x03"),
 			},
 			cache: map[string][]byte{},
-			opts: otf.GetChunkOptions{
+			opts: GetChunkOptions{
 				RunID:  "run-123",
 				Phase:  otf.PlanPhase,
 				Offset: 3,

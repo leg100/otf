@@ -70,10 +70,6 @@ type DB interface {
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 	Close()
-	SessionStore
-	TokenStore
-	ModuleStore
-	ModuleVersionStore
 }
 
 // Database provides access to generated SQL queries as well as wrappers for

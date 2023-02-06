@@ -19,39 +19,6 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-type NewTestWorkspaceOption func(*Workspace)
-
-func AutoApply() NewTestWorkspaceOption {
-	return func(ws *Workspace) {
-		ws.autoApply = true
-	}
-}
-
-func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
-	return func(ws *Workspace) {
-		ws.repo = repo
-	}
-}
-
-func WorkingDirectory(relativePath string) NewTestWorkspaceOption {
-	return func(ws *Workspace) {
-		ws.workingDirectory = relativePath
-	}
-}
-
-func NewTestWorkspace(t *testing.T, org *Organization, opts ...NewTestWorkspaceOption) *Workspace {
-	createOpts := CreateWorkspaceOptions{
-		Name:         String(uuid.NewString()),
-		Organization: String(org.Name()),
-	}
-	ws, err := NewWorkspace(createOpts)
-	require.NoError(t, err)
-	for _, fn := range opts {
-		fn(ws)
-	}
-	return ws
-}
-
 func NewTestConfigurationVersion(t *testing.T, ws *Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
 	cv, err := NewConfigurationVersion(ws.ID(), opts)
 	require.NoError(t, err)

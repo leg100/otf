@@ -6,67 +6,77 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
-	err := db.tx(ctx, func(tx *DB) error {
+// pgdb is a state/state-version database on postgres
+type DB struct {
+	otf.Database // provides access to generated SQL queries
+}
+
+func newPGDB(db otf.Database) *DB {
+	return &DB{db}
+}
+
+func (db *DB) CreateWorkspace(ctx context.Context, ws *Workspace) error {
+	err := db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-			ID:                         String(ws.ID()),
-			CreatedAt:                  Timestamptz(ws.CreatedAt()),
-			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
-			Name:                       String(ws.Name()),
+			ID:                         sql.String(ws.ID()),
+			CreatedAt:                  sql.Timestamptz(ws.CreatedAt()),
+			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt()),
+			Name:                       sql.String(ws.Name()),
 			AllowDestroyPlan:           ws.AllowDestroyPlan(),
 			AutoApply:                  ws.AutoApply(),
 			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
-			Environment:                String(ws.Environment()),
-			Description:                String(ws.Description()),
-			ExecutionMode:              String(string(ws.ExecutionMode())),
+			Environment:                sql.String(ws.Environment()),
+			Description:                sql.String(ws.Description()),
+			ExecutionMode:              sql.String(string(ws.ExecutionMode())),
 			FileTriggersEnabled:        ws.FileTriggersEnabled(),
 			GlobalRemoteState:          ws.GlobalRemoteState(),
-			MigrationEnvironment:       String(ws.MigrationEnvironment()),
-			SourceName:                 String(ws.SourceName()),
-			SourceURL:                  String(ws.SourceURL()),
+			MigrationEnvironment:       sql.String(ws.MigrationEnvironment()),
+			SourceName:                 sql.String(ws.SourceName()),
+			SourceURL:                  sql.String(ws.SourceURL()),
 			SpeculativeEnabled:         ws.SpeculativeEnabled(),
 			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-			TerraformVersion:           String(ws.TerraformVersion()),
+			TerraformVersion:           sql.String(ws.TerraformVersion()),
 			TriggerPrefixes:            ws.TriggerPrefixes(),
 			QueueAllRuns:               ws.QueueAllRuns(),
-			WorkingDirectory:           String(ws.WorkingDirectory()),
-			OrganizationName:           String(ws.Organization()),
+			WorkingDirectory:           sql.String(ws.WorkingDirectory()),
+			OrganizationName:           sql.String(ws.Organization()),
 		})
 		if err != nil {
-			return Error(err)
+			return sql.Error(err)
 		}
 		if ws.Repo() != nil {
 			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-				Branch:        String(ws.Repo().Branch),
-				WebhookID:     UUID(ws.Repo().WebhookID),
-				VCSProviderID: String(ws.Repo().ProviderID),
-				WorkspaceID:   String(ws.ID()),
+				Branch:        sql.String(ws.Repo().Branch),
+				WebhookID:     sql.UUID(ws.Repo().WebhookID),
+				VCSProviderID: sql.String(ws.Repo().ProviderID),
+				WorkspaceID:   sql.String(ws.ID()),
 			})
 			if err != nil {
-				return Error(err)
+				return sql.Error(err)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return Error(err)
+		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
-	var ws *otf.Workspace
-	err := db.tx(ctx, func(tx *DB) error {
+func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
+	var ws *Workspace
+	err := db.Transaction(ctx, func(tx otf.Database) error {
 		var err error
 		// retrieve workspace
-		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
+		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
-			return Error(err)
+			return sql.Error(err)
 		}
-		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+		ws, err = UnmarshalWorkspaceResult(WorkspaceResult(result))
 		if err != nil {
 			return err
 		}
@@ -75,71 +85,71 @@ func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*
 			return err
 		}
 		// persist update
-		_, err = tx.Querier.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
-			ID:                         String(ws.ID()),
-			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
+		_, err = tx.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
+			ID:                         sql.String(ws.ID()),
+			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt()),
 			AllowDestroyPlan:           ws.AllowDestroyPlan(),
 			AutoApply:                  ws.AutoApply(),
-			Description:                String(ws.Description()),
-			ExecutionMode:              String(string(ws.ExecutionMode())),
-			Name:                       String(ws.Name()),
+			Description:                sql.String(ws.Description()),
+			ExecutionMode:              sql.String(string(ws.ExecutionMode())),
+			Name:                       sql.String(ws.Name()),
 			QueueAllRuns:               ws.QueueAllRuns(),
 			SpeculativeEnabled:         ws.SpeculativeEnabled(),
 			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-			TerraformVersion:           String(ws.TerraformVersion()),
+			TerraformVersion:           sql.String(ws.TerraformVersion()),
 			TriggerPrefixes:            ws.TriggerPrefixes(),
-			WorkingDirectory:           String(ws.WorkingDirectory()),
+			WorkingDirectory:           sql.String(ws.WorkingDirectory()),
 		})
 		return err
 	})
 	return ws, err
 }
 
-func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
+func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
 	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-		Branch:        String(repo.Branch),
-		WebhookID:     UUID(repo.WebhookID),
-		VCSProviderID: String(repo.ProviderID),
-		WorkspaceID:   String(workspaceID),
+		Branch:        sql.String(repo.Branch),
+		WebhookID:     sql.UUID(repo.WebhookID),
+		VCSProviderID: sql.String(repo.ProviderID),
+		WorkspaceID:   sql.String(workspaceID),
 	})
 	if err != nil {
-		return nil, Error(err)
+		return nil, sql.Error(err)
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, Error(err)
+	return ws, sql.Error(err)
 }
 
-func CreateWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string, repo otf.WorkspaceRepo) error {
+func CreateWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string, repo WorkspaceRepo) error {
 	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-		Branch:        String(repo.Branch),
-		WebhookID:     UUID(repo.WebhookID),
-		VCSProviderID: String(repo.ProviderID),
-		WorkspaceID:   String(workspaceID),
+		Branch:        sql.String(repo.Branch),
+		WebhookID:     sql.UUID(repo.WebhookID),
+		VCSProviderID: sql.String(repo.ProviderID),
+		WorkspaceID:   sql.String(workspaceID),
 	})
-	return Error(err)
+	return sql.Error(err)
 }
 
-func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
-	_, err := db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), String(workspaceID))
+func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
+	_, err := db.UpdateWorkspaceRepoByID(ctx, sql.String(repo.Branch), sql.String(workspaceID))
 	if err != nil {
-		return nil, Error(err)
+		return nil, sql.Error(err)
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, Error(err)
+	return ws, sql.Error(err)
 }
 
 func (db *DB) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	_, err := db.Querier.DeleteWorkspaceRepoByID(ctx, String(workspaceID))
+	_, err := db.Querier.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
 	if err != nil {
-		return nil, Error(err)
+		return nil, sql.Error(err)
 	}
 	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, Error(err)
+	return ws, sql.Error(err)
 }
 
 func DeleteWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string) error {
-	_, err := db.DeleteWorkspaceRepoByID(ctx, String(workspaceID))
-	return Error(err)
+	_, err := db.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
+	return sql.Error(err)
 }
 
 // LockWorkspace locks the specified workspace.
@@ -152,7 +162,7 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 	var ws *otf.Workspace
 	err = db.tx(ctx, func(tx *DB) error {
 		// retrieve workspace
-		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
+		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
 			return err
 		}
@@ -171,7 +181,7 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 		}
 		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
 		if err != nil {
-			return Error(err)
+			return sql.Error(err)
 		}
 		return nil
 	})
@@ -181,9 +191,9 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 
 // SetCurrentRun sets the ID of the current run for the specified workspace.
 func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
-	_, err := db.UpdateWorkspaceLatestRun(ctx, String(runID), String(workspaceID))
+	_, err := db.UpdateWorkspaceLatestRun(ctx, sql.String(runID), sql.String(workspaceID))
 	if err != nil {
-		return nil, Error(err)
+		return nil, sql.Error(err)
 	}
 	return db.GetWorkspace(ctx, workspaceID)
 }
@@ -200,7 +210,7 @@ func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.
 	var ws *otf.Workspace
 	err = db.tx(ctx, func(tx *DB) error {
 		// retrieve workspace
-		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
+		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
 			return err
 		}
@@ -219,7 +229,7 @@ func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.
 		}
 		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
 		if err != nil {
-			return Error(err)
+			return sql.Error(err)
 		}
 		return nil
 	})
@@ -241,11 +251,11 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 
 	db.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
 		OrganizationNames: []string{organizationName},
-		Prefix:            String(opts.Prefix),
+		Prefix:            sql.String(opts.Prefix),
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
-	db.CountWorkspacesBatch(batch, String(opts.Prefix), []string{organizationName})
+	db.CountWorkspacesBatch(batch, sql.String(opts.Prefix), []string{organizationName})
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -258,30 +268,30 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 		return nil, err
 	}
 
-	var items []*otf.Workspace
+	var items []*Workspace
 	for _, r := range rows {
-		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
+		ws, err := UnmarshalWorkspaceResult(WorkspaceResult(r))
 		if err != nil {
 			return nil, err
 		}
 		items = append(items, ws)
 	}
 
-	return &otf.WorkspaceList{
+	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
+		Pagination: NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
-	rows, err := db.FindWorkspacesByWebhookID(ctx, UUID(id))
+func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+	rows, err := db.FindWorkspacesByWebhookID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*otf.Workspace
+	var items []*Workspace
 	for _, r := range rows {
-		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
+		ws, err := UnmarshalWorkspaceResult(WorkspaceResult(r))
 		if err != nil {
 			return nil, err
 		}
@@ -295,12 +305,12 @@ func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organiz
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
-		OrganizationName: String(organization),
-		UserID:           String(userID),
+		OrganizationName: sql.String(organization),
+		UserID:           sql.String(userID),
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
-	db.CountWorkspacesByUserIDBatch(batch, String(organization), String(userID))
+	db.CountWorkspacesByUserIDBatch(batch, sql.String(organization), sql.String(userID))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -313,73 +323,73 @@ func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organiz
 		return nil, err
 	}
 
-	var items []*otf.Workspace
+	var items []*Workspace
 	for _, r := range rows {
-		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
+		ws, err := UnmarshalWorkspaceResult(WorkspaceResult(r))
 		if err != nil {
 			return nil, err
 		}
 		items = append(items, ws)
 	}
 
-	return &otf.WorkspaceList{
+	return &WorkspaceList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts, *count),
 	}, nil
 }
 
 func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
-	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, String(runID))
+	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, sql.String(runID))
 	if err != nil {
-		return "", Error(err)
+		return "", sql.Error(err)
 	}
 	return workspaceID.String, nil
 }
 
 func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error) {
-	workspaceID, err := db.FindWorkspaceIDByStateVersionID(ctx, String(svID))
+	workspaceID, err := db.FindWorkspaceIDByStateVersionID(ctx, sql.String(svID))
 	if err != nil {
-		return "", Error(err)
+		return "", sql.Error(err)
 	}
 	return workspaceID.String, nil
 }
 
 func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error) {
-	workspaceID, err := db.FindWorkspaceIDByCVID(ctx, String(cvID))
+	workspaceID, err := db.FindWorkspaceIDByCVID(ctx, sql.String(cvID))
 	if err != nil {
-		return "", Error(err)
+		return "", sql.Error(err)
 	}
 	return workspaceID.String, nil
 }
 
-func (db *DB) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	result, err := db.FindWorkspaceByID(ctx, String(workspaceID))
+func (db *DB) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+	result, err := db.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
-		return nil, Error(err)
+		return nil, sql.Error(err)
 	}
-	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+	return UnmarshalWorkspaceResult(WorkspaceResult(result))
 }
 
-func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
-	result, err := db.FindWorkspaceByName(ctx, String(workspace), String(organization))
+func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+	result, err := db.FindWorkspaceByName(ctx, sql.String(workspace), sql.String(organization))
 	if err != nil {
-		return nil, Error(err)
+		return nil, sql.Error(err)
 	}
-	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+	return UnmarshalWorkspaceResult(WorkspaceResult(result))
 }
 
 func (db *DB) DeleteWorkspace(ctx context.Context, workspaceID string) error {
-	_, err := db.Querier.DeleteWorkspaceByID(ctx, String(workspaceID))
+	_, err := db.Querier.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
-		return Error(err)
+		return sql.Error(err)
 	}
 	return nil
 }
 
 func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
-	name, err := db.FindOrganizationNameByWorkspaceID(ctx, String(workspaceID))
+	name, err := db.FindOrganizationNameByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
-		return "", Error(err)
+		return "", sql.Error(err)
 	}
-	return name.String, nil
+	return name.sql.String, nil
 }

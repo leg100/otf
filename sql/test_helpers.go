@@ -104,18 +104,6 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 	return team
 }
 
-func CreateTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestWorkspaceOption) *otf.Workspace {
-	ctx := context.Background()
-	ws := otf.NewTestWorkspace(t, org, opts...)
-	err := db.CreateWorkspace(ctx, ws)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteWorkspace(ctx, ws.ID())
-	})
-	return ws
-}
-
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
 	ctx := context.Background()
 	cv := otf.NewTestConfigurationVersion(t, ws, opts)

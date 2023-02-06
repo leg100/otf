@@ -1,4 +1,4 @@
-package inmem
+package logs
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 // backend.
 type ChunkProxy struct {
 	cache   otf.Cache
-	backend otf.ChunkStore
+	backend ChunkStore
 
 	otf.Application
 	logr.Logger
 }
 
-func NewChunkProxy(app otf.Application, logger logr.Logger, cache otf.Cache, backend otf.ChunkStore) (*ChunkProxy, error) {
+func NewChunkProxy(app otf.Application, logger logr.Logger, cache otf.Cache, backend ChunkStore) (*ChunkProxy, error) {
 	return &ChunkProxy{
 		Application: app,
 		Logger:      logger.WithValues("component", "chunk_proxy"),
@@ -54,46 +54,46 @@ func (c *ChunkProxy) Start(ctx context.Context) error {
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (c *ChunkProxy) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (c *ChunkProxy) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	// Try the cache first
 	if data, err := c.cache.Get(otf.LogCacheKey(opts.RunID, opts.Phase)); err == nil {
-		return otf.Chunk{Data: data}.Cut(opts), nil
+		return Chunk{Data: data}.Cut(opts), nil
 	}
 
 	// Fall back to getting chunk from backend
 	chunk, err := c.backend.GetChunk(ctx, opts)
 	if err != nil {
-		return otf.Chunk{}, err
+		return Chunk{}, err
 	}
 	// Cache it
 	if err := c.cache.Set(chunk.Key(), chunk.Data); err != nil {
-		return otf.Chunk{}, err
+		return Chunk{}, err
 	}
 	// Cut chunk down to requested size.
 	return chunk.Cut(opts), nil
 }
 
-func (c *ChunkProxy) GetChunkByID(ctx context.Context, chunkID int) (otf.PersistedChunk, error) {
+func (c *ChunkProxy) GetChunkByID(ctx context.Context, chunkID int) (PersistedChunk, error) {
 	return c.backend.GetChunkByID(ctx, chunkID)
 }
 
 // PutChunk writes a chunk of data to the backend store before caching it.
-func (c *ChunkProxy) PutChunk(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
+func (c *ChunkProxy) PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
 	// Write to backend
 	persisted, err := c.backend.PutChunk(ctx, chunk)
 	if err != nil {
-		return otf.PersistedChunk{}, err
+		return PersistedChunk{}, err
 	}
 
 	// Then cache it
 	if err := c.cacheChunk(ctx, persisted.Chunk); err != nil {
-		return otf.PersistedChunk{}, err
+		return PersistedChunk{}, err
 	}
 
 	return persisted, nil
 }
 
-func (c *ChunkProxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
+func (c *ChunkProxy) cacheChunk(ctx context.Context, chunk Chunk) error {
 	// First chunk can safely be written straight to cache
 	if chunk.IsStart() {
 		return c.cache.Set(chunk.Key(), chunk.Data)
@@ -105,7 +105,7 @@ func (c *ChunkProxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
 	}
 
 	// Uncached; cache needs re-populating from store
-	all, err := c.backend.GetChunk(ctx, otf.GetChunkOptions{
+	all, err := c.backend.GetChunk(ctx, GetChunkOptions{
 		RunID: chunk.RunID,
 		Phase: chunk.Phase,
 	})

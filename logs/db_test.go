@@ -1,18 +1,20 @@
-package sql
+package logs
 
 import (
 	"context"
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLog_PutChunk(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
+	ws := workspace.CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 	ctx := context.Background()

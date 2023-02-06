@@ -1,18 +1,21 @@
-package otf
+package logs
 
 import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
 )
 
 // JobWriter writes logs on behalf of a run phase.
 //
 // TODO: rename to LogWriter or PhaseWriter
 type JobWriter struct {
-	ID     string    // ID of run to write logs on behalf of.
-	Phase  PhaseType // run phase
-	Client           // for uploading logs to server
+	ID    string        // ID of run to write logs on behalf of.
+	Phase otf.PhaseType // run phase
+
+	ChunkService // for uploading logs to server
 	logr.Logger
 
 	// started is used internally by the writer to determine whether the first
@@ -22,13 +25,13 @@ type JobWriter struct {
 	ctx     context.Context // permits canceling mid-flow
 }
 
-func NewJobWriter(ctx context.Context, app Client, logger logr.Logger, run *Run) *JobWriter {
+func NewJobWriter(ctx context.Context, app ChunkService, logger logr.Logger, run *run.Run) *JobWriter {
 	return &JobWriter{
-		ID:     run.ID(),
-		Phase:  run.Phase(),
-		Client: app,
-		Logger: logger,
-		ctx:    ctx,
+		ID:           run.ID(),
+		Phase:        run.Phase(),
+		ChunkService: app,
+		Logger:       logger,
+		ctx:          ctx,
 	}
 }
 

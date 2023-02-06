@@ -26,6 +26,12 @@ type Workspace interface {
 	Name() string
 }
 
+// WorkspaceList represents a list of Workspaces.
+type WorkspaceList struct {
+	*Pagination
+	Items []Workspace
+}
+
 // WorkspaceConnector connects a workspace to a VCS repo, subscribing it to
 // VCS events that trigger runs.
 type WorkspaceConnector interface {
@@ -59,4 +65,34 @@ type CreateWorkspaceOptions struct {
 	WorkingDirectory           *string
 	Organization               *string `schema:"organization_name,required"`
 	Repo                       *WorkspaceRepo
+}
+
+type UpdateWorkspaceOptions struct {
+	AllowDestroyPlan           *bool
+	AutoApply                  *bool
+	Name                       *string
+	Description                *string
+	ExecutionMode              *ExecutionMode `schema:"execution_mode"`
+	FileTriggersEnabled        *bool
+	GlobalRemoteState          *bool
+	Operations                 *bool
+	QueueAllRuns               *bool
+	SpeculativeEnabled         *bool
+	StructuredRunOutputEnabled *bool
+	TerraformVersion           *string `schema:"terraform_version"`
+	TriggerPrefixes            []string
+	WorkingDirectory           *string
+}
+
+// WorkspaceListOptions are options for paginating and filtering a list of
+// Workspaces
+type WorkspaceListOptions struct {
+	// Pagination
+	ListOptions
+	// Filter workspaces with name matching prefix.
+	Prefix string `schema:"search[name],omitempty"`
+	// Organization filters workspaces by organization name.
+	Organization *string `schema:"organization_name,omitempty"`
+	// Filter by those for which user has workspace-level permissions.
+	UserID *string
 }

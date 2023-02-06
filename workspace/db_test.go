@@ -5,29 +5,32 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspace_Create(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
+	ctx := context.Background()
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	ws := otf.NewTestWorkspace(t, org)
 
-	err := db.CreateWorkspace(context.Background(), ws)
+	err := db.CreateWorkspace(ctx, ws)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		err := db.CreateWorkspace(context.Background(), ws)
+		err := db.CreateWorkspace(ctx, ws)
 		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
 
 func TestWorkspace_Update(t *testing.T) {
-	db := NewTestDB(t)
 	ctx := context.Background()
-	org := CreateTestOrganization(t, db)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	ws := CreateTestWorkspace(t, db, org)
 
 	got, err := db.UpdateWorkspace(ctx, ws.ID(), func(ws *otf.Workspace) error {
@@ -46,8 +49,8 @@ func TestWorkspace_Update(t *testing.T) {
 }
 
 func TestWorkspace_GetByID(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	want := CreateTestWorkspace(t, db, org)
 
 	got, err := db.GetWorkspace(context.Background(), want.ID())
