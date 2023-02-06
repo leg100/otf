@@ -30,7 +30,7 @@ type WorkspacePolicy struct {
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	Team *team.Team
+	Team Team
 	Role rbac.Role
 }
 
@@ -49,12 +49,12 @@ func SubjectFromContext(ctx context.Context) (Subject, error) {
 }
 
 // UserFromContext retrieves a user from a context
-func UserFromContext(ctx context.Context) (*User, error) {
+func UserFromContext(ctx context.Context) (User, error) {
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	user, ok := subj.(*User)
+	user, ok := subj.(User)
 	if !ok {
 		return nil, fmt.Errorf("subject found in context but it is not a user")
 	}
@@ -62,12 +62,12 @@ func UserFromContext(ctx context.Context) (*User, error) {
 }
 
 // AgentFromContext retrieves an agent(-token) from a context
-func AgentFromContext(ctx context.Context) (*AgentToken, error) {
+func AgentFromContext(ctx context.Context) (AgentToken, error) {
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	agent, ok := subj.(*AgentToken)
+	agent, ok := subj.(AgentToken)
 	if !ok {
 		return nil, fmt.Errorf("subject found in context but it is not an agent")
 	}

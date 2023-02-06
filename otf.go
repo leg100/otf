@@ -44,17 +44,10 @@ type Application interface {
 	Tx(ctx context.Context, tx func(Application) error) error
 	DB() DB
 	OrganizationService
-	WorkspaceService
 	StateVersionService
-	ConfigurationVersionService
-	RunService
 	EventService
-	UserService
 	SessionService
 	TokenService
-	TeamService
-	AgentTokenService
-	CurrentRunService
 	VCSProviderService
 	LockableApplication
 	cloud.Service
@@ -77,15 +70,8 @@ type DB interface {
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 	Close()
-	UserStore
-	TeamStore
-	WorkspaceStore
-	RunStore
 	SessionStore
 	TokenStore
-	ConfigurationVersionStore
-	ChunkStore
-	AgentTokenStore
 	ModuleStore
 	ModuleVersionStore
 }

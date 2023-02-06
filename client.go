@@ -7,11 +7,10 @@ import (
 // Client is those services supported by the client application, used in the
 // CLI and the agent.
 type Client interface {
-	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
+	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
 
-	CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
-	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 

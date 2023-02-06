@@ -1,18 +1,20 @@
 package workspace
 
+import "github.com/leg100/otf"
+
 func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 	// required options
 	if opts.Name == nil {
-		return nil, ErrRequiredName
+		return nil, otf.ErrRequiredName
 	}
 	if opts.Organization == nil {
-		return nil, ErrRequiredOrg
+		return nil, otf.ErrRequiredOrg
 	}
 
 	ws := Workspace{
-		id:                  NewID("ws"),
-		createdAt:           CurrentTimestamp(),
-		updatedAt:           CurrentTimestamp(),
+		id:                  otf.NewID("ws"),
+		createdAt:           otf.CurrentTimestamp(),
+		updatedAt:           otf.CurrentTimestamp(),
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
 		executionMode:       RemoteExecutionMode,
 		fileTriggersEnabled: DefaultFileTriggersEnabled,

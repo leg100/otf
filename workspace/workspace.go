@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
 )
@@ -16,18 +17,7 @@ const (
 
 	MinTerraformVersion     = "1.2.0"
 	DefaultTerraformVersion = "1.3.7"
-
-	RemoteExecutionMode ExecutionMode = "remote"
-	LocalExecutionMode  ExecutionMode = "local"
-	AgentExecutionMode  ExecutionMode = "agent"
 )
-
-type ExecutionMode string
-
-// ExecutionModePtr returns a pointer to an execution mode.
-func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
-	return &m
-}
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
@@ -39,7 +29,7 @@ type Workspace struct {
 	canQueueDestroyPlan        bool
 	description                string
 	environment                string
-	executionMode              ExecutionMode
+	executionMode              otf.ExecutionMode
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
 	lock                       WorkspaceLockState
@@ -68,7 +58,7 @@ func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
 func (ws *Workspace) Environment() string              { return ws.environment }
 func (ws *Workspace) Description() string              { return ws.description }
-func (ws *Workspace) ExecutionMode() ExecutionMode     { return ws.executionMode }
+func (ws *Workspace) ExecutionMode() otf.ExecutionMode { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
 func (ws *Workspace) GetLock() WorkspaceLockState      { return ws.lock }
@@ -85,7 +75,9 @@ func (ws *Workspace) Organization() string             { return ws.organization 
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
 
-func (ws *Workspace) SetLatestRun(runID string) { ws.latestRunID = String(runID) }
+func (ws *Workspace) SetLatestRun(runID string) {
+	ws.latestRunID = otf.String(runID)
+}
 
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {

@@ -10,37 +10,20 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-func (c *Client) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
-	// Pre-emptively validate options
-	if _, err := otf.NewWorkspace(opts); err != nil {
-		return nil, err
-	}
-
-	u := fmt.Sprintf("organizations/%s/workspaces", *opts.Organization)
-	req, err := c.NewRequest("POST", u, &opts)
-	if err != nil {
-		return nil, err
-	}
-
-	w := &jsonapi.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
-		return nil, err
-	}
-
-	return otf.UnmarshalWorkspaceJSONAPI(w), nil
+type Client struct {
+	otf.JSONAPIClient
 }
 
 // GetWorkspaceByName retrieves a workspace by organization and
 // name.
-func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
+func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &jsonapiWorkspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -50,18 +33,18 @@ func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace
 	w.ApplyDurationAverage *= time.Millisecond
 	w.PlanDurationAverage *= time.Millisecond
 
-	return otf.UnmarshalWorkspaceJSONAPI(w), nil
+	return UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 // GetWorkspace retrieves a workspace by its ID
-func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &jsonapiWorkspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -71,7 +54,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Wor
 	w.ApplyDurationAverage *= time.Millisecond
 	w.PlanDurationAverage *= time.Millisecond
 
-	return otf.UnmarshalWorkspaceJSONAPI(w), nil
+	return UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 func (c *Client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
