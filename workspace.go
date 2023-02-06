@@ -329,6 +329,7 @@ type WorkspaceStore interface {
 	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
+	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
 
 	// CreateWorkspaceRepo creates a workspace repo in the persistence store.
 	CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)

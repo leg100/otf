@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -14,14 +13,13 @@ import (
 type db interface {
 	otf.Database
 
-	CreateOrganization(ctx context.Context, org *Organization) error
-	GetOrganization(ctx context.Context, name string) (*Organization, error)
-	GetOrganizationByID(ctx context.Context, id string) (*Organization, error)
-	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
-	ListOrganizationsByUser(ctx context.Context, userID string) ([]*Organization, error)
-	UpdateOrganization(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
-	DeleteOrganization(ctx context.Context, name string) error
-	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
+	create(ctx context.Context, org *Organization) error
+	get(ctx context.Context, name string) (*Organization, error)
+	getByID(ctx context.Context, id string) (*Organization, error)
+	list(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
+	listByUser(ctx context.Context, userID string) ([]*Organization, error)
+	update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
+	delete(ctx context.Context, name string) error
 }
 
 // pgdb is a database of organizations on postgres
@@ -30,15 +28,15 @@ type pgdb struct {
 }
 
 func NewDB(db otf.Database) *pgdb {
-	return newPGDB(db)
+	return newDB(db)
 }
 
-func newPGDB(db otf.Database) *pgdb {
+func newDB(db otf.Database) *pgdb {
 	return &pgdb{db}
 }
 
 // CreateOrganization persists an Organization to the DB.
-func (db *pgdb) CreateOrganization(ctx context.Context, org *Organization) error {
+func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              sql.String(org.ID()),
 		CreatedAt:       sql.Timestamptz(org.CreatedAt()),
@@ -56,14 +54,14 @@ func (db *pgdb) CreateOrganization(ctx context.Context, org *Organization) error
 // UpdateOrganization persists an updated Organization to the DB. The existing
 // org is fetched from the DB, the supplied func is invoked on the org, and the
 // updated org is persisted back to the DB.
-func (db *pgdb) UpdateOrganization(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
+func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		result, err := tx.FindOrganizationByNameForUpdate(ctx, sql.String(name))
 		if err != nil {
 			return err
 		}
-		org = UnmarshalOrganizationRow(pggen.Organizations(result))
+		org = unmarshalRow(pggen.Organizations(result))
 		if err := fn(org); err != nil {
 			return err
 		}
@@ -82,7 +80,7 @@ func (db *pgdb) UpdateOrganization(ctx context.Context, name string, fn func(*Or
 	return org, err
 }
 
-func (db *pgdb) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*organizationList, error) {
+func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*organizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
@@ -101,7 +99,7 @@ func (db *pgdb) ListOrganizations(ctx context.Context, opts OrganizationListOpti
 
 	var items []*Organization
 	for _, r := range rows {
-		items = append(items, UnmarshalOrganizationRow(pggen.Organizations(r)))
+		items = append(items, unmarshalRow(pggen.Organizations(r)))
 	}
 
 	return &organizationList{
@@ -110,7 +108,7 @@ func (db *pgdb) ListOrganizations(ctx context.Context, opts OrganizationListOpti
 	}, nil
 }
 
-func (db *pgdb) ListOrganizationsByUser(ctx context.Context, userID string) ([]*Organization, error) {
+func (db *pgdb) listByUser(ctx context.Context, userID string) ([]*Organization, error) {
 	result, err := db.FindOrganizationsByUserID(ctx, sql.String(userID))
 	if err != nil {
 		return nil, err
@@ -118,36 +116,28 @@ func (db *pgdb) ListOrganizationsByUser(ctx context.Context, userID string) ([]*
 
 	var items []*Organization
 	for _, r := range result {
-		items = append(items, UnmarshalOrganizationRow(pggen.Organizations(r)))
+		items = append(items, unmarshalRow(pggen.Organizations(r)))
 	}
 	return items, nil
 }
 
-func (db *pgdb) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
-	name, err := db.FindOrganizationNameByWorkspaceID(ctx, sql.String(workspaceID))
-	if err != nil {
-		return "", sql.Error(err)
-	}
-	return name.String, nil
-}
-
-func (db *pgdb) GetOrganization(ctx context.Context, name string) (*Organization, error) {
+func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return UnmarshalOrganizationRow(pggen.Organizations(r)), nil
+	return unmarshalRow(pggen.Organizations(r)), nil
 }
 
-func (db *pgdb) GetOrganizationByID(ctx context.Context, id string) (*Organization, error) {
+func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
 	r, err := db.FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return UnmarshalOrganizationRow(pggen.Organizations(r)), nil
+	return unmarshalRow(pggen.Organizations(r)), nil
 }
 
-func (db *pgdb) DeleteOrganization(ctx context.Context, name string) error {
+func (db *pgdb) delete(ctx context.Context, name string) error {
 	_, err := db.DeleteOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return sql.Error(err)
@@ -155,9 +145,9 @@ func (db *pgdb) DeleteOrganization(ctx context.Context, name string) error {
 	return nil
 }
 
-// UnmarshalOrganizationRow converts an organization database row into an
+// unmarshalRow converts an organization database row into an
 // organization.
-func UnmarshalOrganizationRow(row pggen.Organizations) *Organization {
+func unmarshalRow(row pggen.Organizations) *Organization {
 	return &Organization{
 		id:              row.OrganizationID.String,
 		createdAt:       row.CreatedAt.Time.UTC(),
@@ -165,15 +155,5 @@ func UnmarshalOrganizationRow(row pggen.Organizations) *Organization {
 		name:            row.Name.String,
 		sessionRemember: row.SessionRemember,
 		sessionTimeout:  row.SessionTimeout,
-	}
-}
-
-func UnmarshalOrganizationJSONAPI(model *jsonapi.Organization) *Organization {
-	return &Organization{
-		id:              model.ExternalID,
-		createdAt:       model.CreatedAt,
-		name:            model.Name,
-		sessionRemember: model.SessionRemember,
-		sessionTimeout:  model.SessionTimeout,
 	}
 }

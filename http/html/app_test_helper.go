@@ -81,13 +81,6 @@ func (u *fakeApp) GetOrganization(ctx context.Context, name string) (*otf.Organi
 	return u.fakeOrganization, nil
 }
 
-func (u *fakeApp) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	return &otf.OrganizationList{
-		Items:      []*otf.Organization{u.fakeOrganization},
-		Pagination: otf.NewPagination(opts.ListOptions, 1),
-	}, nil
-}
-
 func (u *fakeApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }

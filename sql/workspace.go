@@ -375,3 +375,11 @@ func (db *DB) DeleteWorkspace(ctx context.Context, workspaceID string) error {
 	}
 	return nil
 }
+
+func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
+	name, err := db.FindOrganizationNameByWorkspaceID(ctx, String(workspaceID))
+	if err != nil {
+		return "", Error(err)
+	}
+	return name.String, nil
+}

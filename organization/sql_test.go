@@ -14,10 +14,11 @@ import (
 func TestOrganization_Create(t *testing.T) {
 	ctx := context.Background()
 	db := sql.NewTestDB(t)
-	org := otf.NewTestOrganization(t)
+	orgDB := newDB(db)
+	org := NewTestOrganization(t)
 
 	t.Cleanup(func() {
-		db.DeleteOrganization(ctx, org.Name())
+		orgDB.delete(ctx, org.Name())
 	})
 
 	err := db.CreateOrganization(ctx, org)
