@@ -80,7 +80,6 @@ type DB interface {
 	Close()
 	UserStore
 	TeamStore
-	OrganizationStore
 	WorkspaceStore
 	RunStore
 	SessionStore

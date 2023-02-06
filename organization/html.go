@@ -17,6 +17,16 @@ type webApp struct {
 	app appService // provide access to org service
 }
 
+func (a *webApp) AddHTMLHandlers(r *mux.Router) {
+	r.HandleFunc("/organizations", a.listOrganizations)
+	r.HandleFunc("/organizations/new", a.newOrganization)
+	r.HandleFunc("/organizations/create", a.createOrganization)
+	r.HandleFunc("/organizations/{organization_name}", a.getOrganization)
+	r.HandleFunc("/organizations/{organization_name}/edit", a.editOrganization)
+	r.HandleFunc("/organizations/{organization_name}/update", a.updateOrganization)
+	r.HandleFunc("/organizations/{organization_name}/delete", a.deleteOrganization)
+}
+
 func (a *webApp) newOrganization(w http.ResponseWriter, r *http.Request) {
 	a.Render("organization_new.tmpl", w, r, nil)
 }

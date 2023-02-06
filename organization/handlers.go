@@ -25,13 +25,13 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{name}/entitlement-set", h.GetEntitlements)
 }
 
-func (s *handlers) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := jsonapi.OrganizationCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := s.app.createOrganization(r.Context(), OrganizationCreateOptions{
+	org, err := h.app.createOrganization(r.Context(), OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,

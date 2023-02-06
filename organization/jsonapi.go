@@ -3,7 +3,6 @@ package organization
 import (
 	"time"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
@@ -27,6 +26,16 @@ type jsonapiOrganization struct {
 	TwoFactorConformant   bool                `jsonapi:"attr,two-factor-conformant"`
 }
 
+func (j jsonapiOrganization) toOrganization() *Organization {
+	return &Organization{
+		id:              j.ExternalID,
+		createdAt:       j.CreatedAt,
+		name:            j.Name,
+		sessionRemember: j.SessionRemember,
+		sessionTimeout:  j.SessionTimeout,
+	}
+}
+
 // jsonapiPermissions represents the organization permissions.
 type jsonapiPermissions struct {
 	CanCreateTeam               bool `json:"can-create-team"`
@@ -45,11 +54,19 @@ type jsonapiList struct {
 	Items []*jsonapiOrganization
 }
 
-type Entitlements struct {
-	*otf.Entitlements
-}
-
-// ToJSONAPI assembles a JSONAPI DTO
-func (e *Entitlements) ToJSONAPI() any {
-	return (*jsonapi.Entitlements)(e.Entitlements)
+// Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
+// OTF is free and therefore the user is entitled to all currently supported
+// services.  Entitlements represents the entitlements of an organization.
+type jsonapiEntitlements struct {
+	ID                    string `jsonapi:"primary,entitlement-sets"`
+	Agents                bool   `jsonapi:"attr,agents"`
+	AuditLogging          bool   `jsonapi:"attr,audit-logging"`
+	CostEstimation        bool   `jsonapi:"attr,cost-estimation"`
+	Operations            bool   `jsonapi:"attr,operations"`
+	PrivateModuleRegistry bool   `jsonapi:"attr,private-module-registry"`
+	SSO                   bool   `jsonapi:"attr,sso"`
+	Sentinel              bool   `jsonapi:"attr,sentinel"`
+	StateStorage          bool   `jsonapi:"attr,state-storage"`
+	Teams                 bool   `jsonapi:"attr,teams"`
+	VCSIntegrations       bool   `jsonapi:"attr,vcs-integrations"`
 }

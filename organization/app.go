@@ -17,7 +17,6 @@ type appService interface {
 	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
 	UpdateOrganization(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
-	GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error)
 
 	createOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 }

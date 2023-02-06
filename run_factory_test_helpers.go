@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +22,7 @@ type TestRunCreateOptions struct {
 
 // NewTestRun creates a new run. Expressly for testing purposes.
 func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
-	org, err := NewOrganization(OrganizationCreateOptions{Name: String("test-org")})
+	org, err := organization.NewTestOrganization(t)
 	require.NoError(t, err)
 
 	ws := opts.Workspace
