@@ -59,8 +59,6 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 	// purge expired user sessions
 	go db.startSessionExpirer(ctx, opts.CleanupInterval)
-	// purge expired registry sessions
-	go db.startRegistrySessionExpirer(ctx, opts.CleanupInterval)
 
 	return db, nil
 }

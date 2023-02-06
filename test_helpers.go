@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
@@ -82,6 +81,7 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	return session
 }
 
+<<<<<<< HEAD
 func NewTestRegistrySession(t *testing.T, org *Organization, opts ...NewTestRegistrySessionOption) *RegistrySession {
 	session, err := NewRegistrySession(org.Name())
 	require.NoError(t, err)
@@ -102,6 +102,23 @@ func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestRegistrySessionO
 }
 
 func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
+=======
+func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
+	return &VCSProvider{
+		id:           NewID("vcs"),
+		createdAt:    CurrentTimestamp(),
+		name:         uuid.NewString(),
+		token:        uuid.NewString(),
+		organization: organization.Name(),
+		cloudConfig: cloud.Config{
+			Name:     "fake-cloud",
+			Hostname: "fake-cloud.org",
+		},
+	}
+}
+
+func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
+>>>>>>> origin/refactor-user
 	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",

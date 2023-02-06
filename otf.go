@@ -51,7 +51,6 @@ type Application interface {
 	EventService
 	UserService
 	SessionService
-	RegistrySessionService
 	TokenService
 	TeamService
 	AgentTokenService
@@ -83,7 +82,6 @@ type DB interface {
 	WorkspaceStore
 	RunStore
 	SessionStore
-	RegistrySessionStore
 	TokenStore
 	ConfigurationVersionStore
 	ChunkStore

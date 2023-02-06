@@ -1,7 +1,7 @@
-package jsonapi
+package user
 
 // User represents a Terraform Enterprise user.
-type User struct {
+type jsonapiUser struct {
 	ID               string     `jsonapi:"primary,users"`
 	AvatarURL        string     `jsonapi:"attr,avatar-url"`
 	Email            string     `jsonapi:"attr,email"`

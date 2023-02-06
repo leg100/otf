@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/registry"
 	"github.com/leg100/otf/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ func TestEnvironment_WorkingDir(t *testing.T) {
 	env, err := NewEnvironment(
 		context.Background(),
 		logr.Discard(),
-		&fakeEnvironmentApp{ws: ws},
+		&fakeEnvironmentApp{t: t, org: org, ws: ws},
 		run,
 		nil,
 		nil,
@@ -167,7 +168,9 @@ func TestBuildSandboxArgs(t *testing.T) {
 }
 
 type fakeEnvironmentApp struct {
-	ws *otf.Workspace
+	t   *testing.T
+	org *otf.Organization
+	ws  *otf.Workspace
 	otf.Application
 }
 
@@ -175,8 +178,8 @@ func (f *fakeEnvironmentApp) GetWorkspace(context.Context, string) (*otf.Workspa
 	return f.ws, nil
 }
 
-func (f *fakeEnvironmentApp) CreateRegistrySession(context.Context, string) (*otf.RegistrySession, error) {
-	return otf.NewRegistrySession("fake-org")
+func (f *fakeEnvironmentApp) CreateRegistrySession(context.Context, string) (otf.RegistrySession, error) {
+	return registry.NewTestSession(f.t, f.org), nil
 }
 
 func (f *fakeEnvironmentApp) ListVariables(context.Context, string) ([]otf.Variable, error) {

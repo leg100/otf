@@ -1,4 +1,4 @@
-package http
+package user
 
 import (
 	"net/http"
@@ -14,16 +14,4 @@ func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonapi.WriteResponse(w, r, &User{user})
-}
-
-type User struct {
-	*otf.User
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (u *User) ToJSONAPI() any {
-	return &jsonapi.User{
-		ID:       u.ID(),
-		Username: u.Username(),
-	}
 }
