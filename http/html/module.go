@@ -125,7 +125,7 @@ func (app *Application) newModuleConnect(w http.ResponseWriter, r *http.Request)
 	}
 
 	app.Render("module_new.tmpl", w, r, struct {
-		Items        []*otf.VCSProvider
+		Items        []otf.VCSProvider
 		Organization string
 		Step         newModuleStep
 	}{
@@ -185,7 +185,7 @@ func (app *Application) newModuleConfirm(w http.ResponseWriter, r *http.Request)
 	app.Render("module_new.tmpl", w, r, struct {
 		parameters
 		Step newModuleStep
-		*otf.VCSProvider
+		otf.VCSProvider
 	}{
 		parameters:  params,
 		Step:        newModuleConfirmStep,

@@ -9,15 +9,15 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/inmem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestHTML_New(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	app := fakeHTMLApp(t, newTestVCSProvider(t, org))
+	app := fakeHTMLApp(t, NewTestVCSProvider(t, org))
 
 	for _, cloud := range []string{"github", "gitlab"} {
 		t.Run(cloud, func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestHTML_New(t *testing.T) {
 
 func TestCreateVCSProviderHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	app := fakeHTMLApp(t, newTestVCSProvider(t, org))
+	app := fakeHTMLApp(t, NewTestVCSProvider(t, org))
 
 	form := strings.NewReader(url.Values{
 		"organization_name": {"acme-corp"},
@@ -59,9 +59,9 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 
 func TestListVCSProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	app := fakeHTMLApp(t, newTestVCSProvider(t, org))
+	app := fakeHTMLApp(t, NewTestVCSProvider(t, org))
 
-	r := httptest.NewRequest("GET", "/organization/acme-corp/vcs-providers", nil)
+	r := httptest.NewRequest("GET", "/?organization_name=acme-corp", nil)
 	w := httptest.NewRecorder()
 	app.list(w, r)
 
@@ -70,7 +70,7 @@ func TestListVCSProvidersHandler(t *testing.T) {
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	app := fakeHTMLApp(t, newTestVCSProvider(t, org))
+	app := fakeHTMLApp(t, NewTestVCSProvider(t, org))
 
 	form := strings.NewReader(url.Values{
 		"vcs_provider_id": {"fake-id"},
@@ -91,6 +91,7 @@ func fakeHTMLApp(t *testing.T, provider *VCSProvider) *htmlApp {
 	return &htmlApp{
 		Renderer: renderer,
 		app:      &fakeApp{provider: provider},
+		Service:  inmem.NewTestCloudService(),
 	}
 }
 
@@ -110,8 +111,4 @@ func (f *fakeApp) list(context.Context, string) ([]*VCSProvider, error) {
 
 func (f *fakeApp) delete(context.Context, string) (*VCSProvider, error) {
 	return f.provider, nil
-}
-
-func (f *fakeApp) ListCloudConfigs() []cloud.Config {
-	return nil
 }

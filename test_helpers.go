@@ -101,21 +101,7 @@ func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestRegistrySessionO
 	}
 }
 
-func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
-	return &VCSProvider{
-		id:           NewID("vcs"),
-		createdAt:    CurrentTimestamp(),
-		name:         uuid.NewString(),
-		token:        uuid.NewString(),
-		organization: organization.Name(),
-		cloudConfig: cloud.Config{
-			Name:     "fake-cloud",
-			Hostname: "fake-cloud.org",
-		},
-	}
-}
-
-func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
+func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
 	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",

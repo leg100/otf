@@ -14,12 +14,13 @@ const DefaultPathPrefix = "/"
 
 // Application is the otf web app.
 type Application struct {
-	staticServer    http.FileSystem  // Static asset server
-	pathPrefix      string           // path prefix for all URLs
-	authenticators  []*Authenticator // enabled authenticators
-	siteToken       string           // site admin's authentication token
-	secret          string           // secret for webhook signatures
-	variableService otf.VariableService
+	staticServer       http.FileSystem  // Static asset server
+	pathPrefix         string           // path prefix for all URLs
+	authenticators     []*Authenticator // enabled authenticators
+	siteToken          string           // site admin's authentication token
+	secret             string           // secret for webhook signatures
+	variableService    otf.VariableService
+	vcsProviderService otf.VCSProviderService
 
 	otf.Application // otf service accessors
 	*viewEngine     // view engine populates and renders templates
@@ -36,6 +37,7 @@ type ApplicationOptions struct {
 	*otfhttp.Router
 	otf.Application
 	otf.VariableService
+	otf.VCSProviderService
 }
 
 // AddRoutes adds routes for the html web app.
@@ -58,15 +60,16 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 	sseServer.AutoReplay = false
 
 	app := &Application{
-		Application:     opts.Application,
-		variableService: opts.VariableService,
-		staticServer:    newStaticServer(opts.DevMode),
-		pathPrefix:      DefaultPathPrefix,
-		viewEngine:      viewEngine,
-		Logger:          logger,
-		Server:          sseServer,
-		siteToken:       opts.SiteToken,
-		secret:          opts.Secret,
+		Application:        opts.Application,
+		variableService:    opts.VariableService,
+		vcsProviderService: opts.VCSProviderService,
+		staticServer:       newStaticServer(opts.DevMode),
+		pathPrefix:         DefaultPathPrefix,
+		viewEngine:         viewEngine,
+		Logger:             logger,
+		Server:             sseServer,
+		siteToken:          opts.SiteToken,
+		secret:             opts.Secret,
 	}
 
 	app.authenticators, err = newAuthenticators(logger, opts.Application, opts.CloudConfigs)
@@ -118,16 +121,14 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/organizations/{organization_name}/agent-tokens/new", app.newAgentToken)
 		r.PST("/agent-tokens/{agent_token_id}/delete", app.deleteAgentToken)
 
-		r.GET("/organizations/{organization_name}/vcs-providers", app.listVCSProviders)
-		r.GET("/organizations/{organization_name}/vcs-providers/new", app.newVCSProvider)
-		r.PST("/organizations/{organization_name}/vcs-providers/create", app.createVCSProvider)
-		r.PST("/vcs-providers/{vcs_provider_id}/delete", app.deleteVCSProvider)
-
 		r.GET("/organizations/{organization_name}/modules", app.listModules)
 		r.GET("/organizations/{organization_name}/modules/new", app.newModule)
 		r.GET("/organizations/{organization_name}/modules/create", app.createModule)
 		r.GET("/modules/{module_id}", app.getModule)
 		r.PST("/modules/{module_id}/delete", app.deleteModule)
+
+		// VCS provider routes
+		app.vcsProviderService.AddHTMLHandlers(r.Router)
 
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/new", app.newOrganization)

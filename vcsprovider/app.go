@@ -25,11 +25,10 @@ type service interface {
 
 // Application is the implementation of appService
 type Application struct {
-	otf.Authorizer // authorize access
+	otf.Authorizer
 	logr.Logger
 
-	db              // access to state version database
-	cache otf.Cache // cache state file
+	db
 	factory
 }
 

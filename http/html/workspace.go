@@ -392,7 +392,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 	}
 
 	app.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
-		Items []*otf.VCSProvider
+		Items []otf.VCSProvider
 		*otf.Workspace
 	}{
 		Items:     providers,

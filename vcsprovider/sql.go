@@ -88,7 +88,7 @@ type pgRow struct {
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
 	return db.new(createOptions{
 		ID:           &row.VCSProviderID.String,
-		CreatedAt:    &row.CreatedAt.Time,
+		CreatedAt:    otf.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
 		Token:        row.Token.String,
 		Name:         row.Name.String,

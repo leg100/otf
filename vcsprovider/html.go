@@ -70,7 +70,13 @@ func (a *htmlApp) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *htmlApp) list(w http.ResponseWriter, r *http.Request) {
-	providers, err := a.app.list(r.Context(), mux.Vars(r)["organization_name"])
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	providers, err := a.app.list(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,9 +85,11 @@ func (a *htmlApp) list(w http.ResponseWriter, r *http.Request) {
 	a.Render("vcs_provider_list.tmpl", w, r, struct {
 		Items        []*VCSProvider
 		CloudConfigs []cloud.Config
+		Organization string
 	}{
 		Items:        providers,
 		CloudConfigs: a.ListCloudConfigs(),
+		Organization: organization,
 	})
 }
 

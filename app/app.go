@@ -42,7 +42,7 @@ type Application struct {
 	logr.Logger
 	otf.Authorizer
 	otf.StateVersionService
-	otf.VariableApp
+	otf.VCSProviderService
 }
 
 // NewApplication constructs an application, initialising various services and
@@ -78,6 +78,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		Service:             opts.CloudService,
 		Authorizer:          opts.Authorizer,
 		StateVersionService: opts.StateVersionService,
+		VCSProviderService:  opts.VCSProviderService,
 		RunFactory:          parent.RunFactory,
 		proxy:               parent.proxy,
 		hostname:            parent.hostname,
@@ -117,6 +118,7 @@ type Options struct {
 	CloudService        cloud.Service
 	Authorizer          otf.Authorizer
 	StateVersionService otf.StateVersionService
+	VCSProviderService  otf.VCSProviderService
 }
 
 func (a *Application) DB() otf.DB { return a.db }

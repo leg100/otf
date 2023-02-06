@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
@@ -17,7 +16,7 @@ func TestDB_Create(t *testing.T) {
 	db := sql.NewTestDB(t)
 	providerDB := newTestDB(t)
 	org := sql.CreateTestOrganization(t, db)
-	provider := newTestVCSProvider(t, org)
+	provider := NewTestVCSProvider(t, org)
 
 	defer providerDB.delete(ctx, provider.Token())
 
@@ -71,22 +70,8 @@ func TestDB_Delete(t *testing.T) {
 	assert.Len(t, got, 0)
 }
 
-func newTestVCSProvider(t *testing.T, org *otf.Organization) *VCSProvider {
-	factory := &factory{inmem.NewTestCloudService()}
-	provider, err := factory.new(createOptions{
-		Organization: org.Name(),
-		// unit tests require a legitimate cloud name to avoid invalid foreign
-		// key error upon insert/update
-		Cloud: "github",
-		Name:  uuid.NewString(),
-		Token: uuid.NewString(),
-	})
-	require.NoError(t, err)
-	return provider
-}
-
 func createTestVCSProvider(t *testing.T, db *pgdb, organization *otf.Organization) *VCSProvider {
-	provider := newTestVCSProvider(t, organization)
+	provider := NewTestVCSProvider(t, organization)
 	ctx := context.Background()
 
 	err := db.create(ctx, provider)

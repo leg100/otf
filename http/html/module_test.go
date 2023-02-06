@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -104,7 +105,7 @@ func TestNewModule_Confirm(t *testing.T) {
 
 func TestNewModule_Create(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org)
+	provider := vcsprovider.NewTestVCSProvider(t, org)
 	mod := otf.NewTestModule(org)
 	app := newFakeWebApp(t, &fakeModulesApp{
 		org:      org,
@@ -145,7 +146,7 @@ func TestNewModule_Delete(t *testing.T) {
 type fakeModulesApp struct {
 	org      *otf.Organization
 	mod      *otf.Module
-	provider *otf.VCSProvider
+	provider otf.VCSProvider
 	tarball  []byte
 	repos    []cloud.Repo
 
@@ -178,7 +179,7 @@ func (f *fakeModulesApp) DownloadModuleVersion(context.Context, otf.DownloadModu
 	return f.tarball, nil
 }
 
-func (f *fakeModulesApp) GetVCSProvider(context.Context, string) (*otf.VCSProvider, error) {
+func (f *fakeModulesApp) GetVCSProvider(context.Context, string) (otf.VCSProvider, error) {
 	return f.provider, nil
 }
 
