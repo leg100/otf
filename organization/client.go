@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-package http
-=======
 package organization
->>>>>>> ce68d6e2... wip
 
 import (
 	"context"
@@ -11,8 +7,12 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
+type Client struct {
+	otf.JSONAPIClient
+}
+
 // CreateOrganization creates a new organization with the given options.
-func (c *Client) CreateOrganization(ctx context.Context, options otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (c *Client) CreateOrganization(ctx context.Context, options OrganizationCreateOptions) (*Organization, error) {
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}
@@ -24,10 +24,10 @@ func (c *Client) CreateOrganization(ctx context.Context, options otf.Organizatio
 	if err != nil {
 		return nil, err
 	}
-	org := &jsonapi.Organization{}
+	org := &JSONAPIOrganization{}
 	err = c.Do(ctx, req, org)
 	if err != nil {
 		return nil, err
 	}
-	return otf.UnmarshalOrganizationJSONAPI(org), nil
+	return org.toOrganization(), nil
 }

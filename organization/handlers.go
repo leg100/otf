@@ -31,7 +31,7 @@ func (h *handlers) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.app.createOrganization(r.Context(), OrganizationCreateOptions{
+	org, err := h.app.create(r.Context(), OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -122,5 +122,5 @@ func (h *handlers) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Entitlements{entitlements})
+	jsonapi.WriteResponse(w, r, entitlements)
 }

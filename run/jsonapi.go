@@ -1,4 +1,4 @@
-package jsonapi
+package run
 
 import (
 	"time"

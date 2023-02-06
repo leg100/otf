@@ -37,7 +37,7 @@ func (a *webApp) createOrganization(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	org, err := a.app.createOrganization(r.Context(), opts)
+	org, err := a.app.create(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		html.FlashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)

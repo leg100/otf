@@ -1,4 +1,4 @@
-package http
+package workspace
 
 import (
 	"context"

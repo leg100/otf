@@ -67,7 +67,7 @@ func (org *Organization) Update(opts OrganizationUpdateOptions) error {
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (org *Organization) ToJSONAPI() any {
-	return &jsonapiOrganization{
+	return &JSONAPIOrganization{
 		Name:            org.Name(),
 		CreatedAt:       org.CreatedAt(),
 		ExternalID:      org.ID(),
@@ -89,7 +89,7 @@ func (l *organizationList) ToJSONAPI() any {
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, item.ToJSONAPI().(*jsonapiOrganization))
+		obj.Items = append(obj.Items, item.ToJSONAPI().(*JSONAPIOrganization))
 	}
 	return obj
 }

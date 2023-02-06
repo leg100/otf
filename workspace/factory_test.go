@@ -1,4 +1,4 @@
-package otf
+package workspace
 
 import (
 	"testing"

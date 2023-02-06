@@ -1,4 +1,4 @@
-package otf
+package run
 
 import (
 	"testing"

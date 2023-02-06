@@ -1,4 +1,4 @@
-package otf
+package run
 
 const (
 	LocalStateFilename = "terraform.tfstate"

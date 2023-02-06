@@ -12,7 +12,7 @@ var defaultOrganizationPermissions = jsonapiPermissions{
 	CanDestroy:         true,
 }
 
-type jsonapiOrganization struct {
+type JSONAPIOrganization struct {
 	Name                  string              `jsonapi:"primary,organizations"`
 	CostEstimationEnabled bool                `jsonapi:"attr,cost-estimation-enabled"`
 	CreatedAt             time.Time           `jsonapi:"attr,created-at,iso8601"`
@@ -26,7 +26,7 @@ type jsonapiOrganization struct {
 	TwoFactorConformant   bool                `jsonapi:"attr,two-factor-conformant"`
 }
 
-func (j jsonapiOrganization) toOrganization() *Organization {
+func (j JSONAPIOrganization) toOrganization() *Organization {
 	return &Organization{
 		id:              j.ExternalID,
 		createdAt:       j.CreatedAt,
@@ -51,7 +51,7 @@ type jsonapiPermissions struct {
 
 type jsonapiList struct {
 	*jsonapi.Pagination
-	Items []*jsonapiOrganization
+	Items []*JSONAPIOrganization
 }
 
 // jsonapiCreateOptions represents the options for creating an

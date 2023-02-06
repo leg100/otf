@@ -1,4 +1,4 @@
-package http
+package run
 
 import (
 	"bytes"
@@ -13,6 +13,32 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
+
+type handlers struct {
+	app appService
+}
+
+func (h *handlers) AddHandlers(r *mux.Router) {
+			// Run routes
+			r.PST("/runs", s.CreateRun)
+			r.PST("/runs/{id}/actions/apply", s.ApplyRun)
+			r.GET("/runs", s.ListRuns)
+			r.GET("/workspaces/{workspace_id}/runs", s.ListRuns)
+			r.GET("/runs/{id}", s.GetRun)
+			r.PST("/runs/{id}/actions/discard", s.DiscardRun)
+			r.PST("/runs/{id}/actions/cancel", s.CancelRun)
+			r.PST("/runs/{id}/actions/force-cancel", s.ForceCancelRun)
+			r.GET("/organizations/{organization_name}/runs/queue", s.GetRunsQueue)
+
+			// Run routes for exclusive use by remote agents
+			r.PST("/runs/{id}/actions/start/{phase}", s.startPhase)
+			r.PST("/runs/{id}/actions/finish/{phase}", s.finishPhase)
+			r.PUT("/runs/{run_id}/logs/{phase}", s.putLogs)
+			r.GET("/runs/{run_id}/planfile", s.getPlanFile)
+			r.PUT("/runs/{run_id}/planfile", s.uploadPlanFile)
+			r.GET("/runs/{run_id}/lockfile", s.getLockFile)
+			r.PUT("/runs/{run_id}/lockfile", s.uploadLockFile)
+		}
 
 type planFileOptions struct {
 	Format otf.PlanFormat `schema:"format,required"`

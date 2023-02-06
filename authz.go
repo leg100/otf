@@ -30,7 +30,7 @@ type WorkspacePolicy struct {
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	Team *Team
+	Team *team.Team
 	Role rbac.Role
 }
 

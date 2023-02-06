@@ -16,7 +16,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/hooks"
-	"github.com/leg100/otf/triggerer"
 	"github.com/leg100/surl"
 )
 
@@ -60,9 +59,8 @@ type Server struct {
 	*Router      // http router, exported so that other pkgs can add routes
 	*surl.Signer // sign and validate signed URLs
 
-	eventsServer     *sse.Server
-	server           *http.Server
-	vcsEventsHandler *triggerer.Triggerer
+	eventsServer *sse.Server
+	server       *http.Server
 }
 
 // NewServer is the constructor for Server
@@ -102,7 +100,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	//
 	events := make(chan cloud.VCSEvent, 100)
 	r.Handle("/webhooks/vcs/{webhook_id}", hooks.NewHandler(logger, events, s.Application))
-	s.vcsEventsHandler = triggerer.NewTriggerer(app, logger, events)
+	// s.vcsEventsHandler = triggerer.NewTriggerer(app, logger, events)
 
 	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
@@ -142,27 +140,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			// Ensure request has valid API bearer token
 			r.Use(authMiddleware.handler)
 
-			// Organization routes
-			r.GET("/organizations", s.ListOrganizations)
-			r.PST("/organizations", s.CreateOrganization)
-			r.GET("/organizations/{name}", s.GetOrganization)
-			r.PTC("/organizations/{name}", s.UpdateOrganization)
-			r.DEL("/organizations/{name}", s.DeleteOrganization)
-			r.GET("/organizations/{name}/entitlement-set", s.GetEntitlements)
-
-			// Workspace routes
-			r.GET("/organizations/{organization_name}/workspaces", s.ListWorkspaces)
-			r.PST("/organizations/{organization_name}/workspaces", s.CreateWorkspace)
-			r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspaceByName)
-			r.PTC("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspaceByName)
-			r.DEL("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspaceByName)
-
-			r.PTC("/workspaces/{workspace_id}", s.UpdateWorkspace)
-			r.GET("/workspaces/{workspace_id}", s.GetWorkspace)
-			r.DEL("/workspaces/{workspace_id}", s.DeleteWorkspace)
-			r.PST("/workspaces/{workspace_id}/actions/lock", s.LockWorkspace)
-			r.PST("/workspaces/{workspace_id}/actions/unlock", s.UnlockWorkspace)
-
 			// Variables routes
 			variableService.AddHandlers(r.Router)
 
@@ -174,26 +151,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			r.GET("/configuration-versions/{id}", s.GetConfigurationVersion)
 			r.GET("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
 			r.GET("/configuration-versions/{id}/download", s.DownloadConfigurationVersion)
-
-			// Run routes
-			r.PST("/runs", s.CreateRun)
-			r.PST("/runs/{id}/actions/apply", s.ApplyRun)
-			r.GET("/runs", s.ListRuns)
-			r.GET("/workspaces/{workspace_id}/runs", s.ListRuns)
-			r.GET("/runs/{id}", s.GetRun)
-			r.PST("/runs/{id}/actions/discard", s.DiscardRun)
-			r.PST("/runs/{id}/actions/cancel", s.CancelRun)
-			r.PST("/runs/{id}/actions/force-cancel", s.ForceCancelRun)
-			r.GET("/organizations/{organization_name}/runs/queue", s.GetRunsQueue)
-
-			// Run routes for exclusive use by remote agents
-			r.PST("/runs/{id}/actions/start/{phase}", s.startPhase)
-			r.PST("/runs/{id}/actions/finish/{phase}", s.finishPhase)
-			r.PUT("/runs/{run_id}/logs/{phase}", s.putLogs)
-			r.GET("/runs/{run_id}/planfile", s.getPlanFile)
-			r.PUT("/runs/{run_id}/planfile", s.uploadPlanFile)
-			r.GET("/runs/{run_id}/lockfile", s.getLockFile)
-			r.PUT("/runs/{run_id}/lockfile", s.uploadLockFile)
 
 			// Event routes
 			r.GET("/watch", s.watch)

@@ -1,4 +1,4 @@
-package http
+package agenttoken
 
 import (
 	"net/http"
@@ -7,8 +7,24 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
+type handlers struct {
+	app appService
+}
+
+// Implements TFC state versions API:
+//
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
+//
+func (h *handlers) AddHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion).Methods("GET")
+	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
+	r.HandleFunc("/state-versions", h.listVersions).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/download", h.downloadState).Methods("GET")
+}
+
 func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
-	opts := jsonapi.AgentTokenCreateOptions{}
+	opts := jsonapiCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return

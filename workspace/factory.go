@@ -1,4 +1,4 @@
-package otf
+package workspace
 
 func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 	// required options

@@ -21,7 +21,7 @@ func TestOrganization_Create(t *testing.T) {
 		orgDB.delete(ctx, org.Name())
 	})
 
-	err := db.CreateOrganization(ctx, org)
+	err := orgDB.create(ctx, org)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {

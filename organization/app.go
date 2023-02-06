@@ -3,6 +3,7 @@ package organization
 import (
 	"context"
 	"fmt"
+	"os/user"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -17,8 +18,9 @@ type appService interface {
 	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
 	UpdateOrganization(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
+	GetEntitlements(ctx context.Context, organization string) (*Entitlements, error)
 
-	createOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
+	create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 }
 
 // app is the implementation of appService
@@ -114,7 +116,7 @@ func (a *app) ListOrganizations(ctx context.Context, opts OrganizationListOption
 	if err != nil {
 		return nil, err
 	}
-	if user, ok := subj.(*otf.User); ok && !user.IsSiteAdmin() {
+	if user, ok := subj.(*user.User); ok && !user.IsSiteAdmin() {
 		orgs, err := a.db.listByUser(ctx, user.ID())
 		if err != nil {
 			return nil, err
