@@ -81,44 +81,7 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	return session
 }
 
-<<<<<<< HEAD
-func NewTestRegistrySession(t *testing.T, org *Organization, opts ...NewTestRegistrySessionOption) *RegistrySession {
-	session, err := NewRegistrySession(org.Name())
-	require.NoError(t, err)
-
-	for _, o := range opts {
-		o(session)
-	}
-
-	return session
-}
-
-type NewTestRegistrySessionOption func(*RegistrySession)
-
-func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestRegistrySessionOption {
-	return func(session *RegistrySession) {
-		session.expiry = expiry
-	}
-}
-
 func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
-=======
-func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
-	return &VCSProvider{
-		id:           NewID("vcs"),
-		createdAt:    CurrentTimestamp(),
-		name:         uuid.NewString(),
-		token:        uuid.NewString(),
-		organization: organization.Name(),
-		cloudConfig: cloud.Config{
-			Name:     "fake-cloud",
-			Hostname: "fake-cloud.org",
-		},
-	}
-}
-
-func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
->>>>>>> origin/refactor-user
 	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
