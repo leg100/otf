@@ -34,7 +34,7 @@ func newDB(db otf.Database) *DB {
 }
 
 // CreateTeam persists a team to the DB.
-func (db *DB) CreateTeam(ctx context.Context, team Team) error {
+func (db *DB) CreateTeam(ctx context.Context, team *Team) error {
 	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
 		ID:               sql.String(team.ID()),
 		Name:             sql.String(team.Name()),
@@ -104,35 +104,6 @@ func (db *DB) ListTeams(ctx context.Context, organization string) ([]*Team, erro
 		items = append(items, pgRow(r).toTeam())
 	}
 	return items, nil
-}
-
-func (db *DB) ListTeamMembers(ctx context.Context, teamID string) ([]*otf.User, error) {
-	result, err := db.FindUsersByTeamID(ctx, sql.String(teamID))
-	if err != nil {
-		return nil, err
-	}
-
-	var items []*otf.User
-	for _, r := range result {
-		items = append(items, otf.UnmarshalUserResult(otf.UserResult(r)))
-	}
-	return items, nil
-}
-
-func (db *DB) AddTeamMembership(ctx context.Context, userID, teamID string) error {
-	_, err := db.InsertTeamMembership(ctx, sql.String(userID), sql.String(teamID))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
-}
-
-func (db *DB) RemoveTeamMembership(ctx context.Context, userID, teamID string) error {
-	_, err := db.DeleteTeamMembership(ctx, sql.String(userID), sql.String(teamID))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
 }
 
 // DeleteTeam deletes a team from the DB.

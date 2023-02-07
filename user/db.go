@@ -98,6 +98,19 @@ func (db *pgdb) ListUsers(ctx context.Context, opts UserListOptions) ([]*User, e
 	return users, nil
 }
 
+func (db *pgdb) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+	result, err := db.FindUsersByTeamID(ctx, sql.String(teamID))
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*User
+	for _, r := range result {
+		items = append(items, pgRow(r).toUser())
+	}
+	return items, nil
+}
+
 // GetUser retrieves a user from the DB, along with its sessions.
 func (db *pgdb) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
@@ -139,6 +152,22 @@ func (db *pgdb) AddOrganizationMembership(ctx context.Context, id, orgID string)
 
 func (db *pgdb) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
 	_, err := db.DeleteOrganizationMembership(ctx, sql.String(id), sql.String(orgID))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) AddTeamMembership(ctx context.Context, userID, teamID string) error {
+	_, err := db.InsertTeamMembership(ctx, sql.String(userID), sql.String(teamID))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) RemoveTeamMembership(ctx context.Context, userID, teamID string) error {
+	_, err := db.DeleteTeamMembership(ctx, sql.String(userID), sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}
