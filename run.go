@@ -109,6 +109,10 @@ type RunListOptions struct {
 }
 
 type (
-	Plan  interface{}
-	Apply interface{}
+	Plan  interface{
+		ResourceReport() *ResourceReport
+	}
+	Apply interface{
+		ResourceReport() *ResourceReport
+	}
 )

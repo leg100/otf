@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"os"
 	"testing"
@@ -66,20 +65,6 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 		db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
 	})
 	return &otf.WorkspacePermission{Team: team, Role: role}
-}
-
-func CreateTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.User {
-	ctx := context.Background()
-	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
-	user := otf.NewUser(username, opts...)
-
-	err := db.CreateUser(ctx, user)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
-	})
-	return user
 }
 
 func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {

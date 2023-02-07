@@ -29,6 +29,7 @@ type Workspace interface {
 	UpdatedAt() time.Time
 	String() string
 	Name() string
+	Repo() *WorkspaceRepo
 }
 
 // WorkspaceList represents a list of Workspaces.
@@ -143,6 +144,18 @@ type WorkspaceLockState interface {
 	// A lock state has an identity, i.e. the name of the run or user that has
 	// locked the workspace
 	Identity
+}
+
+type WorkspaceService interface {
+	GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
+	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (WorkspaceList, error)
+	// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
+	//
+	// TODO: rename to ListConnectedWorkspaces
+	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 }
 
 // WorkspaceStore is a persistence store for workspaces.

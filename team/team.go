@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 var ErrInvalidTeamSpec = errors.New("invalid team spec options")
@@ -51,7 +53,7 @@ type TeamService interface {
 	// ListTeams lists teams in an organization.
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 	// ListTeamMembers lists users that are members of the given team
-	ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
+	ListTeamMembers(ctx context.Context, teamID string) ([]otf.User, error)
 }
 
 // TeamStore is a persistence store for team accounts.
@@ -63,7 +65,7 @@ type TeamStore interface {
 	DeleteTeam(ctx context.Context, teamID string) error
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 	// ListTeamMembers lists users that are members of the given team
-	ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
+	ListTeamMembers(ctx context.Context, teamID string) ([]otf.User, error)
 }
 
 type TeamSpec struct {
@@ -87,12 +89,12 @@ type UpdateTeamOptions struct {
 	OrganizationAccess
 }
 
-func NewTeam(name string, org *Organization, opts ...NewTeamOption) *Team {
+func newTeam(name string, organization string, opts ...NewTeamOption) *Team {
 	team := Team{
-		id:           NewID("team"),
+		id:           otf.NewID("team"),
 		name:         name,
-		createdAt:    CurrentTimestamp(),
-		organization: org.Name(),
+		createdAt:    otf.CurrentTimestamp(),
+		organization: organization,
 	}
 	for _, o := range opts {
 		o(&team)

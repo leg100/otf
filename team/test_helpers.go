@@ -7,9 +7,9 @@ import (
 )
 
 func NewTestTeam(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
-	return NewTeam(uuid.NewString(), org, opts...)
+	return newTeam(uuid.NewString(), org, opts...)
 }
 
 func NewTestOwners(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
-	return NewTeam("owners", org, opts...)
+	return newTeam("owners", org, opts...)
 }

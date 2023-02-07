@@ -1,4 +1,4 @@
-package inmem
+package logs
 
 import (
 	"context"

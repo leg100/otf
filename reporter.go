@@ -18,17 +18,15 @@ const ReporterLockID int64 = 179366396344335597
 // Reporter reports back to VCS providers the current status of VCS-triggered
 // runs.
 type Reporter struct {
-	ConfigurationVersionService
-	EventService
+	Application
 	logr.Logger
 }
 
 // NewReporter constructs and initialises the reporter.
-func NewReporter(logger logr.Logger, configVersionService ConfigurationVersionService, eventService EventService) *Reporter {
+func NewReporter(logger logr.Logger, app Application) *Reporter {
 	s := &Reporter{
-		ConfigurationVersionService: configVersionService,
-		EventService:                eventService,
-		Logger:                      logger.WithValues("component", "reporter"),
+		Application: app,
+		Logger:      logger.WithValues("component", "reporter"),
 	}
 	s.V(2).Info("started")
 
@@ -109,13 +107,13 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 	case RunPlannedAndFinished:
 		status = cloud.VCSSuccessStatus
 		if run.HasChanges() {
-			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport)
+			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport())
 		} else {
 			description = "no changes"
 		}
 	case RunApplied:
 		status = cloud.VCSSuccessStatus
-		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport)
+		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport())
 	case RunErrored, RunCanceled, RunForceCanceled, RunDiscarded:
 		status = cloud.VCSErrorStatus
 		description = run.Status().String()

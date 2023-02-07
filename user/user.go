@@ -25,9 +25,9 @@ type User struct {
 	id            string // ID uniquely identifies users
 	createdAt     time.Time
 	updatedAt     time.Time
-	username      string      // username is globally unique
-	organizations []string    // user belongs to many organizations
-	teams         []*otf.Team // user belongs to many teams
+	username      string     // username is globally unique
+	organizations []string   // user belongs to many organizations
+	teams         []otf.Team // user belongs to many teams
 }
 
 func (u *User) ID() string              { return u.id }
@@ -36,7 +36,7 @@ func (u *User) CreatedAt() time.Time    { return u.createdAt }
 func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
 func (u *User) String() string          { return u.username }
 func (u *User) Organizations() []string { return u.organizations }
-func (u *User) Teams() []*otf.Team      { return u.teams }
+func (u *User) Teams() []otf.Team       { return u.teams }
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (u *User) ToJSONAPI() any {
@@ -47,8 +47,8 @@ func (u *User) ToJSONAPI() any {
 }
 
 // TeamsByOrganization return a user's teams filtered by organization name
-func (u *User) TeamsByOrganization(organization string) []*otf.Team {
-	var orgTeams []*otf.Team
+func (u *User) TeamsByOrganization(organization string) []otf.Team {
+	var orgTeams []otf.Team
 	for _, t := range u.teams {
 		if t.Organization() == organization {
 			orgTeams = append(orgTeams, t)
@@ -58,7 +58,7 @@ func (u *User) TeamsByOrganization(organization string) []*otf.Team {
 }
 
 // Team retrieves the named team in the given organization.
-func (u *User) Team(name, organization string) (*otf.Team, error) {
+func (u *User) Team(name, organization string) (otf.Team, error) {
 	for _, t := range u.teams {
 		if t.Name() == name && t.Organization() == organization {
 			return t, nil

@@ -5,14 +5,16 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTeam_Create(t *testing.T) {
 	ctx := context.Background()
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	team := otf.NewTeam("team-awesome", org)
 
 	defer db.DeleteTeam(ctx, team.ID())
@@ -23,9 +25,9 @@ func TestTeam_Create(t *testing.T) {
 
 func TestTeam_Update_ByID(t *testing.T) {
 	ctx := context.Background()
-	db := NewTestDB(t)
+	db := sql.NewTestDB(t)
 
-	org := CreateTestOrganization(t, db)
+	org := organization.CreateTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 
 	_, err := db.UpdateTeam(ctx, team.ID(), func(team *otf.Team) error {
