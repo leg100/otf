@@ -116,27 +116,11 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/profile/tokens/new", app.newTokenHandler)
 		r.PST("/profile/tokens/create", app.createTokenHandler)
 
-		r.GET("/organizations/{organization_name}/agent-tokens", app.listAgentTokens)
-		r.PST("/organizations/{organization_name}/agent-tokens/create", app.createAgentToken)
-		r.GET("/organizations/{organization_name}/agent-tokens/new", app.newAgentToken)
-		r.PST("/agent-tokens/{agent_token_id}/delete", app.deleteAgentToken)
-
-		r.GET("/organizations/{organization_name}/modules", app.listModules)
-		r.GET("/organizations/{organization_name}/modules/new", app.newModule)
-		r.GET("/organizations/{organization_name}/modules/create", app.createModule)
-		r.GET("/modules/{module_id}", app.getModule)
-		r.PST("/modules/{module_id}/delete", app.deleteModule)
+		// Module routes
+		app.moduleService.AddHTMLHandlers(r.Router)
 
 		// VCS provider routes
 		app.vcsProviderService.AddHTMLHandlers(r.Router)
-
-		r.GET("/organizations", app.listOrganizations)
-		r.GET("/organizations/new", app.newOrganization)
-		r.PST("/organizations/create", app.createOrganization)
-		r.GET("/organizations/{organization_name}", app.getOrganization)
-		r.GET("/organizations/{organization_name}/edit", app.editOrganization)
-		r.PST("/organizations/{organization_name}/update", app.updateOrganization)
-		r.PST("/organizations/{organization_name}/delete", app.deleteOrganization)
 
 		r.GET("/organizations/{organization_name}/users", app.listUsers)
 
@@ -166,18 +150,10 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 
 		// Variables routes
 		app.variableService.AddHTMLHandlers(r.Router)
+		// Run routes
+		app.runService.AddHTMLHandlers(r.Router)
 
 		r.GET("/workspaces/{workspace_id}/watch", app.watchWorkspace)
-		r.GET("/workspaces/{workspace_id}/runs", app.listRuns)
-		r.GET("/runs/{run_id}", app.getRun)
-		r.GET("/runs/{run_id}/tail", app.tailRun)
-		r.PST("/runs/{run_id}/delete", app.deleteRun)
-		r.PST("/runs/{run_id}/cancel", app.cancelRun)
-		r.PST("/runs/{run_id}/apply", app.applyRun)
-		r.PST("/runs/{run_id}/discard", app.discardRun)
-
-		// this handles the link the terraform CLI shows during a plan/apply.
-		r.GET("/app/{organization_name}/{workspace_id}/runs/{run_id}", app.getRun)
 
 		// terraform login opens a browser to this page
 		r.GET("/app/settings/tokens", app.tokensHandler)

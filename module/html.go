@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
@@ -27,6 +28,14 @@ const (
 	newModuleConfirmStep newModuleStep = "confirm-selection"
 )
 
+func (h *htmlHandlers) AddHTMLHandlers(r *mux.Router) {
+	r.HandleFunc("/organizations/{organization_name}/modules", h.listModules)
+	r.HandleFunc("/organizations/{organization_name}/modules/new", h.newModule)
+	r.HandleFunc("/organizations/{organization_name}/modules/create", h.createModule)
+	r.HandleFunc("/modules/{module_id}", h.getModule)
+	r.HandleFunc("/modules/{module_id}/delete", h.deleteModule)
+}
+
 func (h *htmlHandlers) listModules(w http.ResponseWriter, r *http.Request) {
 	var opts otf.ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
@@ -40,8 +49,8 @@ func (h *htmlHandlers) listModules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render("module_list.tmpl", w, r, struct {
-		Items        []*otf.Module
+	h.Render("module_list.tmpl", w, r, struct {
+		Items        []*Module
 		Organization string
 	}{
 		Items:        modules,
@@ -49,24 +58,24 @@ func (h *htmlHandlers) listModules(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) getModule(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		ID      string `schema:"module_id,required"`
 		Version string `schema:"version"`
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	module, err := app.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var tfmod *otf.TerraformModule
+	var tfmod *TerraformModule
 	var readme template.HTML
 	switch module.Status() {
 	case otf.ModuleStatusSetupComplete:
@@ -74,10 +83,10 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 			ModuleVersionID: module.Version(params.Version).ID(),
 		})
 		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
+			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		tfmod, err = otf.UnmarshalTerraformModule(tarball)
+		tfmod, err = UnmarshalTerraformModule(tarball)
 		if err != nil {
 			htmlHandlers.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -87,7 +96,7 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 
 	app.render("module_get.tmpl", w, r, struct {
 		*otf.Module
-		TerraformModule *otf.TerraformModule
+		TerraformModule *TerraformModule
 		Readme          template.HTML
 		CurrentVersion  *otf.ModuleVersion
 		Hostname        string
@@ -100,13 +109,13 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) newModule(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) newModule(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Step newModuleStep `schema:"step"`
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -120,20 +129,20 @@ func (app *Application) newModule(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *Application) newModuleConnect(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	providers, err := app.ListVCSProviders(r.Context(), org)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		Organization string
 		Step         newModuleStep
@@ -144,7 +153,7 @@ func (app *Application) newModuleConnect(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (app *Application) newModuleRepo(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
@@ -152,17 +161,17 @@ func (app *Application) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	repos, err := otf.ListModuleRepositories(r.Context(), app, params.VCSProviderID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		Items []cloud.Repo
 		parameters
 		Step newModuleStep
@@ -173,7 +182,7 @@ func (app *Application) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
@@ -181,20 +190,20 @@ func (app *Application) newModuleConfirm(w http.ResponseWriter, r *http.Request)
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := app.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_new.tmpl", w, r, struct {
+	app.Render("module_new.tmpl", w, r, struct {
 		parameters
 		Step newModuleStep
-		*otf.VCSProvider
+		otf.VCSProvider
 	}{
 		parameters:  params,
 		Step:        newModuleConfirmStep,
@@ -202,7 +211,7 @@ func (app *Application) newModuleConfirm(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) createModule(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
@@ -210,13 +219,13 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	org, err := app.GetOrganization(r.Context(), params.Organization)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -226,27 +235,27 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 		Organization: org,
 	})
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "published module: "+module.Name())
+	html.FlashSuccess(w, "published module: "+module.Name())
 	http.Redirect(w, r, paths.Module(module.ID()), http.StatusFound)
 }
 
-func (app *Application) deleteModule(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) deleteModule(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("module_id", r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	deleted, err := app.DeleteModule(r.Context(), id)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	flashSuccess(w, "deleted module: "+deleted.Name())
+	html.FlashSuccess(w, "deleted module: "+deleted.Name())
 	http.Redirect(w, r, paths.Modules(deleted.Organization()), http.StatusFound)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 const (
@@ -106,41 +108,11 @@ type ConfigurationVersionStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-// ConfigurationVersionCreateOptions represents the options for creating a
-// configuration version. See jsonapi.ConfigurationVersionCreateOptions for more
-// details.
-type ConfigurationVersionCreateOptions struct {
-	AutoQueueRuns *bool
-	Speculative   *bool
-	*IngressAttributes
-}
-
-type IngressAttributes struct {
-	// ID     string
-	Branch string
-	// CloneURL          string
-	// CommitMessage     string
-	CommitSHA string
-	// CommitURL         string
-	// CompareURL        string
-	Identifier      string
-	IsPullRequest   bool
-	OnDefaultBranch bool
-	// PullRequestNumber int
-	// PullRequestURL    string
-	// PullRequestTitle  string
-	// PullRequestBody   string
-	// Tag               string
-	// SenderUsername    string
-	// SenderAvatarURL   string
-	// SenderHTMLURL     string
-}
-
 type ConfigurationVersionService interface {
-	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	// CloneConfigurationVersion creates a new configuration version using the
 	// config tarball of an existing configuration version.
-	CloneConfigurationVersion(ctx context.Context, cvID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
 	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
 	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
@@ -196,14 +168,14 @@ type ConfigurationVersionListOptions struct {
 	// A list of relations to include
 	Include *string `schema:"include"`
 
-	ListOptions
+	otf.ListOptions
 }
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func NewConfigurationVersion(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		id:            NewID("cv"),
-		createdAt:     CurrentTimestamp(),
+		id:            otf.NewID("cv"),
+		createdAt:     otf.CurrentTimestamp(),
 		autoQueueRuns: DefaultAutoQueueRuns,
 		source:        DefaultConfigurationSource,
 		workspaceID:   workspaceID,

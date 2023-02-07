@@ -18,15 +18,17 @@ const ReporterLockID int64 = 179366396344335597
 // Reporter reports back to VCS providers the current status of VCS-triggered
 // runs.
 type Reporter struct {
-	Application
+	ConfigurationVersionService
+	EventService
 	logr.Logger
 }
 
 // NewReporter constructs and initialises the reporter.
-func NewReporter(logger logr.Logger, app Application) *Reporter {
+func NewReporter(logger logr.Logger, configVersionService ConfigurationVersionService, eventService EventService) *Reporter {
 	s := &Reporter{
-		Application: app,
-		Logger:      logger.WithValues("component", "reporter"),
+		ConfigurationVersionService: configVersionService,
+		EventService:                eventService,
+		Logger:                      logger.WithValues("component", "reporter"),
 	}
 	s.V(2).Info("started")
 

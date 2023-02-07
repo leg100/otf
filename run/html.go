@@ -10,12 +10,30 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
 )
 
+type htmlHandlers struct {
+	otf.Renderer
+}
+
 type htmlLogChunk struct {
 	otf.Chunk
+}
+
+func (h *htmlHandlers) AddHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listRuns)
+	r.HandleFunc("/runs/{run_id}", h.getRun)
+	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
+	r.HandleFunc("/runs/{run_id}/delete", h.deleteRun)
+	r.HandleFunc("/runs/{run_id}/cancel", h.cancelRun)
+	r.HandleFunc("/runs/{run_id}/apply", h.applyRun)
+	r.HandleFunc("/runs/{run_id}/discard", h.discardRun)
+
+	// this handles the link the terraform CLI shows during a plan/apply.
+	r.HandleFunc("/app/{organization_name}/{workspace_id}/runs/{run_id}", h.getRun)
 }
 
 func (l *htmlLogChunk) ToHTML() template.HTML {
@@ -33,20 +51,20 @@ func (l *htmlLogChunk) NextOffset() int {
 	return l.Chunk.Offset + len(l.Chunk.Data)
 }
 
-func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) listRuns(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		otf.ListOptions
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	runs, err := app.ListRuns(r.Context(), otf.RunListOptions{
@@ -55,7 +73,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: &params.WorkspaceID,
 	})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -70,21 +88,21 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) getRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := app.GetWorkspace(r.Context(), run.WorkspaceID())
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Get existing logs thus far received for each phase. If none are found then don't treat
@@ -94,7 +112,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		Phase: otf.PlanPhase,
 	})
 	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	applyLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
@@ -102,7 +120,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		Phase: otf.ApplyPhase,
 	})
 	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.Render("run_get.tmpl", w, r, struct {
@@ -118,10 +136,10 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -132,62 +150,62 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 	}
 	err = app.DeleteRun(r.Context(), runID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Workspace(run.WorkspaceID()), http.StatusFound)
 }
 
-func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.CancelRun(r.Context(), runID, otf.RunCancelOptions{})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	http.Redirect(w, r, paths.Runs(run.WorkspaceID()), http.StatusFound)
 }
 
-func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) applyRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.ApplyRun(r.Context(), mux.Vars(r)["run_id"], otf.RunApplyOptions{})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Run(run.ID())+"#apply", http.StatusFound)
 }
 
-func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) discardRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = app.DiscardRun(r.Context(), mux.Vars(r)["run_id"], otf.RunDiscardOptions{})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
 }
 
-func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
+func (app *htmlHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	opts := struct {
 		// Phase to tail. Must be either plan or apply.
 		Phase otf.PhaseType `schema:"phase,required"`
@@ -197,7 +215,7 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 		StreamID string `schema:"stream,required"`
 	}{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	ch, err := app.Tail(r.Context(), otf.GetChunkOptions{
@@ -206,7 +224,7 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 		Offset: opts.Offset,
 	})
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	go func() {

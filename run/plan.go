@@ -1,5 +1,7 @@
 package run
 
+import "github.com/leg100/otf"
+
 const (
 	LocalStateFilename = "terraform.tfstate"
 	PlanFilename       = "plan.out"
@@ -10,14 +12,14 @@ const (
 // Plan is the plan phase of a run
 type Plan struct {
 	// report of planned resource changes
-	*ResourceReport
+	*otf.ResourceReport
 
 	runID string
 	*phaseStatus
 }
 
-func (p *Plan) ID() string       { return p.runID }
-func (p *Plan) Phase() PhaseType { return PlanPhase }
+func (p *Plan) ID() string           { return p.runID }
+func (p *Plan) Phase() otf.PhaseType { return otf.PlanPhase }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
