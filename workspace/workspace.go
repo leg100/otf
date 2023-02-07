@@ -14,9 +14,6 @@ import (
 const (
 	DefaultAllowDestroyPlan    = true
 	DefaultFileTriggersEnabled = true
-
-	MinTerraformVersion     = "1.2.0"
-	DefaultTerraformVersion = "1.3.7"
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -32,7 +29,7 @@ type Workspace struct {
 	executionMode              otf.ExecutionMode
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
-	lock                       WorkspaceLockState
+	lock                       otf.WorkspaceLockState
 	migrationEnvironment       string
 	name                       string
 	queueAllRuns               bool

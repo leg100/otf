@@ -1,4 +1,4 @@
-package html
+package team
 
 import (
 	"net/http"

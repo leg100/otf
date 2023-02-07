@@ -15,6 +15,10 @@ type DB struct {
 	otf.Database // provides access to generated SQL queries
 }
 
+func NewDB(db otf.Database) *DB {
+	return newPGDB(db)
+}
+
 func newPGDB(db otf.Database) *DB {
 	return &DB{db}
 }

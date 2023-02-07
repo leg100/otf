@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/workspace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -136,8 +137,11 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up pub sub broker")
 	}
 
+	// Setup workspace database
+	workspaceDB := workspace.NewDB(db)
+
 	// Setup authorizer
-	authorizer := otf.NewAuthorizer(logger, db)
+	authorizer := otf.NewAuthorizer(logger, workspaceDB)
 
 	stateService := state.NewService(state.ServiceOptions{
 		Authorizer: authorizer,

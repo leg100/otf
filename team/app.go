@@ -1,4 +1,4 @@
-package app
+package team
 
 import (
 	"context"

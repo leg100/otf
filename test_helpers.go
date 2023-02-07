@@ -19,24 +19,6 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func NewTestConfigurationVersion(t *testing.T, ws *Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
-	cv, err := NewConfigurationVersion(ws.ID(), opts)
-	require.NoError(t, err)
-	return cv
-}
-
-func NewTestUser(t *testing.T, opts ...NewUserOption) *User {
-	return NewUser(uuid.NewString(), opts...)
-}
-
-func NewTestTeam(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
-	return NewTeam(uuid.NewString(), org, opts...)
-}
-
-func NewTestOwners(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
-	return NewTeam("owners", org, opts...)
-}
-
 func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Session {
 	session, err := NewSession(userID, "127.0.0.1")
 	require.NoError(t, err)

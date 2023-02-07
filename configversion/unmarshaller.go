@@ -1,4 +1,4 @@
-package otf
+package configversion
 
 import (
 	"github.com/jackc/pgtype"

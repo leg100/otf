@@ -19,7 +19,7 @@ type Authorizer interface {
 	CanAccessConfigurationVersion(ctx context.Context, action rbac.Action, cvID string) (Subject, error)
 }
 
-func NewAuthorizer(logger logr.Logger, db DB) *authorizer {
+func NewAuthorizer(logger logr.Logger, db WorkspaceStore) *authorizer {
 	return &authorizer{
 		Logger: logger,
 		db:     db,
@@ -27,7 +27,7 @@ func NewAuthorizer(logger logr.Logger, db DB) *authorizer {
 }
 
 type authorizer struct {
-	db DB
+	db WorkspaceStore
 	logr.Logger
 }
 
