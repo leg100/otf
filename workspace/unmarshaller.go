@@ -168,21 +168,4 @@ func UnmarshalWorkspaceListJSONAPI(json *jsonapi.WorkspaceList) *WorkspaceList {
 	return &wl
 }
 
-// WorkspacePermissionResult represents the result of a database query for a
-// workspace permission.
-type WorkspacePermissionResult struct {
-	Role         pgtype.Text          `json:"role"`
-	Team         *pggen.Teams         `json:"team"`
-	Organization *pggen.Organizations `json:"organization"`
-}
 
-func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) (*WorkspacePermission, error) {
-	role, err := rbac.WorkspaceRoleFromString(row.Role.String)
-	if err != nil {
-		return nil, err
-	}
-	return &WorkspacePermission{
-		Role: role,
-		Team: UnmarshalTeamResult(TeamResult(*row.Team)),
-	}, nil
-}

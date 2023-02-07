@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
@@ -12,22 +13,33 @@ import (
 type TestRunCreateOptions struct {
 	ID                *string // override ID of run
 	Speculative       bool
-	ExecutionMode     *ExecutionMode
+	ExecutionMode     *otf.ExecutionMode
 	Status            RunStatus
 	AutoApply         *bool
-	Repo              *WorkspaceRepo
-	IngressAttributes *IngressAttributes
-	Workspace         *Workspace // run's workspace; if nil a workspace is auto created
+	Repo              *otf.WorkspaceRepo
+	IngressAttributes *otf.IngressAttributes
+	Workspace         otf.Workspace // run's workspace; if nil a workspace is auto created
+}
+
+func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	ctx := context.Background()
+	run := otf.NewRun(cv, ws, RunCreateOptions{})
+	err := db.CreateRun(ctx, run)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteRun(ctx, run.ID())
+	})
+	return run
 }
 
 // NewTestRun creates a new run. Expressly for testing purposes.
 func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
-	org, err := organization.NewTestOrganization(t)
-	require.NoError(t, err)
+	org := organization.NewTestOrganization(t)
 
 	ws := opts.Workspace
 	if ws == nil {
-		ws, err = NewWorkspace(CreateWorkspaceOptions{
+		ws, err := NewWorkspace(CreateWorkspaceOptions{
 			Name:         String("test-ws"),
 			Organization: String(org.Name()),
 			Repo:         opts.Repo,
@@ -37,7 +49,7 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 
 	cv, err := NewConfigurationVersion(ws.ID(), ConfigurationVersionCreateOptions{
 		IngressAttributes: opts.IngressAttributes,
-		Speculative:       Bool(opts.Speculative),
+		Speculative:       otf.Bool(opts.Speculative),
 	})
 	require.NoError(t, err)
 

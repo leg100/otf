@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -115,6 +116,42 @@ func (db *DB) DeleteTeam(ctx context.Context, teamID string) error {
 	return nil
 }
 
+func (db *DB) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
+	_, err := db.UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
+		WorkspaceID: sql.String(workspaceID),
+		TeamName:    sql.String(team),
+		Role:        sql.String(role.String()),
+	})
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *DB) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*otf.WorkspacePermission, error) {
+	result, err := db.FindWorkspacePermissionsByID(ctx, sql.String(workspaceID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	var perms []*otf.WorkspacePermission
+	for _, row := range result {
+		perm, err := permissionRow(row).toPermission()
+		if err != nil {
+			return nil, sql.Error(err)
+		}
+		perms = append(perms, perm)
+	}
+	return perms, nil
+}
+
+func (db *DB) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
+	_, err := db.DeleteWorkspacePermissionByID(ctx, sql.String(workspaceID), sql.String(team))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
 // tx constructs a new pgdb within a transaction.
 func (db *DB) tx(ctx context.Context, callback func(db) error) error {
 	return db.Transaction(ctx, func(tx otf.Database) error {
@@ -145,4 +182,23 @@ func (row pgRow) toTeam() *Team {
 			ManageRegistry:   row.PermissionManageRegistry,
 		},
 	}
+}
+
+// permissionRow represents the result of a database query for a
+// workspace permission.
+type permissionRow struct {
+	Role         pgtype.Text          `json:"role"`
+	Team         *pggen.Teams         `json:"team"`
+	Organization *pggen.Organizations `json:"organization"`
+}
+
+func (row permissionRow) toPermission() (*otf.WorkspacePermission, error) {
+	role, err := rbac.WorkspaceRoleFromString(row.Role.String)
+	if err != nil {
+		return nil, err
+	}
+	return &otf.WorkspacePermission{
+		Role: role,
+		Team: pgRow(*row.Team).toTeam(),
+	}, nil
 }

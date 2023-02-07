@@ -116,37 +116,16 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/profile/tokens/new", app.newTokenHandler)
 		r.PST("/profile/tokens/create", app.createTokenHandler)
 
+		// User routes
+		app.userService.AddHTMLHandlers(r.Router)
+
 		// Module routes
 		app.moduleService.AddHTMLHandlers(r.Router)
 
 		// VCS provider routes
 		app.vcsProviderService.AddHTMLHandlers(r.Router)
 
-		r.GET("/organizations/{organization_name}/users", app.listUsers)
-
-		r.GET("/organizations/{organization_name}/teams", app.listTeams)
-		r.GET("/teams/{team_id}", app.getTeam)
-		r.PST("/teams/{team_id}/update", app.updateTeam)
-
 		r.GET("/organizations/{organization_name}/permissions", app.listOrganizationPermissions)
-
-		r.GET("/organizations/{organization_name}/workspaces", app.listWorkspaces)
-		r.GET("/organizations/{organization_name}/workspaces/new", app.newWorkspace)
-		r.PST("/organizations/{organization_name}/workspaces/create", app.createWorkspace)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspaceByName)
-		r.GET("/workspaces/{workspace_id}", app.getWorkspace)
-		r.GET("/workspaces/{workspace_id}/edit", app.editWorkspace)
-		r.PST("/workspaces/{workspace_id}/update", app.updateWorkspace)
-		r.PST("/workspaces/{workspace_id}/delete", app.deleteWorkspace)
-		r.PST("/workspaces/{workspace_id}/lock", app.lockWorkspace)
-		r.PST("/workspaces/{workspace_id}/unlock", app.unlockWorkspace)
-		r.PST("/workspaces/{workspace_id}/set-permission", app.setWorkspacePermission)
-		r.PST("/workspaces/{workspace_id}/unset-permission", app.unsetWorkspacePermission)
-		r.GET("/workspaces/{workspace_id}/setup-connection-provider", app.listWorkspaceVCSProviders)
-		r.GET("/workspaces/{workspace_id}/setup-connection-repo", app.listWorkspaceVCSRepos)
-		r.PST("/workspaces/{workspace_id}/connect", app.connectWorkspace)
-		r.PST("/workspaces/{workspace_id}/disconnect", app.disconnectWorkspace)
-		r.PST("/workspaces/{workspace_id}/start-run", app.startRun)
 
 		// Variables routes
 		app.variableService.AddHTMLHandlers(r.Router)

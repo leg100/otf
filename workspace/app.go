@@ -3,33 +3,52 @@ package workspace
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-func (a *Application) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
-	ws, err := otf.NewWorkspace(opts)
-	if err != nil {
-		a.Error(err, "constructing workspace")
-		return nil, err
+type service interface {
+	create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+}
+
+type Application struct {
+	otf.Authorizer
+	logr.Logger
+
+	db pgdb
+	*handlers
+	*htmlApp
+}
+
+func NewApplication(opts ApplicationOptions) *Application {
+	app := &Application{
+		Authorizer: opts.Authorizer,
+		db:         newPGDB(opts.Database),
+		Logger:     opts.Logger,
 	}
-
-	subject, err := a.CanAccessOrganization(ctx, rbac.CreateWorkspaceAction, ws.Organization())
-	if err != nil {
-		return nil, err
+	app.handlers = &handlers{
+		Application: app,
 	}
-
-	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
-		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
-		return nil, err
+	app.htmlApp = &htmlApp{
+		app:      app,
+		Renderer: opts.Renderer,
 	}
+	return app
+}
 
-	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
-
-	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
-
-	return ws, nil
+type ApplicationOptions struct {
+	otf.Authorizer
+	otf.Database
+	otf.Renderer
+	logr.Logger
 }
 
 func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
@@ -40,7 +59,7 @@ func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, o
 
 	// retain ref to existing name so a name change can be detected
 	var name string
-	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *otf.Workspace) error {
+	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *Workspace) error {
 		name = ws.Name()
 		return ws.Update(opts)
 	})
@@ -237,4 +256,28 @@ func (a *Application) UnlockWorkspace(ctx context.Context, workspaceID string, o
 // SetCurrentRun sets the current run for the workspace
 func (a *Application) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
+}
+
+func (a *Application) create(ctx context.Context, opts CreateWorkspaceOptions) (*otf.Workspace, error) {
+	ws, err := NewWorkspace(opts)
+	if err != nil {
+		a.Error(err, "constructing workspace")
+		return nil, err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateWorkspaceAction, ws.Organization())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
+		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
+		return nil, err
+	}
+
+	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
+
+	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
+
+	return ws, nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,4 +29,15 @@ func CreateTestTeam(t *testing.T, db otf.DB, organization string) *Team {
 		teamDB.DeleteTeam(ctx, team.ID())
 	})
 	return team
+}
+
+func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role rbac.Role) *otf.WorkspacePermission {
+	ctx := context.Background()
+	err := db.SetWorkspacePermission(ctx, ws.ID(), team.Name(), role)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
+	})
+	return &otf.WorkspacePermission{Team: team, Role: role}
 }

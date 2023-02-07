@@ -10,7 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -56,29 +55,6 @@ func overrideCleanupInterval(d time.Duration) newTestDBOption {
 	}
 }
 
-func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role rbac.Role) *otf.WorkspacePermission {
-	ctx := context.Background()
-	err := db.SetWorkspacePermission(ctx, ws.ID(), team.Name(), role)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
-	})
-	return &otf.WorkspacePermission{Team: team, Role: role}
-}
-
-func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	ctx := context.Background()
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	err := db.CreateRun(ctx, run)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteRun(ctx, run.ID())
-	})
-	return run
-}
-
 func createTestSession(t *testing.T, db otf.DB, userID string, opts ...otf.NewSessionOption) *otf.Session {
 	session := otf.NewTestSession(t, userID, opts...)
 	ctx := context.Background()
@@ -105,17 +81,4 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 		db.DeleteToken(ctx, token.Token())
 	})
 	return token
-}
-
-func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
-	ctx := context.Background()
-
-	module := otf.NewTestModule(org)
-	err := db.CreateModule(ctx, module)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteModule(ctx, module.ID())
-	})
-	return module
 }

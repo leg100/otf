@@ -11,19 +11,19 @@ import (
 )
 
 // pgdb is a state/state-version database on postgres
-type DB struct {
+type pgdb struct {
 	otf.Database // provides access to generated SQL queries
 }
 
-func NewDB(db otf.Database) *DB {
+func NewDB(db otf.Database) *pgdb {
 	return newPGDB(db)
 }
 
-func newPGDB(db otf.Database) *DB {
-	return &DB{db}
+func newPGDB(db otf.Database) *pgdb {
+	return &pgdb{db}
 }
 
-func (db *DB) CreateWorkspace(ctx context.Context, ws *Workspace) error {
+func (db *pgdb) CreateWorkspace(ctx context.Context, ws *Workspace) error {
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 			ID:                         sql.String(ws.ID()),
@@ -71,7 +71,7 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *Workspace) error {
 	return nil
 }
 
-func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
+func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		var err error
@@ -109,7 +109,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*
 	return ws, err
 }
 
-func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
+func (db *pgdb) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
 	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
 		Branch:        sql.String(repo.Branch),
 		WebhookID:     sql.UUID(repo.WebhookID),
@@ -133,7 +133,7 @@ func CreateWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID strin
 	return sql.Error(err)
 }
 
-func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
+func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
 	_, err := db.UpdateWorkspaceRepoByID(ctx, sql.String(repo.Branch), sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -142,7 +142,7 @@ func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo 
 	return ws, sql.Error(err)
 }
 
-func (db *DB) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	_, err := db.Querier.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -157,14 +157,14 @@ func DeleteWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID strin
 }
 
 // LockWorkspace locks the specified workspace.
-func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (db *pgdb) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var ws *otf.Workspace
-	err = db.tx(ctx, func(tx *DB) error {
+	err = db.tx(ctx, func(tx *pgdb) error {
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
@@ -194,7 +194,7 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 }
 
 // SetCurrentRun sets the ID of the current run for the specified workspace.
-func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
+func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, sql.String(runID), sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -205,14 +205,14 @@ func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*ot
 // UnlockWorkspace unlocks the specified workspace; the caller has the
 // opportunity to check the current locker passed into the provided callback. If
 // an error is returned the unlock will not go ahead.
-func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (db *pgdb) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var ws *otf.Workspace
-	err = db.tx(ctx, func(tx *DB) error {
+	err = db.tx(ctx, func(tx *pgdb) error {
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
@@ -241,7 +241,7 @@ func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.
 	return ws, err
 }
 
-func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -287,7 +287,7 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	}, nil
 }
 
-func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
 	rows, err := db.FindWorkspacesByWebhookID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, err
@@ -305,7 +305,7 @@ func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*W
 	return items, nil
 }
 
-func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
+func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
@@ -342,7 +342,7 @@ func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organiz
 	}, nil
 }
 
-func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
+func (db *pgdb) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, sql.String(runID))
 	if err != nil {
 		return "", sql.Error(err)
@@ -350,7 +350,7 @@ func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, 
 	return workspaceID.String, nil
 }
 
-func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error) {
+func (db *pgdb) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByStateVersionID(ctx, sql.String(svID))
 	if err != nil {
 		return "", sql.Error(err)
@@ -358,7 +358,7 @@ func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (
 	return workspaceID.String, nil
 }
 
-func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error) {
+func (db *pgdb) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByCVID(ctx, sql.String(cvID))
 	if err != nil {
 		return "", sql.Error(err)
@@ -366,7 +366,7 @@ func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, er
 	return workspaceID.String, nil
 }
 
-func (db *DB) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	result, err := db.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -374,7 +374,7 @@ func (db *DB) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace,
 	return UnmarshalWorkspaceResult(WorkspaceResult(result))
 }
 
-func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (db *pgdb) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	result, err := db.FindWorkspaceByName(ctx, sql.String(workspace), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -382,7 +382,7 @@ func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace st
 	return UnmarshalWorkspaceResult(WorkspaceResult(result))
 }
 
-func (db *DB) DeleteWorkspace(ctx context.Context, workspaceID string) error {
+func (db *pgdb) DeleteWorkspace(ctx context.Context, workspaceID string) error {
 	_, err := db.Querier.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)
@@ -390,10 +390,10 @@ func (db *DB) DeleteWorkspace(ctx context.Context, workspaceID string) error {
 	return nil
 }
 
-func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
+func (db *pgdb) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
 	name, err := db.FindOrganizationNameByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return "", sql.Error(err)
 	}
-	return name.sql.String, nil
+	return name.String, nil
 }

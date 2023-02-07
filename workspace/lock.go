@@ -13,8 +13,8 @@ var (
 	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
 	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
 
-	EventWorkspaceLocked   EventType = "workspace_locked"
-	EventWorkspaceUnlocked EventType = "workspace_unlocked"
+	EventWorkspaceLocked   otf.EventType = "workspace_locked"
+	EventWorkspaceUnlocked otf.EventType = "workspace_unlocked"
 )
 
 // Unlocked is an unlocked workspace lock

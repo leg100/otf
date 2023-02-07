@@ -167,9 +167,9 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []stri
 	// Iterate through orgs and check if already a member; if not then
 	// add membership to store
 	for _, org := range orgs {
-		if !Contains(u.organizations, org) {
+		if !otf.Contains(u.organizations, org) {
 			if err := store.AddOrganizationMembership(ctx, u.ID(), org); err != nil {
-				if errors.Is(err, ErrResourceAlreadyExists) {
+				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate orgs
 					continue
@@ -182,7 +182,7 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []stri
 	// Iterate thru receiver's orgs and check if in the given orgs; if not then
 	// remove membership from store
 	for _, org := range u.organizations {
-		if !Contains(orgs, org) {
+		if !otf.Contains(orgs, org) {
 			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org); err != nil {
 				return err
 			}
@@ -195,7 +195,7 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []stri
 	for _, team := range teams {
 		if !inTeamList(u.teams, team.ID()) {
 			if err := store.AddTeamMembership(ctx, u.ID(), team.ID()); err != nil {
-				if errors.Is(err, ErrResourceAlreadyExists) {
+				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate teams
 					continue
@@ -220,12 +220,12 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []stri
 }
 
 // CanLock always returns an error because nothing can replace a user lock
-func (u *User) CanLock(requestor Identity) error {
-	return ErrWorkspaceAlreadyLocked
+func (u *User) CanLock(requestor otf.Identity) error {
+	return otf.ErrWorkspaceAlreadyLocked
 }
 
 // CanUnlock decides whether to permits requestor to unlock a user lock
-func (u *User) CanUnlock(requestor Identity, force bool) error {
+func (u *User) CanUnlock(requestor otf.Identity, force bool) error {
 	if force {
 		// TODO: only grant admin user
 		return nil
@@ -235,10 +235,10 @@ func (u *User) CanUnlock(requestor Identity, force bool) error {
 			// only same user can unlock
 			return nil
 		}
-		return ErrWorkspaceLockedByDifferentUser
+		return otf.ErrWorkspaceLockedByDifferentUser
 	}
 	// any other entity cannot unlock
-	return ErrWorkspaceUnlockDenied
+	return otf.ErrWorkspaceUnlockDenied
 }
 
 // UserService provides methods to interact with user accounts and their

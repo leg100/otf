@@ -1,8 +1,12 @@
 package module
 
 import (
+	"context"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/require"
 )
 
 func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *Module {
@@ -46,4 +50,17 @@ func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatu
 	modver := NewModuleVersion(createOpts)
 	modver.status = status
 	return modver
+}
+
+func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
+	ctx := context.Background()
+
+	module := otf.NewTestModule(org)
+	err := db.CreateModule(ctx, module)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteModule(ctx, module.ID())
+	})
+	return module
 }
