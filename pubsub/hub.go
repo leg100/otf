@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/inmem"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -25,7 +24,10 @@ var pid = uuid.New().String()
 // hub is a pubsub hub implemented using postgres' listen/notify
 type hub struct {
 	logr.Logger
-	DB // db used for retrieving event payloads
+	otf.OrganizationDB
+	otf.WorkspaceDB
+	otf.RunDB
+	otf.LogsDB
 
 	channel string            // postgres notification channel name
 	pool    *pgxpool.Pool     // pool from which to acquire a dedicated connection to postgres
@@ -38,32 +40,36 @@ type HubConfig struct {
 	ChannelName *string
 	PID         *string
 	PoolDB      otf.DB
-	DB          DB
-}
 
-type (
-	DB interface {
-		GetOrganizationByID(context.Context, string) (otf.Organization, error)
-		GetRun(context.Context, string) (otf.Run, error)
-		GetWorkspace(context.Context, string) (otf.Workspace, error)
-		GetChunkByID(context.Context, int) (otf.Chunk, error)
-	}
-)
+	otf.OrganizationDB
+	otf.WorkspaceDB
+	otf.RunDB
+	otf.LogsDB
+}
 
 func NewHub(logger logr.Logger, cfg HubConfig) (*hub, error) {
 	// required config
 	if cfg.PoolDB == nil {
 		return nil, errors.New("missing database connection pool")
 	}
-	if cfg.DB == nil {
-		return nil, errors.New("missing database")
+	if cfg.OrganizationDB == nil {
+		return nil, errors.New("missing organization database")
+	}
+	if cfg.WorkspaceDB == nil {
+		return nil, errors.New("missing workspace database")
+	}
+	if cfg.RunDB == nil {
+		return nil, errors.New("missing runs database")
+	}
+	if cfg.LogsDB == nil {
+		return nil, errors.New("missing logs database")
 	}
 
 	ps := &hub{
 		Logger:  logger.WithValues("component", "pubsub"),
 		pid:     pid,
 		channel: defaultChannel,
-		local:   inmem.NewPubSub(),
+		local:   newSpoke(),
 	}
 
 	pool, err := cfg.PoolDB.Pool()
@@ -81,18 +87,6 @@ func NewHub(logger logr.Logger, cfg HubConfig) (*hub, error) {
 	}
 
 	return ps, nil
-}
-
-// message is the schema of the payload for use in the postgres notification channel.
-type message struct {
-	// Table is the postgres table on which the event occured
-	Table string `json:"relation"`
-	// Action is the type of change made to the relation
-	Action string `json:"action"`
-	// ID is the primary key of the changed row
-	ID string `json:"id"`
-	// PID is the process id that sent this event
-	PID string `json:"pid"`
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to

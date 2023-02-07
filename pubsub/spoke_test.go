@@ -1,4 +1,4 @@
-package inmem
+package pubsub
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestPubSub(t *testing.T) {
-	ps := NewPubSub()
+	ps := newSpoke()
 	ev := otf.Event{Type: "eclipse"}
 
 	// create subscribers

@@ -1,11 +1,9 @@
-package otf
+package session
 
 import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/jackc/pgtype"
 )
 
 const (
@@ -75,22 +73,4 @@ type SessionStore interface {
 	ListSessions(ctx context.Context, userID string) ([]*Session, error)
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, token string) error
-}
-
-type SessionResult struct {
-	Token     pgtype.Text        `json:"token"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	Address   pgtype.Text        `json:"address"`
-	Expiry    pgtype.Timestamptz `json:"expiry"`
-	UserID    pgtype.Text        `json:"user_id"`
-}
-
-func UnmarshalSessionResult(result SessionResult) *Session {
-	return &Session{
-		token:     result.Token.String,
-		createdAt: result.CreatedAt.Time.UTC(),
-		expiry:    result.Expiry.Time.UTC(),
-		userID:    result.UserID.String,
-		address:   result.Address.String,
-	}
 }

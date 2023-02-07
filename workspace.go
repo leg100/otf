@@ -158,8 +158,9 @@ type WorkspaceService interface {
 	DeleteWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 }
 
-// WorkspaceStore is a persistence store for workspaces.
-type WorkspaceStore interface {
+// WorkspaceDB is a persistence store for workspaces.
+type WorkspaceDB interface {
+	GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
 	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)

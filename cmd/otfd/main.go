@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/registry"
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
@@ -97,6 +98,9 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	// Setup hostname service
+	hostnameService := otf.NewHostnameService(logger)
+
 	// populate cloud service with cloud configurations
 	cloudService, err := inmem.NewCloudService(d.OAuthConfigs.Configs()...)
 	if err != nil {
@@ -131,14 +135,16 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 	defer db.Close()
 
-	// Setup pub sub broker
-	pubsub, err := sql.NewPubSub(logger, db)
+	// Setup workspace database
+	workspaceDB := workspace.NewDB(db)
+
+	// Setup pub sub hub
+	hub, err := pubsub.NewHub(logger, pubsub.HubConfig{
+		WorkspaceDB: workspaceDB,
+	})
 	if err != nil {
 		return fmt.Errorf("setting up pub sub broker")
 	}
-
-	// Setup workspace database
-	workspaceDB := workspace.NewDB(db)
 
 	// Setup authorizer
 	authorizer := otf.NewAuthorizer(logger, workspaceDB)
@@ -155,7 +161,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Logger:              logger,
 		DB:                  db,
 		Cache:               cache,
-		PubSub:              pubsub,
+		PubSub:              hub,
 		CloudService:        cloudService,
 		Authorizer:          authorizer,
 		StateVersionService: stateService,
@@ -195,7 +201,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	defer ln.Close()
 
 	// Set system hostname
-	if err := app.SetHostname(d.hostname, ln.Addr().(*net.TCPAddr)); err != nil {
+	if err := hostnameService.SetHostname(d.hostname, ln.Addr().(*net.TCPAddr)); err != nil {
 		return err
 	}
 
@@ -243,7 +249,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Run pubsub broker
-	g.Go(func() error { return pubsub.Start(ctx) })
+	g.Go(func() error { return broker.Start(ctx) })
 
 	// Run scheduler - if there is another scheduler running already then
 	// this'll wait until the other scheduler exits.

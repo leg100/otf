@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 	"github.com/stretchr/testify/require"
 
@@ -53,32 +52,4 @@ func overrideCleanupInterval(d time.Duration) newTestDBOption {
 	return func(o *Options) {
 		o.CleanupInterval = d
 	}
-}
-
-func createTestSession(t *testing.T, db otf.DB, userID string, opts ...otf.NewSessionOption) *otf.Session {
-	session := otf.NewTestSession(t, userID, opts...)
-	ctx := context.Background()
-
-	err := db.CreateSession(ctx, session)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteSession(ctx, session.Token())
-	})
-	return session
-}
-
-func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
-	ctx := context.Background()
-
-	token, err := otf.NewToken(userID, description)
-	require.NoError(t, err)
-
-	err = db.CreateToken(ctx, token)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteToken(ctx, token.Token())
-	})
-	return token
 }

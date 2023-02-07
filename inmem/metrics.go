@@ -2,13 +2,6 @@ package inmem
 
 import "github.com/prometheus/client_golang/prometheus"
 
-var totalSubscribers = prometheus.NewGauge(prometheus.GaugeOpts{
-	Namespace: "otf",
-	Subsystem: "pub_sub",
-	Name:      "total_subscribers",
-	Help:      "Total number of subscribers.",
-})
-
 var cacheSize = prometheus.NewGauge(prometheus.GaugeOpts{
 	Namespace: "otf",
 	Subsystem: "cache",
@@ -66,7 +59,6 @@ var cacheCollisions = prometheus.NewGauge(prometheus.GaugeOpts{
 })
 
 func init() {
-	prometheus.MustRegister(totalSubscribers)
 	prometheus.MustRegister(cacheSize)
 	prometheus.MustRegister(cacheUsed)
 	prometheus.MustRegister(cacheEntries)

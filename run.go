@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -109,10 +110,14 @@ type RunListOptions struct {
 }
 
 type (
-	Plan  interface{
+	Plan interface {
 		ResourceReport() *ResourceReport
 	}
-	Apply interface{
+	Apply interface {
 		ResourceReport() *ResourceReport
 	}
 )
+
+type RunDB interface {
+	GetRun(context.Context, string) (Run, error)
+}

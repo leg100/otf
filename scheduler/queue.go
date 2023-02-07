@@ -14,14 +14,14 @@ type queue struct {
 	otf.Application
 	logr.Logger
 
-	ws      *otf.Workspace
+	ws      otf.Workspace
 	current *otf.Run
 	queue   []*otf.Run
 }
 
 type queueMaker struct{}
 
-func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws *otf.Workspace) eventHandler {
+func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws otf.Workspace) eventHandler {
 	return &queue{
 		Application: app,
 		ws:          ws,
@@ -31,7 +31,7 @@ func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws *otf.Work
 
 func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 	switch payload := event.Payload.(type) {
-	case *otf.Workspace:
+	case otf.Workspace:
 		q.ws = payload
 		if event.Type == otf.EventWorkspaceUnlocked {
 			if q.current != nil {
@@ -40,7 +40,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 				}
 			}
 		}
-	case *otf.Run:
+	case otf.Run:
 		if payload.Speculative() {
 			if payload.Status() == otf.RunPending {
 				// immediately enqueue onto global queue

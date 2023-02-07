@@ -22,10 +22,9 @@ var _ otf.Application = (*Application)(nil)
 // Application encompasses services for interacting between components of the
 // otf server
 type Application struct {
-	db       otf.DB
-	cache    otf.Cache
-	proxy    otf.ChunkStore
-	hostname string
+	db    otf.DB
+	cache otf.Cache
+	proxy otf.ChunkStore
 
 	opts Options // keep reference for creating child apps
 
@@ -81,7 +80,6 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		VCSProviderService:  opts.VCSProviderService,
 		RunFactory:          parent.RunFactory,
 		proxy:               parent.proxy,
-		hostname:            parent.hostname,
 		VCSProviderFactory: &otf.VCSProviderFactory{
 			Service: opts.CloudService,
 		},
@@ -93,9 +91,8 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		ConfigurationVersionService: child,
 	}
 	child.HookService = hooks.NewService(hooks.NewServiceOptions{
-		Database:        db,
-		CloudService:    child.Service,
-		HostnameService: child,
+		Database:     db,
+		CloudService: child.Service,
 	})
 	child.WorkspaceConnector = &workspace.Connector{
 		HookService:        child,

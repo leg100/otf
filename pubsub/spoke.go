@@ -1,4 +1,4 @@
-package inmem
+package pubsub
 
 import (
 	"context"
@@ -12,24 +12,24 @@ import (
 // subBufferSize is the buffer size of the channel for each subscription.
 const subBufferSize = 16
 
-var _ otf.PubSubService = (*PubSub)(nil)
+var _ otf.PubSubService = (*spoke)(nil)
 
-// PubSub implements a 'pub-sub' service using go channels.
-type PubSub struct {
+// spoke implements a 'pub-sub' service using go channels.
+type spoke struct {
 	mu      sync.Mutex
 	subs    map[string]chan otf.Event
 	metrics map[string]prometheus.Gauge
 }
 
-func NewPubSub() *PubSub {
-	return &PubSub{
+func newSpoke() *spoke {
+	return &spoke{
 		subs:    make(map[string]chan otf.Event),
 		metrics: make(map[string]prometheus.Gauge),
 	}
 }
 
 // Publish relays an event to a list of subscribers
-func (e *PubSub) Publish(event otf.Event) {
+func (e *spoke) Publish(event otf.Event) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -45,7 +45,7 @@ func (e *PubSub) Publish(event otf.Event) {
 }
 
 // Subscribe subscribes the caller to a stream of events.
-func (e *PubSub) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
+func (e *spoke) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

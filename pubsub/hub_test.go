@@ -7,7 +7,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,22 +18,22 @@ import (
 // TestPubSub_E2E tests that one pubsub process can publish a message and that
 // another pubsub process can receive it.
 func TestPubSub_E2E(t *testing.T) {
-	db := NewTestDB(t)
+	db := sql.NewTestDB(t)
 	org := organization.CreateTestOrganization(t, db)
-	ws := workspace.CreateTestWorkspace(t, db, org)
-	cv := configversion.createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
-	run := createTestRun(t, db, ws, cv)
+	ws := workspace.CreateTestWorkspace(t, db, org.Name())
+	cv := configversion.CreateTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+	run := run.CreateTestRun(t, db, ws, cv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(func() { cancel() })
 
 	// setup sender
-	sender, err := NewPubSub(logr.Discard(), db, ChannelName("events_e2e_test"), PID("sender-1"))
+	sender, err := newSpoke(logr.Discard(), db, ChannelName("events_e2e_test"), PID("sender-1"))
 	require.NoError(t, err)
 	senderGot, err := sender.Subscribe(ctx, "sender-1")
 	require.NoError(t, err)
 	// setup receiver
-	receiver, err := NewPubSub(logr.Discard(), db, ChannelName("events_e2e_test"), PID("receiver-1"))
+	receiver, err := newSpoke(logr.Discard(), db, ChannelName("events_e2e_test"), PID("receiver-1"))
 	require.NoError(t, err)
 	receiverGot, err := receiver.Subscribe(ctx, "sender-2")
 	require.NoError(t, err)
@@ -64,7 +66,7 @@ func TestPubSub_E2E(t *testing.T) {
 }
 
 func TestPubSub_marshal(t *testing.T) {
-	ps := &PubSub{pid: "process-1"}
+	ps := &spoke{pid: "process-1"}
 	event := otf.Event{
 		Type: otf.EventRunStatusUpdate,
 		Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
@@ -82,7 +84,7 @@ func TestPubSub_reassemble(t *testing.T) {
 	run := otf.NewTestRun(t, otf.TestRunCreateOptions{
 		ID: otf.String("run-123"),
 	})
-	ps := PubSub{
+	ps := spoke{
 		db: &fakePubSubDB{
 			run: run,
 		},

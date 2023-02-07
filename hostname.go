@@ -4,16 +4,43 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	"github.com/go-logr/logr"
 )
 
 type HostnameService interface {
 	Hostname() string
 }
 
-// SetHostname sets the system hostname. If hostname is provided it'll use
+type hostnameService struct {
+	logr.Logger
+
+	hostname string
+}
+
+func NewHostnameService(logger logr.Logger) *hostnameService {
+	return &hostnameService{
+		Logger: logger,
+	}
+}
+
+func (a *hostnameService) Hostname() string { return a.hostname }
+
+func (a *hostnameService) SetHostname(hostname string, listen *net.TCPAddr) error {
+	hostname, err := setHostname(hostname, listen)
+	if err != nil {
+		return err
+	}
+	a.hostname = hostname
+
+	a.V(0).Info("set system hostname", "hostname", a.hostname)
+	return nil
+}
+
+// setHostname sets the system hostname. If hostname is provided it'll use
 // that; otherwise the listen address is used (which should be that used by the
 // otfd daemon).
-func SetHostname(hostname string, listen *net.TCPAddr) (string, error) {
+func setHostname(hostname string, listen *net.TCPAddr) (string, error) {
 	if hostname != "" {
 		return hostname, nil
 	} else if listen != nil {

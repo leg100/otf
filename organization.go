@@ -4,14 +4,18 @@ import (
 	"context"
 )
 
+type Organization interface {
+	Name() string
+}
+
 type OrganizationService interface {
 	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
 	EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
 	GetOrganization(ctx context.Context, name string) (Organization, error)
 }
 
-type Organization interface {
-	Name() string
+type OrganizationDB interface {
+	GetOrganizationByID(context.Context, string) (Organization, error)
 }
 
 // OrganizationCreateOptions represents the options for creating an

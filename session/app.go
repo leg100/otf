@@ -1,10 +1,20 @@
-package app
+package session
 
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
+
+type Application struct {
+	otf.Authorizer
+	logr.Logger
+
+	db DB
+	*handlers
+	*htmlApp
+}
 
 // CreateSession creates and persists a user session.
 func (a *Application) CreateSession(ctx context.Context, userID, address string) (*otf.Session, error) {
@@ -32,18 +42,12 @@ func (a *Application) ListSessions(ctx context.Context, userID string) ([]*otf.S
 }
 
 func (a *Application) DeleteSession(ctx context.Context, token string) error {
-	// Retrieve user purely for logging purposes
-	user, err := a.GetUser(ctx, otf.UserSpec{SessionToken: &token})
-	if err != nil {
-		return err
-	}
-
 	if err := a.db.DeleteSession(ctx, token); err != nil {
-		a.Error(err, "deleting session", "username", user.Username())
+		a.Error(err, "deleting session")
 		return err
 	}
 
-	a.V(1).Info("deleted session", "username", user.Username())
+	a.V(2).Info("deleted session")
 
 	return nil
 }

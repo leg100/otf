@@ -11,17 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Session {
-	session, err := NewSession(userID, "127.0.0.1")
-	require.NoError(t, err)
-
-	for _, o := range opts {
-		o(session)
-	}
-
-	return session
-}
-
 func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
 	return &WorkspaceRepo{
 		ProviderID: provider.ID(),

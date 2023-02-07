@@ -1,4 +1,4 @@
-package app
+package token
 
 import (
 	"context"

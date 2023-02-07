@@ -1,14 +1,14 @@
-package otf
+package token
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf"
 )
 
-// Token is a user authentication token.
+// Token is a user API token.
 type Token struct {
 	id          string
 	createdAt   time.Time
@@ -48,26 +48,16 @@ type TokenStore interface {
 }
 
 func NewToken(uid, description string) (*Token, error) {
-	t, err := GenerateAuthToken("user")
+	t, err := otf.GenerateAuthToken("user")
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
 	token := Token{
-		id:          NewID("ut"),
-		createdAt:   CurrentTimestamp(),
+		id:          otf.NewID("ut"),
+		createdAt:   otf.CurrentTimestamp(),
 		token:       t,
 		description: description,
 		userID:      uid,
 	}
 	return &token, nil
-}
-
-func UnmarshalTokenResult(result pggen.FindTokensByUserIDRow) *Token {
-	return &Token{
-		id:          result.TokenID.String,
-		createdAt:   result.CreatedAt.Time,
-		token:       result.Token.String,
-		description: result.Description.String,
-		userID:      result.UserID.String,
-	}
 }
