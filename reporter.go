@@ -65,7 +65,7 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case event := <-sub:
-			run, ok := event.Payload.(*Run)
+			run, ok := event.Payload.(Run)
 			if !ok {
 				// Skip non-run events
 				continue
@@ -80,7 +80,7 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 // reinitialize retrieves workspaces and runs from the DB and listens to events,
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
-func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
+func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID())
 	if err != nil {
 		return err

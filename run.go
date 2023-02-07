@@ -81,6 +81,7 @@ type Run interface {
 	ConfigurationVersionID() string
 	Plan() Plan
 	Apply() Apply
+	HasChanges() bool
 }
 
 // RunList represents a list of runs.

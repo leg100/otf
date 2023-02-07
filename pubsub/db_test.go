@@ -1,4 +1,4 @@
-package sql
+package pubsub
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,9 +17,9 @@ import (
 // another pubsub process can receive it.
 func TestPubSub_E2E(t *testing.T) {
 	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+	org := organization.CreateTestOrganization(t, db)
+	ws := workspace.CreateTestWorkspace(t, db, org)
+	cv := configversion.createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -3,15 +3,15 @@ package configversion
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 )
 
 type cvUploader struct {
-	db *DB
+	db db
 	id string
 }
 
-func newConfigUploader(db *DB, id string) *cvUploader {
+func newConfigUploader(db db, id string) *cvUploader {
 	return &cvUploader{
 		db: db,
 		id: id,
@@ -20,18 +20,18 @@ func newConfigUploader(db *DB, id string) *cvUploader {
 
 func (u *cvUploader) SetErrored(ctx context.Context) error {
 	// TODO: add status timestamp
-	_, err := u.db.UpdateConfigurationVersionErroredByID(ctx, String(u.id))
+	_, err := u.db.UpdateConfigurationVersionErroredByID(ctx, sql.String(u.id))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *cvUploader) Upload(ctx context.Context, config []byte) (otf.ConfigurationStatus, error) {
+func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
 	// TODO: add status timestamp
-	_, err := u.db.UpdateConfigurationVersionConfigByID(ctx, config, String(u.id))
+	_, err := u.db.UpdateConfigurationVersionConfigByID(ctx, config, sql.String(u.id))
 	if err != nil {
-		return otf.ConfigurationErrored, err
+		return ConfigurationErrored, err
 	}
-	return otf.ConfigurationUploaded, nil
+	return ConfigurationUploaded, nil
 }

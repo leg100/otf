@@ -68,17 +68,6 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 	return &otf.WorkspacePermission{Team: team, Role: role}
 }
 
-func CreateTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
-	org := otf.NewTestOrganization(t)
-	err := db.CreateOrganization(context.Background(), org)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteOrganization(context.Background(), org.Name())
-	})
-	return org
-}
-
 func CreateTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.User {
 	ctx := context.Background()
 	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
@@ -102,18 +91,6 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 		db.DeleteTeam(context.Background(), team.ID())
 	})
 	return team
-}
-
-func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
-	ctx := context.Background()
-	cv := otf.NewTestConfigurationVersion(t, ws, opts)
-	err := db.CreateConfigurationVersion(ctx, cv)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteConfigurationVersion(ctx, cv.ID())
-	})
-	return cv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {

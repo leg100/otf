@@ -11,14 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestOrganization(t *testing.T) *Organization {
-	org, err := NewOrganization(OrganizationCreateOptions{
-		Name: String(uuid.NewString()),
-	})
-	require.NoError(t, err)
-	return org
-}
-
 func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Session {
 	session, err := NewSession(userID, "127.0.0.1")
 	require.NoError(t, err)
@@ -38,64 +30,12 @@ func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
 	}
 }
 
-func NewTestModule(org *Organization, opts ...NewTestModuleOption) *Module {
-	createOpts := CreateModuleOptions{
-		Organization: org.Name(),
-		Provider:     uuid.NewString(),
-		Name:         uuid.NewString(),
-	}
-	mod := NewModule(createOpts)
-	for _, o := range opts {
-		o(mod)
-	}
-	return mod
-}
-
-type NewTestModuleOption func(*Module)
-
-func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
-	return func(mod *Module) {
-		mod.status = status
-	}
-}
-
-func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModuleOption {
-	return func(mod *Module) {
-		mod.Add(NewTestModuleVersion(mod, version, status))
-	}
-}
-
-func WithModuleRepo() NewTestModuleOption {
-	return func(mod *Module) {
-		mod.repo = &ModuleRepo{}
-	}
-}
-
-func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
-	createOpts := CreateModuleVersionOptions{
-		ModuleID: mod.ID(),
-		Version:  version,
-	}
-	modver := NewModuleVersion(createOpts)
-	modver.status = status
-	return modver
-}
-
 func NewTestCloudConfig(c cloud.Cloud) cloud.Config {
 	return cloud.Config{
 		Name:     "fake-cloud",
 		Hostname: "fake-cloud.org",
 		Cloud:    c,
 	}
-}
-
-func NewTestAgentToken(t *testing.T, org *Organization) *AgentToken {
-	token, err := NewAgentToken(CreateAgentTokenOptions{
-		Organization: org.Name(),
-		Description:  "lorem ipsum...",
-	})
-	require.NoError(t, err)
-	return token
 }
 
 // NewTestTarball creates a tarball (.tar.gz) consisting of files respectively populated with the

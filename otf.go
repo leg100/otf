@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -66,6 +67,7 @@ type LockableApplication interface {
 type DB interface {
 	Database
 
+	Pool() (*pgxpool.Pool, error)
 	Tx(ctx context.Context, tx func(DB) error) error
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error

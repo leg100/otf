@@ -63,35 +63,3 @@ type PhaseStatusTimestamp struct {
 	Status    PhaseStatus
 	Timestamp time.Time
 }
-
-// phaseStatus is a mixin providing status functionality for a phase
-type phaseStatus struct {
-	status           PhaseStatus
-	statusTimestamps []PhaseStatusTimestamp
-}
-
-func (p *phaseStatus) Status() PhaseStatus                      { return p.status }
-func (p *phaseStatus) StatusTimestamps() []PhaseStatusTimestamp { return p.statusTimestamps }
-
-func (p *phaseStatus) StatusTimestamp(status PhaseStatus) (time.Time, error) {
-	for _, rst := range p.statusTimestamps {
-		if rst.Status == status {
-			return rst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
-func (p *phaseStatus) updateStatus(status PhaseStatus) {
-	p.status = status
-	p.statusTimestamps = append(p.statusTimestamps, PhaseStatusTimestamp{
-		Status:    status,
-		Timestamp: CurrentTimestamp(),
-	})
-}
-
-func newPhaseStatus() *phaseStatus {
-	p := &phaseStatus{}
-	p.updateStatus(PhasePending)
-	return p
-}
