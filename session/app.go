@@ -16,6 +16,30 @@ type Application struct {
 	*htmlApp
 }
 
+func NewApplication(opts ApplicationOptions) *Application {
+	app := &Application{
+		Authorizer: opts.Authorizer,
+		db:         newPGDB(opts.Database),
+		Logger:     opts.Logger,
+	}
+	app.handlers = &handlers{
+		Application: app,
+	}
+	app.htmlApp = &htmlApp{
+		app:      app,
+		Renderer: opts.Renderer,
+	}
+	return app
+}
+
+type ApplicationOptions struct {
+	otf.Authorizer
+	otf.Database
+	otf.Renderer
+	logr.Logger
+}
+
+
 // CreateSession creates and persists a user session.
 func (a *Application) CreateSession(ctx context.Context, userID, address string) (*otf.Session, error) {
 	session, err := otf.NewSession(userID, address)

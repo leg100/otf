@@ -1,4 +1,4 @@
-package html
+package authenticator
 
 import (
 	"context"
@@ -85,7 +85,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Return user to the original path they attempted to access
 	if cookie, err := r.Cookie(pathCookie); err == nil {
-		setCookie(w, pathCookie, "", &time.Time{})
+		SetCookie(w, pathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
 		http.Redirect(w, r, paths.Profile(), http.StatusFound)

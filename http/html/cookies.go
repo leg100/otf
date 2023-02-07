@@ -14,9 +14,9 @@ const (
 	pathCookie = "path"
 )
 
-// setCookie sets a cookie on the http response. A nil expiry sets no expiry,
+// SetCookie sets a cookie on the http response. A nil expiry sets no expiry,
 // and a zero expiry sets it to be purged from the browser.
-func setCookie(w http.ResponseWriter, name, value string, expiry *time.Time) {
+func SetCookie(w http.ResponseWriter, name, value string, expiry *time.Time) {
 	cookie := &http.Cookie{
 		Name:     name,
 		Value:    value,

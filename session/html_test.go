@@ -22,7 +22,7 @@ func TestSessionHandlers(t *testing.T) {
 		// add user and active session to request
 		r := httptest.NewRequest("GET", "/sessions", nil)
 		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
-		r = r.WithContext(addSessionToContext(r.Context(), active))
+		r = r.WithContext(addToContext(r.Context(), active))
 
 		w := httptest.NewRecorder()
 		app.sessionsHandler(w, r)

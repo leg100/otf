@@ -3,9 +3,18 @@ package team
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
+
+type Application struct {
+	otf.Authorizer
+	logr.Logger
+
+	db pgdb
+	*htmlApp
+}
 
 func (a *Application) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateTeamAction, opts.Organization)
@@ -18,7 +27,7 @@ func (a *Application) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions
 		return nil, err
 	}
 
-	team := otf.NewTeam(opts.Name, org)
+	team := newTeam(opts.Name, org)
 
 	if err := a.db.CreateTeam(ctx, team); err != nil {
 		a.Error(err, "creating team", "name", opts.Name, "organization", opts.Organization, "subject", subject)

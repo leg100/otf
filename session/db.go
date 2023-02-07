@@ -19,8 +19,6 @@ func newPGDB(db otf.Database) *DB {
 	return &DB{db}
 }
 
-var DefaultSessionCleanupInterval = 5 * time.Minute
-
 // CreateSession inserts the session, associating it with the user.
 func (db *DB) CreateSession(ctx context.Context, session *Session) error {
 	_, err := db.InsertSession(ctx, pggen.InsertSessionParams{

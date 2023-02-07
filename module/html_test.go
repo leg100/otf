@@ -9,12 +9,13 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListModules(t *testing.T) {
-	org := otf.NewTestOrganization(t)
+	org := organization.NewTestOrganization(t)
 	mod := otf.NewTestModule(org)
 	app := newFakeWebApp(t, &fakeModulesApp{mod: mod})
 

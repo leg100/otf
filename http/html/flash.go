@@ -33,7 +33,7 @@ func setFlash(w http.ResponseWriter, f flash) {
 		panic("marshalling flash message to json: " + err.Error())
 	}
 	encoded := base64.URLEncoding.EncodeToString(js)
-	setCookie(w, flashCookie, encoded, nil)
+	SetCookie(w, flashCookie, encoded, nil)
 }
 
 // FlashSuccess helper
@@ -65,7 +65,7 @@ func popFlashFunc(w http.ResponseWriter, r *http.Request) func() *flash {
 		panic("unmarshalling flash message: " + err.Error())
 	}
 	// purge cookie from client
-	setCookie(w, flashCookie, "", &time.Time{})
+	SetCookie(w, flashCookie, "", &time.Time{})
 
 	return func() *flash { return &f }
 }

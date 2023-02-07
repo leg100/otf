@@ -108,13 +108,9 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 
 		r.PST("/logout", app.logoutHandler)
 		r.GET("/profile", app.profileHandler)
-		r.GET("/profile/sessions", app.sessionsHandler)
-		r.PST("/profile/sessions/revoke", app.revokeSessionHandler)
 
-		r.GET("/profile/tokens", app.tokensHandler)
-		r.PST("/profile/tokens/delete", app.deleteTokenHandler)
-		r.GET("/profile/tokens/new", app.newTokenHandler)
-		r.PST("/profile/tokens/create", app.createTokenHandler)
+		// Session routes
+		app.sessionService.AddHTMLHandlers(r.Router)
 
 		// User routes
 		app.userService.AddHTMLHandlers(r.Router)

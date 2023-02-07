@@ -5,60 +5,75 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 )
+
+type htmlApp struct {
+	otf.Renderer
+
+	app Application
+}
+
+func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
+	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET")
+	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST")
+	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET")
+	r.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST")
+}
 
 // tokenList exposes a list of tokens to a template
 type tokenList struct {
 	// list template expects pagination object but we don't paginate token
 	// listing
 	*otf.Pagination
-	Items []*otf.Token
+	Items []*Token
 }
 
-func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (app *htmlApp) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 	app.Render("token_new.tmpl", w, r, nil)
 }
 
-func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (app *htmlApp) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var opts otf.TokenCreateOptions
+	var opts TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
-		Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	token, err := app.CreateToken(r.Context(), user.ID(), &opts)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
 	if err := app.renderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	FlashSuccess(w, buf.String())
+	html.FlashSuccess(w, buf.String())
 
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 
-func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
+func (app *htmlApp) tokensHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	tokens, err := app.ListTokens(r.Context(), user.ID())
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -73,21 +88,21 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (app *htmlApp) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	id := r.FormValue("id")
 	if id == "" {
-		Error(w, "missing id", http.StatusUnprocessableEntity)
+		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
 	if err := app.DeleteToken(r.Context(), user.ID(), id); err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	FlashSuccess(w, "Deleted token")
+	html.FlashSuccess(w, "Deleted token")
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }

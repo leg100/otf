@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 const (
-	DefaultSessionExpiry = 24 * time.Hour
+	defaultExpiry          = 24 * time.Hour
+	defaultCleanupInterval = 5 * time.Minute
 )
 
 // Session is a user session for the UI
@@ -23,15 +26,15 @@ type Session struct {
 
 // NewSession constructs a new Session
 func NewSession(uid, address string) (*Session, error) {
-	token, err := GenerateToken()
+	token, err := otf.GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
 	}
 	session := Session{
-		createdAt: CurrentTimestamp(),
+		createdAt: otf.CurrentTimestamp(),
 		token:     token,
 		address:   address,
-		expiry:    CurrentTimestamp().Add(DefaultSessionExpiry),
+		expiry:    otf.CurrentTimestamp().Add(defaultExpiry),
 		userID:    uid,
 	}
 	return &session, nil
