@@ -79,15 +79,18 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err := a.CreateSession(otf.CreateSessionOptions{
-		ResponseWriter: w,
-		Request: r,
-		UserID: user.ID(),
+	session, err := a.CreateSession(otf.CreateSessionOptions{
+		Request:  r,
+		Response: w,
+		UserID:   user.ID(),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// set session cookie
+	session.SetCookie(w)
 
 	// Return user to the original path they attempted to access
 	if cookie, err := r.Cookie(otf.PathCookie); err == nil {

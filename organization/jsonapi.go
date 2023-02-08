@@ -72,6 +72,25 @@ type jsonapiCreateOptions struct {
 	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
 }
 
+// jsonapiUpdateOptions represents the options for updating an
+// organization.
+type jsonapiUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,organizations"`
+
+	// New name for the organization.
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// Session expiration (minutes).
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
+
+	// Session timeout after inactivity (minutes).
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+}
+
 // Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
 // OTF is free and therefore the user is entitled to all currently supported
 // services.  Entitlements represents the entitlements of an organization.

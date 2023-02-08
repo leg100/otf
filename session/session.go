@@ -3,9 +3,12 @@ package session
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/html"
 )
 
 const (
@@ -13,7 +16,7 @@ const (
 	defaultCleanupInterval = 5 * time.Minute
 )
 
-// Session is a user session for the UI
+// Session is a user session for the web UI
 type Session struct {
 	token     string
 	expiry    time.Time
@@ -25,18 +28,25 @@ type Session struct {
 }
 
 // NewSession constructs a new Session
-func NewSession(uid, address string) (*Session, error) {
+func NewSession(r *http.Request, userID string) (*Session, error) {
+	ip, err := otfhttp.GetClientIP(r)
+	if err != nil {
+		return nil, err
+	}
+
 	token, err := otf.GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
 	}
+
 	session := Session{
 		createdAt: otf.CurrentTimestamp(),
 		token:     token,
-		address:   address,
+		address:   ip,
 		expiry:    otf.CurrentTimestamp().Add(defaultExpiry),
-		userID:    uid,
+		userID:    userID,
 	}
+
 	return &session, nil
 }
 
@@ -46,6 +56,10 @@ func (s *Session) Token() string        { return s.token }
 func (s *Session) UserID() string       { return s.userID }
 func (s *Session) Address() string      { return s.address }
 func (s *Session) Expiry() time.Time    { return s.expiry }
+
+func (s *Session) SetCookie(w http.ResponseWriter) {
+	html.SetCookie(w, sessionCookie, s.token, otf.Time(s.Expiry()))
+}
 
 type NewSessionOption func(*Session)
 

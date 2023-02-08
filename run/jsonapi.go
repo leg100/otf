@@ -2,27 +2,29 @@ package run
 
 import (
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 // Run represents a Terraform Enterprise run.
-type Run struct {
-	ID                     string               `jsonapi:"primary,runs"`
-	Actions                *RunActions          `jsonapi:"attr,actions"`
-	CreatedAt              time.Time            `jsonapi:"attr,created-at,iso8601"`
-	ForceCancelAvailableAt *time.Time           `jsonapi:"attr,force-cancel-available-at,iso8601"`
-	ExecutionMode          string               `jsonapi:"attr,execution-mode"`
-	HasChanges             bool                 `jsonapi:"attr,has-changes"`
-	IsDestroy              bool                 `jsonapi:"attr,is-destroy"`
-	Message                string               `jsonapi:"attr,message"`
-	Permissions            *RunPermissions      `jsonapi:"attr,permissions"`
-	PositionInQueue        int                  `jsonapi:"attr,position-in-queue"`
-	Refresh                bool                 `jsonapi:"attr,refresh"`
-	RefreshOnly            bool                 `jsonapi:"attr,refresh-only"`
-	ReplaceAddrs           []string             `jsonapi:"attr,replace-addrs,omitempty"`
-	Source                 string               `jsonapi:"attr,source"`
-	Status                 string               `jsonapi:"attr,status"`
-	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
-	TargetAddrs            []string             `jsonapi:"attr,target-addrs,omitempty"`
+type jsonapiRun struct {
+	ID                     string                      `jsonapi:"primary,runs"`
+	Actions                *jsonapiRunActions          `jsonapi:"attr,actions"`
+	CreatedAt              time.Time                   `jsonapi:"attr,created-at,iso8601"`
+	ForceCancelAvailableAt *time.Time                  `jsonapi:"attr,force-cancel-available-at,iso8601"`
+	ExecutionMode          string                      `jsonapi:"attr,execution-mode"`
+	HasChanges             bool                        `jsonapi:"attr,has-changes"`
+	IsDestroy              bool                        `jsonapi:"attr,is-destroy"`
+	Message                string                      `jsonapi:"attr,message"`
+	Permissions            *jsonapiRunPermissions      `jsonapi:"attr,permissions"`
+	PositionInQueue        int                         `jsonapi:"attr,position-in-queue"`
+	Refresh                bool                        `jsonapi:"attr,refresh"`
+	RefreshOnly            bool                        `jsonapi:"attr,refresh-only"`
+	ReplaceAddrs           []string                    `jsonapi:"attr,replace-addrs,omitempty"`
+	Source                 string                      `jsonapi:"attr,source"`
+	Status                 string                      `jsonapi:"attr,status"`
+	StatusTimestamps       *jsonapiRunStatusTimestamps `jsonapi:"attr,status-timestamps"`
+	TargetAddrs            []string                    `jsonapi:"attr,target-addrs,omitempty"`
 
 	// Relations
 	Apply                *Apply                `jsonapi:"relation,apply"`
@@ -33,7 +35,7 @@ type Run struct {
 }
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
-type RunStatusTimestamps struct {
+type jsonapiRunStatusTimestamps struct {
 	AppliedAt            *time.Time `json:"applied-at,omitempty"`
 	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
 	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
@@ -54,13 +56,13 @@ type RunStatusTimestamps struct {
 }
 
 // RunList represents a list of runs.
-type RunList struct {
-	*Pagination
+type jsonapiRunList struct {
+	*otf.Pagination
 	Items []*Run
 }
 
 // RunActions represents the run actions.
-type RunActions struct {
+type jsonapiRunActions struct {
 	IsCancelable      bool `json:"is-cancelable"`
 	IsConfirmable     bool `json:"is-confirmable"`
 	IsDiscardable     bool `json:"is-discardable"`
@@ -68,7 +70,7 @@ type RunActions struct {
 }
 
 // RunPermissions represents the run permissions.
-type RunPermissions struct {
+type jsonapiRunPermissions struct {
 	CanApply        bool `json:"can-apply"`
 	CanCancel       bool `json:"can-cancel"`
 	CanDiscard      bool `json:"can-discard"`
@@ -77,7 +79,7 @@ type RunPermissions struct {
 }
 
 // RunCreateOptions represents the options for creating a new run.
-type RunCreateOptions struct {
+type jsonapiCreateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be
 	// set.  https://jsonapi.org/format/#crud-creating
@@ -127,4 +129,43 @@ type RunCreateOptions struct {
 	// AutoApply determines if the run should be applied automatically without
 	// user confirmation. It defaults to the Workspace.AutoApply setting.
 	AutoApply *bool `jsonapi:"attr,auto-apply,omitempty"`
+}
+
+// Plan represents a Terraform Enterprise plan.
+type jsonapiPlan struct {
+	ID               string                        `jsonapi:"primary,plans"`
+	HasChanges       bool                          `jsonapi:"attr,has-changes"`
+	LogReadURL       string                        `jsonapi:"attr,log-read-url"`
+	Status           string                        `jsonapi:"attr,status"`
+	StatusTimestamps *jsonapiPhaseStatusTimestamps `jsonapi:"attr,status-timestamps"`
+
+	jsonapiResourceReport
+}
+
+// Apply represents a Terraform Enterprise apply.
+type jsonapiApply struct {
+	ID               string                        `jsonapi:"primary,applies"`
+	LogReadURL       string                        `jsonapi:"attr,log-read-url"`
+	Status           string                        `jsonapi:"attr,status"`
+	StatusTimestamps *jsonapiPhaseStatusTimestamps `jsonapi:"attr,status-timestamps"`
+
+	otf.ResourceReport
+}
+
+type jsonapiResourceReport struct {
+	Additions    *int `json:"resource-additions"`
+	Changes      *int `json:"resource-changes"`
+	Destructions *int `json:"resource-destructions"`
+}
+
+// PhaseStatusTimestamps holds the timestamps for individual statuses for a
+// phase.
+type jsonapiPhaseStatusTimestamps struct {
+	CanceledAt    *time.Time `json:"canceled-at,omitempty"`
+	ErroredAt     *time.Time `json:"errored-at,omitempty"`
+	FinishedAt    *time.Time `json:"finished-at,omitempty"`
+	PendingAt     *time.Time `json:"pending-at,omitempty"`
+	QueuedAt      *time.Time `json:"queued-at,omitempty"`
+	StartedAt     *time.Time `json:"started-at,omitempty"`
+	UnreachableAt *time.Time `json:"unreachable-at,omitempty"`
 }

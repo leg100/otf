@@ -49,7 +49,7 @@ type Application interface {
 	StateVersionService
 	ConfigurationVersionService
 	EventService
-	// SessionService
+	SessionService
 	// TokenService
 	VCSProviderService
 	LockableApplication
