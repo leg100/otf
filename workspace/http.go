@@ -206,7 +206,7 @@ func (s *handlers) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	opts := otf.WorkspaceUnlockOptions{}
 	ws, err := s.Application.UnlockWorkspace(r.Context(), id, opts)
-	if err == ErrWorkspaceAlreadyUnlocked {
+	if err == ErrAlreadyUnlocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {

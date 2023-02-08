@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -103,7 +102,7 @@ func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDPar
 		params.UserID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
 		params.RunID = pgtype.Text{Status: pgtype.Null}
 	default:
-		return params, ErrWorkspaceInvalidLock
+		return params, ErrInvalidLock
 	}
 	return params, nil
 }
@@ -167,5 +166,3 @@ func UnmarshalWorkspaceListJSONAPI(json *jsonapi.WorkspaceList) *WorkspaceList {
 
 	return &wl
 }
-
-

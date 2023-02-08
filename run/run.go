@@ -11,7 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/workspace"
 )
 
 const (
@@ -70,7 +72,7 @@ type Run struct {
 	forceCancelAvailableAt *time.Time
 	isDestroy              bool
 	message                string
-	executionMode          ExecutionMode
+	executionMode          otf.ExecutionMode
 	positionInQueue        int
 	refresh                bool
 	refreshOnly            bool
@@ -109,7 +111,7 @@ func (r *Run) WorkspaceID() string                    { return r.workspaceID }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
-func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
+func (r *Run) ExecutionMode() otf.ExecutionMode       { return r.executionMode }
 func (r *Run) Commit() *string                        { return r.commit }
 
 // Latest determines whether run is the latest run for a workspace, i.e.
@@ -130,21 +132,21 @@ func (r *Run) PlanOnly() bool {
 
 // HasApply determines whether the run has started applying yet.
 func (r *Run) HasApply() bool {
-	_, err := r.Apply().StatusTimestamp(PhaseRunning)
+	_, err := r.Apply().StatusTimestamp(otf.PhaseRunning)
 	return err == nil
 }
 
 // Phase returns the current phase.
-func (r *Run) Phase() PhaseType {
+func (r *Run) Phase() otf.PhaseType {
 	switch r.status {
 	case RunPending:
-		return PendingPhase
+		return otf.PendingPhase
 	case RunPlanQueued, RunPlanning, RunPlanned:
-		return PlanPhase
+		return otf.PlanPhase
 	case RunApplyQueued, RunApplying, RunApplied:
-		return ApplyPhase
+		return otf.ApplyPhase
 	default:
-		return UnknownPhase
+		return otf.UnknownPhase
 	}
 }
 
@@ -156,9 +158,9 @@ func (r *Run) Discard() error {
 	r.updateStatus(RunDiscarded)
 
 	if r.status == RunPending {
-		r.plan.updateStatus(PhaseUnreachable)
+		r.plan.updateStatus(otf.PhaseUnreachable)
 	}
-	r.apply.updateStatus(PhaseUnreachable)
+	r.apply.updateStatus(otf.PhaseUnreachable)
 
 	return nil
 }
@@ -171,18 +173,18 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
-	tenSecondsFromNow := CurrentTimestamp().Add(10 * time.Second)
+	tenSecondsFromNow := otf.CurrentTimestamp().Add(10 * time.Second)
 	r.forceCancelAvailableAt = &tenSecondsFromNow
 
 	switch r.status {
 	case RunPending:
-		r.plan.updateStatus(PhaseUnreachable)
-		r.apply.updateStatus(PhaseUnreachable)
+		r.plan.updateStatus(otf.PhaseUnreachable)
+		r.apply.updateStatus(otf.PhaseUnreachable)
 	case RunPlanQueued, RunPlanning:
-		r.plan.updateStatus(PhaseCanceled)
-		r.apply.updateStatus(PhaseUnreachable)
+		r.plan.updateStatus(otf.PhaseCanceled)
+		r.apply.updateStatus(otf.PhaseUnreachable)
 	case RunApplyQueued, RunApplying:
-		r.apply.updateStatus(PhaseCanceled)
+		r.apply.updateStatus(otf.PhaseCanceled)
 	}
 
 	if r.status == RunPlanning || r.status == RunApplying {
@@ -205,7 +207,7 @@ func (r *Run) ForceCancel() error {
 }
 
 // Do executes the current phase
-func (r *Run) Do(env Environment) error {
+func (r *Run) Do(env otf.Environment) error {
 	if err := r.setupEnv(env); err != nil {
 		return err
 	}
@@ -237,7 +239,7 @@ func (r *Run) EnqueuePlan() error {
 		return fmt.Errorf("cannot enqueue run with status %s", r.status)
 	}
 	r.updateStatus(RunPlanQueued)
-	r.plan.updateStatus(PhaseQueued)
+	r.plan.updateStatus(otf.PhaseQueued)
 
 	return nil
 }
@@ -252,7 +254,7 @@ func (r *Run) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (r *Run) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool {
+func (r *Run) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolicy) bool {
 	// run can access anything within its workspace
 	return r.workspaceID == policy.WorkspaceID
 }
@@ -262,7 +264,7 @@ func (r *Run) EnqueueApply() error {
 		return fmt.Errorf("cannot apply run")
 	}
 	r.updateStatus(RunApplyQueued)
-	r.apply.updateStatus(PhaseQueued)
+	r.apply.updateStatus(otf.PhaseQueued)
 	return nil
 }
 
@@ -276,12 +278,12 @@ func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
 }
 
 // CanLock determines whether requestor can replace run lock
-func (r *Run) CanLock(requestor Identity) error {
+func (r *Run) CanLock(requestor otf.Identity) error {
 	if _, ok := requestor.(*Run); ok {
 		// run can replace lock held by different run
 		return nil
 	}
-	return ErrWorkspaceAlreadyLocked
+	return workspace.ErrWorkspaceAlreadyLocked
 }
 
 // CanUnlock determines whether requestor can unlock run lock

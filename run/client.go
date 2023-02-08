@@ -10,6 +10,10 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
+type Client struct {
+	otf.JSONAPIClient
+}
+
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, &planFileOptions{Format: format})
@@ -109,7 +113,7 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 		return nil, err
 	}
 
-	return otf.UnmarshalRunJSONAPI(run), nil
+	return UnmarshalRunJSONAPI(run), nil
 }
 
 func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
