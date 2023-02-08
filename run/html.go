@@ -69,7 +69,6 @@ func (app *htmlHandlers) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	runs, err := app.ListRuns(r.Context(), otf.RunListOptions{
 		ListOptions: params.ListOptions,
-		Speculative: otf.Bool(false), // we don't list speculative runs on the UI
 		WorkspaceID: &params.WorkspaceID,
 	})
 	if err != nil {
