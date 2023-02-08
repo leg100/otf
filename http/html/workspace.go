@@ -297,16 +297,14 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				// Handle query parameters which filter run events: 'latest'
-				// specifies that the client is only interested in event
-				// concerning the latest run for the workspace; 'run-id' -
-				// mutually exclusive with 'latest' - specifies that that the
-				// client is only interested in events concerning the run with
-				// that ID, and that is permitted to include a run which is
-				// speculative (because web site shows speculative runs on the
-				// run page but no where else); and if neither of those are
-				// specified then events for all runs that are not speculative
-				// are relayed (e.g. for web page that shows list of runs).
+				// Handle query parameters which filter run events:
+				// - 'latest' specifies that the client is only interest in events
+				// relating to the latest run for the workspace
+				// - 'run-id' (mutually exclusive with 'latest') - specifies
+				// that the client is only interested in events relating to that
+				// run.
+				// - otherwise, if neither of those parameters are specified
+				// then events for all runs are relayed.
 				if r.URL.Query().Get("latest") != "" {
 					if !run.Latest() {
 						// skip: run is not the latest run for a workspace
@@ -318,9 +316,6 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 						// filter
 						continue
 					}
-				} else if run.Speculative() {
-					// skip: event for speculative run
-					continue
 				}
 
 				// render HTML snippets and send as payload in SSE event
