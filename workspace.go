@@ -2,6 +2,7 @@ package otf
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,6 +15,14 @@ const (
 
 	MinTerraformVersion     = "1.2.0"
 	DefaultTerraformVersion = "1.3.7"
+)
+
+var (
+	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
+	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
+	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
+	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
+	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
 )
 
 type ExecutionMode string
@@ -31,6 +40,8 @@ type Workspace interface {
 	Name() string
 	Repo() *WorkspaceRepo
 	TerraformVersion() string
+	ExecutionMode() ExecutionMode
+	AutoApply() bool
 }
 
 // WorkspaceList represents a list of Workspaces.

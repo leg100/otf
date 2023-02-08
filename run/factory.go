@@ -36,8 +36,8 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 // NewRun creates a new run with defaults.
 func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
-		id:                     NewID("run"),
-		createdAt:              CurrentTimestamp(),
+		id:                     otf.NewID("run"),
+		createdAt:              otf.CurrentTimestamp(),
 		refresh:                DefaultRefresh,
 		organization:           ws.Organization(),
 		configurationVersionID: cv.ID(),

@@ -1,12 +1,8 @@
-package workspace
+package jsonapi
 
 import (
 	"errors"
 	"time"
-
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/run"
 )
 
 var (
@@ -14,54 +10,55 @@ var (
 	localExecutionMode  = "local"
 )
 
-type jsonapiWorkspace struct {
-	ID                         string                       `jsonapi:"primary,workspaces"`
-	Actions                    *jsonapiWorkspaceActions     `jsonapi:"attr,actions"`
-	AgentPoolID                string                       `jsonapi:"attr,agent-pool-id"`
-	AllowDestroyPlan           bool                         `jsonapi:"attr,allow-destroy-plan"`
-	AutoApply                  bool                         `jsonapi:"attr,auto-apply"`
-	CanQueueDestroyPlan        bool                         `jsonapi:"attr,can-queue-destroy-plan"`
-	CreatedAt                  time.Time                    `jsonapi:"attr,created-at,iso8601"`
-	Description                string                       `jsonapi:"attr,description"`
-	Environment                string                       `jsonapi:"attr,environment"`
-	ExecutionMode              string                       `jsonapi:"attr,execution-mode"`
-	FileTriggersEnabled        bool                         `jsonapi:"attr,file-triggers-enabled"`
-	GlobalRemoteState          bool                         `jsonapi:"attr,global-remote-state"`
-	Locked                     bool                         `jsonapi:"attr,locked"`
-	MigrationEnvironment       string                       `jsonapi:"attr,migration-environment"`
-	Name                       string                       `jsonapi:"attr,name"`
-	Operations                 bool                         `jsonapi:"attr,operations"`
-	Permissions                *jsonapiWorkspacePermissions `jsonapi:"attr,permissions"`
-	QueueAllRuns               bool                         `jsonapi:"attr,queue-all-runs"`
-	SpeculativeEnabled         bool                         `jsonapi:"attr,speculative-enabled"`
-	SourceName                 string                       `jsonapi:"attr,source-name"`
-	SourceURL                  string                       `jsonapi:"attr,source-url"`
-	StructuredRunOutputEnabled bool                         `jsonapi:"attr,structured-run-output-enabled"`
-	TerraformVersion           string                       `jsonapi:"attr,terraform-version"`
-	TriggerPrefixes            []string                     `jsonapi:"attr,trigger-prefixes"`
-	VCSRepo                    *jsonapiVCSRepo              `jsonapi:"attr,vcs-repo"`
-	WorkingDirectory           string                       `jsonapi:"attr,working-directory"`
-	UpdatedAt                  time.Time                    `jsonapi:"attr,updated-at,iso8601"`
-	ResourceCount              int                          `jsonapi:"attr,resource-count"`
-	ApplyDurationAverage       time.Duration                `jsonapi:"attr,apply-duration-average"`
-	PlanDurationAverage        time.Duration                `jsonapi:"attr,plan-duration-average"`
-	PolicyCheckFailures        int                          `jsonapi:"attr,policy-check-failures"`
-	RunFailures                int                          `jsonapi:"attr,run-failures"`
-	RunsCount                  int                          `jsonapi:"attr,workspace-kpis-runs-count"`
+// Workspace represents a Terraform Enterprise workspace.
+type Workspace struct {
+	ID                         string                `jsonapi:"primary,workspaces"`
+	Actions                    *WorkspaceActions     `jsonapi:"attr,actions"`
+	AgentPoolID                string                `jsonapi:"attr,agent-pool-id"`
+	AllowDestroyPlan           bool                  `jsonapi:"attr,allow-destroy-plan"`
+	AutoApply                  bool                  `jsonapi:"attr,auto-apply"`
+	CanQueueDestroyPlan        bool                  `jsonapi:"attr,can-queue-destroy-plan"`
+	CreatedAt                  time.Time             `jsonapi:"attr,created-at,iso8601"`
+	Description                string                `jsonapi:"attr,description"`
+	Environment                string                `jsonapi:"attr,environment"`
+	ExecutionMode              string                `jsonapi:"attr,execution-mode"`
+	FileTriggersEnabled        bool                  `jsonapi:"attr,file-triggers-enabled"`
+	GlobalRemoteState          bool                  `jsonapi:"attr,global-remote-state"`
+	Locked                     bool                  `jsonapi:"attr,locked"`
+	MigrationEnvironment       string                `jsonapi:"attr,migration-environment"`
+	Name                       string                `jsonapi:"attr,name"`
+	Operations                 bool                  `jsonapi:"attr,operations"`
+	Permissions                *WorkspacePermissions `jsonapi:"attr,permissions"`
+	QueueAllRuns               bool                  `jsonapi:"attr,queue-all-runs"`
+	SpeculativeEnabled         bool                  `jsonapi:"attr,speculative-enabled"`
+	SourceName                 string                `jsonapi:"attr,source-name"`
+	SourceURL                  string                `jsonapi:"attr,source-url"`
+	StructuredRunOutputEnabled bool                  `jsonapi:"attr,structured-run-output-enabled"`
+	TerraformVersion           string                `jsonapi:"attr,terraform-version"`
+	TriggerPrefixes            []string              `jsonapi:"attr,trigger-prefixes"`
+	VCSRepo                    *VCSRepo              `jsonapi:"attr,vcs-repo"`
+	WorkingDirectory           string                `jsonapi:"attr,working-directory"`
+	UpdatedAt                  time.Time             `jsonapi:"attr,updated-at,iso8601"`
+	ResourceCount              int                   `jsonapi:"attr,resource-count"`
+	ApplyDurationAverage       time.Duration         `jsonapi:"attr,apply-duration-average"`
+	PlanDurationAverage        time.Duration         `jsonapi:"attr,plan-duration-average"`
+	PolicyCheckFailures        int                   `jsonapi:"attr,policy-check-failures"`
+	RunFailures                int                   `jsonapi:"attr,run-failures"`
+	RunsCount                  int                   `jsonapi:"attr,workspace-kpis-runs-count"`
 
 	// Relations
-	CurrentRun   *run.Run                   `jsonapi:"relation,current-run"`
-	Organization *organization.Organization `jsonapi:"relation,organization"`
+	CurrentRun   *Run          `jsonapi:"relation,current-run"`
+	Organization *Organization `jsonapi:"relation,organization"`
 }
 
 // WorkspaceList represents a list of workspaces.
-type jsonapiList struct {
-	*otf.Pagination
+type WorkspaceList struct {
+	*Pagination
 	Items []*Workspace
 }
 
 // VCSRepo contains the configuration of a VCS integration.
-type jsonapiVCSRepo struct {
+type VCSRepo struct {
 	Branch            string `json:"branch"`
 	DisplayIdentifier string `json:"display-identifier"`
 	Identifier        string `json:"identifier"`
@@ -72,12 +69,12 @@ type jsonapiVCSRepo struct {
 }
 
 // WorkspaceActions represents the workspace actions.
-type jsonapiWorkspaceActions struct {
+type WorkspaceActions struct {
 	IsDestroyable bool `json:"is-destroyable"`
 }
 
 // WorkspacePermissions represents the workspace permissions.
-type jsonapiWorkspacePermissions struct {
+type WorkspacePermissions struct {
 	CanDestroy        bool `json:"can-destroy"`
 	CanForceUnlock    bool `json:"can-force-unlock"`
 	CanLock           bool `json:"can-lock"`
@@ -91,7 +88,7 @@ type jsonapiWorkspacePermissions struct {
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
-type jsonapiCreateOptions struct {
+type WorkspaceCreateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be
 	// set.  https://jsonapi.org/format/#crud-creating
@@ -180,7 +177,7 @@ type jsonapiCreateOptions struct {
 	// Settings for the workspace's VCS repository. If omitted, the workspace is
 	// created without a VCS repo. If included, you must specify at least the
 	// oauth-token-id and identifier keys below.
-	VCSRepo *jsonapiVCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
+	VCSRepo *VCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching the
@@ -188,7 +185,7 @@ type jsonapiCreateOptions struct {
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
 }
 
-func (opts *jsonapiCreateOptions) Validate() error {
+func (opts *WorkspaceCreateOptions) Validate() error {
 	if opts.Operations != nil && opts.ExecutionMode != nil {
 		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
 	}
@@ -203,7 +200,7 @@ func (opts *jsonapiCreateOptions) Validate() error {
 }
 
 // WorkspaceUpdateOptions represents the options for updating a workspace.
-type jsonapiUpdateOptions struct {
+type WorkspaceUpdateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be
 	// set.  https://jsonapi.org/format/#crud-creating
@@ -276,7 +273,7 @@ type jsonapiUpdateOptions struct {
 	// the keys below you wish to modify. To add a new VCS repo to a workspace
 	// that didn't previously have one, include at least the oauth-token-id and
 	// identifier keys.
-	VCSRepo *jsonapiVCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
+	VCSRepo *VCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching
@@ -285,7 +282,7 @@ type jsonapiUpdateOptions struct {
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
 }
 
-func (opts *jsonapiUpdateOptions) Validate() error {
+func (opts *WorkspaceUpdateOptions) Validate() error {
 	if opts.Operations != nil && opts.ExecutionMode != nil {
 		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
 	}
@@ -301,7 +298,7 @@ func (opts *jsonapiUpdateOptions) Validate() error {
 
 // VCSRepoOptions is used by workspaces, policy sets, and registry modules
 // VCSRepoOptions represents the configuration options of a VCS integration.
-type jsonapiVCSRepoOptions struct {
+type VCSRepoOptions struct {
 	Branch            *string `json:"branch,omitempty"`
 	Identifier        *string `json:"identifier,omitempty"`
 	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
