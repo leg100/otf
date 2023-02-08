@@ -10,6 +10,17 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
+type db interface {
+	// CreateSession persists a new session to the store.
+	CreateSession(ctx context.Context, session *Session) error
+	// GetSession retrieves a session using its token.
+	GetSessionByToken(ctx context.Context, token string) (*Session, error)
+	// ListSessions lists current sessions for a user
+	ListSessions(ctx context.Context, userID string) ([]*Session, error)
+	// DeleteSession deletes a session
+	DeleteSession(ctx context.Context, token string) error
+}
+
 // pgdb is a database of sessions on postgres
 type DB struct {
 	otf.Database // provides access to generated SQL queries

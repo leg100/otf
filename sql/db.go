@@ -21,7 +21,6 @@ const defaultMaxConnections = "20" // max conns avail in a pgx pool
 type DB struct {
 	Conn
 	pggen.Querier
-	otf.Unmarshaler
 }
 
 // New constructs a new DB
@@ -49,16 +48,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	db := &DB{
 		Conn:    conn,
 		Querier: pggen.NewQuerier(conn),
-		Unmarshaler: otf.Unmarshaler{
-			Service: opts.CloudService,
-		},
 	}
-
-	if opts.CleanupInterval == 0 {
-		opts.CleanupInterval = DefaultSessionCleanupInterval
-	}
-	// purge expired user sessions
-	go db.startSessionExpirer(ctx, opts.CleanupInterval)
 
 	return db, nil
 }
@@ -162,9 +152,8 @@ func (db *DB) tx(ctx context.Context, callback func(*DB) error) error {
 // copy makes a copy of the DB object but with a new connection.
 func (db *DB) copy(conn Conn) *DB {
 	return &DB{
-		Conn:        conn,
-		Querier:     pggen.NewQuerier(conn),
-		Unmarshaler: db.Unmarshaler,
+		Conn:    conn,
+		Querier: pggen.NewQuerier(conn),
 	}
 }
 

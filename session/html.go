@@ -56,11 +56,12 @@ func (app *htmlApp) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *htmlApp) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
-	token := r.FormValue("token")
-	if token == "" {
-		html.Error(w, "missing token", http.StatusUnprocessableEntity)
+	token, err := decode.Param("token", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+
 	if err := app.DeleteSession(r.Context(), token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -84,29 +85,26 @@ func (app *htmlApp) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 // adminLoginHandler logs in a site admin
 func (app *htmlApp) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
-	// expect token in POST form
-	type adminLoginForm struct {
-		Token *string `schema:"token,required"`
-	}
-	var form adminLoginForm
-	if err := decode.Form(&form, r); err != nil {
+	token, err := decode.Param("token", r)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if *form.Token != app.siteToken {
+
+	if token != app.siteToken {
 		html.FlashError(w, "incorrect token")
 		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
 		return
 	}
 
-	if err := createSession(app, w, r, otf.SiteAdminID); err != nil {
+	err = app.CreateSession(app, w, r, otf.SiteAdminID); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Return admin to the original path they attempted to access
-	if cookie, err := r.Cookie(pathCookie); err == nil {
-		html.SetCookie(w, pathCookie, "", &time.Time{})
+	if cookie, err := r.Cookie(otf.PathCookie); err == nil {
+		html.SetCookie(w, otf.PathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
 		http.Redirect(w, r, paths.Profile(), http.StatusFound)

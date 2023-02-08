@@ -49,8 +49,8 @@ type Application interface {
 	StateVersionService
 	ConfigurationVersionService
 	EventService
-	SessionService
-	TokenService
+	// SessionService
+	// TokenService
 	VCSProviderService
 	LockableApplication
 	cloud.Service
@@ -58,6 +58,8 @@ type Application interface {
 	ModuleVersionService
 	HostnameService
 	HookService
+	UserService
+	TeamService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.

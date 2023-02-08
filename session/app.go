@@ -11,15 +11,20 @@ type Application struct {
 	otf.Authorizer
 	logr.Logger
 
-	db DB
+	db db
 	*handlers
 	*htmlApp
 }
 
 func NewApplication(opts ApplicationOptions) *Application {
+	db := newPGDB(opts.Database)
+
+	// purge expired sessions
+	go db.startSessionExpirer(defaultCleanupInterval)
+
 	app := &Application{
 		Authorizer: opts.Authorizer,
-		db:         newPGDB(opts.Database),
+		db:         db,
 		Logger:     opts.Logger,
 	}
 	app.handlers = &handlers{
@@ -39,10 +44,9 @@ type ApplicationOptions struct {
 	logr.Logger
 }
 
-
 // CreateSession creates and persists a user session.
-func (a *Application) CreateSession(ctx context.Context, userID, address string) (*otf.Session, error) {
-	session, err := otf.NewSession(userID, address)
+func (a *Application) CreateSession(opts otf.CreateSessionOptions) (otf.Session, error) {
+	session, err := NewSession(userID, address)
 	if err != nil {
 		a.Error(err, "building new session", "uid", userID)
 		return nil, err

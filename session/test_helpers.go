@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -29,4 +30,12 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	}
 
 	return session
+}
+
+type newTestDBOption func(*Options)
+
+func overrideCleanupInterval(d time.Duration) newTestDBOption {
+	return func(o *Options) {
+		o.CleanupInterval = d
+	}
 }

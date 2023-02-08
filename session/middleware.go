@@ -11,8 +11,6 @@ import (
 const (
 	// session cookie stores the session identifier
 	sessionCookie = "session"
-	// path cookie stores the last path the user attempted to access
-	pathCookie = "path"
 )
 
 // authUser middleware ensures the request has a valid session cookie, attaching
@@ -49,6 +47,6 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 }
 
 func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
-	html.SetCookie(w, pathCookie, r.URL.Path, nil)
+	html.SetCookie(w, otf.PathCookie, r.URL.Path, nil)
 	http.Redirect(w, r, paths.Login(), http.StatusFound)
 }

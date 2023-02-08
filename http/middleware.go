@@ -47,7 +47,7 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (otf.Su
 	// check if site admin token
 	if m.siteToken != "" {
 		if m.siteToken == token {
-			return &otf.SiteAdmin, nil
+			return m.GetUser(ctx, otf.UserSpec{UserID: otf.String(otf.SiteAdminID)})
 		}
 	}
 

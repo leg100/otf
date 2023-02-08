@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"golang.org/x/oauth2"
 )
@@ -61,38 +62,43 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	// along with flash error.
 	token, err := a.CallbackHandler(r)
 	if err != nil {
-		FlashError(w, err.Error())
+		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
 
 	client, err := a.NewClient(r.Context(), token)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	user, err := a.synchronise(r.Context(), client)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := createSession(a.Application, w, r, user.ID()); err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+	err := a.CreateSession(otf.CreateSessionOptions{
+		ResponseWriter: w,
+		Request: r,
+		UserID: user.ID(),
+	})
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Return user to the original path they attempted to access
-	if cookie, err := r.Cookie(pathCookie); err == nil {
-		SetCookie(w, pathCookie, "", &time.Time{})
+	if cookie, err := r.Cookie(otf.PathCookie); err == nil {
+		html.SetCookie(w, otf.PathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
 		http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	}
 }
 
-func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (*otf.User, error) {
+func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (otf.User, error) {
 	// give authenticator unlimited access to services
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "authenticator"})
 
@@ -111,7 +117,7 @@ func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (*
 	// organization names to be synchronised
 	var organizations []string
 	// teams to be synchronised
-	var teams []*otf.Team
+	var teams []otf.Team
 
 	// Create organization for each cloud organization
 	for _, corg := range cuser.Organizations {

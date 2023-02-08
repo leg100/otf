@@ -57,21 +57,19 @@ func TestSession_List(t *testing.T) {
 	assert.Contains(t, sessions, session2)
 }
 
-// TestSession_SessionCleanup tests the session cleanup background routine. We
-// override the cleanup interval to just every 100ms, so after waiting for 300ms
-// the sessions should be cleaned up.
 func TestSession_SessionCleanup(t *testing.T) {
 	ctx := context.Background()
 
-	db := sql.NewTestDB(t, overrideCleanupInterval(100*time.Millisecond))
+	db := sql.NewTestDB(t)
 	sessionDB := &DB{db}
 
 	user := user.CreateTestUser(t, db)
 
-	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))
-	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID(), SessionExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID(), SessionExpiry(time.Now()))
 
-	time.Sleep(300 * time.Millisecond)
+	err := sessionDB.deleteExpired()
+	require.NoError(t, err)
 
 	sessions, err := sessionDB.ListSessions(ctx, user.ID())
 	require.NoError(t, err)
