@@ -26,7 +26,7 @@ func NewViewEngine(devmode bool) (*viewEngine, error) {
 // in a handler because it writes an HTTP5xx to the response if there is an
 // error.
 func (ve *viewEngine) Render(name string, w http.ResponseWriter, r *http.Request, content interface{}) {
-	err := ve.renderTemplate(name, w, &view{
+	err := ve.RenderTemplate(name, w, &view{
 		Content:     content,
 		flashPopper: popFlashFunc(w, r),
 		request:     r,

@@ -1,12 +1,12 @@
-package http
+package watch
 
 import (
 	"bytes"
 	"net/http"
 
-	"github.com/leg100/jsonapi"
+	"github.com/gin-contrib/sse"
 	"github.com/leg100/otf"
-	"github.com/r3labs/sse/v2"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // watch subscribes to a stream of otf events using the server-side-events
@@ -24,7 +24,7 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 
 	events, err := s.Watch(r.Context(), otf.WatchOptions{})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 	go func() {

@@ -1,11 +1,18 @@
 package otf
 
-import "net/http"
+import (
+	"io"
+	"net/http"
+)
 
 // Renderer renders templated responses to http requests.
 type Renderer interface {
-	// Render the template with the given path to the response, populating the
-	// template with content. The request can be used to provide further
-	// request-related information to the template.
+	// Render template to http response. Template is provided with access
+	// various helpers on the root object (.) and the content can be accessed at
+	// .Content.
 	Render(path string, w http.ResponseWriter, r *http.Request, content any)
+	// RenderTemplate renders template to http response. No helpers are made
+	// available and the content is available on the root object (.) within the
+	// template.
+	RenderTemplate(path string, w io.Writer, content any) error
 }

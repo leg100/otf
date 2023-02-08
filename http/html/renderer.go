@@ -24,7 +24,7 @@ const (
 
 // renderer is capable of locating and rendering a template.
 type renderer interface {
-	renderTemplate(name string, w io.Writer, data any) error
+	RenderTemplate(name string, w io.Writer, data any) error
 }
 
 // embeddedRenderer renders templates embedded in the go bin. Uses cache for
@@ -59,11 +59,11 @@ func newEmbeddedRenderer() (*embeddedRenderer, error) {
 	return &renderer, nil
 }
 
-func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data any) error {
+func (r *embeddedRenderer) RenderTemplate(name string, w io.Writer, data any) error {
 	return renderTemplateFromCache(r.cache, name, w, data)
 }
 
-func (r *devRenderer) renderTemplate(name string, w io.Writer, data any) error {
+func (r *devRenderer) RenderTemplate(name string, w io.Writer, data any) error {
 	buster := &cacheBuster{localDisk}
 
 	cache, err := newTemplateCache(localDisk, buster)
