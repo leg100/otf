@@ -29,7 +29,7 @@ type jsonapiRun struct {
 	// Relations
 	Apply                *Apply                `jsonapi:"relation,apply"`
 	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
-	CreatedBy            *User                 `jsonapi:"relation,created-by"`
+	CreatedBy            otf.User              `jsonapi:"relation,created-by"`
 	Plan                 *Plan                 `jsonapi:"relation,plan"`
 	Workspace            *Workspace            `jsonapi:"relation,workspace"`
 }
