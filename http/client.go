@@ -183,7 +183,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 
 		if v != nil {
 			q := url.Values{}
-			if err := encoder.Encode(v, q); err != nil {
+			if err := Encoder.Encode(v, q); err != nil {
 				return nil, err
 			}
 			u.RawQuery = q.Encode()

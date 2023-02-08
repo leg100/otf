@@ -38,10 +38,6 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/lockfile", h.uploadLockFile).Methods("PUT")
 }
 
-type planFileOptions struct {
-	Format otf.PlanFormat `schema:"format,required"`
-}
-
 func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
 	opts := jsonapiCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {

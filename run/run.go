@@ -287,7 +287,7 @@ func (r *Run) CanLock(requestor otf.Identity) error {
 }
 
 // CanUnlock determines whether requestor can unlock run lock
-func (r *Run) CanUnlock(requestor Identity, force bool) error {
+func (r *Run) CanUnlock(requestor otf.Identity, force bool) error {
 	if force {
 		// TODO: only grant admin user force unlock always granted
 		return nil
@@ -296,33 +296,33 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 		// runs can unlock other run locks
 		return nil
 	}
-	return ErrWorkspaceLockedByDifferentUser
+	return workspace.ErrLockedByDifferentUser
 }
 
 // Start a run phase
-func (r *Run) Start(phase PhaseType) error {
+func (r *Run) Start(phase otf.PhaseType) error {
 	switch r.status {
 	case RunPlanQueued:
 		return r.startPlan()
 	case RunApplyQueued:
 		return r.startApply()
 	case RunPlanning, RunApplying:
-		return ErrPhaseAlreadyStarted
+		return otf.ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
 	}
 }
 
 // Finish updates the run to reflect its plan or apply phase having finished.
-func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
+func (r *Run) Finish(phase otf.PhaseType, opts otf.PhaseFinishOptions) error {
 	if r.status == RunCanceled {
 		// run was canceled before the phase finished so nothing more to do.
 		return nil
 	}
 	switch phase {
-	case PlanPhase:
+	case otf.PlanPhase:
 		return r.finishPlan(opts)
-	case ApplyPhase:
+	case otf.ApplyPhase:
 		return r.finishApply(opts)
 	default:
 		return fmt.Errorf("unknown phase")
@@ -334,7 +334,7 @@ func (r *Run) startPlan() error {
 		return ErrInvalidRunStateTransition
 	}
 	r.updateStatus(RunPlanning)
-	r.plan.updateStatus(PhaseRunning)
+	r.plan.updateStatus(otf.PhaseRunning)
 	return nil
 }
 
@@ -343,43 +343,43 @@ func (r *Run) startApply() error {
 		return ErrInvalidRunStateTransition
 	}
 	r.updateStatus(RunApplying)
-	r.apply.updateStatus(PhaseRunning)
+	r.apply.updateStatus(otf.PhaseRunning)
 	return nil
 }
 
-func (r *Run) finishPlan(opts PhaseFinishOptions) error {
+func (r *Run) finishPlan(opts otf.PhaseFinishOptions) error {
 	if r.status != RunPlanning {
 		return ErrInvalidRunStateTransition
 	}
 	if opts.Errored {
 		r.updateStatus(RunErrored)
-		r.plan.updateStatus(PhaseErrored)
-		r.apply.updateStatus(PhaseUnreachable)
+		r.plan.updateStatus(otf.PhaseErrored)
+		r.apply.updateStatus(otf.PhaseUnreachable)
 		return nil
 	}
 
 	r.updateStatus(RunPlanned)
-	r.plan.updateStatus(PhaseFinished)
+	r.plan.updateStatus(otf.PhaseFinished)
 
 	if !r.HasChanges() || r.Speculative() {
 		r.updateStatus(RunPlannedAndFinished)
-		r.apply.updateStatus(PhaseUnreachable)
+		r.apply.updateStatus(otf.PhaseUnreachable)
 	} else if r.autoApply {
 		return r.EnqueueApply()
 	}
 	return nil
 }
 
-func (r *Run) finishApply(opts PhaseFinishOptions) error {
+func (r *Run) finishApply(opts otf.PhaseFinishOptions) error {
 	if r.status != RunApplying {
 		return ErrInvalidRunStateTransition
 	}
 	if opts.Errored {
 		r.updateStatus(RunErrored)
-		r.apply.updateStatus(PhaseErrored)
+		r.apply.updateStatus(otf.PhaseErrored)
 	} else {
 		r.updateStatus(RunApplied)
-		r.apply.updateStatus(PhaseFinished)
+		r.apply.updateStatus(otf.PhaseFinished)
 	}
 	return nil
 }
@@ -388,7 +388,7 @@ func (r *Run) updateStatus(status RunStatus) {
 	r.status = status
 	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
 		Status:    status,
-		Timestamp: CurrentTimestamp(),
+		Timestamp: otf.CurrentTimestamp(),
 	})
 }
 
@@ -422,7 +422,7 @@ func (r *Run) Confirmable() bool {
 	}
 }
 
-func (r *Run) doPlan(env Environment) error {
+func (r *Run) doPlan(env otf.Environment) error {
 	if err := r.doTerraformPlan(env); err != nil {
 		return err
 	}
@@ -442,7 +442,7 @@ func (r *Run) doPlan(env Environment) error {
 	return nil
 }
 
-func (r *Run) doApply(env Environment) error {
+func (r *Run) doApply(env otf.Environment) error {
 	if err := env.RunFunc(r.downloadPlanFile); err != nil {
 		return err
 	}
@@ -456,7 +456,7 @@ func (r *Run) doApply(env Environment) error {
 }
 
 // doTerraformPlan invokes terraform plan
-func (r *Run) doTerraformPlan(env Environment) error {
+func (r *Run) doTerraformPlan(env otf.Environment) error {
 	var args []string
 	if r.isDestroy {
 		args = append(args, "-destroy")
@@ -466,7 +466,7 @@ func (r *Run) doTerraformPlan(env Environment) error {
 }
 
 // doTerraformApply invokes terraform apply
-func (r *Run) doTerraformApply(env Environment) error {
+func (r *Run) doTerraformApply(env otf.Environment) error {
 	var args []string
 	if r.isDestroy {
 		args = append(args, "-destroy")
@@ -476,7 +476,7 @@ func (r *Run) doTerraformApply(env Environment) error {
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
-func (r *Run) setupEnv(env Environment) error {
+func (r *Run) setupEnv(env otf.Environment) error {
 	if err := env.RunFunc(r.downloadTerraform); err != nil {
 		return err
 	}
@@ -502,14 +502,14 @@ func (r *Run) setupEnv(env Environment) error {
 	return nil
 }
 
-func (r *Run) deleteBackendConfig(ctx context.Context, env Environment) error {
-	if err := rewriteHCL(env.WorkingDir(), removeBackendBlock); err != nil {
+func (r *Run) deleteBackendConfig(ctx context.Context, env otf.Environment) error {
+	if err := otf.RewriteHCL(env.WorkingDir(), otf.RemoveBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
 }
 
-func (r *Run) downloadTerraform(ctx context.Context, env Environment) error {
+func (r *Run) downloadTerraform(ctx context.Context, env otf.Environment) error {
 	ws, err := env.GetWorkspace(ctx, r.workspaceID)
 	if err != nil {
 		return err
@@ -521,14 +521,14 @@ func (r *Run) downloadTerraform(ctx context.Context, env Environment) error {
 	return nil
 }
 
-func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
+func (r *Run) downloadConfig(ctx context.Context, env otf.Environment) error {
 	// Download config
 	cv, err := env.DownloadConfig(ctx, r.configurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
 	// Decompress and untar config into environment root
-	if err := Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
+	if err := otf.Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 	return nil
@@ -536,9 +536,9 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
-func (r *Run) downloadState(ctx context.Context, env Environment) error {
+func (r *Run) downloadState(ctx context.Context, env otf.Environment) error {
 	statefile, err := env.DownloadCurrentState(ctx, r.workspaceID)
-	if errors.Is(err, ErrResourceNotFound) {
+	if errors.Is(err, otf.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
@@ -549,7 +549,7 @@ func (r *Run) downloadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
-func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
+func (r *Run) uploadPlan(ctx context.Context, env otf.Environment) error {
 	file, err := os.ReadFile(filepath.Join(env.WorkingDir(), PlanFilename))
 	if err != nil {
 		return err
@@ -562,7 +562,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 	return nil
 }
 
-func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
+func (r *Run) uploadJSONPlan(ctx context.Context, env otf.Environment) error {
 	jsonFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), JSONPlanFilename))
 	if err != nil {
 		return err
@@ -576,7 +576,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 // downloadLockFile downloads the .terraform.lock.hcl file into the working
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
-func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
+func (r *Run) downloadLockFile(ctx context.Context, env otf.Environment) error {
 	lockFile, err := env.GetLockFile(ctx, r.id)
 	if err != nil {
 		return err
@@ -584,7 +584,7 @@ func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
 	return os.WriteFile(filepath.Join(env.WorkingDir(), LockFilename), lockFile, 0o644)
 }
 
-func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
+func (r *Run) uploadLockFile(ctx context.Context, env otf.Environment) error {
 	lockFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), LockFilename))
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
@@ -598,7 +598,7 @@ func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
 	return nil
 }
 
-func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
+func (r *Run) downloadPlanFile(ctx context.Context, env otf.Environment) error {
 	plan, err := env.GetPlanFile(ctx, r.id, PlanFormatBinary)
 	if err != nil {
 		return err
@@ -608,12 +608,12 @@ func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 }
 
 // uploadState reads, parses, and uploads terraform state
-func (r *Run) uploadState(ctx context.Context, env Environment) error {
+func (r *Run) uploadState(ctx context.Context, env otf.Environment) error {
 	state, err := os.ReadFile(filepath.Join(env.WorkingDir(), LocalStateFilename))
 	if err != nil {
 		return err
 	}
-	err = env.CreateStateVersion(ctx, CreateStateVersionOptions{
+	err = env.CreateStateVersion(ctx, otf.CreateStateVersionOptions{
 		WorkspaceID: &r.workspaceID,
 		State:       state,
 	})
@@ -654,9 +654,9 @@ type RunService interface {
 	// TODO: return run
 	ForceCancelRun(ctx context.Context, id string, opts RunForceCancelOptions) error
 	// Start a run phase.
-	StartPhase(ctx context.Context, id string, phase PhaseType, opts PhaseStartOptions) (*Run, error)
+	StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*Run, error)
 	// Finish a run phase.
-	FinishPhase(ctx context.Context, id string, phase PhaseType, opts PhaseFinishOptions) (*Run, error)
+	FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error)
 	// GetPlanFile retrieves a run's plan file with the requested format.
 	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
@@ -666,11 +666,11 @@ type RunService interface {
 	// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 	// Read and write logs for run phases.
-	LogService
+	otf.LogService
 	// Tail logs of a run phase
-	Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
+	Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
 	// StartRun creates and starts a run.
-	StartRun(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*Run, error)
+	StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -722,20 +722,20 @@ type RunStore interface {
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
 	UpdateStatus(ctx context.Context, id string, fn func(*Run) error) (*Run, error)
-	CreatePlanReport(ctx context.Context, id string, report ResourceReport) error
-	CreateApplyReport(ctx context.Context, id string, report ResourceReport) error
+	CreatePlanReport(ctx context.Context, id string, report otf.ResourceReport) error
+	CreateApplyReport(ctx context.Context, id string, report otf.ResourceReport) error
 	DeleteRun(ctx context.Context, id string) error
 }
 
 // RunList represents a list of runs.
 type RunList struct {
-	*Pagination
+	*otf.Pagination
 	Items []*Run
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
-	ListOptions
+	otf.ListOptions
 	// Filter by run statuses (with an implicit OR condition)
 	Statuses []RunStatus `schema:"statuses,omitempty"`
 	// Filter by workspace ID

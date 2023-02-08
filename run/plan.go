@@ -32,3 +32,7 @@ func newPlan(run *Run) *Plan {
 		phaseStatus: newPhaseStatus(),
 	}
 }
+
+type planFileOptions struct {
+	Format otf.PlanFormat `schema:"format,required"`
+}

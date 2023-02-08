@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
@@ -37,11 +38,11 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 		return err
 	}
 
-	// newRequest() only lets us set a query or a payload but not both, so we
+	// NewRequest() only lets us set a query or a payload but not both, so we
 	// set query here.
 	opts := &planFileOptions{Format: format}
 	q := url.Values{}
-	if err := encoder.Encode(opts, q); err != nil {
+	if err := http.Encoder.Encode(opts, q); err != nil {
 		return err
 	}
 	req.URL.RawQuery = q.Encode()

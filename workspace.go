@@ -30,6 +30,7 @@ type Workspace interface {
 	String() string
 	Name() string
 	Repo() *WorkspaceRepo
+	TerraformVersion() string
 }
 
 // WorkspaceList represents a list of Workspaces.

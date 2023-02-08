@@ -16,7 +16,7 @@ import (
 )
 
 // Query schema Encoder, caches structs, and safe for sharing
-var encoder = schema.NewEncoder()
+var Encoder = schema.NewEncoder()
 
 // Absolute returns an absolute URL for the given path. It uses the http request
 // to determine the correct hostname and scheme to use. Handles situations where
