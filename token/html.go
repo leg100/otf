@@ -23,6 +23,9 @@ func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST")
 	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET")
 	r.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST")
+
+	// terraform login opens a browser to this hardcoded URL
+	r.HandleFunc("/app/settings/tokens", app.tokensHandler).Methods("GET")
 }
 
 // tokenList exposes a list of tokens to a template

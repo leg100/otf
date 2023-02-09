@@ -21,6 +21,9 @@ type htmlApp struct {
 func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/sessions", app.sessionsHandler).Methods("GET")
 	r.HandleFunc("/profile/sessions/revoke", app.revokeSessionHandler).Methods("POST")
+	// don't require authentication
+	r.HandleFunc("/admin/login", app.adminLoginPromptHandler).Methods("GET")
+	r.HandleFunc("/admin/login", app.adminLoginHandler).Methods("POST")
 }
 
 func (app *htmlApp) sessionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +83,11 @@ func (app *htmlApp) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	html.SetCookie(w, sessionCookie, session.Token(), &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+// adminLoginPromptHandler presents a prompt for logging in as site admin
+func (app *htmlApp) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
+	app.Render("site_admin_login.tmpl", w, r, nil)
 }
 
 // adminLoginHandler logs in a site admin

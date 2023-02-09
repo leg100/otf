@@ -3,9 +3,17 @@ package watch
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
+
+type Application struct {
+	otf.Authorizer
+	otf.PubSubService
+	logr.Logger
+	otf.WorkspaceService
+}
 
 // Watch provides authenticated access to a stream of events.
 //
@@ -45,7 +53,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 				// watch only items that are either:
 				// (a) workspaces
 				// (b) resources that belong to a workspace (e.g. a run)
-				if ws, ok := ev.Payload.(*otf.Workspace); ok {
+				if ws, ok := ev.Payload.(otf.Workspace); ok {
 					// apply workspace filter
 					if opts.WorkspaceID != nil {
 						if ws.Name() != *opts.WorkspaceID {

@@ -42,6 +42,7 @@ type Workspace interface {
 	TerraformVersion() string
 	ExecutionMode() ExecutionMode
 	AutoApply() bool
+	Organization() string
 }
 
 // WorkspaceList represents a list of Workspaces.

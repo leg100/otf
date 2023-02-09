@@ -92,14 +92,9 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	// /runs. Uses an HTTP301.
 	r.StrictSlash(true)
 
-	// routes that don't require authentication.
-	r.GET("/login", app.loginHandler)
-	for _, auth := range app.authenticators {
-		r.GET(auth.RequestPath(), auth.RequestHandler)
-		r.GET(auth.CallbackPath(), auth.responseHandler)
-	}
-	r.GET("/admin/login", app.adminLoginPromptHandler)
-	r.PST("/admin/login", app.adminLoginHandler)
+	// TODO: add authenticator handlers here
+
+	// TODO: add session handlers for admin login here
 
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {
@@ -127,10 +122,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		app.variableService.AddHTMLHandlers(r.Router)
 		// Run routes
 		app.runService.AddHTMLHandlers(r.Router)
-
-		r.GET("/workspaces/{workspace_id}/watch", app.watchWorkspace)
-
-		// terraform login opens a browser to this page
-		r.GET("/app/settings/tokens", app.tokensHandler)
+		// Watch routes
+		app.watchService.AddHTMLHandlers(r.Router)
 	})
 }

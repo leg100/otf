@@ -6,19 +6,29 @@ import (
 	"net/http"
 
 	"github.com/gin-contrib/sse"
+	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 )
 
 type htmlApp struct {
+	*Application
+	logr.Logger
 	otf.Renderer
+}
+
+func (app *htmlApp) AddHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/watch", app.watchWorkspace).Methods("GET")
 }
 
 func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		StreamID    string `schema:"stream,required"`
+		Latest      bool   `schema:"latest"`
+		RunID       string `schema:"run_id"`
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
@@ -26,13 +36,8 @@ func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	events, err := app.Watch(r.Context(), otf.WatchOptions{
-		WorkspaceID: otf.String(ws.ID()),
+		WorkspaceID: otf.String(params.WorkspaceID),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -47,7 +52,7 @@ func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				if !ok {
 					return
 				}
-				run, ok := event.Payload.(*otf.Run)
+				run, ok := event.Payload.(otf.Run)
 				if !ok {
 					// skip non-run events
 					continue
@@ -61,17 +66,13 @@ func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				// run.
 				// - otherwise, if neither of those parameters are specified
 				// then events for all runs are relayed.
-				if r.URL.Query().Get("latest") != "" {
-					if !run.Latest() {
-						// skip: run is not the latest run for a workspace
-						continue
-					}
-				} else if runID := r.URL.Query().Get("run-id"); runID != "" {
-					if runID != run.ID() {
-						// skip: event is for a run which does not match the
-						// filter
-						continue
-					}
+				if params.Latest && !run.Latest() {
+					// skip: run is not the latest run for a workspace
+					continue
+				} else if params.RunID != "" && params.RunID != run.ID() {
+					// skip: event is for a run which does not match the
+					// filter
+					continue
 				}
 
 				// render HTML snippets and send as payload in SSE event
