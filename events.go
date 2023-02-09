@@ -18,6 +18,7 @@ const (
 	EventError               EventType = "error"
 	EventInfo                EventType = "info"
 	EventLogChunk            EventType = "log_update"
+	EventVCS                 EventType = "vcs_event"
 )
 
 // EventType identifies the type of event

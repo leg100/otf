@@ -6,7 +6,7 @@ import (
 )
 
 var paths = WellKnown{
-	ModulesV1:  "/api/registry/v1/modules/",
+	ModulesV1:  "/api/v2/",
 	MotdV1:     "/api/terraform/motd",
 	StateV2:    "/api/v2/",
 	TfeV2:      "/api/v2/",

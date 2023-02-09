@@ -13,9 +13,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/hooks"
-	"github.com/leg100/surl"
 )
 
 const (
@@ -54,28 +52,19 @@ type Server struct {
 	logr.Logger
 	otf.Application // provides access to otf services
 	ServerConfig
-	*Router      // http router, exported so that other pkgs can add routes
-	*surl.Signer // sign and validate signed URLs
+	*Router // http router, exported so that other pkgs can add routes
 
 	server *http.Server
 }
 
 // NewServer is the constructor for Server
-func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, stateService otf.StateVersionService, variableService otf.VariableService, registrySessionService otf.RegistrySessionService) (*Server, error) {
+func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, apis ...otf.HTTPAPI) (*Server, error) {
 	s := &Server{
 		server:       &http.Server{},
 		Logger:       logger,
 		ServerConfig: cfg,
 		Application:  app,
 	}
-
-	// configure URL signer
-	s.Signer = surl.New([]byte(cfg.Secret),
-		surl.PrefixPath("/signed"),
-		surl.WithPathFormatter(),
-		surl.WithBase58Expiry(),
-		surl.SkipQuery(),
-	)
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -89,26 +78,17 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	r.GET("/.well-known/terraform.json", s.WellKnown)
 	r.GET("/metrics", promhttp.Handler().ServeHTTP)
-	r.GET("/healthz", GetHealthz)
+	r.GET("/healthz", getHealthz)
 
 	//
 	// VCS event handling
 	//
-	events := make(chan cloud.VCSEvent, 100)
-	r.Handle("/webhooks/vcs/{webhook_id}", hooks.NewHandler(logger, events, s.Application))
-	// s.vcsEventsHandler = triggerer.NewTriggerer(app, logger, events)
-
-	// These are signed URLs that expire after a given time.
-	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
-		signed.Use((&SignatureVerifier{s.Signer}).Handler)
-
-		signed.GET("/modules/download/{module_version_id}.tar.gz", s.downloadModuleVersion)
-	})
+	r.Handle("/webhooks/vcs/{webhook_id}", hooks.NewHandler(logger, s.Application))
 
 	authMiddleware := &authTokenMiddleware{
 		UserService:            app,
 		AgentTokenService:      app,
-		RegistrySessionService: registrySessionService,
+		RegistrySessionService: app,
 		siteToken:              cfg.SiteToken,
 	}
 
@@ -133,38 +113,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			// Ensure request has valid API bearer token
 			r.Use(authMiddleware.handler)
 
-			// Variables routes
-			variableService.AddHandlers(r.Router)
-
-			// StateVersion routes
-			stateService.AddHandlers(r.Router)
-
-			// ConfigurationVersion routes
-			configService.AddHandlers(r.Router)
-
-			// Watch routes
-			watchService.AddHandlers(r.Router)
-
-			// Run routes
-			runService.AddHandlers(r.Router)
-
-			// User routes
-			userService.AddHandlers(r.Router)
-
-			// Agent token routes
-			agentTokenService.AddHandlers(r.Router)
-
-			// Registry session routes
-			registrySessionService.AddHandlers(r.Router)
+			for _, api := range apis {
+				api.AddHandlers(r.Router)
+			}
 		})
-	})
-
-	// module registry
-	r.PathPrefix("/api/registry/v1/modules").Sub(func(r *Router) {
-		// Ensure request has valid API bearer token
-		r.Use(authMiddleware.handler)
-
-		moduleService.AddHandlers(r.Router)
 	})
 
 	// Toggle logging HTTP requests
@@ -180,9 +132,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 // Start starts serving http traffic on the given listener and waits until the server exits due to
 // error or the context is cancelled.
 func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
-	// start handling incoming VCS events
-	go s.vcsEventsHandler.Start(ctx)
-
 	errch := make(chan error)
 
 	go func() {

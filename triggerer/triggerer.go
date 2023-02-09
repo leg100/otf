@@ -18,31 +18,38 @@ type Triggerer struct {
 	otf.Application
 	*module.Publisher
 	logr.Logger
-
-	events <-chan cloud.VCSEvent
 }
 
-func NewTriggerer(app otf.Application, logger logr.Logger, events <-chan cloud.VCSEvent) *Triggerer {
+func NewTriggerer(app otf.Application, logger logr.Logger) *Triggerer {
 	return &Triggerer{
 		Application: app,
 		Publisher:   module.NewPublisher(app),
 		Logger:      logger.WithValues("component", "triggerer"),
-		events:      events,
 	}
 }
 
 // Start handling VCS events and triggering jobs
-func (h *Triggerer) Start(ctx context.Context) {
+func (h *Triggerer) Start(ctx context.Context) error {
 	h.V(2).Info("started")
+
+	sub, err := h.Subscribe(ctx, "triggerer")
+	if err != nil {
+		return err
+	}
 
 	for {
 		select {
-		case event := <-h.events:
-			if err := h.handle(ctx, event); err != nil {
+		case event := <-sub:
+			// skip non-vcs events
+			if event.Type != otf.EventVCS {
+				continue
+			}
+
+			if err := h.handle(ctx, event.Payload); err != nil {
 				h.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		}
 	}
 }

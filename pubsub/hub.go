@@ -145,6 +145,17 @@ func (b *hub) Start(ctx context.Context) error {
 func (b *hub) Publish(event otf.Event) {
 	b.local.Publish(event)
 
+	// Don't publish vcs events to the rest of the cluster: the triggerer
+	// subscribes to vcs events and runs on each node in the cluster, but we
+	// only want each event to trigger one triggerer, so we restrict publishing
+	// the event to the local node.
+	//
+	// TODO: this is naff, but we'll remove this once we refactor out the
+	// triggerer with something better.
+	if event.Type == otf.EventVCS {
+		return
+	}
+
 	msg, err := b.marshal(event)
 	if err != nil {
 		b.Error(err, "marshaling event into postgres notification payload")

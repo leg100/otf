@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/triggerer"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
 	"github.com/spf13/cobra"
@@ -175,6 +176,8 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up renderer: %w", err)
 	}
 
+	triggerer := triggerer.NewTriggerer(app, logger)
+
 	variableService := variable.NewApplication(variable.ApplicationOptions{
 		Authorizer:       authorizer,
 		Logger:           logger,
@@ -255,6 +258,14 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// this'll wait until the other scheduler exits.
 	g.Go(func() error {
 		return scheduler.ExclusiveScheduler(ctx, logger, app)
+	})
+
+	// Run triggerer
+	g.Go(func() error {
+		if err := triggerer.Start(ctx); err != nil {
+			return fmt.Errorf("triggerer terminated: %w", err)
+		}
+		return nil
 	})
 
 	// Run PR reporter - if there is another reporter running already then

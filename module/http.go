@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/surl"
 )
 
 type handlers struct {
-	otf.Signer
+	*surl.Signer
 
 	app appService
 }
@@ -23,6 +24,10 @@ type handlers struct {
 func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listModuleVersions)
 	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink)
+
+	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
+	signed.Use((&otfhttp.SignatureVerifier{h.Signer}).Handler)
+	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
 }
 
 type listModuleVersionsResponse struct {
@@ -70,11 +75,10 @@ func (h *handlers) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	params := struct {
 		GetModuleOptions
 		Version string
-	}
-	var params parameters
+	}{}
 	if err := decode.Route(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

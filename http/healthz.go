@@ -19,7 +19,7 @@ type Healthz struct {
 	Built   string
 }
 
-func GetHealthz(w http.ResponseWriter, r *http.Request) {
+func getHealthz(w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(currentHealthz)
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)

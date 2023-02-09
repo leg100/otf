@@ -60,6 +60,9 @@ type Application interface {
 	HookService
 	UserService
 	TeamService
+	AgentTokenService
+	RegistrySessionService
+	PubSubService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.

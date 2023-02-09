@@ -14,16 +14,16 @@ import (
 // a cloud-specific handler.
 type handler struct {
 	logr.Logger
+	otf.PubSubService
 
-	events chan<- cloud.VCSEvent
 	db
 }
 
-func NewHandler(logger logr.Logger, events chan<- cloud.VCSEvent, app otf.Application) *handler {
+func NewHandler(logger logr.Logger, app otf.Application) *handler {
 	return &handler{
-		Logger: logger,
-		events: events,
-		db:     newPGDB(app.DB(), newFactory(app, app)),
+		Logger:        logger,
+		PubSubService: app,
+		db:            newPGDB(app.DB(), newFactory(app, app)),
 	}
 }
 
@@ -46,6 +46,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, WebhookID: hook.id})
 	if event != nil {
-		h.events <- event
+		h.Publish(otf.Event{
+			Type:    otf.EventVCS,
+			Payload: event,
+		})
 	}
 }
