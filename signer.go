@@ -6,3 +6,8 @@ import "time"
 type Signer interface {
 	Sign(string, time.Duration) (string, error)
 }
+
+// Verifier is capable of verifying signed URLs
+type Verifier interface {
+	Verify(string) error
+}

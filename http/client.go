@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,9 +18,7 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/r3labs/sse/v2"
 	"golang.org/x/time/rate"
-	"gopkg.in/cenkalti/backoff.v1"
 )
 
 const (
@@ -37,9 +34,6 @@ type Client struct {
 	retryLogHook      RetryLogHook
 	retryServerErrors bool
 	remoteAPIVersion  string
-	// insecure skips verification of upstream TLS certs. Should only be used
-	// for testing purposes. NOTE: Only takes effect on SSE connections.
-	insecure bool
 }
 
 func NewClient(config Config) (*Client, error) {
@@ -219,32 +213,6 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*retryablehttp.
 	}
 
 	return req, nil
-}
-
-func (c *Client) newSSEClient(path string, errch chan otf.Event) (*sse.Client, error) {
-	u, err := c.baseURL.Parse(path)
-	if err != nil {
-		return nil, err
-	}
-	client := sse.NewClient(u.String())
-	client.EncodingBase64 = true
-	// Disable backoff, it's instead the responsibility of the caller
-	client.ReconnectStrategy = new(backoff.StopBackOff)
-	client.OnConnect(func(_ *sse.Client) {
-		errch <- otf.Event{
-			Type:    otf.EventInfo,
-			Payload: "successfully connected",
-		}
-	})
-	client.Headers = map[string]string{
-		"Authorization": "Bearer " + c.token,
-	}
-	if c.insecure {
-		client.Connection.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-	}
-	return client, nil
 }
 
 // Helper method that serializes the given ptr or ptr slice into a JSON
@@ -534,12 +502,4 @@ func parsePagination(body io.Reader) (*jsonapi.Pagination, error) {
 		return &jsonapi.Pagination{}, err
 	}
 	return &raw.Meta.Pagination, nil
-}
-
-func newTestClient(srv string) (*Client, error) {
-	u, err := url.Parse(srv)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{insecure: true, baseURL: u}, nil
 }

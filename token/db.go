@@ -8,6 +8,15 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
+type db interface {
+	// CreateToken creates a user token.
+	CreateToken(ctx context.Context, token *Token) error
+	// ListTokens lists user tokens.
+	ListTokens(ctx context.Context, userID string) ([]*Token, error)
+	// DeleteToken deletes a user token.
+	DeleteToken(ctx context.Context, id string) error
+}
+
 // DB is a database of API tokens
 type DB struct {
 	otf.Database // provides access to generated SQL queries

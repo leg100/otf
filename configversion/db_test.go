@@ -5,13 +5,16 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConfigurationVersion_Create(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	ws := CreateTestWorkspace(t, db, org)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 
@@ -20,8 +23,8 @@ func TestConfigurationVersion_Create(t *testing.T) {
 }
 
 func TestConfigurationVersion_Update(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
@@ -38,22 +41,22 @@ func TestConfigurationVersion_Update(t *testing.T) {
 }
 
 func TestConfigurationVersion_Get(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
 	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	tests := []struct {
 		name string
-		opts otf.ConfigurationVersionGetOptions
+		opts ConfigurationVersionGetOptions
 	}{
 		{
 			name: "by id",
-			opts: otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID())},
+			opts: ConfigurationVersionGetOptions{ID: otf.String(cv.ID())},
 		},
 		{
 			name: "by workspace",
-			opts: otf.ConfigurationVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
+			opts: ConfigurationVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
 		},
 	}
 
@@ -67,9 +70,9 @@ func TestConfigurationVersion_Get(t *testing.T) {
 }
 
 func TestConfigurationVersion_List(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
+	db := sql.NewTestDB(t)
+	org := organization.CreateTestOrganization(t, db)
+	ws := workspace.CreateTestWorkspace(t, db, org.Name())
 
 	cv1 := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	cv2 := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
@@ -77,13 +80,13 @@ func TestConfigurationVersion_List(t *testing.T) {
 	tests := []struct {
 		name        string
 		workspaceID string
-		opts        otf.ConfigurationVersionListOptions
-		want        func(*testing.T, *otf.ConfigurationVersionList)
+		opts        ConfigurationVersionListOptions
+		want        func(*testing.T, *ConfigurationVersionList)
 	}{
 		{
 			name:        "no pagination",
 			workspaceID: ws.ID(),
-			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+			want: func(t *testing.T, got *ConfigurationVersionList) {
 				assert.Equal(t, 2, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
 				assert.Contains(t, got.Items, cv1)
@@ -93,8 +96,8 @@ func TestConfigurationVersion_List(t *testing.T) {
 		{
 			name:        "pagination",
 			workspaceID: ws.ID(),
-			opts:        otf.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
-			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+			opts:        ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+			want: func(t *testing.T, got *ConfigurationVersionList) {
 				assert.Equal(t, 1, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
 			},
@@ -102,8 +105,8 @@ func TestConfigurationVersion_List(t *testing.T) {
 		{
 			name:        "stray pagination",
 			workspaceID: ws.ID(),
-			opts:        otf.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
-			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+			opts:        ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+			want: func(t *testing.T, got *ConfigurationVersionList) {
 				// Zero items but total count should ignore pagination
 				assert.Equal(t, 0, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
@@ -112,7 +115,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 		{
 			name:        "query non-existent workspace",
 			workspaceID: "ws-non-existent",
-			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+			want: func(t *testing.T, got *ConfigurationVersionList) {
 				assert.Empty(t, got.Items)
 				assert.Equal(t, 0, got.TotalCount())
 			},

@@ -59,7 +59,7 @@ func (app *htmlApp) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	if err := app.renderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
+	if err := app.RenderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -37,7 +37,6 @@ const (
 )
 
 var (
-	ErrStatusTimestampNotFound   = errors.New("corresponding status timestamp not found")
 	ErrRunDiscardNotAllowed      = errors.New("run was not paused for confirmation or priority; discard not allowed")
 	ErrRunCancelNotAllowed       = errors.New("run was not planning or applying; cancel not allowed")
 	ErrRunForceCancelNotAllowed  = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
@@ -621,7 +620,7 @@ func (r *Run) uploadState(ctx context.Context, env otf.Environment) error {
 }
 
 type RunStatusTimestamp struct {
-	Status    RunStatus
+	Status    otf.RunStatus
 	Timestamp time.Time
 }
 

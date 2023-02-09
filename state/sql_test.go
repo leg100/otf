@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,8 +16,8 @@ func TestStateVersion_Create(t *testing.T) {
 	ctx := context.Background()
 	db := sql.NewTestDB(t)
 	stateDB := &pgdb{db}
-	org := sql.CreateTestOrganization(t, db)
-	ws := sql.CreateTestWorkspace(t, db, org)
+	org := organization.CreateTestOrganization(t, db)
+	ws := workspace.CreateTestWorkspace(t, db, org.Name())
 
 	sv := newTestVersion(t, ws,
 		StateOutput{"out1", "string", "val1", false},
@@ -30,8 +32,8 @@ func TestStateVersion_Get(t *testing.T) {
 	ctx := context.Background()
 	db := sql.NewTestDB(t)
 	stateDB := &pgdb{db}
-	org := sql.CreateTestOrganization(t, db)
-	ws := sql.CreateTestWorkspace(t, db, org)
+	org := organization.CreateTestOrganization(t, db)
+	ws := workspace.CreateTestWorkspace(t, db, org.Name())
 	sv := createTestStateVersion(t, stateDB, ws,
 		StateOutput{"out1", "string", "val1", false},
 	)
@@ -127,7 +129,7 @@ func TestStateVersion_List(t *testing.T) {
 	}
 }
 
-func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *otf.Workspace, outputs ...StateOutput) *version {
+func createTestStateVersion(t *testing.T, stateDB *pgdb, ws otf.Workspace, outputs ...StateOutput) *version {
 	ctx := context.Background()
 	sv := newTestVersion(t, ws, outputs...)
 	err := stateDB.createVersion(ctx, sv)

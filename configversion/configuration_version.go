@@ -32,7 +32,30 @@ type ConfigurationVersion struct {
 	status            ConfigurationStatus
 	statusTimestamps  []ConfigurationVersionStatusTimestamp
 	workspaceID       string
-	ingressAttributes *IngressAttributes
+	ingressAttributes *otf.IngressAttributes
+}
+
+// NewConfigurationVersion creates a ConfigurationVersion object from scratch
+func NewConfigurationVersion(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+	cv := ConfigurationVersion{
+		id:            otf.NewID("cv"),
+		createdAt:     otf.CurrentTimestamp(),
+		autoQueueRuns: DefaultAutoQueueRuns,
+		source:        DefaultConfigurationSource,
+		workspaceID:   workspaceID,
+	}
+	cv.updateStatus(ConfigurationPending)
+
+	if opts.AutoQueueRuns != nil {
+		cv.autoQueueRuns = *opts.AutoQueueRuns
+	}
+	if opts.Speculative != nil {
+		cv.speculative = *opts.Speculative
+	}
+	if opts.IngressAttributes != nil {
+		cv.ingressAttributes = opts.IngressAttributes
+	}
+	return &cv, nil
 }
 
 func (cv *ConfigurationVersion) ID() string                  { return cv.id }
@@ -42,10 +65,14 @@ func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQue
 func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }
 func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
 func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
+func (cv *ConfigurationVersion) WorkspaceID() string         { return cv.workspaceID }
 func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }
-func (cv *ConfigurationVersion) IngressAttributes() *IngressAttributes { return cv.ingressAttributes }
+
+func (cv *ConfigurationVersion) IngressAttributes() *otf.IngressAttributes {
+	return cv.ingressAttributes
+}
 
 func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
 	for _, sts := range cv.statusTimestamps {
@@ -53,10 +80,8 @@ func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (tim
 			return sts.Timestamp, nil
 		}
 	}
-	return time.Time{}, ErrStatusTimestampNotFound
+	return time.Time{}, otf.ErrStatusTimestampNotFound
 }
-
-func (cv *ConfigurationVersion) WorkspaceID() string { return cv.workspaceID }
 
 func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
 	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
@@ -87,7 +112,7 @@ func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.status = status
 	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
 		Status:    status,
-		Timestamp: CurrentTimestamp(),
+		Timestamp: otf.CurrentTimestamp(),
 	})
 }
 
@@ -96,7 +121,7 @@ type ConfigurationStatus string
 
 // ConfigurationVersionList represents a list of configuration versions.
 type ConfigurationVersionList struct {
-	*Pagination
+	*otf.Pagination
 	Items []*ConfigurationVersion
 }
 
@@ -169,27 +194,4 @@ type ConfigurationVersionListOptions struct {
 	Include *string `schema:"include"`
 
 	otf.ListOptions
-}
-
-// NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func NewConfigurationVersion(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
-	cv := ConfigurationVersion{
-		id:            otf.NewID("cv"),
-		createdAt:     otf.CurrentTimestamp(),
-		autoQueueRuns: DefaultAutoQueueRuns,
-		source:        DefaultConfigurationSource,
-		workspaceID:   workspaceID,
-	}
-	cv.updateStatus(ConfigurationPending)
-
-	if opts.AutoQueueRuns != nil {
-		cv.autoQueueRuns = *opts.AutoQueueRuns
-	}
-	if opts.Speculative != nil {
-		cv.speculative = *opts.Speculative
-	}
-	if opts.IngressAttributes != nil {
-		cv.ingressAttributes = opts.IngressAttributes
-	}
-	return &cv, nil
 }

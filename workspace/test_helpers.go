@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func CreateTestWorkspace(t *testing.T, db otf.DB, organization string, opts ...otf.NewTestWorkspaceOption) *otf.Workspace {
+func CreateTestWorkspace(t *testing.T, db otf.DB, organization string, opts ...otf.NewTestWorkspaceOption) otf.Workspace {
 	ctx := context.Background()
 	ws := NewTestWorkspace(t, organization, opts...)
 	wsdb := newPGDB(db)

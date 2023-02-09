@@ -10,7 +10,6 @@ import (
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/r3labs/sse/v2"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -36,7 +35,6 @@ type ServerConfig struct {
 	EnableRequestLogging bool
 	SiteToken            string // site admin token
 	Secret               string // Secret for signing
-	MaxConfigSize        int64  // Maximum permitted config upload size in bytes
 }
 
 func (cfg *ServerConfig) Validate() error {
@@ -59,8 +57,7 @@ type Server struct {
 	*Router      // http router, exported so that other pkgs can add routes
 	*surl.Signer // sign and validate signed URLs
 
-	eventsServer *sse.Server
-	server       *http.Server
+	server *http.Server
 }
 
 // NewServer is the constructor for Server
@@ -70,7 +67,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		Logger:       logger,
 		ServerConfig: cfg,
 		Application:  app,
-		eventsServer: newSSEServer(),
 	}
 
 	// configure URL signer
@@ -147,27 +143,19 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			stateService.AddHandlers(r.Router)
 
 			// ConfigurationVersion routes
-			r.PST("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)
-			r.GET("/configuration-versions/{id}", s.GetConfigurationVersion)
-			r.GET("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
-			r.GET("/configuration-versions/{id}/download", s.DownloadConfigurationVersion)
+			configService.AddHandlers(r.Router)
 
-			// Event routes
-			r.GET("/watch", s.watch)
+			// Watch routes
+			watchService.AddHandlers(r.Router)
 
-			// Plan routes
-			r.GET("/plans/{plan_id}", s.getPlan)
-			r.GET("/plans/{plan_id}/json-output", s.getPlanJSON)
-
-			// Apply routes
-			r.GET("/applies/{apply_id}", s.GetApply)
+			// Run routes
+			runService.AddHandlers(r.Router)
 
 			// User routes
-			r.GET("/account/details", s.GetCurrentUser)
+			userService.AddHandlers(r.Router)
 
 			// Agent token routes
-			r.GET("/agent/details", s.GetCurrentAgent)
-			r.PST("/agent/create", s.CreateAgentToken)
+			agentTokenService.AddHandlers(r.Router)
 
 			// Registry session routes
 			registrySessionService.AddHandlers(r.Router)
@@ -179,11 +167,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		// Ensure request has valid API bearer token
 		r.Use(authMiddleware.handler)
 
-		r.GET("/{organization}/{name}/{provider}/versions", s.listModuleVersions)
-		r.GET("/{organization}/{name}/{provider}/{version}/download", s.getModuleVersionDownloadLink)
+		moduleService.AddHandlers(r.Router)
 	})
 
-	// Optionally log all HTTP requests
+	// Toggle logging HTTP requests
 	if cfg.EnableRequestLogging {
 		http.Handle("/", s.loggingMiddleware(r))
 	} else {
@@ -242,14 +229,4 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 			"method", r.Method,
 			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
 	})
-}
-
-func newSSEServer() *sse.Server {
-	srv := sse.New()
-	// we don't use last-event-item functionality so turn it off
-	srv.AutoReplay = false
-	// encode payloads into base64 otherwise the JSON string payloads corrupt
-	// the SSE protocol
-	srv.EncodeBase64 = true
-	return srv
 }

@@ -5,7 +5,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/leg100/otf"
 )
+
+type Client struct {
+	otf.JSONAPIClient
+}
 
 // DownloadConfig downloads a configuration version tarball.  Only configuration versions in the uploaded state may be downloaded.
 func (c *Client) DownloadConfig(ctx context.Context, cvID string) ([]byte, error) {

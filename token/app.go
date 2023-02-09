@@ -4,12 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
+type Application struct {
+	logr.Logger
+	db db
+}
+
 // CreateToken creates a user token. Only users can create a user token, and
 // they can only create a token for themselves.
-func (a *Application) CreateToken(ctx context.Context, userID string, opts *otf.TokenCreateOptions) (*otf.Token, error) {
+func (a *Application) CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error) {
 	subject, err := otf.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -18,7 +24,7 @@ func (a *Application) CreateToken(ctx context.Context, userID string, opts *otf.
 		return nil, fmt.Errorf("cannot create a token for a different user")
 	}
 
-	token, err := otf.NewToken(userID, opts.Description)
+	token, err := NewToken(userID, opts.Description)
 	if err != nil {
 		a.Error(err, "constructing token", "user", subject)
 		return nil, err
@@ -34,7 +40,7 @@ func (a *Application) CreateToken(ctx context.Context, userID string, opts *otf.
 	return token, nil
 }
 
-func (a *Application) ListTokens(ctx context.Context, userID string) ([]*otf.Token, error) {
+func (a *Application) ListTokens(ctx context.Context, userID string) ([]*Token, error) {
 	return a.db.ListTokens(ctx, userID)
 }
 

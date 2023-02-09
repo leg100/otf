@@ -5,18 +5,19 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gin-contrib/sse"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
+	"github.com/r3labs/sse/v2"
 )
 
 type htmlApp struct {
 	*Application
 	logr.Logger
 	otf.Renderer
+	*sse.Server
 }
 
 func (app *htmlApp) AddHandlers(r *mux.Router) {

@@ -32,9 +32,9 @@ func (r *jsonapiMarshaler) ToJSONAPI() any {
 		Permissions:  perms,
 	}
 
-	obj := &jsonapiRun{
+	obj := &jsonapi.Run{
 		ID: r.ID(),
-		Actions: &jsonapiRunActions{
+		Actions: &jsonapi.RunActions{
 			IsCancelable:      r.Cancelable(),
 			IsConfirmable:     r.Confirmable(),
 			IsForceCancelable: r.ForceCancelAvailableAt() != nil,
@@ -46,7 +46,7 @@ func (r *jsonapiMarshaler) ToJSONAPI() any {
 		HasChanges:             r.Plan().HasChanges(),
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),
-		Permissions: &jsonapiRunPermissions{
+		Permissions: &jsonapi.RunPermissions{
 			CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
 			CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 			CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
@@ -59,7 +59,7 @@ func (r *jsonapiMarshaler) ToJSONAPI() any {
 		ReplaceAddrs:     r.ReplaceAddrs(),
 		Source:           otf.DefaultConfigurationSource,
 		Status:           string(r.Status()),
-		StatusTimestamps: &jsonapiRunStatusTimestamps{},
+		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
 		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*jsonapiApply),
@@ -72,7 +72,7 @@ func (r *jsonapiMarshaler) ToJSONAPI() any {
 		ConfigurationVersion: &jsonapi.ConfigurationVersion{
 			ID: r.ConfigurationVersionID(),
 		},
-		Workspace: &jsonapiWorkspace{ID: r.WorkspaceID()},
+		Workspace: &jsonapi.Workspace{ID: r.WorkspaceID()},
 	}
 
 	// Support including related resources:

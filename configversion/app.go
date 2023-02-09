@@ -4,17 +4,44 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+type app interface {
+	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	// CloneConfigurationVersion creates a new configuration version using the
+	// config tarball of an existing configuration version.
+	CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
+	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
+	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+
+	// Upload handles verification and upload of the config tarball, updating
+	// the config version upon success or failure.
+	UploadConfig(ctx context.Context, id string, config []byte) error
+
+	// Download retrieves the config tarball for the given config version ID.
+	DownloadConfig(ctx context.Context, id string) ([]byte, error)
+}
+
+type Application struct {
+	otf.Authorizer
+	logr.Logger
+
+	db    db
+	cache otf.Cache
+	*handlers
+}
+
+func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := otf.NewConfigurationVersion(workspaceID, opts)
+	cv, err := NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		a.Error(err, "constructing configuration version", "id", cv.ID(), "subject", subject)
 		return nil, err
@@ -27,7 +54,7 @@ func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceI
 	return cv, nil
 }
 
-func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
 	cv, err := a.GetConfigurationVersion(ctx, cvID)
 	if err != nil {
 		return nil, err
@@ -50,13 +77,13 @@ func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string
 	return cv, nil
 }
 
-func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	cvl, err := a.db.ListConfigurationVersions(ctx, workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+	cvl, err := a.db.ListConfigurationVersions(ctx, workspaceID, ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
 		a.Error(err, "listing configuration versions", "subject", subject)
 		return nil, err
@@ -65,13 +92,13 @@ func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID
 	return cvl, nil
 }
 
-func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
+func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) (otf.ConfigurationVersion, error) {
 	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := a.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{ID: &cvID})
+	cv, err := a.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		a.Error(err, "retrieving configuration version", "id", cvID, "subject", subject)
 		return nil, err
@@ -80,13 +107,13 @@ func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) 
 	return cv, nil
 }
 
-func (a *Application) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
+func (a *Application) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (otf.ConfigurationVersion, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := a.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+	cv, err := a.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		a.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -99,7 +126,7 @@ func (a *Application) GetLatestConfigurationVersion(ctx context.Context, workspa
 //
 // NOTE: unauthenticated - access granted only via signed URL
 func (a *Application) UploadConfig(ctx context.Context, cvID string, config []byte) error {
-	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
 		return cv.Upload(ctx, config, uploader)
 	})
 	if err != nil {

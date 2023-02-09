@@ -41,14 +41,3 @@ func (s *Server) signedLogURL(r *http.Request, runID, phase string) string {
 	// Terraform CLI expects an absolute URL
 	return Absolute(r, url)
 }
-
-// signedUploadURL creates a signed URL for uploading a configuration version
-// blob
-func (s *Server) signedUploadURL(cvID string) string {
-	url := fmt.Sprintf("/configuration-versions/%s/upload", cvID)
-	url, err := s.Sign(url, time.Hour)
-	if err != nil {
-		panic("signing url: " + url + "; error: " + err.Error())
-	}
-	return url
-}

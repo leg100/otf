@@ -4,14 +4,24 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/gin-contrib/sse"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/r3labs/sse/v2"
 )
+
+type handlers struct {
+	Application
+	eventsServer *sse.Server
+}
+
+func (h *handlers) AddHandlers(r *mux.Router) {
+	r.HandleFunc(otf.DefaultWatchPath, h.watch).Methods("GET")
+}
 
 // watch subscribes to a stream of otf events using the server-side-events
 // protocol
-func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) watch(w http.ResponseWriter, r *http.Request) {
 	// r3lab's sse server expects a query parameter with the stream ID
 	// but we don't want to bother the client with having to do that so we
 	// handle it here
@@ -20,9 +30,9 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 	q.Add("stream", streamID)
 	r.URL.RawQuery = q.Encode()
 
-	s.eventsServer.CreateStream(streamID)
+	h.eventsServer.CreateStream(streamID)
 
-	events, err := s.Watch(r.Context(), otf.WatchOptions{})
+	events, err := h.Watch(r.Context(), otf.WatchOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
@@ -32,33 +42,33 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-r.Context().Done():
 				// client closed connection
-				s.eventsServer.RemoveStream(streamID)
+				h.eventsServer.RemoveStream(streamID)
 				return
 			case event, ok := <-events:
 				if !ok {
 					// server closes connection
-					s.eventsServer.RemoveStream(streamID)
+					h.eventsServer.RemoveStream(streamID)
 					return
 				}
 
 				// Watch currently only streams run events
-				run, ok := event.Payload.(*otf.Run)
+				run, ok := event.Payload.(otf.Run)
 				if !ok {
 					continue
 				}
 
 				buf := bytes.Buffer{}
-				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, s}).ToJSONAPI()); err != nil {
-					s.Error(err, "marshalling event", "event", event.Type)
+				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, h}).ToJSONAPI()); err != nil {
+					h.Error(err, "marshalling event", "event", event.Type)
 					continue
 				}
 
-				s.eventsServer.Publish(streamID, &sse.Event{
+				h.eventsServer.Publish(streamID, &sse.Event{
 					Data:  buf.Bytes(),
 					Event: []byte(event.Type),
 				})
 			}
 		}
 	}()
-	s.eventsServer.ServeHTTP(w, r)
+	h.eventsServer.ServeHTTP(w, r)
 }

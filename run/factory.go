@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // factory constructs runs
@@ -64,8 +65,29 @@ func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions
 	if opts.AutoApply != nil {
 		run.autoApply = *opts.AutoApply
 	}
-	if cv.ingressAttributes != nil {
-		run.commit = &cv.ingressAttributes.CommitSHA
+	if cv.IngressAttributes() != nil {
+		run.commit = &cv.IngressAttributes().CommitSHA
 	}
 	return &run
+}
+
+func NewFromJSONAPI(d *jsonapi.Run) *Run {
+	return &Run{
+		id:                     d.ID,
+		createdAt:              d.CreatedAt,
+		forceCancelAvailableAt: d.ForceCancelAvailableAt,
+		isDestroy:              d.IsDestroy,
+		executionMode:          otf.ExecutionMode(d.ExecutionMode),
+		message:                d.Message,
+		positionInQueue:        d.PositionInQueue,
+		refresh:                d.Refresh,
+		refreshOnly:            d.RefreshOnly,
+		status:                 RunStatus(d.Status),
+		// TODO: unmarshal timestamps
+		replaceAddrs:           d.ReplaceAddrs,
+		targetAddrs:            d.TargetAddrs,
+		workspaceID:            d.Workspace.ID,
+		configurationVersionID: d.ConfigurationVersion.ID,
+		// TODO: unmarshal plan and apply relations
+	}
 }

@@ -55,4 +55,6 @@ var (
 
 	// ErrRequiredOrg is returned when the organization option is not present
 	ErrRequiredOrg = errors.New("organization is required")
+
+	ErrStatusTimestampNotFound = errors.New("corresponding status timestamp not found")
 )

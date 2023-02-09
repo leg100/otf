@@ -36,6 +36,13 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/planfile", h.uploadPlanFile).Methods("PUT")
 	r.HandleFunc("/runs/{run_id}/lockfile", h.getLockFile).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/lockfile", h.uploadLockFile).Methods("PUT")
+
+	// Plan routes
+	r.HandleFunc("/plans/{plan_id}", h.getPlan).Methods("GET")
+	r.HandleFunc("/plans/{plan_id}/json-output", h.getPlanJSON).Methods("GET")
+
+	// Apply routes
+	r.HandleFunc("/applies/{apply_id}", h.GetApply).Methods("GET")
 }
 
 func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {

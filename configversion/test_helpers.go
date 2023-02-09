@@ -16,20 +16,22 @@ func (f *fakeConfigurationVersionApp) UploadConfig(context.Context, string, []by
 	return nil
 }
 
-func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
+func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
 	cv, err := NewConfigurationVersion(ws.ID(), opts)
 	require.NoError(t, err)
 	return cv
 }
 
-func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
+func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
 	ctx := context.Background()
 	cv := NewTestConfigurationVersion(t, ws, opts)
-	err := db.CreateConfigurationVersion(ctx, cv)
+	cvDB := newPGDB(db)
+
+	err := cvDB.CreateConfigurationVersion(ctx, cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteConfigurationVersion(ctx, cv.ID())
+		cvDB.DeleteConfigurationVersion(ctx, cv.ID())
 	})
 	return cv
 }

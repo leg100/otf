@@ -27,6 +27,7 @@ type ConfigurationVersion interface {
 	String() string
 	AutoQueueRuns() bool
 	Speculative() bool
+	WorkspaceID() string
 
 	IngressAttributes() *IngressAttributes
 }

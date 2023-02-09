@@ -27,6 +27,7 @@ type db interface {
 	// Upload uploads a config tarball for the given config version ID
 	UploadConfigurationVersion(ctx context.Context, id string, fn func(cv *ConfigurationVersion, uploader ConfigUploader) error) error
 
+	insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVersion) error
 	tx(context.Context, func(db) error) error
 }
 
@@ -195,11 +196,11 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 		speculative:      result.Speculative,
 		source:           ConfigurationSource(result.Source.String),
 		status:           ConfigurationStatus(result.Status.String),
-		statusTimestamps: unmarshalConfigurationVersionStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
+		statusTimestamps: unmarshalStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
 		workspaceID:      result.WorkspaceID.String,
 	}
 	if result.IngressAttributes != nil {
-		cv.ingressAttributes = &IngressAttributes{
+		cv.ingressAttributes = &otf.IngressAttributes{
 			Branch:          result.IngressAttributes.Branch.String,
 			CommitSHA:       result.IngressAttributes.CommitSHA.String,
 			Identifier:      result.IngressAttributes.Identifier.String,
@@ -210,7 +211,7 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	return &cv
 }
 
-func unmarshalConfigurationVersionStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
+func unmarshalStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
 	for _, ty := range rows {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),
