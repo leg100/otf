@@ -31,7 +31,6 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	// Run routes for exclusive use by remote agents
 	r.HandleFunc("/runs/{id}/actions/start/{phase}", h.startPhase).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/finish/{phase}", h.finishPhase).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/logs/{phase}", h.putLogs).Methods("PUT")
 	r.HandleFunc("/runs/{run_id}/planfile", h.getPlanFile).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/planfile", h.uploadPlanFile).Methods("PUT")
 	r.HandleFunc("/runs/{run_id}/lockfile", h.getLockFile).Methods("GET")

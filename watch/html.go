@@ -25,13 +25,12 @@ func (app *htmlApp) AddHandlers(r *mux.Router) {
 }
 
 func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	params := struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		StreamID    string `schema:"stream,required"`
 		Latest      bool   `schema:"latest"`
 		RunID       string `schema:"run_id"`
-	}
-	var params parameters
+	}{}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

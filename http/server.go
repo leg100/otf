@@ -102,7 +102,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
 		signed.Use((&SignatureVerifier{s.Signer}).Handler)
 
-		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
 		signed.GET("/modules/download/{module_version_id}.tar.gz", s.downloadModuleVersion)
 	})
 

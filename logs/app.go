@@ -6,14 +6,58 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/r3labs/sse/v2"
 )
+
+type app interface {
+	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	PutChunk(ctx context.Context, chunk Chunk) error
+	Tail(ctx context.Context, opts GetChunkOptions) (<-chan otf.Chunk, error)
+}
 
 type Application struct {
 	otf.Authorizer // authorize access
 	logr.Logger
+	otf.PubSubService
 
 	proxy ChunkProxy
 	db
+	*handlers
+	*htmlHandlers
+}
+
+func NewApplication(opts ApplicationOptions) *Application {
+	app := &Application{
+		Authorizer:    opts.Authorizer,
+		Logger:        opts.Logger,
+		PubSubService: opts.PubSubService,
+	}
+
+	// Create and configure SSE server
+	srv := sse.New()
+	// we don't use last-event-item functionality so turn it off
+	srv.AutoReplay = false
+	// encode payloads into base64 otherwise the JSON string payloads corrupt
+	// the SSE protocol
+	srv.EncodeBase64 = true
+
+	app.handlers = &handlers{
+		app:      app,
+		Verifier: opts.Verifier,
+	}
+	app.htmlHandlers = &htmlHandlers{
+		app:    app,
+		Logger: opts.Logger,
+		Server: srv,
+	}
+	return app
+}
+
+type ApplicationOptions struct {
+	otf.Authorizer
+	otf.PubSubService
+	otf.Verifier
+	logr.Logger
 }
 
 // GetChunk reads a chunk of logs for a phase.
@@ -57,7 +101,7 @@ func (a *Application) PutChunk(ctx context.Context, chunk Chunk) error {
 
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (a *Application) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
+func (a *Application) Tail(ctx context.Context, opts GetChunkOptions) (<-chan otf.Chunk, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err

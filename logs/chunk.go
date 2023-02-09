@@ -113,8 +113,8 @@ type ChunkStore interface {
 }
 
 type GetChunkOptions struct {
-	RunID string    `schema:"run_id"`
-	Phase PhaseType `schema:"phase"`
+	RunID string        `schema:"run_id"`
+	Phase otf.PhaseType `schema:"phase"`
 	// Limit is the size of the chunk to retrieve
 	Limit int `schema:"limit"`
 	// Offset is the position in the data from which to retrieve the chunk.
