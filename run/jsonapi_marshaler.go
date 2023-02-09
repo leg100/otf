@@ -10,21 +10,21 @@ import (
 )
 
 // jsonapiMarshaler converts run into a struct suitable for
-// marshaling into json-api
+// marshaling into json:api encoding
 type jsonapiMarshaler struct {
 	otf.Signer      // for signing upload url
 	otf.Application // for retrieving workspace and workspace permissions
 }
 
-func (m *jsonapiMarshaler) toMarshalable(run *Run, r *http.Request) (marshalable, error) {
+func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
-		return marshalable{}, err
+		return nil, err
 	}
 
 	workspacePerms, err := m.ListWorkspacePermissions(r.Context(), run.WorkspaceID())
 	if err != nil {
-		return marshalable{}, err
+		return nil, err
 	}
 	policy := &otf.WorkspacePolicy{
 		Organization: run.Organization(),
@@ -62,88 +62,72 @@ func (m *jsonapiMarshaler) toMarshalable(run *Run, r *http.Request) (marshalable
 		}
 	}
 
-	return marshalable{
-		Run:            run,
-		RunPermissions: runPerms,
-		workspace:      workspace,
-	}, nil
-}
+	var timestamps jsonapi.RunStatusTimestamps
+	for _, rst := range run.StatusTimestamps() {
+		switch rst.Status {
+		case otf.RunPending:
+			timestamps.PlanQueueableAt = &rst.Timestamp
+		case otf.RunPlanQueued:
+			timestamps.PlanQueuedAt = &rst.Timestamp
+		case otf.RunPlanning:
+			timestamps.PlanningAt = &rst.Timestamp
+		case otf.RunPlanned:
+			timestamps.PlannedAt = &rst.Timestamp
+		case otf.RunPlannedAndFinished:
+			timestamps.PlannedAndFinishedAt = &rst.Timestamp
+		case otf.RunApplyQueued:
+			timestamps.ApplyQueuedAt = &rst.Timestamp
+		case otf.RunApplying:
+			timestamps.ApplyingAt = &rst.Timestamp
+		case otf.RunApplied:
+			timestamps.AppliedAt = &rst.Timestamp
+		case otf.RunErrored:
+			timestamps.ErroredAt = &rst.Timestamp
+		case otf.RunCanceled:
+			timestamps.CanceledAt = &rst.Timestamp
+		case otf.RunForceCanceled:
+			timestamps.ForceCanceledAt = &rst.Timestamp
+		case otf.RunDiscarded:
+			timestamps.DiscardedAt = &rst.Timestamp
+		}
+	}
 
-type marshalable struct {
-	*Run
-	*jsonapi.RunPermissions
-	workspace    *jsonapi.Workspace
-	planLogsURL  string
-	applyLogsURL string
-}
-
-func (r marshalable) ToJSONAPI() any {
-	obj := &jsonapi.Run{
-		ID: r.ID(),
+	return &jsonapi.Run{
+		ID: run.ID(),
 		Actions: &jsonapi.RunActions{
-			IsCancelable:      r.Cancelable(),
-			IsConfirmable:     r.Confirmable(),
-			IsForceCancelable: r.ForceCancelAvailableAt() != nil,
-			IsDiscardable:     r.Discardable(),
+			IsCancelable:      run.Cancelable(),
+			IsConfirmable:     run.Confirmable(),
+			IsForceCancelable: run.ForceCancelAvailableAt() != nil,
+			IsDiscardable:     run.Discardable(),
 		},
-		CreatedAt:              r.CreatedAt(),
-		ExecutionMode:          string(r.ExecutionMode()),
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
-		HasChanges:             r.Plan().HasChanges(),
-		IsDestroy:              r.IsDestroy(),
-		Message:                r.Message(),
-		Permissions:            r.RunPermissions,
+		CreatedAt:              run.CreatedAt(),
+		ExecutionMode:          string(run.ExecutionMode()),
+		ForceCancelAvailableAt: run.ForceCancelAvailableAt(),
+		HasChanges:             run.Plan().HasChanges(),
+		IsDestroy:              run.IsDestroy(),
+		Message:                run.Message(),
+		Permissions:            runPerms,
 		PositionInQueue:        0,
-		Refresh:                r.Refresh(),
-		RefreshOnly:            r.RefreshOnly(),
-		ReplaceAddrs:           r.ReplaceAddrs(),
+		Refresh:                run.Refresh(),
+		RefreshOnly:            run.RefreshOnly(),
+		ReplaceAddrs:           run.ReplaceAddrs(),
 		Source:                 otf.DefaultConfigurationSource,
-		Status:                 string(r.Status()),
-		StatusTimestamps:       &jsonapi.RunStatusTimestamps{},
-		TargetAddrs:            r.TargetAddrs(),
+		Status:                 string(run.Status()),
+		StatusTimestamps:       &timestamps,
+		TargetAddrs:            run.TargetAddrs(),
 		// Relations
-		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*jsonapiApply),
-		Plan:  (&plan{r.Plan(), r.req, r.Server}).ToJSONAPI().(*jsonapiPlan),
+		Apply: (&apply{run.Apply(), r.req, r.Server}).ToJSONAPI().(*jsonapiApply),
+		Plan:  (&plan{run.Plan(), r.req, r.Server}).ToJSONAPI().(*jsonapiPlan),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{
 			ID:       otf.DefaultUserID,
 			Username: otf.DefaultUsername,
 		},
 		ConfigurationVersion: &jsonapi.ConfigurationVersion{
-			ID: r.ConfigurationVersionID(),
+			ID: run.ConfigurationVersionID(),
 		},
-		Workspace: r.workspace,
-	}
-
-	for _, rst := range r.StatusTimestamps() {
-		switch rst.Status {
-		case otf.RunPending:
-			obj.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
-		case otf.RunPlanQueued:
-			obj.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
-		case otf.RunPlanning:
-			obj.StatusTimestamps.PlanningAt = &rst.Timestamp
-		case otf.RunPlanned:
-			obj.StatusTimestamps.PlannedAt = &rst.Timestamp
-		case otf.RunPlannedAndFinished:
-			obj.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case otf.RunApplyQueued:
-			obj.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
-		case otf.RunApplying:
-			obj.StatusTimestamps.ApplyingAt = &rst.Timestamp
-		case otf.RunApplied:
-			obj.StatusTimestamps.AppliedAt = &rst.Timestamp
-		case otf.RunErrored:
-			obj.StatusTimestamps.ErroredAt = &rst.Timestamp
-		case otf.RunCanceled:
-			obj.StatusTimestamps.CanceledAt = &rst.Timestamp
-		case otf.RunForceCanceled:
-			obj.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
-		case otf.RunDiscarded:
-			obj.StatusTimestamps.DiscardedAt = &rst.Timestamp
-		}
-	}
-	return obj
+		Workspace: workspace,
+	}, nil
 }
 
 type jsonapiPlanMarshaler struct {
@@ -185,4 +169,27 @@ func (p *jsonapiPlanMarshaler) ToJSONAPI() any {
 		}
 	}
 	return dto
+}
+
+type apply struct {
+	*otf.Apply
+	req *http.Request
+	*handlers
+}
+
+type RunList struct {
+	*otf.RunList
+	req *http.Request
+	*handlers
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *RunList) ToJSONAPI() any {
+	obj := &jsonapi.RunList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*jsonapi.Run))
+	}
+	return obj
 }

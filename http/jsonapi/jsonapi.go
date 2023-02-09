@@ -79,7 +79,7 @@ func UnmarshalManyPayload(in io.Reader, t reflect.Type) ([]interface{}, error) {
 }
 
 // WriteResponse writes an HTTP response with a JSON-API marshalled payload.
-func WriteResponse(w http.ResponseWriter, r *http.Request, obj Assembler, opts ...func(http.ResponseWriter)) {
+func WriteResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
 	w.Header().Set("Content-type", jsonapi.MediaType)
 	for _, o := range opts {
 		o(w)
@@ -87,9 +87,9 @@ func WriteResponse(w http.ResponseWriter, r *http.Request, obj Assembler, opts .
 	// Only sideline relationships for responses to GET requests
 	var err error
 	if r.Method == "GET" {
-		err = MarshalPayload(w, r, obj.ToJSONAPI())
+		err = MarshalPayload(w, r, v)
 	} else {
-		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj.ToJSONAPI())
+		err = jsonapi.MarshalPayloadWithoutIncluded(w, v)
 	}
 	if err != nil {
 		Error(w, http.StatusInternalServerError, err)

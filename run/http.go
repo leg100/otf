@@ -14,6 +14,8 @@ import (
 
 type handlers struct {
 	Application appService
+
+	jsonapiMarshaler
 }
 
 func (h *handlers) AddHandlers(r *mux.Router) {
@@ -45,7 +47,7 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 }
 
 func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
-	opts := jsonapiCreateOptions{}
+	opts := jsonapi.RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -58,7 +60,7 @@ func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.Application.CreateRun(r.Context(), opts.Workspace.ID, otf.RunCreateOptions{
+	run, err := s.Application.CreateRun(r.Context(), opts.Workspace.ID, RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -72,55 +74,82 @@ func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Run{run, r, s}, withCode(http.StatusCreated))
+
+	jrun, err := s.toJSONAPI(run, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jrun, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (s *handlers) startPhase(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.PhaseStartOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	params := struct {
+		RunID string        `schema:"id,required"`
+		Phase otf.PhaseType `schema:"phase,required"`
+	}{}
+	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	run, err := s.Application.StartPhase(
-		r.Context(),
-		vars["id"],
-		otf.PhaseType(vars["phase"]),
-		opts)
+
+	run, err := s.Application.StartPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Run{run, r, s})
+
+	jrun, err := s.toJSONAPI(run, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jrun)
 }
 
 func (s *handlers) finishPhase(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.PhaseFinishOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	params := struct {
+		RunID string        `schema:"id,required"`
+		Phase otf.PhaseType `schema:"phase,required"`
+	}{}
+	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	run, err := s.Application.FinishPhase(
-		r.Context(),
-		vars["id"],
-		otf.PhaseType(vars["phase"]),
-		opts)
+
+	run, err := s.Application.FinishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Run{run, r, s})
+
+	jrun, err := s.toJSONAPI(run, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jrun)
 }
 
 func (s *handlers) GetRun(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	run, err := s.Application.GetRun(r.Context(), vars["id"])
+	id, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	run, err := s.Application.GetRun(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Run{run, r, s})
+
+	jrun, err := s.toJSONAPI(run, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jrun)
 }
 
 func (s *handlers) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -134,20 +163,18 @@ func (s *handlers) GetRunsQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *handlers) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListOptions) {
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+	if err := decode.All(&opts, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := decode.Route(&opts, r); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	rl, err := s.Application.ListRuns(r.Context(), opts)
+
+	list, err := s.Application.ListRuns(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &RunList{rl, r, s})
+
+	jsonapi.WriteResponse(w, r, &RunList{list, r, s})
 }
 
 func (s *handlers) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -335,27 +362,4 @@ func (s *handlers) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonapi.WriteResponse(w, r, &apply{run.Apply(), r, s})
-}
-
-type apply struct {
-	*otf.Apply
-	req *http.Request
-	*handlers
-}
-
-type RunList struct {
-	*otf.RunList
-	req *http.Request
-	*handlers
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *RunList) ToJSONAPI() any {
-	obj := &jsonapi.RunList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*jsonapi.Run))
-	}
-	return obj
 }

@@ -12,45 +12,43 @@ import (
 // JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
 type JSONAPIMarshaler struct {
-	r *http.Request
 	otf.Application
-	*Workspace
 }
 
-func (m *JSONAPIMarshaler) ToJSONAPI() any {
-	subject, err := otf.SubjectFromContext(m.r.Context())
+func (m *JSONAPIMarshaler) ToJSONAPI(ws otf.Workspace, r *http.Request) any {
+	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		panic(err.Error())
 	}
-	perms, err := m.ListWorkspacePermissions(m.r.Context(), m.ID())
+	perms, err := m.ListWorkspacePermissions(r.Context(), ws.ID())
 	if err != nil {
 		panic(err.Error())
 	}
 	policy := &otf.WorkspacePolicy{
-		Organization: m.Organization(),
-		WorkspaceID:  m.ID(),
+		Organization: ws.Organization(),
+		WorkspaceID:  ws.ID(),
 		Permissions:  perms,
 	}
 
 	obj := &jsonapi.Workspace{
-		ID: m.ID(),
+		ID: ws.ID(),
 		Actions: &jsonapi.WorkspaceActions{
 			IsDestroyable: true,
 		},
-		AllowDestroyPlan:     m.AllowDestroyPlan(),
-		AutoApply:            m.AutoApply(),
-		CanQueueDestroyPlan:  m.CanQueueDestroyPlan(),
-		CreatedAt:            m.CreatedAt(),
-		Description:          m.Description(),
-		Environment:          m.Environment(),
-		ExecutionMode:        string(m.ExecutionMode()),
-		FileTriggersEnabled:  m.FileTriggersEnabled(),
-		GlobalRemoteState:    m.GlobalRemoteState(),
-		Locked:               m.Locked(),
-		MigrationEnvironment: m.MigrationEnvironment(),
-		Name:                 m.Name(),
+		AllowDestroyPlan:     ws.AllowDestroyPlan(),
+		AutoApply:            ws.AutoApply(),
+		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
+		CreatedAt:            ws.CreatedAt(),
+		Description:          ws.Description(),
+		Environment:          ws.Environment(),
+		ExecutionMode:        string(ws.ExecutionMode()),
+		FileTriggersEnabled:  ws.FileTriggersEnabled(),
+		GlobalRemoteState:    ws.GlobalRemoteState(),
+		Locked:               ws.Locked(),
+		MigrationEnvironment: ws.MigrationEnvironment(),
+		Name:                 ws.Name(),
 		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations: m.ExecutionMode() == "remote",
+		Operations: ws.ExecutionMode() == "remote",
 		Permissions: &jsonapi.WorkspacePermissions{
 			CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
 			CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
@@ -63,16 +61,16 @@ func (m *JSONAPIMarshaler) ToJSONAPI() any {
 			CanUpdate:         subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 			CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		},
-		QueueAllRuns:               m.QueueAllRuns(),
-		SpeculativeEnabled:         m.SpeculativeEnabled(),
-		SourceName:                 m.SourceName(),
-		SourceURL:                  m.SourceURL(),
-		StructuredRunOutputEnabled: m.StructuredRunOutputEnabled(),
-		TerraformVersion:           m.TerraformVersion(),
-		TriggerPrefixes:            m.TriggerPrefixes(),
-		WorkingDirectory:           m.WorkingDirectory(),
-		UpdatedAt:                  m.UpdatedAt(),
-		Organization:               &jsonapi.Organization{Name: m.Organization()},
+		QueueAllRuns:               ws.QueueAllRuns(),
+		SpeculativeEnabled:         ws.SpeculativeEnabled(),
+		SourceName:                 ws.SourceName(),
+		SourceURL:                  ws.SourceURL(),
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
+		TerraformVersion:           ws.TerraformVersion(),
+		TriggerPrefixes:            ws.TriggerPrefixes(),
+		WorkingDirectory:           ws.WorkingDirectory(),
+		UpdatedAt:                  ws.UpdatedAt(),
+		Organization:               &jsonapi.Organization{Name: ws.Organization()},
 	}
 
 	// Support including related resources:
@@ -82,11 +80,11 @@ func (m *JSONAPIMarshaler) ToJSONAPI() any {
 	// NOTE: limit support to organization, since that's what the go-tfe tests
 	// for, and we want to run the full barrage of go-tfe workspace tests
 	// without error
-	if includes := m.r.URL.Query().Get("include"); includes != "" {
+	if includes := r.URL.Query().Get("include"); includes != "" {
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "organization":
-				org, err := m.GetOrganization(m.r.Context(), m.Organization())
+				org, err := m.GetOrganization(r.Context(), ws.Organization())
 				if err != nil {
 					panic(err.Error()) // throws HTTP500
 				}
