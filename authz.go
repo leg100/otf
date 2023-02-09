@@ -30,8 +30,8 @@ type WorkspacePolicy struct {
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	Team Team
-	Role rbac.Role
+	TeamID string
+	Role   rbac.Role
 }
 
 // AddSubjectToContext adds a subject to a context

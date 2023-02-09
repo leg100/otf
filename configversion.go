@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultConfigurationSource = "tfe-api"
+)
+
 type ConfigurationVersionService interface {
 	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (ConfigurationVersion, error)
 	// CloneConfigurationVersion creates a new configuration version using the

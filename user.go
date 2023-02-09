@@ -2,7 +2,11 @@ package otf
 
 import "context"
 
-const SiteAdminID = "user-site-admin"
+const (
+	SiteAdminID     = "user-site-admin"
+	DefaultUserID   = "user-123"
+	DefaultUsername = "otf"
+)
 
 type User interface {
 	Username() string

@@ -10,15 +10,7 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-const (
-	DefaultUserID   = "user-123"
-	DefaultUsername = "otf"
-)
-
-var (
-	SiteAdminID = "user-site-admin"
-	SiteAdmin   = User{id: SiteAdminID, username: "site-admin"}
-)
+var SiteAdmin = User{id: otf.SiteAdminID, username: "site-admin"}
 
 // User represents an otf user account.
 type User struct {
@@ -140,7 +132,7 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) b
 				return true
 			}
 			for _, perm := range policy.Permissions {
-				if team.id == perm.Team.id {
+				if team.id == perm.TeamID {
 					return perm.Role.IsAllowed(action)
 				}
 			}

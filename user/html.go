@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/rbac"
 )
 
 type htmlApp struct {
@@ -103,50 +102,4 @@ func (app *htmlApp) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.Render("team_list.tmpl", w, r, teams)
-}
-
-func (app *htmlApp) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		TeamName    string `schema:"team_name,required"`
-		Role        string `schema:"role,required"`
-	}
-	params := parameters{}
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	role, err := rbac.WorkspaceRoleFromString(params.Role)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = app.SetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName, role)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	html.FlashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
-}
-
-func (app *htmlApp) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		TeamName    string `schema:"team_name,required"`
-	}
-	var params parameters
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	err := app.UnsetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	html.FlashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }

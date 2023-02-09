@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	DefaultAutoQueueRuns       = true
-	DefaultConfigurationSource = "tfe-api"
+	DefaultAutoQueueRuns = true
 
 	// List all available configuration version statuses.
 	ConfigurationErrored  ConfigurationStatus = "errored"
@@ -41,7 +40,7 @@ func NewConfigurationVersion(workspaceID string, opts otf.ConfigurationVersionCr
 		id:            otf.NewID("cv"),
 		createdAt:     otf.CurrentTimestamp(),
 		autoQueueRuns: DefaultAutoQueueRuns,
-		source:        DefaultConfigurationSource,
+		source:        otf.DefaultConfigurationSource,
 		workspaceID:   workspaceID,
 	}
 	cv.updateStatus(ConfigurationPending)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/rbac"
 )
 
 const (
@@ -169,6 +170,14 @@ type WorkspaceService interface {
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]Workspace, error)
 	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
 	DeleteWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
+
+	WorkspacePermissionService
+}
+
+type WorkspacePermissionService interface {
+	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
+	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
+	UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 }
 
 // WorkspaceDB is a persistence store for workspaces.

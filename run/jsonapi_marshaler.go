@@ -9,29 +9,75 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
-// into json-api
+// jsonapiMarshaler converts run into a struct suitable for
+// marshaling into json-api
 type jsonapiMarshaler struct {
-	*Run
-	req *http.Request
-	*handlers
+	otf.Signer      // for signing upload url
+	otf.Application // for retrieving workspace and workspace permissions
 }
 
-func (r *jsonapiMarshaler) ToJSONAPI() any {
-	subject, err := otf.SubjectFromContext(r.req.Context())
+func (m *jsonapiMarshaler) toMarshalable(run *Run, r *http.Request) (marshalable, error) {
+	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
-		panic(err.Error())
-	}
-	perms, err := r.ListWorkspacePermissions(r.req.Context(), r.WorkspaceID())
-	if err != nil {
-		panic(err.Error())
-	}
-	policy := &otf.WorkspacePolicy{
-		Organization: r.Organization(),
-		WorkspaceID:  r.WorkspaceID(),
-		Permissions:  perms,
+		return marshalable{}, err
 	}
 
+	workspacePerms, err := m.ListWorkspacePermissions(r.Context(), run.WorkspaceID())
+	if err != nil {
+		return marshalable{}, err
+	}
+	policy := &otf.WorkspacePolicy{
+		Organization: run.Organization(),
+		WorkspaceID:  run.WorkspaceID(),
+		Permissions:  workspacePerms,
+	}
+
+	runPerms := &jsonapi.RunPermissions{
+		CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
+		CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
+		CanCancel:       subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
+		CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+	}
+
+	workspace := &jsonapi.Workspace{ID: run.WorkspaceID()}
+
+	// Support including related resources:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#available-related-resources
+	//
+	// NOTE: limit support to workspace, since that's what the go-tfe tests
+	// for, and we want to run the full barrage of go-tfe workspace tests
+	// without error
+	if includes := r.URL.Query().Get("include"); includes != "" {
+		for _, inc := range strings.Split(includes, ",") {
+			switch inc {
+			case "workspace":
+				ws, err := m.GetWorkspace(r.Context(), run.WorkspaceID())
+				if err != nil {
+					return marshalable{}, err
+				}
+				workspace = (&Workspace{r.req, r.Application, ws}).ToJSONAPI().(*jsonapi.Workspace)
+			}
+		}
+	}
+
+	return marshalable{
+		Run:            run,
+		RunPermissions: runPerms,
+		workspace:      workspace,
+	}, nil
+}
+
+type marshalable struct {
+	*Run
+	*jsonapi.RunPermissions
+	workspace    *jsonapi.Workspace
+	planLogsURL  string
+	applyLogsURL string
+}
+
+func (r marshalable) ToJSONAPI() any {
 	obj := &jsonapi.Run{
 		ID: r.ID(),
 		Actions: &jsonapi.RunActions{
@@ -46,21 +92,15 @@ func (r *jsonapiMarshaler) ToJSONAPI() any {
 		HasChanges:             r.Plan().HasChanges(),
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),
-		Permissions: &jsonapi.RunPermissions{
-			CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
-			CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-			CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
-			CanCancel:       subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
-			CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		},
-		PositionInQueue:  0,
-		Refresh:          r.Refresh(),
-		RefreshOnly:      r.RefreshOnly(),
-		ReplaceAddrs:     r.ReplaceAddrs(),
-		Source:           otf.DefaultConfigurationSource,
-		Status:           string(r.Status()),
-		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
-		TargetAddrs:      r.TargetAddrs(),
+		Permissions:            r.RunPermissions,
+		PositionInQueue:        0,
+		Refresh:                r.Refresh(),
+		RefreshOnly:            r.RefreshOnly(),
+		ReplaceAddrs:           r.ReplaceAddrs(),
+		Source:                 otf.DefaultConfigurationSource,
+		Status:                 string(r.Status()),
+		StatusTimestamps:       &jsonapi.RunStatusTimestamps{},
+		TargetAddrs:            r.TargetAddrs(),
 		// Relations
 		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*jsonapiApply),
 		Plan:  (&plan{r.Plan(), r.req, r.Server}).ToJSONAPI().(*jsonapiPlan),
@@ -72,27 +112,7 @@ func (r *jsonapiMarshaler) ToJSONAPI() any {
 		ConfigurationVersion: &jsonapi.ConfigurationVersion{
 			ID: r.ConfigurationVersionID(),
 		},
-		Workspace: &jsonapi.Workspace{ID: r.WorkspaceID()},
-	}
-
-	// Support including related resources:
-	//
-	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#available-related-resources
-	//
-	// NOTE: limit support to workspace, since that's what the go-tfe tests
-	// for, and we want to run the full barrage of go-tfe workspace tests
-	// without error
-	if includes := r.req.URL.Query().Get("include"); includes != "" {
-		for _, inc := range strings.Split(includes, ",") {
-			switch inc {
-			case "workspace":
-				ws, err := r.Application.GetWorkspace(r.req.Context(), r.WorkspaceID())
-				if err != nil {
-					panic(err.Error()) // throws HTTP500
-				}
-				obj.Workspace = (&Workspace{r.req, r.Application, ws}).ToJSONAPI().(*jsonapi.Workspace)
-			}
-		}
+		Workspace: r.workspace,
 	}
 
 	for _, rst := range r.StatusTimestamps() {

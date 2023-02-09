@@ -90,7 +90,7 @@ func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &jsonapiMarshaler{r, s.Application, ws}, jsonapi.WithCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, &JSONAPIMarshaler{r, s.Application, ws}, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (s *handlers) GetWorkspace(w http.ResponseWriter, r *http.Request) {

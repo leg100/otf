@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
 )
 
@@ -292,12 +291,6 @@ type WorkspaceConnectionService interface {
 	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
 	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
 	DisconnectWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-}
-
-type WorkspacePermissionService interface {
-	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
-	UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 }
 
 type WorkspaceLockService interface {

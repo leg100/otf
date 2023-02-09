@@ -9,15 +9,15 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
+// JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
-type jsonapiMarshaler struct {
+type JSONAPIMarshaler struct {
 	r *http.Request
 	otf.Application
 	*Workspace
 }
 
-func (m *jsonapiMarshaler) ToJSONAPI() any {
+func (m *JSONAPIMarshaler) ToJSONAPI() any {
 	subject, err := otf.SubjectFromContext(m.r.Context())
 	if err != nil {
 		panic(err.Error())
@@ -32,9 +32,9 @@ func (m *jsonapiMarshaler) ToJSONAPI() any {
 		Permissions:  perms,
 	}
 
-	obj := &jsonapiWorkspace{
+	obj := &jsonapi.Workspace{
 		ID: m.ID(),
-		Actions: &jsonapiWorkspaceActions{
+		Actions: &jsonapi.WorkspaceActions{
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     m.AllowDestroyPlan(),
@@ -51,7 +51,7 @@ func (m *jsonapiMarshaler) ToJSONAPI() any {
 		Name:                 m.Name(),
 		// Operations is deprecated but clients and go-tfe tests still use it
 		Operations: m.ExecutionMode() == "remote",
-		Permissions: &jsonapiWorkspacePermissions{
+		Permissions: &jsonapi.WorkspacePermissions{
 			CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
 			CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
 			CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
@@ -72,7 +72,7 @@ func (m *jsonapiMarshaler) ToJSONAPI() any {
 		TriggerPrefixes:            m.TriggerPrefixes(),
 		WorkingDirectory:           m.WorkingDirectory(),
 		UpdatedAt:                  m.UpdatedAt(),
-		Organization:               &organization.Organization{Name: m.Organization()},
+		Organization:               &jsonapi.Organization{Name: m.Organization()},
 	}
 
 	// Support including related resources:

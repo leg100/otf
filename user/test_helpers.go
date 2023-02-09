@@ -59,5 +59,5 @@ func createTestWorkspacePermission(t *testing.T, db DB, ws *Workspace, team Team
 	t.Cleanup(func() {
 		db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
 	})
-	return &otf.WorkspacePermission{Team: team, Role: role}
+	return &otf.WorkspacePermission{TeamID: team, Role: role}
 }
