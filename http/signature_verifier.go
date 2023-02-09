@@ -4,24 +4,16 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
-// Signer is capable of signing URLs with a limited lifespan.
-type Signer interface {
-	Sign(string, time.Duration) (string, error)
+// SignatureVerifier is middleware that verifies signed URLs
+type SignatureVerifier struct {
+	otf.Verifier
 }
 
-// Verifier is capable of verifying signed URLs
-type Verifier interface {
-	Verify(string) error
-}
-
-// signatureVerifier is middleware that verifies and validates signed URLs
-type signatureVerifier struct {
-	Verifier
-}
-
-func (v *signatureVerifier) handler(next http.Handler) http.Handler {
+func (v *SignatureVerifier) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := v.Verify(r.URL.String()); err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)

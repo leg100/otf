@@ -7,16 +7,34 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/surl"
 )
 
 type handlers struct {
-	Application app
+	Application  app
+	otf.Verifier // for verifying upload url
 
 	jsonapiMarshaler
 
 	max int64 // Maximum permitted config upload size in bytes
+}
+
+func newHandlers(opts handlersOptions) *handlers {
+	return &handlers{
+		Application:      opts.app,
+		max:              opts.max,
+		jsonapiMarshaler: jsonapiMarshaler{opts.Signer},
+		Verifier:         opts.Signer,
+	}
+}
+
+type handlersOptions struct {
+	app
+	max int64
+	*surl.Signer
 }
 
 func (s *handlers) AddHandlers(r *mux.Router) {
@@ -25,6 +43,10 @@ func (s *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/configuration-versions/{id}", s.GetConfigurationVersion)
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
 	r.HandleFunc("/configuration-versions/{id}/download", s.DownloadConfigurationVersion)
+
+	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
+	signed.Use((&otfhttp.SignatureVerifier{s.Verifier}).Handler)
+	signed.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion()).Methods("PUT")
 }
 
 func (s *handlers) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {

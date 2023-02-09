@@ -100,11 +100,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
-		// TODO: use mux.Middleware interface
-		signed.Use((&signatureVerifier{s.Signer}).handler)
+		signed.Use((&SignatureVerifier{s.Signer}).Handler)
 
 		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
-		signed.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
 		signed.GET("/modules/download/{module_version_id}.tar.gz", s.downloadModuleVersion)
 	})
 

@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/surl"
 )
 
 type app interface {
@@ -33,6 +34,24 @@ type Application struct {
 	db    db
 	cache otf.Cache
 	*handlers
+}
+
+func NewApplication(opts ApplicationOptions) *Application {
+	app := &Application{
+		Authorizer: opts.Authorizer,
+		db:         newPGDB(opts.Database),
+		Logger:     opts.Logger,
+	}
+	app.handlers = newHandlers(handlersOptions{app, opts.MaxUploadSize, opts.Signer})
+	return app
+}
+
+type ApplicationOptions struct {
+	otf.Authorizer
+	otf.Database
+	*surl.Signer
+	logr.Logger
+	MaxUploadSize int64
 }
 
 func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
