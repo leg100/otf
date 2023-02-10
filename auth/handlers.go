@@ -44,7 +44,7 @@ func (h *handlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.app.createRegistrySession(r.Context(), opts.OrganizationName)
+	session, err := h.app.CreateRegistrySession(r.Context(), opts.OrganizationName)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -61,7 +61,7 @@ func (h *handlers) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	at, err := h.app.createAgentToken(r.Context(), CreateAgentTokenOptions{
+	at, err := h.app.createAgentToken(r.Context(), otf.CreateAgentTokenOptions{
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	})

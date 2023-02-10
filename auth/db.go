@@ -17,19 +17,7 @@ type db interface {
 
 	CreateUser(ctx context.Context, user *User) error
 	GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	// ListUsers lists users.
-	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
 	DeleteUser(ctx context.Context, spec UserSpec) error
-	// AddOrganizationMembership adds a user as a member of an organization
-	AddOrganizationMembership(ctx context.Context, id, orgID string) error
-	// RemoveOrganizationMembership removes a user as a member of an
-	// organization
-	RemoveOrganizationMembership(ctx context.Context, id, orgID string) error
-	// AddTeamMembership adds a user as a member of a team
-	AddTeamMembership(ctx context.Context, id, teamID string) error
-	// RemoveTeamMembership removes a user as a member of an
-	// team
-	RemoveTeamMembership(ctx context.Context, id, teamID string) error
 
 	CreateTeam(ctx context.Context, team *Team) error
 	UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error)
@@ -53,14 +41,22 @@ type db interface {
 	// GetAgentTokenByToken retrieves agent token using its cryptographic
 	// authentication token.
 	GetAgentTokenByToken(ctx context.Context, token string) (*agentToken, error)
-	ListAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
-	DeleteAgentToken(ctx context.Context, id string) error
+
+	listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
+	deleteAgentToken(ctx context.Context, id string) error
 
 	createRegistrySession(context.Context, *registrySession) error
 	getRegistrySession(ctx context.Context, token string) (*registrySession, error)
 
-	// listTeamMembers lists users that are members of the given team
 	listTeamMembers(ctx context.Context, teamID string) ([]*User, error)
+
+	listUsers(ctx context.Context, organization string) ([]*User, error)
+
+	addOrganizationMembership(ctx context.Context, userID, organization string) error
+	removeOrganizationMembership(ctx context.Context, userID, organization string) error
+
+	addTeamMembership(ctx context.Context, userID, teamID string) error
+	removeTeamMembership(ctx context.Context, userID, teamID string) error
 
 	tx(context.Context, func(db) error) error
 }
@@ -177,15 +173,15 @@ func (db *pgdb) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	}
 }
 
-func (db *pgdb) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
-	_, err := db.InsertOrganizationMembership(ctx, sql.String(id), sql.String(orgID))
+func (db *pgdb) addOrganizationMembership(ctx context.Context, userID, organization string) error {
+	_, err := db.InsertOrganizationMembership(ctx, sql.String(userID), sql.String(organization))
 	if err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
+func (db *pgdb) removeOrganizationMembership(ctx context.Context, id, orgID string) error {
 	_, err := db.DeleteOrganizationMembership(ctx, sql.String(id), sql.String(orgID))
 	if err != nil {
 		return sql.Error(err)
@@ -193,7 +189,7 @@ func (db *pgdb) RemoveOrganizationMembership(ctx context.Context, id, orgID stri
 	return nil
 }
 
-func (db *pgdb) AddTeamMembership(ctx context.Context, userID, teamID string) error {
+func (db *pgdb) addTeamMembership(ctx context.Context, userID, teamID string) error {
 	_, err := db.InsertTeamMembership(ctx, sql.String(userID), sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
@@ -201,7 +197,7 @@ func (db *pgdb) AddTeamMembership(ctx context.Context, userID, teamID string) er
 	return nil
 }
 
-func (db *pgdb) RemoveTeamMembership(ctx context.Context, userID, teamID string) error {
+func (db *pgdb) removeTeamMembership(ctx context.Context, userID, teamID string) error {
 	_, err := db.DeleteTeamMembership(ctx, sql.String(userID), sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
@@ -339,7 +335,7 @@ func (db *pgdb) getRegistrySession(ctx context.Context, token string) (*registry
 func (db *pgdb) CreateAgentToken(ctx context.Context, token *agentToken) error {
 	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
 		TokenID:          sql.String(token.ID()),
-		Token:            sql.String(*token.Token()),
+		Token:            sql.String(token.Token()),
 		Description:      sql.String(token.Description()),
 		OrganizationName: sql.String(token.Organization()),
 		CreatedAt:        sql.Timestamptz(token.CreatedAt()),
@@ -347,8 +343,8 @@ func (db *pgdb) CreateAgentToken(ctx context.Context, token *agentToken) error {
 	return err
 }
 
-func (db *pgdb) ListAgentTokens(ctx context.Context, organizationName string) ([]*agentToken, error) {
-	rows, err := db.FindAgentTokens(ctx, sql.String(organizationName))
+func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error) {
+	rows, err := db.FindAgentTokens(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -357,6 +353,15 @@ func (db *pgdb) ListAgentTokens(ctx context.Context, organizationName string) ([
 		unmarshalled = append(unmarshalled, agentTokenRow(r).toAgentToken())
 	}
 	return unmarshalled, nil
+}
+
+// deleteAgentToken deletes an agent token.
+func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {
+	_, err := db.DeleteAgentTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
 }
 
 func (db *pgdb) GetAgentTokenByID(ctx context.Context, id string) (*agentToken, error) {
@@ -373,15 +378,6 @@ func (db *pgdb) GetAgentTokenByToken(ctx context.Context, token string) (*agentT
 		return nil, sql.Error(err)
 	}
 	return agentTokenRow(r).toAgentToken(), nil
-}
-
-// DeleteAgentToken deletes an agent token.
-func (db *pgdb) DeleteAgentToken(ctx context.Context, id string) error {
-	_, err := db.DeleteAgentTokenByID(ctx, sql.String(id))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
 }
 
 // CreateSession inserts the session, associating it with the user.

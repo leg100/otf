@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -12,7 +14,9 @@ type app interface {
 	// CreateRegistrySession creates a registry session, returning its token.
 	CreateRegistrySession(ctx context.Context, organization string) (string, error)
 
-	createAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*agentToken, error)
+	createAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*agentToken, error)
+	listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
+	deleteAgentToken(ctx context.Context, id string) (*agentToken, error)
 
 	listUsers(context.Context, UserListOptions) ([]*User, error)
 
@@ -21,8 +25,10 @@ type app interface {
 	listTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 	updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
 
-	create(ctx context.Context, organization string) (*Session, error)
-	get(ctx context.Context, token string) (*Session, error)
+	createSession(ctx context.Context, organization string) (*Session, error)
+	getSession(ctx context.Context, token string) (*Session, error)
+	listSessions(ctx context.Context, userID string) ([]*Session, error)
+	deleteSession(ctx context.Context, token string) error
 }
 
 type Application struct {
@@ -31,17 +37,26 @@ type Application struct {
 
 	db db
 	*handlers
+	*synchroniser
 }
 
-func NewApplication(ctx context.Context, opts ApplicationOptions) *Application {
+func NewApplication(ctx context.Context, opts ApplicationOptions) (*Application, error) {
 	db := newDB(opts.Database)
 	app := &Application{
-		Authorizer: opts.Authorizer,
-		Logger:     opts.Logger,
-		db:         db,
+		Authorizer:   opts.Authorizer,
+		Logger:       opts.Logger,
+		db:           db,
+		synchroniser: &synchroniser{Logger, db},
 	}
+
+	authenticators, err := newAuthenticators(opts.Logger, opts.Application, opts.Configs)
+	if err != nil {
+		return nil, err
+	}
+
 	app.handlers = &handlers{
-		app: app,
+		app:            app,
+		authenticators: authenticators,
 	}
 
 	// purge expired registry sessions
@@ -51,6 +66,8 @@ func NewApplication(ctx context.Context, opts ApplicationOptions) *Application {
 }
 
 type ApplicationOptions struct {
+	Configs []*cloud.CloudOAuthConfig
+
 	otf.Authorizer
 	otf.Database
 	logr.Logger
@@ -77,76 +94,10 @@ func (a *Application) CreateUser(ctx context.Context, username string) (otf.User
 	return user, nil
 }
 
-// EnsureCreatedUser retrieves the user or creates the user if they don't exist.
-func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (otf.User, error) {
-	user, err := a.db.GetUser(ctx, UserSpec{Username: &username})
-	if err == nil {
-		return user, nil
-	}
-	if err != otf.ErrResourceNotFound {
-		a.Error(err, "retrieving user", "username", username)
-		return nil, err
-	}
-
-	return a.CreateUser(ctx, username)
-}
-
-// listUsers lists users with various filters.
-func (a *Application) listUsers(ctx context.Context, opts UserListOptions) ([]*otf.User, error) {
-	var err error
-	if opts.Organization != nil && opts.TeamName != nil {
-		// team members can view membership of their own teams.
-		subject, err := otf.SubjectFromContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if user, ok := subject.(otf.User); ok && !user.IsSiteAdmin() {
-			_, err := user.Team(*opts.TeamName, *opts.Organization)
-			if err != nil {
-				// user is not a member of the team
-				return nil, otf.ErrAccessNotPermitted
-			}
-			return a.db.ListUsers(ctx, opts)
-		}
-	}
-
-	if opts.Organization != nil {
-		// subject needs perms on org to list users in org
-		_, err = a.CanAccessOrganization(ctx, rbac.ListUsersAction, *opts.Organization)
-	} else {
-		// subject needs perms on site to list users across site
-		_, err = a.CanAccessSite(ctx, rbac.ListRunsAction)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return a.db.ListUsers(ctx, opts)
-}
-
-func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []string, teams []*otf.Team) (*otf.User, error) {
-	if err := user.SyncMemberships(ctx, a.db, orgs, teams); err != nil {
-		return nil, err
-	}
-
-	a.V(1).Info("synchronised user's memberships", "username", user.Username())
-
-	return user, nil
-}
-
 func (a *Application) GetUser(ctx context.Context, spec UserSpec) (otf.User, error) {
 	user, err := a.db.GetUser(ctx, spec)
 	if err != nil {
-		// Failure to retrieve a user is frequently due to the fact the http
-		// middleware first calls this endpoint to see if the bearer token
-		// belongs to a user and if that fails it then checks if it belongs to
-		// an agent. Therefore we log this at a low priority info level rather
-		// than as an error.
-		//
-		// TODO: make bearer token a signed cryptographic token containing
-		// metadata about the authenticating entity.
-		info := append([]any{"err", err.Error()}, spec.KeyValue()...)
-		a.V(2).Info("unable to retrieve user", info...)
+		a.V(2).Info("retrieving user", "spec", spec)
 		return nil, err
 	}
 
@@ -155,18 +106,13 @@ func (a *Application) GetUser(ctx context.Context, spec UserSpec) (otf.User, err
 	return user, nil
 }
 
-func (a *Application) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
+func (a *Application) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.db.GetOrganization(ctx, opts.Organization)
-	if err != nil {
-		return nil, err
-	}
-
-	team := newTeam(opts.Name, org)
+	team := newTeam(opts)
 
 	if err := a.db.CreateTeam(ctx, team); err != nil {
 		a.Error(err, "creating team", "name", opts.Name, "organization", opts.Organization, "subject", subject)
@@ -177,17 +123,53 @@ func (a *Application) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions
 	return team, nil
 }
 
-// EnsureCreatedTeam retrieves the team or creates the team if it doesn't exist.
-func (a *Application) EnsureCreatedTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
-	team, err := a.db.GetTeam(ctx, opts.Name, opts.Organization)
-	if err == otf.ErrResourceNotFound {
-		return a.CreateTeam(ctx, opts)
-	} else if err != nil {
-		a.Error(err, "retrieving team", "name", opts.Name, "organization", opts.Organization)
+// listUsers lists an organization's users
+func (a *Application) listUsers(ctx context.Context, organization string) ([]*User, error) {
+	_, err := a.CanAccessOrganization(ctx, rbac.ListUsersAction, organization)
+	if err != nil {
 		return nil, err
-	} else {
-		return team, nil
 	}
+
+	return a.db.listUsers(ctx, organization)
+}
+
+//
+// Session endpoints
+//
+
+func (a *Application) createSession(r *http.Request, userID string) (*Session, error) {
+	session, err := NewSession(r, userID)
+	if err != nil {
+		a.Error(err, "building new session", "uid", userID)
+		return nil, err
+	}
+	if err := a.db.CreateSession(r.Context(), session); err != nil {
+		a.Error(err, "creating session", "uid", userID)
+		return nil, err
+	}
+
+	a.V(2).Info("created session", "uid", userID)
+
+	return session, nil
+}
+
+func (a *Application) getSession(ctx context.Context, token string) (*Session, error) {
+	return a.db.GetSessionByToken(ctx, token)
+}
+
+func (a *Application) listSessions(ctx context.Context, userID string) ([]*Session, error) {
+	return a.db.ListSessions(ctx, userID)
+}
+
+func (a *Application) deleteSession(ctx context.Context, token string) error {
+	if err := a.db.DeleteSession(ctx, token); err != nil {
+		a.Error(err, "deleting session")
+		return err
+	}
+
+	a.V(2).Info("deleted session")
+
+	return nil
 }
 
 func (a *Application) updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
@@ -214,10 +196,8 @@ func (a *Application) updateTeam(ctx context.Context, teamID string, opts Update
 	return team, nil
 }
 
-// GetTeam retrieves a team in an organization. If the caller is an unprivileged
-// user i.e. not an owner nor a site admin then they are only permitted to
-// retrieve a team they are a member of.
-func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, error) {
+// GetTeam retrieves a team.
+func (a *Application) getTeam(ctx context.Context, teamID string) (*Team, error) {
 	team, err := a.db.GetTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -227,16 +207,7 @@ func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, er
 	// Check organization-wide authority
 	subject, err := a.CanAccessOrganization(ctx, rbac.GetTeamAction, team.Organization())
 	if err != nil {
-		// Fallback to checking if they are member of the team
-		if user, ok := subject.(*otf.User); ok {
-			if !user.IsTeamMember(teamID) {
-				// User is not a member; refuse access
-				return nil, err
-			}
-		} else {
-			// non-user without organization-wide authority; refuse access
-			return nil, err
-		}
+		return nil, err
 	}
 
 	a.V(2).Info("retrieved team", "team", team.Name(), "organization", team.Organization(), "subject", subject)
@@ -244,14 +215,8 @@ func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, er
 	return team, nil
 }
 
-// listTeams lists teams in the organization. If the caller is an unprivileged
-// user i.e. not an owner nor a site admin then only their teams are listed.
+// listTeams lists teams in the organization.
 func (a *Application) listTeams(ctx context.Context, organization string) ([]*Team, error) {
-	if user, err := otf.UserFromContext(ctx); err == nil && user.IsUnprivilegedUser(organization) {
-		a.V(2).Info("listed teams", "organization", organization, "subject", user)
-		return user.TeamsByOrganization(organization), nil
-	}
-
 	subject, err := a.CanAccessOrganization(ctx, rbac.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
@@ -277,19 +242,9 @@ func (a *Application) listTeamMembers(ctx context.Context, teamID string) ([]*Us
 		return nil, err
 	}
 
-	// Check organization-wide authority
-	subject, err := a.CanAccessOrganization(ctx, rbac.ListTeamsAction, team.Organization())
+	subject, err := a.CanAccessOrganization(ctx, rbac.ListUsersAction, team.Organization())
 	if err != nil {
-		// Fallback to checking if they are member of the team
-		if user, ok := subject.(*User); ok {
-			if !user.IsTeamMember(teamID) {
-				// User is not a member; refuse access
-				return nil, err
-			}
-		} else {
-			// non-user without organization-wide authority; refuse access
-			return nil, err
-		}
+		return nil, err
 	}
 
 	members, err := a.db.listTeamMembers(ctx, teamID)
@@ -306,13 +261,13 @@ func (a *Application) listTeamMembers(ctx context.Context, teamID string) ([]*Us
 // Registry session services
 
 // CreateRegistrySession creates and persists a registry session.
-func (a *app) CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error) {
+func (a *Application) CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error) {
 	return a.createRegistrySession(ctx, organization)
 }
 
 // GetRegistrySession retrieves a registry session using a token. Useful for
 // checking token is valid.
-func (a *app) getRegistrySession(ctx context.Context, token string) (*registrySession, error) {
+func (a *Application) getRegistrySession(ctx context.Context, token string) (*registrySession, error) {
 	// No need for authz because caller is providing an auth token.
 
 	session, err := a.db.getRegistrySession(ctx, token)
@@ -326,7 +281,7 @@ func (a *app) getRegistrySession(ctx context.Context, token string) (*registrySe
 	return session, nil
 }
 
-func (a *app) createRegistrySession(ctx context.Context, organization string) (*registrySession, error) {
+func (a *Application) createRegistrySession(ctx context.Context, organization string) (*registrySession, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateRegistrySessionAction, organization)
 	if err != nil {
 		return nil, err
@@ -367,7 +322,7 @@ func (a *Application) createAgentToken(ctx context.Context, opts CreateAgentToke
 	return token, nil
 }
 
-func (a *Application) ListAgentTokens(ctx context.Context, organization string) ([]*otf.AgentToken, error) {
+func (a *Application) listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -410,7 +365,7 @@ func (a *Application) deleteAgentToken(ctx context.Context, id string) (*agentTo
 		return nil, err
 	}
 
-	if err := a.db.DeleteAgentToken(ctx, id); err != nil {
+	if err := a.db.deleteAgentToken(ctx, id); err != nil {
 		a.Error(err, "deleting agent token", "agent token", at, "subject", subject)
 		return nil, err
 	}

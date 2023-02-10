@@ -1,4 +1,4 @@
-package authenticator
+package auth
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
-	"golang.org/x/oauth2"
 )
 
 // Authenticator logs people onto the system using an OAuth handshake with an
@@ -19,36 +18,6 @@ import (
 type Authenticator struct {
 	otf.Application
 	oauthClient
-}
-
-// oauthClient is an oauth client for the authenticator, implemented as an
-// interface to permit swapping out for testing purposes.
-type oauthClient interface {
-	RequestHandler(w http.ResponseWriter, r *http.Request)
-	CallbackHandler(*http.Request) (*oauth2.Token, error)
-	NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error)
-	RequestPath() string
-	CallbackPath() string
-	String() string
-}
-
-func NewApplication(opts ApplicationOptions) (otf.HTTPAPI, error) {
-	authenticators, err := newAuthenticators(opts.Logger, opts.Application, opts.Configs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &handlers{
-		Renderer:       opts.Renderer,
-		authenticators: authenticators,
-	}, nil
-}
-
-type ApplicationOptions struct {
-	logr.Logger
-	otf.Application
-	Configs []*cloud.CloudOAuthConfig
-	otf.Renderer
 }
 
 func newAuthenticators(logger logr.Logger, app otf.Application, configs []*cloud.CloudOAuthConfig) ([]*Authenticator, error) {

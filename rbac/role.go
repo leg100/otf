@@ -13,6 +13,8 @@ var (
 			GetEntitlementsAction: true, // guest can read entitlements
 			ListModulesAction:     true, // guest can list mods within org
 			GetModuleAction:       true, // guest can read mod info
+			GetTeamAction:         true, // guest can read team info
+			ListTeamsAction:       true, // guest can list teams within org
 		},
 	}
 

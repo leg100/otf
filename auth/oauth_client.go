@@ -1,4 +1,4 @@
-package authenticator
+package auth
 
 import (
 	"context"
@@ -17,6 +17,16 @@ import (
 const oauthCookieName = "oauth-state"
 
 var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and client secret")
+
+// oauthClient is an oauth client
+type oauthClient interface {
+	RequestHandler(w http.ResponseWriter, r *http.Request)
+	CallbackHandler(*http.Request) (*oauth2.Token, error)
+	NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error)
+	RequestPath() string
+	CallbackPath() string
+	String() string
+}
 
 // OAuthClient performs the client role in an oauth handshake, requesting
 // authorization from the user to access their account details on a particular

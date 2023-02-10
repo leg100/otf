@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -41,7 +42,7 @@ func (t *registrySession) Expiry() time.Time    { return t.expiry }
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (t *registrySession) ToJSONAPI() any {
-	return &jsonapiSession{
+	return &jsonapi.RegistrySession{
 		Token:            t.Token(),
 		OrganizationName: t.Organization(),
 	}

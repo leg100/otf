@@ -25,6 +25,16 @@ func (f *flash) HTML() template.HTML { return template.HTML(f.Message) }
 
 type flashType string
 
+// FlashSuccess helper
+func FlashSuccess(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashSuccessType, Message: msg})
+}
+
+// FlashError helper
+func FlashError(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashErrorType, Message: msg})
+}
+
 // setFlash sets flash message on response cookie
 func setFlash(w http.ResponseWriter, f flash) {
 	js, err := json.Marshal(f)
@@ -34,16 +44,6 @@ func setFlash(w http.ResponseWriter, f flash) {
 	}
 	encoded := base64.URLEncoding.EncodeToString(js)
 	SetCookie(w, flashCookie, encoded, nil)
-}
-
-// FlashSuccess helper
-func FlashSuccess(w http.ResponseWriter, msg string) {
-	setFlash(w, flash{Type: FlashSuccessType, Message: msg})
-}
-
-// FlashError helper
-func FlashError(w http.ResponseWriter, msg string) {
-	setFlash(w, flash{Type: FlashErrorType, Message: msg})
 }
 
 // popFlashFunc returns a func to pop a flash message for the current session - for

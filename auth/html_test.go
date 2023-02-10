@@ -3,11 +3,15 @@ package auth
 import (
 	"context"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestTeam_GetHandler tests the getTeam handler. The getTeam page renders
@@ -88,17 +92,6 @@ func (f *fakeTeamHandlerApp) UpdateTeam(ctx context.Context, teamID string, opts
 func (f *fakeTeamHandlerApp) ListTeamMembers(ctx context.Context, teamID string) ([]*otf.User, error) {
 	return f.members, nil
 }
-package agenttoken
-
-import (
-	"context"
-	"net/http/httptest"
-	"testing"
-
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/stretchr/testify/assert"
-)
 
 func TestAgentToken_NewHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
@@ -187,19 +180,6 @@ func (f *fakeAgentTokenHandlerApp) ListAgentTokens(context.Context, string) ([]*
 func (f *fakeAgentTokenHandlerApp) DeleteAgentToken(context.Context, string) (*otf.AgentToken, error) {
 	return f.token, nil
 }
-package session
-
-import (
-	"context"
-	"net/http/httptest"
-	"net/url"
-	"strings"
-	"testing"
-
-	"github.com/leg100/otf"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
 
 func TestSessionHandlers(t *testing.T) {
 	user := otf.NewTestUser(t)
@@ -284,4 +264,30 @@ func (f *fakeSessionHandlerApp) ListSessions(context.Context, string) ([]*otf.Se
 
 func (f *fakeSessionHandlerApp) DeleteSession(context.Context, string) error {
 	return nil
+}
+
+// TestLoginHandler tests the login page handler, testing for the presence of a
+// login button for each configured cloud.
+func TestLoginHandler(t *testing.T) {
+	app := newFakeWebApp(t, nil, withAuthenticators([]*Authenticator{
+		{
+			oauthClient: &OAuthClient{
+				cloudConfig: cloud.Config{Name: "cloud1"},
+			},
+		},
+		{
+			oauthClient: &OAuthClient{
+				cloudConfig: cloud.Config{Name: "cloud2"},
+			},
+		},
+	}))
+
+	r := httptest.NewRequest("GET", "/?", nil)
+	w := httptest.NewRecorder()
+	app.loginHandler(w, r)
+	body := w.Body.String()
+	if assert.Equal(t, 200, w.Code) {
+		assert.Contains(t, body, "Login with Cloud1")
+		assert.Contains(t, body, "Login with Cloud2")
+	}
 }

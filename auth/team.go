@@ -89,17 +89,12 @@ type UpdateTeamOptions struct {
 	OrganizationAccess
 }
 
-func newTeam(name string, organization string, opts ...NewTeamOption) *Team {
+func newTeam(opts CreateTeamOptions) *Team {
 	team := Team{
 		id:           otf.NewID("team"),
-		name:         name,
+		name:         opts.Name,
 		createdAt:    otf.CurrentTimestamp(),
-		organization: organization,
-	}
-	for _, o := range opts {
-		o(&team)
+		organization: opts.Organization,
 	}
 	return &team
 }
-
-type NewTeamOption func(*Team)

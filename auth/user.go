@@ -17,9 +17,9 @@ type User struct {
 	id            string // ID uniquely identifies users
 	createdAt     time.Time
 	updatedAt     time.Time
-	username      string     // username is globally unique
-	organizations []string   // user belongs to many organizations
-	teams         []otf.Team // user belongs to many teams
+	username      string   // username is globally unique
+	organizations []string // user belongs to many organizations
+	teams         []*Team  // user belongs to many teams
 }
 
 func (u *User) ID() string              { return u.id }
@@ -29,14 +29,6 @@ func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
 func (u *User) String() string          { return u.username }
 func (u *User) Organizations() []string { return u.organizations }
 func (u *User) Teams() []otf.Team       { return u.teams }
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (u *User) ToJSONAPI() any {
-	return &jsonapiUser{
-		ID:       u.ID(),
-		Username: u.Username(),
-	}
-}
 
 // TeamsByOrganization return a user's teams filtered by organization name
 func (u *User) TeamsByOrganization(organization string) []otf.Team {
@@ -282,28 +274,19 @@ type UserSpec struct {
 	AuthenticationToken *string
 }
 
-// KeyValue returns the user spec in key-value form. Useful for logging
-// purposes.
-func (spec *UserSpec) KeyValue() []interface{} {
-	if spec.Username != nil {
-		return []interface{}{"username", *spec.Username}
+func (s UserSpec) MarshalLog() any {
+	if s.AuthenticationToken != nil {
+		s.AuthenticationToken = otf.String("*****")
 	}
-	if spec.SessionToken != nil {
-		return []interface{}{"token", *spec.SessionToken}
-	}
-	if spec.AuthenticationToken != nil {
-		return []interface{}{"authentication_token", "*****"}
-	}
-
-	return []interface{}{"invalid user spec", ""}
+	return s
 }
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := User{
-		id:        NewID("user"),
+		id:        otf.NewID("user"),
 		username:  username,
-		createdAt: CurrentTimestamp(),
-		updatedAt: CurrentTimestamp(),
+		createdAt: otf.CurrentTimestamp(),
+		updatedAt: otf.CurrentTimestamp(),
 	}
 	for _, o := range opts {
 		o(&user)
@@ -323,13 +306,4 @@ func WithTeamMemberships(memberships ...*Team) NewUserOption {
 	return func(user *User) {
 		user.teams = memberships
 	}
-}
-
-func inTeamList(teams []*Team, teamID string) bool {
-	for _, team := range teams {
-		if team.ID() == teamID {
-			return true
-		}
-	}
-	return false
 }

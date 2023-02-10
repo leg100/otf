@@ -16,10 +16,18 @@ import (
 type htmlApp struct {
 	otf.Renderer
 
-	app app
+	app            app
+	authenticators []*Authenticator
 }
 
 func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
+	// routes that don't require authentication.
+	r.HandleFunc("/login", app.loginHandler)
+	for _, auth := range app.authenticators {
+		r.HandleFunc(auth.RequestPath(), auth.RequestHandler)
+		r.HandleFunc(auth.CallbackPath(), auth.responseHandler)
+	}
+
 	// TODO: use session mw
 	r.HandleFunc("/organizations/{organization_name}/users", app.listUsers).Methods("GET")
 
@@ -133,13 +141,7 @@ func (app *htmlApp) newAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := app.GetOrganization(r.Context(), organization)
-	if err != nil {
-		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	app.Render("agent_token_new.tmpl", w, r, org)
+	app.Render("agent_token_new.tmpl", w, r, organization)
 }
 
 func (app *htmlApp) createAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -149,15 +151,13 @@ func (app *htmlApp) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := app.CreateAgentToken(r.Context(), opts)
+	token, err := app.app.createAgentToken(r.Context(), opts)
 	if err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// render a small templated flash message
-	//
-	// TODO: replace with a helper func, 'flashTemplate'
 	buf := new(bytes.Buffer)
 	if err := app.RenderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
@@ -175,7 +175,7 @@ func (app *htmlApp) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := app.ListAgentTokens(r.Context(), organization)
+	tokens, err := app.app.listAgentTokens(r.Context(), organization)
 	if err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -185,7 +185,7 @@ func (app *htmlApp) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items        []*otf.AgentToken
+		Items        []*agentToken
 		Organization string
 	}{
 		Pagination:   &otf.Pagination{},
@@ -201,7 +201,7 @@ func (app *htmlApp) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, err := app.DeleteAgentToken(r.Context(), id)
+	at, err := app.app.deleteAgentToken(r.Context(), id)
 	if err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -231,7 +231,7 @@ func (app *htmlApp) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessions, err := app.app.list(r.Context(), user.ID())
+	sessions, err := app.app.listSessions(r.Context(), user.ID())
 	if err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -258,7 +258,7 @@ func (app *htmlApp) revokeSessionHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := app.app.delete(r.Context(), token); err != nil {
+	if err := app.app.deleteSession(r.Context(), token); err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -267,15 +267,15 @@ func (app *htmlApp) revokeSessionHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *htmlApp) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := fromContext(r.Context())
+	token, err := fromContext(r.Context())
 	if err != nil {
 		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := app.app.delete(r.Context(), session.Token()); err != nil {
+	if err := app.app.deleteSession(r.Context(), token); err != nil {
 		return
 	}
-	otfhttp.SetCookie(w, sessionCookie, session.Token(), &time.Time{})
+	otfhttp.SetCookie(w, sessionCookie, token, &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
@@ -314,4 +314,8 @@ func (app *htmlApp) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	}
+}
+
+func (app *htmlApp) loginHandler(w http.ResponseWriter, r *http.Request) {
+	app.Render("login.tmpl", w, r, app.authenticators)
 }
