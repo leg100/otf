@@ -15,15 +15,27 @@ import (
 type htmlApp struct {
 	otf.Renderer
 
-	app Application
+	app *Application
 }
 
 func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/sessions", app.sessionsHandler).Methods("GET")
 	r.HandleFunc("/profile/sessions/revoke", app.revokeSessionHandler).Methods("POST")
+	r.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+	r.HandleFunc("/profile", app.profileHandler).Methods("POST")
+
 	// don't require authentication
 	r.HandleFunc("/admin/login", app.adminLoginPromptHandler).Methods("GET")
 	r.HandleFunc("/admin/login", app.adminLoginHandler).Methods("POST")
+}
+
+func (app *htmlApp) profileHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := otf.SubjectFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	app.Render("profile.tmpl", w, r, user)
 }
 
 func (app *htmlApp) sessionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +49,7 @@ func (app *htmlApp) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessions, err := app.ListSessions(r.Context(), user.ID())
+	sessions, err := app.app.list(r.Context(), user.ID())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,7 +76,7 @@ func (app *htmlApp) revokeSessionHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := app.DeleteSession(r.Context(), token); err != nil {
+	if err := app.app.delete(r.Context(), token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -78,7 +90,7 @@ func (app *htmlApp) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := app.DeleteSession(r.Context(), session.Token()); err != nil {
+	if err := app.app.delete(r.Context(), session.Token()); err != nil {
 		return
 	}
 	html.SetCookie(w, sessionCookie, session.Token(), &time.Time{})
@@ -98,19 +110,26 @@ func (app *htmlApp) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if token != app.siteToken {
+	if token != app.app.siteToken {
 		html.FlashError(w, "incorrect token")
 		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
 		return
 	}
 
-	_, err = app.app.CreateSession(otf.CreateSessionOptions{
-		Request:  r,
-		Response: w,
-		UserID:   otf.SiteAdminID,
-	})
+	session, err := app.app.CreateSession(r, otf.SiteAdminID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// set session cookie
+	session.SetCookie(w)
+
+	// Return user to the original path they attempted to access
+	if cookie, err := r.Cookie(otf.PathCookie); err == nil {
+		html.SetCookie(w, otf.PathCookie, "", &time.Time{})
+		http.Redirect(w, r, cookie.Value, http.StatusFound)
+	} else {
+		http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	}
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_AuthMiddleware(t *testing.T) {
+func Test_AuthenticateToken(t *testing.T) {
 	upstream := func(w http.ResponseWriter, r *http.Request) {
 		// implicitly respond with 200 OK
 	}

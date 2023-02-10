@@ -15,14 +15,14 @@ type JSONAPIMarshaler struct {
 	otf.Application
 }
 
-func (m *JSONAPIMarshaler) ToJSONAPI(ws otf.Workspace, r *http.Request) any {
+func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	perms, err := m.ListWorkspacePermissions(r.Context(), ws.ID())
+	perms, err := m.ListWorkspacePermissions(r.Context(), ws.id)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	policy := &otf.WorkspacePolicy{
 		Organization: ws.Organization(),
@@ -30,7 +30,27 @@ func (m *JSONAPIMarshaler) ToJSONAPI(ws otf.Workspace, r *http.Request) any {
 		Permissions:  perms,
 	}
 
-	obj := &jsonapi.Workspace{
+	org := &jsonapi.Organization{Name: ws.Organization()}
+
+	// Support including related resources:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
+	//
+	// NOTE: limit support to organization, since that's what the go-tfe tests
+	// for, and we want to run the full barrage of go-tfe workspace tests
+	// without error
+	if includes := r.URL.Query().Get("include"); includes != "" {
+		for _, inc := range strings.Split(includes, ",") {
+			switch inc {
+			case "organization":
+				org, err = m.GetOrganizationJSONAPI(r.Context(), ws.Organization())
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	return &jsonapi.Workspace{
 		ID: ws.ID(),
 		Actions: &jsonapi.WorkspaceActions{
 			IsDestroyable: true,
@@ -70,27 +90,20 @@ func (m *JSONAPIMarshaler) ToJSONAPI(ws otf.Workspace, r *http.Request) any {
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
-		Organization:               &jsonapi.Organization{Name: ws.Organization()},
-	}
+		Organization:               org,
+	}, nil
+}
 
-	// Support including related resources:
-	//
-	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
-	//
-	// NOTE: limit support to organization, since that's what the go-tfe tests
-	// for, and we want to run the full barrage of go-tfe workspace tests
-	// without error
-	if includes := r.URL.Query().Get("include"); includes != "" {
-		for _, inc := range strings.Split(includes, ",") {
-			switch inc {
-			case "organization":
-				org, err := m.GetOrganization(r.Context(), ws.Organization())
-				if err != nil {
-					panic(err.Error()) // throws HTTP500
-				}
-				obj.Organization = (&Organization{org}).ToJSONAPI().(*jsonapi.Organization)
-			}
+func (m *JSONAPIMarshaler) toJSONAPIList(list *WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
+	var items []*jsonapi.Workspace
+	for _, ws := range list.Items {
+		item, err := m.toJSONAPI(ws, r)
+		if err != nil {
+			return nil, err
 		}
+		items = append(items, item)
 	}
-	return obj
+	return &jsonapi.WorkspaceList{
+		Pagination: list.Pagination.ToJSONAPI(),
+	}, nil
 }

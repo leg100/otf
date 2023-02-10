@@ -12,14 +12,14 @@ const (
 	sessionCtxKey ctxKey = iota
 )
 
-func addToContext(ctx context.Context, sess *Session) context.Context {
-	return context.WithValue(ctx, sessionCtxKey, sess)
+func addToContext(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, sessionCtxKey, token)
 }
 
-func fromContext(ctx context.Context) (*Session, error) {
-	session, ok := ctx.Value(sessionCtxKey).(*Session)
+func fromContext(ctx context.Context) (string, error) {
+	token, ok := ctx.Value(sessionCtxKey).(string)
 	if !ok {
-		return nil, fmt.Errorf("no session in context")
+		return "", fmt.Errorf("no session in context")
 	}
-	return session, nil
+	return token, nil
 }

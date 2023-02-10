@@ -1,10 +1,13 @@
 package run
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
@@ -12,7 +15,7 @@ import (
 // jsonapiMarshaler converts run into a struct suitable for
 // marshaling into json:api encoding
 type jsonapiMarshaler struct {
-	otf.Signer      // for signing upload url
+	otf.Signer      // for signing plan and apply log urls
 	otf.Application // for retrieving workspace and workspace permissions
 }
 
@@ -53,11 +56,10 @@ func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "workspace":
-				ws, err := m.GetWorkspace(r.Context(), run.WorkspaceID())
+				workspace, err = m.GetWorkspaceJSONAPI(r.Context(), run.WorkspaceID())
 				if err != nil {
-					return marshalable{}, err
+					return nil, err
 				}
-				workspace = (&Workspace{r.req, r.Application, ws}).ToJSONAPI().(*jsonapi.Workspace)
 			}
 		}
 	}
@@ -92,6 +94,15 @@ func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		}
 	}
 
+	plan, err := m.planToJSONAPI(run.plan, r)
+	if err != nil {
+		return nil, err
+	}
+	apply, err := m.applyToJSONAPI(run.apply, r)
+	if err != nil {
+		return nil, err
+	}
+
 	return &jsonapi.Run{
 		ID: run.ID(),
 		Actions: &jsonapi.RunActions{
@@ -116,8 +127,8 @@ func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		StatusTimestamps:       &timestamps,
 		TargetAddrs:            run.TargetAddrs(),
 		// Relations
-		Apply: (&apply{run.Apply(), r.req, r.Server}).ToJSONAPI().(*jsonapiApply),
-		Plan:  (&plan{run.Plan(), r.req, r.Server}).ToJSONAPI().(*jsonapiPlan),
+		Plan:  plan,
+		Apply: apply,
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{
 			ID:       otf.DefaultUserID,
@@ -137,59 +148,108 @@ type jsonapiPlanMarshaler struct {
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (p *jsonapiPlanMarshaler) ToJSONAPI() any {
-	dto := &jsonapiPlan{
-		ID:               otf.ConvertID(p.ID(), "plan"),
-		HasChanges:       p.HasChanges(),
-		LogReadURL:       p.signedLogURL(p.req, p.ID(), "plan"),
-		Status:           string(p.Status()),
-		StatusTimestamps: &jsonapiPhaseStatusTimestamps{},
+func (m *jsonapiMarshaler) planToJSONAPI(plan *Plan, r *http.Request) (*jsonapi.Plan, error) {
+	var report *jsonapi.ResourceReport
+	if plan.ResourceReport != nil {
+		report.Additions = &plan.Additions
+		report.Changes = &plan.Changes
+		report.Destructions = &plan.Destructions
 	}
-	if p.ResourceReport != nil {
-		dto.Additions = &p.Additions
-		dto.Changes = &p.Changes
-		dto.Destructions = &p.Destructions
-	}
-	for _, ts := range p.StatusTimestamps() {
+
+	var timestamps jsonapi.PhaseStatusTimestamps
+	for _, ts := range plan.StatusTimestamps() {
 		switch ts.Status {
 		case otf.PhasePending:
-			dto.StatusTimestamps.PendingAt = &ts.Timestamp
+			timestamps.PendingAt = &ts.Timestamp
 		case otf.PhaseCanceled:
-			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
+			timestamps.CanceledAt = &ts.Timestamp
 		case otf.PhaseErrored:
-			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
+			timestamps.ErroredAt = &ts.Timestamp
 		case otf.PhaseFinished:
-			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
+			timestamps.FinishedAt = &ts.Timestamp
 		case otf.PhaseQueued:
-			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
+			timestamps.QueuedAt = &ts.Timestamp
 		case otf.PhaseRunning:
-			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+			timestamps.StartedAt = &ts.Timestamp
 		case otf.PhaseUnreachable:
-			dto.StatusTimestamps.UnreachableAt = &ts.Timestamp
+			timestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
-	return dto
-}
 
-type apply struct {
-	*otf.Apply
-	req *http.Request
-	*handlers
-}
-
-type RunList struct {
-	*otf.RunList
-	req *http.Request
-	*handlers
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *RunList) ToJSONAPI() any {
-	obj := &jsonapi.RunList{
-		Pagination: l.Pagination.ToJSONAPI(),
+	// signedLogURL creates a signed URL for retrieving logs for a run phase.
+	logs := fmt.Sprintf("/runs/%s/logs/%s", plan.runID, otf.PlanPhase)
+	logs, err := m.Sign(logs, time.Hour)
+	if err != nil {
+		return nil, err
 	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*jsonapi.Run))
+	// Terraform CLI expects an absolute URL
+	logs = otfhttp.Absolute(r, logs)
+
+	return &jsonapi.Plan{
+		ID:               otf.ConvertID(plan.ID(), "plan"),
+		HasChanges:       plan.HasChanges(),
+		LogReadURL:       logs,
+		Status:           string(plan.Status()),
+		StatusTimestamps: &timestamps,
+	}, nil
+}
+
+func (m *jsonapiMarshaler) applyToJSONAPI(apply *Apply, r *http.Request) (*jsonapi.Apply, error) {
+	var report *jsonapi.ResourceReport
+	if apply.ResourceReport != nil {
+		report.Additions = &apply.Additions
+		report.Changes = &apply.Changes
+		report.Destructions = &apply.Destructions
 	}
-	return obj
+
+	var timestamps jsonapi.PhaseStatusTimestamps
+	for _, ts := range apply.StatusTimestamps() {
+		switch ts.Status {
+		case otf.PhasePending:
+			timestamps.PendingAt = &ts.Timestamp
+		case otf.PhaseCanceled:
+			timestamps.CanceledAt = &ts.Timestamp
+		case otf.PhaseErrored:
+			timestamps.ErroredAt = &ts.Timestamp
+		case otf.PhaseFinished:
+			timestamps.FinishedAt = &ts.Timestamp
+		case otf.PhaseQueued:
+			timestamps.QueuedAt = &ts.Timestamp
+		case otf.PhaseRunning:
+			timestamps.StartedAt = &ts.Timestamp
+		case otf.PhaseUnreachable:
+			timestamps.UnreachableAt = &ts.Timestamp
+		}
+	}
+
+	// signedLogURL creates a signed URL for retrieving logs for a run phase.
+	logs := fmt.Sprintf("/runs/%s/logs/%s", apply.runID, otf.ApplyPhase)
+	logs, err := m.Sign(logs, time.Hour)
+	if err != nil {
+		return nil, err
+	}
+	// Terraform CLI expects an absolute URL
+	logs = otfhttp.Absolute(r, logs)
+
+	return &jsonapi.Apply{
+		ID:               otf.ConvertID(apply.ID(), "apply"),
+		LogReadURL:       logs,
+		Status:           string(apply.Status()),
+		StatusTimestamps: &timestamps,
+	}, nil
+}
+
+func (m jsonapiMarshaler) toJSONAPIList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
+	var items []*jsonapi.Run
+	for _, run := range list.Items {
+		jrun, err := m.toJSONAPI(run, r)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, jrun)
+	}
+	return &jsonapi.RunList{
+		Items:      items,
+		Pagination: list.Pagination.ToJSONAPI(),
+	}, nil
 }

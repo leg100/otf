@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -163,6 +164,7 @@ type WorkspaceLockState interface {
 type WorkspaceService interface {
 	GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
+	GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (WorkspaceList, error)
 	// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 	//

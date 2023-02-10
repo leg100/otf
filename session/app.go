@@ -23,21 +23,20 @@ type Application struct {
 	db db
 	*handlers
 	*htmlApp
+	siteToken string
 }
 
-func NewApplication(opts ApplicationOptions) *Application {
+func NewApplication(ctx context.Context, opts ApplicationOptions) *Application {
 	db := newPGDB(opts.Database)
 
 	// purge expired sessions
-	go db.startSessionExpirer(defaultCleanupInterval)
+	go db.startSessionExpirer(ctx, defaultCleanupInterval)
 
 	app := &Application{
 		Authorizer: opts.Authorizer,
 		db:         db,
 		Logger:     opts.Logger,
-	}
-	app.handlers = &handlers{
-		Application: app,
+		siteToken:  opts.SiteToken,
 	}
 	app.htmlApp = &htmlApp{
 		app:      app,
@@ -51,6 +50,7 @@ type ApplicationOptions struct {
 	otf.Database
 	otf.Renderer
 	logr.Logger
+	SiteToken string
 }
 
 // CreateSession creates and persists a user session.

@@ -3,12 +3,20 @@ package user
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-func (a *Application) CreateUser(ctx context.Context, username string) (*otf.User, error) {
-	user := otf.NewUser(username)
+type Application struct {
+	otf.Authorizer
+	logr.Logger
+
+	db db
+}
+
+func (a *Application) CreateUser(ctx context.Context, username string) (otf.User, error) {
+	user := NewUser(username)
 
 	if err := a.db.CreateUser(ctx, user); err != nil {
 		a.Error(err, "creating user", "username", username)
@@ -21,8 +29,8 @@ func (a *Application) CreateUser(ctx context.Context, username string) (*otf.Use
 }
 
 // EnsureCreatedUser retrieves the user or creates the user if they don't exist.
-func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*otf.User, error) {
-	user, err := a.db.GetUser(ctx, otf.UserSpec{Username: &username})
+func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (otf.User, error) {
+	user, err := a.db.GetUser(ctx, UserSpec{Username: &username})
 	if err == nil {
 		return user, nil
 	}
@@ -35,7 +43,7 @@ func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*
 }
 
 // ListUsers lists users with various filters.
-func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.User, error) {
+func (a *Application) ListUsers(ctx context.Context, opts UserListOptions) ([]otf.User, error) {
 	var err error
 	if opts.Organization != nil && opts.TeamName != nil {
 		// team members can view membership of their own teams.
@@ -43,7 +51,7 @@ func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) (
 		if err != nil {
 			return nil, err
 		}
-		if user, ok := subject.(*otf.User); ok && !user.IsSiteAdmin() {
+		if user, ok := subject.(otf.User); ok && !user.IsSiteAdmin() {
 			_, err := user.Team(*opts.TeamName, *opts.Organization)
 			if err != nil {
 				// user is not a member of the team
@@ -77,11 +85,7 @@ func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, o
 	return user, nil
 }
 
-func (a *Application) GetUser(ctx context.Context, spec otf.UserSpec) (otf.User, error) {
-	if spec.UserID != nil && *spec.UserID == SiteAdminID {
-		return &SiteAdmin, nil
-	}
-
+func (a *Application) GetUser(ctx context.Context, spec UserSpec) (otf.User, error) {
 	user, err := a.db.GetUser(ctx, spec)
 	if err != nil {
 		// Failure to retrieve a user is frequently due to the fact the http

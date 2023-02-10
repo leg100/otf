@@ -25,6 +25,7 @@ func (a *webApp) AddHTMLHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/edit", a.editOrganization)
 	r.HandleFunc("/organizations/{organization_name}/update", a.updateOrganization)
 	r.HandleFunc("/organizations/{organization_name}/delete", a.deleteOrganization)
+	r.HandleFunc("/organizations/{organization_name}/permissions", a.listOrganizationPermissions)
 }
 
 func (a *webApp) newOrganization(w http.ResponseWriter, r *http.Request) {

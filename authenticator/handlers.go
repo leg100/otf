@@ -7,11 +7,13 @@ import (
 	"github.com/leg100/otf"
 )
 
-type htmlApp struct {
+type handlers struct {
 	otf.Renderer
+
+	authenticators []*Authenticator
 }
 
-func (app *htmlApp) AddHandlers(r *mux.Router) {
+func (app *handlers) AddHandlers(r *mux.Router) {
 	// routes that don't require authentication.
 	r.HandleFunc("/login", app.loginHandler)
 	for _, auth := range app.authenticators {
@@ -20,6 +22,6 @@ func (app *htmlApp) AddHandlers(r *mux.Router) {
 	}
 }
 
-func (app *htmlApp) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *handlers) loginHandler(w http.ResponseWriter, r *http.Request) {
 	app.Render("login.tmpl", w, r, app.authenticators)
 }

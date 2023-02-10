@@ -13,7 +13,7 @@ import (
 type htmlApp struct {
 	otf.Renderer
 
-	app service
+	app *Application
 }
 
 func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
@@ -31,7 +31,7 @@ func (app *htmlApp) listUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := app.ListUsers(r.Context(), UserListOptions{
+	users, err := app.app.ListUsers(r.Context(), UserListOptions{
 		Organization: otf.String(organization),
 	})
 	if err != nil {
@@ -48,12 +48,12 @@ func (app *htmlApp) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := app.GetTeam(r.Context(), teamID)
+	team, err := app.app.GetTeam(r.Context(), teamID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	members, err := app.ListTeamMembers(r.Context(), teamID)
+	members, err := app.app.ListTeamMembers(r.Context(), teamID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -80,7 +80,7 @@ func (app *htmlApp) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := app.UpdateTeam(r.Context(), teamID, opts)
+	team, err := app.app.UpdateTeam(r.Context(), teamID, opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -96,7 +96,7 @@ func (app *htmlApp) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teams, err := app.ListTeams(r.Context(), organization)
+	teams, err := app.app.ListTeams(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

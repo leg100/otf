@@ -11,6 +11,7 @@ import (
 
 type handlers struct {
 	Application service
+	*JSONAPIMarshaler
 }
 
 // byName are parameters used when looking up a workspace by
@@ -18,23 +19,6 @@ type handlers struct {
 type byName struct {
 	Name         string `schema:"workspace_name,required"`
 	Organization string `schema:"organization_name,required"`
-}
-
-// WorkspaceList assembles a workspace list JSONAPI DTO
-type WorkspaceList struct {
-	r *http.Request
-	otf.Application
-	*otf.WorkspaceList
-}
-
-func (l *WorkspaceList) ToJSONAPI() any {
-	obj := &jsonapi.WorkspaceList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Workspace{l.r, l.Application, item}).ToJSONAPI().(*jsonapi.Workspace))
-	}
-	return obj
 }
 
 func (h *handlers) AddHandlers(r *mux.Router) {
@@ -53,7 +37,7 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 }
 
 func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
-	var opts jsonapiCreateOptions
+	var opts jsonapi.WorkspaceCreateOptions
 	if err := decode.Route(&opts, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -90,7 +74,13 @@ func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &JSONAPIMarshaler{r, s.Application, ws}, jsonapi.WithCode(http.StatusCreated))
+
+	jworkspace, err := s.toJSONAPI(ws, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jworkspace, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (s *handlers) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +95,13 @@ func (s *handlers) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
+
+	jworkspace, err := s.toJSONAPI(ws, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
 func (s *handlers) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
@@ -120,21 +116,26 @@ func (s *handlers) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
+
+	jworkspace, err := s.toJSONAPI(ws, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
 func (s *handlers) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	params := struct {
 		Organization    string `schema:"organization_name,required"`
 		otf.ListOptions        // Pagination
-	}
-	var params parameters
+	}{}
 	if err := decode.All(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	wsl, err := s.Application.ListWorkspaces(r.Context(), otf.WorkspaceListOptions{
+	wsl, err := s.Application.ListWorkspaces(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -143,7 +144,12 @@ func (s *handlers) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, &WorkspaceList{r, s.Application, wsl})
+	jlist, err := s.toJSONAPIList(wsl, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jlist)
 }
 
 // UpdateWorkspace updates a workspace using its ID.
@@ -194,7 +200,13 @@ func (s *handlers) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
+
+	jworkspace, err := s.toJSONAPI(ws, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
 func (s *handlers) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -206,14 +218,20 @@ func (s *handlers) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	opts := otf.WorkspaceUnlockOptions{}
 	ws, err := s.Application.UnlockWorkspace(r.Context(), id, opts)
-	if err == ErrAlreadyUnlocked {
+	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
+
+	jworkspace, err := s.toJSONAPI(ws, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
 func (s *handlers) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -252,7 +270,7 @@ func (s *handlers) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *handlers) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	opts := jsonapiUpdateOptions{}
+	opts := jsonapi.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -266,7 +284,7 @@ func (s *handlers) updateWorkspace(w http.ResponseWriter, r *http.Request, works
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
-		ExecutionMode:              (*ExecutionMode)(opts.ExecutionMode),
+		ExecutionMode:              (*otf.ExecutionMode)(opts.ExecutionMode),
 		FileTriggersEnabled:        opts.FileTriggersEnabled,
 		GlobalRemoteState:          opts.GlobalRemoteState,
 		Name:                       opts.Name,
@@ -281,5 +299,11 @@ func (s *handlers) updateWorkspace(w http.ResponseWriter, r *http.Request, works
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &Workspace{r, s.Application, ws})
+
+	jworkspace, err := s.toJSONAPI(ws, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jworkspace)
 }

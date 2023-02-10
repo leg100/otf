@@ -1,9 +1,7 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/leg100/otf"
 )
@@ -21,15 +19,4 @@ func (v *SignatureVerifier) Handler(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-// signedLogURL creates a signed URL for retrieving logs for a run phase.
-func (s *Server) signedLogURL(r *http.Request, runID, phase string) string {
-	url := fmt.Sprintf("/runs/%s/logs/%s", runID, phase)
-	url, err := s.Sign(url, time.Hour)
-	if err != nil {
-		panic("signing url: " + url + "; error: " + err.Error())
-	}
-	// Terraform CLI expects an absolute URL
-	return Absolute(r, url)
 }

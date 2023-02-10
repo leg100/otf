@@ -2,9 +2,11 @@ package hooks
 
 import (
 	"net/http"
+	"path"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
@@ -27,11 +29,14 @@ func NewHandler(logger logr.Logger, app otf.Application) *handler {
 	}
 }
 
+func (h *handler) AddHandlers(r *mux.Router) {
+	r.Handle(path.Join(handlerPrefix, "{webhook_id}"), h)
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	type options struct {
+	opts := struct {
 		ID uuid.UUID `schema:"webhook_id,required"`
-	}
-	var opts options
+	}{}
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

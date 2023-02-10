@@ -32,6 +32,25 @@ type oauthClient interface {
 	String() string
 }
 
+func NewApplication(opts ApplicationOptions) (otf.HTTPAPI, error) {
+	authenticators, err := newAuthenticators(opts.Logger, opts.Application, opts.Configs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &handlers{
+		Renderer:       opts.Renderer,
+		authenticators: authenticators,
+	}, nil
+}
+
+type ApplicationOptions struct {
+	logr.Logger
+	otf.Application
+	Configs []*cloud.CloudOAuthConfig
+	otf.Renderer
+}
+
 func newAuthenticators(logger logr.Logger, app otf.Application, configs []*cloud.CloudOAuthConfig) ([]*Authenticator, error) {
 	var authenticators []*Authenticator
 
@@ -79,11 +98,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := a.CreateSession(otf.CreateSessionOptions{
-		Request:  r,
-		Response: w,
-		UserID:   user.ID(),
-	})
+	session, err := a.CreateSession(r, user.ID())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

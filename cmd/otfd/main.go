@@ -150,6 +150,9 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Setup authorizer
 	authorizer := otf.NewAuthorizer(logger, workspaceDB)
 
+	// Setup API token middleware
+	http.AuthenticateToken
+
 	stateService := state.NewService(state.ServiceOptions{
 		Authorizer: authorizer,
 		Logger:     logger,
@@ -171,6 +174,9 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up services: %w", err)
 	}
 
+	if d.ApplicationOptions.DevMode {
+		logger.Info("enabled developer mode")
+	}
 	renderer, err := html.NewViewEngine(d.ApplicationOptions.DevMode)
 	if err != nil {
 		return fmt.Errorf("setting up renderer: %w", err)

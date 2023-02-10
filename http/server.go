@@ -9,11 +9,11 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/hooks"
 )
 
 const (
@@ -31,92 +31,70 @@ type ServerConfig struct {
 	SSL                  bool
 	CertFile, KeyFile    string
 	EnableRequestLogging bool
-	SiteToken            string // site admin token
-	Secret               string // Secret for signing
-}
-
-func (cfg *ServerConfig) Validate() error {
-	if cfg.SSL {
-		if cfg.CertFile == "" || cfg.KeyFile == "" {
-			return fmt.Errorf("must provide both --cert-file and --key-file")
-		}
-	}
-	if cfg.Secret == "" {
-		return fmt.Errorf("--secret cannot be empty")
-	}
-	return nil
 }
 
 // Server provides an HTTP/S server
 type Server struct {
 	logr.Logger
-	otf.Application // provides access to otf services
 	ServerConfig
-	*Router // http router, exported so that other pkgs can add routes
 
 	server *http.Server
 }
 
-// NewServer is the constructor for Server
-func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, apis ...otf.HTTPAPI) (*Server, error) {
+// NewServer is the constructor for a http server
+func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Server, error) {
 	s := &Server{
 		server:       &http.Server{},
 		Logger:       logger,
 		ServerConfig: cfg,
-		Application:  app,
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return nil, err
+	if cfg.SSL {
+		if cfg.CertFile == "" || cfg.KeyFile == "" {
+			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
+		}
 	}
 
-	r := NewRouter()
-	s.Router = r
+	r := mux.NewRouter()
 
 	// Catch panics and return 500s
 	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
-	r.GET("/.well-known/terraform.json", s.WellKnown)
-	r.GET("/metrics", promhttp.Handler().ServeHTTP)
-	r.GET("/healthz", getHealthz)
-
-	//
-	// VCS event handling
-	//
-	r.Handle("/webhooks/vcs/{webhook_id}", hooks.NewHandler(logger, s.Application))
+	r.HandleFunc("/.well-known/terraform.json", s.WellKnown)
+	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
+	r.HandleFunc("/healthz", getHealthz)
 
 	authMiddleware := &authTokenMiddleware{
 		UserService:            app,
 		AgentTokenService:      app,
 		RegistrySessionService: app,
-		siteToken:              cfg.SiteToken,
 	}
 
-	r.PathPrefix("/api/v2").Sub(func(api *Router) {
-		// Add tfp api version header to every response
-		api.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// Version 2.5 is the minimum version terraform requires for the
-				// newer 'cloud' configuration block:
-				// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
-				w.Header().Set("TFP-API-Version", "2.5")
-				next.ServeHTTP(w, r)
-			})
-		})
+	api := r.PathPrefix("/api/v2").Subrouter()
 
-		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
+	// Add tfp api version header to every response
+	api.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Version 2.5 is the minimum version terraform requires for the
+			// newer 'cloud' configuration block:
+			// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
+			w.Header().Set("TFP-API-Version", "2.5")
+			next.ServeHTTP(w, r)
 		})
+	})
 
-		// Authenticated endpoints
-		api.Sub(func(r *Router) {
-			// Ensure request has valid API bearer token
-			r.Use(authMiddleware.handler)
+	api.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
-			for _, api := range apis {
-				api.AddHandlers(r.Router)
-			}
-		})
+	// Authenticated endpoints
+	api.Sub(func(r *Router) {
+		// Ensure request has valid API bearer token
+		r.Use(authMiddleware.handler)
+
+		for _, api := range apis {
+			api.AddHandlers(r.Router)
+		}
 	})
 
 	// Toggle logging HTTP requests

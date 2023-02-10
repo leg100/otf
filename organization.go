@@ -2,6 +2,8 @@ package otf
 
 import (
 	"context"
+
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 type Organization interface {
@@ -12,6 +14,7 @@ type OrganizationService interface {
 	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
 	EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
 	GetOrganization(ctx context.Context, name string) (Organization, error)
+	GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
 }
 
 type OrganizationDB interface {
