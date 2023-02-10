@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
@@ -36,10 +37,6 @@ type db interface {
 	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
 	DeleteTeam(ctx context.Context, teamID string) error
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
-	// ListTeamMembers lists users that are members of the given team
-	ListTeamMembers(ctx context.Context, teamID string) ([]otf.User, error)
-
-	tx(context.Context, func(db) error) error
 
 	// CreateSession persists a new session to the store.
 	CreateSession(ctx context.Context, session *Session) error
@@ -61,23 +58,21 @@ type db interface {
 
 	createRegistrySession(context.Context, *registrySession) error
 	getRegistrySession(ctx context.Context, token string) (*registrySession, error)
+
+	// listTeamMembers lists users that are members of the given team
+	listTeamMembers(ctx context.Context, teamID string) ([]*User, error)
+
+	tx(context.Context, func(db) error) error
 }
 
 // pgdb is a registry session database on postgres
 type pgdb struct {
 	otf.Database // provides access to generated SQL queries
+	logr.Logger
 }
 
-func newDB(ctx context.Context, database otf.Database, cleanupInterval time.Duration) *pgdb {
-	db := &pgdb{database}
-
-	if cleanupInterval == 0 {
-		cleanupInterval = defaultExpiry
-	}
-	// purge expired registry sessions
-	go db.startExpirer(ctx, cleanupInterval)
-
-	return db
+func newDB(database otf.Database, logger logr.Logger) *pgdb {
+	return &pgdb{database, logger}
 }
 
 // CreateUser persists a User to the DB.
@@ -138,7 +133,7 @@ func (db *pgdb) ListUsers(ctx context.Context, opts UserListOptions) ([]*User, e
 	return users, nil
 }
 
-func (db *pgdb) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
 	result, err := db.FindUsersByTeamID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
@@ -317,7 +312,7 @@ func (db *pgdb) DeleteTeam(ctx context.Context, teamID string) error {
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(db) error) error {
 	return db.Transaction(ctx, func(tx otf.Database) error {
-		return callback(newPGDB(tx))
+		return callback(newDB(tx, db.Logger))
 	})
 }
 
@@ -338,19 +333,6 @@ func (db *pgdb) getRegistrySession(ctx context.Context, token string) (*registry
 		return nil, sql.Error(err)
 	}
 	return registrySessionRow(row).toRegistrySession(), nil
-}
-
-func (db *pgdb) startExpirer(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	for {
-		select {
-		case <-ticker.C:
-			// TODO: log errors
-			_, _ = db.DeleteExpiredRegistrySessions(ctx)
-		case <-ctx.Done():
-			return
-		}
-	}
 }
 
 // CreateAgentToken inserts an agent token, associating it with an organization
@@ -448,7 +430,23 @@ func (db *pgdb) startSessionExpirer(ctx context.Context, interval time.Duration)
 	for {
 		select {
 		case <-ticker.C:
-			db.deleteExpired()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (db *pgdb) startExpirer(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	for {
+		select {
+		case <-ticker.C:
+			// TODO: log errors
+			_, err := db.DeleteExpiredRegistrySessions(ctx)
+			_, err := db.DeleteSessionsExpired(context.Background())
+			if err != nil {
+				return sql.Error(err)
+			}
 		case <-ctx.Done():
 			return
 		}
@@ -456,9 +454,5 @@ func (db *pgdb) startSessionExpirer(ctx context.Context, interval time.Duration)
 }
 
 func (db *pgdb) deleteExpired() error {
-	_, err := db.DeleteSessionsExpired(context.Background())
-	if err != nil {
-		return sql.Error(err)
-	}
 	return nil
 }

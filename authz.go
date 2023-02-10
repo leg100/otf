@@ -61,19 +61,6 @@ func UserFromContext(ctx context.Context) (User, error) {
 	return user, nil
 }
 
-// AgentFromContext retrieves an agent(-token) from a context
-func AgentFromContext(ctx context.Context) (AgentToken, error) {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	agent, ok := subj.(AgentToken)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not an agent")
-	}
-	return agent, nil
-}
-
 // LockFromContext retrieves a workspace lock from a context
 func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
 	subj, err := SubjectFromContext(ctx)

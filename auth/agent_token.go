@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -14,14 +13,14 @@ import (
 type agentToken struct {
 	id           string
 	createdAt    time.Time
-	token        *string
+	token        string
 	description  string
 	organization string
 }
 
 func (t *agentToken) ID() string           { return t.id }
 func (t *agentToken) String() string       { return t.id }
-func (t *agentToken) Token() *string       { return t.token }
+func (t *agentToken) Token() string        { return t.token }
 func (t *agentToken) CreatedAt() time.Time { return t.createdAt }
 func (t *agentToken) Description() string  { return t.description }
 func (t *agentToken) Organization() string { return t.organization }
@@ -59,22 +58,11 @@ func newAgentToken(opts CreateAgentTokenOptions) (*agentToken, error) {
 	token := agentToken{
 		id:           otf.NewID("at"),
 		createdAt:    otf.CurrentTimestamp(),
-		token:        &t,
+		token:        t,
 		description:  opts.Description,
 		organization: opts.Organization,
 	}
 	return &token, nil
-}
-
-func UnmarshalAgentTokenJSONAPI(dto *jsonapi.AgentToken) *agentToken {
-	at := &agentToken{
-		id:           dto.ID,
-		organization: dto.Organization,
-	}
-	if dto.Token != nil {
-		at.token = dto.Token
-	}
-	return at
 }
 
 // AgentTokenService provides access to agent tokens

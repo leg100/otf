@@ -8,7 +8,6 @@ import (
 
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/html"
 )
 
 const (
