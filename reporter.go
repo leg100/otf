@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/http/paths"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 

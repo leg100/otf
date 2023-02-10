@@ -2,9 +2,12 @@ package http
 
 import (
 	"context"
+	"embed"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -24,13 +27,22 @@ const (
 	jsonApplication = "application/json"
 )
 
-type WebRoute string
+var (
+	// Files embedded within the go binary
+	//
+	//go:embed static
+	embedded embed.FS
+
+	// The same files but on the local disk
+	localDisk = os.DirFS("http/html")
+)
 
 // ServerConfig is the http server config
 type ServerConfig struct {
 	SSL                  bool
 	CertFile, KeyFile    string
 	EnableRequestLogging bool
+	DevMode              bool
 }
 
 // Server provides an HTTP/S server
@@ -60,15 +72,72 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 	// Catch panics and return 500s
 	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
-	r.HandleFunc("/.well-known/terraform.json", s.WellKnown)
-	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
-	r.HandleFunc("/healthz", getHealthz)
+	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
+	// /runs. Uses an HTTP301.
+	r.StrictSlash(true)
 
-	authMiddleware := &authTokenMiddleware{
-		UserService:            app,
-		AgentTokenService:      app,
-		RegistrySessionService: app,
+	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
+
+	r.Use(setOrganization)
+
+	// Serve static assets (JS, CSS, etc) from within go binary. Dev mode
+	// sources files from local disk instead.
+	var fs http.FileSystem
+	if cfg.DevMode {
+		fs = &cacheBuster{localDisk}
+	} else {
+		fs = &cacheBuster{embedded}
 	}
+	r.PathPrefix("/static/").Handler(http.FileServer(fs)).Methods("GET")
+
+	// Prometheus metrics
+	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
+
+	// TODO: marshal at compile-time
+	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		payload, err := json.Marshal(struct {
+			Version string
+			Commit  string
+			Built   string
+		}{
+			Version: otf.Version,
+			Commit:  otf.Commit,
+			Built:   otf.Built,
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		w.Header().Set("Content-type", jsonApplication)
+		w.Write(payload)
+	})
+
+	// TODO: marshal at compile-time
+	r.HandleFunc("/.well-known/terraform.json", func(w http.ResponseWriter, r *http.Request) {
+		payload, err := json.Marshal(struct {
+			ModulesV1  string `json:"modules.v1"`
+			MotdV1     string `json:"motd.v1"`
+			StateV2    string `json:"state.v2"`
+			TfeV2      string `json:"tfe.v2"`
+			TfeV21     string `json:"tfe.v2.1"`
+			TfeV22     string `json:"tfe.v2.2"`
+			VersionsV1 string `json:"versions.v1"`
+		}{
+			ModulesV1:  "/api/v2/",
+			MotdV1:     "/api/terraform/motd",
+			StateV2:    "/api/v2/",
+			TfeV2:      "/api/v2/",
+			TfeV21:     "/api/v2/",
+			TfeV22:     "/api/v2/",
+			VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		w.Header().Set("Content-type", jsonApplication)
+		w.Write(payload)
+	})
 
 	api := r.PathPrefix("/api/v2").Subrouter()
 
@@ -85,16 +154,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 
 	api.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
-	})
-
-	// Authenticated endpoints
-	api.Sub(func(r *Router) {
-		// Ensure request has valid API bearer token
-		r.Use(authMiddleware.handler)
-
-		for _, api := range apis {
-			api.AddHandlers(r.Router)
-		}
 	})
 
 	// Toggle logging HTTP requests
