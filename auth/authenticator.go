@@ -8,8 +8,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
+	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/paths"
 )
 
 // Authenticator logs people onto the system using an OAuth handshake with an
@@ -50,26 +50,26 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	// along with flash error.
 	token, err := a.CallbackHandler(r)
 	if err != nil {
-		html.FlashError(w, err.Error())
+		otfhttp.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
 
 	client, err := a.NewClient(r.Context(), token)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	user, err := a.synchronise(r.Context(), client)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	session, err := a.CreateSession(r, user.ID())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Return user to the original path they attempted to access
 	if cookie, err := r.Cookie(otf.PathCookie); err == nil {
-		html.SetCookie(w, otf.PathCookie, "", &time.Time{})
+		otfhttp.SetCookie(w, otf.PathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
 		http.Redirect(w, r, paths.Profile(), http.StatusFound)

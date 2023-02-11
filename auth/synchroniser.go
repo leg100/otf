@@ -6,17 +6,105 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 )
 
-// synchroniser updates a user's memberships of organizations and teams in the
-// db
+// synchroniser synchronises a user account from the cloud to an a user account
+// in OTF:
+// * user account is created if it doesn't already exist
+// * organizations are created if they don't already exist
+// * a 'personal' organization is created matching username if it doesn't
+// already exist
+// * teams are created if they don't already exist
+// * organization memberships are added if they don't already exist
+// * organization memberships are removed if they exist in OTF but not on the cloud
+// * team memberships are added if they don't already exist
+// * team memberships are removed if they exist in OTF but not on the cloud
 type synchroniser struct {
 	logr.Logger
-	db
+	otf.OrganizationService
+
+	app
 }
 
-// syncOrganizations updates a user's organization memberships in the db to
-// match those in wanted
+func (s *synchroniser) sync(ctx context.Context, from cloud.User) error {
+	// ensure user exists
+	user, err := s.getUser(ctx, UserSpec{Username: otf.String(from.Name)})
+	if err == otf.ErrResourceNotFound {
+		user, err = s.app.createUser(ctx, from.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Create organization for each cloud organization
+	var organizations []string
+	for _, want := range from.Organizations {
+		got, err := s.GetOrganization(ctx, want)
+		if err == otf.ErrResourceNotFound {
+			got, err = s.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+				Name: otf.String(want),
+			})
+			if err != nil {
+				return err
+			}
+		} else if err != nil {
+			return err
+		}
+		organizations = append(organizations, got.Name())
+	}
+
+	// A user also gets their own personal organization matching their username
+	personal, err := s.GetOrganization(ctx, user.username)
+	if err == otf.ErrResourceNotFound {
+		personal, err = s.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+			Name: otf.String(user.username),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	organizations = append(organizations, personal.Name())
+
+	// Create team for each cloud team
+	var teams []*Team
+	for _, want := range from.Teams {
+		got, err := s.getTeam(ctx, want.Organization, want.Name)
+		if err == otf.ErrResourceNotFound {
+			got, err = s.app.createTeam(ctx, createTeamOptions{
+				Name:         want.Name,
+				Organization: want.Organization,
+			})
+		} else if err != nil {
+			return err
+		}
+		teams = append(teams, got)
+	}
+
+	// And make them an owner of their personal org
+	owners, err := s.getTeam(ctx, personal.Name(), "owners")
+	if err == otf.ErrResourceNotFound {
+		owners, err = s.app.createTeam(ctx, createTeamOptions{
+			Name:         "owners",
+			Organization: personal.Name(),
+		})
+	} else if err != nil {
+		return err
+	}
+	teams = append(teams, owners)
+
+	// Add/remove memberships
+	if err = s.syncOrganizations(ctx, user, organizations); err != nil {
+		return err
+	}
+	if err = s.syncTeams(ctx, user, teams); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// syncOrganizations updates a user's organization memberships to match those in wanted
 func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []string) error {
 	// Add org memberships
 	for _, want := range wanted {
@@ -30,7 +118,6 @@ func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []
 					return err
 				}
 			}
-			s.V(0).Info("added organization membership", "user", u, "org", want)
 		}
 	}
 
@@ -40,15 +127,13 @@ func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []
 			if err := s.removeOrganizationMembership(ctx, u.ID(), got); err != nil {
 				return err
 			}
-			s.V(0).Info("removed organization membership", "user", u, "org", got)
 		}
 	}
 
 	return nil
 }
 
-// syncTeams updates a user's team memberships in the db to match those in
-// wanted.
+// syncTeams updates a user's team memberships to match those in wanted.
 func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) error {
 	// Add team memberships
 	for _, want := range wanted {

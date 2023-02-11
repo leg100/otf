@@ -18,9 +18,8 @@ type app interface {
 	listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
 	deleteAgentToken(ctx context.Context, id string) (*agentToken, error)
 
-	listUsers(context.Context, UserListOptions) ([]*User, error)
-
-	getTeam(ctx context.Context, teamID string) (*Team, error)
+	createTeam(ctx context.Context, opts createTeamOptions) (*Team, error)
+	getTeam(ctx context.Context, organization, team string) (*Team, error)
 	listTeams(ctx context.Context, organization string) ([]*Team, error)
 	listTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 	updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
@@ -29,6 +28,15 @@ type app interface {
 	getSession(ctx context.Context, token string) (*Session, error)
 	listSessions(ctx context.Context, userID string) ([]*Session, error)
 	deleteSession(ctx context.Context, token string) error
+
+	createUser(ctx context.Context, username string) (*User, error)
+	listUsers(context.Context, UserListOptions) ([]*User, error)
+	getUser(ctx context.Context, spec UserSpec) (*User, error)
+
+	addOrganizationMembership(ctx context.Context, userID, organization string) error
+	removeOrganizationMembership(ctx context.Context, userID, organization string) error
+	addTeamMembership(ctx context.Context, userID, teamID string) error
+	removeTeamMembership(ctx context.Context, userID, teamID string) error
 }
 
 type Application struct {
@@ -81,7 +89,7 @@ func NewApp(logger logr.Logger, db otf.DB, authorizer otf.Authorizer) *Applicati
 	}
 }
 
-func (a *Application) CreateUser(ctx context.Context, username string) (otf.User, error) {
+func (a *Application) createUser(ctx context.Context, username string) (otf.User, error) {
 	user := NewUser(username)
 
 	if err := a.db.CreateUser(ctx, user); err != nil {
@@ -94,7 +102,7 @@ func (a *Application) CreateUser(ctx context.Context, username string) (otf.User
 	return user, nil
 }
 
-func (a *Application) GetUser(ctx context.Context, spec UserSpec) (otf.User, error) {
+func (a *Application) getUser(ctx context.Context, spec UserSpec) (otf.User, error) {
 	user, err := a.db.GetUser(ctx, spec)
 	if err != nil {
 		a.V(2).Info("retrieving user", "spec", spec)
@@ -106,7 +114,7 @@ func (a *Application) GetUser(ctx context.Context, spec UserSpec) (otf.User, err
 	return user, nil
 }
 
-func (a *Application) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
+func (a *Application) createTeam(ctx context.Context, opts createTeamOptions) (*Team, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -196,21 +204,19 @@ func (a *Application) updateTeam(ctx context.Context, teamID string, opts Update
 	return team, nil
 }
 
-// GetTeam retrieves a team.
-func (a *Application) getTeam(ctx context.Context, teamID string) (*Team, error) {
-	team, err := a.db.GetTeamByID(ctx, teamID)
-	if err != nil {
-		a.Error(err, "retrieving team", "team_id", teamID)
-		return nil, err
-	}
-
-	// Check organization-wide authority
-	subject, err := a.CanAccessOrganization(ctx, rbac.GetTeamAction, team.Organization())
+func (a *Application) getTeam(ctx context.Context, organization, name string) (*Team, error) {
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved team", "team", team.Name(), "organization", team.Organization(), "subject", subject)
+	team, err := a.db.getTeam(ctx, name, organization)
+	if err != nil {
+		a.Error(err, "retrieving team", "team", name, "organization", organization, "subject", subject)
+		return nil, err
+	}
+
+	a.V(2).Info("retrieved team", "team", name, "organization", organization, "subject", subject)
 
 	return team, nil
 }
@@ -222,7 +228,7 @@ func (a *Application) listTeams(ctx context.Context, organization string) ([]*Te
 		return nil, err
 	}
 
-	teams, err := a.db.ListTeams(ctx, organization)
+	teams, err := a.db.listTeams(ctx, organization)
 	if err != nil {
 		a.V(2).Info("listing teams", "organization", organization, "subject", subject)
 		return nil, err
@@ -236,7 +242,7 @@ func (a *Application) listTeams(ctx context.Context, organization string) ([]*Te
 // needs either organization-wide authority to call this endpoint, or they need
 // to be a member of the team.
 func (a *Application) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
-	team, err := a.db.GetTeamByID(ctx, teamID)
+	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
@@ -328,7 +334,7 @@ func (a *Application) listAgentTokens(ctx context.Context, organization string) 
 		return nil, err
 	}
 
-	tokens, err := a.db.ListAgentTokens(ctx, organization)
+	tokens, err := a.db.listAgentTokens(ctx, organization)
 	if err != nil {
 		a.Error(err, "listing agent tokens", "organization", organization, "subject", subject)
 		return nil, err
@@ -371,4 +377,44 @@ func (a *Application) deleteAgentToken(ctx context.Context, id string) (*agentTo
 	}
 	a.V(0).Info("deleted agent token", "agent token", at, "subject", subject)
 	return at, nil
+}
+
+func (a *Application) addOrganizationMembership(ctx context.Context, userID, organization string) error {
+	if err := a.db.addOrganizationMembership(ctx, userID, organization); err != nil {
+		a.Error(err, "adding organization membership", "user", userID, "org", organization)
+		return err
+	}
+	a.V(0).Info("added organization membership", "user", userID, "org", organization)
+
+	return nil
+}
+
+func (a *Application) removeOrganizationMembership(ctx context.Context, userID, organization string) error {
+	if err := a.db.removeOrganizationMembership(ctx, userID, organization); err != nil {
+		a.Error(err, "removing organization membership", "user", userID, "org", organization)
+		return err
+	}
+	a.V(0).Info("removed organization membership", "user", userID, "org", organization)
+
+	return nil
+}
+
+func (a *Application) addTeamMembership(ctx context.Context, userID, teamID string) error {
+	if err := a.db.addTeamMembership(ctx, userID, teamID); err != nil {
+		a.Error(err, "adding team membership", "user", userID, "team", teamID)
+		return err
+	}
+	a.V(0).Info("added team membership", "user", userID, "team", teamID)
+
+	return nil
+}
+
+func (a *Application) removeTeamMembership(ctx context.Context, userID, teamID string) error {
+	if err := a.db.removeTeamMembership(ctx, userID, teamID); err != nil {
+		a.Error(err, "removing team membership", "user", userID, "team", teamID)
+		return err
+	}
+	a.V(0).Info("removed team membership", "user", userID, "team", teamID)
+
+	return nil
 }

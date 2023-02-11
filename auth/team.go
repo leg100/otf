@@ -43,11 +43,11 @@ func (u *Team) Update(opts UpdateTeamOptions) error {
 type TeamService interface {
 	// CreateTeam creates a team with the given name belong to the named
 	// organization.
-	CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
+	CreateTeam(ctx context.Context, opts createTeamOptions) (*Team, error)
 	UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
 	// EnsureCreatedTeam retrieves a team; if they don't exist they'll be
 	// created.
-	EnsureCreatedTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
+	EnsureCreatedTeam(ctx context.Context, opts createTeamOptions) (*Team, error)
 	// Get retrieves a team with the given ID
 	GetTeam(ctx context.Context, teamID string) (*Team, error)
 	// ListTeams lists teams in an organization.
@@ -80,7 +80,7 @@ type OrganizationAccess struct {
 	ManageRegistry   bool `schema:"manage_registry"`   // manage module and provider registry
 }
 
-type CreateTeamOptions struct {
+type createTeamOptions struct {
 	Name         string `schema:"team_name,required"`
 	Organization string `schema:"organization_name,required"`
 }
@@ -89,7 +89,7 @@ type UpdateTeamOptions struct {
 	OrganizationAccess
 }
 
-func newTeam(opts CreateTeamOptions) *Team {
+func newTeam(opts createTeamOptions) *Team {
 	team := Team{
 		id:           otf.NewID("team"),
 		name:         opts.Name,

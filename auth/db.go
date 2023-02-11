@@ -16,15 +16,7 @@ type db interface {
 	otf.Database
 
 	CreateUser(ctx context.Context, user *User) error
-	GetUser(ctx context.Context, spec UserSpec) (*User, error)
 	DeleteUser(ctx context.Context, spec UserSpec) error
-
-	CreateTeam(ctx context.Context, team *Team) error
-	UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error)
-	GetTeam(ctx context.Context, name, organization string) (*Team, error)
-	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
-	DeleteTeam(ctx context.Context, teamID string) error
-	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 
 	// CreateSession persists a new session to the store.
 	CreateSession(ctx context.Context, session *Session) error
@@ -45,12 +37,20 @@ type db interface {
 	listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
 	deleteAgentToken(ctx context.Context, id string) error
 
+	createTeam(ctx context.Context, team *Team) error
+	UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error)
+	getTeam(ctx context.Context, name, organization string) (*Team, error)
+	getTeamByID(ctx context.Context, teamID string) (*Team, error)
+	deleteTeam(ctx context.Context, teamID string) error
+	listTeams(ctx context.Context, organization string) ([]*Team, error)
+
 	createRegistrySession(context.Context, *registrySession) error
 	getRegistrySession(ctx context.Context, token string) (*registrySession, error)
 
 	listTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 
 	listUsers(ctx context.Context, organization string) ([]*User, error)
+	getUser(ctx context.Context, spec UserSpec) (*User, error)
 
 	addOrganizationMembership(ctx context.Context, userID, organization string) error
 	removeOrganizationMembership(ctx context.Context, userID, organization string) error
@@ -142,8 +142,8 @@ func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, er
 	return items, nil
 }
 
-// GetUser retrieves a user from the DB, along with its sessions.
-func (db *pgdb) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
+// getUser retrieves a user from the DB, along with its sessions.
+func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
 		result, err := db.FindUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {
@@ -223,8 +223,7 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	return nil
 }
 
-// CreateTeam persists a team to the DB.
-func (db *pgdb) CreateTeam(ctx context.Context, team *Team) error {
+func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
 		ID:               sql.String(team.ID()),
 		Name:             sql.String(team.Name()),
@@ -265,8 +264,7 @@ func (pdb *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) e
 	return team, err
 }
 
-// GetTeam retrieves a team from the DB by name
-func (db *pgdb) GetTeam(ctx context.Context, name, organization string) (*Team, error) {
+func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {
 	result, err := db.FindTeamByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -274,8 +272,7 @@ func (db *pgdb) GetTeam(ctx context.Context, name, organization string) (*Team, 
 	return teamRow(result).toTeam(), nil
 }
 
-// GetTeamByID retrieves a team from the DB by ID.
-func (db *pgdb) GetTeamByID(ctx context.Context, id string) (*Team, error) {
+func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
 	result, err := db.FindTeamByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -283,7 +280,7 @@ func (db *pgdb) GetTeamByID(ctx context.Context, id string) (*Team, error) {
 	return teamRow(result).toTeam(), nil
 }
 
-func (db *pgdb) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
+func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, error) {
 	result, err := db.FindTeamsByOrg(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
@@ -297,7 +294,7 @@ func (db *pgdb) ListTeams(ctx context.Context, organization string) ([]*Team, er
 }
 
 // DeleteTeam deletes a team from the DB.
-func (db *pgdb) DeleteTeam(ctx context.Context, teamID string) error {
+func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
 	_, err := db.DeleteTeamByID(ctx, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
