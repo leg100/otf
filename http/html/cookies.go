@@ -1,13 +1,8 @@
-package http
+package html
 
 import (
 	"net/http"
 	"time"
-)
-
-const (
-	// organizationCookie stores the current organization for the session
-	organizationCookie = "organization"
 )
 
 // SetCookie sets a cookie on the http response. A nil expiry sets no expiry,

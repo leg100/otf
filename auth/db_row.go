@@ -2,7 +2,6 @@ package auth
 
 import (
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -71,7 +70,7 @@ func (row agentTokenRow) toAgentToken() *agentToken {
 	return &agentToken{
 		id:           row.TokenID.String,
 		createdAt:    row.CreatedAt.Time,
-		token:        otf.String(row.Token.String),
+		token:        row.Token.String,
 		description:  row.Description.String,
 		organization: row.OrganizationName.String,
 	}

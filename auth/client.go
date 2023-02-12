@@ -29,20 +29,20 @@ func (c *Client) CreateRegistrySession(ctx context.Context, organization string)
 	return session.Token, nil
 }
 
-func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (string, error) {
-	req, err := c.NewRequest("POST", "agent/create", &jsonapiCreateOptions{
+func (c *Client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (otf.AgentToken, error) {
+	req, err := c.NewRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
 		Description:  options.Description,
 		Organization: options.Organization,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	at := &jsonapi.AgentToken{}
 	err = c.Do(ctx, req, at)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return at.Token, nil
+	return &agentToken{id: at.ID, token: *at.Token, organization: at.Organization}, nil
 }
 
 func (c *Client) GetAgentToken(ctx context.Context, token string) (*agentToken, error) {
@@ -51,11 +51,11 @@ func (c *Client) GetAgentToken(ctx context.Context, token string) (*agentToken, 
 		return nil, err
 	}
 
-	at := &jsonapiAgentToken{}
+	at := &jsonapi.AgentToken{}
 	err = c.Do(ctx, req, at)
 	if err != nil {
 		return nil, err
 	}
 
-	return UnmarshalAgentTokenJSONAPI(at), nil
+	return &agentToken{id: at.ID, organization: at.Organization}, nil
 }

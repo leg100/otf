@@ -18,7 +18,6 @@ const oauthCookieName = "oauth-state"
 
 var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and client secret")
 
-// oauthClient is an oauth client
 type oauthClient interface {
 	RequestHandler(w http.ResponseWriter, r *http.Request)
 	CallbackHandler(*http.Request) (*oauth2.Token, error)

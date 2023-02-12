@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/http/paths"
 )
 
 // webApp is the web application for organizations

@@ -7,7 +7,6 @@ import (
 	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"math/rand"
 	"os"
 	"regexp"
@@ -95,11 +94,6 @@ type Database interface {
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 }
 
-// Unmarshaler unmarshals database rows
-type Unmarshaler struct {
-	cloud.Service
-}
-
 // Identity is an identifiable otf entity.
 type Identity interface {
 	// Human friendly identification of the entity.
@@ -153,28 +147,6 @@ func GenerateRandomString(size int) string {
 		buf[i] = alphanumeric[rand.Intn(len(alphanumeric))]
 	}
 	return string(buf)
-}
-
-// ResourceReport reports a summary of additions, changes, and deletions of
-// resources in a plan or an apply.
-type ResourceReport struct {
-	Additions    int
-	Changes      int
-	Destructions int
-}
-
-func (r ResourceReport) HasChanges() bool {
-	if r.Additions > 0 || r.Changes > 0 || r.Destructions > 0 {
-		return true
-	}
-	return false
-}
-
-func (r ResourceReport) String() string {
-	// \u2212 is a proper minus sign; an ascii hyphen is too narrow (in the
-	// default github font at least) and looks incongruous alongside
-	// the wider '+' and '~' characters.
-	return fmt.Sprintf("+%d/~%d/\u2212%d", r.Additions, r.Changes, r.Destructions)
 }
 
 // ValidStringID checks if the given string pointer is non-nil and

@@ -34,6 +34,8 @@ type Client interface {
 
 	Watch(context.Context, WatchOptions) (<-chan Event, error)
 
+	// CreateRegistrySession creates and returns a registry session for the
+	// given organization.
 	CreateRegistrySession(ctx context.Context, organization string) (RegistrySession, error)
 
 	WorkspaceLockService

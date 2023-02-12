@@ -1,4 +1,4 @@
-package http
+package html
 
 import (
 	"encoding/base64"

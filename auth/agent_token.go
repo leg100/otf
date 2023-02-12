@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -39,12 +38,7 @@ func (t *agentToken) CanAccessWorkspace(action rbac.Action, policy *otf.Workspac
 	return t.organization == policy.Organization
 }
 
-type CreateAgentTokenOptions struct {
-	Organization string `schema:"organization_name,required"`
-	Description  string `schema:"description,required"`
-}
-
-func newAgentToken(opts CreateAgentTokenOptions) (*agentToken, error) {
+func newAgentToken(opts otf.CreateAgentTokenOptions) (*agentToken, error) {
 	if opts.Organization == "" {
 		return nil, fmt.Errorf("organization name cannot be an empty string")
 	}
@@ -63,14 +57,4 @@ func newAgentToken(opts CreateAgentTokenOptions) (*agentToken, error) {
 		organization: opts.Organization,
 	}
 	return &token, nil
-}
-
-// AgentTokenService provides access to agent tokens
-type AgentTokenService interface {
-	CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*agentToken, error)
-	// GetAgentToken retrieves AgentToken using its cryptographic
-	// authentication token.
-	GetAgentToken(ctx context.Context, token string) (*agentToken, error)
-	ListAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
-	DeleteAgentToken(ctx context.Context, id string) (*agentToken, error)
 }

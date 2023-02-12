@@ -1,157 +1,97 @@
 package auth
 
 import (
-	"context"
 	"net/http"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/paths"
 )
 
-// Authenticator logs people onto the system using an OAuth handshake with an
+// authenticator logs people onto the system using an OAuth handshake with an
 // Identity provider before synchronising their user account and various organization
 // and team memberships from the provider.
-type Authenticator struct {
-	otf.Application
+type authenticator struct {
+	otf.HostnameService
+
+	app
 	oauthClient
 }
 
-func newAuthenticators(logger logr.Logger, app otf.Application, configs []*cloud.CloudOAuthConfig) ([]*Authenticator, error) {
-	var authenticators []*Authenticator
+type authenticatorOptions struct {
+	logr.Logger
+	otf.HostnameService
+	app
+	configs []*cloud.CloudOAuthConfig
+}
 
-	for _, cfg := range configs {
+func newAuthenticators(opts authenticatorOptions) ([]*authenticator, error) {
+	var authenticators []*authenticator
+
+	for _, cfg := range opts.configs {
 		if cfg.OAuthConfig.ClientID == "" && cfg.OAuthConfig.ClientSecret == "" {
 			// skip creating oauth client when creds are unspecified
 			continue
 		}
 		client, err := NewOAuthClient(NewOAuthClientConfig{
 			CloudOAuthConfig: cfg,
-			hostname:         app.Hostname(),
+			hostname:         opts.Hostname(),
 		})
 		if err != nil {
 			return nil, err
 		}
-		authenticators = append(authenticators, &Authenticator{
+		authenticators = append(authenticators, &authenticator{
 			oauthClient: client,
-			Application: app,
+			app:         opts.app,
 		})
-		logger.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
+		opts.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
 	}
 	return authenticators, nil
 }
 
 // exchanging its auth code for a token.
-func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) {
+func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) {
 	// Handle oauth response; if there is an error, return user to login page
 	// along with flash error.
 	token, err := a.CallbackHandler(r)
 	if err != nil {
-		otfhttp.FlashError(w, err.Error())
+		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
 
 	client, err := a.NewClient(r.Context(), token)
 	if err != nil {
-		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	user, err := a.synchronise(r.Context(), client)
-	if err != nil {
-		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	session, err := a.CreateSession(r, user.ID())
-	if err != nil {
-		otfhttp.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// set session cookie
-	session.SetCookie(w)
-
-	// Return user to the original path they attempted to access
-	if cookie, err := r.Cookie(otf.PathCookie); err == nil {
-		otfhttp.SetCookie(w, otf.PathCookie, "", &time.Time{})
-		http.Redirect(w, r, cookie.Value, http.StatusFound)
-	} else {
-		http.Redirect(w, r, paths.Profile(), http.StatusFound)
-	}
-}
-
-func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (otf.User, error) {
 	// give authenticator unlimited access to services
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "authenticator"})
+	ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{Username: "authenticator"})
 
 	// Get cloud user
 	cuser, err := client.GetUser(ctx)
 	if err != nil {
-		return nil, err
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// Get otf user; if not exist, create user
-	user, err := a.EnsureCreatedUser(ctx, cuser.Name)
+	// Synchronise cloud user with otf user
+	user, err := a.sync(ctx, *cuser)
 	if err != nil {
-		return nil, err
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// organization names to be synchronised
-	var organizations []string
-	// teams to be synchronised
-	var teams []otf.Team
-
-	// Create organization for each cloud organization
-	for _, corg := range cuser.Organizations {
-		org, err := a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
-			Name: otf.String(corg),
-		})
-		if err != nil {
-			return nil, err
-		}
-		organizations = append(organizations, org.Name())
-	}
-
-	// A user also gets their own personal organization matching their username
-	personal, err := a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
-		Name: otf.String(user.Username()),
-	})
+	session, err := a.createSession(r, user.ID())
 	if err != nil {
-		return nil, err
-	}
-	organizations = append(organizations, personal.Name())
-
-	// Create team for each cloud team
-	for _, cteam := range cuser.Teams {
-		team, err := a.EnsureCreatedTeam(ctx, otf.CreateTeamOptions{
-			Name:         cteam.Name,
-			Organization: cteam.Organization,
-		})
-		if err != nil {
-			return nil, err
-		}
-		teams = append(teams, team)
-	}
-	// And make them an owner of their personal org
-	team, err := a.EnsureCreatedTeam(ctx, otf.CreateTeamOptions{
-		Name:         "owners",
-		Organization: personal.Name(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	teams = append(teams, team)
-
-	// Synchronise user's memberships so that they match those of the cloud
-	// user.
-	if _, err = a.SyncUserMemberships(ctx, user, organizations, teams); err != nil {
-		return nil, err
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return user, nil
+	session.SetCookie(w)
+
+	returnUserOriginalPage(w, r)
 }

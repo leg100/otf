@@ -7,7 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/paths"
 )
 
@@ -63,9 +63,14 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 	}
 }
 
+type AuthenticateSessionService interface {
+	GetUser(context.Context, otf.UserSpec) (otf.User, error)
+	GetSession(ctx context.Context, token string) (*Session, error)
+}
+
 // AuthenticateSession middleware checks incoming request possesses a valid session cookie,
 // attaching its user and the session to the context.
-func AuthenticateSession(svc otf.UserService) mux.MiddlewareFunc {
+func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie(sessionCookie)
@@ -77,20 +82,27 @@ func AuthenticateSession(svc otf.UserService) mux.MiddlewareFunc {
 				SessionToken: &cookie.Value,
 			})
 			if err != nil {
-				otfhttp.FlashError(w, "unable to find user: "+err.Error())
+				html.FlashError(w, "unable to find user: "+err.Error())
+				sendUserToLoginPage(w, r)
+				return
+			}
+
+			session, err := svc.GetSession(r.Context(), cookie.Value)
+			if err != nil {
+				html.FlashError(w, "session expired")
 				sendUserToLoginPage(w, r)
 				return
 			}
 
 			// add user and session token to context for use by upstream handlers
 			ctx := otf.AddSubjectToContext(r.Context(), user)
-			ctx = addToContext(ctx, cookie.Value)
+			ctx = addSessionCtx(ctx, session)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
-	otfhttp.SetCookie(w, otf.PathCookie, r.URL.Path, nil)
+	html.SetCookie(w, pathCookie, r.URL.Path, nil)
 	http.Redirect(w, r, paths.Login(), http.StatusFound)
 }

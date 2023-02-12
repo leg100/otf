@@ -2,12 +2,10 @@ package http
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -17,24 +15,42 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 )
 
 const (
 	// shutdownTimeout is the time given for outstanding requests to finish
 	// before shutdown.
 	shutdownTimeout = 1 * time.Second
-
-	jsonApplication = "application/json"
 )
 
 var (
-	// Files embedded within the go binary
-	//
-	//go:embed static
-	embedded embed.FS
-
-	// The same files but on the local disk
-	localDisk = os.DirFS("http/html")
+	healthzPayload = mustMarshal(struct {
+		Version string
+		Commit  string
+		Built   string
+	}{
+		Version: otf.Version,
+		Commit:  otf.Commit,
+		Built:   otf.Built,
+	})
+	discoveryPayload = mustMarshal(struct {
+		ModulesV1  string `json:"modules.v1"`
+		MotdV1     string `json:"motd.v1"`
+		StateV2    string `json:"state.v2"`
+		TfeV2      string `json:"tfe.v2"`
+		TfeV21     string `json:"tfe.v2.1"`
+		TfeV22     string `json:"tfe.v2.2"`
+		VersionsV1 string `json:"versions.v1"`
+	}{
+		ModulesV1:  "/api/v2/",
+		MotdV1:     "/api/terraform/motd",
+		StateV2:    "/api/v2/",
+		TfeV2:      "/api/v2/",
+		TfeV21:     "/api/v2/",
+		TfeV22:     "/api/v2/",
+		VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
+	})
 )
 
 // ServerConfig is the http server config
@@ -78,71 +94,26 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 
 	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
 
-	r.Use(setOrganization)
-
-	// Serve static assets (JS, CSS, etc) from within go binary. Dev mode
-	// sources files from local disk instead.
-	var fs http.FileSystem
-	if cfg.DevMode {
-		fs = &cacheBuster{localDisk}
-	} else {
-		fs = &cacheBuster{embedded}
-	}
-	r.PathPrefix("/static/").Handler(http.FileServer(fs)).Methods("GET")
+	// Serve static files
+	html.AddStaticHandler(r, cfg.DevMode)
 
 	// Prometheus metrics
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 
-	// TODO: marshal at compile-time
 	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		payload, err := json.Marshal(struct {
-			Version string
-			Commit  string
-			Built   string
-		}{
-			Version: otf.Version,
-			Commit:  otf.Commit,
-			Built:   otf.Built,
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
-		}
-		w.Header().Set("Content-type", jsonApplication)
-		w.Write(payload)
+		w.Header().Set("Content-type", "application/json")
+		w.Write(healthzPayload)
 	})
 
-	// TODO: marshal at compile-time
 	r.HandleFunc("/.well-known/terraform.json", func(w http.ResponseWriter, r *http.Request) {
-		payload, err := json.Marshal(struct {
-			ModulesV1  string `json:"modules.v1"`
-			MotdV1     string `json:"motd.v1"`
-			StateV2    string `json:"state.v2"`
-			TfeV2      string `json:"tfe.v2"`
-			TfeV21     string `json:"tfe.v2.1"`
-			TfeV22     string `json:"tfe.v2.2"`
-			VersionsV1 string `json:"versions.v1"`
-		}{
-			ModulesV1:  "/api/v2/",
-			MotdV1:     "/api/terraform/motd",
-			StateV2:    "/api/v2/",
-			TfeV2:      "/api/v2/",
-			TfeV21:     "/api/v2/",
-			TfeV22:     "/api/v2/",
-			VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
-		}
-		w.Header().Set("Content-type", jsonApplication)
-		w.Write(payload)
+		w.Header().Set("Content-type", "application/json")
+		w.Write(discoveryPayload)
 	})
-
-	api := r.PathPrefix("/api/v2").Subrouter()
 
 	// Add tfp api version header to every response
-	api.Use(func(next http.Handler) http.Handler {
+	//
+	// TODO: only set this on api routes
+	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Version 2.5 is the minimum version terraform requires for the
 			// newer 'cloud' configuration block:
@@ -152,9 +123,18 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 		})
 	})
 
-	api.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+	// Get/set session organization
+	//
+	// TODO: only set this on web app routes
+	r.Use(html.SetOrganization)
+
+	r.HandleFunc("/api/v2/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
+
+	for _, api := range apis {
+		api.AddHandlers(r)
+	}
 
 	// Toggle logging HTTP requests
 	if cfg.EnableRequestLogging {
@@ -212,4 +192,13 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 			"method", r.Method,
 			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
 	})
+}
+
+// mustMarshal marshals a value into json and panics upon error
+func mustMarshal(v any) []byte {
+	encoded, err := json.Marshal(v)
+	if err != nil {
+		panic(err.Error())
+	}
+	return encoded
 }

@@ -1,46 +1,95 @@
 package auth
 
-// User represents a Terraform Enterprise user.
-type jsonapiUser struct {
-	ID               string     `jsonapi:"primary,users"`
-	AvatarURL        string     `jsonapi:"attr,avatar-url"`
-	Email            string     `jsonapi:"attr,email"`
-	IsServiceAccount bool       `jsonapi:"attr,is-service-account"`
-	TwoFactor        *TwoFactor `jsonapi:"attr,two-factor"`
-	UnconfirmedEmail string     `jsonapi:"attr,unconfirmed-email"`
-	Username         string     `jsonapi:"attr,username"`
-	V2Only           bool       `jsonapi:"attr,v2-only"`
+import (
+	"net/http"
 
-	// Relations
-	// AuthenticationTokens *AuthenticationTokens `jsonapi:"relation,authentication-tokens"`
+	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
+)
+
+// api provides handlers for json:api endpoints
+type api struct {
+	app app
 }
 
-// TwoFactor represents the organization permissions.
-type TwoFactor struct {
-	Enabled  bool `jsonapi:"attr,enabled"`
-	Verified bool `jsonapi:"attr,verified"`
+func (h *api) addHandlers(r *mux.Router) {
+	r = r.PathPrefix("/api/v2").Subrouter()
+
+	r.Use(AuthenticateToken(h.app))
+
+	// Agent token routes
+	r.HandleFunc("/agent/details", h.getCurrentAgent).Methods("GET")
+	r.HandleFunc("/agent/create", h.createAgentToken).Methods("POST")
+
+	// Registry session routes
+	r.HandleFunc("/organizations/{organization_name}/registry/sessions/create", h.createRegistrySession).Methods("POST")
+
+	// User routes
+	r.HandleFunc("/account/details", h.getCurrentUser).Methods("GET")
 }
 
-// AgentToken represents an otf agent token
-type jsonapiAgentToken struct {
-	ID string `jsonapi:"primary,agent_tokens"`
-	// Only set upon creation and never thereafter
-	Token        *string `jsonapi:"attr,token,omitempty"`
-	Organization string  `jsonapi:"attr,organization_name"`
+// User routes
+
+func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
+	user, err := otf.UserFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	jsonapi.WriteResponse(w, r, &jsonapi.User{ID: user.ID(), Username: user.Username()})
 }
 
-// AgentTokenCreateOptions represents the options for creating a new otf agent token.
-type jsonapiCreateOptions struct {
-	// Type is a public field utilized by JSON:API to set the resource type via
-	// the field tag.  It is not a user-defined value and does not need to be
-	// set.  https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,runs"`
+// Registry session routes
 
-	// Description is a meaningful description of the purpose of the agent
-	// token.
-	Description string `jsonapi:"attr,description"`
+func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
+	var opts jsonapi.RegistrySessionCreateOptions
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
-	// Organization is the name of the organization in which to create the
-	// token.
-	Organization string `jsonapi:"attr,organization_name"`
+	session, err := h.app.CreateRegistrySession(r.Context(), opts.OrganizationName)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+
+	jsonapi.WriteResponse(w, r, session)
+}
+
+// Agent token routes
+
+func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
+	var opts jsonapi.AgentTokenCreateOptions
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	at, err := h.app.createAgentToken(r.Context(), otf.CreateAgentTokenOptions{
+		Description:  opts.Description,
+		Organization: opts.Organization,
+	})
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
+		ID:           at.id,
+		Token:        otf.String(at.token),
+		Organization: at.organization,
+	})
+}
+
+func (h *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
+	at, err := agentFromContext(r.Context())
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
+		ID:           at.id,
+		Token:        nil, // deliberately omit token
+		Organization: at.organization,
+	})
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// db is a database of state and state versions
+// db is a database of organizations
 type db interface {
 	otf.Database
 
@@ -17,7 +17,7 @@ type db interface {
 	get(ctx context.Context, name string) (*Organization, error)
 	getByID(ctx context.Context, id string) (*Organization, error)
 	list(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
-	listByUser(ctx context.Context, userID string) ([]*Organization, error)
+	listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*organizationList, error)
 	update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
 	delete(ctx context.Context, name string) error
 }
@@ -108,17 +108,36 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*organi
 	}, nil
 }
 
-func (db *pgdb) listByUser(ctx context.Context, userID string) ([]*Organization, error) {
-	result, err := db.FindOrganizationsByUserID(ctx, sql.String(userID))
+func (db *pgdb) listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*organizationList, error) {
+	batch := &pgx.Batch{}
+
+	db.FindOrganizationsByUserIDBatch(batch, pggen.FindOrganizationsByUserIDParams{
+		UserID: sql.String(userID),
+		Limit:  opts.GetLimit(),
+		Offset: opts.GetOffset(),
+	})
+	db.CountOrganizationsByUserIDBatch(batch, sql.String(userID))
+	results := db.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := db.FindOrganizationsByUserIDScan(results)
+	if err != nil {
+		return nil, err
+	}
+	count, err := db.CountOrganizationsByUserIDScan(results)
 	if err != nil {
 		return nil, err
 	}
 
 	var items []*Organization
-	for _, r := range result {
+	for _, r := range rows {
 		items = append(items, unmarshalRow(pggen.Organizations(r)))
 	}
-	return items, nil
+
+	return &organizationList{
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
+	}, nil
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {

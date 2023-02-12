@@ -291,12 +291,19 @@ type Querier interface {
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 
-	FindOrganizationsByUserID(ctx context.Context, userID pgtype.Text) ([]FindOrganizationsByUserIDRow, error)
+	FindOrganizationsByUserID(ctx context.Context, params FindOrganizationsByUserIDParams) ([]FindOrganizationsByUserIDRow, error)
 	// FindOrganizationsByUserIDBatch enqueues a FindOrganizationsByUserID query into batch to be executed
 	// later by the batch.
-	FindOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	FindOrganizationsByUserIDBatch(batch genericBatch, params FindOrganizationsByUserIDParams)
 	// FindOrganizationsByUserIDScan scans the result of an executed FindOrganizationsByUserIDBatch query.
 	FindOrganizationsByUserIDScan(results pgx.BatchResults) ([]FindOrganizationsByUserIDRow, error)
+
+	CountOrganizationsByUserID(ctx context.Context, userID pgtype.Text) (*int, error)
+	// CountOrganizationsByUserIDBatch enqueues a CountOrganizationsByUserID query into batch to be executed
+	// later by the batch.
+	CountOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	// CountOrganizationsByUserIDScan scans the result of an executed CountOrganizationsByUserIDBatch query.
+	CountOrganizationsByUserIDScan(results pgx.BatchResults) (*int, error)
 
 	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
@@ -1246,6 +1253,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findOrganizationsByUserIDSQL, findOrganizationsByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationsByUserID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, countOrganizationsByUserIDSQL, countOrganizationsByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountOrganizationsByUserID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)

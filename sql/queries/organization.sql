@@ -32,6 +32,14 @@ SELECT o.*
 FROM organizations o
 JOIN organization_memberships om ON o.name = om.organization_name
 WHERE om.user_id = pggen.arg('user_id')
+LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
+;
+
+-- name: CountOrganizationsByUserID :one
+SELECT count(*)
+FROM organizations o
+JOIN organization_memberships om ON o.name = om.organization_name
+WHERE om.user_id = pggen.arg('user_id')
 ;
 
 -- name: InsertOrganization :exec

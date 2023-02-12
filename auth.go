@@ -12,9 +12,6 @@ const (
 	SiteAdminID     = "user-site-admin"
 	DefaultUserID   = "user-123"
 	DefaultUsername = "otf"
-
-	// path cookie stores the last path the user attempted to access
-	PathCookie = "path"
 )
 
 type RegistrySession interface {
@@ -39,6 +36,7 @@ type RegistrySessionApp interface {
 
 type User interface {
 	Username() string
+	IsSiteAdmin() bool
 
 	Subject
 }
@@ -46,12 +44,6 @@ type User interface {
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
-	// EnsureCreatedUser retrieves a user; if they don't exist they'll be
-	// created.
-	EnsureCreatedUser(ctx context.Context, username string) (User, error)
-	// SyncUserMemberships makes the user a member of the specified organizations
-	// and teams and removes any existing memberships not specified.
-	SyncUserMemberships(ctx context.Context, user User, orgs []string, teams []Team) (User, error)
 	// Get retrieves a user according to the spec.
 	GetUser(ctx context.Context, spec UserSpec) (User, error)
 }
@@ -61,6 +53,13 @@ type UserSpec struct {
 	Username            *string
 	SessionToken        *string
 	AuthenticationToken *string
+}
+
+func (s UserSpec) MarshalLog() any {
+	if s.AuthenticationToken != nil {
+		s.AuthenticationToken = String("*****")
+	}
+	return s
 }
 
 type Team interface {
@@ -83,6 +82,7 @@ type CreateTeamOptions struct {
 
 type AgentToken interface {
 	Token() string
+	Organization() string
 
 	Subject
 }
@@ -109,10 +109,4 @@ type SessionService interface {
 	ListSessions(ctx context.Context, userID string) ([]Session, error)
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
-}
-
-type CreateSessionOptions struct {
-	Request  *http.Request
-	Response http.ResponseWriter
-	UserID   string
 }

@@ -3,7 +3,6 @@ package organization
 import (
 	"context"
 	"fmt"
-	"os/user"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -116,12 +115,8 @@ func (a *app) ListOrganizations(ctx context.Context, opts OrganizationListOption
 	if err != nil {
 		return nil, err
 	}
-	if user, ok := subj.(*user.User); ok && !user.IsSiteAdmin() {
-		orgs, err := a.db.listByUser(ctx, user.ID())
-		if err != nil {
-			return nil, err
-		}
-		return newOrganizationList(opts, orgs), nil
+	if user, ok := subj.(otf.User); ok && !user.IsSiteAdmin() {
+		return a.db.listByUser(ctx, user.ID(), opts)
 	}
 	return a.db.list(ctx, opts)
 }

@@ -1,13 +1,15 @@
 package auth
 
 import (
-	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/http/paths"
 )
 
 const (
@@ -26,9 +28,9 @@ type Session struct {
 	userID string
 }
 
-// NewSession constructs a new Session
-func NewSession(r *http.Request, userID string) (*Session, error) {
-	ip, err := otfhttp.GetClientIP(r)
+// newSession constructs a new Session
+func newSession(r *http.Request, userID string) (*Session, error) {
+	ip, err := getClientIP(r)
 	if err != nil {
 		return nil, err
 	}
@@ -60,33 +62,29 @@ func (s *Session) SetCookie(w http.ResponseWriter) {
 	html.SetCookie(w, sessionCookie, s.token, otf.Time(s.Expiry()))
 }
 
-type NewSessionOption func(*Session)
-
-func SessionExpiry(expiry time.Time) NewSessionOption {
-	return func(session *Session) {
-		session.expiry = expiry
+// getClientIP gets the client's IP address
+func getClientIP(r *http.Request) (string, error) {
+	// reverse proxy adds client IP to an HTTP header, and each successive proxy
+	// adds a client IP, so we want the leftmost IP.
+	if hdr := r.Header.Get("X-Forwarded-For"); hdr != "" {
+		first, _, _ := strings.Cut(hdr, ",")
+		addr := strings.TrimSpace(first)
+		if isIP := net.ParseIP(addr); isIP != nil {
+			return addr, nil
+		}
 	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	return host, err
 }
 
-type SessionService interface {
-	// CreateSession creates a user session.
-	CreateSession(ctx context.Context, userID, address string) (*Session, error)
-	// GetSession retrieves a session using its token.
-	GetSessionByToken(ctx context.Context, token string) (*Session, error)
-	// ListSessions lists current sessions for a user
-	ListSessions(ctx context.Context, userID string) ([]*Session, error)
-	// DeleteSession deletes the session with the given token
-	DeleteSession(ctx context.Context, token string) error
-}
-
-// SessionStore is a persistence store for user sessions.
-type SessionStore interface {
-	// CreateSession persists a new session to the store.
-	CreateSession(ctx context.Context, session *Session) error
-	// GetSession retrieves a session using its token.
-	GetSessionByToken(ctx context.Context, token string) (*Session, error)
-	// ListSessions lists current sessions for a user
-	ListSessions(ctx context.Context, userID string) ([]*Session, error)
-	// DeleteSession deletes a session
-	DeleteSession(ctx context.Context, token string) error
+// returnUserOriginalPage returns a user to the original page they tried to
+// access before they were redirected elsewhere.
+func returnUserOriginalPage(w http.ResponseWriter, r *http.Request) {
+	// Return user to the original path they attempted to access
+	if cookie, err := r.Cookie(pathCookie); err == nil {
+		html.SetCookie(w, pathCookie, "", &time.Time{})
+		http.Redirect(w, r, cookie.Value, http.StatusFound)
+	} else {
+		http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	}
 }

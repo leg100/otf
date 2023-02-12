@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -22,13 +20,21 @@ type User struct {
 	teams         []*Team  // user belongs to many teams
 }
 
+func newUser(username string) *User {
+	return &User{
+		id:        otf.NewID("user"),
+		username:  username,
+		createdAt: otf.CurrentTimestamp(),
+		updatedAt: otf.CurrentTimestamp(),
+	}
+}
+
 func (u *User) ID() string              { return u.id }
 func (u *User) Username() string        { return u.username }
 func (u *User) CreatedAt() time.Time    { return u.createdAt }
 func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
 func (u *User) String() string          { return u.username }
 func (u *User) Organizations() []string { return u.organizations }
-func (u *User) Teams() []otf.Team       { return u.teams }
 
 // TeamsByOrganization return a user's teams filtered by organization name
 func (u *User) TeamsByOrganization(organization string) []otf.Team {
@@ -65,7 +71,7 @@ func (u *User) IsUnprivilegedUser(organization string) bool {
 	return !u.IsSiteAdmin() && !u.IsOwner(organization)
 }
 
-func (u *User) IsSiteAdmin() bool { return u.id == SiteAdminID }
+func (u *User) IsSiteAdmin() bool { return u.id == otf.SiteAdminID }
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	// Only site admin can perform actions on the site
@@ -107,7 +113,7 @@ func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolicy) bool {
 	// Site admin can access any workspace
 	if u.IsSiteAdmin() {
 		return true
@@ -145,64 +151,6 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
-// SyncMemberships synchronises the user's organization and team memberships to
-// match those given, adding and removing memberships in the persistence store accordingly.
-func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []string, teams []*Team) error {
-	// Iterate through orgs and check if already a member; if not then
-	// add membership to store
-	for _, org := range orgs {
-		if !otf.Contains(u.organizations, org) {
-			if err := store.AddOrganizationMembership(ctx, u.ID(), org); err != nil {
-				if errors.Is(err, otf.ErrResourceAlreadyExists) {
-					// ignore conflicts - sometimes the caller may provide
-					// duplicate orgs
-					continue
-				} else {
-					return err
-				}
-			}
-		}
-	}
-	// Iterate thru receiver's orgs and check if in the given orgs; if not then
-	// remove membership from store
-	for _, org := range u.organizations {
-		if !otf.Contains(orgs, org) {
-			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org); err != nil {
-				return err
-			}
-		}
-	}
-	u.organizations = orgs
-
-	// Iterate thru teams and check if already member; if not then
-	// add membership to store
-	for _, team := range teams {
-		if !inTeamList(u.teams, team.ID()) {
-			if err := store.AddTeamMembership(ctx, u.ID(), team.ID()); err != nil {
-				if errors.Is(err, otf.ErrResourceAlreadyExists) {
-					// ignore conflicts - sometimes the caller may provide
-					// duplicate teams
-					continue
-				} else {
-					return err
-				}
-			}
-		}
-	}
-	// Iterate thru receiver's teams and check if in the given teams; if
-	// not then remove membership from store
-	for _, team := range u.teams {
-		if !inTeamList(teams, team.ID()) {
-			if err := store.RemoveTeamMembership(ctx, u.ID(), team.ID()); err != nil {
-				return err
-			}
-		}
-	}
-	u.teams = teams
-
-	return nil
-}
-
 // CanLock always returns an error because nothing can replace a user lock
 func (u *User) CanLock(requestor otf.Identity) error {
 	return otf.ErrWorkspaceAlreadyLocked
@@ -225,85 +173,8 @@ func (u *User) CanUnlock(requestor otf.Identity, force bool) error {
 	return otf.ErrWorkspaceUnlockDenied
 }
 
-// UserService provides methods to interact with user accounts and their
-// sessions.
-type UserService interface {
-	// CreateUser creates a user with the given username.
-	CreateUser(ctx context.Context, username string) (*User, error)
-	// EnsureCreatedUser retrieves a user; if they don't exist they'll be
-	// created.
-	EnsureCreatedUser(ctx context.Context, username string) (*User, error)
-	// Get retrieves a user according to the spec.
-	GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	// SyncUserMemberships makes the user a member of the specified organizations
-	// and teams and removes any existing memberships not specified.
-	SyncUserMemberships(ctx context.Context, user *User, orgs []string, teams []*Team) (*User, error)
-	// ListUsers lists users.
-	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
-}
-
-// UserStore is a persistence store for user accounts.
-type UserStore interface {
-	CreateUser(ctx context.Context, user *User) error
-	GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	// ListUsers lists users.
-	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
-	DeleteUser(ctx context.Context, spec UserSpec) error
-	// AddOrganizationMembership adds a user as a member of an organization
-	AddOrganizationMembership(ctx context.Context, id, orgID string) error
-	// RemoveOrganizationMembership removes a user as a member of an
-	// organization
-	RemoveOrganizationMembership(ctx context.Context, id, orgID string) error
-	// AddTeamMembership adds a user as a member of a team
-	AddTeamMembership(ctx context.Context, id, teamID string) error
-	// RemoveTeamMembership removes a user as a member of an
-	// team
-	RemoveTeamMembership(ctx context.Context, id, teamID string) error
-}
-
 // UserListOptions are options for the ListUsers endpoint.
 type UserListOptions struct {
 	Organization *string
 	TeamName     *string
-}
-
-type UserSpec struct {
-	UserID              *string
-	Username            *string
-	SessionToken        *string
-	AuthenticationToken *string
-}
-
-func (s UserSpec) MarshalLog() any {
-	if s.AuthenticationToken != nil {
-		s.AuthenticationToken = otf.String("*****")
-	}
-	return s
-}
-
-func NewUser(username string, opts ...NewUserOption) *User {
-	user := User{
-		id:        otf.NewID("user"),
-		username:  username,
-		createdAt: otf.CurrentTimestamp(),
-		updatedAt: otf.CurrentTimestamp(),
-	}
-	for _, o := range opts {
-		o(&user)
-	}
-	return &user
-}
-
-type NewUserOption func(*User)
-
-func WithOrganizationMemberships(organizations ...string) NewUserOption {
-	return func(user *User) {
-		user.organizations = organizations
-	}
-}
-
-func WithTeamMemberships(memberships ...*Team) NewUserOption {
-	return func(user *User) {
-		user.teams = memberships
-	}
 }

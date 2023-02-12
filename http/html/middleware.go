@@ -1,14 +1,37 @@
-package http
+package html
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-// setOrganization ensures the session's organization reflects the most recently
+// unexported key type prevents collisions
+type ctxKey int
+
+const (
+	organizationCtxKey ctxKey = iota
+	// organizationCookie stores the current organization for the session
+	organizationCookie = "organization"
+)
+
+func newOrganizationContext(ctx context.Context, organizationName string) context.Context {
+	return context.WithValue(ctx, organizationCtxKey, organizationName)
+}
+
+func organizationFromContext(ctx context.Context) (string, error) {
+	name, ok := ctx.Value(organizationCtxKey).(string)
+	if !ok {
+		return "", fmt.Errorf("no organization in context")
+	}
+	return name, nil
+}
+
+// SetOrganization ensures the session's organization reflects the most recently
 // visited organization route.
-func setOrganization(next http.Handler) http.Handler {
+func SetOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		current, ok := mux.Vars(r)["organization_name"]
 		cookie, err := r.Cookie(organizationCookie)

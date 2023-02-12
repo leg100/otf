@@ -1,4 +1,4 @@
-package session
+package auth
 
 import (
 	"context"
@@ -8,9 +8,25 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type fakeWeb struct {
+	app *fakeApp
+	otf.Renderer
+}
+
+func newFakeWeb(t *testing.T, app *fakeApp) *web {
+	renderer, err := html.NewViewEngine(true)
+	require.NoError(t, err)
+	return &web{
+		app:      app,
+		Renderer: renderer,
+	}
+}
 
 func TestSessionHandlers(t *testing.T) {
 	user := otf.NewTestUser(t)
@@ -23,7 +39,7 @@ func TestSessionHandlers(t *testing.T) {
 		// add user and active session to request
 		r := httptest.NewRequest("GET", "/sessions", nil)
 		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
-		r = r.WithContext(addToContext(r.Context(), active))
+		r = r.WithContext(addSessionCtx(r.Context(), active))
 
 		w := httptest.NewRecorder()
 		app.sessionsHandler(w, r)
@@ -95,4 +111,30 @@ func (f *fakeSessionHandlerApp) ListSessions(context.Context, string) ([]*otf.Se
 
 func (f *fakeSessionHandlerApp) DeleteSession(context.Context, string) error {
 	return nil
+}
+
+// TestLoginHandler tests the login page handler, testing for the presence of a
+// login button for each configured cloud.
+func TestLoginHandler(t *testing.T) {
+	app := newFakeWebApp(t, nil, withAuthenticators([]*authenticator{
+		{
+			oauthClient: &OAuthClient{
+				cloudConfig: cloud.Config{Name: "cloud1"},
+			},
+		},
+		{
+			oauthClient: &OAuthClient{
+				cloudConfig: cloud.Config{Name: "cloud2"},
+			},
+		},
+	}))
+
+	r := httptest.NewRequest("GET", "/?", nil)
+	w := httptest.NewRecorder()
+	app.loginHandler(w, r)
+	body := w.Body.String()
+	if assert.Equal(t, 200, w.Code) {
+		assert.Contains(t, body, "Login with Cloud1")
+		assert.Contains(t, body, "Login with Cloud2")
+	}
 }

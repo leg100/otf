@@ -5,10 +5,8 @@ package http
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/gorilla/schema"
 )
@@ -71,19 +69,4 @@ func SanitizeAddress(address string) (string, error) {
 	}
 	u.Scheme = "https"
 	return u.String(), nil
-}
-
-// GetClientIP gets the client's IP address
-func GetClientIP(r *http.Request) (string, error) {
-	// reverse proxy adds client IP to an HTTP header, and each successive proxy
-	// adds a client IP, so we want the leftmost IP.
-	if hdr := r.Header.Get("X-Forwarded-For"); hdr != "" {
-		first, _, _ := strings.Cut(hdr, ",")
-		addr := strings.TrimSpace(first)
-		if isIP := net.ParseIP(addr); isIP != nil {
-			return addr, nil
-		}
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	return host, err
 }

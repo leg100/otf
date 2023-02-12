@@ -27,13 +27,13 @@ type synchroniser struct {
 	app
 }
 
-func (s *synchroniser) sync(ctx context.Context, from cloud.User) error {
+func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error) {
 	// ensure user exists
-	user, err := s.getUser(ctx, UserSpec{Username: otf.String(from.Name)})
+	user, err := s.getUser(ctx, otf.UserSpec{Username: otf.String(from.Name)})
 	if err == otf.ErrResourceNotFound {
 		user, err = s.app.createUser(ctx, from.Name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -46,10 +46,10 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) error {
 				Name: otf.String(want),
 			})
 			if err != nil {
-				return err
+				return nil, err
 			}
 		} else if err != nil {
-			return err
+			return nil, err
 		}
 		organizations = append(organizations, got.Name())
 	}
@@ -61,7 +61,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) error {
 			Name: otf.String(user.username),
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	organizations = append(organizations, personal.Name())
@@ -76,7 +76,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) error {
 				Organization: want.Organization,
 			})
 		} else if err != nil {
-			return err
+			return nil, err
 		}
 		teams = append(teams, got)
 	}
@@ -89,19 +89,19 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) error {
 			Organization: personal.Name(),
 		})
 	} else if err != nil {
-		return err
+		return nil, err
 	}
 	teams = append(teams, owners)
 
 	// Add/remove memberships
 	if err = s.syncOrganizations(ctx, user, organizations); err != nil {
-		return err
+		return nil, err
 	}
 	if err = s.syncTeams(ctx, user, teams); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return user, nil
 }
 
 // syncOrganizations updates a user's organization memberships to match those in wanted
@@ -147,7 +147,6 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 					return err
 				}
 			}
-			s.V(0).Info("added team membership", "user", u, "org", want.organization, "team", want.name)
 		}
 	}
 
@@ -157,7 +156,6 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 			if err := s.removeTeamMembership(ctx, u.ID(), team.ID()); err != nil {
 				return err
 			}
-			s.V(0).Info("removed team membership", "user", u, "org", team.organization, "team", team.name)
 		}
 	}
 

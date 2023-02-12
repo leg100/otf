@@ -50,7 +50,7 @@ func TestAuthenticator(t *testing.T) {
 	}
 
 	t.Run("response_handler", func(t *testing.T) {
-		authenticator := &Authenticator{
+		authenticator := &authenticator{
 			Application: &fakeAuthenticatorApp{},
 			oauthClient: &fakeOAuthClient{user: &cuser},
 		}
@@ -73,7 +73,7 @@ func TestAuthenticator(t *testing.T) {
 	})
 
 	t.Run("synchronise", func(t *testing.T) {
-		authenticator := &Authenticator{
+		authenticator := &authenticator{
 			Application: &fakeAuthenticatorApp{},
 		}
 
@@ -116,7 +116,7 @@ func (f *fakeAuthenticatorApp) EnsureCreatedOrganization(ctx context.Context, op
 }
 
 func (f *fakeAuthenticatorApp) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []string, teams []*otf.Team) (*otf.User, error) {
-	err := user.SyncMemberships(ctx, &fakeUserStore{}, orgs, teams)
+	err := user.SyncMemberships(ctx, &fakeUserApp{}, orgs, teams)
 	return user, err
 }
 
@@ -128,22 +128,6 @@ func (f *fakeAuthenticatorApp) EnsureCreatedTeam(ctx context.Context, opts otf.C
 		return nil, err
 	}
 	return otf.NewTeam(opts.Name, org), nil
-}
-
-type fakeUserStore struct {
-	otf.UserStore
-}
-
-func (f *fakeUserStore) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
-	return nil
-}
-
-func (f *fakeUserStore) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
-	return nil
-}
-func (f *fakeUserStore) AddTeamMembership(ctx context.Context, id, teamID string) error { return nil }
-func (f *fakeUserStore) RemoveTeamMembership(ctx context.Context, id, teamID string) error {
-	return nil
 }
 
 type fakeOAuthClient struct {

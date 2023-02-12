@@ -1,4 +1,4 @@
-package http
+package html
 
 import (
 	"bytes"
@@ -65,7 +65,7 @@ func Test_SetOrganization(t *testing.T) {
 			}
 			// setup router and middleware under test
 			router := mux.NewRouter()
-			router.Use(setOrganization)
+			router.Use(SetOrganization)
 			router.HandleFunc("/organizations/{organization_name}", h)
 			router.HandleFunc("/non-organization-route", h)
 			// setup server

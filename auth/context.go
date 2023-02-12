@@ -27,14 +27,14 @@ func agentFromContext(ctx context.Context) (*agentToken, error) {
 	return agent, nil
 }
 
-func addToContext(ctx context.Context, token string) context.Context {
-	return context.WithValue(ctx, sessionCtxKey, token)
+func addSessionCtx(ctx context.Context, session *Session) context.Context {
+	return context.WithValue(ctx, sessionCtxKey, session)
 }
 
-func fromContext(ctx context.Context) (string, error) {
-	token, ok := ctx.Value(sessionCtxKey).(string)
+func getSessionCtx(ctx context.Context) (*Session, error) {
+	session, ok := ctx.Value(sessionCtxKey).(*Session)
 	if !ok {
-		return "", fmt.Errorf("no session in context")
+		return nil, fmt.Errorf("no session in context")
 	}
-	return token, nil
+	return session, nil
 }
