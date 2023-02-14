@@ -7,54 +7,35 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
-	"github.com/leg100/surl"
 )
 
 type app interface {
-	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	// CloneConfigurationVersion creates a new configuration version using the
 	// config tarball of an existing configuration version.
-	CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
-	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+	clone(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+
+	get(ctx context.Context, id string) (*ConfigurationVersion, error)
+	getLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
+	list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
 
 	// Upload handles verification and upload of the config tarball, updating
 	// the config version upon success or failure.
-	UploadConfig(ctx context.Context, id string, config []byte) error
+	upload(ctx context.Context, id string, config []byte) error
 
 	// Download retrieves the config tarball for the given config version ID.
-	DownloadConfig(ctx context.Context, id string) ([]byte, error)
+	download(ctx context.Context, id string) ([]byte, error)
 }
 
 type Application struct {
 	otf.Authorizer
 	logr.Logger
 
-	db    db
+	db    *db
 	cache otf.Cache
-	*handlers
 }
 
-func NewApplication(opts ApplicationOptions) *Application {
-	app := &Application{
-		Authorizer: opts.Authorizer,
-		db:         newPGDB(opts.Database),
-		Logger:     opts.Logger,
-	}
-	app.handlers = newHandlers(handlersOptions{app, opts.MaxUploadSize, opts.Signer})
-	return app
-}
-
-type ApplicationOptions struct {
-	otf.Authorizer
-	otf.Database
-	*surl.Signer
-	logr.Logger
-	MaxUploadSize int64
-}
-
-func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
+func (a *Application) create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -73,30 +54,30 @@ func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceI
 	return cv, nil
 }
 
-func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
-	cv, err := a.GetConfigurationVersion(ctx, cvID)
+func (a *Application) clone(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+	cv, err := a.get(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err = a.CreateConfigurationVersion(ctx, cv.WorkspaceID(), opts)
+	cv, err = a.create(ctx, cv.WorkspaceID(), opts)
 	if err != nil {
 		return nil, err
 	}
 
-	config, err := a.DownloadConfig(ctx, cvID)
+	config, err := a.download(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := a.UploadConfig(ctx, cv.ID(), config); err != nil {
+	if err := a.upload(ctx, cv.ID(), config); err != nil {
 		return nil, err
 	}
 
 	return cv, nil
 }
 
-func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
+func (a *Application) list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -111,7 +92,7 @@ func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID
 	return cvl, nil
 }
 
-func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) (otf.ConfigurationVersion, error) {
+func (a *Application) get(ctx context.Context, cvID string) (*ConfigurationVersion, error) {
 	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
@@ -126,7 +107,7 @@ func (a *Application) GetConfigurationVersion(ctx context.Context, cvID string) 
 	return cv, nil
 }
 
-func (a *Application) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (otf.ConfigurationVersion, error) {
+func (a *Application) getLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -144,7 +125,7 @@ func (a *Application) GetLatestConfigurationVersion(ctx context.Context, workspa
 // UploadConfig saves a configuration tarball to the db
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (a *Application) UploadConfig(ctx context.Context, cvID string, config []byte) error {
+func (a *Application) upload(ctx context.Context, cvID string, config []byte) error {
 	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
 		return cv.Upload(ctx, config, uploader)
 	})
@@ -159,7 +140,7 @@ func (a *Application) UploadConfig(ctx context.Context, cvID string, config []by
 	return nil
 }
 
-func (a *Application) DownloadConfig(ctx context.Context, cvID string) ([]byte, error) {
+func (a *Application) download(ctx context.Context, cvID string) ([]byte, error) {
 	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err

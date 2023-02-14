@@ -14,7 +14,7 @@ type Service struct {
 	web *web
 }
 
-func NewService(ctx context.Context, opts Options) *Service {
+func NewService(opts Options) *Service {
 	app := &app{
 		Authorizer: opts.Authorizer,
 		Logger:     opts.Logger,

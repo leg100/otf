@@ -132,38 +132,6 @@ type ConfigurationVersionStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-type ConfigurationVersionService interface {
-	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-	// CloneConfigurationVersion creates a new configuration version using the
-	// config tarball of an existing configuration version.
-	CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
-	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-
-	// Upload handles verification and upload of the config tarball, updating
-	// the config version upon success or failure.
-	UploadConfig(ctx context.Context, id string, config []byte) error
-
-	// Download retrieves the config tarball for the given config version ID.
-	DownloadConfig(ctx context.Context, id string) ([]byte, error)
-}
-
-type ConfigurationVersionStore interface {
-	// Creates a config version.
-	CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error
-	// Get retrieves a config version.
-	GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
-	// GetConfig retrieves the config tarball for the given config version ID.
-	GetConfig(ctx context.Context, id string) ([]byte, error)
-	// List lists config versions for the given workspace.
-	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	// Delete deletes the config version from the store
-	DeleteConfigurationVersion(ctx context.Context, id string) error
-	// Upload uploads a config tarball for the given config version ID
-	UploadConfigurationVersion(ctx context.Context, id string, fn func(cv *ConfigurationVersion, uploader ConfigUploader) error) error
-}
-
 // ConfigUploader uploads a config
 type ConfigUploader interface {
 	// Upload uploads the config tarball and returns a status indicating success

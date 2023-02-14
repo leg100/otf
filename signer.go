@@ -1,8 +1,10 @@
 package otf
 
 import (
+	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/surl"
 )
 
@@ -24,4 +26,17 @@ type Signer interface {
 // Verifier verifies signed URLs
 type Verifier interface {
 	Verify(string) error
+}
+
+// VerifySignedURL is middleware that verifies signed URLs
+func VerifySignedURL(v Verifier) mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := v.Verify(r.URL.String()); err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

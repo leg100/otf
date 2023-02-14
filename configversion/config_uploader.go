@@ -7,11 +7,11 @@ import (
 )
 
 type cvUploader struct {
-	db db
+	db *db
 	id string
 }
 
-func newConfigUploader(db db, id string) *cvUploader {
+func newConfigUploader(db *db, id string) *cvUploader {
 	return &cvUploader{
 		db: db,
 		id: id,

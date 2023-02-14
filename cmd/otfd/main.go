@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
@@ -73,7 +74,9 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&d.address, "address", DefaultAddress, "Listening address")
 	cmd.Flags().StringVar(&d.database, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().StringVar(&d.hostname, "hostname", "", "User-facing hostname for otf")
-	cmd.Flags().StringVar(&d.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
+	cmd.Flags().StringVar(&d.siteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
+	cmd.Flags().StringVar(&d.secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
+	cmd.Flags().Int64Var(&d.maxConfigSize, "max-config-size", configversion.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -82,7 +85,8 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 }
 
 type daemon struct {
-	address, hostname, database, siteToken string
+	address, hostname, database, siteToken, secret string
+	maxConfigSize                                  int64
 
 	*http.ServerConfig
 	*inmem.CacheConfig
@@ -144,17 +148,32 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up pub sub broker")
 	}
 
+	// Setup url signer
+	signer := otf.NewSigner(d.secret)
+
 	// Setup workspace database
 	workspaceDB := workspace.NewDB(db)
 
 	// Setup authorizer
 	authorizer := otf.NewAuthorizer(logger, workspaceDB)
 
-	orgService := organization.NewService(ctx, organization.Options{})
+	orgService := organization.NewService(organization.Options{
+		Authorizer: authorizer,
+	})
+
+	configService := configversion.NewService(configversion.Options{
+		Authorizer:    authorizer,
+		Cache:         cache,
+		Database:      db,
+		Signer:        signer,
+		Logger:        logger,
+		MaxUploadSize: d.maxConfigSize,
+	})
 
 	authService, err := auth.NewService(ctx, auth.Options{
-		Configs:   d.OAuthConfigs,
-		SiteToken: d.siteToken,
+		Authorizer: authorizer,
+		Configs:    d.OAuthConfigs,
+		SiteToken:  d.siteToken,
 	})
 
 	stateService := state.NewService(state.ServiceOptions{
@@ -196,8 +215,8 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Renderer:         renderer,
 	})
 
-	// Setup http server and web app
-	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService, registrySessionService)
+	// Setup and start http server
+	server, err := http.NewServer(logger, *d.ServerConfig, stateService, variableService)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
@@ -213,13 +232,8 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 
 	d.ApplicationOptions.ServerConfig = d.ServerConfig
-	d.ApplicationOptions.Application = app
-	d.ApplicationOptions.Router = server.Router
 	d.ApplicationOptions.CloudConfigs = d.OAuthConfigs
 	d.ApplicationOptions.VariableService = variableService
-	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
-		return err
-	}
 
 	// Setup client app for use by agent
 	client := struct {
@@ -256,7 +270,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Run pubsub broker
-	g.Go(func() error { return broker.Start(ctx) })
+	g.Go(func() error { return hub.Start(ctx) })
 
 	// Run scheduler - if there is another scheduler running already then
 	// this'll wait until the other scheduler exits.
@@ -316,8 +330,6 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
-	flags.StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
-	flags.Int64Var(&cfg.MaxConfigSize, "max-config-size", otf.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
 
 	return &cfg
 }
