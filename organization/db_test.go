@@ -11,32 +11,48 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOrganization_Create(t *testing.T) {
+func newTestDB(t *testing.T) *pgdb {
+	return newDB(sql.NewTestDB(t))
+}
+
+func createTestOrganization(t *testing.T, db *pgdb) *Organization {
 	ctx := context.Background()
-	db := sql.NewTestDB(t)
-	orgDB := newDB(db)
-	org := NewTestOrganization(t)
+	org := newTestOrganization(t)
+	err := db.create(ctx, org)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		orgDB.delete(ctx, org.Name())
+		db.delete(ctx, org.name)
+	})
+	return org
+}
+
+func TestOrganization_Create(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	org := newTestOrganization(t)
+
+	t.Cleanup(func() {
+		db.delete(ctx, org.Name())
 	})
 
-	err := orgDB.create(ctx, org)
+	err := db.create(ctx, org)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		err := db.CreateOrganization(context.Background(), org)
+		err := db.create(ctx, org)
 		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
 
 func TestOrganization_Update(t *testing.T) {
-	db := sql.NewTestDB(t)
-	org := sql.CreateTestOrganization(t, db)
+	ctx := context.Background()
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
 
 	newName := uuid.NewString()
-	org, err := db.UpdateOrganization(context.Background(), org.Name(), func(org *otf.Organization) error {
-		otf.UpdateOrganizationFromOpts(org, otf.OrganizationUpdateOptions{Name: &newName})
+	org, err := db.update(ctx, org.Name(), func(org *Organization) error {
+		org.Update(updateOptions{Name: &newName})
 		return nil
 	})
 	require.NoError(t, err)
@@ -46,11 +62,11 @@ func TestOrganization_Update(t *testing.T) {
 
 func TestOrganization_Get(t *testing.T) {
 	ctx := context.Background()
-	db := sql.NewTestDB(t)
-	org := sql.CreateTestOrganization(t, db)
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
 
 	t.Run("by name", func(t *testing.T) {
-		got, err := db.GetOrganization(ctx, org.Name())
+		got, err := db.get(ctx, org.Name())
 		require.NoError(t, err)
 
 		assert.Equal(t, org.Name(), got.Name())
@@ -58,7 +74,7 @@ func TestOrganization_Get(t *testing.T) {
 	})
 
 	t.Run("by id", func(t *testing.T) {
-		got, err := db.GetOrganizationByID(ctx, org.ID())
+		got, err := db.getByID(ctx, org.ID())
 		require.NoError(t, err)
 
 		assert.Equal(t, org.Name(), got.Name())
@@ -67,10 +83,10 @@ func TestOrganization_Get(t *testing.T) {
 }
 
 func TestOrganization_List(t *testing.T) {
-	db := sql.NewTestDB(t)
-	org := sql.CreateTestOrganization(t, db)
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
 
-	ol, err := db.ListOrganizations(context.Background(), otf.OrganizationListOptions{})
+	ol, err := db.list(context.Background(), listOptions{})
 	require.NoError(t, err)
 
 	assert.Contains(t, ol.Items, org)
@@ -78,26 +94,26 @@ func TestOrganization_List(t *testing.T) {
 
 func TestOrganization_ListWithPagination(t *testing.T) {
 	ctx := context.Background()
-	db := sql.NewTestDB(t)
-	_ = sql.CreateTestOrganization(t, db)
-	_ = sql.CreateTestOrganization(t, db)
+	db := newTestDB(t)
+	_ = createTestOrganization(t, db)
+	_ = createTestOrganization(t, db)
 
 	t.Run("page one, two items per page", func(t *testing.T) {
-		orgs, err := db.ListOrganizations(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+		orgs, err := db.list(ctx, listOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(orgs.Items))
 	})
 
 	t.Run("page one, one item per page", func(t *testing.T) {
-		orgs, err := db.ListOrganizations(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+		orgs, err := db.list(ctx, listOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
 		require.NoError(t, err)
 
 		assert.Equal(t, 1, len(orgs.Items))
 	})
 
 	t.Run("page two, one item per page", func(t *testing.T) {
-		orgs, err := db.ListOrganizations(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+		orgs, err := db.list(ctx, listOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
 		require.NoError(t, err)
 
 		assert.Equal(t, 1, len(orgs.Items))
@@ -106,10 +122,10 @@ func TestOrganization_ListWithPagination(t *testing.T) {
 
 func TestListUserOrganizations(t *testing.T) {
 	ctx := context.Background()
-	db := sql.NewTestDB(t)
-	org1 := sql.CreateTestOrganization(t, db)
-	org2 := sql.CreateTestOrganization(t, db)
-	user := sql.CreateTestUser(t, db,
+	db := newTestDB(t)
+	org1 := createTestOrganization(t, db)
+	org2 := createTestOrganization(t, db)
+	user := auth.CreateTestUser(t, db,
 		otf.WithOrganizationMemberships(org1.Name(), org2.Name()))
 
 	got, err := db.ListOrganizationsByUser(ctx, user.ID())
@@ -121,21 +137,21 @@ func TestListUserOrganizations(t *testing.T) {
 
 func TestOrganization_Delete(t *testing.T) {
 	ctx := context.Background()
-	db := sql.NewTestDB(t)
-	org := sql.CreateTestOrganization(t, db)
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
 
-	require.NoError(t, db.DeleteOrganization(ctx, org.Name()))
+	require.NoError(t, db.delete(ctx, org.name))
 
-	_, err := db.GetOrganization(ctx, org.Name())
+	_, err := db.get(ctx, org.name)
 	assert.Equal(t, otf.ErrResourceNotFound, err)
 }
 
 func TestOrganization_DeleteError(t *testing.T) {
 	ctx := context.Background()
-	db := sql.NewTestDB(t)
-	_ = sql.CreateTestOrganization(t, db)
+	db := newTestDB(t)
+	_ = createTestOrganization(t, db)
 
-	err := db.DeleteOrganization(ctx, "non-existent-org")
+	err := db.delete(ctx, "non-existent-org")
 
 	assert.Equal(t, otf.ErrResourceNotFound, err)
 }

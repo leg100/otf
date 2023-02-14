@@ -70,8 +70,6 @@ type Team interface {
 }
 
 type TeamService interface {
-	EnsureCreatedTeam(ctx context.Context, opts CreateTeamOptions) (Team, error)
-	// Get retrieves a team with the given ID
 	GetTeam(ctx context.Context, teamID string) (Team, error)
 }
 

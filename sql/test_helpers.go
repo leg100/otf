@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/inmem"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -25,10 +24,8 @@ func NewTestDB(t *testing.T) *DB {
 	require.Equal(t, "postgres", u.Scheme)
 
 	opts := Options{
-		Logger:       logr.Discard(),
-		ConnString:   u.String(),
-		Cache:        nil,
-		CloudService: inmem.NewTestCloudService(),
+		Logger:     logr.Discard(),
+		ConnString: u.String(),
 	}
 
 	db, err := New(context.Background(), opts)

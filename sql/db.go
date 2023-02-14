@@ -4,14 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -55,11 +53,8 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 
 // Options for constructing a DB
 type Options struct {
-	Logger          logr.Logger
-	ConnString      string
-	Cache           otf.Cache
-	CleanupInterval time.Duration
-	CloudService    cloud.Service
+	Logger     logr.Logger
+	ConnString string
 }
 
 func (db *DB) Pool() (*pgxpool.Pool, error) {

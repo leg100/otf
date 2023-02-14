@@ -15,7 +15,7 @@ type Application struct {
 	logr.Logger
 	otf.WorkspaceService
 
-	*handlers
+	*api
 	*htmlApp
 }
 
@@ -35,7 +35,7 @@ func NewApplication(opts ApplicationOptions) *Application {
 	// the SSE protocol
 	srv.EncodeBase64 = true
 
-	app.handlers = &handlers{
+	app.api = &api{
 		Application:  app,
 		eventsServer: srv,
 	}

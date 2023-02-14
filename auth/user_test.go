@@ -7,7 +7,7 @@ import (
 )
 
 func NewTestUser(t *testing.T, opts ...newUserOption) *User {
-	user := newUser(uuid.NewString())
+	user := NewUser(uuid.NewString())
 	for _, fn := range opts {
 		fn(user)
 	}

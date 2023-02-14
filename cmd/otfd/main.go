@@ -10,13 +10,14 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
-	"github.com/leg100/otf/registry"
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
@@ -72,6 +73,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&d.address, "address", DefaultAddress, "Listening address")
 	cmd.Flags().StringVar(&d.database, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().StringVar(&d.hostname, "hostname", "", "User-facing hostname for otf")
+	cmd.Flags().StringVar(&d.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -80,7 +82,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 }
 
 type daemon struct {
-	address, hostname, database string
+	address, hostname, database, siteToken string
 
 	*http.ServerConfig
 	*inmem.CacheConfig
@@ -124,34 +126,36 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// give other components unlimited access too
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
 
-	// Setup database(s)
+	// Setup database connection
 	db, err := sql.New(ctx, sql.Options{
-		Logger:       logger,
-		ConnString:   d.database,
-		Cache:        cache,
-		CloudService: cloudService,
+		Logger:     logger,
+		ConnString: d.database,
 	})
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	// Setup workspace database
-	workspaceDB := workspace.NewDB(db)
-
 	// Setup pub sub hub
 	hub, err := pubsub.NewHub(logger, pubsub.HubConfig{
-		WorkspaceDB: workspaceDB,
+		PoolDB: db,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up pub sub broker")
 	}
 
+	// Setup workspace database
+	workspaceDB := workspace.NewDB(db)
+
 	// Setup authorizer
 	authorizer := otf.NewAuthorizer(logger, workspaceDB)
 
-	// Setup API token middleware
-	http.AuthenticateToken
+	orgService := organization.NewService(ctx, organization.Options{})
+
+	authService, err := auth.NewService(ctx, auth.Options{
+		Configs:   d.OAuthConfigs,
+		SiteToken: d.siteToken,
+	})
 
 	stateService := state.NewService(state.ServiceOptions{
 		Authorizer: authorizer,
@@ -190,12 +194,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Database:         db,
 		WorkspaceService: app.WorkspaceService,
 		Renderer:         renderer,
-	})
-
-	registrySessionService := registry.NewApplication(ctx, registry.ApplicationOptions{
-		Authorizer: authorizer,
-		Logger:     logger,
-		Database:   db,
 	})
 
 	// Setup http server and web app
@@ -318,7 +316,6 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
-	flags.StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 	flags.StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
 	flags.Int64Var(&cfg.MaxConfigSize, "max-config-size", otf.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
 

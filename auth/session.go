@@ -9,7 +9,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/paths"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 const (

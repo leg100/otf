@@ -9,33 +9,15 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// db is a database of organizations
-type db interface {
-	otf.Database
-
-	create(ctx context.Context, org *Organization) error
-	get(ctx context.Context, name string) (*Organization, error)
-	getByID(ctx context.Context, id string) (*Organization, error)
-	list(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
-	listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*organizationList, error)
-	update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
-	delete(ctx context.Context, name string) error
-}
-
 // pgdb is a database of organizations on postgres
 type pgdb struct {
 	otf.Database // provides access to generated SQL queries
-}
-
-func NewDB(db otf.Database) *pgdb {
-	return newDB(db)
 }
 
 func newDB(db otf.Database) *pgdb {
 	return &pgdb{db}
 }
 
-// CreateOrganization persists an Organization to the DB.
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              sql.String(org.ID()),
@@ -80,7 +62,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 	return org, err
 }
 
-func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*organizationList, error) {
+func (db *pgdb) list(ctx context.Context, opts listOptions) (*organizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
@@ -108,7 +90,7 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*organi
 	}, nil
 }
 
-func (db *pgdb) listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*organizationList, error) {
+func (db *pgdb) listByUser(ctx context.Context, userID string, opts listOptions) (*organizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsByUserIDBatch(batch, pggen.FindOrganizationsByUserIDParams{

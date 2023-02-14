@@ -18,7 +18,7 @@ type htmlApp struct {
 	app Application
 }
 
-func (app *htmlApp) AddHTMLHandlers(r *mux.Router) {
+func (app *htmlApp) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET")
 	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST")
 	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET")

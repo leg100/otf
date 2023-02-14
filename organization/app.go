@@ -9,65 +9,42 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// appService is the application service for organizations
-type appService interface {
-	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (string, error)
-	EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (string, error)
-	GetOrganization(ctx context.Context, name string) (*Organization, error)
-	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*organizationList, error)
-	UpdateOrganization(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error)
-	DeleteOrganization(ctx context.Context, name string) error
-	GetEntitlements(ctx context.Context, organization string) (*Entitlements, error)
-
-	create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
+type application interface {
+	create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error)
+	get(ctx context.Context, name string) (*Organization, error)
+	list(ctx context.Context, opts listOptions) (*organizationList, error)
+	update(ctx context.Context, name string, opts *updateOptions) (*Organization, error)
+	delete(ctx context.Context, name string) error
+	getEntitlements(ctx context.Context, organization string) (*Entitlements, error)
 }
 
-// app is the implementation of appService
+// app is the implementation of application
 type app struct {
 	otf.Authorizer
 	logr.Logger
 	otf.PubSubService
 
-	db
+	db *pgdb
 }
 
-// CreateOrganization creates an organization. Needs admin permission.
-func (a *app) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (string, error) {
-	org, err := a.createOrganization(ctx, opts)
-	if err != nil {
-		return "", err
+func NewApplication(ctx context.Context, opts ApplicationOptions) (*app, error) {
+	app := &app{
+		Authorizer: opts.Authorizer,
+		Logger:     opts.Logger,
+		db:         newDB(opts.DB),
 	}
-	return org.Name(), nil
+
+	return app, nil
 }
 
-// EnsureCreatedOrganization idempotently creates an organization. Needs admin
-// permission.
-//
-// TODO: merge this into CreatedOrganization and add an option to toggle
-// idempotency
-func (a *app) EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (string, error) {
-	subject, err := a.CanAccessSite(ctx, rbac.GetOrganizationAction)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = a.db.get(ctx, *opts.Name)
-	if err == nil {
-		return "", nil
-	}
-
-	if err != otf.ErrResourceNotFound {
-		a.Error(err, "retrieving organization", "name", *opts.Name, "subject", subject)
-		return "", err
-	}
-
-	// org not found
-
-	return a.CreateOrganization(ctx, opts)
+type ApplicationOptions struct {
+	otf.Authorizer
+	otf.DB
+	otf.Renderer
+	logr.Logger
 }
 
-// createOrganization creates an organization. Needs admin permission.
-func (a *app) createOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+func (a *app) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
 	subject, err := a.CanAccessSite(ctx, rbac.CreateOrganizationAction)
 	if err != nil {
 		return nil, err
@@ -90,8 +67,7 @@ func (a *app) createOrganization(ctx context.Context, opts OrganizationCreateOpt
 	return org, nil
 }
 
-// GetOrganization retrieves an organization by name.
-func (a *app) GetOrganization(ctx context.Context, name string) (*Organization, error) {
+func (a *app) get(ctx context.Context, name string) (*Organization, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -108,9 +84,7 @@ func (a *app) GetOrganization(ctx context.Context, name string) (*Organization, 
 	return org, nil
 }
 
-// ListOrganizations lists organizations. If the caller is a normal user then
-// only list their organizations; otherwise list all.
-func (a *app) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*organizationList, error) {
+func (a *app) list(ctx context.Context, opts listOptions) (*organizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -121,7 +95,7 @@ func (a *app) ListOrganizations(ctx context.Context, opts OrganizationListOption
 	return a.db.list(ctx, opts)
 }
 
-func (a *app) UpdateOrganization(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error) {
+func (a *app) update(ctx context.Context, name string, opts *updateOptions) (*Organization, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -140,7 +114,7 @@ func (a *app) UpdateOrganization(ctx context.Context, name string, opts *Organiz
 	return org, nil
 }
 
-func (a *app) DeleteOrganization(ctx context.Context, name string) error {
+func (a *app) delete(ctx context.Context, name string) error {
 	subject, err := a.CanAccessOrganization(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
 		return err
@@ -156,13 +130,13 @@ func (a *app) DeleteOrganization(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *app) GetEntitlements(ctx context.Context, organization string) (*Entitlements, error) {
+func (a *app) getEntitlements(ctx context.Context, organization string) (*Entitlements, error) {
 	_, err := a.CanAccessOrganization(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.GetOrganization(ctx, organization)
+	org, err := a.get(ctx, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +145,7 @@ func (a *app) GetEntitlements(ctx context.Context, organization string) (*Entitl
 
 // newOrganizationList constructs a paginated OrganizationList given the list
 // options and a complete list of organizations.
-func newOrganizationList(opts OrganizationListOptions, orgs []*Organization) *organizationList {
+func newOrganizationList(opts listOptions, orgs []*Organization) *organizationList {
 	low := opts.GetOffset()
 	if low > len(orgs) {
 		low = len(orgs)

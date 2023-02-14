@@ -1,6 +1,7 @@
 package organization
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -9,11 +10,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type fakeApp struct {
+	orgs []*Organization
+
+	app
+}
+
+func (f *fakeApp) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
+	return NewOrganization(opts)
+}
+
+func (f *fakeApp) ListOrganizations(ctx context.Context, opts listOptions) (*organizationList, error) {
+	return &organizationList{
+		Items:      f.orgs,
+		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
+	}, nil
+}
+
+// TODO: do we need this?
+func (f *fakeApp) DeleteSession(context.Context, string) error {
+	return nil
+}
+
 func TestNewOrganizationList(t *testing.T) {
 	// create a dozen orgs
 	var orgs []*Organization
 	for i := 0; i < 12; i++ {
-		org, err := NewOrganization(OrganizationCreateOptions{
+		org, err := NewOrganization(otf.OrganizationCreateOptions{
 			Name: otf.String(strconv.Itoa(i)),
 		})
 		require.NoError(t, err)
@@ -49,7 +72,7 @@ func TestNewOrganizationList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := OrganizationListOptions{ListOptions: tt.opts}
+			opts := listOptions{ListOptions: tt.opts}
 			list := newOrganizationList(opts, orgs)
 			assert.Equal(t, tt.wantTotal, list.TotalCount())
 			assert.Equal(t, tt.wantItems, len(list.Items))

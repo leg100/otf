@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/organization"
 )
 
 // synchroniser synchronises a user account from the cloud to an a user account
@@ -22,7 +23,7 @@ import (
 // * team memberships are removed if they exist in OTF but not on the cloud
 type synchroniser struct {
 	logr.Logger
-	otf.OrganizationService
+	organization.Service
 
 	app
 }

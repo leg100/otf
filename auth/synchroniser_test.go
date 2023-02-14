@@ -21,8 +21,8 @@ func TestUserSyncMemberships(t *testing.T) {
 	team3 := newTeam(createTeamOptions{"team-2", org3.Name()})
 
 	user := NewTestUser(t,
-		withOrganizations(org1.Name(), org2.Name()),
-		withTeams(team1, team2))
+		WithOrganizations(org1.Name(), org2.Name()),
+		WithTeams(team1, team2))
 
 	wantOrgMemberships := []string{org2.Name(), org3.Name()}
 	wantTeamMemberships := []*Team{team2, team3}

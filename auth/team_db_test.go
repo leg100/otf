@@ -16,8 +16,8 @@ func TestTeam_ListTeamMembers(t *testing.T) {
 	team := CreateTestTeam(t, db, org.Name())
 
 	memberships := []newUserOption{
-		withOrganizations(org.Name()),
-		withTeams(team),
+		WithOrganizations(org.Name()),
+		WithTeams(team),
 	}
 	user1 := createTestUser(t, db, memberships...)
 	user2 := createTestUser(t, db, memberships...)

@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/paths"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (h *web) addTeamHandlers(r *mux.Router) {

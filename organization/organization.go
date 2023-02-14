@@ -1,8 +1,6 @@
 package organization
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
@@ -23,7 +21,7 @@ type Organization struct {
 	sessionTimeout  int
 }
 
-func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
+func NewOrganization(opts otf.OrganizationCreateOptions) (*Organization, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
@@ -52,7 +50,7 @@ func (org *Organization) Name() string         { return org.name }
 func (org *Organization) SessionRemember() int { return org.sessionRemember }
 func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
 
-func (org *Organization) Update(opts OrganizationUpdateOptions) error {
+func (org *Organization) Update(opts updateOptions) error {
 	if opts.Name != nil {
 		org.name = *opts.Name
 	}
@@ -94,35 +92,14 @@ func (l *organizationList) ToJSONAPI() any {
 	return obj
 }
 
-// OrganizationListOptions represents the options for listing organizations.
-type OrganizationListOptions struct {
+// listOptions represents the options for listing organizations.
+type listOptions struct {
 	otf.ListOptions
 }
 
-// OrganizationCreateOptions represents the options for creating an
-// organization. See dto.OrganizationCreateOptions for more details.
-type OrganizationCreateOptions struct {
-	Name            *string `schema:"name,required"`
-	SessionRemember *int
-	SessionTimeout  *int
-}
-
-func (opts *OrganizationCreateOptions) Validate() error {
-	if opts.Name == nil {
-		return errors.New("name required")
-	}
-	if *opts.Name == "" {
-		return errors.New("name cannot be empty")
-	}
-	if !otf.ValidStringID(opts.Name) {
-		return fmt.Errorf("invalid name: %s", *opts.Name)
-	}
-	return nil
-}
-
-// OrganizationUpdateOptions represents the options for updating an
-// organization. See dto.OrganizationUpdateOptions for more details.
-type OrganizationUpdateOptions struct {
+// updateOptions represents the options for updating an
+// organization. See dto.updateOptions for more details.
+type updateOptions struct {
 	Name            *string
 	SessionRemember *int
 	SessionTimeout  *int

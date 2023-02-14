@@ -2,6 +2,8 @@ package otf
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/leg100/otf/http/jsonapi"
 )
@@ -27,4 +29,17 @@ type OrganizationCreateOptions struct {
 	Name            *string `schema:"name,required"`
 	SessionRemember *int
 	SessionTimeout  *int
+}
+
+func (opts *OrganizationCreateOptions) Validate() error {
+	if opts.Name == nil {
+		return errors.New("name required")
+	}
+	if *opts.Name == "" {
+		return errors.New("name cannot be empty")
+	}
+	if !ValidStringID(opts.Name) {
+		return fmt.Errorf("invalid name: %s", *opts.Name)
+	}
+	return nil
 }

@@ -9,7 +9,9 @@ import (
 )
 
 type userApp interface {
+	CreateUser(ctx context.Context, username string) (*User, error)
 	GetUser(ctx context.Context, spec otf.UserSpec) (otf.User, error)
+	DeleteUser(ctx context.Context, username string) (*User, error)
 
 	createUser(ctx context.Context, username string) (*User, error)
 	listUsers(ctx context.Context, organization string) ([]*User, error)
@@ -36,7 +38,7 @@ func (a *Application) GetUser(ctx context.Context, spec otf.UserSpec) (otf.User,
 }
 
 func (a *Application) createUser(ctx context.Context, username string) (*User, error) {
-	user := newUser(username)
+	user := NewUser(username)
 
 	if err := a.db.CreateUser(ctx, user); err != nil {
 		a.Error(err, "creating user", "username", username)

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -24,27 +23,19 @@ var pid = uuid.New().String()
 // hub is a pubsub hub implemented using postgres' listen/notify
 type hub struct {
 	logr.Logger
-	otf.OrganizationDB
-	otf.WorkspaceDB
-	otf.RunDB
-	otf.LogsDB
 
 	channel string            // postgres notification channel name
 	pool    *pgxpool.Pool     // pool from which to acquire a dedicated connection to postgres
 	local   otf.PubSubService // local pub sub service to forward messages to
 	pid     string            // each pubsub maintains a unique identifier to distriguish messages it
 	// sends from messages other pubsub have sent
+	tables map[string]Getter // registered means of reassembling back into events
 }
 
 type HubConfig struct {
 	ChannelName *string
 	PID         *string
 	PoolDB      otf.DB
-
-	otf.OrganizationDB
-	otf.WorkspaceDB
-	otf.RunDB
-	otf.LogsDB
 }
 
 func NewHub(logger logr.Logger, cfg HubConfig) (*hub, error) {
@@ -52,24 +43,13 @@ func NewHub(logger logr.Logger, cfg HubConfig) (*hub, error) {
 	if cfg.PoolDB == nil {
 		return nil, errors.New("missing database connection pool")
 	}
-	if cfg.OrganizationDB == nil {
-		return nil, errors.New("missing organization database")
-	}
-	if cfg.WorkspaceDB == nil {
-		return nil, errors.New("missing workspace database")
-	}
-	if cfg.RunDB == nil {
-		return nil, errors.New("missing runs database")
-	}
-	if cfg.LogsDB == nil {
-		return nil, errors.New("missing logs database")
-	}
 
 	ps := &hub{
 		Logger:  logger.WithValues("component", "pubsub"),
 		pid:     pid,
 		channel: defaultChannel,
 		local:   newSpoke(),
+		tables:  make(map[string]Getter),
 	}
 
 	pool, err := cfg.PoolDB.Pool()
@@ -174,38 +154,24 @@ func (b *hub) Subscribe(ctx context.Context, name string) (<-chan otf.Event, err
 	return b.local.Subscribe(ctx, name)
 }
 
+type Getter interface {
+	GetByID(context.Context, string) (any, error)
+}
+
+// Register a means of reassembling a postgres message back into an otf event
+func (b *hub) Register(table string, getter Getter) {
+	b.tables[table] = getter
+}
+
 // reassemble a postgres message into an otf event
 func (b *hub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
-	var payload any
-	var err error
-
-	switch msg.Table {
-	case "organization":
-		payload, err = b.GetOrganizationByID(ctx, msg.ID)
-		if err != nil {
-			return otf.Event{}, err
-		}
-	case "run":
-		payload, err = b.GetRun(ctx, msg.ID)
-		if err != nil {
-			return otf.Event{}, err
-		}
-	case "workspace":
-		payload, err = b.GetWorkspace(ctx, msg.ID)
-		if err != nil {
-			return otf.Event{}, err
-		}
-	case "log":
-		id, err := strconv.Atoi(msg.ID)
-		if err != nil {
-			return otf.Event{}, fmt.Errorf("converting chunk ID from string to an integer: %w", err)
-		}
-		payload, err = b.GetChunkByID(ctx, id)
-		if err != nil {
-			return otf.Event{}, err
-		}
-	default:
-		return otf.Event{}, fmt.Errorf("unknown table specified in events notification: %s", msg.Table)
+	getter, ok := b.tables[msg.Table]
+	if !ok {
+		return otf.Event{}, fmt.Errorf("unregistered table: %s", msg.Table)
+	}
+	payload, err := getter.GetByID(ctx, msg.ID)
+	if err != nil {
+		return otf.Event{}, err
 	}
 	return otf.Event{
 		Type:    otf.EventType(fmt.Sprintf("%s_%s", msg.Table, msg.Action)),

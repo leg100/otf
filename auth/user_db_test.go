@@ -1,4 +1,4 @@
-package auth
+package auth_test
 
 import (
 	"context"
@@ -189,7 +189,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 	assert.NotContains(t, got.teams, team)
 }
 
-func createTestUser(t *testing.T, db db, opts ...newUserOption) *User {
+func createTestUser(t *testing.T, db db, opts ...NewUserOption) *User {
 	ctx := context.Background()
 	user := NewTestUser(t, opts...)
 
@@ -200,18 +200,4 @@ func createTestUser(t *testing.T, db db, opts ...newUserOption) *User {
 		db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	})
 	return user
-}
-
-type newUserOption func(*User)
-
-func withOrganizations(organizations ...string) newUserOption {
-	return func(user *User) {
-		user.organizations = organizations
-	}
-}
-
-func withTeams(memberships ...*Team) newUserOption {
-	return func(user *User) {
-		user.teams = memberships
-	}
 }

@@ -4,19 +4,20 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type handlers struct {
-	app appService
+type api struct {
+	app application
 }
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 //
-func (h *handlers) AddHandlers(r *mux.Router) {
+func (h *api) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations", h.ListOrganizations)
 	r.HandleFunc("/organizations", h.CreateOrganization)
 	r.HandleFunc("/organizations/{name}", h.GetOrganization)
@@ -25,13 +26,14 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{name}/entitlement-set", h.GetEntitlements)
 }
 
-func (h *handlers) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := jsonapi.OrganizationCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.app.create(r.Context(), OrganizationCreateOptions{
+
+	org, err := h.app.create(r.Context(), otf.OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -40,39 +42,43 @@ func (h *handlers) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	jsonapi.WriteResponse(w, r, org, jsonapi.WithCode(http.StatusCreated))
 }
 
-func (h *handlers) GetOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	org, err := h.app.GetOrganization(r.Context(), name)
+	org, err := h.app.get(r.Context(), name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	jsonapi.WriteResponse(w, r, org)
 }
 
-func (h *handlers) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts OrganizationListOptions
+func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
+	var opts listOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	list, err := h.app.ListOrganizations(r.Context(), opts)
+
+	list, err := h.app.list(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	jsonapi.WriteResponse(w, r, list)
 }
 
-func (h *handlers) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -84,7 +90,7 @@ func (h *handlers) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.app.UpdateOrganization(r.Context(), name, &OrganizationUpdateOptions{
+	org, err := h.app.update(r.Context(), name, &updateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -93,34 +99,37 @@ func (h *handlers) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	jsonapi.WriteResponse(w, r, org)
 }
 
-func (h *handlers) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
+func (h *api) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if err := h.app.DeleteOrganization(r.Context(), name); err != nil {
+	if err := h.app.delete(r.Context(), name); err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *handlers) GetEntitlements(w http.ResponseWriter, r *http.Request) {
+func (h *api) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	entitlements, err := h.app.GetEntitlements(r.Context(), name)
+	entitlements, err := h.app.getEntitlements(r.Context(), name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	jsonapi.WriteResponse(w, r, entitlements)
 }

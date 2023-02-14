@@ -20,12 +20,30 @@ type User struct {
 	teams         []*Team  // user belongs to many teams
 }
 
-func newUser(username string) *User {
-	return &User{
+func NewUser(username string, opts ...NewUserOption) *User {
+	user := &User{
 		id:        otf.NewID("user"),
 		username:  username,
 		createdAt: otf.CurrentTimestamp(),
 		updatedAt: otf.CurrentTimestamp(),
+	}
+	for _, fn := range opts {
+		fn(user)
+	}
+	return user
+}
+
+type NewUserOption func(*User)
+
+func WithOrganizations(organizations ...string) NewUserOption {
+	return func(user *User) {
+		user.organizations = organizations
+	}
+}
+
+func WithTeams(memberships ...*Team) NewUserOption {
+	return func(user *User) {
+		user.teams = memberships
 	}
 }
 

@@ -2,6 +2,7 @@ package logs
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -58,6 +59,15 @@ type ApplicationOptions struct {
 	otf.PubSubService
 	otf.Verifier
 	logr.Logger
+}
+
+// GetByID implements pubsub.Getter
+func (a *Application) GetByID(ctx context.Context, chunkID string) (PersistedChunk, error) {
+	id, err := strconv.Atoi(chunkID)
+	if err != nil {
+		return PersistedChunk{}, err
+	}
+	return a.db.GetChunkByID(ctx, id)
 }
 
 // GetChunk reads a chunk of logs for a phase.

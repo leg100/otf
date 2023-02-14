@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/paths"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 // web provides handlers for the web UI
@@ -37,7 +37,7 @@ func (h *web) addHandlers(r *mux.Router) {
 	h.addSessionHandlers(r)
 	h.addTeamHandlers(r)
 
-	r.HandleFunc("/organizations/{organization_name}/users", h.listUsers).Methods("GET")
+	r.HandleFunc("/organizations/{name}/users", h.listUsers).Methods("GET")
 
 	r.HandleFunc("/logout", h.logoutHandler).Methods("POST")
 	r.HandleFunc("/profile", h.profileHandler).Methods("POST")
@@ -47,13 +47,13 @@ func (h *web) addHandlers(r *mux.Router) {
 }
 
 func (h *web) listUsers(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	name, err := decode.Param("name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	users, err := h.app.listUsers(r.Context(), organization)
+	users, err := h.app.listUsers(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -10,18 +10,18 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-type handlers struct {
+type api struct {
 	Application
 	eventsServer *sse.Server
 }
 
-func (h *handlers) AddHandlers(r *mux.Router) {
-	r.HandleFunc(otf.DefaultWatchPath, h.watch).Methods("GET")
+func (a *api) AddHandlers(r *mux.Router) {
+	r.HandleFunc(otf.DefaultWatchPath, a.watch).Methods("GET")
 }
 
 // watch subscribes to a stream of otf events using the server-side-events
 // protocol
-func (h *handlers) watch(w http.ResponseWriter, r *http.Request) {
+func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 	// r3lab's sse server expects a query parameter with the stream ID
 	// but we don't want to bother the client with having to do that so we
 	// handle it here
@@ -30,9 +30,9 @@ func (h *handlers) watch(w http.ResponseWriter, r *http.Request) {
 	q.Add("stream", streamID)
 	r.URL.RawQuery = q.Encode()
 
-	h.eventsServer.CreateStream(streamID)
+	a.eventsServer.CreateStream(streamID)
 
-	events, err := h.Watch(r.Context(), otf.WatchOptions{})
+	events, err := a.Watch(r.Context(), otf.WatchOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
@@ -42,12 +42,12 @@ func (h *handlers) watch(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-r.Context().Done():
 				// client closed connection
-				h.eventsServer.RemoveStream(streamID)
+				a.eventsServer.RemoveStream(streamID)
 				return
 			case event, ok := <-events:
 				if !ok {
 					// server closes connection
-					h.eventsServer.RemoveStream(streamID)
+					a.eventsServer.RemoveStream(streamID)
 					return
 				}
 
@@ -58,17 +58,17 @@ func (h *handlers) watch(w http.ResponseWriter, r *http.Request) {
 				}
 
 				buf := bytes.Buffer{}
-				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, h}).ToJSONAPI()); err != nil {
-					h.Error(err, "marshalling event", "event", event.Type)
+				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, a}).ToJSONAPI()); err != nil {
+					a.Error(err, "marshalling event", "event", event.Type)
 					continue
 				}
 
-				h.eventsServer.Publish(streamID, &sse.Event{
+				a.eventsServer.Publish(streamID, &sse.Event{
 					Data:  buf.Bytes(),
 					Event: []byte(event.Type),
 				})
 			}
 		}
 	}()
-	h.eventsServer.ServeHTTP(w, r)
+	a.eventsServer.ServeHTTP(w, r)
 }

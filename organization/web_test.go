@@ -1,19 +1,33 @@
 package organization
 
 import (
-	"context"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type fakeWeb struct {
+	app *fakeApp
+	otf.Renderer
+}
+
+func newFakeWeb(t *testing.T, app *fakeApp) *web {
+	renderer, err := html.NewViewEngine(true)
+	require.NoError(t, err)
+	return &web{
+		app:      app,
+		Renderer: renderer,
+	}
+}
+
 func TestNewOrganizationHandler(t *testing.T) {
-	app := newFakeWebApp(t, &fakeOrganizationHandlerApp{})
+	app := newFakeWebApp(t, &fakeApp{})
 	r := httptest.NewRequest("GET", "/organization/new", nil)
 	w := httptest.NewRecorder()
 	app.newOrganization(w, r)
@@ -21,7 +35,7 @@ func TestNewOrganizationHandler(t *testing.T) {
 }
 
 func TestCreateOrganizationHandler(t *testing.T) {
-	app := newFakeWebApp(t, &fakeOrganizationHandlerApp{})
+	app := newFakeWebApp(t, &fakeApp{})
 
 	form := strings.NewReader(url.Values{
 		"name": {"my-new-org"},
@@ -48,7 +62,7 @@ func TestListOrganizationsHandler(t *testing.T) {
 		otf.NewTestOrganization(t),
 		otf.NewTestOrganization(t),
 	}
-	app := newFakeWebApp(t, &fakeOrganizationHandlerApp{orgs: orgs})
+	app := newFakeWebApp(t, &fakeApp{orgs: orgs})
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
@@ -76,25 +90,4 @@ func TestListOrganizationsHandler(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.NotContains(t, w.Body.String(), "Next Page")
 	})
-}
-
-type fakeOrganizationHandlerApp struct {
-	orgs []*otf.Organization
-	otf.Application
-}
-
-func (f *fakeOrganizationHandlerApp) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	return otf.NewOrganization(opts)
-}
-
-func (f *fakeOrganizationHandlerApp) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	return &otf.OrganizationList{
-		Items:      f.orgs,
-		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
-	}, nil
-}
-
-// TODO: do we need this?
-func (f *fakeOrganizationHandlerApp) DeleteSession(context.Context, string) error {
-	return nil
 }
