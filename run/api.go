@@ -12,13 +12,13 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type handlers struct {
-	Application appService
+type api struct {
+	app app
 
 	jsonapiMarshaler
 }
 
-func (h *handlers) AddHandlers(r *mux.Router) {
+func (h *api) addHandlers(r *mux.Router) {
 	// Run routes
 	r.HandleFunc("/runs", h.CreateRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/apply", h.ApplyRun).Methods("POST")
@@ -46,7 +46,7 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/applies/{apply_id}", h.GetApply).Methods("GET")
 }
 
-func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) CreateRun(w http.ResponseWriter, r *http.Request) {
 	opts := jsonapi.RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -60,7 +60,7 @@ func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.Application.CreateRun(r.Context(), opts.Workspace.ID, RunCreateOptions{
+	run, err := s.app.CreateRun(r.Context(), opts.Workspace.ID, RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -83,7 +83,7 @@ func (s *handlers) CreateRun(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jrun, jsonapi.WithCode(http.StatusCreated))
 }
 
-func (s *handlers) startPhase(w http.ResponseWriter, r *http.Request) {
+func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 	params := struct {
 		RunID string        `schema:"id,required"`
 		Phase otf.PhaseType `schema:"phase,required"`
@@ -93,7 +93,7 @@ func (s *handlers) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.Application.StartPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
+	run, err := s.app.StartPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -107,7 +107,7 @@ func (s *handlers) startPhase(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jrun)
 }
 
-func (s *handlers) finishPhase(w http.ResponseWriter, r *http.Request) {
+func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 	params := struct {
 		RunID string        `schema:"id,required"`
 		Phase otf.PhaseType `schema:"phase,required"`
@@ -117,7 +117,7 @@ func (s *handlers) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.Application.FinishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
+	run, err := s.app.FinishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -131,14 +131,14 @@ func (s *handlers) finishPhase(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jrun)
 }
 
-func (s *handlers) GetRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) GetRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	run, err := s.Application.GetRun(r.Context(), id)
+	run, err := s.app.GetRun(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -152,23 +152,23 @@ func (s *handlers) GetRun(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jrun)
 }
 
-func (s *handlers) ListRuns(w http.ResponseWriter, r *http.Request) {
+func (s *api) ListRuns(w http.ResponseWriter, r *http.Request) {
 	s.listRuns(w, r, otf.RunListOptions{})
 }
 
-func (s *handlers) GetRunsQueue(w http.ResponseWriter, r *http.Request) {
+func (s *api) GetRunsQueue(w http.ResponseWriter, r *http.Request) {
 	s.listRuns(w, r, otf.RunListOptions{
 		Statuses: []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
 	})
 }
 
-func (s *handlers) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListOptions) {
+func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListOptions) {
 	if err := decode.All(&opts, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	list, err := s.Application.ListRuns(r.Context(), opts)
+	list, err := s.app.ListRuns(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -177,28 +177,28 @@ func (s *handlers) listRuns(w http.ResponseWriter, r *http.Request, opts otf.Run
 	jsonapi.WriteResponse(w, r, &RunList{list, r, s})
 }
 
-func (s *handlers) ApplyRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	opts := otf.RunApplyOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.Application.ApplyRun(r.Context(), vars["id"], opts); err != nil {
+	if err := s.app.ApplyRun(r.Context(), vars["id"], opts); err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *handlers) DiscardRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) DiscardRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	opts := otf.RunDiscardOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.Application.DiscardRun(r.Context(), vars["id"], opts)
+	err := s.app.DiscardRun(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunDiscardNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -209,14 +209,14 @@ func (s *handlers) DiscardRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *handlers) CancelRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) CancelRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	opts := otf.RunCancelOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.Application.CancelRun(r.Context(), vars["id"], opts)
+	err := s.app.CancelRun(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -227,14 +227,14 @@ func (s *handlers) CancelRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *handlers) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	opts := otf.RunForceCancelOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.Application.ForceCancelRun(r.Context(), vars["id"], opts)
+	err := s.app.ForceCancelRun(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunForceCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -245,7 +245,7 @@ func (s *handlers) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *handlers) getPlanFile(w http.ResponseWriter, r *http.Request) {
+func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -263,7 +263,7 @@ func (s *handlers) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handlers) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
+func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -283,7 +283,7 @@ func (s *handlers) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *handlers) getLockFile(w http.ResponseWriter, r *http.Request) {
+func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	file, err := s.GetLockFile(r.Context(), vars["run_id"])
 	if err != nil {
@@ -296,7 +296,7 @@ func (s *handlers) getLockFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handlers) uploadLockFile(w http.ResponseWriter, r *http.Request) {
+func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
@@ -320,12 +320,12 @@ func (s *handlers) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
 //
-func (s *handlers) getPlan(w http.ResponseWriter, r *http.Request) {
+func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
 	// otf's plan IDs are simply the corresponding run ID
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
 
-	run, err := s.Application.GetRun(r.Context(), runID)
+	run, err := s.app.GetRun(r.Context(), runID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -336,7 +336,7 @@ func (s *handlers) getPlan(w http.ResponseWriter, r *http.Request) {
 // getPlanJSON retrieves a plan object's plan file in JSON format.
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
-func (s *handlers) getPlanJSON(w http.ResponseWriter, r *http.Request) {
+func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	// otf's plan IDs are simply the corresponding run ID
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
@@ -352,11 +352,11 @@ func (s *handlers) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handlers) GetApply(w http.ResponseWriter, r *http.Request) {
+func (s *api) GetApply(w http.ResponseWriter, r *http.Request) {
 	applyID := mux.Vars(r)["apply_id"]
 	runID := otf.ConvertID(applyID, "run")
 
-	run, err := s.Application.GetRun(r.Context(), runID)
+	run, err := s.app.GetRun(r.Context(), runID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

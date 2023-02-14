@@ -91,7 +91,6 @@ type daemon struct {
 	*http.ServerConfig
 	*inmem.CacheConfig
 	*cmdutil.LoggerConfig
-	*html.ApplicationOptions
 	*agent.Config
 	cloud.OAuthConfigs
 }
@@ -140,7 +139,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 	defer db.Close()
 
-	// Setup pub sub hub
+	// Setup pub sub broker
 	hub, err := pubsub.NewHub(logger, pubsub.HubConfig{
 		PoolDB: db,
 	})

@@ -144,7 +144,7 @@ func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 type jsonapiPlanMarshaler struct {
 	*Plan
 	req *http.Request
-	*handlers
+	*api
 }
 
 // ToJSONAPI assembles a JSON-API DTO.

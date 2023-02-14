@@ -82,7 +82,7 @@ type CreateWorkspaceOptions struct {
 	AllowDestroyPlan           *bool
 	AutoApply                  *bool
 	Description                *string
-	ExecutionMode              *ExecutionMode
+	ExecutionMode              *otf.ExecutionMode
 	FileTriggersEnabled        *bool
 	GlobalRemoteState          *bool
 	MigrationEnvironment       *string

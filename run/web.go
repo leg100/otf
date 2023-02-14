@@ -11,15 +11,17 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-type htmlHandlers struct {
+type web struct {
 	otf.Renderer
+
+	app app
 }
 
 type htmlLogChunk struct {
 	otf.Chunk
 }
 
-func (h *htmlHandlers) AddHandlers(r *mux.Router) {
+func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.listRuns)
 	r.HandleFunc("/runs/{run_id}", h.getRun)
 	r.HandleFunc("/runs/{run_id}/delete", h.deleteRun)
@@ -31,7 +33,7 @@ func (h *htmlHandlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/app/{organization_name}/{workspace_id}/runs/{run_id}", h.getRun)
 }
 
-func (app *htmlHandlers) listRuns(w http.ResponseWriter, r *http.Request) {
+func (h *web) listRuns(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		otf.ListOptions
@@ -42,12 +44,12 @@ func (app *htmlHandlers) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
+	ws, err := h.app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := app.ListRuns(r.Context(), otf.RunListOptions{
+	runs, err := h.ListRuns(r.Context(), otf.RunListOptions{
 		ListOptions: params.ListOptions,
 		WorkspaceID: &params.WorkspaceID,
 	})
@@ -56,9 +58,9 @@ func (app *htmlHandlers) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.Render("run_list.tmpl", w, r, struct {
+	h.Render("run_list.tmpl", w, r, struct {
 		*otf.RunList
-		*otf.Workspace
+		otf.Workspace
 		StreamID string
 	}{
 		RunList:   runs,
@@ -67,7 +69,7 @@ func (app *htmlHandlers) listRuns(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *htmlHandlers) getRun(w http.ResponseWriter, r *http.Request) {
+func (app *web) getRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -115,7 +117,7 @@ func (app *htmlHandlers) getRun(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *htmlHandlers) deleteRun(w http.ResponseWriter, r *http.Request) {
+func (app *web) deleteRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -135,7 +137,7 @@ func (app *htmlHandlers) deleteRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(run.WorkspaceID()), http.StatusFound)
 }
 
-func (app *htmlHandlers) cancelRun(w http.ResponseWriter, r *http.Request) {
+func (app *web) cancelRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -156,7 +158,7 @@ func (app *htmlHandlers) cancelRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Runs(run.WorkspaceID()), http.StatusFound)
 }
 
-func (app *htmlHandlers) applyRun(w http.ResponseWriter, r *http.Request) {
+func (app *web) applyRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -170,7 +172,7 @@ func (app *htmlHandlers) applyRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID())+"#apply", http.StatusFound)
 }
 
-func (app *htmlHandlers) discardRun(w http.ResponseWriter, r *http.Request) {
+func (app *web) discardRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

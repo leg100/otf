@@ -4,12 +4,74 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-// CreateRun creates a run. Caller needs to have created a config version first.
-func (a *Application) CreateRun(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
+type app interface {
+	create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
+	get(ctx context.Context, runID string) (*otf.Run, error)
+	list(ctx context.Context, opts RunListOptions) (*RunList, error)
+	// apply enqueues an apply for the run.
+	apply(ctx context.Context, runID string, opts RunApplyOptions) error
+	discard(ctx context.Context, runID string, opts RunDiscardOptions) error
+
+	// CancelRun a run. If a run is in progress then a cancelation signal will be
+	// sent out.
+	cancel(ctx context.Context, runID string, opts RunCancelOptions) error
+
+	// ForceCancelRun forcefully cancels a run.
+	ForceCancelRun(ctx context.Context, runID string, opts RunForceCancelOptions) error
+
+	// EnqueuePlan enqueues a plan for the run.
+	//
+	// NOTE: this is an internal action, invoked by the scheduler only.
+	EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error)
+
+	// GetPlanFile returns the plan file for the run.
+	GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error)
+
+	// UploadPlanFile persists a run's plan file. The plan format should be either
+	// be binary or json.
+	UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error
+
+	// GetLockFile returns the lock file for the run.
+	GetLockFile(ctx context.Context, runID string) ([]byte, error)
+
+	// UploadLockFile persists the lock file for a run.
+	UploadLockFile(ctx context.Context, runID string, plan []byte) error
+
+	// DeleteRun deletes a run.
+	DeleteRun(ctx context.Context, runID string) error
+
+	// StartPhase starts a run phase.
+	StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error)
+
+	// FinishPhase finishes a phase. Creates a report of changes before updating the status of
+	// the run.
+	FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error)
+
+	// createReport creates a report of changes for the phase.
+	createReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error)
+
+	createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error)
+
+	createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error)
+}
+
+type Application struct {
+	otf.Authorizer
+	logr.Logger
+	otf.PubSubService
+	otf.WorkspaceService
+
+	cache otf.Cache
+	db    *pgdb
+	*factory
+}
+
+func (a *Application) create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -51,7 +113,7 @@ func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error
 
 // ListRuns retrieves multiple run objs. Use opts to filter and paginate the
 // list.
-func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (a *Application) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var err error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -86,7 +148,7 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*o
 }
 
 // ApplyRun enqueues an apply for the run.
-func (a *Application) ApplyRun(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
+func (a *Application) ApplyRun(ctx context.Context, runID string, opts RunApplyOptions) error {
 	subject, err := a.CanAccessRun(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err
@@ -107,7 +169,7 @@ func (a *Application) ApplyRun(ctx context.Context, runID string, opts otf.RunAp
 }
 
 // DiscardRun the run.
-func (a *Application) DiscardRun(ctx context.Context, runID string, opts otf.RunDiscardOptions) error {
+func (a *Application) DiscardRun(ctx context.Context, runID string, opts RunDiscardOptions) error {
 	subject, err := a.CanAccessRun(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -130,7 +192,7 @@ func (a *Application) DiscardRun(ctx context.Context, runID string, opts otf.Run
 
 // CancelRun a run. If a run is in progress then a cancelation signal will be
 // sent out.
-func (a *Application) CancelRun(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
+func (a *Application) CancelRun(ctx context.Context, runID string, opts RunCancelOptions) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -155,7 +217,7 @@ func (a *Application) CancelRun(ctx context.Context, runID string, opts otf.RunC
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts otf.RunForceCancelOptions) error {
+func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts RunForceCancelOptions) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -184,7 +246,7 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 		return nil, err
 	}
 
-	run, err := a.DB().UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
@@ -375,7 +437,7 @@ func (a *Application) createPlanReport(ctx context.Context, runID string) (otf.R
 	if err != nil {
 		return otf.ResourceReport{}, err
 	}
-	report, err := otf.CompilePlanReport(plan)
+	report, err := CompilePlanReport(plan)
 	if err != nil {
 		return otf.ResourceReport{}, err
 	}
@@ -393,7 +455,7 @@ func (a *Application) createApplyReport(ctx context.Context, runID string) (otf.
 	if err != nil {
 		return otf.ResourceReport{}, err
 	}
-	report, err := otf.ParseApplyOutput(string(logs.Data))
+	report, err := ParseApplyOutput(string(logs.Data))
 	if err != nil {
 		return otf.ResourceReport{}, err
 	}
