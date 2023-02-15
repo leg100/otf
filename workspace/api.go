@@ -9,8 +9,8 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type handlers struct {
-	Application service
+type api struct {
+	app application
 	*JSONAPIMarshaler
 }
 
@@ -21,22 +21,27 @@ type byName struct {
 	Organization string `schema:"organization_name,required"`
 }
 
-func (h *handlers) AddHandlers(r *mux.Router) {
-	// Workspace routes
-	r.HandleFunc("/organizations/{organization_name}/workspaces", h.ListWorkspaces)
-	r.HandleFunc("/organizations/{organization_name}/workspaces", h.create)
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", h.GetWorkspaceByName)
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", h.UpdateWorkspaceByName)
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", h.DeleteWorkspaceByName)
-
-	r.HandleFunc("/workspaces/{workspace_id}", h.UpdateWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}", h.GetWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}", h.DeleteWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", h.LockWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", h.UnlockWorkspace)
+// unlockOptions are POST options for unlocking a workspace via the API
+type unlockOptions struct {
+	Force bool `json:"force"`
 }
 
-func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
+func (a *api) addHandlers(r *mux.Router) {
+	// Workspace routes
+	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list)
+	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create)
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.GetWorkspaceByName)
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.UpdateWorkspaceByName)
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.DeleteWorkspaceByName)
+
+	r.HandleFunc("/workspaces/{workspace_id}", a.UpdateWorkspace)
+	r.HandleFunc("/workspaces/{workspace_id}", a.GetWorkspace)
+	r.HandleFunc("/workspaces/{workspace_id}", a.DeleteWorkspace)
+	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", a.LockWorkspace)
+	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", a.UnlockWorkspace)
+}
+
+func (a *api) create(w http.ResponseWriter, r *http.Request) {
 	var opts jsonapi.WorkspaceCreateOptions
 	if err := decode.Route(&opts, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -51,7 +56,7 @@ func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.Application.create(r.Context(), CreateWorkspaceOptions{
+	ws, err := a.app.create(r.Context(), CreateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -75,7 +80,7 @@ func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jworkspace, err := s.toJSONAPI(ws, r)
+	jworkspace, err := a.toJSONAPI(ws, r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
@@ -83,20 +88,20 @@ func (s *handlers) create(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jworkspace, jsonapi.WithCode(http.StatusCreated))
 }
 
-func (s *handlers) GetWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *api) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.Application.GetWorkspace(r.Context(), id)
+	ws, err := a.app.get(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	jworkspace, err := s.toJSONAPI(ws, r)
+	jworkspace, err := a.toJSONAPI(ws, r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
@@ -104,20 +109,20 @@ func (s *handlers) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
-func (s *handlers) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (a *api) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byName
 	if err := decode.All(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.Application.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.app.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	jworkspace, err := s.toJSONAPI(ws, r)
+	jworkspace, err := a.toJSONAPI(ws, r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
@@ -125,7 +130,7 @@ func (s *handlers) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
-func (s *handlers) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
+func (s *api) list(w http.ResponseWriter, r *http.Request) {
 	params := struct {
 		Organization    string `schema:"organization_name,required"`
 		otf.ListOptions        // Pagination
@@ -135,7 +140,7 @@ func (s *handlers) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := s.Application.ListWorkspaces(r.Context(), WorkspaceListOptions{
+	wsl, err := s.app.list(r.Context(), otf.WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -155,7 +160,7 @@ func (s *handlers) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 // UpdateWorkspace updates a workspace using its ID.
 //
 // TODO: support updating workspace's vcs repo.
-func (s *handlers) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *api) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -168,14 +173,14 @@ func (s *handlers) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 // UpdateWorkspaceByName updates a workspace using its name and organization.
 //
 // TODO: support updating workspace's vcs repo.
-func (s *handlers) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (s *api) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byName
 	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.Application.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := s.app.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -184,15 +189,14 @@ func (s *handlers) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request)
 	s.updateWorkspace(w, r, ws.ID())
 }
 
-func (s *handlers) LockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	opts := otf.WorkspaceLockOptions{}
-	ws, err := s.Application.LockWorkspace(r.Context(), id, opts)
+	ws, err := s.app.lock(r.Context(), id, nil)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -209,15 +213,19 @@ func (s *handlers) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
-func (s *handlers) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
+	var opts unlockOptions
+	if err := decode.Form(&opts, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
-	opts := otf.WorkspaceUnlockOptions{}
-	ws, err := s.Application.UnlockWorkspace(r.Context(), id, opts)
+	ws, err := s.app.unlock(r.Context(), id, opts.Force)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -234,14 +242,14 @@ func (s *handlers) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, jworkspace)
 }
 
-func (s *handlers) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	_, err = s.Application.DeleteWorkspace(r.Context(), workspaceID)
+	_, err = s.app.delete(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -249,19 +257,19 @@ func (s *handlers) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *handlers) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (s *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byName
 	if err := decode.All(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.Application.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := s.app.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	_, err = s.Application.DeleteWorkspace(r.Context(), ws.ID())
+	_, err = s.app.delete(r.Context(), ws.ID())
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -269,7 +277,7 @@ func (s *handlers) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *handlers) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
+func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
 	opts := jsonapi.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -280,7 +288,7 @@ func (s *handlers) updateWorkspace(w http.ResponseWriter, r *http.Request, works
 		return
 	}
 
-	ws, err := s.Application.UpdateWorkspace(r.Context(), workspaceID, UpdateWorkspaceOptions{
+	ws, err := s.app.update(r.Context(), workspaceID, UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,

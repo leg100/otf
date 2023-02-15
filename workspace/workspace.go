@@ -1,11 +1,10 @@
+// Package workspace is responsible for terraform workspaces
 package workspace
 
 import (
-	"context"
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/semver"
 )
@@ -28,7 +27,6 @@ type Workspace struct {
 	executionMode              otf.ExecutionMode
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
-	lock                       otf.WorkspaceLockState
 	migrationEnvironment       string
 	name                       string
 	queueAllRuns               bool
@@ -42,6 +40,8 @@ type Workspace struct {
 	organization               string
 	latestRunID                *string
 	repo                       *WorkspaceRepo
+
+	Lock
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
@@ -57,7 +57,6 @@ func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() otf.ExecutionMode { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
-func (ws *Workspace) GetLock() WorkspaceLockState      { return ws.lock }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
 func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
@@ -87,30 +86,6 @@ func (ws *Workspace) QualifiedName() WorkspaceQualifiedName {
 		Organization: ws.Organization(),
 		Name:         ws.Name(),
 	}
-}
-
-// Locked determines whether workspace is locked.
-func (ws *Workspace) Locked() bool {
-	_, ok := ws.lock.(*Unlocked)
-	return !ok
-}
-
-// Lock transfers a workspace into the given lock state
-func (ws *Workspace) Lock(lock WorkspaceLockState) error {
-	if err := ws.lock.CanLock(lock); err != nil {
-		return err
-	}
-	ws.lock = lock
-	return nil
-}
-
-// Unlock the workspace using the given identity.
-func (ws *Workspace) Unlock(iden Identity, force bool) error {
-	if err := ws.lock.CanUnlock(iden, force); err != nil {
-		return err
-	}
-	ws.lock = &Unlocked{}
-	return nil
 }
 
 func (ws *Workspace) MarshalLog() any {
@@ -191,22 +166,22 @@ func (ws *Workspace) Update(opts UpdateWorkspaceOptions) error {
 		updated = true
 	}
 	if updated {
-		ws.updatedAt = CurrentTimestamp()
+		ws.updatedAt = otf.CurrentTimestamp()
 	}
 
 	return nil
 }
 
 func (ws *Workspace) setName(name string) error {
-	if !reStringID.MatchString(name) {
-		return ErrInvalidName
+	if !otf.ReStringID.MatchString(name) {
+		return otf.ErrInvalidName
 	}
 	ws.name = name
 	return nil
 }
 
-func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
-	if m != RemoteExecutionMode && m != LocalExecutionMode && m != AgentExecutionMode {
+func (ws *Workspace) setExecutionMode(m otf.ExecutionMode) error {
+	if m != otf.RemoteExecutionMode && m != otf.LocalExecutionMode && m != otf.AgentExecutionMode {
 		return errors.New("invalid execution mode")
 	}
 	ws.executionMode = m
@@ -215,10 +190,10 @@ func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
 
 func (ws *Workspace) setTerraformVersion(v string) error {
 	if !validSemanticVersion(v) {
-		return ErrInvalidTerraformVersion
+		return otf.ErrInvalidTerraformVersion
 	}
-	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
-		return ErrUnsupportedTerraformVersion
+	if result := semver.Compare(v, otf.MinTerraformVersion); result < 0 {
+		return otf.ErrUnsupportedTerraformVersion
 	}
 	ws.terraformVersion = v
 	return nil
@@ -237,7 +212,7 @@ type UpdateWorkspaceOptions struct {
 	AutoApply                  *bool
 	Name                       *string
 	Description                *string
-	ExecutionMode              *ExecutionMode `schema:"execution_mode"`
+	ExecutionMode              *otf.ExecutionMode `schema:"execution_mode"`
 	FileTriggersEnabled        *bool
 	GlobalRemoteState          *bool
 	Operations                 *bool
@@ -249,102 +224,8 @@ type UpdateWorkspaceOptions struct {
 	WorkingDirectory           *string
 }
 
-// WorkspaceLockOptions represents the options for locking a workspace.
-type WorkspaceLockOptions struct {
-	// Specifies the reason for locking the workspace.
-	Reason *string `jsonapi:"attr,reason,omitempty"`
-}
-
-// WorkspaceUnlockOptions represents the options for unlocking a workspace.
-type WorkspaceUnlockOptions struct {
-	// Specifies the reason for locking the workspace.
-	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// Force unlock of workspace
-	Force bool
-}
-
 // WorkspaceList represents a list of Workspaces.
 type WorkspaceList struct {
-	*Pagination
+	*otf.Pagination
 	Items []*Workspace
-}
-
-type WorkspaceService interface {
-	CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
-	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
-	//
-	// TODO: rename to ListConnectedWorkspaces
-	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
-	DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-
-	WorkspaceLockService
-	CurrentRunService
-	WorkspacePermissionService
-	WorkspaceConnectionService
-}
-
-type WorkspaceConnectionService interface {
-	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
-	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	DisconnectWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-}
-
-type WorkspaceLockService interface {
-	LockWorkspace(ctx context.Context, workspaceID string, opts WorkspaceLockOptions) (*Workspace, error)
-	UnlockWorkspace(ctx context.Context, workspaceID string, opts WorkspaceUnlockOptions) (*Workspace, error)
-}
-
-// WorkspaceStore is a persistence store for workspaces.
-type WorkspaceStore interface {
-	CreateWorkspace(ctx context.Context, ws *Workspace) error
-	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts ListOptions) (*WorkspaceList, error)
-	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	UpdateWorkspace(ctx context.Context, workspaceID string, ws func(ws *Workspace) error) (*Workspace, error)
-	DeleteWorkspace(ctx context.Context, workspaceID string) error
-	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
-	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
-	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
-	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
-
-	// CreateWorkspaceRepo creates a workspace repo in the persistence store.
-	CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	// UpdateWorkspaceRepo updates a workspace's repo in the persistence store.
-	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	// DeleteWorkspaceRepo deletes a workspace's repo from the persistence
-	// store, returning the workspace without the repo as well the original repo, or an
-	// error.
-	DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*Workspace, error)
-
-	WorkspaceLockService
-	CurrentRunService
-	WorkspacePermissionService
-}
-
-// CurrentRunService provides interaction with the current run for a workspace,
-// i.e. the current, or most recently current, non-speculative, run.
-type CurrentRunService interface {
-	// SetCurrentRun sets the ID of the latest run for a workspace.
-	//
-	// Take full run obj as param
-	SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
-}
-
-// WorkspaceListOptions are options for paginating and filtering a list of
-// Workspaces
-type WorkspaceListOptions struct {
-	// Pagination
-	ListOptions
-	// Filter workspaces with name matching prefix.
-	Prefix string `schema:"search[name],omitempty"`
-	// Organization filters workspaces by organization name.
-	Organization *string `schema:"organization_name,omitempty"`
-	// Filter by those for which user has workspace-level permissions.
-	UserID *string
 }

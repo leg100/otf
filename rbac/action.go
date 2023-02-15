@@ -61,9 +61,11 @@ const (
 	DeleteWorkspaceAction
 	SetWorkspacePermissionAction
 	UnsetWorkspacePermissionAction
+	UpdateWorkspaceAction
+
 	LockWorkspaceAction
 	UnlockWorkspaceAction
-	UpdateWorkspaceAction
+	ForceUnlockWorkspaceAction
 
 	CreateStateVersionAction
 	ListStateVersionsAction

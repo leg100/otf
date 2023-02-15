@@ -119,22 +119,8 @@ type WorkspaceListOptions struct {
 }
 
 type WorkspaceLockService interface {
-	LockWorkspace(ctx context.Context, workspaceID string, opts WorkspaceLockOptions) (Workspace, error)
-	UnlockWorkspace(ctx context.Context, workspaceID string, opts WorkspaceUnlockOptions) (Workspace, error)
-}
-
-// WorkspaceLockOptions represents the options for locking a workspace.
-type WorkspaceLockOptions struct {
-	// Specifies the reason for locking the workspace.
-	Reason *string `jsonapi:"attr,reason,omitempty"`
-}
-
-// WorkspaceUnlockOptions represents the options for unlocking a workspace.
-type WorkspaceUnlockOptions struct {
-	// Specifies the reason for locking the workspace.
-	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// Force unlock of workspace
-	Force bool
+	LockWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
+	UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (Workspace, error)
 }
 
 // WorkspaceRepo represents a connection between a workspace and a VCS
@@ -147,18 +133,6 @@ type WorkspaceRepo struct {
 	Identifier  string // identifier is <repo_owner>/<repo_name>
 	Branch      string // branch for which applies are run
 	WorkspaceID string
-}
-
-// WorkspaceLockState is the state a workspace lock is currently in (i.e.
-// unlocked, run-locked, or user-locked)
-type WorkspaceLockState interface {
-	// CanLock checks whether it can be locked by subject
-	CanLock(subject Identity) error
-	// CanUnlock checks whether it can be unlocked by subject
-	CanUnlock(subject Identity, force bool) error
-	// A lock state has an identity, i.e. the name of the run or user that has
-	// locked the workspace
-	Identity
 }
 
 type WorkspaceService interface {

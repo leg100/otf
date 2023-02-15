@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -125,16 +124,6 @@ func (db *pgdb) CreateWorkspaceRepo(ctx context.Context, workspaceID string, rep
 	return ws, sql.Error(err)
 }
 
-func CreateWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string, repo WorkspaceRepo) error {
-	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-		Branch:        sql.String(repo.Branch),
-		WebhookID:     sql.UUID(repo.WebhookID),
-		VCSProviderID: sql.String(repo.ProviderID),
-		WorkspaceID:   sql.String(workspaceID),
-	})
-	return sql.Error(err)
-}
-
 func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
 	_, err := db.UpdateWorkspaceRepoByID(ctx, sql.String(repo.Branch), sql.String(workspaceID))
 	if err != nil {
@@ -144,8 +133,8 @@ func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, rep
 	return ws, sql.Error(err)
 }
 
-func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	_, err := db.Querier.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
+func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*Workspace, error) {
+	_, err := db.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -153,50 +142,8 @@ func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*o
 	return ws, sql.Error(err)
 }
 
-func DeleteWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string) error {
-	_, err := db.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
-	return sql.Error(err)
-}
-
-// LockWorkspace locks the specified workspace.
-func (db *pgdb) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	subj, err := otf.LockFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var ws *otf.Workspace
-	err = db.tx(ctx, func(tx *pgdb) error {
-		// retrieve workspace
-		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
-		if err != nil {
-			return err
-		}
-		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
-		if err != nil {
-			return err
-		}
-		// lock the workspace
-		if err := ws.Lock(subj); err != nil {
-			return err
-		}
-		// persist to db
-		params, err := otf.MarshalWorkspaceLockParams(ws)
-		if err != nil {
-			return err
-		}
-		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
-		if err != nil {
-			return sql.Error(err)
-		}
-		return nil
-	})
-	// return ws with new lock
-	return ws, err
-}
-
 // SetCurrentRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
+func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, sql.String(runID), sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -204,46 +151,7 @@ func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	return db.GetWorkspace(ctx, workspaceID)
 }
 
-// UnlockWorkspace unlocks the specified workspace; the caller has the
-// opportunity to check the current locker passed into the provided callback. If
-// an error is returned the unlock will not go ahead.
-func (db *pgdb) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	subj, err := otf.LockFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var ws *otf.Workspace
-	err = db.tx(ctx, func(tx *pgdb) error {
-		// retrieve workspace
-		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
-		if err != nil {
-			return err
-		}
-		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
-		if err != nil {
-			return err
-		}
-		// unlock workspace
-		if err := ws.Unlock(subj, opts.Force); err != nil {
-			return err
-		}
-		// persist to db
-		params, err := otf.MarshalWorkspaceLockParams(ws)
-		if err != nil {
-			return err
-		}
-		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
-		if err != nil {
-			return sql.Error(err)
-		}
-		return nil
-	})
-	// return ws with new lock
-	return ws, err
-}
-
-func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -285,7 +193,7 @@ func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOption
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: NewPagination(opts.ListOptions, *count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
@@ -307,7 +215,7 @@ func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]
 	return items, nil
 }
 
-func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
+func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
@@ -385,7 +293,7 @@ func (db *pgdb) GetWorkspaceByName(ctx context.Context, organization, workspace 
 }
 
 func (db *pgdb) DeleteWorkspace(ctx context.Context, workspaceID string) error {
-	_, err := db.Querier.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
+	_, err := db.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -400,57 +308,88 @@ func (db *pgdb) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceI
 	return name.String, nil
 }
 
-func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
-	_, err := db.UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
-		WorkspaceID: sql.String(workspaceID),
-		TeamName:    sql.String(team),
-		Role:        sql.String(role.String()),
+// tx constructs a new pgdb within a transaction.
+func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
+	return db.Transaction(ctx, func(tx otf.Database) error {
+		return callback(newPGDB(tx))
 	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
 }
 
-func (db *pgdb) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*otf.WorkspacePermission, error) {
-	result, err := db.FindWorkspacePermissionsByID(ctx, sql.String(workspaceID))
-	if err != nil {
-		return nil, sql.Error(err)
+// WorkspaceResult represents the result of a database query for a workspace.
+type WorkspaceResult struct {
+	WorkspaceID                pgtype.Text           `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz    `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz    `json:"updated_at"`
+	AllowDestroyPlan           bool                  `json:"allow_destroy_plan"`
+	AutoApply                  bool                  `json:"auto_apply"`
+	CanQueueDestroyPlan        bool                  `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text           `json:"description"`
+	Environment                pgtype.Text           `json:"environment"`
+	ExecutionMode              pgtype.Text           `json:"execution_mode"`
+	FileTriggersEnabled        bool                  `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool                  `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text           `json:"migration_environment"`
+	Name                       pgtype.Text           `json:"name"`
+	QueueAllRuns               bool                  `json:"queue_all_runs"`
+	SpeculativeEnabled         bool                  `json:"speculative_enabled"`
+	SourceName                 pgtype.Text           `json:"source_name"`
+	SourceURL                  pgtype.Text           `json:"source_url"`
+	StructuredRunOutputEnabled bool                  `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text           `json:"terraform_version"`
+	TriggerPrefixes            []string              `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text           `json:"working_directory"`
+	LockRunID                  pgtype.Text           `json:"lock_run_id"`
+	LockUserID                 pgtype.Text           `json:"lock_user_id"`
+	LatestRunID                pgtype.Text           `json:"latest_run_id"`
+	OrganizationName           pgtype.Text           `json:"organization_name"`
+	UserLock                   *pggen.Users          `json:"user_lock"`
+	RunLock                    *pggen.Runs           `json:"run_lock"`
+	WorkspaceRepo              *pggen.WorkspaceRepos `json:"workspace_repo"`
+	Webhook                    *pggen.Webhooks       `json:"webhook"`
+}
+
+func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
+	ws := Workspace{
+		id:                         result.WorkspaceID.String,
+		createdAt:                  result.CreatedAt.Time.UTC(),
+		updatedAt:                  result.UpdatedAt.Time.UTC(),
+		allowDestroyPlan:           result.AllowDestroyPlan,
+		autoApply:                  result.AutoApply,
+		canQueueDestroyPlan:        result.CanQueueDestroyPlan,
+		description:                result.Description.String,
+		environment:                result.Environment.String,
+		executionMode:              otf.ExecutionMode(result.ExecutionMode.String),
+		fileTriggersEnabled:        result.FileTriggersEnabled,
+		globalRemoteState:          result.GlobalRemoteState,
+		migrationEnvironment:       result.MigrationEnvironment.String,
+		name:                       result.Name.String,
+		queueAllRuns:               result.QueueAllRuns,
+		speculativeEnabled:         result.SpeculativeEnabled,
+		structuredRunOutputEnabled: result.StructuredRunOutputEnabled,
+		sourceName:                 result.SourceName.String,
+		sourceURL:                  result.SourceURL.String,
+		terraformVersion:           result.TerraformVersion.String,
+		triggerPrefixes:            result.TriggerPrefixes,
+		workingDirectory:           result.WorkingDirectory.String,
+		organization:               result.OrganizationName.String,
 	}
-	var perms []*otf.WorkspacePermission
-	for _, row := range result {
-		perm, err := permissionRow(row).toPermission()
-		if err != nil {
-			return nil, sql.Error(err)
+
+	if result.WorkspaceRepo != nil {
+		ws.repo = &WorkspaceRepo{
+			Branch:     result.WorkspaceRepo.Branch.String,
+			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
+			WebhookID:  result.Webhook.WebhookID.Bytes,
+			Identifier: result.Webhook.Identifier.String,
 		}
-		perms = append(perms, perm)
 	}
-	return perms, nil
-}
 
-func (db *pgdb) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
-	_, err := db.DeleteWorkspacePermissionByID(ctx, sql.String(workspaceID), sql.String(team))
-	if err != nil {
-		return sql.Error(err)
+	if result.LatestRunID.Status == pgtype.Present {
+		ws.latestRunID = &result.LatestRunID.String
 	}
-	return nil
-}
 
-// permissionRow represents the result of a database query for a
-// workspace permission.
-type permissionRow struct {
-	Role         pgtype.Text          `json:"role"`
-	Team         *pggen.Teams         `json:"team"`
-	Organization *pggen.Organizations `json:"organization"`
-}
-
-func (row permissionRow) toPermission() (*otf.WorkspacePermission, error) {
-	role, err := rbac.WorkspaceRoleFromString(row.Role.String)
-	if err != nil {
+	if err := unmarshalWorkspaceLock(&ws, &result); err != nil {
 		return nil, err
 	}
-	return &otf.WorkspacePermission{
-		Role:   role,
-		TeamID: row.Team.TeamID.String,
-	}, nil
+
+	return &ws, nil
 }

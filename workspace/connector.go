@@ -1,4 +1,3 @@
-// Package workspace is responsible for workspaces
 package workspace
 
 import (
@@ -6,13 +5,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/sql"
 	"github.com/pkg/errors"
 )
 
 type Connector struct {
 	otf.HookService        // for registering and unregistering connections to webhooks
-	otf.WorkspaceService   // for retrieving workspace
 	otf.VCSProviderService // for retrieving cloud client
 }
 
@@ -28,11 +25,12 @@ func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.Co
 	}
 
 	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
-		return sql.CreateWorkspaceRepo(ctx, tx, workspaceID, otf.WorkspaceRepo{
+		_, err := newPGDB(tx).CreateWorkspaceRepo(ctx, workspaceID, WorkspaceRepo{
 			Branch:     repo.Branch,
 			ProviderID: opts.ProviderID,
 			WebhookID:  hookID,
 		})
+		return err
 	}
 	err = c.Hook(ctx, otf.HookOptions{
 		Identifier:   opts.Identifier,
@@ -48,11 +46,7 @@ func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.Co
 
 // Disconnect a repo from a workspace. The repo's webhook is deleted if no other
 // workspace is connected to the repo.
-func (c *Connector) Disconnect(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	ws, err := c.GetWorkspace(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
+func (c *Connector) Disconnect(ctx context.Context, ws *Workspace) (*Workspace, error) {
 	repo := ws.Repo()
 	client, err := c.GetVCSClient(ctx, repo.ProviderID)
 	if err != nil {
@@ -63,7 +57,8 @@ func (c *Connector) Disconnect(ctx context.Context, workspaceID string) (*otf.Wo
 	// 1. delete workspace repo from db
 	// 2. delete webhook from db
 	unhookCallback := func(ctx context.Context, tx otf.Database) error {
-		return sql.DeleteWorkspaceRepo(ctx, tx, workspaceID)
+		ws, err = newPGDB(tx).DeleteWorkspaceRepo(ctx, ws.id)
+		return err
 	}
 	err = c.Unhook(ctx, otf.UnhookOptions{
 		HookID:         repo.WebhookID,

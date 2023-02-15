@@ -16,47 +16,34 @@ type app interface {
 	// apply enqueues an apply for the run.
 	apply(ctx context.Context, runID string, opts RunApplyOptions) error
 	discard(ctx context.Context, runID string, opts RunDiscardOptions) error
-
-	// CancelRun a run. If a run is in progress then a cancelation signal will be
+	// cancel a run. If a run is in progress then a cancelation signal will be
 	// sent out.
 	cancel(ctx context.Context, runID string, opts RunCancelOptions) error
-
-	// ForceCancelRun forcefully cancels a run.
-	ForceCancelRun(ctx context.Context, runID string, opts RunForceCancelOptions) error
-
-	// EnqueuePlan enqueues a plan for the run.
+	// forceCancel forcefully cancels a run.
+	forceCancel(ctx context.Context, runID string, opts RunForceCancelOptions) error
+	// enqueuePlan enqueues a plan for the run.
 	//
 	// NOTE: this is an internal action, invoked by the scheduler only.
-	EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error)
-
-	// GetPlanFile returns the plan file for the run.
-	GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error)
-
-	// UploadPlanFile persists a run's plan file. The plan format should be either
+	enqueuePlan(ctx context.Context, runID string) (*otf.Run, error)
+	// getPlanFile returns the plan file for the run.
+	getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error)
+	// uploadPlanFile persists a run's plan file. The plan format should be either
 	// be binary or json.
-	UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error
-
-	// GetLockFile returns the lock file for the run.
-	GetLockFile(ctx context.Context, runID string) ([]byte, error)
-
-	// UploadLockFile persists the lock file for a run.
-	UploadLockFile(ctx context.Context, runID string, plan []byte) error
-
-	// DeleteRun deletes a run.
-	DeleteRun(ctx context.Context, runID string) error
-
-	// StartPhase starts a run phase.
-	StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error)
-
-	// FinishPhase finishes a phase. Creates a report of changes before updating the status of
+	uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error
+	// getLockFile returns the lock file for the run.
+	getLockFile(ctx context.Context, runID string) ([]byte, error)
+	// uploadLockFile persists the lock file for a run.
+	uploadLockFile(ctx context.Context, runID string, plan []byte) error
+	// delete deletes a run.
+	delete(ctx context.Context, runID string) error
+	// startPhase starts a run phase.
+	startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error)
+	// finishPhase finishes a phase. Creates a report of changes before updating the status of
 	// the run.
-	FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error)
-
+	finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error)
 	// createReport creates a report of changes for the phase.
 	createReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error)
-
 	createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error)
-
 	createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error)
 }
 

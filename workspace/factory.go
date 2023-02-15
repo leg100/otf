@@ -16,12 +16,11 @@ func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 		createdAt:           otf.CurrentTimestamp(),
 		updatedAt:           otf.CurrentTimestamp(),
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
-		executionMode:       RemoteExecutionMode,
+		executionMode:       otf.RemoteExecutionMode,
 		fileTriggersEnabled: DefaultFileTriggersEnabled,
 		globalRemoteState:   true, // Only global remote state is supported
-		terraformVersion:    DefaultTerraformVersion,
+		terraformVersion:    otf.DefaultTerraformVersion,
 		speculativeEnabled:  true,
-		lock:                &Unlocked{},
 		organization:        *opts.Organization,
 	}
 	if err := ws.setName(*opts.Name); err != nil {

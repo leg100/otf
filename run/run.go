@@ -13,7 +13,6 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/workspace"
 )
 
 const (
@@ -274,28 +273,6 @@ func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
 		}
 	}
 	return time.Time{}, ErrStatusTimestampNotFound
-}
-
-// CanLock determines whether requestor can replace run lock
-func (r *Run) CanLock(requestor otf.Identity) error {
-	if _, ok := requestor.(*Run); ok {
-		// run can replace lock held by different run
-		return nil
-	}
-	return workspace.ErrWorkspaceAlreadyLocked
-}
-
-// CanUnlock determines whether requestor can unlock run lock
-func (r *Run) CanUnlock(requestor otf.Identity, force bool) error {
-	if force {
-		// TODO: only grant admin user force unlock always granted
-		return nil
-	}
-	if _, ok := requestor.(*Run); ok {
-		// runs can unlock other run locks
-		return nil
-	}
-	return workspace.ErrLockedByDifferentUser
 }
 
 // Start a run phase

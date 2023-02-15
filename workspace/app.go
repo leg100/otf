@@ -9,49 +9,28 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type service interface {
+type application interface {
 	create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
-	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
-	DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+	get(ctx context.Context, workspaceID string) (*Workspace, error)
+	getByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+	list(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error)
+	listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
+	update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
+	delete(ctx context.Context, workspaceID string) (*Workspace, error)
+
+	lockApp
 }
 
-type Application struct {
+type app struct {
 	otf.Authorizer
+	otf.PubSubService
 	logr.Logger
 
-	db pgdb
-	*handlers
-	*htmlApp
+	connector *Connector
+	db        *pgdb
 }
 
-func NewApplication(opts ApplicationOptions) *Application {
-	app := &Application{
-		Authorizer: opts.Authorizer,
-		db:         newPGDB(opts.Database),
-		Logger:     opts.Logger,
-	}
-	app.handlers = &handlers{
-		Application: app,
-	}
-	app.htmlApp = &htmlApp{
-		app:      app,
-		Renderer: opts.Renderer,
-	}
-	return app
-}
-
-type ApplicationOptions struct {
-	otf.Authorizer
-	otf.Database
-	otf.Renderer
-	logr.Logger
-}
-
-func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
+func (a *app) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -77,17 +56,17 @@ func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, o
 	return updated, nil
 }
 
-func (a *Application) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
+func (a *app) listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
 	return a.db.ListWorkspacesByWebhookID(ctx, id)
 }
 
-func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
+func (a *app) ConnectWorkspace(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
 	}
 
-	err = a.Connect(ctx, workspaceID, opts)
+	err = a.connector.Connect(ctx, workspaceID, opts)
 	if err != nil {
 		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.Identifier)
 		return err
@@ -98,7 +77,7 @@ func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, 
 	return nil
 }
 
-func (a *Application) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
+func (a *app) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -115,13 +94,18 @@ func (a *Application) UpdateWorkspaceRepo(ctx context.Context, workspaceID strin
 	return ws, nil
 }
 
-func (a *Application) DisconnectWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (a *app) disconnect(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	ws, err := a.Disconnect(ctx, workspaceID)
+	ws, err := a.db.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err = a.connector.Disconnect(ctx, ws)
 	if err != nil {
 		a.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return nil, err
@@ -132,7 +116,7 @@ func (a *Application) DisconnectWorkspace(ctx context.Context, workspaceID strin
 	return ws, nil
 }
 
-func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (a *app) list(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := a.CanAccessSite(ctx, rbac.ListWorkspacesAction)
@@ -149,7 +133,7 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 			if err != nil {
 				return nil, err
 			}
-			if user, ok := subject.(*otf.User); ok {
+			if user, ok := subject.(otf.User); ok {
 				return a.db.ListWorkspacesByUserID(ctx, user.ID(), *opts.Organization, opts.ListOptions)
 			}
 		} else if err != nil {
@@ -160,7 +144,7 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 	return a.db.ListWorkspaces(ctx, opts)
 }
 
-func (a *Application) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (a *app) get(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -177,7 +161,7 @@ func (a *Application) GetWorkspace(ctx context.Context, workspaceID string) (*ot
 	return ws, nil
 }
 
-func (a *Application) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
+func (a *app) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.GetWorkspaceAction, organization, workspace)
 	if err != nil {
 		return nil, err
@@ -194,7 +178,7 @@ func (a *Application) GetWorkspaceByName(ctx context.Context, organization, work
 	return ws, nil
 }
 
-func (a *Application) DeleteWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (a *app) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -217,48 +201,12 @@ func (a *Application) DeleteWorkspace(ctx context.Context, workspaceID string) (
 	return ws, nil
 }
 
-func (a *Application) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.LockWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := a.db.LockWorkspace(ctx, workspaceID, opts)
-	if err != nil {
-		a.Error(err, "locking workspace", "subject", subject, "workspace", workspaceID)
-		return nil, err
-	}
-	a.V(1).Info("locked workspace", "subject", subject, "workspace", workspaceID)
-
-	a.Publish(otf.Event{Type: otf.EventWorkspaceLocked, Payload: ws})
-
-	return ws, nil
-}
-
-func (a *Application) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.LockWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := a.db.UnlockWorkspace(ctx, workspaceID, opts)
-	if err != nil {
-		a.Error(err, "unlocking workspace", "subject", subject, "workspace", workspaceID)
-		return nil, err
-	}
-	a.V(1).Info("unlocked workspace", "subject", subject, "workspace", workspaceID)
-
-	a.Publish(otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
-
-	return ws, nil
-}
-
 // SetCurrentRun sets the current run for the workspace
-func (a *Application) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
+func (a *app) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
 }
 
-func (a *Application) create(ctx context.Context, opts CreateWorkspaceOptions) (*otf.Workspace, error) {
+func (a *app) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
 	ws, err := NewWorkspace(opts)
 	if err != nil {
 		a.Error(err, "constructing workspace")

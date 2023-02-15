@@ -169,6 +169,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 
 func (a *application) workspaceUnlockCommand() *cobra.Command {
 	var organization string
+	var force bool
 
 	cmd := &cobra.Command{
 		Use:           "unlock [name]",
@@ -183,7 +184,7 @@ func (a *application) workspaceUnlockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID(), otf.WorkspaceUnlockOptions{})
+			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID(), force)
 			if err != nil {
 				return err
 			}
@@ -195,6 +196,7 @@ func (a *application) workspaceUnlockCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().BoolVar(&force, "force", false, "Forceably unlock workspace.")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

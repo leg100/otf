@@ -61,19 +61,6 @@ func UserFromContext(ctx context.Context) (User, error) {
 	return user, nil
 }
 
-// LockFromContext retrieves a workspace lock from a context
-func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	lock, ok := subj.(WorkspaceLockState)
-	if !ok {
-		return nil, fmt.Errorf("no lock subject in context")
-	}
-	return lock, nil
-}
-
 // Superuser is a subject with unlimited privileges.
 type Superuser struct {
 	Username string

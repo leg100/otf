@@ -126,6 +126,11 @@ paths:
 	go generate ./http/html/paths
 	goimports -w ./http/html/paths
 
+# Re-generate RBAC action strings
+.PHONY: actions
+actions:
+	stringer -type Action ./rbac
+
 # Install staticcheck linter
 .PHONY: install-linter
 install-linter:

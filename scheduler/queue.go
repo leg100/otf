@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 )
 
 // queue enqueues and schedules runs for a workspace
@@ -33,7 +34,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 	switch payload := event.Payload.(type) {
 	case otf.Workspace:
 		q.ws = payload
-		if event.Type == otf.EventWorkspaceUnlocked {
+		if event.Type == workspace.EventUnlocked {
 			if q.current != nil {
 				if err := q.scheduleRun(ctx, q.current); err != nil {
 					return err
@@ -123,7 +124,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *otf.Run) error {
 
 	// if workspace is locked by a user then do not schedule;
 	// instead wait for an unlock event to arrive.
-	if _, locked := q.ws.GetLock().(*otf.User); locked {
+	if _, locked := q.ws.LockState().(*otf.User); locked {
 		q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID())
 		return nil
 	}

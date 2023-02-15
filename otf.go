@@ -32,10 +32,10 @@ const (
 
 var (
 	// A regular expression used to validate common string ID patterns.
-	reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
+	ReStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 
 	// A regular expression used to validate semantic versions (major.minor.patch).
-	reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
+	ReSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 )
 
 // Application provides access to the otf application services
@@ -152,13 +152,13 @@ func GenerateRandomString(size int) string {
 // ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
 func ValidStringID(v *string) bool {
-	return v != nil && reStringID.MatchString(*v)
+	return v != nil && ReStringID.MatchString(*v)
 }
 
 // validStringID checks if the given string pointer is non-nil and contains a
 // valid semantic version (major.minor.patch).
 func validSemanticVersion(v string) bool {
-	return reSemanticVersion.MatchString(v)
+	return ReSemanticVersion.MatchString(v)
 }
 
 func GetMapKeys(m map[string]interface{}) []string {

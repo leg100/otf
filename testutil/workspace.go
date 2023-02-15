@@ -1,11 +1,10 @@
-package workspace
+package testutil
 
 import (
 	"context"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
