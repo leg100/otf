@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
 
@@ -14,7 +15,7 @@ type RunStarter struct {
 	Application
 }
 
-func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*Run, error) {
+func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {
 	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err

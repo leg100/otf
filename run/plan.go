@@ -12,7 +12,7 @@ const (
 // Plan is the plan phase of a run
 type Plan struct {
 	// report of planned resource changes
-	*otf.ResourceReport
+	*ResourceReport
 
 	runID string
 	*phaseStatus
@@ -31,8 +31,4 @@ func newPlan(run *Run) *Plan {
 		runID:       run.id,
 		phaseStatus: newPhaseStatus(),
 	}
-}
-
-type planFileOptions struct {
-	Format otf.PlanFormat `schema:"format,required"`
 }

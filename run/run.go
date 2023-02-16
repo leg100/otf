@@ -266,13 +266,13 @@ func (r *Run) EnqueueApply() error {
 	return nil
 }
 
-func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
+func (r *Run) StatusTimestamp(status otf.RunStatus) (time.Time, error) {
 	for _, rst := range r.statusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, nil
 		}
 	}
-	return time.Time{}, ErrStatusTimestampNotFound
+	return time.Time{}, otf.ErrStatusTimestampNotFound
 }
 
 // Start a run phase
@@ -601,54 +601,6 @@ type RunStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-// RunService implementations allow interactions with runs
-type RunService interface {
-	// Create a new run with the given options.
-	CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
-	// Get retrieves a run with the given ID.
-	GetRun(ctx context.Context, id string) (*Run, error)
-	// List lists runs according to the given options.
-	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
-	// Delete deletes a run with the given ID.
-	DeleteRun(ctx context.Context, id string) error
-	// EnqueuePlan enqueues a plan
-	EnqueuePlan(ctx context.Context, id string) (*Run, error)
-	// Apply a run with the given ID.
-	//
-	// TODO: return run
-	ApplyRun(ctx context.Context, id string, opts RunApplyOptions) error
-	// Discard discards a run with the given ID.
-	//
-	// TODO: return run
-	DiscardRun(ctx context.Context, id string, opts RunDiscardOptions) error
-	// Cancel run.
-	//
-	// TODO: return run
-	CancelRun(ctx context.Context, id string, opts RunCancelOptions) error
-	// Forcefully cancel a run.
-	//
-	// TODO: return run
-	ForceCancelRun(ctx context.Context, id string, opts RunForceCancelOptions) error
-	// Start a run phase.
-	StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*Run, error)
-	// Finish a run phase.
-	FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error)
-	// GetPlanFile retrieves a run's plan file with the requested format.
-	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
-	// UploadPlanFile saves a run's plan file with the requested format.
-	UploadPlanFile(ctx context.Context, id string, plan []byte, format PlanFormat) error
-	// GetLockFile retrieves a run's lock file (.terraform.lock.hcl)
-	GetLockFile(ctx context.Context, id string) ([]byte, error)
-	// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
-	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
-	// Read and write logs for run phases.
-	otf.LogService
-	// Tail logs of a run phase
-	Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
-	// StartRun creates and starts a run.
-	StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error)
-}
-
 // RunCreateOptions represents the options for creating a new run. See
 // dto.RunCreateOptions for further detail.
 type RunCreateOptions struct {
@@ -662,86 +614,8 @@ type RunCreateOptions struct {
 	AutoApply              *bool
 }
 
-// RunApplyOptions represents the options for applying a run.
-type RunApplyOptions struct {
-	// An optional comment about the run.
-	Comment *string `json:"comment,omitempty"`
-}
-
-// RunCancelOptions represents the options for canceling a run.
-type RunCancelOptions struct {
-	// An optional explanation for why the run was canceled.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// RunForceCancelOptions represents the options for force-canceling a run.
-type RunForceCancelOptions struct {
-	// An optional comment explaining the reason for the force-cancel.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// RunDiscardOptions represents the options for discarding a run.
-type RunDiscardOptions struct {
-	// An optional explanation for why the run was discarded.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// RunStore implementations persist Run objects.
-type RunStore interface {
-	CreateRun(ctx context.Context, run *Run) error
-	GetRun(ctx context.Context, id string) (*Run, error)
-	SetPlanFile(ctx context.Context, id string, file []byte, format PlanFormat) error
-	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
-	SetLockFile(ctx context.Context, id string, file []byte) error
-	GetLockFile(ctx context.Context, id string) ([]byte, error)
-	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
-	// UpdateStatus updates the run's status, providing a func with which to
-	// perform updates in a transaction.
-	UpdateStatus(ctx context.Context, id string, fn func(*Run) error) (*Run, error)
-	CreatePlanReport(ctx context.Context, id string, report otf.ResourceReport) error
-	CreateApplyReport(ctx context.Context, id string, report otf.ResourceReport) error
-	DeleteRun(ctx context.Context, id string) error
-}
-
 // RunList represents a list of runs.
 type RunList struct {
 	*otf.Pagination
 	Items []*Run
-}
-
-// RunListOptions are options for paginating and filtering a list of runs
-type RunListOptions struct {
-	otf.ListOptions
-	// Filter by run statuses (with an implicit OR condition)
-	Statuses []RunStatus `schema:"statuses,omitempty"`
-	// Filter by workspace ID
-	WorkspaceID *string `schema:"workspace_id,omitempty"`
-	// Filter by organization name
-	Organization *string `schema:"organization_name,omitempty"`
-	// Filter by workspace name
-	WorkspaceName *string `schema:"workspace_name,omitempty"`
-	// Filter by speculative or non-speculative
-	Speculative *bool `schema:"-"`
-	// A list of relations to include. See available resources:
-	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-	Include *string `schema:"include,omitempty"`
-}
-
-// LogFields provides fields for logging
-//
-// TODO: use logr marshaller instead
-func (opts RunListOptions) LogFields() (fields []interface{}) {
-	if opts.WorkspaceID != nil {
-		fields = append(fields, "workspace_id", *opts.WorkspaceID)
-	}
-	if opts.WorkspaceName != nil {
-		fields = append(fields, "name", *opts.WorkspaceName)
-	}
-	if opts.Organization != nil {
-		fields = append(fields, "organization", *opts.Organization)
-	}
-	if len(opts.Statuses) > 0 {
-		fields = append(fields, "status", fmt.Sprintf("%v", opts.Statuses))
-	}
-	return fields
 }

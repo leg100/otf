@@ -185,7 +185,7 @@ func TestRun_CreatePlanReport(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 
-	report := otf.ResourceReport{
+	report := run.ResourceReport{
 		Additions:    5,
 		Changes:      2,
 		Destructions: 99,

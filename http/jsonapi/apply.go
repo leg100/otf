@@ -1,6 +1,6 @@
 package jsonapi
 
-// Apply represents a Terraform Enterprise apply.
+// Apply is a terraform apply
 type Apply struct {
 	ID               string                 `jsonapi:"primary,applies"`
 	LogReadURL       string                 `jsonapi:"attr,log-read-url"`

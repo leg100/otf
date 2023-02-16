@@ -15,7 +15,12 @@ import (
 type api struct {
 	app app
 
-	jsonapiMarshaler
+	jsonapiConverter
+}
+
+// planFileOptions are options for the plan file API
+type planFileOptions struct {
+	Format otf.PlanFormat `schema:"format,required"`
 }
 
 func (h *api) addHandlers(r *mux.Router) {
@@ -60,7 +65,7 @@ func (s *api) CreateRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.app.CreateRun(r.Context(), opts.Workspace.ID, RunCreateOptions{
+	run, err := s.app.create(r.Context(), opts.Workspace.ID, RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -93,7 +98,7 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.app.StartPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
+	run, err := s.app.startPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -117,7 +122,7 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.app.FinishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
+	run, err := s.app.finishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -138,7 +143,7 @@ func (s *api) GetRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.app.GetRun(r.Context(), id)
+	run, err := s.app.get(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -168,23 +173,28 @@ func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListO
 		return
 	}
 
-	list, err := s.app.ListRuns(r.Context(), opts)
+	list, err := s.app.list(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, &RunList{list, r, s})
+	jlist, err := s.toJSONAPIList(list, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jlist)
 }
 
 func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.RunApplyOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	id, err := decode.Param("id", r)
+	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.app.ApplyRun(r.Context(), vars["id"], opts); err != nil {
+
+	if err := s.app.apply(r.Context(), id); err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
@@ -192,32 +202,31 @@ func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) DiscardRun(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.RunDiscardOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	id, err := decode.Param("id", r)
+	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.app.DiscardRun(r.Context(), vars["id"], opts)
-	if err == otf.ErrRunDiscardNotAllowed {
+
+	if err = s.app.discard(r.Context(), id); err == ErrRunDiscardNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
 func (s *api) CancelRun(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.RunCancelOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	id, err := decode.Param("id", r)
+	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.app.CancelRun(r.Context(), vars["id"], opts)
-	if err == otf.ErrRunCancelNotAllowed {
+
+	if err = s.app.cancel(r.Context(), id); err == ErrRunCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -228,14 +237,14 @@ func (s *api) CancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.RunForceCancelOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	id, err := decode.Param("id", r)
+	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.app.ForceCancelRun(r.Context(), vars["id"], opts)
-	if err == otf.ErrRunForceCancelNotAllowed {
+
+	err = s.app.forceCancel(r.Context(), id)
+	if err == ErrRunForceCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -246,13 +255,18 @@ func (s *api) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	vars := mux.Vars(r)
-	file, err := s.GetPlanFile(r.Context(), vars["run_id"], opts.Format)
+
+	file, err := s.app.getPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -264,18 +278,24 @@ func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	vars := mux.Vars(r)
+
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.UploadPlanFile(r.Context(), vars["run_id"], buf.Bytes(), opts.Format)
+
+	err = s.app.uploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -284,12 +304,18 @@ func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file, err := s.GetLockFile(r.Context(), vars["run_id"])
+	id, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	file, err := s.app.getLockFile(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	if _, err := w.Write(file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -297,17 +323,24 @@ func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	id, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.UploadLockFile(r.Context(), vars["run_id"], buf.Bytes())
+
+	err = s.app.uploadLockFile(r.Context(), id, buf.Bytes())
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -321,27 +354,39 @@ func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
 //
 func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
-	// otf's plan IDs are simply the corresponding run ID
-	planID := mux.Vars(r)["plan_id"]
-	runID := otf.ConvertID(planID, "run")
+	id, err := decode.Param("plan_id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
-	run, err := s.app.GetRun(r.Context(), runID)
+	// otf's plan IDs are simply the corresponding run ID
+	run, err := s.app.get(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &plan{run.Plan(), r, s})
+
+	jplan, err := s.planToJSONAPI(run.plan, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, jplan)
 }
 
 // getPlanJSON retrieves a plan object's plan file in JSON format.
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
 func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
-	// otf's plan IDs are simply the corresponding run ID
-	planID := mux.Vars(r)["plan_id"]
-	runID := otf.ConvertID(planID, "run")
+	id, err := decode.Param("plan_id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
-	json, err := s.GetPlanFile(r.Context(), runID, otf.PlanFormatJSON)
+	// otf's plan IDs are simply the corresponding run ID
+	json, err := s.app.getPlanFile(r.Context(), otf.ConvertID(id, "run"), otf.PlanFormatJSON)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -353,13 +398,23 @@ func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) GetApply(w http.ResponseWriter, r *http.Request) {
-	applyID := mux.Vars(r)["apply_id"]
-	runID := otf.ConvertID(applyID, "run")
+	id, err := decode.Param("apply_id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
-	run, err := s.app.GetRun(r.Context(), runID)
+	// otf's apply IDs are simply the corresponding run ID
+	run, err := s.app.get(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &apply{run.Apply(), r, s})
+
+	japply, err := s.applyToJSONAPI(run.apply, r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, japply)
 }

@@ -71,6 +71,7 @@ func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions
 	return &run
 }
 
+// NewFromJSONAPI constructs a run from a json:api struct
 func NewFromJSONAPI(d *jsonapi.Run) *Run {
 	return &Run{
 		id:                     d.ID,
@@ -90,4 +91,15 @@ func NewFromJSONAPI(d *jsonapi.Run) *Run {
 		configurationVersionID: d.ConfigurationVersion.ID,
 		// TODO: unmarshal plan and apply relations
 	}
+}
+
+// NewListFromJSONAPI constructs a run list from a json:api struct
+func NewListFromJSONAPI(from *jsonapi.RunList) *RunList {
+	to := RunList{
+		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
+	}
+	for _, i := range from.Items {
+		to.Items = append(to.Items, NewFromJSONAPI(i))
+	}
+	return &to
 }

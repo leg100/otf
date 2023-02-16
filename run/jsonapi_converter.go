@@ -12,14 +12,27 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// jsonapiMarshaler converts run into a struct suitable for
-// marshaling into json:api encoding
-type jsonapiMarshaler struct {
-	otf.Signer      // for signing plan and apply log urls
+// jsonapiConverter converts a run into a json:api struct
+type jsonapiConverter struct {
 	otf.Application // for retrieving workspace and workspace permissions
+
+	*jsonapiPlanConverter
+	*jsonapiApplyConverter
 }
 
-func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, error) {
+func newJSONAPIConverter(app otf.Application, signer otf.Signer) *jsonapiConverter {
+	return &jsonapiConverter{
+		Application: app,
+		jsonapiPlanConverter: &jsonapiPlanConverter{
+			logURLSigner: &logURLSigner{signer, otf.PlanPhase},
+		},
+		jsonapiApplyConverter: &jsonapiApplyConverter{
+			logURLSigner: &logURLSigner{signer, otf.ApplyPhase},
+		},
+	}
+}
+
+func (m *jsonapiConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -94,11 +107,11 @@ func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		}
 	}
 
-	plan, err := m.planToJSONAPI(run.plan, r)
+	plan, err := m.plan().toJSONAPI(run.plan, r)
 	if err != nil {
 		return nil, err
 	}
-	apply, err := m.applyToJSONAPI(run.apply, r)
+	apply, err := m.apply().toJSONAPI(run.apply, r)
 	if err != nil {
 		return nil, err
 	}
@@ -141,15 +154,31 @@ func (m *jsonapiMarshaler) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 	}, nil
 }
 
-type jsonapiPlanMarshaler struct {
-	*Plan
-	req *http.Request
-	*api
+func (m jsonapiConverter) toJSONAPIList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
+	var items []*jsonapi.Run
+	for _, run := range list.Items {
+		jrun, err := m.toJSONAPI(run, r)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, jrun)
+	}
+	return &jsonapi.RunList{
+		Items:      items,
+		Pagination: list.Pagination.ToJSONAPI(),
+	}, nil
 }
 
-// ToJSONAPI assembles a JSON-API DTO.
-func (m *jsonapiMarshaler) planToJSONAPI(plan *Plan, r *http.Request) (*jsonapi.Plan, error) {
-	var report *jsonapi.ResourceReport
+func (m *jsonapiConverter) plan() *jsonapiPlanConverter   { return m.jsonapiPlanConverter }
+func (m *jsonapiConverter) apply() *jsonapiApplyConverter { return m.jsonapiApplyConverter }
+
+// jsonapiPlanConverter converts a plan into a json:api struct
+type jsonapiPlanConverter struct {
+	*logURLSigner
+}
+
+func (m *jsonapiPlanConverter) toJSONAPI(plan *Plan, r *http.Request) (*jsonapi.Plan, error) {
+	var report jsonapi.ResourceReport
 	if plan.ResourceReport != nil {
 		report.Additions = &plan.Additions
 		report.Changes = &plan.Changes
@@ -176,26 +205,28 @@ func (m *jsonapiMarshaler) planToJSONAPI(plan *Plan, r *http.Request) (*jsonapi.
 		}
 	}
 
-	// signedLogURL creates a signed URL for retrieving logs for a run phase.
-	logs := fmt.Sprintf("/runs/%s/logs/%s", plan.runID, otf.PlanPhase)
-	logs, err := m.Sign(logs, time.Hour)
+	logURL, err := m.logURL(r, plan.runID)
 	if err != nil {
 		return nil, err
 	}
-	// Terraform CLI expects an absolute URL
-	logs = otfhttp.Absolute(r, logs)
 
 	return &jsonapi.Plan{
 		ID:               otf.ConvertID(plan.ID(), "plan"),
 		HasChanges:       plan.HasChanges(),
-		LogReadURL:       logs,
+		LogReadURL:       logURL,
+		ResourceReport:   report,
 		Status:           string(plan.Status()),
 		StatusTimestamps: &timestamps,
 	}, nil
 }
 
-func (m *jsonapiMarshaler) applyToJSONAPI(apply *Apply, r *http.Request) (*jsonapi.Apply, error) {
-	var report *jsonapi.ResourceReport
+// jsonapiApplyConverter converts an apply into a json:api struct
+type jsonapiApplyConverter struct {
+	*logURLSigner
+}
+
+func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsonapi.Apply, error) {
+	var report jsonapi.ResourceReport
 	if apply.ResourceReport != nil {
 		report.Additions = &apply.Additions
 		report.Changes = &apply.Changes
@@ -222,34 +253,33 @@ func (m *jsonapiMarshaler) applyToJSONAPI(apply *Apply, r *http.Request) (*jsona
 		}
 	}
 
-	// signedLogURL creates a signed URL for retrieving logs for a run phase.
-	logs := fmt.Sprintf("/runs/%s/logs/%s", apply.runID, otf.ApplyPhase)
-	logs, err := m.Sign(logs, time.Hour)
+	logURL, err := m.logURL(r, apply.runID)
 	if err != nil {
 		return nil, err
 	}
-	// Terraform CLI expects an absolute URL
-	logs = otfhttp.Absolute(r, logs)
 
 	return &jsonapi.Apply{
 		ID:               otf.ConvertID(apply.ID(), "apply"),
-		LogReadURL:       logs,
+		LogReadURL:       logURL,
+		ResourceReport:   report,
 		Status:           string(apply.Status()),
 		StatusTimestamps: &timestamps,
 	}, nil
 }
 
-func (m jsonapiMarshaler) toJSONAPIList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
-	var items []*jsonapi.Run
-	for _, run := range list.Items {
-		jrun, err := m.toJSONAPI(run, r)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, jrun)
+// logURLSigner creates a signed URL for retrieving logs for a run phase.
+type logURLSigner struct {
+	otf.Signer
+
+	phase otf.PhaseType
+}
+
+func (s *logURLSigner) logURL(r *http.Request, runID string) (string, error) {
+	logs := fmt.Sprintf("/runs/%s/logs/%s", runID, s.phase)
+	logs, err := s.Sign(logs, time.Hour)
+	if err != nil {
+		return "", err
 	}
-	return &jsonapi.RunList{
-		Items:      items,
-		Pagination: list.Pagination.ToJSONAPI(),
-	}, nil
+	// Terraform CLI expects an absolute URL
+	return otfhttp.Absolute(r, logs), nil
 }

@@ -1,4 +1,4 @@
-package otf
+package run
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -14,6 +15,25 @@ import (
 
 // ReporterLockID is a unique ID guaranteeing only one reporter on a cluster is running at any time.
 const ReporterLockID int64 = 179366396344335597
+
+// ExclusiveReporter runs a reporter, ensuring it is the *only* reporter
+// running.
+func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string, app otf.LockableApplication) error {
+	op := func() error {
+		for {
+			err := app.WithLock(ctx, ReporterLockID, func(app Application) error {
+				return NewReporter(logger, app).Start(ctx)
+			})
+			select {
+			case <-ctx.Done():
+				return nil
+			default:
+				return err
+			}
+		}
+	}
+	return backoff.RetryNotify(op, backoff.NewExponentialBackOff(), nil)
+}
 
 // Reporter reports back to VCS providers the current status of VCS-triggered
 // runs.
@@ -146,23 +166,4 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 			Path:   paths.Run(run.ID()),
 		}).String(),
 	})
-}
-
-// ExclusiveReporter runs a reporter, ensuring it is the *only* reporter
-// running.
-func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string, app LockableApplication) error {
-	op := func() error {
-		for {
-			err := app.WithLock(ctx, ReporterLockID, func(app Application) error {
-				return NewReporter(logger, app).Start(ctx)
-			})
-			select {
-			case <-ctx.Done():
-				return nil
-			default:
-				return err
-			}
-		}
-	}
-	return backoff.RetryNotify(op, backoff.NewExponentialBackOff(), nil)
 }

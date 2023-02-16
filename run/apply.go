@@ -7,7 +7,7 @@ import (
 // Apply is the apply phase of a run
 type Apply struct {
 	// ResourcesReport is a report of applied resource changes
-	*otf.ResourceReport
+	*ResourceReport
 
 	runID string
 	*phaseStatus

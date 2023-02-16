@@ -11,20 +11,20 @@ import (
 
 type app interface {
 	create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
-	get(ctx context.Context, runID string) (*otf.Run, error)
-	list(ctx context.Context, opts RunListOptions) (*RunList, error)
+	get(ctx context.Context, runID string) (*Run, error)
+	list(ctx context.Context, opts otf.RunListOptions) (*RunList, error)
 	// apply enqueues an apply for the run.
-	apply(ctx context.Context, runID string, opts RunApplyOptions) error
-	discard(ctx context.Context, runID string, opts RunDiscardOptions) error
+	apply(ctx context.Context, runID string) error
+	discard(ctx context.Context, runID string) error
 	// cancel a run. If a run is in progress then a cancelation signal will be
 	// sent out.
-	cancel(ctx context.Context, runID string, opts RunCancelOptions) error
+	cancel(ctx context.Context, runID string) error
 	// forceCancel forcefully cancels a run.
-	forceCancel(ctx context.Context, runID string, opts RunForceCancelOptions) error
+	forceCancel(ctx context.Context, runID string) error
 	// enqueuePlan enqueues a plan for the run.
 	//
 	// NOTE: this is an internal action, invoked by the scheduler only.
-	enqueuePlan(ctx context.Context, runID string) (*otf.Run, error)
+	enqueuePlan(ctx context.Context, runID string) (*Run, error)
 	// getPlanFile returns the plan file for the run.
 	getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error)
 	// uploadPlanFile persists a run's plan file. The plan format should be either
@@ -37,14 +37,14 @@ type app interface {
 	// delete deletes a run.
 	delete(ctx context.Context, runID string) error
 	// startPhase starts a run phase.
-	startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error)
+	startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*Run, error)
 	// finishPhase finishes a phase. Creates a report of changes before updating the status of
 	// the run.
-	finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error)
+	finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error)
 	// createReport creates a report of changes for the phase.
-	createReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error)
-	createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error)
-	createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error)
+	createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
+	createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
+	createApplyReport(ctx context.Context, runID string) (ResourceReport, error)
 }
 
 type Application struct {
@@ -100,7 +100,7 @@ func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error
 
 // ListRuns retrieves multiple run objs. Use opts to filter and paginate the
 // list.
-func (a *Application) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var err error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -135,12 +135,12 @@ func (a *Application) ListRuns(ctx context.Context, opts RunListOptions) (*RunLi
 }
 
 // ApplyRun enqueues an apply for the run.
-func (a *Application) ApplyRun(ctx context.Context, runID string, opts RunApplyOptions) error {
+func (a *Application) ApplyRun(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueueApply()
 	})
 	if err != nil {
@@ -156,13 +156,13 @@ func (a *Application) ApplyRun(ctx context.Context, runID string, opts RunApplyO
 }
 
 // DiscardRun the run.
-func (a *Application) DiscardRun(ctx context.Context, runID string, opts RunDiscardOptions) error {
+func (a *Application) DiscardRun(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -179,14 +179,14 @@ func (a *Application) DiscardRun(ctx context.Context, runID string, opts RunDisc
 
 // CancelRun a run. If a run is in progress then a cancelation signal will be
 // sent out.
-func (a *Application) CancelRun(ctx context.Context, runID string, opts RunCancelOptions) error {
+func (a *Application) CancelRun(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
 
 	var enqueue bool
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) (err error) {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 		enqueue, err = run.Cancel()
 		return err
 	})
@@ -204,12 +204,12 @@ func (a *Application) CancelRun(ctx context.Context, runID string, opts RunCance
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts RunForceCancelOptions) error {
+func (a *Application) ForceCancelRun(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.ForceCancel()
 	})
 	if err != nil {
@@ -227,13 +227,13 @@ func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts Run
 // EnqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
+func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.EnqueuePlanAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
@@ -355,13 +355,13 @@ func (a *Application) DeleteRun(ctx context.Context, runID string) error {
 }
 
 // StartPhase starts a run phase.
-func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error) {
+func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Start(phase)
 	})
 	if err != nil {
@@ -375,13 +375,13 @@ func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.Ph
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	var report otf.ResourceReport
+	var report ResourceReport
 	if !opts.Errored {
 		var err error
 		report, err = a.createReport(ctx, runID, phase)
@@ -390,7 +390,7 @@ func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.P
 			opts.Errored = true
 		}
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Finish(phase, opts)
 	})
 	if err != nil {
@@ -408,46 +408,46 @@ func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.P
 }
 
 // createReport creates a report of changes for the phase.
-func (a *Application) createReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error) {
+func (a *Application) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
 	switch phase {
 	case otf.PlanPhase:
 		return a.createPlanReport(ctx, runID)
 	case otf.ApplyPhase:
 		return a.createApplyReport(ctx, runID)
 	default:
-		return otf.ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
+		return ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
 	}
 }
 
-func (a *Application) createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error) {
+func (a *Application) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
 	plan, err := a.GetPlanFile(ctx, runID, otf.PlanFormatJSON)
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	report, err := CompilePlanReport(plan)
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	if err := a.db.CreatePlanReport(ctx, runID, report); err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	return report, nil
 }
 
-func (a *Application) createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error) {
+func (a *Application) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
 	logs, err := a.GetChunk(ctx, otf.GetChunkOptions{
 		RunID: runID,
 		Phase: otf.ApplyPhase,
 	})
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	report, err := ParseApplyOutput(string(logs.Data))
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	if err := a.db.CreateApplyReport(ctx, runID, report); err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	return report, nil
 }

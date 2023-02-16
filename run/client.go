@@ -98,7 +98,7 @@ func (c *Client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Ru
 		return nil, err
 	}
 
-	return otf.UnmarshalRunListJSONAPI(wl), nil
+	return NewListFromJSONAPI(wl), nil
 }
 
 func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
