@@ -21,7 +21,7 @@ const ReporterLockID int64 = 179366396344335597
 func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string, app otf.LockableApplication) error {
 	op := func() error {
 		for {
-			err := app.WithLock(ctx, ReporterLockID, func(app Application) error {
+			err := app.WithLock(ctx, ReporterLockID, func(app otf.Application) error {
 				return NewReporter(logger, app).Start(ctx)
 			})
 			select {
@@ -38,12 +38,12 @@ func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string,
 // Reporter reports back to VCS providers the current status of VCS-triggered
 // runs.
 type Reporter struct {
-	Application
+	otf.Application
 	logr.Logger
 }
 
 // NewReporter constructs and initialises the reporter.
-func NewReporter(logger logr.Logger, app Application) *Reporter {
+func NewReporter(logger logr.Logger, app otf.Application) *Reporter {
 	s := &Reporter{
 		Application: app,
 		Logger:      logger.WithValues("component", "reporter"),
@@ -55,7 +55,7 @@ func NewReporter(logger logr.Logger, app Application) *Reporter {
 
 // Start starts the reporter daemon. Should be invoked in a go routine.
 func (r *Reporter) Start(ctx context.Context) error {
-	ctx = AddSubjectToContext(ctx, &Superuser{"reporter"})
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"reporter"})
 
 	op := func() error {
 		return r.reinitialize(ctx)
@@ -75,7 +75,7 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 	defer cancel()
 
 	// subscribe to run events
-	sub, err := r.Watch(ctx, WatchOptions{Name: String("reporter")})
+	sub, err := r.Watch(ctx, otf.WatchOptions{Name: otf.String("reporter")})
 	if err != nil {
 		return err
 	}
@@ -120,21 +120,21 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 	var status cloud.VCSStatus
 	var description string
 	switch run.Status() {
-	case RunPending, RunPlanQueued, RunApplyQueued:
+	case otf.RunPending, otf.RunPlanQueued, otf.RunApplyQueued:
 		status = cloud.VCSPendingStatus
-	case RunPlanning, RunApplying, RunPlanned, RunConfirmed:
+	case otf.RunPlanning, otf.RunApplying, otf.RunPlanned, otf.RunConfirmed:
 		status = cloud.VCSRunningStatus
-	case RunPlannedAndFinished:
+	case otf.RunPlannedAndFinished:
 		status = cloud.VCSSuccessStatus
 		if run.HasChanges() {
-			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport())
+			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport)
 		} else {
 			description = "no changes"
 		}
-	case RunApplied:
+	case otf.RunApplied:
 		status = cloud.VCSSuccessStatus
-		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport())
-	case RunErrored, RunCanceled, RunForceCanceled, RunDiscarded:
+		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport)
+	case otf.RunErrored, otf.RunCanceled, otf.RunForceCanceled, otf.RunDiscarded:
 		status = cloud.VCSErrorStatus
 		description = run.Status().String()
 	default:

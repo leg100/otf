@@ -11,16 +11,14 @@ import (
 )
 
 type db interface {
-	// GetChunk fetches a chunk of logs.
-	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
-	// GetChunkByID fetches a specific chunk with the given ID.
-	GetChunkByID(ctx context.Context, id int) (PersistedChunk, error)
-	// PutChunk uploads a chunk, receiving back the chunk along with a unique
+	// get fetches a chunk of logs.
+	get(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	// put uploads a chunk, receiving back the chunk along with a unique
 	// ID.
-	PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error)
+	put(ctx context.Context, chunk Chunk) (PersistedChunk, error)
 }
 
-// pgdb is a state/state-version database on postgres
+// pgdb is a logs database on postgres
 type pgdb struct {
 	otf.Database // provides access to generated SQL queries
 }
@@ -29,8 +27,8 @@ func newPGDB(db otf.Database) *pgdb {
 	return &pgdb{db}
 }
 
-// PutChunk persists a log chunk to the DB.
-func (db *pgdb) PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
+// put persists a log chunk to the DB.
+func (db *pgdb) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
 	if len(chunk.Data) == 0 {
 		return PersistedChunk{}, fmt.Errorf("refusing to persist empty chunk")
 	}
@@ -49,8 +47,8 @@ func (db *pgdb) PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, erro
 	}, nil
 }
 
-// GetChunk retrieves a log chunk from the DB.
-func (db *pgdb) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+// get retrieves a log chunk from the DB.
+func (db *pgdb) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
 	// maximum a postgres INT can hold.
 	if opts.Limit == 0 {
@@ -73,8 +71,8 @@ func (db *pgdb) GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, erro
 	}, nil
 }
 
-// GetChunkByID retrieves a plan log chunk from the DB using its unique chunk ID.
-func (db *pgdb) GetChunkByID(ctx context.Context, chunkID int) (PersistedChunk, error) {
+// getByID retrieves a log chunk from the DB using its unique ID.
+func (db *pgdb) getByID(ctx context.Context, chunkID int) (PersistedChunk, error) {
 	chunk, err := db.FindLogChunkByID(ctx, chunkID)
 	if err != nil {
 		return PersistedChunk{}, sql.Error(err)

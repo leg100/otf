@@ -58,7 +58,7 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 			backend := &fakeBackend{store: tt.backend}
 			cache := &fakeCache{cache: tt.cache}
 
-			proxy, err := NewChunkProxy(nil, logr.Discard(), cache, backend)
+			proxy, err := newProxy(nil, logr.Discard(), cache, backend)
 			require.NoError(t, err)
 
 			_, err = proxy.PutChunk(context.Background(), tt.chunk)
@@ -143,7 +143,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 			backend := &fakeBackend{store: tt.backend}
 			cache := &fakeCache{cache: tt.cache}
 
-			proxy, err := NewChunkProxy(nil, logr.Discard(), cache, backend)
+			proxy, err := newProxy(nil, logr.Discard(), cache, backend)
 			require.NoError(t, err)
 
 			// check we get wanted chunk

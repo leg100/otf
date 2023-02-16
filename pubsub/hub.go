@@ -20,8 +20,13 @@ const defaultChannel = "events"
 // processes
 var pid = uuid.New().String()
 
-// hub is a pubsub hub implemented using postgres' listen/notify
-type hub struct {
+// Getter retrieves a resource using its ID.
+type Getter interface {
+	GetByID(context.Context, string) (any, error)
+}
+
+// Hub is a pubsub Hub implemented using postgres' listen/notify
+type Hub struct {
 	logr.Logger
 
 	channel string            // postgres notification channel name
@@ -38,13 +43,13 @@ type HubConfig struct {
 	PoolDB      otf.DB
 }
 
-func NewHub(logger logr.Logger, cfg HubConfig) (*hub, error) {
+func NewHub(logger logr.Logger, cfg HubConfig) (*Hub, error) {
 	// required config
 	if cfg.PoolDB == nil {
 		return nil, errors.New("missing database connection pool")
 	}
 
-	ps := &hub{
+	ps := &Hub{
 		Logger:  logger.WithValues("component", "pubsub"),
 		pid:     pid,
 		channel: defaultChannel,
@@ -71,7 +76,7 @@ func NewHub(logger logr.Logger, cfg HubConfig) (*hub, error) {
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
 // local pubsub broker.
-func (b *hub) Start(ctx context.Context) error {
+func (b *Hub) Start(ctx context.Context) error {
 	conn, err := b.pool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -122,7 +127,7 @@ func (b *hub) Start(ctx context.Context) error {
 // Publish sends an event to subscribers, via postgres to subscribers on
 // other machines, and via the local broker to subscribers within the same
 // process.
-func (b *hub) Publish(event otf.Event) {
+func (b *Hub) Publish(event otf.Event) {
 	b.local.Publish(event)
 
 	// Don't publish vcs events to the rest of the cluster: the triggerer
@@ -150,21 +155,17 @@ func (b *hub) Publish(event otf.Event) {
 }
 
 // Subscribe subscribes the caller to a stream of events.
-func (b *hub) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
+func (b *Hub) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
 	return b.local.Subscribe(ctx, name)
 }
 
-type Getter interface {
-	GetByID(context.Context, string) (any, error)
-}
-
 // Register a means of reassembling a postgres message back into an otf event
-func (b *hub) Register(table string, getter Getter) {
+func (b *Hub) Register(table string, getter Getter) {
 	b.tables[table] = getter
 }
 
 // reassemble a postgres message into an otf event
-func (b *hub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
+func (b *Hub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
 	getter, ok := b.tables[msg.Table]
 	if !ok {
 		return otf.Event{}, fmt.Errorf("unregistered table: %s", msg.Table)
@@ -180,7 +181,7 @@ func (b *hub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
 }
 
 // marshal an otf event into a JSON-encoded postgres message
-func (b *hub) marshal(event otf.Event) ([]byte, error) {
+func (b *Hub) marshal(event otf.Event) ([]byte, error) {
 	obj, ok := event.Payload.(otf.Identity)
 	if !ok {
 		return nil, fmt.Errorf("cannot marshal event without an identifiable payload")

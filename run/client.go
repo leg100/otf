@@ -101,7 +101,7 @@ func (c *Client) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Ru
 	return NewListFromJSONAPI(wl), nil
 }
 
-func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+func (c *Client) GetRun(ctx context.Context, runID string) (otf.Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -114,10 +114,10 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 		return nil, err
 	}
 
-	return UnmarshalRunJSONAPI(run), nil
+	return NewFromJSONAPI(run), nil
 }
 
-func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
+func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (otf.Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/start/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
@@ -133,10 +133,10 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 		return nil, err
 	}
 
-	return otf.UnmarshalRunJSONAPI(run), nil
+	return NewFromJSONAPI(run), nil
 }
 
-func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (otf.Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/finish/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
@@ -152,5 +152,5 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 		return nil, err
 	}
 
-	return otf.UnmarshalRunJSONAPI(run), nil
+	return NewFromJSONAPI(run), nil
 }

@@ -80,12 +80,7 @@ func (s *api) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jrun, err := s.toJSONAPI(run, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jrun, jsonapi.WithCode(http.StatusCreated))
+	s.writeResponse(w, r, run, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
@@ -104,12 +99,7 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jrun, err := s.toJSONAPI(run, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jrun)
+	s.writeResponse(w, r, run)
 }
 
 func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
@@ -128,12 +118,7 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jrun, err := s.toJSONAPI(run, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jrun)
+	s.writeResponse(w, r, run)
 }
 
 func (s *api) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -149,12 +134,7 @@ func (s *api) GetRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jrun, err := s.toJSONAPI(run, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jrun)
+	s.writeResponse(w, r, run)
 }
 
 func (s *api) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -179,12 +159,7 @@ func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListO
 		return
 	}
 
-	jlist, err := s.toJSONAPIList(list, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jlist)
+	s.writeResponse(w, r, list)
 }
 
 func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -198,6 +173,7 @@ func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -233,6 +209,7 @@ func (s *api) CancelRun(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -251,6 +228,7 @@ func (s *api) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -271,6 +249,7 @@ func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	if _, err := w.Write(file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -300,6 +279,7 @@ func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -367,12 +347,7 @@ func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jplan, err := s.planToJSONAPI(run.plan, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jplan)
+	s.writeResponse(w, r, run.plan)
 }
 
 // getPlanJSON retrieves a plan object's plan file in JSON format.
@@ -411,10 +386,27 @@ func (s *api) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	japply, err := s.applyToJSONAPI(run.apply, r)
+	s.writeResponse(w, r, run.apply)
+}
+
+// writeResponse encodes v as json:api and writes it to the body of the http response.
+func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+	var payload any
+	var err error
+
+	switch v := v.(type) {
+	case *RunList:
+		payload, err = s.toJSONAPIList(v, r)
+	case *Run:
+		payload, err = s.toJSONAPI(v, r)
+	case *Plan:
+		payload, err = s.plan().toJSONAPI(v, r)
+	case *Apply:
+		payload, err = s.apply().toJSONAPI(v, r)
+	}
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, japply)
+	jsonapi.WriteResponse(w, r, payload, opts...)
 }

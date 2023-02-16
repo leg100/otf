@@ -71,6 +71,7 @@ type Run interface {
 	ForceCancelAvailableAt() *time.Time
 	Message() string
 	Organization() string
+	Phase() PhaseType
 	Refresh() bool
 	RefreshOnly() bool
 	ReplaceAddrs() []string

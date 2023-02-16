@@ -19,20 +19,6 @@ const (
 	// DefaultRefresh specifies that the state be refreshed prior to running a
 	// plan
 	DefaultRefresh = true
-	// List all available run statuses supported in OTF.
-	RunApplied            RunStatus = "applied"
-	RunApplyQueued        RunStatus = "apply_queued"
-	RunApplying           RunStatus = "applying"
-	RunCanceled           RunStatus = "canceled"
-	RunForceCanceled      RunStatus = "force_canceled"
-	RunConfirmed          RunStatus = "confirmed"
-	RunDiscarded          RunStatus = "discarded"
-	RunErrored            RunStatus = "errored"
-	RunPending            RunStatus = "pending"
-	RunPlanQueued         RunStatus = "plan_queued"
-	RunPlanned            RunStatus = "planned"
-	RunPlannedAndFinished RunStatus = "planned_and_finished"
-	RunPlanning           RunStatus = "planning"
 )
 
 var (
@@ -41,28 +27,7 @@ var (
 	ErrRunForceCancelNotAllowed  = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
 	ErrInvalidRunGetOptions      = errors.New("invalid run get options")
 	ErrInvalidRunStateTransition = errors.New("invalid run state transition")
-	ActiveRun                    = []RunStatus{
-		RunApplyQueued,
-		RunApplying,
-		RunConfirmed,
-		RunPlanQueued,
-		RunPlanned,
-		RunPlanning,
-	}
-	IncompleteRun = append(ActiveRun, RunPending)
-	CompletedRun  = []RunStatus{
-		RunApplied,
-		RunErrored,
-		RunDiscarded,
-		RunCanceled,
-		RunForceCanceled,
-	}
 )
-
-// RunStatus represents a run state.
-type RunStatus string
-
-func (r RunStatus) String() string { return string(r) }
 
 type Run struct {
 	id                     string
@@ -76,7 +41,7 @@ type Run struct {
 	refreshOnly            bool
 	autoApply              bool
 	speculative            bool
-	status                 RunStatus
+	status                 otf.RunStatus
 	statusTimestamps       []RunStatusTimestamp
 	replaceAddrs           []string
 	targetAddrs            []string
@@ -103,7 +68,7 @@ func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
 func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
 func (r *Run) AutoApply() bool                        { return r.autoApply }
 func (r *Run) Speculative() bool                      { return r.speculative }
-func (r *Run) Status() RunStatus                      { return r.status }
+func (r *Run) Status() otf.RunStatus                  { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
@@ -117,7 +82,7 @@ func (r *Run) Commit() *string                        { return r.commit }
 func (r *Run) Latest() bool { return r.latest }
 
 func (r *Run) Queued() bool {
-	return r.status == RunPlanQueued || r.status == RunApplyQueued
+	return r.status == otf.RunPlanQueued || r.status == otf.RunApplyQueued
 }
 
 func (r *Run) HasChanges() bool {
@@ -125,7 +90,7 @@ func (r *Run) HasChanges() bool {
 }
 
 func (r *Run) PlanOnly() bool {
-	return r.status == RunPlannedAndFinished
+	return r.status == otf.RunPlannedAndFinished
 }
 
 // HasApply determines whether the run has started applying yet.
@@ -137,11 +102,11 @@ func (r *Run) HasApply() bool {
 // Phase returns the current phase.
 func (r *Run) Phase() otf.PhaseType {
 	switch r.status {
-	case RunPending:
+	case otf.RunPending:
 		return otf.PendingPhase
-	case RunPlanQueued, RunPlanning, RunPlanned:
+	case otf.RunPlanQueued, otf.RunPlanning, otf.RunPlanned:
 		return otf.PlanPhase
-	case RunApplyQueued, RunApplying, RunApplied:
+	case otf.RunApplyQueued, otf.RunApplying, otf.RunApplied:
 		return otf.ApplyPhase
 	default:
 		return otf.UnknownPhase
@@ -153,9 +118,9 @@ func (r *Run) Discard() error {
 	if !r.Discardable() {
 		return ErrRunDiscardNotAllowed
 	}
-	r.updateStatus(RunDiscarded)
+	r.updateStatus(otf.RunDiscarded)
 
-	if r.status == RunPending {
+	if r.status == otf.RunPending {
 		r.plan.updateStatus(otf.PhaseUnreachable)
 	}
 	r.apply.updateStatus(otf.PhaseUnreachable)
@@ -175,21 +140,21 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 	r.forceCancelAvailableAt = &tenSecondsFromNow
 
 	switch r.status {
-	case RunPending:
+	case otf.RunPending:
 		r.plan.updateStatus(otf.PhaseUnreachable)
 		r.apply.updateStatus(otf.PhaseUnreachable)
-	case RunPlanQueued, RunPlanning:
+	case otf.RunPlanQueued, otf.RunPlanning:
 		r.plan.updateStatus(otf.PhaseCanceled)
 		r.apply.updateStatus(otf.PhaseUnreachable)
-	case RunApplyQueued, RunApplying:
+	case otf.RunApplyQueued, otf.RunApplying:
 		r.apply.updateStatus(otf.PhaseCanceled)
 	}
 
-	if r.status == RunPlanning || r.status == RunApplying {
+	if r.status == otf.RunPlanning || r.status == otf.RunApplying {
 		enqueue = true
 	}
 
-	r.updateStatus(RunCanceled)
+	r.updateStatus(otf.RunCanceled)
 
 	return enqueue, nil
 }
@@ -198,7 +163,7 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.forceCancelAvailableAt != nil && time.Now().After(*r.forceCancelAvailableAt) {
-		r.updateStatus(RunCanceled)
+		r.updateStatus(otf.RunCanceled)
 		return nil
 	}
 	return ErrRunForceCancelNotAllowed
@@ -210,9 +175,9 @@ func (r *Run) Do(env otf.Environment) error {
 		return err
 	}
 	switch r.status {
-	case RunPlanning:
+	case otf.RunPlanning:
 		return r.doPlan(env)
-	case RunApplying:
+	case otf.RunApplying:
 		return r.doApply(env)
 	default:
 		return fmt.Errorf("invalid status: %s", r.status)
@@ -223,7 +188,7 @@ func (r *Run) Do(env otf.Environment) error {
 // discarded, etc.
 func (r *Run) Done() bool {
 	switch r.Status() {
-	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
+	case otf.RunApplied, otf.RunPlannedAndFinished, otf.RunDiscarded, otf.RunCanceled, otf.RunErrored:
 		return true
 	default:
 		return false
@@ -233,10 +198,10 @@ func (r *Run) Done() bool {
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
 // run for its workspace (speculative runs are ignored).
 func (r *Run) EnqueuePlan() error {
-	if r.status != RunPending {
+	if r.status != otf.RunPending {
 		return fmt.Errorf("cannot enqueue run with status %s", r.status)
 	}
-	r.updateStatus(RunPlanQueued)
+	r.updateStatus(otf.RunPlanQueued)
 	r.plan.updateStatus(otf.PhaseQueued)
 
 	return nil
@@ -258,10 +223,10 @@ func (r *Run) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolicy
 }
 
 func (r *Run) EnqueueApply() error {
-	if r.status != RunPlanned {
+	if r.status != otf.RunPlanned {
 		return fmt.Errorf("cannot apply run")
 	}
-	r.updateStatus(RunApplyQueued)
+	r.updateStatus(otf.RunApplyQueued)
 	r.apply.updateStatus(otf.PhaseQueued)
 	return nil
 }
@@ -278,11 +243,11 @@ func (r *Run) StatusTimestamp(status otf.RunStatus) (time.Time, error) {
 // Start a run phase
 func (r *Run) Start(phase otf.PhaseType) error {
 	switch r.status {
-	case RunPlanQueued:
+	case otf.RunPlanQueued:
 		return r.startPlan()
-	case RunApplyQueued:
+	case otf.RunApplyQueued:
 		return r.startApply()
-	case RunPlanning, RunApplying:
+	case otf.RunPlanning, otf.RunApplying:
 		return otf.ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
@@ -291,7 +256,7 @@ func (r *Run) Start(phase otf.PhaseType) error {
 
 // Finish updates the run to reflect its plan or apply phase having finished.
 func (r *Run) Finish(phase otf.PhaseType, opts otf.PhaseFinishOptions) error {
-	if r.status == RunCanceled {
+	if r.status == otf.RunCanceled {
 		// run was canceled before the phase finished so nothing more to do.
 		return nil
 	}
@@ -306,39 +271,39 @@ func (r *Run) Finish(phase otf.PhaseType, opts otf.PhaseFinishOptions) error {
 }
 
 func (r *Run) startPlan() error {
-	if r.status != RunPlanQueued {
+	if r.status != otf.RunPlanQueued {
 		return ErrInvalidRunStateTransition
 	}
-	r.updateStatus(RunPlanning)
+	r.updateStatus(otf.RunPlanning)
 	r.plan.updateStatus(otf.PhaseRunning)
 	return nil
 }
 
 func (r *Run) startApply() error {
-	if r.status != RunApplyQueued {
+	if r.status != otf.RunApplyQueued {
 		return ErrInvalidRunStateTransition
 	}
-	r.updateStatus(RunApplying)
+	r.updateStatus(otf.RunApplying)
 	r.apply.updateStatus(otf.PhaseRunning)
 	return nil
 }
 
 func (r *Run) finishPlan(opts otf.PhaseFinishOptions) error {
-	if r.status != RunPlanning {
+	if r.status != otf.RunPlanning {
 		return ErrInvalidRunStateTransition
 	}
 	if opts.Errored {
-		r.updateStatus(RunErrored)
+		r.updateStatus(otf.RunErrored)
 		r.plan.updateStatus(otf.PhaseErrored)
 		r.apply.updateStatus(otf.PhaseUnreachable)
 		return nil
 	}
 
-	r.updateStatus(RunPlanned)
+	r.updateStatus(otf.RunPlanned)
 	r.plan.updateStatus(otf.PhaseFinished)
 
 	if !r.HasChanges() || r.Speculative() {
-		r.updateStatus(RunPlannedAndFinished)
+		r.updateStatus(otf.RunPlannedAndFinished)
 		r.apply.updateStatus(otf.PhaseUnreachable)
 	} else if r.autoApply {
 		return r.EnqueueApply()
@@ -347,20 +312,20 @@ func (r *Run) finishPlan(opts otf.PhaseFinishOptions) error {
 }
 
 func (r *Run) finishApply(opts otf.PhaseFinishOptions) error {
-	if r.status != RunApplying {
+	if r.status != otf.RunApplying {
 		return ErrInvalidRunStateTransition
 	}
 	if opts.Errored {
-		r.updateStatus(RunErrored)
+		r.updateStatus(otf.RunErrored)
 		r.apply.updateStatus(otf.PhaseErrored)
 	} else {
-		r.updateStatus(RunApplied)
+		r.updateStatus(otf.RunApplied)
 		r.apply.updateStatus(otf.PhaseFinished)
 	}
 	return nil
 }
 
-func (r *Run) updateStatus(status RunStatus) {
+func (r *Run) updateStatus(status otf.RunStatus) {
 	r.status = status
 	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
 		Status:    status,
@@ -371,7 +336,7 @@ func (r *Run) updateStatus(status RunStatus) {
 // Discardable determines whether run can be discarded.
 func (r *Run) Discardable() bool {
 	switch r.Status() {
-	case RunPending, RunPlanned:
+	case otf.RunPending, otf.RunPlanned:
 		return true
 	default:
 		return false
@@ -381,7 +346,7 @@ func (r *Run) Discardable() bool {
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
 	switch r.Status() {
-	case RunPending, RunPlanQueued, RunPlanning, RunPlanned, RunApplyQueued, RunApplying:
+	case otf.RunPending, otf.RunPlanQueued, otf.RunPlanning, otf.RunPlanned, otf.RunApplyQueued, otf.RunApplying:
 		return true
 	default:
 		return false
@@ -391,7 +356,7 @@ func (r *Run) Cancelable() bool {
 // Confirmable determines whether run can be confirmed.
 func (r *Run) Confirmable() bool {
 	switch r.Status() {
-	case RunPlanned:
+	case otf.RunPlanned:
 		return true
 	default:
 		return false
@@ -465,7 +430,7 @@ func (r *Run) setupEnv(env otf.Environment) error {
 	if err := env.RunFunc(r.downloadState); err != nil {
 		return err
 	}
-	if r.status == RunApplying {
+	if r.status == otf.RunApplying {
 		// Download lock file from plan phase for the apply phase, to ensure
 		// same providers are used in both phases.
 		if err := env.RunFunc(r.downloadLockFile); err != nil {
@@ -531,7 +496,7 @@ func (r *Run) uploadPlan(ctx context.Context, env otf.Environment) error {
 		return err
 	}
 
-	if err := env.UploadPlanFile(ctx, r.id, file, PlanFormatBinary); err != nil {
+	if err := env.UploadPlanFile(ctx, r.id, file, otf.PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -543,7 +508,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env otf.Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.UploadPlanFile(ctx, r.id, jsonFile, PlanFormatJSON); err != nil {
+	if err := env.UploadPlanFile(ctx, r.id, jsonFile, otf.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -575,7 +540,7 @@ func (r *Run) uploadLockFile(ctx context.Context, env otf.Environment) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env otf.Environment) error {
-	plan, err := env.GetPlanFile(ctx, r.id, PlanFormatBinary)
+	plan, err := env.GetPlanFile(ctx, r.id, otf.PlanFormatBinary)
 	if err != nil {
 		return err
 	}

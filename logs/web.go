@@ -14,37 +14,34 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-type htmlHandlers struct {
+type web struct {
 	logr.Logger
 	*sse.Server
 
 	app
 }
 
-type htmlLogChunk struct {
-	Chunk
+func newWebHandlers(app app, logger logr.Logger) *web {
+	// Create and configure SSE server
+	srv := sse.New()
+	// we don't use last-event-item functionality so turn it off
+	srv.AutoReplay = false
+	// encode payloads into base64 otherwise the JSON string payloads corrupt
+	// the SSE protocol
+	srv.EncodeBase64 = true
+
+	return &web{
+		Server: srv,
+		Logger: logger,
+		app:    app,
+	}
 }
 
-func (l *htmlLogChunk) ToHTML() template.HTML {
-	chunk := l.RemoveStartMarker()
-	chunk = chunk.RemoveEndMarker()
-
-	// convert ANSI escape sequences to HTML
-	data := string(term2html.Render(chunk.Data))
-
-	return template.HTML(data)
-}
-
-// NextOffset returns the offset for the next chunk
-func (l *htmlLogChunk) NextOffset() int {
-	return l.Chunk.Offset + len(l.Chunk.Data)
-}
-
-func (h *htmlHandlers) AddHandlers(r *mux.Router) {
+func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 }
 
-func (app *htmlHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
+func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 	params := struct {
 		// Phase to tail. Must be either plan or apply.
 		Phase otf.PhaseType `schema:"phase,required"`
@@ -60,7 +57,7 @@ func (app *htmlHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := app.Tail(r.Context(), GetChunkOptions{
+	ch, err := h.app.tail(r.Context(), GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,
@@ -75,7 +72,7 @@ func (app *htmlHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 			case chunk, ok := <-ch:
 				if !ok {
 					// no more logs
-					app.Server.Publish(params.StreamID, &sse.Event{
+					h.Server.Publish(params.StreamID, &sse.Event{
 						Event: []byte("finished"),
 						Data:  []byte("no more logs"),
 					})
@@ -95,10 +92,10 @@ func (app *htmlHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 					NextOffset: htmlChunk.NextOffset(),
 				})
 				if err != nil {
-					app.Error(err, "marshalling data")
+					h.Error(err, "marshalling data")
 					continue
 				}
-				app.Server.Publish(params.StreamID, &sse.Event{
+				h.Server.Publish(params.StreamID, &sse.Event{
 					Data:  js,
 					Event: []byte("new-log-chunk"),
 				})
@@ -107,5 +104,25 @@ func (app *htmlHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
-	app.Server.ServeHTTP(w, r)
+	h.Server.ServeHTTP(w, r)
+}
+
+// htmlLogChunk is a log chunk rendered in html
+type htmlLogChunk struct {
+	Chunk
+}
+
+func (l *htmlLogChunk) ToHTML() template.HTML {
+	chunk := l.RemoveStartMarker()
+	chunk = chunk.RemoveEndMarker()
+
+	// convert ANSI escape sequences to HTML
+	data := string(term2html.Render(chunk.Data))
+
+	return template.HTML(data)
+}
+
+// NextOffset returns the offset for the next chunk
+func (l *htmlLogChunk) NextOffset() int {
+	return l.Chunk.Offset + len(l.Chunk.Data)
 }

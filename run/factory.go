@@ -51,7 +51,7 @@ func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions
 	}
 	run.plan = newPlan(&run)
 	run.apply = newApply(&run)
-	run.updateStatus(RunPending)
+	run.updateStatus(otf.RunPending)
 
 	if opts.IsDestroy != nil {
 		run.isDestroy = *opts.IsDestroy
@@ -83,7 +83,7 @@ func NewFromJSONAPI(d *jsonapi.Run) *Run {
 		positionInQueue:        d.PositionInQueue,
 		refresh:                d.Refresh,
 		refreshOnly:            d.RefreshOnly,
-		status:                 RunStatus(d.Status),
+		status:                 otf.RunStatus(d.Status),
 		// TODO: unmarshal timestamps
 		replaceAddrs:           d.ReplaceAddrs,
 		targetAddrs:            d.TargetAddrs,
@@ -94,8 +94,8 @@ func NewFromJSONAPI(d *jsonapi.Run) *Run {
 }
 
 // NewListFromJSONAPI constructs a run list from a json:api struct
-func NewListFromJSONAPI(from *jsonapi.RunList) *RunList {
-	to := RunList{
+func NewListFromJSONAPI(from *jsonapi.RunList) *otf.RunList {
+	to := otf.RunList{
 		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
 	}
 	for _, i := range from.Items {

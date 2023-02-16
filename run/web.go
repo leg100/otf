@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/logs"
 )
 
 type web struct {
@@ -69,26 +70,26 @@ func (h *web) listRuns(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *web) getRun(w http.ResponseWriter, r *http.Request) {
+func (h *web) getRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	run, err := app.GetRun(r.Context(), runID)
+	run, err := h.app.get(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), run.WorkspaceID())
+	ws, err := h.GetWorkspace(r.Context(), run.WorkspaceID())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Get existing logs thus far received for each phase. If none are found then don't treat
 	// that as an error because it merely means no logs have yet been received.
-	planLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
+	planLogs, err := h.GetChunk(r.Context(), logs.GetChunkOptions{
 		RunID: run.ID(),
 		Phase: otf.PlanPhase,
 	})
@@ -96,7 +97,7 @@ func (app *web) getRun(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
+	applyLogs, err := h.GetChunk(r.Context(), otf.GetChunkOptions{
 		RunID: run.ID(),
 		Phase: otf.ApplyPhase,
 	})
@@ -104,8 +105,8 @@ func (app *web) getRun(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.Render("run_get.tmpl", w, r, struct {
-		*otf.Run
+	h.Render("run_get.tmpl", w, r, struct {
+		*Run
 		Workspace *otf.Workspace
 		PlanLogs  *htmlLogChunk
 		ApplyLogs *htmlLogChunk
@@ -117,19 +118,19 @@ func (app *web) getRun(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *web) deleteRun(w http.ResponseWriter, r *http.Request) {
+func (h *web) deleteRun(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	run, err := app.GetRun(r.Context(), runID)
+	run, err := h.app.get(r.Context(), runID)
 	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.DeleteRun(r.Context(), runID)
+	err = h.DeleteRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -50,6 +51,7 @@ type app interface {
 type Application struct {
 	otf.Authorizer
 	logr.Logger
+	logs.Service
 	otf.PubSubService
 	otf.WorkspaceService
 
@@ -82,7 +84,7 @@ func (a *Application) create(ctx context.Context, workspaceID string, opts RunCr
 }
 
 // GetRun retrieves a run from the db.
-func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+func (a *Application) GetRun(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -129,7 +131,7 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*R
 		return nil, err
 	}
 
-	a.V(2).Info("listed runs", append(opts.LogFields(), "count", len(rl.Items), "subject", subject)...)
+	a.V(2).Info("listed runs", "count", len(rl.Items), "subject", subject)
 
 	return rl, nil
 }
@@ -435,7 +437,7 @@ func (a *Application) createPlanReport(ctx context.Context, runID string) (Resou
 }
 
 func (a *Application) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := a.GetChunk(ctx, otf.GetChunkOptions{
+	logs, err := a.GetChunk(ctx, logs.GetChunkOptions{
 		RunID: runID,
 		Phase: otf.ApplyPhase,
 	})

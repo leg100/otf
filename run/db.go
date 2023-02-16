@@ -232,12 +232,12 @@ func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
 }
 
 // SetPlanFile writes a plan file to the db
-func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, format PlanFormat) error {
+func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, format otf.PlanFormat) error {
 	switch format {
-	case PlanFormatBinary:
+	case otf.PlanFormatBinary:
 		_, err := db.UpdatePlanBinByID(ctx, file, sql.String(runID))
 		return err
-	case PlanFormatJSON:
+	case otf.PlanFormatJSON:
 		_, err := db.UpdatePlanJSONByID(ctx, file, sql.String(runID))
 		return err
 	default:
@@ -246,11 +246,11 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, form
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	switch format {
-	case PlanFormatBinary:
+	case otf.PlanFormatBinary:
 		return db.GetPlanBinByID(ctx, sql.String(runID))
-	case PlanFormatJSON:
+	case otf.PlanFormatJSON:
 		return db.GetPlanJSONByID(ctx, sql.String(runID))
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
@@ -301,7 +301,14 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase otf.Phase)
 	return err
 }
 
-func convertStatusSliceToStringSlice(statuses []RunStatus) (s []string) {
+// tx constructs a new pgdb within a transaction.
+func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
+	return db.Transaction(ctx, func(tx otf.Database) error {
+		return callback(newDB(tx))
+	})
+}
+
+func convertStatusSliceToStringSlice(statuses []otf.RunStatus) (s []string) {
 	for _, status := range statuses {
 		s = append(s, string(status))
 	}
@@ -345,7 +352,7 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 		positionInQueue:        result.PositionInQueue,
 		refresh:                result.Refresh,
 		refreshOnly:            result.RefreshOnly,
-		status:                 RunStatus(result.Status.String),
+		status:                 otf.RunStatus(result.Status.String),
 		statusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		replaceAddrs:           result.ReplaceAddrs,
 		targetAddrs:            result.TargetAddrs,

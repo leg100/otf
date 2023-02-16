@@ -28,14 +28,12 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	return val, nil
 }
 
-var _ otf.ChunkStore = (*fakeBackend)(nil)
-
 type fakeBackend struct {
 	store map[string][]byte
-	otf.ChunkStore
+	ChunkStore
 }
 
-func (s *fakeBackend) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (s *fakeBackend) GetChunk(ctx context.Context, opts GetChunkOptions) (otf.Chunk, error) {
 	if s.store == nil {
 		// avoid panics
 		s.store = make(map[string][]byte)
@@ -43,23 +41,23 @@ func (s *fakeBackend) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (o
 
 	data, ok := s.store[opts.Key()]
 	if !ok {
-		return otf.Chunk{}, errors.New("not found")
+		return Chunk{}, errors.New("not found")
 	}
-	return otf.Chunk{
+	return Chunk{
 		RunID: opts.RunID,
 		Phase: opts.Phase,
 		Data:  data,
 	}, nil
 }
 
-func (s *fakeBackend) PutChunk(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
+func (s *fakeBackend) PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
 	if existing, ok := s.store[chunk.Key()]; ok {
 		s.store[chunk.Key()] = append(existing, chunk.Data...)
 	} else {
 		s.store[chunk.Key()] = chunk.Data
 	}
 
-	return otf.PersistedChunk{
+	return PersistedChunk{
 		ChunkID: 123,
 		Chunk:   chunk,
 	}, nil

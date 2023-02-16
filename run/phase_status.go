@@ -21,7 +21,7 @@ func (p *phaseStatus) StatusTimestamp(status otf.PhaseStatus) (time.Time, error)
 			return rst.Timestamp, nil
 		}
 	}
-	return time.Time{}, ErrStatusTimestampNotFound
+	return time.Time{}, otf.ErrStatusTimestampNotFound
 }
 
 func (p *phaseStatus) updateStatus(status otf.PhaseStatus) {

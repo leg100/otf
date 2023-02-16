@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/run"
 )
 
 // JobWriter writes logs on behalf of a run phase.
@@ -25,7 +24,7 @@ type JobWriter struct {
 	ctx     context.Context // permits canceling mid-flow
 }
 
-func NewJobWriter(ctx context.Context, app ChunkService, logger logr.Logger, run *run.Run) *JobWriter {
+func NewJobWriter(ctx context.Context, app ChunkService, logger logr.Logger, run otf.Run) *JobWriter {
 	return &JobWriter{
 		ID:           run.ID(),
 		Phase:        run.Phase(),
