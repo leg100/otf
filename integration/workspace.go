@@ -1,13 +1,16 @@
-package workspace
+package integration
 
 import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/testutil"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,14 +18,21 @@ import (
 func TestWorkspace_Create(t *testing.T) {
 	ctx := context.Background()
 	db := sql.NewTestDB(t)
-	org := organization.CreateTestOrganization(t, db)
-	ws := otf.NewTestWorkspace(t, org)
+	svc := testutil.NewWorkspaceService(t, db)
+	org := testutil.CreateOrganization(t, db)
+	name := uuid.NewString()
 
-	err := db.CreateWorkspace(ctx, ws)
+	_, err := svc.CreateWorkspace(ctx, workspace.CreateWorkspaceOptions{
+		Name:         otf.String(name),
+		Organization: otf.String(org.Name()),
+	})
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		err := db.CreateWorkspace(ctx, ws)
+		_, err := svc.CreateWorkspace(ctx, workspace.CreateWorkspaceOptions{
+			Name:         otf.String(name),
+			Organization: otf.String(org.Name()),
+		})
 		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }

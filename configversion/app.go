@@ -9,6 +9,11 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
+// cacheKey generates a key for caching config tarballs
+func cacheKey(cvID string) string {
+	return fmt.Sprintf("%s.tar.gz", cvID)
+}
+
 type app interface {
 	create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	// CloneConfigurationVersion creates a new configuration version using the
@@ -18,6 +23,7 @@ type app interface {
 	get(ctx context.Context, id string) (*ConfigurationVersion, error)
 	getLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
 	list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+	delete(ctx context.Context, cvID string) error
 
 	// Upload handles verification and upload of the config tarball, updating
 	// the config version upon success or failure.
@@ -122,6 +128,21 @@ func (a *Application) getLatest(ctx context.Context, workspaceID string) (*Confi
 	return cv, nil
 }
 
+func (a *Application) delete(ctx context.Context, cvID string) error {
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteConfigurationVersionAction, cvID)
+	if err != nil {
+		return err
+	}
+
+	err = a.db.DeleteConfigurationVersion(ctx, cvID)
+	if err != nil {
+		a.Error(err, "deleting configuration version", "id", cvID, "subject", subject)
+		return err
+	}
+	a.V(2).Info("deleted configuration version", "id", cvID, "subject", subject)
+	return nil
+}
+
 // UploadConfig saves a configuration tarball to the db
 //
 // NOTE: unauthenticated - access granted only via signed URL
@@ -133,12 +154,20 @@ func (a *Application) upload(ctx context.Context, cvID string, config []byte) er
 		a.Error(err, "uploading configuration")
 		return err
 	}
-	if err := a.cache.Set(otf.ConfigVersionCacheKey(cvID), config); err != nil {
+	if err := a.cache.Set(cacheKey(cvID), config); err != nil {
 		return fmt.Errorf("caching configuration version tarball: %w", err)
 	}
 	a.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
 	return nil
 }
+
+type keyValue struct {
+	id     string
+	config []byte
+}
+
+func (kv keyValue) Key() string   { return kv.id }
+func (kv keyValue) Value() []byte { return kv.config }
 
 func (a *Application) download(ctx context.Context, cvID string) ([]byte, error) {
 	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.DownloadConfigurationVersionAction, cvID)
@@ -146,14 +175,14 @@ func (a *Application) download(ctx context.Context, cvID string) ([]byte, error)
 		return nil, err
 	}
 
-	if config, err := a.cache.Get(otf.ConfigVersionCacheKey(cvID)); err == nil {
+	if config, err := a.cache.Get(cacheKey(cvID)); err == nil {
 		return config, nil
 	}
 	config, err := a.db.GetConfig(context.Background(), cvID)
 	if err != nil {
 		return nil, err
 	}
-	if err := a.cache.Set(otf.ConfigVersionCacheKey(cvID), config); err != nil {
+	if err := a.cache.Set(cacheKey(cvID), config); err != nil {
 		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
 	}
 	a.V(2).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)

@@ -46,7 +46,6 @@ type Application interface {
 	OrganizationService
 	WorkspaceService
 	StateVersionService
-	ConfigurationVersionService
 	EventService
 	SessionService
 	// TokenService

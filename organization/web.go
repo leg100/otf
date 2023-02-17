@@ -110,7 +110,7 @@ func (a *web) editOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	params := struct {
-		Options updateOptions
+		Options UpdateOptions
 		Name    string `schema:"name,required"`
 	}{}
 	if err := decode.All(&params, r); err != nil {

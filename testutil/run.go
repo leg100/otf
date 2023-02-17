@@ -1,4 +1,4 @@
-package run
+package testutil
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type TestRunCreateOptions struct {
 	ID                *string // override ID of run
 	Speculative       bool
 	ExecutionMode     *otf.ExecutionMode
-	Status            RunStatus
+	Status            otf.RunStatus
 	AutoApply         *bool
 	Repo              *otf.WorkspaceRepo
 	IngressAttributes *otf.IngressAttributes
@@ -23,7 +23,7 @@ type TestRunCreateOptions struct {
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	ctx := context.Background()
-	run := otf.NewRun(cv, ws, RunCreateOptions{})
+	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
 	err := db.CreateRun(ctx, run)
 	require.NoError(t, err)
 

@@ -9,13 +9,18 @@ import (
 
 type fakeCache struct {
 	cache map[string][]byte
+}
 
-	otf.Cache
+func newFakeCache(keyvalues ...string) *fakeCache {
+	cache := make(map[string][]byte, len(keyvalues)/2)
+	for i := 0; i < len(keyvalues)/2; i += 2 {
+		cache[keyvalues[i]] = []byte(keyvalues[i+1])
+	}
+	return &fakeCache{cache}
 }
 
 func (c *fakeCache) Set(key string, val []byte) error {
 	c.cache[key] = val
-
 	return nil
 }
 
@@ -24,33 +29,30 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	if !ok {
 		return nil, errors.New("not found")
 	}
-
 	return val, nil
 }
 
 type fakeBackend struct {
 	store map[string][]byte
-	ChunkStore
 }
 
-func (s *fakeBackend) GetChunk(ctx context.Context, opts GetChunkOptions) (otf.Chunk, error) {
-	if s.store == nil {
-		// avoid panics
-		s.store = make(map[string][]byte)
+func newFakeBackend(keyvalues ...string) *fakeBackend {
+	db := make(map[string][]byte, len(keyvalues)/2)
+	for i := 0; i < len(keyvalues)/2; i += 2 {
+		db[keyvalues[i]] = []byte(keyvalues[i+1])
 	}
+	return &fakeBackend{db}
+}
 
+func (s *fakeBackend) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	data, ok := s.store[opts.Key()]
 	if !ok {
-		return Chunk{}, errors.New("not found")
+		return Chunk{}, otf.ErrResourceNotFound
 	}
-	return Chunk{
-		RunID: opts.RunID,
-		Phase: opts.Phase,
-		Data:  data,
-	}, nil
+	return Chunk{Data: data}, nil
 }
 
-func (s *fakeBackend) PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
+func (s *fakeBackend) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
 	if existing, ok := s.store[chunk.Key()]; ok {
 		s.store[chunk.Key()] = append(existing, chunk.Data...)
 	} else {

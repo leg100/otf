@@ -12,7 +12,10 @@ import (
 // RunStarter starts a run triggered via the UI (whereas the terraform CLI takes
 // care of calling all the API endpoints to start a run itself).
 type RunStarter struct {
-	Application
+	otf.ConfigurationVersionService
+	otf.Application
+
+	app
 }
 
 func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {
@@ -21,7 +24,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 		return nil, err
 	}
 
-	var cv *ConfigurationVersion
+	var cv otf.ConfigurationVersion
 	if ws.Repo() != nil {
 		client, err := rs.GetVCSClient(ctx, ws.Repo().ProviderID)
 		if err != nil {
@@ -44,7 +47,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 	} else {
 		latest, err := rs.GetLatestConfigurationVersion(ctx, ws.ID())
 		if err != nil {
-			if errors.Is(err, ErrResourceNotFound) {
+			if errors.Is(err, otf.ErrResourceNotFound) {
 				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")
 			}
 			return nil, err
@@ -55,7 +58,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 		}
 	}
 
-	return rs.CreateRun(ctx, workspaceID, RunCreateOptions{
-		ConfigurationVersionID: String(cv.ID()),
+	return rs.create(ctx, workspaceID, RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID()),
 	})
 }

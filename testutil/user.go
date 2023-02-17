@@ -16,7 +16,7 @@ import (
 func TestUser_Get(t *testing.T) {
 	ctx := context.Background()
 	db := sql.NewTestDB(t)
-	orgService := newOrganizationService(t, db)
+	orgService := NewOrganizationService(t, db)
 	service := newAuthService(t, db)
 
 	org1 := createOrganization(t, orgService)

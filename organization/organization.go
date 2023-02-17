@@ -50,7 +50,7 @@ func (org *Organization) Name() string         { return org.name }
 func (org *Organization) SessionRemember() int { return org.sessionRemember }
 func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
 
-func (org *Organization) Update(opts updateOptions) error {
+func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.Name != nil {
 		org.name = *opts.Name
 	}
@@ -97,9 +97,9 @@ type listOptions struct {
 	otf.ListOptions
 }
 
-// updateOptions represents the options for updating an
-// organization. See dto.updateOptions for more details.
-type updateOptions struct {
+// UpdateOptions represents the options for updating an
+// organization.
+type UpdateOptions struct {
 	Name            *string
 	SessionRemember *int
 	SessionTimeout  *int

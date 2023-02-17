@@ -76,6 +76,7 @@ const (
 	ListConfigurationVersionsAction
 	GetConfigurationVersionAction
 	DownloadConfigurationVersionAction
+	DeleteConfigurationVersionAction
 
 	ListUsersAction
 

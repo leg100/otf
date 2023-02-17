@@ -31,10 +31,6 @@ type app interface {
 	// uploadPlanFile persists a run's plan file. The plan format should be either
 	// be binary or json.
 	uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error
-	// getLockFile returns the lock file for the run.
-	getLockFile(ctx context.Context, runID string) ([]byte, error)
-	// uploadLockFile persists the lock file for a run.
-	uploadLockFile(ctx context.Context, runID string, plan []byte) error
 	// delete deletes a run.
 	delete(ctx context.Context, runID string) error
 	// startPhase starts a run phase.
@@ -46,6 +42,8 @@ type app interface {
 	createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
 	createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
 	createApplyReport(ctx context.Context, runID string) (ResourceReport, error)
+
+	lockFileApp
 }
 
 type Application struct {
@@ -84,7 +82,7 @@ func (a *Application) create(ctx context.Context, workspaceID string, opts RunCr
 }
 
 // GetRun retrieves a run from the db.
-func (a *Application) GetRun(ctx context.Context, runID string) (*Run, error) {
+func (a *Application) get(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -102,7 +100,7 @@ func (a *Application) GetRun(ctx context.Context, runID string) (*Run, error) {
 
 // ListRuns retrieves multiple run objs. Use opts to filter and paginate the
 // list.
-func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
+func (a *Application) list(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var err error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -136,8 +134,8 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*R
 	return rl, nil
 }
 
-// ApplyRun enqueues an apply for the run.
-func (a *Application) ApplyRun(ctx context.Context, runID string) error {
+// apply enqueues an apply for the run.
+func (a *Application) apply(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err
@@ -157,8 +155,8 @@ func (a *Application) ApplyRun(ctx context.Context, runID string) error {
 	return err
 }
 
-// DiscardRun the run.
-func (a *Application) DiscardRun(ctx context.Context, runID string) error {
+// discard discards the run.
+func (a *Application) discard(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -179,9 +177,9 @@ func (a *Application) DiscardRun(ctx context.Context, runID string) error {
 	return err
 }
 
-// CancelRun a run. If a run is in progress then a cancelation signal will be
+// cancel a run. If a run is in progress then a cancelation signal will be
 // sent out.
-func (a *Application) CancelRun(ctx context.Context, runID string) error {
+func (a *Application) cancel(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -206,7 +204,7 @@ func (a *Application) CancelRun(ctx context.Context, runID string) error {
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (a *Application) ForceCancelRun(ctx context.Context, runID string) error {
+func (a *Application) forceCancel(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -226,10 +224,10 @@ func (a *Application) ForceCancelRun(ctx context.Context, runID string) error {
 	return err
 }
 
-// EnqueuePlan enqueues a plan for the run.
+// enqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
+func (a *Application) enqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.EnqueuePlanAction, runID)
 	if err != nil {
 		return nil, err
@@ -249,8 +247,8 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*Run, erro
 	return run, nil
 }
 
-// GetPlanFile returns the plan file for the run.
-func (a *Application) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+// getPlanFile returns the plan file for the run.
+func (a *Application) getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -272,9 +270,9 @@ func (a *Application) GetPlanFile(ctx context.Context, runID string, format otf.
 	return file, nil
 }
 
-// UploadPlanFile persists a run's plan file. The plan format should be either
+// uploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (a *Application) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
+func (a *Application) uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
 	subject, err := a.CanAccessRun(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -294,49 +292,8 @@ func (a *Application) UploadPlanFile(ctx context.Context, runID string, plan []b
 	return nil
 }
 
-// GetLockFile returns the lock file for the run.
-func (a *Application) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
-	subject, err := a.CanAccessRun(ctx, rbac.GetLockFileAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	if plan, err := a.cache.Get(otf.LockFileCacheKey(runID)); err == nil {
-		return plan, nil
-	}
-	// Cache is empty; retrieve from DB
-	file, err := a.db.GetLockFile(ctx, runID)
-	if err != nil {
-		a.Error(err, "retrieving lock file", "id", runID, "subject", subject)
-		return nil, err
-	}
-	// Cache plan before returning
-	if err := a.cache.Set(otf.LockFileCacheKey(runID), file); err != nil {
-		return nil, fmt.Errorf("caching lock file: %w", err)
-	}
-	return file, nil
-}
-
-// UploadLockFile persists the lock file for a run.
-func (a *Application) UploadLockFile(ctx context.Context, runID string, plan []byte) error {
-	subject, err := a.CanAccessRun(ctx, rbac.UploadLockFileAction, runID)
-	if err != nil {
-		return err
-	}
-
-	if err := a.db.SetLockFile(ctx, runID, plan); err != nil {
-		a.Error(err, "uploading lock file", "id", runID, "subject", subject)
-		return err
-	}
-	a.V(2).Info("uploaded lock file", "id", runID)
-	if err := a.cache.Set(otf.LockFileCacheKey(runID), plan); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
-	}
-	return nil
-}
-
-// DeleteRun deletes a run.
-func (a *Application) DeleteRun(ctx context.Context, runID string) error {
+// delete a run.
+func (a *Application) delete(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.DeleteRunAction, runID)
 	if err != nil {
 		return err
@@ -356,8 +313,8 @@ func (a *Application) DeleteRun(ctx context.Context, runID string) error {
 	return nil
 }
 
-// StartPhase starts a run phase.
-func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*Run, error) {
+// startPhase starts a run phase.
+func (a *Application) startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
@@ -375,9 +332,9 @@ func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.Ph
 	return run, nil
 }
 
-// FinishPhase finishes a phase. Creates a report of changes before updating the status of
+// finishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error) {
+func (a *Application) finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
@@ -422,7 +379,7 @@ func (a *Application) createReport(ctx context.Context, runID string, phase otf.
 }
 
 func (a *Application) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
-	plan, err := a.GetPlanFile(ctx, runID, otf.PlanFormatJSON)
+	plan, err := a.getPlanFile(ctx, runID, otf.PlanFormatJSON)
 	if err != nil {
 		return ResourceReport{}, err
 	}

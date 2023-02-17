@@ -25,15 +25,15 @@ type planFileOptions struct {
 
 func (h *api) addHandlers(r *mux.Router) {
 	// Run routes
-	r.HandleFunc("/runs", h.CreateRun).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/apply", h.ApplyRun).Methods("POST")
-	r.HandleFunc("/runs", h.ListRuns).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.ListRuns).Methods("GET")
-	r.HandleFunc("/runs/{id}", h.GetRun).Methods("GET")
-	r.HandleFunc("/runs/{id}/actions/discard", h.DiscardRun).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/cancel", h.CancelRun).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/force-cancel", h.ForceCancelRun).Methods("POST")
-	r.HandleFunc("/organizations/{organization_name}/runs/queue", h.GetRunsQueue).Methods("GET")
+	r.HandleFunc("/runs", h.create).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/apply", h.applyRun).Methods("POST")
+	r.HandleFunc("/runs", h.list).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
+	r.HandleFunc("/runs/{id}", h.get).Methods("GET")
+	r.HandleFunc("/runs/{id}/actions/discard", h.discard).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/cancel", h.cancel).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/force-cancel", h.forceCancel).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/runs/queue", h.getRunQueue).Methods("GET")
 
 	// Run routes for exclusive use by remote agents
 	r.HandleFunc("/runs/{id}/actions/start/{phase}", h.startPhase).Methods("POST")
@@ -48,10 +48,10 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/plans/{plan_id}/json-output", h.getPlanJSON).Methods("GET")
 
 	// Apply routes
-	r.HandleFunc("/applies/{apply_id}", h.GetApply).Methods("GET")
+	r.HandleFunc("/applies/{apply_id}", h.getApply).Methods("GET")
 }
 
-func (s *api) CreateRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) create(w http.ResponseWriter, r *http.Request) {
 	opts := jsonapi.RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -121,7 +121,7 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 	s.writeResponse(w, r, run)
 }
 
-func (s *api) GetRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) get(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -137,11 +137,11 @@ func (s *api) GetRun(w http.ResponseWriter, r *http.Request) {
 	s.writeResponse(w, r, run)
 }
 
-func (s *api) ListRuns(w http.ResponseWriter, r *http.Request) {
+func (s *api) list(w http.ResponseWriter, r *http.Request) {
 	s.listRuns(w, r, otf.RunListOptions{})
 }
 
-func (s *api) GetRunsQueue(w http.ResponseWriter, r *http.Request) {
+func (s *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	s.listRuns(w, r, otf.RunListOptions{
 		Statuses: []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
 	})
@@ -162,7 +162,7 @@ func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListO
 	s.writeResponse(w, r, list)
 }
 
-func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) applyRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -177,7 +177,7 @@ func (s *api) ApplyRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *api) DiscardRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) discard(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -195,7 +195,7 @@ func (s *api) DiscardRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *api) CancelRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) cancel(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -213,7 +213,7 @@ func (s *api) CancelRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *api) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
+func (s *api) forceCancel(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -372,7 +372,7 @@ func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *api) GetApply(w http.ResponseWriter, r *http.Request) {
+func (s *api) getApply(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("apply_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)

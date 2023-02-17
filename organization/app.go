@@ -13,7 +13,7 @@ type application interface {
 	create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error)
 	get(ctx context.Context, name string) (*Organization, error)
 	list(ctx context.Context, opts listOptions) (*organizationList, error)
-	update(ctx context.Context, name string, opts *updateOptions) (*Organization, error)
+	update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
 	delete(ctx context.Context, name string) error
 	getEntitlements(ctx context.Context, organization string) (*Entitlements, error)
 }
@@ -95,14 +95,14 @@ func (a *app) list(ctx context.Context, opts listOptions) (*organizationList, er
 	return a.db.list(ctx, opts)
 }
 
-func (a *app) update(ctx context.Context, name string, opts *updateOptions) (*Organization, error) {
+func (a *app) update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
 
 	org, err := a.db.update(ctx, name, func(org *Organization) error {
-		return org.Update(*opts)
+		return org.Update(opts)
 	})
 	if err != nil {
 		a.Error(err, "updating organization", "name", name, "subject", subject)

@@ -52,7 +52,7 @@ func TestOrganization_Update(t *testing.T) {
 
 	newName := uuid.NewString()
 	org, err := db.update(ctx, org.Name(), func(org *Organization) error {
-		org.Update(updateOptions{Name: &newName})
+		org.Update(UpdateOptions{Name: &newName})
 		return nil
 	})
 	require.NoError(t, err)

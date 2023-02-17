@@ -1,22 +1,30 @@
-package run
+package integration
 
 import (
 	"context"
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRun_Create(t *testing.T) {
+	ctx := context.Background()
 	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+	os := testutil.NewOrganizationService(t, db)
+	runService := run.NewService()
+	org := testutil.CreateTestOrganization(t, db)
+	ws := testutil.CreateWorkspace(t, db, org)
+	cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	err := db.CreateRun(context.Background(), run)
+	// defer deletion
+
+	_, err := runService.Create(ctx, ws.ID(), run.RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID()),
+	})
 	require.NoError(t, err)
 }
 
@@ -24,7 +32,6 @@ func TestRun_UpdateStatus(t *testing.T) {
 	ctx := context.Background()
 
 	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
 	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 

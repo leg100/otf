@@ -43,8 +43,19 @@ func (s *Service) CloneConfigurationVersion(ctx context.Context, cvID string, op
 	return s.app.clone(ctx, cvID, opts)
 }
 
-func (s *Service) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
-	return s.app.list(ctx, workspaceID, opts)
+func (s *Service) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+	// convert from list of concrete CVs to list of interface CVs
+	from, err := s.app.list(ctx, workspaceID, opts)
+	if err != nil {
+		return nil, err
+	}
+	to := otf.ConfigurationVersionList{
+		Pagination: from.Pagination,
+	}
+	for _, i := range from.Items {
+		to.Items = append(to.Items, i)
+	}
+	return &to, nil
 }
 
 func (s *Service) GetConfigurationVersion(ctx context.Context, cvID string) (otf.ConfigurationVersion, error) {
@@ -53,4 +64,16 @@ func (s *Service) GetConfigurationVersion(ctx context.Context, cvID string) (otf
 
 func (s *Service) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (otf.ConfigurationVersion, error) {
 	return s.app.getLatest(ctx, workspaceID)
+}
+
+func (s *Service) DeleteConfigurationVersion(ctx context.Context, cvID string) error {
+	return s.app.delete(ctx, cvID)
+}
+
+func (s *Service) UploadConfig(ctx context.Context, workspaceID string, config []byte) error {
+	return s.app.upload(ctx, workspaceID, config)
+}
+
+func (s *Service) DownloadConfig(ctx context.Context, workspaceID string) ([]byte, error) {
+	return s.app.download(ctx, workspaceID)
 }

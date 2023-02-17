@@ -11,6 +11,12 @@ type AllowAllAuthorizer struct {
 	User otf.Subject
 }
 
+func NewAllowAllAuthorizer() *AllowAllAuthorizer {
+	return &AllowAllAuthorizer{
+		User: &otf.Superuser{},
+	}
+}
+
 func (a *AllowAllAuthorizer) CanAccessSite(ctx context.Context, action rbac.Action) (otf.Subject, error) {
 	return a.User, nil
 }

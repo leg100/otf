@@ -2,10 +2,16 @@ package logs
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
+
+// cacheKey generates a key for caching log chunks.
+func cacheKey(runID string, phase otf.PhaseType) string {
+	return fmt.Sprintf("%s.%s.log", runID, string(phase))
+}
 
 // proxy is a caching proxy for log chunks
 type proxy struct {
@@ -53,18 +59,19 @@ func (c *proxy) Start(ctx context.Context) error {
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
 func (c *proxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+	key := cacheKey(opts.RunID, opts.Phase)
+
 	// Try the cache first
-	if data, err := c.cache.Get(otf.LogCacheKey(opts.RunID, opts.Phase)); err == nil {
+	if data, err := c.cache.Get(key); err == nil {
 		return Chunk{Data: data}.Cut(opts), nil
 	}
-
 	// Fall back to getting chunk from backend
 	chunk, err := c.db.get(ctx, opts)
 	if err != nil {
 		return Chunk{}, err
 	}
 	// Cache it
-	if err := c.cache.Set(chunk.Key(), chunk.Data); err != nil {
+	if err := c.cache.Set(key, chunk.Data); err != nil {
 		return Chunk{}, err
 	}
 	// Cut chunk down to requested size.
@@ -88,17 +95,17 @@ func (c *proxy) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
 }
 
 func (c *proxy) cacheChunk(ctx context.Context, chunk Chunk) error {
-	// First chunk can safely be written straight to cache
+	key := cacheKey(chunk.RunID, chunk.Phase)
+
+	// first chunk: don't append
 	if chunk.IsStart() {
-		return c.cache.Set(chunk.Key(), chunk.Data)
+		return c.cache.Set(key, chunk.Data)
 	}
-
-	// Otherwise, append chunk to cache
-	if previous, err := c.cache.Get(chunk.Key()); err == nil {
-		return c.cache.Set(chunk.Key(), append(previous, chunk.Data...))
+	// successive chunks: append
+	if previous, err := c.cache.Get(key); err == nil {
+		return c.cache.Set(key, append(previous, chunk.Data...))
 	}
-
-	// Uncached; cache needs re-populating from store
+	// no cache entry; repopulate cache from db
 	all, err := c.db.get(ctx, GetChunkOptions{
 		RunID: chunk.RunID,
 		Phase: chunk.Phase,
@@ -106,5 +113,5 @@ func (c *proxy) cacheChunk(ctx context.Context, chunk Chunk) error {
 	if err != nil {
 		return err
 	}
-	return c.cache.Set(chunk.Key(), all.Data)
+	return c.cache.Set(key, all.Data)
 }

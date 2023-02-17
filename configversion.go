@@ -36,6 +36,11 @@ type ConfigurationVersion interface {
 	IngressAttributes() *IngressAttributes
 }
 
+type ConfigurationVersionList struct {
+	*Pagination
+	Items []ConfigurationVersion
+}
+
 // ConfigurationVersionCreateOptions represents the options for creating a
 // configuration version. See jsonapi.ConfigurationVersionCreateOptions for more
 // details.

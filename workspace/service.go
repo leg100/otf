@@ -16,7 +16,7 @@ type Service struct {
 	web *web
 }
 
-func NewService(ctx context.Context, opts Options) (*Service, error) {
+func NewService(opts Options) (*Service, error) {
 	app := &app{
 		Authorizer:    opts.Authorizer,
 		PubSubService: opts.PubSubService,
@@ -49,6 +49,10 @@ type Options struct {
 func (a *Service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 	a.web.addHandlers(r)
+}
+
+func (s *Service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+	return s.create(ctx, opts)
 }
 
 func (s *Service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {

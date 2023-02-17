@@ -4,24 +4,24 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
 )
 
-func CreateTestWorkspace(t *testing.T, db otf.DB, organization string, opts ...otf.NewTestWorkspaceOption) otf.Workspace {
-	ctx := context.Background()
-	ws := NewTestWorkspace(t, organization, opts...)
-	wsdb := newPGDB(db)
-	err := wsdb.CreateWorkspace(ctx, ws)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteWorkspace(ctx, ws.ID())
+func NewWorkspaceService(t *testing.T, db otf.DB) *workspace.Service {
+	svc, err := workspace.NewService(workspace.Options{
+		Authorizer: NewAllowAllAuthorizer(),
+		DB:         db,
+		Logger:     logr.Discard(),
 	})
-	return ws
+	require.NoError(t, err)
+	return svc
 }
 
-func NewTestWorkspace(t *testing.T, organization string, opts ...NewTestWorkspaceOption) *Workspace {
+func NewWorkspace(t *testing.T, organization string, opts ...NewTestWorkspaceOption) *Workspace {
 	createOpts := CreateWorkspaceOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: otf.String(organization),
@@ -31,6 +31,18 @@ func NewTestWorkspace(t *testing.T, organization string, opts ...NewTestWorkspac
 	for _, fn := range opts {
 		fn(ws)
 	}
+	return ws
+}
+
+func CreateWorkspace(t *testing.T, db otf.DB, organization string, opts ...otf.NewTestWorkspaceOption) otf.Workspace {
+	ctx := context.Background()
+	ws := NewWorkspace(t, organization, opts...)
+	err := workspaceService.CreateWorkspace(ctx, ws)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteWorkspace(ctx, ws.ID())
+	})
 	return ws
 }
 

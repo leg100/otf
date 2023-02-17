@@ -90,7 +90,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.app.update(r.Context(), name, &updateOptions{
+	org, err := h.app.update(r.Context(), name, &UpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,

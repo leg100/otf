@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/html/paths"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -38,6 +39,7 @@ func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string,
 // Reporter reports back to VCS providers the current status of VCS-triggered
 // runs.
 type Reporter struct {
+	*configversion.Service
 	otf.Application
 	logr.Logger
 }

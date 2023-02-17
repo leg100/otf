@@ -53,7 +53,11 @@ type Options struct {
 	logr.Logger
 }
 
-func (a *Service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
-	a.web.addHandlers(r)
+func (s *Service) AddHandlers(r *mux.Router) {
+	s.api.addHandlers(r)
+	s.web.addHandlers(r)
+}
+
+func (s *Service) Create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+	return s.create(ctx, workspaceID, opts)
 }

@@ -10,6 +10,9 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
+// cacheKey generates a key for caching state files
+func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
+
 // appService is the application service for state
 type appService interface {
 	createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*version, error)
@@ -76,7 +79,7 @@ func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOpti
 		return nil, err
 	}
 
-	if err := a.cache.Set(otf.StateVersionCacheKey(sv.ID()), sv.State()); err != nil {
+	if err := a.cache.Set(cacheKey(sv.id), sv.State()); err != nil {
 		return nil, fmt.Errorf("caching state version: %w", err)
 	}
 
@@ -136,7 +139,7 @@ func (a *app) downloadState(ctx context.Context, svID string) ([]byte, error) {
 		return nil, err
 	}
 
-	if state, err := a.cache.Get(otf.StateVersionCacheKey(svID)); err == nil {
+	if state, err := a.cache.Get(cacheKey(svID)); err == nil {
 		a.V(2).Info("downloaded state", "id", svID, "subject", subject)
 		return state, nil
 	}
@@ -145,7 +148,7 @@ func (a *app) downloadState(ctx context.Context, svID string) ([]byte, error) {
 		a.Error(err, "downloading state", "id", svID, "subject", subject)
 		return nil, err
 	}
-	if err := a.cache.Set(otf.StateVersionCacheKey(svID), state); err != nil {
+	if err := a.cache.Set(cacheKey(svID), state); err != nil {
 		return nil, fmt.Errorf("caching state: %w", err)
 	}
 	a.V(2).Info("downloaded state", "id", svID, "subject", subject)
