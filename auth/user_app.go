@@ -12,6 +12,8 @@ type userApp interface {
 	CreateUser(ctx context.Context, username string) (*User, error)
 	GetUser(ctx context.Context, spec otf.UserSpec) (otf.User, error)
 	DeleteUser(ctx context.Context, username string) (*User, error)
+	AddOrganizationMembership(ctx context.Context, userID, organization string) error
+	RemoveOrganizationMembership(ctx context.Context, userID, organization string) error
 
 	createUser(ctx context.Context, username string) (*User, error)
 	listUsers(ctx context.Context, organization string) ([]*User, error)
@@ -35,6 +37,14 @@ func (a *Application) GetUser(ctx context.Context, spec otf.UserSpec) (otf.User,
 	a.V(2).Info("retrieved user", "username", user.Username())
 
 	return user, nil
+}
+
+func (a *Application) AddOrganizationMembership(ctx context.Context, userID, organization string) error {
+	return a.addOrganizationMembership(ctx, userID, organization)
+}
+
+func (a *Application) RemoveOrganizationMembership(ctx context.Context, userID, organization string) error {
+	return a.removeOrganizationMembership(ctx, userID, organization)
 }
 
 func (a *Application) createUser(ctx context.Context, username string) (*User, error) {

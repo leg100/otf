@@ -19,10 +19,6 @@ type OrganizationService interface {
 	GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
 }
 
-type OrganizationDB interface {
-	GetOrganizationByID(context.Context, string) (Organization, error)
-}
-
 // OrganizationCreateOptions represents the options for creating an
 // organization. See dto.OrganizationCreateOptions for more details.
 type OrganizationCreateOptions struct {

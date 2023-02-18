@@ -10,15 +10,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func CreateUser(t *testing.T, db otf.DB, opts ...auth.NewUserOption) *auth.User {
+func CreateTeam(t *testing.T, db otf.DB, opts ...auth.NewUserOption) *auth.User {
 	ctx := context.Background()
 	svc := NewAuthService(t, db)
 
-	user, err := svc.CreateUser(ctx, uuid.NewString())
+	team, err := svc.CreateTeam(ctx, uuid.NewString())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		svc.DeleteUser(ctx, user.Username())
+		svc.DeleteTeam(ctx, team.Username())
 	})
-	return user
+	return team
 }

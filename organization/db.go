@@ -62,7 +62,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 	return org, err
 }
 
-func (db *pgdb) list(ctx context.Context, opts listOptions) (*organizationList, error) {
+func (db *pgdb) list(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
@@ -84,13 +84,13 @@ func (db *pgdb) list(ctx context.Context, opts listOptions) (*organizationList, 
 		items = append(items, unmarshalRow(pggen.Organizations(r)))
 	}
 
-	return &organizationList{
+	return &OrganizationList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) listByUser(ctx context.Context, userID string, opts listOptions) (*organizationList, error) {
+func (db *pgdb) listByUser(ctx context.Context, userID string, opts ListOptions) (*OrganizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsByUserIDBatch(batch, pggen.FindOrganizationsByUserIDParams{
@@ -116,7 +116,7 @@ func (db *pgdb) listByUser(ctx context.Context, userID string, opts listOptions)
 		items = append(items, unmarshalRow(pggen.Organizations(r)))
 	}
 
-	return &organizationList{
+	return &OrganizationList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil

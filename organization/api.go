@@ -63,7 +63,7 @@ func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts listOptions
+	var opts ListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -90,7 +90,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.app.update(r.Context(), name, &UpdateOptions{
+	org, err := h.app.update(r.Context(), name, UpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,

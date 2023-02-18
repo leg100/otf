@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,21 +22,31 @@ type TestRunCreateOptions struct {
 	Workspace         otf.Workspace // run's workspace; if nil a workspace is auto created
 }
 
-func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+func NewRunService(db otf.DB) *run.Service {
+	return run.NewService(run.Options{
+		Authorizer: NewAllowAllAuthorizer(),
+		DB:         db,
+		Logger:     logr.Discard(),
+	})
+}
+
+func CreateRun(t *testing.T, db otf.DB, ws otf.Workspace, cv otf.ConfigurationVersion) otf.Run {
 	ctx := context.Background()
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	err := db.CreateRun(ctx, run)
+	svc := NewRunService(db)
+	run, err := svc.Create(ctx, ws.ID(), run.RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID()),
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteRun(ctx, run.ID())
+		svc.Delete(ctx, run.ID())
 	})
 	return run
 }
 
 // NewTestRun creates a new run. Expressly for testing purposes.
-func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
-	org := organization.NewTestOrganization(t)
+func NewRun(t *testing.T, opts TestRunCreateOptions) *run.Run {
+	org := NewOrganization(t)
 
 	ws := opts.Workspace
 	if ws == nil {

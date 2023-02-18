@@ -20,8 +20,8 @@ func (f *fakeApp) CreateOrganization(ctx context.Context, opts otf.OrganizationC
 	return NewOrganization(opts)
 }
 
-func (f *fakeApp) ListOrganizations(ctx context.Context, opts listOptions) (*organizationList, error) {
-	return &organizationList{
+func (f *fakeApp) ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
+	return &OrganizationList{
 		Items:      f.orgs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil
@@ -72,7 +72,7 @@ func TestNewOrganizationList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := listOptions{ListOptions: tt.opts}
+			opts := ListOptions{ListOptions: tt.opts}
 			list := newOrganizationList(opts, orgs)
 			assert.Equal(t, tt.wantTotal, list.TotalCount())
 			assert.Equal(t, tt.wantItems, len(list.Items))

@@ -55,7 +55,7 @@ func (a *web) createOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
-	var opts listOptions
+	var opts ListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -68,11 +68,11 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Render("organization_list.tmpl", w, r, struct {
-		*organizationList
-		listOptions
+		*OrganizationList
+		ListOptions
 	}{
-		organizationList: organizations,
-		listOptions:      opts,
+		OrganizationList: organizations,
+		ListOptions:      opts,
 	})
 }
 
@@ -118,7 +118,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.app.update(r.Context(), params.Name, &params.Options)
+	org, err := a.app.update(r.Context(), params.Name, params.Options)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

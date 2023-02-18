@@ -12,7 +12,7 @@ import (
 type application interface {
 	create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error)
 	get(ctx context.Context, name string) (*Organization, error)
-	list(ctx context.Context, opts listOptions) (*organizationList, error)
+	list(ctx context.Context, opts ListOptions) (*OrganizationList, error)
 	update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
 	delete(ctx context.Context, name string) error
 	getEntitlements(ctx context.Context, organization string) (*Entitlements, error)
@@ -84,7 +84,7 @@ func (a *app) get(ctx context.Context, name string) (*Organization, error) {
 	return org, nil
 }
 
-func (a *app) list(ctx context.Context, opts listOptions) (*organizationList, error) {
+func (a *app) list(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (a *app) getEntitlements(ctx context.Context, organization string) (*Entitl
 
 // newOrganizationList constructs a paginated OrganizationList given the list
 // options and a complete list of organizations.
-func newOrganizationList(opts listOptions, orgs []*Organization) *organizationList {
+func newOrganizationList(opts ListOptions, orgs []*Organization) *OrganizationList {
 	low := opts.GetOffset()
 	if low > len(orgs) {
 		low = len(orgs)
@@ -154,7 +154,7 @@ func newOrganizationList(opts listOptions, orgs []*Organization) *organizationLi
 	if high > len(orgs) {
 		high = len(orgs)
 	}
-	return &organizationList{
+	return &OrganizationList{
 		Items:      orgs[low:high],
 		Pagination: otf.NewPagination(opts.ListOptions, len(orgs)),
 	}

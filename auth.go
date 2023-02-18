@@ -37,6 +37,7 @@ type RegistrySessionApp interface {
 type User interface {
 	Username() string
 	IsSiteAdmin() bool
+	Organizations() []string
 
 	Subject
 }

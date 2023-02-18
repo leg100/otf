@@ -67,16 +67,17 @@ func _() {
 	_ = x[ListConfigurationVersionsAction-56]
 	_ = x[GetConfigurationVersionAction-57]
 	_ = x[DownloadConfigurationVersionAction-58]
-	_ = x[ListUsersAction-59]
-	_ = x[CreateTeamAction-60]
-	_ = x[UpdateTeamAction-61]
-	_ = x[GetTeamAction-62]
-	_ = x[ListTeamsAction-63]
+	_ = x[DeleteConfigurationVersionAction-59]
+	_ = x[ListUsersAction-60]
+	_ = x[CreateTeamAction-61]
+	_ = x[UpdateTeamAction-62]
+	_ = x[GetTeamAction-63]
+	_ = x[ListTeamsAction-64]
 }
 
-const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentTokenActionListAgentTokensActionDeleteAgentTokenActionCreateRegistrySessionActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionCreateVariableActionUpdateVariableActionListVariablesActionGetVariableActionDeleteVariableActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionEnqueuePlanActionStartPhaseActionFinishPhaseActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDownloadStateActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionListUsersActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsAction"
+const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentTokenActionListAgentTokensActionDeleteAgentTokenActionCreateRegistrySessionActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionCreateVariableActionUpdateVariableActionListVariablesActionGetVariableActionDeleteVariableActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionEnqueuePlanActionStartPhaseActionFinishPhaseActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDownloadStateActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionListUsersActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsAction"
 
-var _Action_index = [...]uint16{0, 11, 35, 59, 80, 101, 125, 148, 168, 190, 213, 235, 256, 278, 305, 323, 348, 366, 383, 398, 416, 436, 456, 475, 492, 512, 524, 538, 552, 567, 583, 598, 613, 630, 646, 663, 677, 691, 708, 728, 745, 765, 785, 803, 824, 845, 873, 903, 924, 943, 964, 990, 1014, 1037, 1058, 1077, 1109, 1140, 1169, 1203, 1218, 1234, 1250, 1263, 1278}
+var _Action_index = [...]uint16{0, 11, 35, 59, 80, 101, 125, 148, 168, 190, 213, 235, 256, 278, 305, 323, 348, 366, 383, 398, 416, 436, 456, 475, 492, 512, 524, 538, 552, 567, 583, 598, 613, 630, 646, 663, 677, 691, 708, 728, 745, 765, 785, 803, 824, 845, 873, 903, 924, 943, 964, 990, 1014, 1037, 1058, 1077, 1109, 1140, 1169, 1203, 1235, 1250, 1266, 1282, 1295, 1310}
 
 func (i Action) String() string {
 	if i < 0 || i >= Action(len(_Action_index)-1) {

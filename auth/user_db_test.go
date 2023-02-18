@@ -123,22 +123,6 @@ func TestUser_Delete(t *testing.T) {
 	assert.Equal(t, err, otf.ErrResourceNotFound)
 }
 
-func TestUser_AddOrganizationMembership(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-
-	org := organization.CreateTestOrganization(t, db)
-	user := createTestUser(t, db)
-
-	err := db.addOrganizationMembership(ctx, user.ID(), org.Name())
-	require.NoError(t, err)
-
-	got, err := db.getUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
-	require.NoError(t, err)
-
-	assert.Contains(t, got.Organizations(), org.Name())
-}
-
 func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)

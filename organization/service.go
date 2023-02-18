@@ -46,6 +46,10 @@ func (a *Service) UpdateOrganization(ctx context.Context, name string, opts Upda
 	return a.update(ctx, name, opts)
 }
 
+func (a *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
+	return a.list(ctx, opts)
+}
+
 func (a *Service) GetOrganization(ctx context.Context, name string) (otf.Organization, error) {
 	return a.get(ctx, name)
 }

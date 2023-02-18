@@ -15,7 +15,7 @@ type Service struct {
 	web *web
 }
 
-func NewService(ctx context.Context, opts Options) *Service {
+func NewService(opts Options) *Service {
 	app := &Application{
 		Authorizer:    opts.Authorizer,
 		PubSubService: opts.PubSubService,
@@ -60,4 +60,16 @@ func (s *Service) AddHandlers(r *mux.Router) {
 
 func (s *Service) Create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	return s.create(ctx, workspaceID, opts)
+}
+
+func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
+	return s.get(ctx, runID)
+}
+
+func (s *Service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
+	return s.enqueuePlan(ctx, runID)
+}
+
+func (s *Service) Delete(ctx context.Context, runID string) error {
+	return s.delete(ctx, runID)
 }

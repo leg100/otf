@@ -6,77 +6,54 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestRun_Create(t *testing.T) {
+func TestRunCreate(t *testing.T) {
 	ctx := context.Background()
-	db := NewTestDB(t)
-	os := testutil.NewOrganizationService(t, db)
-	runService := run.NewService()
-	org := testutil.CreateTestOrganization(t, db)
-	ws := testutil.CreateWorkspace(t, db, org)
-	cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+	db := sql.NewTestDB(t)
+	svc := testutil.NewRunService(db)
+	org := testutil.CreateOrganization(t, db)
+	ws := testutil.CreateWorkspace(t, db, org.Name())
 
-	// defer deletion
+	t.Run("create", func(t *testing.T) {
+		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
-	_, err := runService.Create(ctx, ws.ID(), run.RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID()),
-	})
-	require.NoError(t, err)
-}
+		var got *run.Run
+		t.Cleanup(func() {
+			svc.Delete(ctx, got.ID())
+		})
 
-func TestRun_UpdateStatus(t *testing.T) {
-	ctx := context.Background()
-
-	db := NewTestDB(t)
-	ws := CreateTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
-
-	t.Run("update status", func(t *testing.T) {
-		run := createTestRun(t, db, ws, cv)
-		got, err := db.UpdateStatus(ctx, run.ID(), func(run *otf.Run) error {
-			return run.EnqueuePlan()
+		var err error
+		got, err = svc.Create(ctx, ws.ID(), run.RunCreateOptions{
+			ConfigurationVersionID: otf.String(cv.ID()),
 		})
 		require.NoError(t, err)
+	})
+
+	t.Run("enqueue plan", func(t *testing.T) {
+		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+		run := testutil.CreateRun(t, db, ws, cv)
+
+		got, err := svc.EnqueuePlan(ctx, run.ID())
+		require.NoError(t, err)
 		assert.Equal(t, otf.RunPlanQueued, got.Status())
+
 		timestamp, err := got.StatusTimestamp(otf.RunPlanQueued)
 		assert.NoError(t, err)
 		assert.True(t, timestamp.After(got.CreatedAt()))
 	})
 
-	t.Run("update status", func(t *testing.T) {
-		run := createTestRun(t, db, ws, cv)
-		got, err := db.UpdateStatus(ctx, run.ID(), func(run *otf.Run) error {
-			_, err := run.Cancel()
-			return err
-		})
+	t.Run("get run", func(t *testing.T) {
+		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+		run := testutil.CreateRun(t, db, ws, cv)
+
+		_, err := svc.Get(ctx, run.ID())
 		require.NoError(t, err)
-		assert.Equal(t, otf.RunCanceled, got.Status())
-		canceled, err := got.StatusTimestamp(otf.RunCanceled)
-		assert.NoError(t, err)
-		assert.True(t, canceled.After(got.CreatedAt()))
-
-		// force cancel available after a cool down period following cancelation
-		assert.True(t, got.ForceCancelAvailableAt().After(canceled))
 	})
-}
-
-func TestRun_Get(t *testing.T) {
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	ws := CreateTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
-
-	want := createTestRun(t, db, ws, cv)
-
-	got, err := db.GetRun(context.Background(), want.ID())
-	require.NoError(t, err)
-
-	assert.Equal(t, want.ForceCancelAvailableAt(), got.ForceCancelAvailableAt())
-	assert.Equal(t, want, got)
 }
 
 func TestRun_List(t *testing.T) {

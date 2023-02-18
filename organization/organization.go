@@ -75,14 +75,14 @@ func (org *Organization) ToJSONAPI() any {
 	}
 }
 
-// organizationList represents a list of Organizations.
-type organizationList struct {
+// OrganizationList represents a list of Organizations.
+type OrganizationList struct {
 	*otf.Pagination
 	Items []*Organization
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (l *organizationList) ToJSONAPI() any {
+func (l *OrganizationList) ToJSONAPI() any {
 	obj := &jsonapiList{
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
@@ -92,8 +92,8 @@ func (l *organizationList) ToJSONAPI() any {
 	return obj
 }
 
-// listOptions represents the options for listing organizations.
-type listOptions struct {
+// ListOptions represents the options for listing organizations.
+type ListOptions struct {
 	otf.ListOptions
 }
 

@@ -1,13 +1,30 @@
-package auth
+package integration
 
 import (
 	"context"
 	"testing"
 
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestTeam(t *testing.T) {
+	ctx := context.Background()
+	db := sql.NewTestDB(t)
+	org := testutil.CreateOrganization(t, db)
+
+	t.Run("create", func(t *testing.T) {
+		team := newTeam(createTeamOptions{"team-awesome", org.Name()})
+
+		defer db.deleteTeam(ctx, team.ID())
+
+		err := db.createTeam(ctx, team)
+		require.NoError(t, err)
+	})
+}
 
 func TestTeam_ListTeamMembers(t *testing.T) {
 	db := newTestDB(t)
@@ -27,19 +44,6 @@ func TestTeam_ListTeamMembers(t *testing.T) {
 
 	assert.Contains(t, got, user1)
 	assert.Contains(t, got, user2)
-}
-
-func TestTeam_Create(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-
-	org := organization.CreateTestOrganization(t, db)
-	team := newTeam(createTeamOptions{"team-awesome", org.Name()})
-
-	defer db.deleteTeam(ctx, team.ID())
-
-	err := db.createTeam(ctx, team)
-	require.NoError(t, err)
 }
 
 func TestTeam_Update_ByID(t *testing.T) {
