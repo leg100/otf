@@ -4,7 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/organization"
+	"github.com/google/uuid"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/testutil"
 	"github.com/stretchr/testify/assert"
@@ -15,99 +17,79 @@ func TestTeam(t *testing.T) {
 	ctx := context.Background()
 	db := sql.NewTestDB(t)
 	org := testutil.CreateOrganization(t, db)
+	svc := testutil.NewAuthService(t, db)
 
 	t.Run("create", func(t *testing.T) {
-		team := newTeam(createTeamOptions{"team-awesome", org.Name()})
-
-		defer db.deleteTeam(ctx, team.ID())
-
-		err := db.createTeam(ctx, team)
+		team, err := svc.CreateTeam(ctx, otf.CreateTeamOptions{
+			Name:         uuid.NewString(),
+			Organization: org.Name(),
+		})
 		require.NoError(t, err)
+
+		svc.DeleteTeam(ctx, team.ID())
 	})
-}
+	t.Run("list", func(t *testing.T) {
+		team1 := testutil.CreateTeam(t, db, org)
+		team2 := testutil.CreateTeam(t, db, org)
+		team3 := testutil.CreateTeam(t, db, org)
 
-func TestTeam_ListTeamMembers(t *testing.T) {
-	db := newTestDB(t)
+		got, err := svc.ListTeams(ctx, org.Name())
+		require.NoError(t, err)
 
-	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name())
+		assert.Contains(t, got, team1)
+		assert.Contains(t, got, team2)
+		assert.Contains(t, got, team3)
+	})
 
-	memberships := []newUserOption{
-		WithOrganizations(org.Name()),
-		WithTeams(team),
-	}
-	user1 := createTestUser(t, db, memberships...)
-	user2 := createTestUser(t, db, memberships...)
+	t.Run("list members", func(t *testing.T) {
+		team := testutil.CreateTeam(t, db, org)
 
-	got, err := db.listTeamMembers(context.Background(), team.ID())
-	require.NoError(t, err)
+		memberships := []auth.NewUserOption{
+			auth.WithOrganizations(org.Name()),
+			auth.WithTeams(team),
+		}
+		user1 := testutil.CreateUser(t, db, memberships...)
+		user2 := testutil.CreateUser(t, db, memberships...)
 
-	assert.Contains(t, got, user1)
-	assert.Contains(t, got, user2)
-}
+		got, err := svc.ListTeamMembers(context.Background(), team.ID())
+		require.NoError(t, err)
 
-func TestTeam_Update_ByID(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
+		assert.Contains(t, got, user1)
+		assert.Contains(t, got, user2)
+	})
 
-	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name())
+	t.Run("update", func(t *testing.T) {
+		team := testutil.CreateTeam(t, db, org)
 
-	_, err := db.UpdateTeam(ctx, team.ID(), func(team *Team) error {
-		return team.Update(UpdateTeamOptions{
-			OrganizationAccess: OrganizationAccess{
+		got, err := svc.UpdateTeam(ctx, team.ID(), auth.UpdateTeamOptions{
+			OrganizationAccess: auth.OrganizationAccess{
 				ManageWorkspaces: true,
 				ManageVCS:        true,
 				ManageRegistry:   true,
 			},
 		})
+		require.NoError(t, err)
+
+		assert.True(t, got.OrganizationAccess().ManageWorkspaces)
+		assert.True(t, got.OrganizationAccess().ManageVCS)
+		assert.True(t, got.OrganizationAccess().ManageRegistry)
 	})
-	require.NoError(t, err)
 
-	got, err := db.getTeam(ctx, team.Name(), org.Name())
-	require.NoError(t, err)
+	t.Run("get by name", func(t *testing.T) {
+		team := testutil.CreateTeam(t, db, org)
 
-	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
-	assert.True(t, got.OrganizationAccess().ManageVCS)
-	assert.True(t, got.OrganizationAccess().ManageRegistry)
-}
+		got, err := svc.GetTeam(ctx, team.Name(), org.Name())
+		require.NoError(t, err)
 
-func TestTeam_Get(t *testing.T) {
-	db := newTestDB(t)
+		assert.Equal(t, team, got)
+	})
 
-	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name())
+	t.Run("get by id", func(t *testing.T) {
+		want := testutil.CreateTeam(t, db, org)
 
-	got, err := db.getTeam(context.Background(), team.Name(), org.Name())
-	require.NoError(t, err)
+		got, err := svc.GetTeamByID(ctx, want.ID())
+		require.NoError(t, err)
 
-	assert.Equal(t, team, got)
-}
-
-func TestTeam_GetByID(t *testing.T) {
-	db := newTestDB(t)
-
-	org := organization.CreateTestOrganization(t, db)
-	want := CreateTestTeam(t, db, org.Name())
-
-	got, err := db.getTeamByID(context.Background(), want.ID())
-	require.NoError(t, err)
-
-	assert.Equal(t, want, got)
-}
-
-func TestTeam_List(t *testing.T) {
-	db := newTestDB(t)
-	org := organization.CreateTestOrganization(t, db)
-
-	team1 := CreateTestTeam(t, db, org.Name())
-	team2 := CreateTestTeam(t, db, org.Name())
-	team3 := CreateTestTeam(t, db, org.Name())
-
-	got, err := db.listTeams(context.Background(), org.Name())
-	require.NoError(t, err)
-
-	assert.Contains(t, got, team1)
-	assert.Contains(t, got, team2)
-	assert.Contains(t, got, team3)
+		assert.Equal(t, want, got)
+	})
 }

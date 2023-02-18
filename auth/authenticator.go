@@ -16,14 +16,14 @@ import (
 type authenticator struct {
 	otf.HostnameService
 
-	app
+	application
 	oauthClient
 }
 
 type authenticatorOptions struct {
 	logr.Logger
 	otf.HostnameService
-	app
+	application
 	configs []*cloud.CloudOAuthConfig
 }
 
@@ -44,7 +44,7 @@ func newAuthenticators(opts authenticatorOptions) ([]*authenticator, error) {
 		}
 		authenticators = append(authenticators, &authenticator{
 			oauthClient: client,
-			app:         opts.app,
+			application:         opts.application,
 		})
 		opts.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
 	}

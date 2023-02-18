@@ -5,18 +5,19 @@ import (
 	"github.com/leg100/otf"
 )
 
-type app interface {
+type application interface {
 	agentTokenApp
 	registrySessionApp
 	sessionApp
 	teamApp
+	tokenApp
 	userApp
 }
 
-type Application struct {
+type app struct {
 	otf.Authorizer
 	logr.Logger
 
-	db db
+	db *pgdb
 	*synchroniser
 }

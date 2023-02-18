@@ -15,7 +15,7 @@ import (
 type web struct {
 	otf.Renderer
 
-	app            app
+	app            application
 	authenticators []*authenticator
 	siteToken      string
 }

@@ -11,7 +11,7 @@ import (
 )
 
 type Service struct {
-	app
+	*app
 
 	api *api
 	web *web
@@ -19,7 +19,7 @@ type Service struct {
 
 func NewService(ctx context.Context, opts Options) (*Service, error) {
 	db := newDB(opts.DB, opts.Logger)
-	app := &Application{
+	app := &app{
 		Authorizer: opts.Authorizer,
 		Logger:     opts.Logger,
 		db:         db,
@@ -29,7 +29,7 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	authenticators, err := newAuthenticators(authenticatorOptions{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
-		app:             app,
+		application:     app,
 		configs:         opts.Configs,
 	})
 	if err != nil {

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -19,7 +18,7 @@ func newTestOwners(t *testing.T, organization string) *Team {
 	return newTeam(createTeamOptions{"owners", organization})
 }
 
-func CreateTestTeam(t *testing.T, db db, organization string) *Team {
+func CreateTestTeam(t *testing.T, db *pgdb, organization string) *Team {
 	ctx := context.Background()
 
 	team := NewTestTeam(t, organization)
@@ -47,28 +46,4 @@ func NewTestAgentToken(t *testing.T, org string) *agentToken {
 	})
 	require.NoError(t, err)
 	return token
-}
-
-func createTestSession(t *testing.T, db db, userID string, expiry *time.Time) *Session {
-	ctx := context.Background()
-
-	session := newTestSession(t, userID, expiry)
-	err := db.createSession(ctx, session)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.deleteSession(ctx, session.Token())
-	})
-	return session
-}
-
-func newTestSession(t *testing.T, userID string, expiry *time.Time) *Session {
-	r := httptest.NewRequest("", "/", nil)
-	session, err := newSession(r, userID)
-	require.NoError(t, err)
-	if expiry != nil {
-		session.expiry = *expiry
-	}
-
-	return session
 }

@@ -2,23 +2,24 @@ package testutil
 
 import (
 	"context"
+	"net/http/httptest"
 	"testing"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/stretchr/testify/require"
 )
 
-func CreateUser(t *testing.T, db otf.DB, opts ...auth.NewUserOption) *auth.User {
+func CreateSession(t *testing.T, db otf.DB, userID string, expiry *time.Time) *auth.Session {
 	ctx := context.Background()
 	svc := NewAuthService(t, db)
 
-	user, err := svc.CreateUser(ctx, uuid.NewString(), opts...)
+	session, err := svc.CreateSession(httptest.NewRequest("", "/", nil), userID)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		svc.DeleteUser(ctx, user.Username())
+		svc.DeleteSession(ctx, session.Token())
 	})
-	return user
+	return session
 }

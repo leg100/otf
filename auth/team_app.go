@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -13,9 +14,38 @@ type teamApp interface {
 	listTeams(ctx context.Context, organization string) ([]*Team, error)
 	listTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 	updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
+	deleteTeam(ctx context.Context, teamID string) error
 }
 
-func (a *Application) createTeam(ctx context.Context, opts createTeamOptions) (*Team, error) {
+func (a *app) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions) (*Team, error) {
+	return a.createTeam(ctx, createTeamOptions(opts))
+}
+
+func (a *app) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+	return a.updateTeam(ctx, teamID, opts)
+}
+
+func (a *app) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
+	return a.listTeams(ctx, organization)
+}
+
+func (a *app) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+	return a.listTeamMembers(ctx, teamID)
+}
+
+func (a *app) GetTeam(ctx context.Context, organization, name string) (*Team, error) {
+	return a.getTeam(ctx, organization, name)
+}
+
+func (a *app) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
+	return a.getTeamByID(ctx, teamID)
+}
+
+func (a *app) DeleteTeam(ctx context.Context, teamID string) error {
+	return a.deleteTeam(ctx, teamID)
+}
+
+func (a *app) createTeam(ctx context.Context, opts createTeamOptions) (*Team, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -32,7 +62,7 @@ func (a *Application) createTeam(ctx context.Context, opts createTeamOptions) (*
 	return team, nil
 }
 
-func (a *Application) updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+func (a *app) updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -56,7 +86,7 @@ func (a *Application) updateTeam(ctx context.Context, teamID string, opts Update
 	return team, nil
 }
 
-func (a *Application) getTeam(ctx context.Context, organization, name string) (*Team, error) {
+func (a *app) getTeam(ctx context.Context, organization, name string) (*Team, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -73,7 +103,7 @@ func (a *Application) getTeam(ctx context.Context, organization, name string) (*
 	return team, nil
 }
 
-func (a *Application) getTeamByID(ctx context.Context, teamID string) (*Team, error) {
+func (a *app) getTeamByID(ctx context.Context, teamID string) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -91,7 +121,7 @@ func (a *Application) getTeamByID(ctx context.Context, teamID string) (*Team, er
 }
 
 // listTeams lists teams in the organization.
-func (a *Application) listTeams(ctx context.Context, organization string) ([]*Team, error) {
+func (a *app) listTeams(ctx context.Context, organization string) ([]*Team, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
@@ -110,7 +140,7 @@ func (a *Application) listTeams(ctx context.Context, organization string) ([]*Te
 // listTeamMembers lists users that are members of the given team. The caller
 // needs either organization-wide authority to call this endpoint, or they need
 // to be a member of the team.
-func (a *Application) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+func (a *app) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -131,4 +161,27 @@ func (a *Application) listTeamMembers(ctx context.Context, teamID string) ([]*Us
 	a.V(2).Info("listed team members", "team_id", teamID, "subject", subject)
 
 	return members, nil
+}
+
+func (a *app) deleteTeam(ctx context.Context, teamID string) error {
+	team, err := a.db.getTeamByID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team", "team_id", teamID)
+		return err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, rbac.GetTeamAction, team.organization)
+	if err != nil {
+		return err
+	}
+
+	err = a.db.deleteTeam(ctx, teamID)
+	if err != nil {
+		a.Error(err, "deleting team", "team", team.name, "organization", team.organization, "subject", subject)
+		return err
+	}
+
+	a.V(2).Info("deleted team", "team", team.name, "organization", team.organization, "subject", subject)
+
+	return nil
 }

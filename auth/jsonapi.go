@@ -10,7 +10,7 @@ import (
 
 // api provides handlers for json:api endpoints
 type api struct {
-	app app
+	app application
 }
 
 func (h *api) addHandlers(r *mux.Router) {

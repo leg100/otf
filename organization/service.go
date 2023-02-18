@@ -38,11 +38,11 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.AddHandlers(r)
 }
 
-func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (otf.Organization, error) {
+func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
 	return a.create(ctx, opts)
 }
 
-func (a *Service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (otf.Organization, error) {
+func (a *Service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
 	return a.update(ctx, name, opts)
 }
 
@@ -50,7 +50,7 @@ func (a *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*Org
 	return a.list(ctx, opts)
 }
 
-func (a *Service) GetOrganization(ctx context.Context, name string) (otf.Organization, error) {
+func (a *Service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
 	return a.get(ctx, name)
 }
 

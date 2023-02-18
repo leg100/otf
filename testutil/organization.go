@@ -20,7 +20,7 @@ func NewOrganizationService(t *testing.T, db otf.DB) *organization.Service {
 	return service
 }
 
-func CreateOrganization(t *testing.T, db otf.DB) otf.Organization {
+func CreateOrganization(t *testing.T, db otf.DB) *organization.Organization {
 	ctx := context.Background()
 	svc := NewOrganizationService(t, db)
 	org, err := svc.CreateOrganization(ctx, otf.OrganizationCreateOptions{

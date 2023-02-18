@@ -16,7 +16,7 @@ type agentTokenApp interface {
 	deleteAgentToken(ctx context.Context, id string) (*agentToken, error)
 }
 
-func (a *Application) GetAgentToken(ctx context.Context, token string) (otf.AgentToken, error) {
+func (a *app) GetAgentToken(ctx context.Context, token string) (otf.AgentToken, error) {
 	at, err := a.db.GetAgentTokenByToken(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
@@ -26,7 +26,7 @@ func (a *Application) GetAgentToken(ctx context.Context, token string) (otf.Agen
 	return at, nil
 }
 
-func (a *Application) createAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*agentToken, error) {
+func (a *app) createAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*agentToken, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (a *Application) createAgentToken(ctx context.Context, opts otf.CreateAgent
 	return token, nil
 }
 
-func (a *Application) listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error) {
+func (a *app) listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (a *Application) listAgentTokens(ctx context.Context, organization string) 
 	return tokens, nil
 }
 
-func (a *Application) deleteAgentToken(ctx context.Context, id string) (*agentToken, error) {
+func (a *app) deleteAgentToken(ctx context.Context, id string) (*agentToken, error) {
 	// retrieve agent token first in order to get organization for authorization
 	at, err := a.db.GetAgentTokenByID(ctx, id)
 	if err != nil {

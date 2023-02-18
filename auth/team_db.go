@@ -19,7 +19,7 @@ func (pdb *pgdb) createTeam(ctx context.Context, team *Team) error {
 
 func (pdb *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
 	var team *Team
-	err := pdb.tx(ctx, func(tx db) error {
+	err := pdb.tx(ctx, func(tx *pgdb) error {
 		var err error
 
 		// retrieve team

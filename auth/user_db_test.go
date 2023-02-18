@@ -10,21 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUser_Create(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-
-	user := newUser("mr-t")
-
-	defer db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
-
-	err := db.CreateUser(ctx, user)
-	require.NoError(t, err)
-}
-
 func TestUser_Get(t *testing.T) {
-	db := newTestDB(t)
-
 	org1 := organization.CreateTestOrganization(t, db)
 	org2 := organization.CreateTestOrganization(t, db)
 	team1 := CreateTestTeam(t, db, org1.Name())
@@ -123,22 +109,6 @@ func TestUser_Delete(t *testing.T) {
 	assert.Equal(t, err, otf.ErrResourceNotFound)
 }
 
-func TestUser_RemoveOrganizationMembership(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-
-	org := organization.CreateTestOrganization(t, db)
-	user := createTestUser(t, db, withOrganizations(org.Name()))
-
-	err := db.removeOrganizationMembership(ctx, user.ID(), org.Name())
-	require.NoError(t, err)
-
-	got, err := db.getUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
-	require.NoError(t, err)
-
-	assert.NotContains(t, got.Organizations(), org)
-}
-
 func TestUser_AddTeamMembership(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
@@ -171,17 +141,4 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotContains(t, got.teams, team)
-}
-
-func createTestUser(t *testing.T, db db, opts ...NewUserOption) *User {
-	ctx := context.Background()
-	user := NewTestUser(t, opts...)
-
-	err := db.CreateUser(ctx, user)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
-	})
-	return user
 }

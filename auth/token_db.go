@@ -7,15 +7,6 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-type tokenDB interface {
-	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, token *Token) error
-	// ListTokens lists user tokens.
-	ListTokens(ctx context.Context, userID string) ([]*Token, error)
-	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, id string) error
-}
-
 // CreateToken inserts the token, associating it with the user.
 func (db *pgdb) CreateToken(ctx context.Context, token *Token) error {
 	_, err := db.InsertToken(ctx, pggen.InsertTokenParams{

@@ -25,14 +25,14 @@ type synchroniser struct {
 	logr.Logger
 	organization.Service
 
-	app
+	application
 }
 
 func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error) {
 	// ensure user exists
 	user, err := s.getUser(ctx, otf.UserSpec{Username: otf.String(from.Name)})
 	if err == otf.ErrResourceNotFound {
-		user, err = s.app.createUser(ctx, from.Name)
+		user, err = s.application.createUser(ctx, from.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	for _, want := range from.Teams {
 		got, err := s.getTeam(ctx, want.Organization, want.Name)
 		if err == otf.ErrResourceNotFound {
-			got, err = s.app.createTeam(ctx, createTeamOptions{
+			got, err = s.application.createTeam(ctx, createTeamOptions{
 				Name:         want.Name,
 				Organization: want.Organization,
 			})
@@ -85,7 +85,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	// And make them an owner of their personal org
 	owners, err := s.getTeam(ctx, personal.Name(), "owners")
 	if err == otf.ErrResourceNotFound {
-		owners, err = s.app.createTeam(ctx, createTeamOptions{
+		owners, err = s.application.createTeam(ctx, createTeamOptions{
 			Name:         "owners",
 			Organization: personal.Name(),
 		})
