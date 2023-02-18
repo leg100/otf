@@ -14,15 +14,15 @@ import (
 
 // jsonapiConverter converts a run into a json:api struct
 type jsonapiConverter struct {
-	otf.Application // for retrieving workspace and workspace permissions
+	otf.WorkspaceService // for retrieving workspace and workspace permissions
 
 	*jsonapiPlanConverter
 	*jsonapiApplyConverter
 }
 
-func newJSONAPIConverter(app otf.Application, signer otf.Signer) *jsonapiConverter {
+func newJSONAPIConverter(svc otf.WorkspaceService, signer otf.Signer) *jsonapiConverter {
 	return &jsonapiConverter{
-		Application: app,
+		WorkspaceService: svc,
 		jsonapiPlanConverter: &jsonapiPlanConverter{
 			logURLSigner: &logURLSigner{signer, otf.PlanPhase},
 		},

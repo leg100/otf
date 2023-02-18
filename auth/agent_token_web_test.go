@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/http/paths"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 )
 

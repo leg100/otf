@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -19,8 +20,9 @@ func (a *api) AddHandlers(r *mux.Router) {
 	r.HandleFunc(otf.DefaultWatchPath, a.watch).Methods("GET")
 }
 
-// watch subscribes to a stream of otf events using the server-side-events
-// protocol
+// Watch handler responds with a stream of events, using the json:api encoding.
+//
+// NOTE: Only run events are currently supported.
 func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 	// r3lab's sse server expects a query parameter with the stream ID
 	// but we don't want to bother the client with having to do that so we
@@ -51,8 +53,7 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// Watch currently only streams run events
-				run, ok := event.Payload.(otf.Run)
+				run, ok := event.Payload.(*run.Run)
 				if !ok {
 					continue
 				}
