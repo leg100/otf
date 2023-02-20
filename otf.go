@@ -156,7 +156,7 @@ func ValidStringID(v *string) bool {
 
 // validStringID checks if the given string pointer is non-nil and contains a
 // valid semantic version (major.minor.patch).
-func validSemanticVersion(v string) bool {
+func ValidSemanticVersion(v string) bool {
 	return ReSemanticVersion.MatchString(v)
 }
 

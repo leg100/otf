@@ -50,6 +50,7 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 
 	a.eventsServer.CreateStream(streamID)
 
+	// TODO: populate watch options
 	events, err := a.app.Watch(r.Context(), otf.WatchOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)

@@ -13,7 +13,7 @@ type application interface {
 	create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
 	get(ctx context.Context, workspaceID string) (*Workspace, error)
 	getByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-	list(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error)
+	list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
 	update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 	delete(ctx context.Context, workspaceID string) (*Workspace, error)
@@ -116,7 +116,7 @@ func (a *app) disconnect(ctx context.Context, workspaceID string) (*Workspace, e
 	return ws, nil
 }
 
-func (a *app) list(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error) {
+func (a *app) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := a.CanAccessSite(ctx, rbac.ListWorkspacesAction)

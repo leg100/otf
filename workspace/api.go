@@ -140,7 +140,7 @@ func (s *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := s.app.list(r.Context(), otf.WorkspaceListOptions{
+	wsl, err := s.app.list(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})

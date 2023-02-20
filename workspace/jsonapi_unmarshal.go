@@ -43,7 +43,7 @@ func unmarshalJSONAPI(w *jsonapi.Workspace) *Workspace {
 // unmarshalListJSONAPI converts a DTO into a workspace list
 func unmarshalListJSONAPI(json *jsonapi.WorkspaceList) *WorkspaceList {
 	wl := WorkspaceList{
-		Pagination: UnmarshalPaginationJSONAPI(json.Pagination),
+		Pagination: otf.NewPaginationFromJSONAPI(json.Pagination),
 	}
 	for _, i := range json.Items {
 		wl.Items = append(wl.Items, unmarshalJSONAPI(i))

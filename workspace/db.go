@@ -151,7 +151,7 @@ func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	return db.GetWorkspace(ctx, workspaceID)
 }
 
-func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error) {
+func (db *pgdb) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in

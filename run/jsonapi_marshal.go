@@ -282,48 +282,6 @@ func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsona
 	}, nil
 }
 
-func UnmarshalJSONAPI(b []byte) (*Run, error) {
-	// unmarshal into json:api struct
-	var jrun jsonapi.Run
-	if err := jsonapi.UnmarshalPayload(bytes.NewReader(b), &jrun); err != nil {
-		return nil, err
-	}
-	// convert json:api struct to run
-	return newFromJSONAPI(&jrun), nil
-}
-
-func newFromJSONAPI(d *jsonapi.Run) *Run {
-	return &Run{
-		id:                     d.ID,
-		createdAt:              d.CreatedAt,
-		forceCancelAvailableAt: d.ForceCancelAvailableAt,
-		isDestroy:              d.IsDestroy,
-		executionMode:          otf.ExecutionMode(d.ExecutionMode),
-		message:                d.Message,
-		positionInQueue:        d.PositionInQueue,
-		refresh:                d.Refresh,
-		refreshOnly:            d.RefreshOnly,
-		status:                 otf.RunStatus(d.Status),
-		// TODO: unmarshal timestamps
-		replaceAddrs:           d.ReplaceAddrs,
-		targetAddrs:            d.TargetAddrs,
-		workspaceID:            d.Workspace.ID,
-		configurationVersionID: d.ConfigurationVersion.ID,
-		// TODO: unmarshal plan and apply relations
-	}
-}
-
-// newListFromJSONAPI constructs a run list from a json:api struct
-func newListFromJSONAPI(from *jsonapi.RunList) *RunList {
-	to := RunList{
-		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
-	}
-	for _, i := range from.Items {
-		to.Items = append(to.Items, newFromJSONAPI(i))
-	}
-	return &to
-}
-
 // logURLSigner creates a signed URL for retrieving logs for a run phase.
 type logURLSigner struct {
 	otf.Signer

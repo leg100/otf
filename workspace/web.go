@@ -60,7 +60,7 @@ func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_list.tmpl", w, r, struct {
-		*otf.WorkspaceList
+		*WorkspaceList
 		Organization string
 	}{
 		WorkspaceList: workspaces,

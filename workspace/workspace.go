@@ -193,7 +193,7 @@ func (ws *Workspace) setExecutionMode(m otf.ExecutionMode) error {
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {
-	if !validSemanticVersion(v) {
+	if !otf.ValidSemanticVersion(v) {
 		return otf.ErrInvalidTerraformVersion
 	}
 	if result := semver.Compare(v, otf.MinTerraformVersion); result < 0 {
@@ -226,10 +226,4 @@ type UpdateWorkspaceOptions struct {
 	TerraformVersion           *string `schema:"terraform_version"`
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-}
-
-// WorkspaceList represents a list of Workspaces.
-type WorkspaceList struct {
-	*otf.Pagination
-	Items []*Workspace
 }
