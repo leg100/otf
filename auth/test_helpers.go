@@ -39,7 +39,7 @@ func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestSessionOption {
 	}
 }
 
-func NewTestAgentToken(t *testing.T, org string) *agentToken {
+func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 	token, err := newAgentToken(otf.CreateAgentTokenOptions{
 		Organization: org,
 		Description:  "lorem ipsum...",

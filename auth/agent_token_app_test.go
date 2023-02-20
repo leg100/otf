@@ -7,19 +7,19 @@ import (
 )
 
 type fakeAgentTokenApp struct {
-	token *agentToken
+	token *AgentToken
 
 	agentTokenApp
 }
 
-func (f *fakeAgentTokenApp) createAgentToken(context.Context, otf.CreateAgentTokenOptions) (*agentToken, error) {
+func (f *fakeAgentTokenApp) createAgentToken(context.Context, otf.CreateAgentTokenOptions) (*AgentToken, error) {
 	return f.token, nil
 }
 
-func (f *fakeAgentTokenApp) listAgentTokens(context.Context, string) ([]*agentToken, error) {
-	return []*agentToken{f.token}, nil
+func (f *fakeAgentTokenApp) listAgentTokens(context.Context, string) ([]*AgentToken, error) {
+	return []*AgentToken{f.token}, nil
 }
 
-func (f *fakeAgentTokenApp) deleteAgentToken(context.Context, string) (*agentToken, error) {
+func (f *fakeAgentTokenApp) deleteAgentToken(context.Context, string) (*AgentToken, error) {
 	return f.token, nil
 }

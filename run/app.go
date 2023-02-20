@@ -247,6 +247,10 @@ func (a *Application) enqueuePlan(ctx context.Context, runID string) (*Run, erro
 	return run, nil
 }
 
+func planFileCacheKey(f otf.PlanFormat, id string) string {
+	return fmt.Sprintf("%s.%s", id, f)
+}
+
 // getPlanFile returns the plan file for the run.
 func (a *Application) getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetPlanFileAction, runID)
@@ -254,7 +258,7 @@ func (a *Application) getPlanFile(ctx context.Context, runID string, format otf.
 		return nil, err
 	}
 
-	if plan, err := a.cache.Get(format.CacheKey(runID)); err == nil {
+	if plan, err := a.cache.Get(planFileCacheKey(format, runID)); err == nil {
 		return plan, nil
 	}
 	// Cache is empty; retrieve from DB
@@ -264,7 +268,7 @@ func (a *Application) getPlanFile(ctx context.Context, runID string, format otf.
 		return nil, err
 	}
 	// Cache plan before returning
-	if err := a.cache.Set(format.CacheKey(runID), file); err != nil {
+	if err := a.cache.Set(planFileCacheKey(format, runID), file); err != nil {
 		return nil, fmt.Errorf("caching plan: %w", err)
 	}
 	return file, nil
@@ -285,7 +289,7 @@ func (a *Application) uploadPlanFile(ctx context.Context, runID string, plan []b
 
 	a.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
 
-	if err := a.cache.Set(format.CacheKey(runID), plan); err != nil {
+	if err := a.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
 

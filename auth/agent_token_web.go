@@ -69,7 +69,7 @@ func (app *web) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items        []*agentToken
+		Items        []*AgentToken
 		Organization string
 	}{
 		Pagination:   &otf.Pagination{},

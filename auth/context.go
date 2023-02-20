@@ -15,12 +15,12 @@ const (
 )
 
 // agentFromContext retrieves an agent(-token) from a context
-func agentFromContext(ctx context.Context) (*agentToken, error) {
+func agentFromContext(ctx context.Context) (*AgentToken, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	agent, ok := subj.(*agentToken)
+	agent, ok := subj.(*AgentToken)
 	if !ok {
 		return nil, fmt.Errorf("subject found in context but it is not an agent")
 	}

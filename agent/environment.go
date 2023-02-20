@@ -18,6 +18,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Doer interface {
+	// TODO: environment is excessive; can we pass in something that exposes
+	// fewer methods like an 'executor'?
+	Do(otf.Environment) error
+}
+
 // Environment is an implementation of an execution environment
 var _ otf.Environment = (*Environment)(nil)
 
@@ -289,12 +295,6 @@ func (e *Environment) buildSandboxArgs(args []string) []string {
 	}
 	bargs = append(bargs, "terraform", "apply")
 	return append(bargs, args...)
-}
-
-type Doer interface {
-	// TODO: environment is excessive; can we pass in something that exposes
-	// fewer methods like an 'executor'?
-	Do(otf.Environment) error
 }
 
 // writeTerraformVariables writes workspace variables to a file named

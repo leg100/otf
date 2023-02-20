@@ -26,8 +26,8 @@ type JobWriter struct {
 
 func NewJobWriter(ctx context.Context, app ChunkService, logger logr.Logger, run otf.Run) *JobWriter {
 	return &JobWriter{
-		ID:           run.ID(),
-		Phase:        run.Phase(),
+		ID:           run.ID,
+		Phase:        run.Phase,
 		ChunkService: app,
 		Logger:       logger,
 		ctx:          ctx,

@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -23,10 +22,9 @@ const (
 	RunPlanned            RunStatus = "planned"
 	RunPlannedAndFinished RunStatus = "planned_and_finished"
 	RunPlanning           RunStatus = "planning"
-	// PlanFormatBinary is the binary representation of the plan file
-	PlanFormatBinary = "bin"
-	// PlanFormatJSON is the JSON representation of the plan file
-	PlanFormatJSON = "json"
+
+	PlanFormatBinary = "bin"  // plan file in binary format
+	PlanFormatJSON   = "json" // plan file in json format
 )
 
 var (
@@ -54,39 +52,35 @@ type RunStatus string
 // PlanFormat is the format of the plan file
 type PlanFormat string
 
-func (f PlanFormat) CacheKey(id string) string {
-	return fmt.Sprintf("%s.%s", id, f)
+// Run value type for use outside the run package.
+type Run struct {
+	ID                     string
+	CreatedAt              time.Time
+	String                 string
+	IsDestroy              bool
+	ForceCancelAvailableAt *time.Time
+	Message                string
+	Organization           string
+	Phase                  PhaseType
+	Refresh                bool
+	RefreshOnly            bool
+	ReplaceAddrs           []string
+	TargetAddrs            []string
+	AutoApply              bool
+	Speculative            bool
+	Status                 RunStatus
+	WorkspaceID            string
+	ConfigurationVersionID string
+	HasChanges             bool
+	Latest                 bool
+	Plan                   Plan
+	Apply                  Apply
 }
 
-func (f PlanFormat) SQLColumn() string {
-	return fmt.Sprintf("plan_%s", f)
-}
-
-type Run interface {
-	ID() string
-	RunID() string
-	CreatedAt() time.Time
-	String() string
-	IsDestroy() bool
-	ForceCancelAvailableAt() *time.Time
-	Message() string
-	Organization() string
-	Phase() PhaseType
-	Refresh() bool
-	RefreshOnly() bool
-	ReplaceAddrs() []string
-	TargetAddrs() []string
-	AutoApply() bool
-	Speculative() bool
-	Status() RunStatus
-	WorkspaceID() string
-	ConfigurationVersionID() string
-	HasChanges() bool
-	Latest() bool
-	Plan() Plan
-}
-
-type Plan interface{}
+type (
+	Plan  struct{}
+	Apply struct{}
+)
 
 // RunList represents a list of runs.
 type RunList struct {
@@ -128,9 +122,9 @@ type RunDB interface {
 // RunService implementations allow interactions with runs
 type RunService interface {
 	// Create a new run with the given options.
-	//CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
+	// CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 	// Get retrieves a run with the given ID.
-	//GetRun(ctx context.Context, id string) (*Run, error)
+	GetRun(ctx context.Context, id string) (Run, error)
 	// List lists runs according to the given options.
 	//ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
 	// Delete deletes a run with the given ID.

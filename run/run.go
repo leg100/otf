@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/environment"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -55,7 +56,6 @@ type Run struct {
 }
 
 func (r *Run) ID() string                             { return r.id }
-func (r *Run) RunID() string                          { return r.id }
 func (r *Run) CreatedAt() time.Time                   { return r.createdAt }
 func (r *Run) String() string                         { return r.id }
 func (r *Run) IsDestroy() bool                        { return r.isDestroy }
@@ -76,6 +76,9 @@ func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 func (r *Run) ExecutionMode() otf.ExecutionMode       { return r.executionMode }
 func (r *Run) Commit() *string                        { return r.commit }
+
+// TODO: is this necessary?
+func (r *Run) RunID() string { return r.id }
 
 // Latest determines whether run is the latest run for a workspace, i.e.
 // its current run, or the most recent current run.
@@ -170,7 +173,7 @@ func (r *Run) ForceCancel() error {
 }
 
 // Do executes the current phase
-func (r *Run) Do(env otf.Environment) error {
+func (r *Run) Do(env environment.Environment) error {
 	if err := r.setupEnv(env); err != nil {
 		return err
 	}
@@ -363,7 +366,7 @@ func (r *Run) Confirmable() bool {
 	}
 }
 
-func (r *Run) doPlan(env otf.Environment) error {
+func (r *Run) doPlan(env environment.Environment) error {
 	if err := r.doTerraformPlan(env); err != nil {
 		return err
 	}
@@ -383,7 +386,7 @@ func (r *Run) doPlan(env otf.Environment) error {
 	return nil
 }
 
-func (r *Run) doApply(env otf.Environment) error {
+func (r *Run) doApply(env environment.Environment) error {
 	if err := env.RunFunc(r.downloadPlanFile); err != nil {
 		return err
 	}
@@ -397,7 +400,7 @@ func (r *Run) doApply(env otf.Environment) error {
 }
 
 // doTerraformPlan invokes terraform plan
-func (r *Run) doTerraformPlan(env otf.Environment) error {
+func (r *Run) doTerraformPlan(env environment.Environment) error {
 	var args []string
 	if r.isDestroy {
 		args = append(args, "-destroy")
@@ -407,7 +410,7 @@ func (r *Run) doTerraformPlan(env otf.Environment) error {
 }
 
 // doTerraformApply invokes terraform apply
-func (r *Run) doTerraformApply(env otf.Environment) error {
+func (r *Run) doTerraformApply(env environment.Environment) error {
 	var args []string
 	if r.isDestroy {
 		args = append(args, "-destroy")
@@ -417,7 +420,7 @@ func (r *Run) doTerraformApply(env otf.Environment) error {
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
-func (r *Run) setupEnv(env otf.Environment) error {
+func (r *Run) setupEnv(env environment.Environment) error {
 	if err := env.RunFunc(r.downloadTerraform); err != nil {
 		return err
 	}
@@ -443,14 +446,14 @@ func (r *Run) setupEnv(env otf.Environment) error {
 	return nil
 }
 
-func (r *Run) deleteBackendConfig(ctx context.Context, env otf.Environment) error {
+func (r *Run) deleteBackendConfig(ctx context.Context, env environment.Environment) error {
 	if err := otf.RewriteHCL(env.WorkingDir(), otf.RemoveBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
 }
 
-func (r *Run) downloadTerraform(ctx context.Context, env otf.Environment) error {
+func (r *Run) downloadTerraform(ctx context.Context, env environment.Environment) error {
 	ws, err := env.GetWorkspace(ctx, r.workspaceID)
 	if err != nil {
 		return err
@@ -462,7 +465,7 @@ func (r *Run) downloadTerraform(ctx context.Context, env otf.Environment) error 
 	return nil
 }
 
-func (r *Run) downloadConfig(ctx context.Context, env otf.Environment) error {
+func (r *Run) downloadConfig(ctx context.Context, env environment.Environment) error {
 	// Download config
 	cv, err := env.DownloadConfig(ctx, r.configurationVersionID)
 	if err != nil {
@@ -477,7 +480,7 @@ func (r *Run) downloadConfig(ctx context.Context, env otf.Environment) error {
 
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
-func (r *Run) downloadState(ctx context.Context, env otf.Environment) error {
+func (r *Run) downloadState(ctx context.Context, env environment.Environment) error {
 	statefile, err := env.DownloadCurrentState(ctx, r.workspaceID)
 	if errors.Is(err, otf.ErrResourceNotFound) {
 		return nil
@@ -490,7 +493,7 @@ func (r *Run) downloadState(ctx context.Context, env otf.Environment) error {
 	return nil
 }
 
-func (r *Run) uploadPlan(ctx context.Context, env otf.Environment) error {
+func (r *Run) uploadPlan(ctx context.Context, env environment.Environment) error {
 	file, err := os.ReadFile(filepath.Join(env.WorkingDir(), PlanFilename))
 	if err != nil {
 		return err
@@ -503,7 +506,7 @@ func (r *Run) uploadPlan(ctx context.Context, env otf.Environment) error {
 	return nil
 }
 
-func (r *Run) uploadJSONPlan(ctx context.Context, env otf.Environment) error {
+func (r *Run) uploadJSONPlan(ctx context.Context, env environment.Environment) error {
 	jsonFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), JSONPlanFilename))
 	if err != nil {
 		return err
@@ -517,7 +520,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env otf.Environment) error {
 // downloadLockFile downloads the .terraform.lock.hcl file into the working
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
-func (r *Run) downloadLockFile(ctx context.Context, env otf.Environment) error {
+func (r *Run) downloadLockFile(ctx context.Context, env environment.Environment) error {
 	lockFile, err := env.GetLockFile(ctx, r.id)
 	if err != nil {
 		return err
@@ -525,7 +528,7 @@ func (r *Run) downloadLockFile(ctx context.Context, env otf.Environment) error {
 	return os.WriteFile(filepath.Join(env.WorkingDir(), LockFilename), lockFile, 0o644)
 }
 
-func (r *Run) uploadLockFile(ctx context.Context, env otf.Environment) error {
+func (r *Run) uploadLockFile(ctx context.Context, env environment.Environment) error {
 	lockFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), LockFilename))
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
@@ -539,7 +542,7 @@ func (r *Run) uploadLockFile(ctx context.Context, env otf.Environment) error {
 	return nil
 }
 
-func (r *Run) downloadPlanFile(ctx context.Context, env otf.Environment) error {
+func (r *Run) downloadPlanFile(ctx context.Context, env environment.Environment) error {
 	plan, err := env.GetPlanFile(ctx, r.id, otf.PlanFormatBinary)
 	if err != nil {
 		return err
@@ -549,7 +552,7 @@ func (r *Run) downloadPlanFile(ctx context.Context, env otf.Environment) error {
 }
 
 // uploadState reads, parses, and uploads terraform state
-func (r *Run) uploadState(ctx context.Context, env otf.Environment) error {
+func (r *Run) uploadState(ctx context.Context, env environment.Environment) error {
 	state, err := os.ReadFile(filepath.Join(env.WorkingDir(), LocalStateFilename))
 	if err != nil {
 		return err

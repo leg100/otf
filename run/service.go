@@ -58,15 +58,15 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+func (s *Service) Create(ctx context.Context, workspaceID string, opts RunCreateOptions) (otf.Run, error) {
 	return s.create(ctx, workspaceID, opts)
 }
 
-func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
+func (s *Service) Get(ctx context.Context, runID string) (otf.Run, error) {
 	return s.get(ctx, runID)
 }
 
-func (s *Service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
+func (s *Service) EnqueuePlan(ctx context.Context, runID string) (otf.Run, error) {
 	return s.enqueuePlan(ctx, runID)
 }
 

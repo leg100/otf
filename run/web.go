@@ -16,6 +16,7 @@ type web struct {
 	logs.LogService
 	otf.Renderer
 	otf.WorkspaceService
+	*RunStarter
 
 	app app
 }
@@ -26,6 +27,7 @@ type htmlLogChunk struct {
 
 func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list)
+	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get)
 	r.HandleFunc("/runs/{run_id}/delete", h.delete)
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel)
@@ -190,4 +192,37 @@ func (h *web) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+}
+
+func (h *web) startRun(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		Strategy    string `schema:"strategy,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	var speculative bool
+	switch params.Strategy {
+	case "plan-only":
+		speculative = true
+	case "plan-and-apply":
+		speculative = false
+	default:
+		html.Error(w, "invalid strategy", http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := h.StartRun(r.Context(), params.WorkspaceID, otf.ConfigurationVersionCreateOptions{
+		Speculative: otf.Bool(speculative),
+	})
+	if err != nil {
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
 }

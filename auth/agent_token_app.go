@@ -9,14 +9,14 @@ import (
 
 type agentTokenApp interface {
 	// GetAgentToken retrieves an agent token using the given token.
-	GetAgentToken(ctx context.Context, token string) (otf.AgentToken, error)
+	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 
-	createAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*agentToken, error)
-	listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error)
-	deleteAgentToken(ctx context.Context, id string) (*agentToken, error)
+	createAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*AgentToken, error)
+	listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+	deleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 }
 
-func (a *app) GetAgentToken(ctx context.Context, token string) (otf.AgentToken, error) {
+func (a *app) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	at, err := a.db.GetAgentTokenByToken(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
@@ -26,7 +26,7 @@ func (a *app) GetAgentToken(ctx context.Context, token string) (otf.AgentToken, 
 	return at, nil
 }
 
-func (a *app) createAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*agentToken, error) {
+func (a *app) createAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*AgentToken, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (a *app) createAgentToken(ctx context.Context, opts otf.CreateAgentTokenOpt
 	return token, nil
 }
 
-func (a *app) listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error) {
+func (a *app) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (a *app) listAgentTokens(ctx context.Context, organization string) ([]*agen
 	return tokens, nil
 }
 
-func (a *app) deleteAgentToken(ctx context.Context, id string) (*agentToken, error) {
+func (a *app) deleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
 	// retrieve agent token first in order to get organization for authorization
 	at, err := a.db.GetAgentTokenByID(ctx, id)
 	if err != nil {

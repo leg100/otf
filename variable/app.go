@@ -23,7 +23,7 @@ type app struct {
 
 	db
 	*handlers
-	*htmlApp
+	*web
 }
 
 func NewApplication(opts ApplicationOptions) *app {
@@ -35,7 +35,7 @@ func NewApplication(opts ApplicationOptions) *app {
 	app.handlers = &handlers{
 		app: app,
 	}
-	app.htmlApp = &htmlApp{
+	app.htmlApp = &web{
 		app:              app,
 		Renderer:         opts.Renderer,
 		WorkspaceService: opts.WorkspaceService,

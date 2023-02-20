@@ -46,7 +46,7 @@ func (db *pgdb) getRegistrySession(ctx context.Context, token string) (*registry
 }
 
 // CreateAgentToken inserts an agent token, associating it with an organization
-func (db *pgdb) CreateAgentToken(ctx context.Context, token *agentToken) error {
+func (db *pgdb) CreateAgentToken(ctx context.Context, token *AgentToken) error {
 	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
 		TokenID:          sql.String(token.ID()),
 		Token:            sql.String(token.Token()),
@@ -57,12 +57,12 @@ func (db *pgdb) CreateAgentToken(ctx context.Context, token *agentToken) error {
 	return err
 }
 
-func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*agentToken, error) {
+func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
 	rows, err := db.FindAgentTokens(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var unmarshalled []*agentToken
+	var unmarshalled []*AgentToken
 	for _, r := range rows {
 		unmarshalled = append(unmarshalled, agentTokenRow(r).toAgentToken())
 	}
@@ -78,7 +78,7 @@ func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db *pgdb) GetAgentTokenByID(ctx context.Context, id string) (*agentToken, error) {
+func (db *pgdb) GetAgentTokenByID(ctx context.Context, id string) (*AgentToken, error) {
 	r, err := db.FindAgentTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -86,7 +86,7 @@ func (db *pgdb) GetAgentTokenByID(ctx context.Context, id string) (*agentToken, 
 	return agentTokenRow(r).toAgentToken(), nil
 }
 
-func (db *pgdb) GetAgentTokenByToken(ctx context.Context, token string) (*agentToken, error) {
+func (db *pgdb) GetAgentTokenByToken(ctx context.Context, token string) (*AgentToken, error) {
 	r, err := db.FindAgentTokenByToken(ctx, sql.String(token))
 	if err != nil {
 		return nil, sql.Error(err)

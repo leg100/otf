@@ -13,7 +13,8 @@ import (
 // care of calling all the API endpoints to start a run itself).
 type RunStarter struct {
 	otf.ConfigurationVersionService
-	otf.Application
+	otf.VCSProviderService
+	otf.WorkspaceService
 
 	app
 }

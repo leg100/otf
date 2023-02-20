@@ -14,6 +14,7 @@ import (
 
 type web struct {
 	otf.Renderer
+	otf.RunService
 
 	app application
 }
@@ -33,7 +34,6 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-repo", h.listWorkspaceVCSRepos).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connectWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/disconnect", h.disconnectWorkspace).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/set-permission", h.setWorkspacePermission).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unset-permission", h.unsetWorkspacePermission).Methods("POST")
@@ -79,13 +79,13 @@ func (h *web) newWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var opts otf.CreateWorkspaceOptions
+	var opts CreateWorkspaceOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := h.CreateWorkspace(r.Context(), opts)
+	ws, err := h.app.create(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		html.FlashError(w, "workspace already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewWorkspace(*opts.Organization), http.StatusFound)
@@ -106,13 +106,13 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.GetWorkspace(r.Context(), id)
+	ws, err := h.app.get(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var latest *otf.Run
+	var latest otf.Run
 	if ws.LatestRunID() != nil {
 		latest, err = h.GetRun(r.Context(), *ws.LatestRunID())
 		if err != nil {
@@ -123,7 +123,7 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_get.tmpl", w, r, struct {
 		*Workspace
-		LatestRun      *otf.Run
+		LatestRun      otf.Run
 		LatestStreamID string
 	}{
 		Workspace:      ws,
@@ -143,7 +143,7 @@ func (h *web) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.app.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -159,13 +159,13 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := h.GetWorkspace(r.Context(), workspaceID)
+	workspace, err := h.app.get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Get existing perms as well as all teams in org
-	perms, err := h.ListWorkspacePermissions(r.Context(), workspaceID)
+	perms, err := h.app.listWorkspacePermissions(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -220,7 +220,7 @@ func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.UpdateWorkspace(r.Context(), params.WorkspaceID, otf.UpdateWorkspaceOptions{
+	ws, err := h.app.update(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,
@@ -245,7 +245,7 @@ func (h *web) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.DeleteWorkspace(r.Context(), workspaceID)
+	ws, err := h.app.delete(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -284,25 +284,25 @@ func (h *web) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
-func (app *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.app.get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	providers, err := app.ListVCSProviders(r.Context(), ws.Organization())
+	providers, err := h.ListVCSProviders(r.Context(), ws.Organization())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
+	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
 		Items []otf.VCSProvider
 		*Workspace
 	}{
@@ -324,7 +324,7 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.GetWorkspace(r.Context(), opts.WorkspaceID)
+	ws, err := h.app.get(r.Context(), opts.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -371,7 +371,7 @@ func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	params.Cloud = provider.CloudConfig().Name
 
-	err = h.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
+	err = h.app.connect(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -388,7 +388,7 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.DisconnectWorkspace(r.Context(), workspaceID)
+	ws, err := h.app.disconnect(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -396,45 +396,6 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "disconnected workspace from repo")
 	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
-}
-
-func (h *web) startRun(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		Strategy    string `schema:"strategy,required"`
-	}
-	var params parameters
-	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	var speculative bool
-	switch params.Strategy {
-	case "plan-only":
-		speculative = true
-	case "plan-and-apply":
-		speculative = false
-	default:
-		html.Error(w, "invalid strategy", http.StatusUnprocessableEntity)
-		return
-	}
-
-	ws, err := h.GetWorkspace(r.Context(), params.WorkspaceID)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	run, err := h.StartRun(r.Context(), params.WorkspaceID, otf.ConfigurationVersionCreateOptions{
-		Speculative: otf.Bool(speculative),
-	})
-	if err != nil {
-		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
-		return
-	}
-
-	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
 }
 
 func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {

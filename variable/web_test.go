@@ -85,10 +85,10 @@ func TestVariable_Update(t *testing.T) {
 	}
 }
 
-func fakeHTMLApp(t *testing.T, variable *Variable) *htmlApp {
+func fakeHTMLApp(t *testing.T, variable *Variable) *web {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
-	return &htmlApp{
+	return &web{
 		Renderer: renderer,
 		app:      &fakeService{variable: variable},
 	}

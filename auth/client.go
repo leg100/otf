@@ -42,10 +42,10 @@ func (c *Client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTo
 	if err != nil {
 		return nil, err
 	}
-	return &agentToken{id: at.ID, token: *at.Token, organization: at.Organization}, nil
+	return &AgentToken{id: at.ID, token: *at.Token, organization: at.Organization}, nil
 }
 
-func (c *Client) GetAgentToken(ctx context.Context, token string) (*agentToken, error) {
+func (c *Client) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	req, err := c.NewRequest("GET", "agent/details", nil)
 	if err != nil {
 		return nil, err
@@ -57,5 +57,5 @@ func (c *Client) GetAgentToken(ctx context.Context, token string) (*agentToken, 
 		return nil, err
 	}
 
-	return &agentToken{id: at.ID, organization: at.Organization}, nil
+	return &AgentToken{id: at.ID, organization: at.Organization}, nil
 }
