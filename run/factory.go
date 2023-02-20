@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 )
 
 // factory constructs runs
@@ -69,37 +68,4 @@ func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions
 		run.commit = &cv.IngressAttributes().CommitSHA
 	}
 	return &run
-}
-
-// NewFromJSONAPI constructs a run from a json:api struct
-func NewFromJSONAPI(d *jsonapi.Run) *Run {
-	return &Run{
-		id:                     d.ID,
-		createdAt:              d.CreatedAt,
-		forceCancelAvailableAt: d.ForceCancelAvailableAt,
-		isDestroy:              d.IsDestroy,
-		executionMode:          otf.ExecutionMode(d.ExecutionMode),
-		message:                d.Message,
-		positionInQueue:        d.PositionInQueue,
-		refresh:                d.Refresh,
-		refreshOnly:            d.RefreshOnly,
-		status:                 otf.RunStatus(d.Status),
-		// TODO: unmarshal timestamps
-		replaceAddrs:           d.ReplaceAddrs,
-		targetAddrs:            d.TargetAddrs,
-		workspaceID:            d.Workspace.ID,
-		configurationVersionID: d.ConfigurationVersion.ID,
-		// TODO: unmarshal plan and apply relations
-	}
-}
-
-// NewListFromJSONAPI constructs a run list from a json:api struct
-func NewListFromJSONAPI(from *jsonapi.RunList) *otf.RunList {
-	to := otf.RunList{
-		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
-	}
-	for _, i := range from.Items {
-		to.Items = append(to.Items, NewFromJSONAPI(i))
-	}
-	return &to
 }

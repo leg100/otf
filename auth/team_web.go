@@ -43,11 +43,10 @@ func (h *web) getTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) updateTeam(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		TeamID string `schema:"team_id,required"`
 		UpdateTeamOptions
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

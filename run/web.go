@@ -37,10 +37,10 @@ func (h *web) addHandlers(r *mux.Router) {
 }
 
 func (h *web) list(w http.ResponseWriter, r *http.Request) {
-	params := struct {
-		ListOptions otf.ListOptions
+	var params struct {
+		otf.ListOptions
 		WorkspaceID string `schema:"workspace_id,required"`
-	}{}
+	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

@@ -10,33 +10,35 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 
-type htmlApp struct {
-	*Application
+type web struct {
 	logr.Logger
 	otf.Renderer
 	*sse.Server
+
+	app application
 }
 
-func (app *htmlApp) AddHandlers(r *mux.Router) {
-	r.HandleFunc("/workspaces/{workspace_id}/watch", app.watchWorkspace).Methods("GET")
+func (h *web) addHandlers(r *mux.Router) {
+	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watchWorkspace).Methods("GET")
 }
 
-func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
+	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		StreamID    string `schema:"stream,required"`
 		Latest      bool   `schema:"latest"`
 		RunID       string `schema:"run_id"`
-	}{}
+	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	events, err := app.Watch(r.Context(), otf.WatchOptions{
+	events, err := h.app.Watch(r.Context(), otf.WatchOptions{
 		WorkspaceID: otf.String(params.WorkspaceID),
 	})
 	if err != nil {
@@ -52,7 +54,7 @@ func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				if !ok {
 					return
 				}
-				run, ok := event.Payload.(otf.Run)
+				run, ok := event.Payload.(*run.Run)
 				if !ok {
 					// skip non-run events
 					continue
@@ -77,23 +79,23 @@ func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 
 				// render HTML snippets and send as payload in SSE event
 				itemHTML := new(bytes.Buffer)
-				if err := app.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
-					app.Error(err, "rendering template for run item")
+				if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
+					h.Error(err, "rendering template for run item")
 					continue
 				}
 				runStatusHTML := new(bytes.Buffer)
-				if err := app.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
-					app.Error(err, "rendering run status template")
+				if err := h.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
+					h.Error(err, "rendering run status template")
 					continue
 				}
 				planStatusHTML := new(bytes.Buffer)
-				if err := app.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan()); err != nil {
-					app.Error(err, "rendering plan status template")
+				if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan()); err != nil {
+					h.Error(err, "rendering plan status template")
 					continue
 				}
 				applyStatusHTML := new(bytes.Buffer)
-				if err := app.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply()); err != nil {
-					app.Error(err, "rendering apply status template")
+				if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply()); err != nil {
+					h.Error(err, "rendering apply status template")
 					continue
 				}
 				js, err := json.Marshal(struct {
@@ -112,15 +114,15 @@ func (app *htmlApp) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					ApplyStatusHTML: applyStatusHTML.String(),
 				})
 				if err != nil {
-					app.Error(err, "marshalling watched run", "run", run.ID())
+					h.Error(err, "marshalling watched run", "run", run.ID())
 					continue
 				}
-				app.Server.Publish(params.StreamID, &sse.Event{
+				h.Server.Publish(params.StreamID, &sse.Event{
 					Data:  js,
 					Event: []byte(event.Type),
 				})
 			}
 		}
 	}()
-	app.Server.ServeHTTP(w, r)
+	h.Server.ServeHTTP(w, r)
 }

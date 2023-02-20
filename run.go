@@ -82,7 +82,11 @@ type Run interface {
 	WorkspaceID() string
 	ConfigurationVersionID() string
 	HasChanges() bool
+	Latest() bool
+	Plan() Plan
 }
+
+type Plan interface{}
 
 // RunList represents a list of runs.
 type RunList struct {

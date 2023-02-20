@@ -1,6 +1,7 @@
 package run
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,16 +13,16 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// jsonapiConverter converts a run into a json:api struct
-type jsonapiConverter struct {
+// JSONAPIConverter converts a run into a json:api struct
+type JSONAPIConverter struct {
 	otf.WorkspaceService // for retrieving workspace and workspace permissions
 
 	*jsonapiPlanConverter
 	*jsonapiApplyConverter
 }
 
-func newJSONAPIConverter(svc otf.WorkspaceService, signer otf.Signer) *jsonapiConverter {
-	return &jsonapiConverter{
+func newJSONAPIConverter(svc otf.WorkspaceService, signer otf.Signer) *JSONAPIConverter {
+	return &JSONAPIConverter{
 		WorkspaceService: svc,
 		jsonapiPlanConverter: &jsonapiPlanConverter{
 			logURLSigner: &logURLSigner{signer, otf.PlanPhase},
@@ -32,7 +33,21 @@ func newJSONAPIConverter(svc otf.WorkspaceService, signer otf.Signer) *jsonapiCo
 	}
 }
 
-func (m *jsonapiConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, error) {
+// MarshalJSONAPI marshals a run into json:api encoded data
+func (m *JSONAPIConverter) MarshalJSONAPI(run *Run, r *http.Request) ([]byte, error) {
+	jrun, err := m.toJSONAPI(run, r)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, jrun); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -154,7 +169,7 @@ func (m *jsonapiConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 	}, nil
 }
 
-func (m jsonapiConverter) toJSONAPIList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
+func (m JSONAPIConverter) toJSONAPIList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
 	var items []*jsonapi.Run
 	for _, run := range list.Items {
 		jrun, err := m.toJSONAPI(run, r)
@@ -169,8 +184,8 @@ func (m jsonapiConverter) toJSONAPIList(list *RunList, r *http.Request) (*jsonap
 	}, nil
 }
 
-func (m *jsonapiConverter) plan() *jsonapiPlanConverter   { return m.jsonapiPlanConverter }
-func (m *jsonapiConverter) apply() *jsonapiApplyConverter { return m.jsonapiApplyConverter }
+func (m *JSONAPIConverter) plan() *jsonapiPlanConverter   { return m.jsonapiPlanConverter }
+func (m *JSONAPIConverter) apply() *jsonapiApplyConverter { return m.jsonapiApplyConverter }
 
 // jsonapiPlanConverter converts a plan into a json:api struct
 type jsonapiPlanConverter struct {
@@ -265,6 +280,48 @@ func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsona
 		Status:           string(apply.Status()),
 		StatusTimestamps: &timestamps,
 	}, nil
+}
+
+func UnmarshalJSONAPI(b []byte) (*Run, error) {
+	// unmarshal into json:api struct
+	var jrun jsonapi.Run
+	if err := jsonapi.UnmarshalPayload(bytes.NewReader(b), &jrun); err != nil {
+		return nil, err
+	}
+	// convert json:api struct to run
+	return newFromJSONAPI(&jrun), nil
+}
+
+func newFromJSONAPI(d *jsonapi.Run) *Run {
+	return &Run{
+		id:                     d.ID,
+		createdAt:              d.CreatedAt,
+		forceCancelAvailableAt: d.ForceCancelAvailableAt,
+		isDestroy:              d.IsDestroy,
+		executionMode:          otf.ExecutionMode(d.ExecutionMode),
+		message:                d.Message,
+		positionInQueue:        d.PositionInQueue,
+		refresh:                d.Refresh,
+		refreshOnly:            d.RefreshOnly,
+		status:                 otf.RunStatus(d.Status),
+		// TODO: unmarshal timestamps
+		replaceAddrs:           d.ReplaceAddrs,
+		targetAddrs:            d.TargetAddrs,
+		workspaceID:            d.Workspace.ID,
+		configurationVersionID: d.ConfigurationVersion.ID,
+		// TODO: unmarshal plan and apply relations
+	}
+}
+
+// newListFromJSONAPI constructs a run list from a json:api struct
+func newListFromJSONAPI(from *jsonapi.RunList) *RunList {
+	to := RunList{
+		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
+	}
+	for _, i := range from.Items {
+		to.Items = append(to.Items, newFromJSONAPI(i))
+	}
+	return &to
 }
 
 // logURLSigner creates a signed URL for retrieving logs for a run phase.

@@ -42,7 +42,7 @@ func (h *web) addHandlers(r *mux.Router) {
 }
 
 func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+	var params struct {
 		// Phase to tail. Must be either plan or apply.
 		Phase otf.PhaseType `schema:"phase,required"`
 		// Offset is number of bytes into logs to start tailing from
@@ -51,7 +51,7 @@ func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 		StreamID string `schema:"stream,required"`
 		// ID of run to tail
 		RunID string `schema:"run_id,required"`
-	}{}
+	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

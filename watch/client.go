@@ -1,7 +1,6 @@
 package watch
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -11,8 +10,6 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -21,6 +18,9 @@ type Client struct {
 	http.Config
 }
 
+// Watch returns a channel subscribed to events.
+//
+// NOTE: currently only subscribes to run events
 func (c *Client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
 	// TODO: why buffered chan of size 1?
 	notifications := make(chan otf.Event, 1)
@@ -31,17 +31,14 @@ func (c *Client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.E
 
 	go func() {
 		err := sseClient.SubscribeRawWithContext(ctx, func(msg *sse.Event) {
-			// TODO: impl support for objects other than runs
-			if bytes.HasPrefix(msg.Event, []byte("run_")) {
-				rawRun := jsonapi.Run{}
-				if err := jsonapi.UnmarshalPayload(bytes.NewReader(msg.Data), &rawRun); err != nil {
-					notifications <- otf.Event{Type: otf.EventError, Payload: err.Error()}
-					return
-				}
-				notifications <- otf.Event{
-					Type:    otf.EventType(msg.Event),
-					Payload: run.NewFromJSONAPI(&rawRun),
-				}
+			payload, err := unmarshal(msg.Data)
+			if err != nil {
+				notifications <- otf.Event{Type: otf.EventError, Payload: err.Error()}
+				return
+			}
+			notifications <- otf.Event{
+				Type:    otf.EventType(msg.Event),
+				Payload: payload,
 			}
 		})
 		if err != nil {

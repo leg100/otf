@@ -1,22 +1,38 @@
 package watch
 
 import (
-	"bytes"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/run"
+	otfrun "github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 
-type api struct {
-	Application
-	eventsServer *sse.Server
+// marshals runs into json:api
+type runJSONAPIConverter interface {
+	MarshalJSONAPI(*otfrun.Run, *http.Request) ([]byte, error)
 }
 
-func (a *api) AddHandlers(r *mux.Router) {
+// eventsServer is a server capable of streaming SSE events
+type eventsServer interface {
+	CreateStream(string) *sse.Stream
+	RemoveStream(string)
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
+	Publish(string, *sse.Event)
+}
+
+type api struct {
+	logr.Logger
+	runJSONAPIConverter
+
+	app          application
+	eventsServer eventsServer
+}
+
+func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc(otf.DefaultWatchPath, a.watch).Methods("GET")
 }
 
@@ -34,7 +50,7 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 
 	a.eventsServer.CreateStream(streamID)
 
-	events, err := a.Watch(r.Context(), otf.WatchOptions{})
+	events, err := a.app.Watch(r.Context(), otf.WatchOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
@@ -53,19 +69,20 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				run, ok := event.Payload.(*run.Run)
+				// Only run events are supported
+				run, ok := event.Payload.(*otfrun.Run)
 				if !ok {
 					continue
 				}
 
-				buf := bytes.Buffer{}
-				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, a}).ToJSONAPI()); err != nil {
+				data, err := a.MarshalJSONAPI(run, r)
+				if err != nil {
 					a.Error(err, "marshalling event", "event", event.Type)
 					continue
 				}
 
 				a.eventsServer.Publish(streamID, &sse.Event{
-					Data:  buf.Bytes(),
+					Data:  data,
 					Event: []byte(event.Type),
 				})
 			}

@@ -70,6 +70,10 @@ func (ws *Workspace) Organization() string             { return ws.organization 
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
 
+// WorkspaceID returns the workspace's ID. Implemented in order to satisfy
+// WorkspaceResource.
+func (ws *Workspace) WorkspaceID() string { return ws.id }
+
 func (ws *Workspace) SetLatestRun(runID string) {
 	ws.latestRunID = otf.String(runID)
 }

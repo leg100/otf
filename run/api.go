@@ -15,7 +15,7 @@ import (
 type api struct {
 	app app
 
-	jsonapiConverter
+	JSONAPIConverter
 }
 
 // planFileOptions are options for the plan file API

@@ -47,6 +47,13 @@ type Workspace interface {
 	Organization() string
 }
 
+// WorkspaceResource is a resource that is associated with a workspace,
+// (including a workspace), e.g. a Run, StateVersion, etc.
+type WorkspaceResource interface {
+	WorkspaceID() string
+	Organization() string
+}
+
 // WorkspaceList represents a list of Workspaces.
 type WorkspaceList struct {
 	*Pagination
