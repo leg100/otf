@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type service interface {
+type application interface {
 	create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*Variable, error)
 	list(ctx context.Context, workspaceID string) ([]*Variable, error)
 	get(ctx context.Context, variableID string) (*Variable, error)
@@ -22,33 +22,6 @@ type app struct {
 	logr.Logger
 
 	db
-	*handlers
-	*web
-}
-
-func NewApplication(opts ApplicationOptions) *app {
-	app := &app{
-		Authorizer: opts.Authorizer,
-		db:         newPGDB(opts.Database),
-		Logger:     opts.Logger,
-	}
-	app.handlers = &handlers{
-		app: app,
-	}
-	app.htmlApp = &web{
-		app:              app,
-		Renderer:         opts.Renderer,
-		WorkspaceService: opts.WorkspaceService,
-	}
-	return app
-}
-
-type ApplicationOptions struct {
-	otf.Authorizer
-	otf.Database
-	otf.Renderer
-	otf.WorkspaceService
-	logr.Logger
 }
 
 func (a *app) ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error) {

@@ -14,7 +14,7 @@ type web struct {
 	otf.Renderer
 	otf.WorkspaceService
 
-	app service
+	app application
 }
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -39,7 +39,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.Render("variable_new.tmpl", w, r, struct {
+	h.Render("variable_new.tmpl", w, r, struct {
 		Workspace  otf.Workspace
 		Variable   *Variable
 		EditMode   bool
@@ -104,7 +104,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_list.tmpl", w, r, struct {
-		Workspace *otf.Workspace
+		Workspace otf.Workspace
 		Variables []*Variable
 	}{
 		Workspace: ws,
@@ -131,7 +131,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_edit.tmpl", w, r, struct {
-		Workspace  *otf.Workspace
+		Workspace  otf.Workspace
 		Variable   *Variable
 		EditMode   bool
 		FormAction string

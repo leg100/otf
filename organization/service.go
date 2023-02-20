@@ -34,8 +34,8 @@ type Options struct {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
-	s.api.AddHandlers(r)
-	s.web.AddHandlers(r)
+	s.api.addHandlers(r)
+	s.web.addHandlers(r)
 }
 
 func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {

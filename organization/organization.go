@@ -63,33 +63,10 @@ func (org *Organization) Update(opts UpdateOptions) error {
 	return nil
 }
 
-// ToJSONAPI assembles a JSONAPI DTO
-func (org *Organization) ToJSONAPI() any {
-	return &JSONAPIOrganization{
-		Name:            org.Name(),
-		CreatedAt:       org.CreatedAt(),
-		ExternalID:      org.ID(),
-		Permissions:     &defaultOrganizationPermissions,
-		SessionRemember: org.SessionRemember(),
-		SessionTimeout:  org.SessionTimeout(),
-	}
-}
-
 // OrganizationList represents a list of Organizations.
 type OrganizationList struct {
 	*otf.Pagination
 	Items []*Organization
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *OrganizationList) ToJSONAPI() any {
-	obj := &jsonapiList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, item.ToJSONAPI().(*JSONAPIOrganization))
-	}
-	return obj
 }
 
 // ListOptions represents the options for listing organizations.

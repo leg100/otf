@@ -1,7 +1,6 @@
 package organization
 
 import (
-	"context"
 	"strconv"
 	"testing"
 
@@ -9,28 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type fakeApp struct {
-	orgs []*Organization
-
-	app
-}
-
-func (f *fakeApp) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
-	return NewOrganization(opts)
-}
-
-func (f *fakeApp) ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
-	return &OrganizationList{
-		Items:      f.orgs,
-		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
-	}, nil
-}
-
-// TODO: do we need this?
-func (f *fakeApp) DeleteSession(context.Context, string) error {
-	return nil
-}
 
 func TestNewOrganizationList(t *testing.T) {
 	// create a dozen orgs

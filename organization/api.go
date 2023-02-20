@@ -17,7 +17,7 @@ type api struct {
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 //
-func (h *api) AddHandlers(r *mux.Router) {
+func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations", h.ListOrganizations)
 	r.HandleFunc("/organizations", h.CreateOrganization)
 	r.HandleFunc("/organizations/{name}", h.GetOrganization)
@@ -131,5 +131,6 @@ func (h *api) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, entitlements)
+	response := jsonapi.Entitlements(entitlements)
+	jsonapi.WriteResponse(w, r, &response)
 }

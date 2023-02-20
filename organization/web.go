@@ -17,22 +17,21 @@ type web struct {
 	app application
 }
 
-func (a *web) AddHandlers(r *mux.Router) {
+func (a *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations", a.list)
 	r.HandleFunc("/organizations/new", a.new)
-	r.HandleFunc("/organizations/create", a.createOrganization)
-	r.HandleFunc("/organizations/{name}", a.getOrganization)
-	r.HandleFunc("/organizations/{name}/edit", a.editOrganization)
+	r.HandleFunc("/organizations/create", a.create)
+	r.HandleFunc("/organizations/{name}", a.get)
+	r.HandleFunc("/organizations/{name}/edit", a.edit)
 	r.HandleFunc("/organizations/{name}/update", a.update)
 	r.HandleFunc("/organizations/{name}/delete", a.delete)
-	r.HandleFunc("/organizations/{name}/permissions", a.listPermissions)
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {
 	a.Render("organization_new.tmpl", w, r, nil)
 }
 
-func (a *web) createOrganization(w http.ResponseWriter, r *http.Request) {
+func (a *web) create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -76,7 +75,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *web) getOrganization(w http.ResponseWriter, r *http.Request) {
+func (a *web) get(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -92,7 +91,7 @@ func (a *web) getOrganization(w http.ResponseWriter, r *http.Request) {
 	a.Render("organization_get.tmpl", w, r, org)
 }
 
-func (a *web) editOrganization(w http.ResponseWriter, r *http.Request) {
+func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -143,19 +142,4 @@ func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "deleted organization: "+organization)
 	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
-}
-
-func (a *web) listPermissions(w http.ResponseWriter, r *http.Request) {
-	name, err := decode.Param("name", r)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	org, err := a.app.get(r.Context(), name)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	a.Render("organization_get.tmpl", w, r, org)
 }

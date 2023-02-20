@@ -15,7 +15,7 @@ type application interface {
 	list(ctx context.Context, opts ListOptions) (*OrganizationList, error)
 	update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
 	delete(ctx context.Context, name string) error
-	getEntitlements(ctx context.Context, organization string) (*Entitlements, error)
+	getEntitlements(ctx context.Context, organization string) (Entitlements, error)
 }
 
 // app is the implementation of application
@@ -130,17 +130,17 @@ func (a *app) delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *app) getEntitlements(ctx context.Context, organization string) (*Entitlements, error) {
+func (a *app) getEntitlements(ctx context.Context, organization string) (Entitlements, error) {
 	_, err := a.CanAccessOrganization(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
-		return nil, err
+		return Entitlements{}, err
 	}
 
 	org, err := a.get(ctx, organization)
 	if err != nil {
-		return nil, err
+		return Entitlements{}, err
 	}
-	return DefaultEntitlements(org.ID()), nil
+	return defaultEntitlements(org.ID()), nil
 }
 
 // newOrganizationList constructs a paginated OrganizationList given the list

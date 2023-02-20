@@ -6,92 +6,91 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func createTestOrganization(t *testing.T, db *pgdb) *Organization {
+func TestOrganization_Create(t *testing.T) {
 	ctx := context.Background()
-	org := newTestOrganization(t)
-	err := db.create(ctx, org)
-	require.NoError(t, err)
+	db := newDB(sql.NewTestDB(t))
 
-	t.Cleanup(func() {
-		db.delete(ctx, org.name)
-	})
-	return org
-}
+	t.Run("create", func(t *testing.T) {
+		org := NewTestOrganization(t)
 
-func TestOrganization_List(t *testing.T) {
-	db := newTestDB(t)
-	org := createTestOrganization(t, db)
+		t.Cleanup(func() {
+			db.delete(ctx, org.name)
+		})
 
-	ol, err := db.list(context.Background(), ListOptions{})
-	require.NoError(t, err)
-
-	assert.Contains(t, ol.Items, org)
-}
-
-func TestOrganization_ListWithPagination(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	_ = createTestOrganization(t, db)
-	_ = createTestOrganization(t, db)
-
-	t.Run("page one, two items per page", func(t *testing.T) {
-		orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+		err := db.create(ctx, org)
 		require.NoError(t, err)
 
-		assert.Equal(t, 2, len(orgs.Items))
+		t.Run("duplicate error", func(t *testing.T) {
+			err := db.create(ctx, org)
+			require.Equal(t, otf.ErrResourceAlreadyExists, err)
+		})
 	})
 
-	t.Run("page one, one item per page", func(t *testing.T) {
-		orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+	t.Run("update name", func(t *testing.T) {
+		org := createTestOrganization(t, db)
+
+		want := uuid.NewString()
+		org, err := db.update(ctx, org.Name(), func(org *Organization) error {
+			org.name = want
+			return nil
+		})
 		require.NoError(t, err)
 
-		assert.Equal(t, 1, len(orgs.Items))
+		assert.Equal(t, want, org.Name())
 	})
 
-	t.Run("page two, one item per page", func(t *testing.T) {
-		orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+	t.Run("list with pagination", func(t *testing.T) {
+		_ = createTestOrganization(t, db)
+		_ = createTestOrganization(t, db)
+
+		t.Run("page one, two items per page", func(t *testing.T) {
+			orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+			require.NoError(t, err)
+
+			assert.Equal(t, 2, len(orgs.Items))
+		})
+
+		t.Run("page one, one item per page", func(t *testing.T) {
+			orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+			require.NoError(t, err)
+
+			assert.Equal(t, 1, len(orgs.Items))
+		})
+
+		t.Run("page two, one item per page", func(t *testing.T) {
+			orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+			require.NoError(t, err)
+
+			assert.Equal(t, 1, len(orgs.Items))
+		})
+	})
+
+	t.Run("get", func(t *testing.T) {
+		want := createTestOrganization(t, db)
+
+		got, err := db.get(ctx, want.name)
 		require.NoError(t, err)
 
-		assert.Equal(t, 1, len(orgs.Items))
+		assert.Equal(t, want, got)
 	})
-}
 
-func TestListUserOrganizations(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	org1 := createTestOrganization(t, db)
-	org2 := createTestOrganization(t, db)
-	user := auth.CreateTestUser(t, db,
-		otf.WithOrganizationMemberships(org1.Name(), org2.Name()))
+	t.Run("delete", func(t *testing.T) {
+		org := createTestOrganization(t, db)
 
-	got, err := db.ListOrganizationsByUser(ctx, user.ID())
-	require.NoError(t, err)
+		err := db.delete(ctx, org.name)
+		require.NoError(t, err)
 
-	assert.Contains(t, got, org1)
-	assert.Contains(t, got, org2)
-}
+		_, err = db.get(ctx, org.name)
+		assert.Equal(t, otf.ErrResourceNotFound, err)
+	})
 
-func TestOrganization_Delete(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	org := createTestOrganization(t, db)
-
-	require.NoError(t, db.delete(ctx, org.name))
-
-	_, err := db.get(ctx, org.name)
-	assert.Equal(t, otf.ErrResourceNotFound, err)
-}
-
-func TestOrganization_DeleteError(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	_ = createTestOrganization(t, db)
-
-	err := db.delete(ctx, "non-existent-org")
-
-	assert.Equal(t, otf.ErrResourceNotFound, err)
+	t.Run("delete non-existent org", func(t *testing.T) {
+		err := db.delete(ctx, "does-not-exist")
+		assert.Equal(t, otf.ErrResourceNotFound, err)
+	})
 }

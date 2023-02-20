@@ -206,7 +206,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	triggerer := triggerer.NewTriggerer(app, logger)
 
-	variableService := variable.NewApplication(variable.ApplicationOptions{
+	variableService := variable.NewApplication(variable.Options{
 		Authorizer:       authorizer,
 		Logger:           logger,
 		Database:         db,

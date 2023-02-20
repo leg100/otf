@@ -40,9 +40,6 @@ func TestOrganization_Create(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		ctx := context.Background()
-		db := sql.NewTestDB(t)
-		svc := testutil.NewOrganizationService(t, db)
 		org := testutil.CreateOrganization(t, db)
 
 		// update org name
@@ -56,9 +53,6 @@ func TestOrganization_Create(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		ctx := context.Background()
-		db := sql.NewTestDB(t)
-		svc := testutil.NewOrganizationService(t, db)
 		want := testutil.CreateOrganization(t, db)
 
 		got, err := svc.GetOrganization(ctx, want.Name())
@@ -68,9 +62,6 @@ func TestOrganization_Create(t *testing.T) {
 	})
 
 	t.Run("list by user", func(t *testing.T) {
-		ctx := context.Background()
-		db := sql.NewTestDB(t)
-		svc := testutil.NewOrganizationService(t, db)
 		org1 := testutil.CreateOrganization(t, db)
 		org2 := testutil.CreateOrganization(t, db)
 		user := testutil.CreateUser(t, db,

@@ -9,15 +9,15 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type handlers struct {
-	app service
+type api struct {
+	app application
 }
 
-// Implements TFC state versions API:
+// Implements TFC workspace variables API:
 //
-// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables#update-variables
 //
-func (h *handlers) AddHandlers(r *mux.Router) {
+func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.create).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.get).Methods("GET")
@@ -38,7 +38,7 @@ func (l *variableList) ToJSONAPI() any {
 	return variables
 }
 
-func (h *handlers) create(w http.ResponseWriter, r *http.Request) {
+func (h *api) create(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -64,7 +64,7 @@ func (h *handlers) create(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, variable, jsonapi.WithCode(http.StatusCreated))
 }
 
-func (h *handlers) get(w http.ResponseWriter, r *http.Request) {
+func (h *api) get(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -78,7 +78,7 @@ func (h *handlers) get(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, variable)
 }
 
-func (h *handlers) list(w http.ResponseWriter, r *http.Request) {
+func (h *api) list(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -92,7 +92,7 @@ func (h *handlers) list(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, &variableList{variables})
 }
 
-func (h *handlers) update(w http.ResponseWriter, r *http.Request) {
+func (h *api) update(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -118,7 +118,7 @@ func (h *handlers) update(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, updated)
 }
 
-func (h *handlers) delete(w http.ResponseWriter, r *http.Request) {
+func (h *api) delete(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)

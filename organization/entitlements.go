@@ -1,6 +1,5 @@
 package organization
 
-// Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
 // OTF is free and therefore the user is entitled to all currently supported
 // services.
 type Entitlements struct {
@@ -17,15 +16,10 @@ type Entitlements struct {
 	VCSIntegrations       bool
 }
 
-// ToJSONAPI assembles a JSONAPI DTO
-func (e Entitlements) ToJSONAPI() any {
-	return jsonapiEntitlements(e)
-}
-
-// DefaultEntitlements constructs an Entitlements struct with currently
+// defaultEntitlements constructs an Entitlements struct with currently
 // supported entitlements.
-func DefaultEntitlements(organizationID string) *Entitlements {
-	return &Entitlements{
+func defaultEntitlements(organizationID string) Entitlements {
+	return Entitlements{
 		ID:                    organizationID,
 		Agents:                true,
 		Operations:            true,

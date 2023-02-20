@@ -24,10 +24,10 @@ func (c *Client) CreateOrganization(ctx context.Context, options otf.Organizatio
 	if err != nil {
 		return nil, err
 	}
-	org := &JSONAPIOrganization{}
-	err = c.Do(ctx, req, org)
+	org := jsonapi.Organization{}
+	err = c.Do(ctx, req, &org)
 	if err != nil {
 		return nil, err
 	}
-	return org.toOrganization(), nil
+	return newFromJSONAPI(org), nil
 }
