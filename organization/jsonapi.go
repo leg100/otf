@@ -18,7 +18,7 @@ func toJSONAPI(org *Organization) *jsonapi.Organization {
 		Name:            org.name,
 		CreatedAt:       org.createdAt,
 		ExternalID:      org.id,
-		Permissions:     defaultOrganizationPermissions,
+		Permissions:     &jsonapi.DefaultOrganizationPermissions,
 		SessionRemember: org.sessionRemember,
 		SessionTimeout:  org.sessionTimeout,
 	}

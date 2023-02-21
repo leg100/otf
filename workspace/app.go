@@ -18,7 +18,11 @@ type application interface {
 	update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 	delete(ctx context.Context, workspaceID string) (*Workspace, error)
 
+	connect(ctx context.Context, workspaceID string, opts connectOptions) error
+	disconnect(ctx context.Context, workspaceID string) (*Workspace, error)
+
 	lockApp
+	permissionsApp
 }
 
 type app struct {
@@ -60,13 +64,13 @@ func (a *app) listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace, er
 	return a.db.ListWorkspacesByWebhookID(ctx, id)
 }
 
-func (a *app) ConnectWorkspace(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
+func (a *app) connect(ctx context.Context, workspaceID string, opts connectOptions) error {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
 	}
 
-	err = a.connector.Connect(ctx, workspaceID, opts)
+	err = a.connector.connect(ctx, workspaceID, opts)
 	if err != nil {
 		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.Identifier)
 		return err
@@ -105,7 +109,7 @@ func (a *app) disconnect(ctx context.Context, workspaceID string) (*Workspace, e
 		return nil, err
 	}
 
-	ws, err = a.connector.Disconnect(ctx, ws)
+	ws, err = a.connector.disconnect(ctx, ws)
 	if err != nil {
 		a.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return nil, err

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
@@ -54,27 +53,6 @@ func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
 func (u *User) String() string          { return u.username }
 func (u *User) Organizations() []string { return u.organizations }
 
-// TeamsByOrganization return a user's teams filtered by organization name
-func (u *User) TeamsByOrganization(organization string) []otf.Team {
-	var orgTeams []otf.Team
-	for _, t := range u.teams {
-		if t.Organization() == organization {
-			orgTeams = append(orgTeams, t)
-		}
-	}
-	return orgTeams
-}
-
-// Team retrieves the named team in the given organization.
-func (u *User) Team(name, organization string) (otf.Team, error) {
-	for _, t := range u.teams {
-		if t.Name() == name && t.Organization() == organization {
-			return t, nil
-		}
-	}
-	return nil, fmt.Errorf("no team found with the name: %s", name)
-}
-
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID string) bool {
 	for _, t := range u.teams {
@@ -83,10 +61,6 @@ func (u *User) IsTeamMember(teamID string) bool {
 		}
 	}
 	return false
-}
-
-func (u *User) IsUnprivilegedUser(organization string) bool {
-	return !u.IsSiteAdmin() && !u.IsOwner(organization)
 }
 
 func (u *User) IsSiteAdmin() bool { return u.id == otf.SiteAdminID }
@@ -104,7 +78,7 @@ func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 
 	for _, team := range u.teams {
 		if team.Organization() == name {
-			if team.IsOwners() {
+			if team.isOwners() {
 				// owner team members can perform all actions on organization
 				return true
 			}
@@ -139,7 +113,7 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolic
 	// user must be a member of a team with perms
 	for _, team := range u.teams {
 		if team.Organization() == policy.Organization {
-			if team.IsOwners() {
+			if team.isOwners() {
 				// owner team members can perform all actions on all workspaces
 				return true
 			}
@@ -161,34 +135,12 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolic
 func (u *User) IsOwner(organization string) bool {
 	for _, team := range u.teams {
 		if team.Organization() == organization {
-			if team.IsOwners() {
+			if team.isOwners() {
 				return true
 			}
 		}
 	}
 	return false
-}
-
-// CanLock always returns an error because nothing can replace a user lock
-func (u *User) CanLock(requestor otf.Identity) error {
-	return otf.ErrWorkspaceAlreadyLocked
-}
-
-// CanUnlock decides whether to permits requestor to unlock a user lock
-func (u *User) CanUnlock(requestor otf.Identity, force bool) error {
-	if force {
-		// TODO: only grant admin user
-		return nil
-	}
-	if user, ok := requestor.(*User); ok {
-		if u.ID() == user.ID() {
-			// only same user can unlock
-			return nil
-		}
-		return otf.ErrWorkspaceLockedByDifferentUser
-	}
-	// any other entity cannot unlock
-	return otf.ErrWorkspaceUnlockDenied
 }
 
 // UserListOptions are options for the ListUsers endpoint.

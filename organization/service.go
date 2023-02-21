@@ -38,20 +38,42 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
-	return a.create(ctx, opts)
+func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (otf.Organization, error) {
+	org, err := a.create(ctx, opts)
+	if err != nil {
+		return otf.Organization{}, nil
+	}
+	return org.toValue(), nil
 }
 
-func (a *Service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
-	return a.update(ctx, name, opts)
+func (a *Service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (otf.Organization, error) {
+	org, err := a.update(ctx, name, opts)
+	if err != nil {
+		return otf.Organization{}, nil
+	}
+	return org.toValue(), nil
 }
 
-func (a *Service) ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
-	return a.list(ctx, opts)
+func (a *Service) ListOrganizations(ctx context.Context, opts ListOptions) (otf.OrganizationList, error) {
+	from, err := a.list(ctx, opts)
+	if err != nil {
+		return otf.OrganizationList{}, nil
+	}
+	to := otf.OrganizationList{
+		Pagination: from.Pagination,
+	}
+	for _, org := range from.Items {
+		to.Items = append(to.Items, org.toValue())
+	}
+	return to, nil
 }
 
-func (a *Service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
-	return a.get(ctx, name)
+func (a *Service) GetOrganization(ctx context.Context, name string) (otf.Organization, error) {
+	org, err := a.get(ctx, name)
+	if err != nil {
+		return otf.Organization{}, nil
+	}
+	return org.toValue(), nil
 }
 
 func (a *Service) DeleteOrganization(ctx context.Context, name string) error {

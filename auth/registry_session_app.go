@@ -9,8 +9,8 @@ import (
 
 type registrySessionApp interface {
 	CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error)
-	// GetRegistrySession retrieves a registry session using a token. Useful for
-	// checking token is valid.
+	// GetRegistrySession retrieves a registry session using a token. Intended
+	// as means of checking whether a given token is valid.
 	GetRegistrySession(ctx context.Context, token string) (otf.RegistrySession, error)
 
 	createRegistrySession(ctx context.Context, organization string) (*registrySession, error)

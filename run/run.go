@@ -1,12 +1,7 @@
 package run
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -273,6 +268,10 @@ func (r *Run) Finish(phase otf.PhaseType, opts otf.PhaseFinishOptions) error {
 	}
 }
 
+func (r *Run) toValue() otf.Run {
+	return otf.Run{ID: r.id}
+}
+
 func (r *Run) startPlan() error {
 	if r.status != otf.RunPlanQueued {
 		return ErrInvalidRunStateTransition
@@ -444,124 +443,6 @@ func (r *Run) setupEnv(env environment.Environment) error {
 		return fmt.Errorf("running terraform init: %w", err)
 	}
 	return nil
-}
-
-func (r *Run) deleteBackendConfig(ctx context.Context, env environment.Environment) error {
-	if err := otf.RewriteHCL(env.WorkingDir(), otf.RemoveBackendBlock); err != nil {
-		return fmt.Errorf("removing backend config: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) downloadTerraform(ctx context.Context, env environment.Environment) error {
-	ws, err := env.GetWorkspace(ctx, r.workspaceID)
-	if err != nil {
-		return err
-	}
-	_, err = env.Download(ctx, ws.TerraformVersion(), env)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Run) downloadConfig(ctx context.Context, env environment.Environment) error {
-	// Download config
-	cv, err := env.DownloadConfig(ctx, r.configurationVersionID)
-	if err != nil {
-		return fmt.Errorf("unable to download config: %w", err)
-	}
-	// Decompress and untar config into environment root
-	if err := otf.Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
-		return fmt.Errorf("unable to unpack config: %w", err)
-	}
-	return nil
-}
-
-// downloadState downloads current state to disk. If there is no state yet
-// nothing will be downloaded and no error will be reported.
-func (r *Run) downloadState(ctx context.Context, env environment.Environment) error {
-	statefile, err := env.DownloadCurrentState(ctx, r.workspaceID)
-	if errors.Is(err, otf.ErrResourceNotFound) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("downloading state version: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(env.WorkingDir(), LocalStateFilename), statefile, 0o644); err != nil {
-		return fmt.Errorf("saving state to local disk: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) uploadPlan(ctx context.Context, env environment.Environment) error {
-	file, err := os.ReadFile(filepath.Join(env.WorkingDir(), PlanFilename))
-	if err != nil {
-		return err
-	}
-
-	if err := env.UploadPlanFile(ctx, r.id, file, otf.PlanFormatBinary); err != nil {
-		return fmt.Errorf("unable to upload plan: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Run) uploadJSONPlan(ctx context.Context, env environment.Environment) error {
-	jsonFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), JSONPlanFilename))
-	if err != nil {
-		return err
-	}
-	if err := env.UploadPlanFile(ctx, r.id, jsonFile, otf.PlanFormatJSON); err != nil {
-		return fmt.Errorf("unable to upload JSON plan: %w", err)
-	}
-	return nil
-}
-
-// downloadLockFile downloads the .terraform.lock.hcl file into the working
-// directory. If one has not been uploaded then this will simply write an empty
-// file, which is harmless.
-func (r *Run) downloadLockFile(ctx context.Context, env environment.Environment) error {
-	lockFile, err := env.GetLockFile(ctx, r.id)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(env.WorkingDir(), LockFilename), lockFile, 0o644)
-}
-
-func (r *Run) uploadLockFile(ctx context.Context, env environment.Environment) error {
-	lockFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), LockFilename))
-	if errors.Is(err, fs.ErrNotExist) {
-		// there is no lock file to upload, which is ok
-		return nil
-	} else if err != nil {
-		return errors.Wrap(err, "reading lock file")
-	}
-	if err := env.UploadLockFile(ctx, r.id, lockFile); err != nil {
-		return fmt.Errorf("unable to upload lock file: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) downloadPlanFile(ctx context.Context, env environment.Environment) error {
-	plan, err := env.GetPlanFile(ctx, r.id, otf.PlanFormatBinary)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(filepath.Join(env.WorkingDir(), PlanFilename), plan, 0o644)
-}
-
-// uploadState reads, parses, and uploads terraform state
-func (r *Run) uploadState(ctx context.Context, env environment.Environment) error {
-	state, err := os.ReadFile(filepath.Join(env.WorkingDir(), LocalStateFilename))
-	if err != nil {
-		return err
-	}
-	err = env.CreateStateVersion(ctx, otf.CreateStateVersionOptions{
-		WorkspaceID: &r.workspaceID,
-		State:       state,
-	})
-	return err
 }
 
 type RunStatusTimestamp struct {

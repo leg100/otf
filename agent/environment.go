@@ -15,25 +15,26 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/environment"
 	"github.com/pkg/errors"
 )
 
 type Doer interface {
 	// TODO: environment is excessive; can we pass in something that exposes
 	// fewer methods like an 'executor'?
-	Do(otf.Environment) error
+	Do() error
 }
 
 // Environment is an implementation of an execution environment
-var _ otf.Environment = (*Environment)(nil)
+var _ environment.Environment = (*Environment)(nil)
 
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
 type Environment struct {
 	otf.Client
 	logr.Logger
-	otf.Downloader // Downloader for workers to download terraform cli on demand
-	Terraform      // For looking up path to terraform cli
+	environment.Downloader // Downloader for workers to download terraform cli on demand
+	Terraform              // For looking up path to terraform cli
 	Config
 
 	configRoot string             // absolute path of tf config
@@ -53,10 +54,10 @@ func NewEnvironment(
 	app otf.Client,
 	run *otf.Run,
 	envs []string,
-	downloader otf.Downloader,
+	downloader environment.Downloader,
 	cfg Config,
 ) (*Environment, error) {
-	ws, err := app.GetWorkspace(ctx, run.WorkspaceID())
+	ws, err := app.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}
@@ -68,7 +69,7 @@ func NewEnvironment(
 	}
 	// create working directory in case user has specified a non-existent
 	// working directory
-	err = os.MkdirAll(path.Join(configRoot, ws.WorkingDirectory()), 0o755)
+	err = os.MkdirAll(path.Join(configRoot, ws.WorkingDirectory), 0o755)
 	if err != nil {
 		return nil, err
 	}
@@ -223,12 +224,12 @@ func (e *Environment) TerraformPath() string {
 }
 
 // RunFunc invokes a func in the executor.
-func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
+func (e *Environment) RunFunc(fn environment.EnvironmentFunc) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
 
-	if err := fn(e.ctx, e); err != nil {
+	if err := fn(e.ctx); err != nil {
 		e.printRedErrorMessage(err)
 		return err
 	}

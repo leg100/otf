@@ -25,7 +25,7 @@ type Subject interface {
 type WorkspacePolicy struct {
 	Organization string
 	WorkspaceID  string
-	Permissions  []*WorkspacePermission
+	Permissions  []WorkspacePermission
 }
 
 // WorkspacePermission binds a role to a team.

@@ -52,7 +52,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 		} else if err != nil {
 			return nil, err
 		}
-		organizations = append(organizations, got.Name())
+		organizations = append(organizations, got.Name)
 	}
 
 	// A user also gets their own personal organization matching their username
@@ -65,17 +65,20 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 			return nil, err
 		}
 	}
-	organizations = append(organizations, personal.Name())
+	organizations = append(organizations, personal.Name)
 
 	// Create team for each cloud team
 	var teams []*Team
 	for _, want := range from.Teams {
 		got, err := s.getTeam(ctx, want.Organization, want.Name)
 		if err == otf.ErrResourceNotFound {
-			got, err = s.application.createTeam(ctx, createTeamOptions{
+			got, err = s.createTeam(ctx, createTeamOptions{
 				Name:         want.Name,
 				Organization: want.Organization,
 			})
+			if err != nil {
+				return nil, err
+			}
 		} else if err != nil {
 			return nil, err
 		}
@@ -83,12 +86,15 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	}
 
 	// And make them an owner of their personal org
-	owners, err := s.getTeam(ctx, personal.Name(), "owners")
+	owners, err := s.getTeam(ctx, personal.Name, "owners")
 	if err == otf.ErrResourceNotFound {
-		owners, err = s.application.createTeam(ctx, createTeamOptions{
+		owners, err = s.createTeam(ctx, createTeamOptions{
 			Name:         "owners",
-			Organization: personal.Name(),
+			Organization: personal.Name,
 		})
+		if err != nil {
+			return nil, err
+		}
 	} else if err != nil {
 		return nil, err
 	}

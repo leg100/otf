@@ -5,15 +5,24 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/pkg/errors"
 )
 
+// connector connects a workspace to a VCS repo, subscribing it to
+// VCS events that trigger runs.
 type Connector struct {
-	otf.HookService        // for registering and unregistering connections to webhooks
-	otf.VCSProviderService // for retrieving cloud client
+	otf.HookService      // for registering and unregistering connections to webhooks
+	*vcsprovider.Service // for retrieving cloud client
 }
 
-func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
+type connectOptions struct {
+	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
+	ProviderID string `schema:"vcs_provider_id,required"`
+	Cloud      string // cloud host of the repo
+}
+
+func (c *Connector) connect(ctx context.Context, workspaceID string, opts connectOptions) error {
 	client, err := c.GetVCSClient(ctx, opts.ProviderID)
 	if err != nil {
 		return err
@@ -46,7 +55,7 @@ func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.Co
 
 // Disconnect a repo from a workspace. The repo's webhook is deleted if no other
 // workspace is connected to the repo.
-func (c *Connector) Disconnect(ctx context.Context, ws *Workspace) (*Workspace, error) {
+func (c *Connector) disconnect(ctx context.Context, ws *Workspace) (*Workspace, error) {
 	repo := ws.Repo()
 	client, err := c.GetVCSClient(ctx, repo.ProviderID)
 	if err != nil {

@@ -10,8 +10,10 @@ import (
 )
 
 type api struct {
-	app application
 	*JSONAPIMarshaler
+
+	app             application
+	tokenMiddleware mux.MiddlewareFunc
 }
 
 // byName are parameters used when looking up a workspace by
@@ -27,7 +29,8 @@ type unlockOptions struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	// Workspace routes
+	r.Use(a.tokenMiddleware)
+
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list)
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create)
 	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.GetWorkspaceByName)
@@ -131,10 +134,10 @@ func (a *api) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) list(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+	var params struct {
 		Organization    string `schema:"organization_name,required"`
 		otf.ListOptions        // Pagination
-	}{}
+	}
 	if err := decode.All(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return

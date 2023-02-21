@@ -60,19 +60,6 @@ type WorkspaceList struct {
 	Items []Workspace
 }
 
-// WorkspaceConnector connects a workspace to a VCS repo, subscribing it to
-// VCS events that trigger runs.
-type WorkspaceConnector interface {
-	Connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
-	Disconnect(ctx context.Context, workspaceID string) (*Workspace, error)
-}
-
-type ConnectWorkspaceOptions struct {
-	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
-	ProviderID string `schema:"vcs_provider_id,required"`
-	Cloud      string // cloud host of the repo
-}
-
 // CreateWorkspaceOptions represents the options for creating a new workspace.
 type CreateWorkspaceOptions struct {
 	AllowDestroyPlan           *bool
@@ -159,7 +146,7 @@ type WorkspaceService interface {
 
 type WorkspacePermissionService interface {
 	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
+	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]WorkspacePermission, error)
 	UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 }
 
@@ -172,5 +159,5 @@ type WorkspaceDB interface {
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
 
-	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
+	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]WorkspacePermission, error)
 }

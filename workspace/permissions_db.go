@@ -22,12 +22,12 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team st
 	return nil
 }
 
-func (db *pgdb) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*otf.WorkspacePermission, error) {
+func (db *pgdb) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error) {
 	result, err := db.FindWorkspacePermissionsByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var perms []*otf.WorkspacePermission
+	var perms []otf.WorkspacePermission
 	for _, row := range result {
 		perm, err := permissionRow(row).toPermission()
 		if err != nil {
@@ -54,12 +54,12 @@ type permissionRow struct {
 	Organization *pggen.Organizations `json:"organization"`
 }
 
-func (row permissionRow) toPermission() (*otf.WorkspacePermission, error) {
+func (row permissionRow) toPermission() (otf.WorkspacePermission, error) {
 	role, err := rbac.WorkspaceRoleFromString(row.Role.String)
 	if err != nil {
-		return nil, err
+		return otf.WorkspacePermission{}, err
 	}
-	return &otf.WorkspacePermission{
+	return otf.WorkspacePermission{
 		Role:   role,
 		TeamID: row.Team.TeamID.String,
 	}, nil

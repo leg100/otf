@@ -24,7 +24,8 @@ func NewService(opts Options) (*Service, error) {
 		Logger:        opts.Logger,
 	}
 	api := &api{
-		app: app,
+		app:             app,
+		tokenMiddleware: opts.TokenMiddleware,
 	}
 	web := &web{
 		Renderer: opts.Renderer,
@@ -39,6 +40,8 @@ func NewService(opts Options) (*Service, error) {
 }
 
 type Options struct {
+	TokenMiddleware mux.MiddlewareFunc
+
 	otf.Authorizer
 	otf.DB
 	otf.PubSubService

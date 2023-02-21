@@ -7,13 +7,14 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 // RunStarter starts a run triggered via the UI (whereas the terraform CLI takes
 // care of calling all the API endpoints to start a run itself).
 type RunStarter struct {
 	otf.ConfigurationVersionService
-	otf.VCSProviderService
+	*vcsprovider.Service
 	otf.WorkspaceService
 
 	app

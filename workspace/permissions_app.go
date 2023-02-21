@@ -7,7 +7,13 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-func (a *app) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
+type permissionsApp interface {
+	setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
+	listPermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error)
+	unsetPermission(ctx context.Context, workspaceID, team string) error
+}
+
+func (a *app) setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
@@ -25,11 +31,11 @@ func (a *app) SetWorkspacePermission(ctx context.Context, workspaceID, team stri
 	return nil
 }
 
-func (a *app) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*otf.WorkspacePermission, error) {
+func (a *app) listPermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error) {
 	return a.db.ListWorkspacePermissions(ctx, workspaceID)
 }
 
-func (a *app) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
+func (a *app) unsetPermission(ctx context.Context, workspaceID, team string) error {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		a.Error(err, "unsetting workspace permission", "team", team, "subject", subject, "workspace", workspaceID)

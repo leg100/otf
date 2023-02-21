@@ -25,10 +25,10 @@ func newJSONAPIConverter(svc otf.WorkspaceService, signer otf.Signer) *JSONAPICo
 	return &JSONAPIConverter{
 		WorkspaceService: svc,
 		jsonapiPlanConverter: &jsonapiPlanConverter{
-			logURLSigner: &logURLSigner{signer, otf.PlanPhase},
+			logURLGenerator: &logURLGenerator{signer, otf.PlanPhase},
 		},
 		jsonapiApplyConverter: &jsonapiApplyConverter{
-			logURLSigner: &logURLSigner{signer, otf.ApplyPhase},
+			logURLGenerator: &logURLGenerator{signer, otf.ApplyPhase},
 		},
 	}
 }
@@ -189,7 +189,7 @@ func (m *JSONAPIConverter) apply() *jsonapiApplyConverter { return m.jsonapiAppl
 
 // jsonapiPlanConverter converts a plan into a json:api struct
 type jsonapiPlanConverter struct {
-	*logURLSigner
+	*logURLGenerator
 }
 
 func (m *jsonapiPlanConverter) toJSONAPI(plan *Plan, r *http.Request) (*jsonapi.Plan, error) {
@@ -237,7 +237,7 @@ func (m *jsonapiPlanConverter) toJSONAPI(plan *Plan, r *http.Request) (*jsonapi.
 
 // jsonapiApplyConverter converts an apply into a json:api struct
 type jsonapiApplyConverter struct {
-	*logURLSigner
+	*logURLGenerator
 }
 
 func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsonapi.Apply, error) {
@@ -282,14 +282,14 @@ func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsona
 	}, nil
 }
 
-// logURLSigner creates a signed URL for retrieving logs for a run phase.
-type logURLSigner struct {
+// logURLGenerator creates a signed URL for retrieving logs for a run phase.
+type logURLGenerator struct {
 	otf.Signer
 
 	phase otf.PhaseType
 }
 
-func (s *logURLSigner) logURL(r *http.Request, runID string) (string, error) {
+func (s *logURLGenerator) logURL(r *http.Request, runID string) (string, error) {
 	logs := fmt.Sprintf("/runs/%s/logs/%s", runID, s.phase)
 	logs, err := s.Sign(logs, time.Hour)
 	if err != nil {

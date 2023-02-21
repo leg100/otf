@@ -8,8 +8,13 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type Organization interface {
-	Name() string
+type Organization struct {
+	Name string
+}
+
+type OrganizationList struct {
+	*Pagination
+	Items []Organization
 }
 
 type OrganizationService interface {

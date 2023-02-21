@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/environment"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -35,9 +36,9 @@ type Agent struct {
 	otf.Client
 	logr.Logger
 
-	Spooler        // spools new run events
-	*Terminator    // terminates runs
-	otf.Downloader // terraform cli downloader
+	Spooler                // spools new run events
+	*Terminator            // terminates runs
+	environment.Downloader // terraform cli downloader
 
 	envs []string // terraform environment variables
 }
@@ -45,7 +46,7 @@ type Agent struct {
 // NewAgent is the constructor for an Agent
 func NewAgent(logger logr.Logger, app otf.Client, cfg Config) (*Agent, error) {
 	agent := &Agent{
-		Client:   app,
+		Client:     app,
 		Config:     cfg,
 		Logger:     logger,
 		envs:       DefaultEnvs,

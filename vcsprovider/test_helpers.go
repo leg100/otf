@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestVCSProvider(t *testing.T, org *otf.Organization) *VCSProvider {
+func NewTestVCSProvider(t *testing.T, org otf.Organization) *VCSProvider {
 	factory := &factory{inmem.NewTestCloudService()}
 	provider, err := factory.new(createOptions{
-		Organization: org.Name(),
+		Organization: org.Name,
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
 		Cloud: "github",

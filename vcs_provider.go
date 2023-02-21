@@ -4,32 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/cloud"
 )
 
-type VCSProvider interface {
-	ID() string
-	String() string
-	Token() string
-	CreatedAt() time.Time
-	Name() string
-	Organization() string
-	CloudConfig() cloud.Config
-}
-
-type VCSProviderCreateOptions struct {
-	Organization string
+type VCSProvider struct {
+	ID           string
+	String       string
 	Token        string
+	CreatedAt    time.Time
 	Name         string
-	Cloud        string
-}
-
-type VCSProviderService interface {
-	// AddHTMLHandlers adds handlers for the web ui.
-	AddHTMLHandlers(*mux.Router)
-
-	VCSProviderApp
+	Organization string
+	CloudConfig  cloud.Config
 }
 
 // VCSProviderService provides access to vcs providers

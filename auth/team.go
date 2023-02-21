@@ -27,7 +27,7 @@ func (u *Team) String() string                         { return u.name }
 func (u *Team) Organization() string                   { return u.organization }
 func (u *Team) OrganizationAccess() OrganizationAccess { return u.access }
 
-func (u *Team) IsOwners() bool {
+func (u *Team) isOwners() bool {
 	return u.name == "owners"
 }
 
@@ -38,6 +38,15 @@ func (u *Team) Update(opts UpdateTeamOptions) error {
 	return nil
 }
 
+func (u *Team) toValue() otf.Team {
+	return otf.Team{
+		ID:           u.id,
+		Name:         u.name,
+		Organization: u.organization,
+		IsOwners:     u.isOwners(),
+	}
+}
+
 // TeamService provides methods to interact with team accounts and their
 // sessions.
 type TeamService interface {
@@ -45,13 +54,10 @@ type TeamService interface {
 	// organization.
 	CreateTeam(ctx context.Context, opts createTeamOptions) (*Team, error)
 	UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
-	// EnsureCreatedTeam retrieves a team; if they don't exist they'll be
-	// created.
-	EnsureCreatedTeam(ctx context.Context, opts createTeamOptions) (*Team, error)
 	// Get retrieves a team with the given ID
 	GetTeam(ctx context.Context, teamID string) (*Team, error)
 	// ListTeams lists teams in an organization.
-	ListTeams(ctx context.Context, organization string) ([]*Team, error)
+	ListTeams(ctx context.Context, organization string) ([]otf.Team, error)
 	// ListTeamMembers lists users that are members of the given team
 	ListTeamMembers(ctx context.Context, teamID string) ([]otf.User, error)
 }

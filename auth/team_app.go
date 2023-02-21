@@ -25,8 +25,17 @@ func (a *app) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOpti
 	return a.updateTeam(ctx, teamID, opts)
 }
 
-func (a *app) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
-	return a.listTeams(ctx, organization)
+func (a *app) ListTeams(ctx context.Context, organization string) ([]otf.Team, error) {
+	from, err := a.listTeams(ctx, organization)
+	if err != nil {
+		return nil, err
+	}
+
+	var to []otf.Team
+	for _, i := range from {
+		to = append(to, i.toValue())
+	}
+	return to, nil
 }
 
 func (a *app) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {

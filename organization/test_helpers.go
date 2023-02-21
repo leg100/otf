@@ -27,7 +27,7 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func CreateTestOrganization(t *testing.T, db otf.DB) *Organization {
+func CreateTestOrganization(t *testing.T, db otf.DB) otf.Organization {
 	ctx := context.Background()
 	svc := NewTestService(t, db)
 	org, err := svc.CreateOrganization(ctx, otf.OrganizationCreateOptions{
@@ -36,7 +36,7 @@ func CreateTestOrganization(t *testing.T, db otf.DB) *Organization {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		svc.DeleteOrganization(ctx, org.Name())
+		svc.DeleteOrganization(ctx, org.Name)
 	})
 	return org
 }

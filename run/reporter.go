@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/vcsprovider"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -39,7 +40,8 @@ func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string,
 // Reporter reports back to VCS providers the current status of VCS-triggered
 // runs.
 type Reporter struct {
-	*configversion.Service
+	configService      *configversion.Service
+	vcsproviderService *vcsprovider.Service
 	otf.Application
 	logr.Logger
 }
@@ -103,7 +105,7 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
 func (r *Reporter) handleRun(ctx context.Context, run Run) error {
-	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID())
+	cv, err := r.configService.GetConfigurationVersion(ctx, run.ConfigurationVersionID())
 	if err != nil {
 		return err
 	}
@@ -151,7 +153,7 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID())
 	}
 
-	client, err := r.GetVCSClient(ctx, ws.Repo().ProviderID)
+	client, err := r.vcsproviderService.GetVCSClient(ctx, ws.Repo().ProviderID)
 	if err != nil {
 		return err
 	}

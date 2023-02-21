@@ -63,6 +63,12 @@ func (org *Organization) Update(opts UpdateOptions) error {
 	return nil
 }
 
+func (org *Organization) toValue() otf.Organization {
+	return otf.Organization{
+		Name: org.name,
+	}
+}
+
 // OrganizationList represents a list of Organizations.
 type OrganizationList struct {
 	*otf.Pagination

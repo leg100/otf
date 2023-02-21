@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type service interface {
+type application interface {
 	create(ctx context.Context, opts createOptions) (*VCSProvider, error)
 	get(ctx context.Context, id string) (*VCSProvider, error)
 	list(ctx context.Context, organization string) ([]*VCSProvider, error)
@@ -21,18 +21,36 @@ type service interface {
 	// TODO: rename vcs provider to cloud client; the central purpose of the vcs
 	// provider is, after all, to construct a cloud client.
 	GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
+	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
+	GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 }
 
-// Application is the implementation of appService
-type Application struct {
+// app is the implementation of application
+type app struct {
 	otf.Authorizer
 	logr.Logger
 
-	db
-	factory
+	db *pgdb
+	*factory
 }
 
-func (a *Application) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
+func (a *app) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {
+	return a.list(ctx, organization)
+}
+
+func (a *app) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
+	return a.get(ctx, id)
+}
+
+func (a *app) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+	provider, err := a.get(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	return provider.NewClient(ctx)
+}
+
+func (a *app) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -51,7 +69,7 @@ func (a *Application) create(ctx context.Context, opts createOptions) (*VCSProvi
 	return provider, nil
 }
 
-func (a *Application) get(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *app) get(ctx context.Context, id string) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 
@@ -70,7 +88,7 @@ func (a *Application) get(ctx context.Context, id string) (*VCSProvider, error) 
 	return provider, nil
 }
 
-func (a *Application) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
+func (a *app) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
 	subject, err := a.CanAccessOrganization(ctx, rbac.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
@@ -85,7 +103,7 @@ func (a *Application) list(ctx context.Context, organization string) ([]*VCSProv
 	return providers, nil
 }
 
-func (a *Application) delete(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *app) delete(ctx context.Context, id string) (*VCSProvider, error) {
 	// retrieve vcs provider first in order to get organization for authorization
 	provider, err := a.db.get(ctx, id)
 	if err != nil {
@@ -104,12 +122,4 @@ func (a *Application) delete(ctx context.Context, id string) (*VCSProvider, erro
 	}
 	a.V(0).Info("deleted vcs provider", "provider", provider, "subject", subject)
 	return provider, nil
-}
-
-func (a *Application) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
-	provider, err := a.get(ctx, providerID)
-	if err != nil {
-		return nil, err
-	}
-	return provider.NewClient(ctx)
 }

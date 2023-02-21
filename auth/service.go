@@ -11,6 +11,9 @@ import (
 )
 
 type Service struct {
+	// make token-checking middleware available to other packages
+	TokenMiddleware mux.MiddlewareFunc
+
 	*app
 
 	api *api
@@ -50,9 +53,10 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	go db.startExpirer(ctx, defaultExpiry)
 
 	return &Service{
-		app: app,
-		api: api,
-		web: web,
+		TokenMiddleware: AuthenticateToken(app),
+		app:             app,
+		api:             api,
+		web:             web,
 	}, nil
 }
 

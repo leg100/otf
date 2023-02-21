@@ -44,7 +44,7 @@ type Environment interface {
 }
 
 // EnvironmentFunc is a go func invoked within an Environment
-type EnvironmentFunc func(context.Context, Environment) error
+type EnvironmentFunc func(context.Context) error
 
 // Downloader downloads a particular version of software.
 type Downloader interface {

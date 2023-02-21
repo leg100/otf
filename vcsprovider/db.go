@@ -10,22 +10,14 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// VCSProviderStore persists vcs providers
-type db interface {
-	create(ctx context.Context, provider *VCSProvider) error
-	get(ctx context.Context, id string) (*VCSProvider, error)
-	list(ctx context.Context, organization string) ([]*VCSProvider, error)
-	delete(ctx context.Context, id string) error
-}
-
 // pgdb is a VCS provider database on postgres
 type pgdb struct {
-	otf.Database // provides access to generated SQL queries
-	factory
+	otf.DB // provides access to generated SQL queries
+	*factory
 }
 
-func newPGDB(db otf.Database, cloudService cloud.Service) *pgdb {
-	return &pgdb{db, factory{cloudService}}
+func newDB(db otf.DB, cloudService cloud.Service) *pgdb {
+	return &pgdb{db, &factory{cloudService}}
 }
 
 // CreateVCSProvider inserts an agent token, associating it with an organization

@@ -12,22 +12,22 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-type htmlApp struct {
+type web struct {
 	otf.Renderer
 	otf.WorkspaceService
 	cloud.Service
 
-	app service
+	app application
 }
 
-func (a *htmlApp) AddHTMLHandlers(r *mux.Router) {
+func (a *web) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", a.list)
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", a.new)
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", a.create)
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", a.delete)
 }
 
-func (a *htmlApp) new(w http.ResponseWriter, r *http.Request) {
+func (a *web) new(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Organization string `schema:"organization_name,required"`
 		Cloud        string `schema:"cloud,required"`
@@ -42,7 +42,7 @@ func (a *htmlApp) new(w http.ResponseWriter, r *http.Request) {
 	a.Render(tmpl, w, r, params)
 }
 
-func (a *htmlApp) create(w http.ResponseWriter, r *http.Request) {
+func (a *web) create(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		OrganizationName string `schema:"organization_name,required"`
 		Token            string `schema:"token,required"`
@@ -69,7 +69,7 @@ func (a *htmlApp) create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
 }
 
-func (a *htmlApp) list(w http.ResponseWriter, r *http.Request) {
+func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -93,7 +93,7 @@ func (a *htmlApp) list(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *htmlApp) delete(w http.ResponseWriter, r *http.Request) {
+func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("vcs_provider_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

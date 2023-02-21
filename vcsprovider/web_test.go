@@ -85,10 +85,10 @@ func TestDeleteVCSProvidersHandler(t *testing.T) {
 	assert.Equal(t, 302, w.Code)
 }
 
-func fakeHTMLApp(t *testing.T, provider *VCSProvider) *htmlApp {
+func fakeHTMLApp(t *testing.T, provider *VCSProvider) *web {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
-	return &htmlApp{
+	return &web{
 		Renderer: renderer,
 		app:      &fakeApp{provider: provider},
 		Service:  inmem.NewTestCloudService(),
@@ -98,7 +98,7 @@ func fakeHTMLApp(t *testing.T, provider *VCSProvider) *htmlApp {
 type fakeApp struct {
 	provider *VCSProvider
 
-	service
+	application
 }
 
 func (f *fakeApp) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {

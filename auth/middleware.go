@@ -17,8 +17,8 @@ const (
 )
 
 type AuthenticateTokenService interface {
-	GetUser(context.Context, otf.UserSpec) (otf.User, error)
-	GetAgentToken(context.Context, string) (otf.AgentToken, error)
+	GetAgentToken(context.Context, string) (*AgentToken, error)
+	getUser(ctx context.Context, spec otf.UserSpec) (*User, error)
 	GetRegistrySession(context.Context, string) (otf.RegistrySession, error)
 }
 
@@ -32,7 +32,7 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 			return svc.GetRegistrySession(ctx, token)
 		default:
 			// otherwise assume user or site admin token
-			return svc.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
+			return svc.getUser(ctx, otf.UserSpec{AuthenticationToken: &token})
 		}
 	}
 

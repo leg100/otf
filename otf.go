@@ -49,7 +49,6 @@ type Application interface {
 	EventService
 	SessionService
 	// TokenService
-	VCSProviderService
 	LockableApplication
 	cloud.Service
 	ModuleService

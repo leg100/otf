@@ -5,16 +5,20 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 type web struct {
 	otf.Renderer
 	otf.RunService
+	auth.TeamService
+	*vcsprovider.Service
 
 	app application
 }
@@ -40,11 +44,10 @@ func (h *web) addHandlers(r *mux.Router) {
 }
 
 func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		Organization    string `schema:"organization_name,required"`
 		otf.ListOptions        // Pagination
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -133,11 +136,10 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		Name         string `schema:"workspace_name,required"`
 		Organization string `schema:"organization_name,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -164,22 +166,23 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Get existing perms as well as all teams in org
-	perms, err := h.app.listWorkspacePermissions(r.Context(), workspaceID)
+	// Get existing perms
+	perms, err := h.app.listPermissions(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	teams, err := h.ListTeams(r.Context(), workspace.Organization())
+	// Get unassigned that have not been assigned perms
+	unassigned, err := h.ListTeams(r.Context(), workspace.Organization())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Filter teams, removing those already assigned perms
 	for _, p := range perms {
-		for it, t := range teams {
-			if t.ID() == p.Team.ID() {
-				teams = append(teams[:it], teams[it+1:]...)
+		for it, t := range unassigned {
+			if t.ID == p.TeamID {
+				unassigned = append(unassigned[:it], unassigned[it+1:]...)
 				break
 			}
 		}
@@ -187,13 +190,13 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_edit.tmpl", w, r, struct {
 		*Workspace
-		Permissions []*otf.WorkspacePermission
-		Teams       []*otf.Team
+		Permissions []otf.WorkspacePermission
+		Teams       []otf.Team
 		Roles       []rbac.Role
 	}{
 		Workspace:   workspace,
 		Permissions: perms,
-		Teams:       teams,
+		Teams:       unassigned,
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
 			rbac.WorkspacePlanRole,
@@ -204,7 +207,7 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		AutoApply        bool `schema:"auto_apply"`
 		Name             *string
 		Description      *string
@@ -213,7 +216,6 @@ func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory *string            `schema:"working_directory"`
 		WorkspaceID      string             `schema:"workspace_id,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -303,7 +305,7 @@ func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) 
 	}
 
 	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
-		Items []otf.VCSProvider
+		Items []*vcsprovider.VCSProvider
 		*Workspace
 	}{
 		Items:     providers,
@@ -312,24 +314,23 @@ func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
-	type options struct {
+	var params struct {
 		WorkspaceID     string `schema:"workspace_id,required"`
 		VCSProviderID   string `schema:"vcs_provider_id,required"`
 		otf.ListOptions        // Pagination
 		// TODO: filters, public/private, etc
 	}
-	var opts options
-	if err := decode.All(&opts, r); err != nil {
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := h.app.get(r.Context(), opts.WorkspaceID)
+	ws, err := h.app.get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client, err := h.GetVCSClient(r.Context(), opts.VCSProviderID)
+	client, err := h.GetVCSClient(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -349,16 +350,15 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	}{
 		Items:         repos,
 		Workspace:     ws,
-		VCSProviderID: opts.VCSProviderID,
+		VCSProviderID: params.VCSProviderID,
 	})
 }
 
 func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		otf.ConnectWorkspaceOptions
+		connectOptions
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -371,7 +371,7 @@ func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	params.Cloud = provider.CloudConfig().Name
 
-	err = h.app.connect(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
+	err = h.app.connect(r.Context(), params.WorkspaceID, params.connectOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -399,12 +399,11 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		TeamName    string `schema:"team_name,required"`
 		Role        string `schema:"role,required"`
 	}
-	params := parameters{}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -425,11 +424,10 @@ func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		TeamName    string `schema:"team_name,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

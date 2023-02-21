@@ -59,15 +59,27 @@ func (s *Service) AddHandlers(r *mux.Router) {
 }
 
 func (s *Service) Create(ctx context.Context, workspaceID string, opts RunCreateOptions) (otf.Run, error) {
-	return s.create(ctx, workspaceID, opts)
+	run, err := s.create(ctx, workspaceID, opts)
+	if err != nil {
+		return otf.Run{}, nil
+	}
+	return run.toValue(), nil
 }
 
 func (s *Service) Get(ctx context.Context, runID string) (otf.Run, error) {
-	return s.get(ctx, runID)
+	run, err := s.get(ctx, runID)
+	if err != nil {
+		return otf.Run{}, nil
+	}
+	return run.toValue(), nil
 }
 
 func (s *Service) EnqueuePlan(ctx context.Context, runID string) (otf.Run, error) {
-	return s.enqueuePlan(ctx, runID)
+	run, err := s.enqueuePlan(ctx, runID)
+	if err != nil {
+		return otf.Run{}, nil
+	}
+	return run.toValue(), nil
 }
 
 func (s *Service) Delete(ctx context.Context, runID string) error {

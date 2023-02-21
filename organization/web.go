@@ -108,10 +108,10 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+	var params struct {
 		Options UpdateOptions
 		Name    string `schema:"name,required"`
-	}{}
+	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

@@ -50,8 +50,6 @@ func (t *VCSProvider) MarshalLog() any {
 // VCSProviderService provides access to vcs providers
 type VCSProviderService interface {
 	CreateVCSProvider(ctx context.Context, opts createOptions) (*VCSProvider, error)
-	GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
-	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
 	// GetVCSClient combines retrieving a vcs provider and construct a cloud

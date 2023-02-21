@@ -13,7 +13,7 @@ import (
 
 func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
 	return &WorkspaceRepo{
-		ProviderID: provider.ID(),
+		ProviderID: provider.ID,
 		Branch:     "master",
 		Identifier: "leg100/" + uuid.NewString(),
 	}

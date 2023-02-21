@@ -63,15 +63,11 @@ func (s UserSpec) MarshalLog() any {
 	return s
 }
 
-type Team interface {
-	ID() string
-	Name() string
-	Organization() string
-	IsOwners() bool
-}
-
-type TeamService interface {
-	GetTeam(ctx context.Context, teamID string) (Team, error)
+type Team struct {
+	ID           string
+	Name         string
+	Organization string
+	IsOwners     bool
 }
 
 type CreateTeamOptions struct {
@@ -99,6 +95,11 @@ type AgentTokenService interface {
 type Session interface {
 	Expiry() time.Time
 	SetCookie(w http.ResponseWriter)
+}
+
+type TeamService interface {
+	// GetTeam(ctx context.Context, teamID string) (Team, error)
+	ListTeams(ctx context.Context, organization string) ([]Team, error)
 }
 
 type SessionService interface {

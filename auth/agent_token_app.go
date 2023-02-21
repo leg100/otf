@@ -16,7 +16,7 @@ type agentTokenApp interface {
 	deleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 }
 
-func (a *app) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
+func (a *app) getAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	at, err := a.db.GetAgentTokenByToken(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
