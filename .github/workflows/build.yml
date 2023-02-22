@@ -35,6 +35,8 @@ jobs:
     env:
       # for unit, go-tfe and e2e tests
       OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+      # disable unnecessary roundtrips to checkpoint.hashicorp.com in e2e tests
+      CHECKPOINT_DISABLE: "true"
     steps:
       -
         name: Checkout
