@@ -69,7 +69,7 @@ export OTF_SSL=true
 export OTF_CERT_FILE=./e2e/fixtures/cert.crt
 export OTF_KEY_FILE=./e2e/fixtures/key.pem
 
-TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersions|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
+TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
 cd $(GOPROXY=direct go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
 go test -v -run $TESTS -timeout 60s

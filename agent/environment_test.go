@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -26,21 +25,26 @@ func TestEnvironment(t *testing.T) {
 }
 
 func TestEnvironment_WorkingDir(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkingDirectory("subdir"))
-	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	env, err := NewEnvironment(
-		context.Background(),
-		logr.Discard(),
-		&fakeEnvironmentApp{t: t, org: org, ws: ws},
-		run,
-		nil,
-		nil,
-		Config{},
-	)
-	require.NoError(t, err)
-	assert.Equal(t, "subdir", filepath.Base(env.WorkingDir()))
+	tests := []struct {
+		name    string
+		workdir string
+	}{
+		{
+			"default working dir", "",
+		},
+		{
+			"custom working dir", "subdir",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := newTestEnvironment(t, otf.WorkingDirectory(tt.workdir))
+			assert.Equal(t, tt.workdir, env.relWorkDir)
+			assert.DirExists(t, env.rootDir)
+			assert.DirExists(t, env.absWorkDir)
+			assert.FileExists(t, path.Join(env.absWorkDir, "terraform.tfvars"))
+		})
+	}
 }
 
 func TestEnvironment_Cancel(t *testing.T) {
@@ -102,8 +106,8 @@ images = {
 func TestBuildSandboxArgs(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
 		env := Environment{
-			Terraform:  &fakeTerraform{"/bins"},
-			configRoot: "/root",
+			Terraform: &fakeTerraform{"/bins"},
+			rootDir:   "/root",
 		}
 		want := []string{
 			"--ro-bind", "/bins/terraform", "/bin/terraform",
@@ -121,8 +125,8 @@ func TestBuildSandboxArgs(t *testing.T) {
 
 	t.Run("with plugin cache", func(t *testing.T) {
 		env := Environment{
-			Terraform:  &fakeTerraform{"/bins"},
-			configRoot: "/root",
+			Terraform: &fakeTerraform{"/bins"},
+			rootDir:   "/root",
 			Config: Config{
 				PluginCache: true,
 			},
@@ -145,8 +149,8 @@ func TestBuildSandboxArgs(t *testing.T) {
 	t.Run("with working directory set", func(t *testing.T) {
 		env := Environment{
 			Terraform:  &fakeTerraform{"/bins"},
-			configRoot: "/root",
-			workingDir: "/relative",
+			rootDir:    "/root",
+			relWorkDir: "/relative",
 			Config: Config{
 				PluginCache: true,
 			},
@@ -187,3 +191,21 @@ func (f *fakeEnvironmentApp) ListVariables(context.Context, string) ([]otf.Varia
 }
 
 func (f *fakeEnvironmentApp) Hostname() string { return "fake-host.org" }
+
+func newTestEnvironment(t *testing.T, opts ...otf.NewTestWorkspaceOption) *Environment {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org, opts...)
+	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
+	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+	env, err := NewEnvironment(
+		context.Background(),
+		logr.Discard(),
+		&fakeEnvironmentApp{t: t, org: org, ws: ws},
+		run,
+		nil,
+		nil,
+		Config{},
+	)
+	require.NoError(t, err)
+	return env
+}

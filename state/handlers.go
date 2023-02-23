@@ -25,6 +25,9 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
 	r.HandleFunc("/state-versions", h.listVersions).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/download", h.downloadState).Methods("GET")
+
+	r.HandleFunc("/state-versions/{id}/outputs", h.listOutputs).Methods("GET")
+	r.HandleFunc("/state-version-outputs/{id}", h.getOutput).Methods("GET")
 }
 
 func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -131,4 +134,32 @@ func (h *handlers) downloadState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(resp)
+}
+
+func (h *handlers) listOutputs(w http.ResponseWriter, r *http.Request) {
+	versionID, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	sv, err := h.app.getVersion(r.Context(), versionID)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, sv.outputs)
+}
+
+func (h *handlers) getOutput(w http.ResponseWriter, r *http.Request) {
+	outputID, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	out, err := h.app.getOutput(r.Context(), outputID)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, out)
 }

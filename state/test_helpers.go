@@ -9,25 +9,27 @@ import (
 )
 
 // newTestVersion creates a new state.Version for testing purposes
-func newTestVersion(t *testing.T, ws otf.Workspace, outputs ...StateOutput) *version {
-	// create empty terraform state
-	state := State{
+func newTestVersion(t *testing.T, ws *otf.Workspace, outputKVs ...string) *version {
+	// create empty terraform state file
+	f := file{
 		Version: DefaultStateVersion,
 		Serial:  1,
 	}
-	state.Outputs = make(map[string]StateOutput, len(outputs))
-	for _, out := range outputs {
-		state.Outputs[out.Name] = out
+	f.Outputs = make(map[string]fileOutput, len(outputKVs))
+	for i := 0; i < len(outputKVs); i += 2 {
+		f.Outputs[outputKVs[i]] = fileOutput{
+			Value: []byte(outputKVs[i+1]),
+		}
 	}
 
-	// marshal it into json
-	js, err := json.Marshal(state)
+	// encode state file as json
+	encoded, err := json.Marshal(f)
 	require.NoError(t, err)
 
 	// wrap it in a version and return
 	version, err := newVersion(otf.CreateStateVersionOptions{
-		State:       js,
-		WorkspaceID: otf.String(ws.ID()),
+		State:       encoded,
+		WorkspaceID: otf.String(ws.ID),
 	})
 	require.NoError(t, err)
 	return version

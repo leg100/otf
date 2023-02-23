@@ -37,15 +37,17 @@ type Environment struct {
 	Terraform              // For looking up path to terraform cli
 	Config
 
-	configRoot string             // absolute path of tf config
-	workingDir string             // path relative to configRoot in which tf ops are invoked
-	canceled   bool               // Whether cancelation has been triggered
-	cancel     context.CancelFunc // Cancel context func for currently running func
-	proc       *os.Process        // Current process
-	out        io.WriteCloser     // captures CLI process output
-	version    string             // terraform version
-	envs       []string           // environment variables
-	ctx        context.Context    // contains subject for authenticating to services
+	rootDir    string // absolute path of the root directory containing tf config
+	relWorkDir string // path relative to configRoot in which tf ops are invoked
+	absWorkDir string // absolute path in which tf ops are invoked
+
+	canceled bool               // Whether cancelation has been triggered
+	cancel   context.CancelFunc // Cancel context func for currently running func
+	proc     *os.Process        // Current process
+	out      io.WriteCloser     // captures CLI process output
+	version  string             // terraform version
+	envs     []string           // environment variables
+	ctx      context.Context    // contains subject for authenticating to services
 }
 
 func NewEnvironment(
@@ -63,15 +65,18 @@ func NewEnvironment(
 	}
 
 	// create dedicated directory for environment
-	configRoot, err := os.MkdirTemp("", "otf-config-")
+	rootDir, err := os.MkdirTemp("", "otf-config-")
 	if err != nil {
 		return nil, err
 	}
 	// create working directory in case user has specified a non-existent
 	// working directory
-	err = os.MkdirAll(path.Join(configRoot, ws.WorkingDirectory), 0o755)
-	if err != nil {
-		return nil, err
+	absWorkDir := path.Join(rootDir, ws.WorkingDirectory)
+	if absWorkDir != rootDir {
+		err = os.MkdirAll(absWorkDir, 0o755)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create token for terraform for it to authenticate with the otf registry
@@ -87,7 +92,7 @@ func NewEnvironment(
 	envs = append(envs, tokenEnvVar)
 
 	// retrieve workspace variables and add them to the environment
-	variables, err := app.ListVariables(ctx, run.WorkspaceID())
+	variables, err := app.ListVariables(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace variables")
 	}
@@ -97,7 +102,7 @@ func NewEnvironment(
 			envs = append(envs, ev)
 		}
 	}
-	if err := writeTerraformVariables(configRoot, variables); err != nil {
+	if err := writeTerraformVariables(absWorkDir, variables); err != nil {
 		return nil, errors.Wrap(err, "writing terraform variables")
 	}
 
@@ -111,8 +116,9 @@ func NewEnvironment(
 		Terraform:  &TerraformPathFinder{},
 		version:    ws.TerraformVersion(),
 		out:        otf.NewJobWriter(ctx, app, logger, run),
-		configRoot: configRoot,
-		workingDir: ws.WorkingDirectory(),
+		rootDir:    rootDir,
+		relWorkDir: ws.WorkingDirectory,
+		absWorkDir: absWorkDir,
 		envs:       envs,
 		cancel:     cancel,
 		ctx:        ctx,
@@ -120,8 +126,8 @@ func NewEnvironment(
 	}, nil
 }
 
-func (e *Environment) Path() string       { return e.configRoot }
-func (e *Environment) WorkingDir() string { return path.Join(e.configRoot, e.workingDir) }
+func (e *Environment) Path() string       { return e.rootDir }
+func (e *Environment) WorkingDir() string { return e.absWorkDir }
 
 func (e *Environment) Close() error {
 	// return os.RemoveAll(e.configRoot)
@@ -280,12 +286,12 @@ func (e *Environment) cancelFunc(force bool) {
 func (e *Environment) buildSandboxArgs(args []string) []string {
 	bargs := []string{
 		"--ro-bind", e.TerraformPath(), "/bin/terraform",
-		"--bind", e.configRoot, "/config",
+		"--bind", e.rootDir, "/config",
 		// for DNS lookups
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 		// for verifying SSL connections
 		"--ro-bind", otf.SSLCertsDir(), otf.SSLCertsDir(),
-		"--chdir", path.Join("/config", e.workingDir),
+		"--chdir", path.Join("/config", e.relWorkDir),
 		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
 		"--proc", "/proc",
 		// avoids provider error "failed to read schema..."

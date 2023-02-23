@@ -20,8 +20,8 @@ func TestStateVersion_Create(t *testing.T) {
 	ws := workspace.CreateTestWorkspace(t, db, org.Name())
 
 	sv := newTestVersion(t, ws,
-		StateOutput{"out1", "string", "val1", false},
-		StateOutput{"out2", "string", "val2", false},
+		"out1", `"val1"`,
+		"out2", `"val2"`,
 	)
 
 	err := stateDB.createVersion(ctx, sv)
@@ -34,9 +34,8 @@ func TestStateVersion_Get(t *testing.T) {
 	stateDB := &pgdb{db}
 	org := organization.CreateTestOrganization(t, db)
 	ws := workspace.CreateTestWorkspace(t, db, org.Name())
-	sv := createTestStateVersion(t, stateDB, ws,
-		StateOutput{"out1", "string", "val1", false},
-	)
+	sv := createTestStateVersion(t, stateDB, ws, "out1", `"val1"`)
+	sv := createTestStateVersion(t, stateDB, ws, "out1", `"val1"`)
 
 	tests := []struct {
 		name string
@@ -129,9 +128,9 @@ func TestStateVersion_List(t *testing.T) {
 	}
 }
 
-func createTestStateVersion(t *testing.T, stateDB *pgdb, ws otf.Workspace, outputs ...StateOutput) *version {
+func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *otf.Workspace, outputKVs ...string) *version {
 	ctx := context.Background()
-	sv := newTestVersion(t, ws, outputs...)
+	sv := newTestVersion(t, ws, outputKVs...)
 	err := stateDB.createVersion(ctx, sv)
 	require.NoError(t, err)
 	t.Cleanup(func() {

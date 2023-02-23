@@ -71,6 +71,7 @@ const (
 	ListStateVersionsAction
 	GetStateVersionAction
 	DownloadStateAction
+	GetStateVersionOutputAction
 
 	CreateConfigurationVersionAction
 	ListConfigurationVersionsAction
