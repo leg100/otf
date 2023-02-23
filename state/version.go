@@ -25,9 +25,9 @@ type version struct {
 type output struct {
 	id        string
 	name      string
-	sensitive bool
 	typ       string
-	value     string
+	value     []byte
+	sensitive bool
 }
 
 // newVersion constructs a new state version.
@@ -39,15 +39,15 @@ func newVersion(opts otf.CreateStateVersionOptions) (*version, error) {
 		return nil, errors.New("workspace ID required")
 	}
 
-	var state State
-	if err := json.Unmarshal(opts.State, &state); err != nil {
+	var f file
+	if err := json.Unmarshal(opts.State, &f); err != nil {
 		return nil, err
 	}
 
 	sv := version{
 		id:          otf.NewID("sv"),
 		createdAt:   otf.CurrentTimestamp(),
-		serial:      state.Serial,
+		serial:      f.Serial,
 		state:       opts.State,
 		workspaceID: *opts.WorkspaceID,
 	}
@@ -57,12 +57,18 @@ func newVersion(opts otf.CreateStateVersionOptions) (*version, error) {
 		sv.serial = *opts.Serial
 	}
 
-	for k, v := range state.Outputs {
+	for k, v := range f.Outputs {
+		hclType, err := newHCLType(v.Value)
+		if err != nil {
+			return nil, err
+		}
+
 		sv.outputs = append(sv.outputs, &output{
-			id:    otf.NewID("wsout"),
-			name:  k,
-			typ:   v.Type,
-			value: v.Value,
+			id:        otf.NewID("wsout"),
+			name:      k,
+			typ:       hclType,
+			value:     v.Value,
+			sensitive: v.Sensitive,
 		})
 	}
 	return &sv, nil

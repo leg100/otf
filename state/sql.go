@@ -51,7 +51,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *version) error {
 				Name:           sql.String(svo.name),
 				Sensitive:      svo.sensitive,
 				Type:           sql.String(svo.typ),
-				Value:          sql.String(svo.value),
+				Value:          svo.value,
 				StateVersionID: sql.String(v.id),
 			})
 			if err != nil {
@@ -158,7 +158,7 @@ func unmarshalVersionOutputRow(row pggen.StateVersionOutputs) *output {
 		id:        row.StateVersionOutputID.String,
 		sensitive: row.Sensitive,
 		typ:       row.Type.String,
-		value:     row.Value.String,
+		value:     row.Value,
 		name:      row.Name.String,
 	}
 }

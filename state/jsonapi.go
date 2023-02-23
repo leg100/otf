@@ -31,7 +31,7 @@ type jsonapiVersionOutput struct {
 	Name      string `jsonapi:"attr,name"`
 	Sensitive bool   `jsonapi:"attr,sensitive"`
 	Type      string `jsonapi:"attr,type"`
-	Value     string `jsonapi:"attr,value"`
+	Value     any    `jsonapi:"attr,value"`
 }
 
 // jsonapiCreateVersionOptions are options for creating a state version via

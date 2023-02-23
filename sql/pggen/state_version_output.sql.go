@@ -32,7 +32,7 @@ type InsertStateVersionOutputParams struct {
 	Name           pgtype.Text
 	Sensitive      bool
 	Type           pgtype.Text
-	Value          pgtype.Text
+	Value          []byte
 	StateVersionID pgtype.Text
 }
 
