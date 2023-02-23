@@ -1,20 +1,15 @@
 package watch
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	otfrun "github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
-
-// marshals runs into json:api
-type runJSONAPIConverter interface {
-	MarshalJSONAPI(*otfrun.Run, *http.Request) ([]byte, error)
-}
 
 // eventsServer is a server capable of streaming SSE events
 type eventsServer interface {
@@ -26,7 +21,6 @@ type eventsServer interface {
 
 type api struct {
 	logr.Logger
-	runJSONAPIConverter
 
 	app          application
 	eventsServer eventsServer
@@ -71,12 +65,12 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Only run events are supported
-				run, ok := event.Payload.(*otfrun.Run)
+				run, ok := event.Payload.(otf.Run)
 				if !ok {
 					continue
 				}
 
-				data, err := a.MarshalJSONAPI(run, r)
+				data, err := json.Marshal(run)
 				if err != nil {
 					a.Error(err, "marshalling event", "event", event.Type)
 					continue
