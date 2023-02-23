@@ -26,7 +26,7 @@ type Client struct {
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) error {
-	var state State
+	var state file
 	if err := json.Unmarshal(opts.State, &state); err != nil {
 		return err
 	}

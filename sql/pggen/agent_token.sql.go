@@ -606,6 +606,13 @@ type Querier interface {
 	// InsertStateVersionOutputScan scans the result of an executed InsertStateVersionOutputBatch query.
 	InsertStateVersionOutputScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	FindStateVersionOutputByID(ctx context.Context, id pgtype.Text) (FindStateVersionOutputByIDRow, error)
+	// FindStateVersionOutputByIDBatch enqueues a FindStateVersionOutputByID query into batch to be executed
+	// later by the batch.
+	FindStateVersionOutputByIDBatch(batch genericBatch, id pgtype.Text)
+	// FindStateVersionOutputByIDScan scans the result of an executed FindStateVersionOutputByIDBatch query.
+	FindStateVersionOutputByIDScan(results pgx.BatchResults) (FindStateVersionOutputByIDRow, error)
+
 	InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error)
 	// InsertTeamBatch enqueues a InsertTeam query into batch to be executed
 	// later by the batch.
@@ -1378,6 +1385,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertStateVersionOutputSQL, insertStateVersionOutputSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersionOutput': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findStateVersionOutputByIDSQL, findStateVersionOutputByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindStateVersionOutputByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertTeamSQL, insertTeamSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertTeam': %w", err)
