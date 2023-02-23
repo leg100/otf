@@ -51,7 +51,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *version) error {
 				Name:           sql.String(svo.name),
 				Sensitive:      svo.sensitive,
 				Type:           sql.String(svo.typ),
-				Value:          svo.value,
+				Value:          sql.String(svo.value),
 				StateVersionID: sql.String(v.id),
 			})
 			if err != nil {
@@ -144,9 +144,10 @@ func (row pgRow) toVersion() *version {
 		serial:      int64(row.Serial),
 		state:       row.State,
 		workspaceID: row.WorkspaceID.String,
+		outputs:     make(outputList, len(row.StateVersionOutputs)),
 	}
 	for _, r := range row.StateVersionOutputs {
-		sv.outputs = append(sv.outputs, outputRow(r).toOutput())
+		sv.outputs[r.Name.String] = outputRow(r).toOutput()
 	}
 	return &sv
 }

@@ -49,20 +49,21 @@ func newVersion(opts otf.CreateStateVersionOptions) (*version, error) {
 		sv.serial = *opts.Serial
 	}
 
+	sv.outputs = make(outputList, len(f.Outputs))
 	for k, v := range f.Outputs {
 		hclType, err := newHCLType(v.Value)
 		if err != nil {
 			return nil, err
 		}
 
-		sv.outputs = append(sv.outputs, &output{
+		sv.outputs[k] = &output{
 			id:             otf.NewID("wsout"),
 			name:           k,
 			typ:            hclType,
-			value:          v.Value,
+			value:          string(v.Value),
 			sensitive:      v.Sensitive,
 			stateVersionID: sv.id,
-		})
+		}
 	}
 	return &sv, nil
 }

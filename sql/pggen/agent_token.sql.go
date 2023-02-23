@@ -1675,7 +1675,7 @@ type StateVersionOutputs struct {
 	Name                 pgtype.Text `json:"name"`
 	Sensitive            bool        `json:"sensitive"`
 	Type                 pgtype.Text `json:"type"`
-	Value                []byte      `json:"value"`
+	Value                pgtype.Text `json:"value"`
 	StateVersionID       pgtype.Text `json:"state_version_id"`
 }
 
@@ -1932,7 +1932,7 @@ func (tr *typeResolver) newStateVersionOutputs() pgtype.ValueTranscoder {
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"sensitive", "bool", &pgtype.Bool{}},
 		compositeField{"type", "text", &pgtype.Text{}},
-		compositeField{"value", "bytea", &pgtype.Bytea{}},
+		compositeField{"value", "text", &pgtype.Text{}},
 		compositeField{"state_version_id", "text", &pgtype.Text{}},
 	)
 }

@@ -12,7 +12,7 @@ type outputRow struct {
 	Name                 pgtype.Text `json:"name"`
 	Sensitive            bool        `json:"sensitive"`
 	Type                 pgtype.Text `json:"type"`
-	Value                []byte      `json:"value"`
+	Value                pgtype.Text `json:"value"`
 	StateVersionID       pgtype.Text `json:"state_version_id"`
 }
 
@@ -31,7 +31,7 @@ func (row outputRow) toOutput() *output {
 		id:             row.StateVersionOutputID.String,
 		sensitive:      row.Sensitive,
 		typ:            row.Type.String,
-		value:          row.Value,
+		value:          row.Value.String,
 		name:           row.Name.String,
 		stateVersionID: row.StateVersionID.String,
 	}

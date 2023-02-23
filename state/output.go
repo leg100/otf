@@ -4,7 +4,7 @@ type output struct {
 	id             string
 	name           string
 	typ            string
-	value          []byte
+	value          string
 	sensitive      bool
 	stateVersionID string
 }
@@ -20,13 +20,13 @@ func (out *output) ToJSONAPI() any {
 	}
 }
 
-type outputList []*output
+type outputList map[string]*output
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
 func (out outputList) ToJSONAPI() any {
 	var to jsonapiVersionOutputList
-	for _, from := range out {
-		to.Items = append(to.Items, from.ToJSONAPI().(*jsonapiVersionOutput))
+	for _, v := range out {
+		to.Items = append(to.Items, v.ToJSONAPI().(*jsonapiVersionOutput))
 	}
 	return &to
 }
