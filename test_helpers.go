@@ -27,6 +27,12 @@ func AutoApply() NewTestWorkspaceOption {
 	}
 }
 
+func WorkspaceName(name string) NewTestWorkspaceOption {
+	return func(ws *Workspace) {
+		ws.name = name
+	}
+}
+
 func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
 	return func(ws *Workspace) {
 		ws.repo = repo
