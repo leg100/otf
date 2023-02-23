@@ -17,17 +17,9 @@ type version struct {
 	id          string
 	createdAt   time.Time
 	serial      int64
-	state       []byte    // state file
-	outputs     []*output // state version has many outputs
-	workspaceID string    // state version belongs to a workspace
-}
-
-type output struct {
-	id        string
-	name      string
-	typ       string
-	value     []byte
-	sensitive bool
+	state       []byte     // state file
+	outputs     outputList // state version has many outputs
+	workspaceID string     // state version belongs to a workspace
 }
 
 // newVersion constructs a new state version.
@@ -64,11 +56,12 @@ func newVersion(opts otf.CreateStateVersionOptions) (*version, error) {
 		}
 
 		sv.outputs = append(sv.outputs, &output{
-			id:        otf.NewID("wsout"),
-			name:      k,
-			typ:       hclType,
-			value:     v.Value,
-			sensitive: v.Sensitive,
+			id:             otf.NewID("wsout"),
+			name:           k,
+			typ:            hclType,
+			value:          v.Value,
+			sensitive:      v.Sensitive,
+			stateVersionID: sv.id,
 		})
 	}
 	return &sv, nil
@@ -79,7 +72,6 @@ func (v *version) CreatedAt() time.Time { return v.createdAt }
 func (v *version) String() string       { return v.id }
 func (v *version) Serial() int64        { return v.serial }
 func (v *version) State() []byte        { return v.state }
-func (v *version) Outputs() []*output   { return v.outputs }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
 func (v *version) ToJSONAPI() any {
@@ -89,14 +81,8 @@ func (v *version) ToJSONAPI() any {
 		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", v.ID()),
 		Serial:      v.Serial(),
 	}
-	for _, out := range v.Outputs() {
-		j.Outputs = append(j.Outputs, &jsonapiVersionOutput{
-			ID:        out.id,
-			Name:      out.name,
-			Sensitive: out.sensitive,
-			Type:      out.typ,
-			Value:     out.value,
-		})
+	for _, out := range v.outputs {
+		j.Outputs = append(j.Outputs, out.ToJSONAPI().(*jsonapiVersionOutput))
 	}
 	return j
 }

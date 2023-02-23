@@ -14,3 +14,9 @@ INSERT INTO state_version_outputs (
     pggen.arg('value'),
     pggen.arg('state_version_id')
 );
+
+-- name: FindStateVersionOutputByID :one
+SELECT *
+FROM state_version_outputs
+WHERE state_version_output_id = pggen.arg('id')
+;

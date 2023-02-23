@@ -34,6 +34,12 @@ type jsonapiVersionOutput struct {
 	Value     any    `jsonapi:"attr,value"`
 }
 
+// jsonapiVersionOutputList is a list of state version outputs suitable for marshaling into
+// JSONAPI
+type jsonapiVersionOutputList struct {
+	Items []*jsonapiVersionOutput
+}
+
 // jsonapiCreateVersionOptions are options for creating a state version via
 // JSONAPI
 type jsonapiCreateVersionOptions struct {

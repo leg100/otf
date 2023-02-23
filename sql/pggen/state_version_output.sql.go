@@ -59,3 +59,43 @@ func (q *DBQuerier) InsertStateVersionOutputScan(results pgx.BatchResults) (pgco
 	}
 	return cmdTag, err
 }
+
+const findStateVersionOutputByIDSQL = `SELECT *
+FROM state_version_outputs
+WHERE state_version_output_id = $1
+;`
+
+type FindStateVersionOutputByIDRow struct {
+	StateVersionOutputID pgtype.Text `json:"state_version_output_id"`
+	Name                 pgtype.Text `json:"name"`
+	Sensitive            bool        `json:"sensitive"`
+	Type                 pgtype.Text `json:"type"`
+	Value                []byte      `json:"value"`
+	StateVersionID       pgtype.Text `json:"state_version_id"`
+}
+
+// FindStateVersionOutputByID implements Querier.FindStateVersionOutputByID.
+func (q *DBQuerier) FindStateVersionOutputByID(ctx context.Context, id pgtype.Text) (FindStateVersionOutputByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionOutputByID")
+	row := q.conn.QueryRow(ctx, findStateVersionOutputByIDSQL, id)
+	var item FindStateVersionOutputByIDRow
+	if err := row.Scan(&item.StateVersionOutputID, &item.Name, &item.Sensitive, &item.Type, &item.Value, &item.StateVersionID); err != nil {
+		return item, fmt.Errorf("query FindStateVersionOutputByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindStateVersionOutputByIDBatch implements Querier.FindStateVersionOutputByIDBatch.
+func (q *DBQuerier) FindStateVersionOutputByIDBatch(batch genericBatch, id pgtype.Text) {
+	batch.Queue(findStateVersionOutputByIDSQL, id)
+}
+
+// FindStateVersionOutputByIDScan implements Querier.FindStateVersionOutputByIDScan.
+func (q *DBQuerier) FindStateVersionOutputByIDScan(results pgx.BatchResults) (FindStateVersionOutputByIDRow, error) {
+	row := results.QueryRow()
+	var item FindStateVersionOutputByIDRow
+	if err := row.Scan(&item.StateVersionOutputID, &item.Name, &item.Sensitive, &item.Type, &item.Value, &item.StateVersionID); err != nil {
+		return item, fmt.Errorf("scan FindStateVersionOutputByIDBatch row: %w", err)
+	}
+	return item, nil
+}

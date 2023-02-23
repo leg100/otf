@@ -17,6 +17,7 @@ type appService interface {
 	getVersion(ctx context.Context, versionID string) (*version, error)
 	downloadState(ctx context.Context, versionID string) ([]byte, error)
 	listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
+	getOutput(ctx context.Context, outputID string) (*output, error)
 }
 
 // app is the implementation of appService
@@ -150,4 +151,20 @@ func (a *app) downloadState(ctx context.Context, svID string) ([]byte, error) {
 	}
 	a.V(2).Info("downloaded state", "id", svID, "subject", subject)
 	return state, nil
+}
+
+func (a *app) getOutput(ctx context.Context, outputID string) (*output, error) {
+	sv, err := a.db.getOutput(ctx, outputID)
+	if err != nil {
+		a.Error(err, "retrieving state version output", "id", outputID)
+		return nil, err
+	}
+
+	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionOutputAction, sv.stateVersionID)
+	if err != nil {
+		return nil, err
+	}
+
+	a.V(2).Info("retrieved state version output", "id", outputID, "subject", subject)
+	return sv, nil
 }

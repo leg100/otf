@@ -20,6 +20,7 @@ type db interface {
 	getVersion(ctx context.Context, opts stateVersionGetOptions) (*version, error)
 	getState(ctx context.Context, versionID string) ([]byte, error)
 	deleteVersion(ctx context.Context, versionID string) error
+	getOutput(ctx context.Context, outputID string) (*output, error)
 }
 
 // pgdb is a state/state-version database on postgres
@@ -44,8 +45,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *version) error {
 			return err
 		}
 
-		// Insert state_version_outputs
-		for _, svo := range v.Outputs() {
+		for _, svo := range v.outputs {
 			_, err := db.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
 				ID:             sql.String(svo.id),
 				Name:           sql.String(svo.name),
@@ -146,19 +146,7 @@ func (row pgRow) toVersion() *version {
 		workspaceID: row.WorkspaceID.String,
 	}
 	for _, r := range row.StateVersionOutputs {
-		sv.outputs = append(sv.outputs, unmarshalVersionOutputRow(r))
+		sv.outputs = append(sv.outputs, outputRow(r).toOutput())
 	}
 	return &sv
-}
-
-// unmarshalVersionOutputRow unmarshals a database row into a state version
-// output.
-func unmarshalVersionOutputRow(row pggen.StateVersionOutputs) *output {
-	return &output{
-		id:        row.StateVersionOutputID.String,
-		sensitive: row.Sensitive,
-		typ:       row.Type.String,
-		value:     row.Value,
-		name:      row.Name.String,
-	}
 }
