@@ -11,15 +11,22 @@ import (
 )
 
 func TestWorkspace_Create(t *testing.T) {
+	ctx := context.Background()
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
 	ws := otf.NewTestWorkspace(t, org)
 
-	err := db.CreateWorkspace(context.Background(), ws)
+	err := db.CreateWorkspace(ctx, ws)
 	require.NoError(t, err)
 
-	t.Run("Duplicate", func(t *testing.T) {
-		err := db.CreateWorkspace(context.Background(), ws)
+	t.Run("duplicate", func(t *testing.T) {
+		err := db.CreateWorkspace(ctx, ws)
+		require.Equal(t, otf.ErrResourceAlreadyExists, err)
+	})
+
+	t.Run("duplicate name", func(t *testing.T) {
+		dup := otf.NewTestWorkspace(t, org, otf.WorkspaceName(ws.Name()))
+		err := db.CreateWorkspace(ctx, dup)
 		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
