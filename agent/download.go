@@ -45,6 +45,7 @@ func (d *Download) Download() error {
 }
 
 func (d *Download) download() (string, error) {
+	// TODO: why no context?
 	req, err := http.NewRequestWithContext(context.Background(), "GET", d.src, nil)
 	if err != nil {
 		return "", fmt.Errorf("building request: %w", err)

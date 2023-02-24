@@ -15,7 +15,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/environment"
+	"github.com/leg100/otf/logs"
 	"github.com/pkg/errors"
 )
 
@@ -31,7 +33,7 @@ var _ environment.Environment = (*Environment)(nil)
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
 type Environment struct {
-	otf.Client
+	client.Client
 	logr.Logger
 	environment.Downloader // Downloader for workers to download terraform cli on demand
 	Terraform              // For looking up path to terraform cli
@@ -53,8 +55,8 @@ type Environment struct {
 func NewEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
-	app otf.Client,
-	run *otf.Run,
+	app client.Client,
+	run otf.Run,
 	envs []string,
 	downloader environment.Downloader,
 	cfg Config,
@@ -84,7 +86,7 @@ func NewEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	session, err := app.CreateRegistrySession(ctx, ws.Organization())
+	session, err := app.CreateRegistrySession(ctx, ws.Organization)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}
@@ -114,8 +116,8 @@ func NewEnvironment(
 		Client:     app,
 		Downloader: downloader,
 		Terraform:  &TerraformPathFinder{},
-		version:    ws.TerraformVersion(),
-		out:        otf.NewJobWriter(ctx, app, logger, run),
+		version:    ws.TerraformVersion,
+		out:        logs.NewPhaseWriter(ctx, logger, app, run),
 		rootDir:    rootDir,
 		relWorkDir: ws.WorkingDirectory,
 		absWorkDir: absWorkDir,
@@ -240,10 +242,6 @@ func (e *Environment) RunFunc(fn environment.EnvironmentFunc) error {
 		return err
 	}
 	return nil
-}
-
-func (e *Environment) Write(p []byte) (int, error) {
-	return e.out.Write(p)
 }
 
 func (e *Environment) printRedErrorMessage(err error) {

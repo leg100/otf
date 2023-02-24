@@ -25,7 +25,7 @@ type Spooler interface {
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
-	queue        chan *otf.Run    // Queue of queued jobs
+	queue        chan otf.Run     // Queue of queued jobs
 	cancelations chan Cancelation // Queue of cancelation requests
 	otf.Client                    // Application for retrieving queued runs
 	logr.Logger
@@ -33,7 +33,7 @@ type SpoolerDaemon struct {
 }
 
 type Cancelation struct {
-	Run      *otf.Run
+	Run      otf.Run
 	Forceful bool
 }
 
@@ -43,7 +43,7 @@ const SpoolerCapacity = 100
 // NewSpooler populates a Spooler with queued runs
 func NewSpooler(app otf.Client, logger logr.Logger, cfg Config) *SpoolerDaemon {
 	return &SpoolerDaemon{
-		queue:        make(chan *otf.Run, SpoolerCapacity),
+		queue:        make(chan otf.Run, SpoolerCapacity),
 		cancelations: make(chan Cancelation, SpoolerCapacity),
 		Client:       app,
 		Logger:       logger,
@@ -63,7 +63,7 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 }
 
 // GetRun returns a channel of queued runs
-func (s *SpoolerDaemon) GetRun() <-chan *otf.Run {
+func (s *SpoolerDaemon) GetRun() <-chan otf.Run {
 	return s.queue
 }
 
@@ -126,42 +126,28 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch payload := ev.Payload.(type) {
 	case otf.Run:
-		switch payload.ExecutionMode() {
-		case otf.LocalExecutionMode:
-			// agents never handle runs belonging to workspaces configured to
-			// use local execution (it shouldn't be possible for such a run to
-			// be created in the first place...)
-			s.V(2).Info("ignoring run event", "run", payload.ID(), "execution-mode", payload.ExecutionMode())
-			return
-		case otf.RemoteExecutionMode:
-			if s.External {
-				// external agents only handle runs belonging to workspaces
-				// configured to use agent mode
-				s.V(2).Info("ignoring run event", "run", payload.ID(), "execution-mode", payload.ExecutionMode())
-				return
-			}
-		case otf.AgentExecutionMode:
-			if !s.External {
-				// internal agents only handle runs belonging to workspaces
-				// configured to use remote mode.
-				s.V(2).Info("ignoring run event", "run", payload.ID(), "execution-mode", payload.ExecutionMode())
-				return
-			}
-		default:
-			// unknown execution mode
-			return
-		}
-
-		if payload.Queued() {
-			s.queue <- payload
-		} else if ev.Type == otf.EventRunCancel {
-			s.cancelations <- Cancelation{Run: payload}
-		} else if ev.Type == otf.EventRunForceCancel {
-			s.cancelations <- Cancelation{Run: payload, Forceful: true}
-		}
+		s.handleRun(ev.Type, payload)
 	case string:
 		s.Info("stream update", "info", string(payload))
 	case error:
 		s.Error(payload, "stream update")
+	}
+}
+
+func (s *SpoolerDaemon) handleRun(event otf.EventType, run otf.Run) {
+	// (a) external agents handle runs with agent execution mode
+	// (b) internal agents handle runs with remote execution mode
+	// (c) if neither (a) nor (b) then skip run
+	if !(s.External && run.ExecutionMode == otf.AgentExecutionMode) ||
+		!(!s.External && run.ExecutionMode == otf.RemoteExecutionMode) {
+		return
+	}
+
+	if run.Queued {
+		s.queue <- run
+	} else if event == otf.EventRunCancel {
+		s.cancelations <- Cancelation{Run: run}
+	} else if event == otf.EventRunForceCancel {
+		s.cancelations <- Cancelation{Run: run, Forceful: true}
 	}
 }

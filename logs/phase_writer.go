@@ -7,41 +7,44 @@ import (
 	"github.com/leg100/otf"
 )
 
-// JobWriter writes logs on behalf of a run phase.
-//
-// TODO: rename to LogWriter or PhaseWriter
-type JobWriter struct {
-	ID    string        // ID of run to write logs on behalf of.
-	Phase otf.PhaseType // run phase
+type logWriter interface {
+	PutChunk(ctx context.Context, chunk Chunk) error
+}
 
-	ChunkService // for uploading logs to server
+// PhaseWriter writes logs on behalf of a run phase.
+type PhaseWriter struct {
 	logr.Logger
 
 	// started is used internally by the writer to determine whether the first
 	// write has been prefixed with the start marker (STX).
-	started bool
-	offset  int             // current position in stream
-	ctx     context.Context // permits canceling mid-flow
+	started   bool
+	id        string          // ID of run to write logs on behalf of.
+	phase     otf.PhaseType   // run phase
+	offset    int             // current position in stream
+	ctx       context.Context // permits canceling mid-flow
+	logWriter                 // for uploading logs to server
 }
 
-func NewJobWriter(ctx context.Context, app ChunkService, logger logr.Logger, run otf.Run) *JobWriter {
-	return &JobWriter{
-		ID:           run.ID,
-		Phase:        run.Phase,
-		ChunkService: app,
-		Logger:       logger,
-		ctx:          ctx,
+// NewPhaseWriter returns a new writer for writing logs on behalf of a run.
+
+func NewPhaseWriter(ctx context.Context, logger logr.Logger, w logWriter, run otf.Run) *PhaseWriter {
+	return &PhaseWriter{
+		id:        run.ID,
+		phase:     run.Phase,
+		logWriter: w,
+		Logger:    logger,
+		ctx:       ctx,
 	}
 }
 
 // Write uploads a chunk of logs to the server.
-func (w *JobWriter) Write(p []byte) (int, error) {
+func (w *PhaseWriter) Write(p []byte) (int, error) {
 	data := make([]byte, len(p))
 	copy(data, p)
 
 	chunk := Chunk{
-		RunID:  w.ID,
-		Phase:  w.Phase,
+		RunID:  w.id,
+		Phase:  w.phase,
 		Data:   data,
 		Offset: w.offset,
 	}
@@ -61,10 +64,10 @@ func (w *JobWriter) Write(p []byte) (int, error) {
 }
 
 // Close must be called to complete writing job logs
-func (w *JobWriter) Close() error {
+func (w *PhaseWriter) Close() error {
 	chunk := Chunk{
-		RunID:  w.ID,
-		Phase:  w.Phase,
+		RunID:  w.id,
+		Phase:  w.phase,
 		Offset: w.offset,
 	}
 	chunk = chunk.AddEndMarker()

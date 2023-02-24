@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/http/jsonapi"
@@ -34,17 +33,16 @@ func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
 	return &m
 }
 
-type Workspace interface {
-	ID() string
-	CreatedAt() time.Time
-	UpdatedAt() time.Time
-	String() string
-	Name() string
-	Repo() *WorkspaceRepo
-	TerraformVersion() string
-	ExecutionMode() ExecutionMode
-	AutoApply() bool
-	Organization() string
+type Workspace struct {
+	ID               string
+	String           string
+	Name             string
+	Repo             *WorkspaceRepo
+	TerraformVersion string
+	ExecutionMode    ExecutionMode
+	AutoApply        bool
+	Organization     string
+	WorkingDirectory string
 }
 
 // WorkspaceResource is a resource that is associated with a workspace,

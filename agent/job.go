@@ -17,6 +17,8 @@ import (
 type Job struct {
 	otf.Run
 	environment.Environment
+
+	workspace otf.Workspace
 }
 
 func (r *Job) Do() error {
@@ -67,7 +69,7 @@ func (r *Job) doPlan() error {
 	if err := r.RunCLI("sh", "-c", fmt.Sprintf("%s show -json %s > %s", r.TerraformPath(), PlanFilename, JSONPlanFilename)); err != nil {
 		return err
 	}
-	if err := r.RunFunc(r.uploadPlan); err != nil {
+	if err := r.uploadPlan(); err != nil {
 		return err
 	}
 	if err := r.RunFunc(r.uploadJSONPlan); err != nil {
@@ -101,11 +103,7 @@ func (r *Job) deleteBackendConfig(ctx context.Context) error {
 }
 
 func (r *Job) downloadTerraform(ctx context.Context) error {
-	ws, err := r.GetWorkspace(ctx, r.WorkspaceID)
-	if err != nil {
-		return err
-	}
-	_, err = r.Download(ctx, ws.TerraformVersion(), r)
+	_, err := r.Download(ctx, r.workspace.TerraformVersion, r)
 	if err != nil {
 		return err
 	}

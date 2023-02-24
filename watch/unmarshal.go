@@ -3,8 +3,11 @@ package watch
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/run"
+	"github.com/r3labs/sse/v2"
 )
 
 // registry of json:api type to unmarshaler
@@ -14,22 +17,18 @@ var registry = map[string]func(b []byte) (any, error){
 	},
 }
 
-// unmarshal parses a json:api document and returns its equivalent Go Type
-// populated with the result.
-func unmarshal(b []byte) (any, error) {
-	// lookup json:api type
-	t, err := unmarshalJSONAPIType(b)
-	if err != nil {
-		return nil, err
+// unmarshal parses an SSE event and returns the equivalent OTF event
+func unmarshal(event *sse.Event) (otf.Event, error) {
+	if !strings.HasPrefix("run_", string(event.Event)) {
+		return otf.Event{}, fmt.Errorf("no unmarshaler available for event %s", string(event.Event))
 	}
 
-	// lookup unmarshaler for type
-	unmarshaler, ok := registry[t]
-	if !ok {
-		return nil, fmt.Errorf("no json:api unmarshaler found for type %s", t)
+	var run otf.Run
+	if err := json.Unmarshal(event.Data, &run); err != nil {
+		return otf.Event{}, nil
 	}
 
-	return unmarshaler(b)
+	return otf.Event{Type: otf.EventType(event.Event), Payload: run}, nil
 }
 
 type jsonapiBody struct {

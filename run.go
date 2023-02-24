@@ -71,7 +71,9 @@ type Run struct {
 	Status                 RunStatus
 	WorkspaceID            string
 	ConfigurationVersionID string
+	ExecutionMode          ExecutionMode
 	HasChanges             bool
+	Queued                 bool
 	Latest                 bool
 	Plan                   Plan
 	Apply                  Apply

@@ -30,16 +30,13 @@ func (c *Client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.E
 	}
 
 	go func() {
-		err := sseClient.SubscribeRawWithContext(ctx, func(msg *sse.Event) {
-			payload, err := unmarshal(msg.Data)
+		err := sseClient.SubscribeRawWithContext(ctx, func(raw *sse.Event) {
+			event, err := unmarshal(raw)
 			if err != nil {
-				notifications <- otf.Event{Type: otf.EventError, Payload: err.Error()}
+				notifications <- otf.Event{Type: otf.EventError, Payload: err}
 				return
 			}
-			notifications <- otf.Event{
-				Type:    otf.EventType(msg.Event),
-				Payload: payload,
-			}
+			notifications <- event
 		})
 		if err != nil {
 			notifications <- otf.Event{Type: otf.EventError, Payload: err}

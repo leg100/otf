@@ -24,8 +24,8 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, run *otf.Run) {
-	log := w.Logger.WithValues("run", run.ID(), "phase", run.Phase())
+func (w *Worker) handle(ctx context.Context, run otf.Run) {
+	log := w.Logger.WithValues("run", run.ID, "phase", run.Phase)
 
 	// Claim run job
 	run, err := w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
@@ -51,8 +51,8 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	// Check run in with the terminator so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(run.ID(), env)
-	defer w.CheckOut(run.ID())
+	w.CheckIn(run.ID, env)
+	defer w.CheckOut(run.ID)
 
 	var finishOptions otf.PhaseFinishOptions
 
@@ -66,7 +66,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	log.Info("finishing phase")
 
 	// Regardless of job success, mark job as finished
-	_, err = w.FinishPhase(ctx, run.ID(), run.Phase(), finishOptions)
+	_, err = w.FinishPhase(ctx, run.ID, run.Phase, finishOptions)
 	if err != nil {
 		log.Error(err, "finishing phase")
 		return
