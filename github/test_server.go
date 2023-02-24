@@ -97,7 +97,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 			var teams []*github.Team
 			for _, team := range srv.user.Teams {
 				teams = append(teams, &github.Team{
-					Name: otf.String(team.Name),
+					Slug: otf.String(team.Name),
 					Organization: &github.Organization{
 						Login: otf.String(team.Organization),
 					},
