@@ -1026,26 +1026,12 @@ type Querier interface {
 	// FindWorkspacePermissionsByIDScan scans the result of an executed FindWorkspacePermissionsByIDBatch query.
 	FindWorkspacePermissionsByIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByIDRow, error)
 
-	FindWorkspacePermissionsByName(ctx context.Context, workspaceName pgtype.Text, organizationName pgtype.Text) ([]FindWorkspacePermissionsByNameRow, error)
-	// FindWorkspacePermissionsByNameBatch enqueues a FindWorkspacePermissionsByName query into batch to be executed
-	// later by the batch.
-	FindWorkspacePermissionsByNameBatch(batch genericBatch, workspaceName pgtype.Text, organizationName pgtype.Text)
-	// FindWorkspacePermissionsByNameScan scans the result of an executed FindWorkspacePermissionsByNameBatch query.
-	FindWorkspacePermissionsByNameScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByNameRow, error)
-
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
 	// later by the batch.
 	DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamName pgtype.Text)
 	// DeleteWorkspacePermissionByIDScan scans the result of an executed DeleteWorkspacePermissionByIDBatch query.
 	DeleteWorkspacePermissionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	DeleteWorkspacePermissionByName(ctx context.Context, params DeleteWorkspacePermissionByNameParams) (pgconn.CommandTag, error)
-	// DeleteWorkspacePermissionByNameBatch enqueues a DeleteWorkspacePermissionByName query into batch to be executed
-	// later by the batch.
-	DeleteWorkspacePermissionByNameBatch(batch genericBatch, params DeleteWorkspacePermissionByNameParams)
-	// DeleteWorkspacePermissionByNameScan scans the result of an executed DeleteWorkspacePermissionByNameBatch query.
-	DeleteWorkspacePermissionByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertWorkspaceRepo(ctx context.Context, params InsertWorkspaceRepoParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceRepoBatch enqueues a InsertWorkspaceRepo query into batch to be executed
@@ -1573,14 +1559,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspacePermissionsByIDSQL, findWorkspacePermissionsByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspacePermissionsByNameSQL, findWorkspacePermissionsByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByName': %w", err)
-	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByNameSQL, deleteWorkspacePermissionByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertWorkspaceRepoSQL, insertWorkspaceRepoSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspaceRepo': %w", err)
@@ -1627,16 +1607,6 @@ type ModuleVersions struct {
 	Status          pgtype.Text        `json:"status"`
 	StatusError     pgtype.Text        `json:"status_error"`
 	ModuleID        pgtype.Text        `json:"module_id"`
-}
-
-// Organizations represents the Postgres composite type "organizations".
-type Organizations struct {
-	OrganizationID  pgtype.Text        `json:"organization_id"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	Name            pgtype.Text        `json:"name"`
-	SessionRemember int                `json:"session_remember"`
-	SessionTimeout  int                `json:"session_timeout"`
 }
 
 // PhaseStatusTimestamps represents the Postgres composite type "phase_status_timestamps".
@@ -1860,20 +1830,6 @@ func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"status_error", "text", &pgtype.Text{}},
 		compositeField{"module_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'organizations'.
-func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"organizations",
-		compositeField{"organization_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"session_remember", "int4", &pgtype.Int4{}},
-		compositeField{"session_timeout", "int4", &pgtype.Int4{}},
 	)
 }
 

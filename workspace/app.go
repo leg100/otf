@@ -166,14 +166,14 @@ func (a *app) get(ctx context.Context, workspaceID string) (*Workspace, error) {
 }
 
 func (a *app) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.GetWorkspaceAction, organization, workspace)
+	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
 	if err != nil {
+		a.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
 		return nil, err
 	}
 
-	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetWorkspaceAction, ws.id)
 	if err != nil {
-		a.Error(err, "retrieving workspace", "subject", subject, "organization", organization, "workspace", workspace)
 		return nil, err
 	}
 

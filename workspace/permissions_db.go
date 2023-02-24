@@ -22,16 +22,19 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team st
 	return nil
 }
 
-func (db *pgdb) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error) {
+func (db *pgdb) ListWorkspacePermissions(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
 	result, err := db.FindWorkspacePermissionsByID(ctx, sql.String(workspaceID))
 	if err != nil {
-		return nil, sql.Error(err)
+		return otf.WorkspacePolicy{}, sql.Error(err)
 	}
-	var perms []otf.WorkspacePermission
+	policy := otf.WorkspacePolicy{
+		Organization: result.OrganizationName.String,
+		WorkspaceID: result.WorkspaceID.String,
+	}
 	for _, row := range result {
 		perm, err := permissionRow(row).toPermission()
 		if err != nil {
-			return nil, sql.Error(err)
+			return otf.WorkspacePolicy{}, sql.Error(err)
 		}
 		perms = append(perms, perm)
 	}

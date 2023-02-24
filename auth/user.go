@@ -71,11 +71,11 @@ func (u *User) CanAccessSite(action rbac.Action) bool {
 }
 
 func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
-	// Site admin can perform any action on any organization
-	if u.IsSiteAdmin() {
+	// coarser-grained site-level perms take precedence
+	if u.CanAccessSite(action) {
 		return true
 	}
-
+	// fallback to finer-grained organization-level perms
 	for _, team := range u.teams {
 		if team.Organization() == name {
 			if team.isOwners() {
@@ -105,26 +105,16 @@ func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolicy) bool {
-	// Site admin can access any workspace
-	if u.IsSiteAdmin() {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
+	// coarser-grained organization perms take precedence.
+	if u.CanAccessOrganization(action, policy.Organization) {
 		return true
 	}
-	// user must be a member of a team with perms
+	// fallback to checking finer-grained workspace perms
 	for _, team := range u.teams {
-		if team.Organization() == policy.Organization {
-			if team.isOwners() {
-				// owner team members can perform all actions on all workspaces
-				return true
-			}
-			if team.access.ManageWorkspaces {
-				// workspace managers can perform all actions on all workspaces
-				return true
-			}
-			for _, perm := range policy.Permissions {
-				if team.id == perm.TeamID {
-					return perm.Role.IsAllowed(action)
-				}
+		for _, perm := range policy.Permissions {
+			if team.id == perm.TeamID {
+				return perm.Role.IsAllowed(action)
 			}
 		}
 	}

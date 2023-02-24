@@ -40,6 +40,7 @@ type Workspace struct {
 	organization               string
 	latestRunID                *string
 	repo                       *WorkspaceRepo
+	permissions                []otf.WorkspacePermission
 
 	Lock
 }
