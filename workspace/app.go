@@ -26,12 +26,60 @@ type application interface {
 }
 
 type app struct {
-	otf.Authorizer
+	otf.OrganizationAuthorizer
 	otf.PubSubService
 	logr.Logger
 
 	connector *Connector
 	db        *pgdb
+}
+
+func (a *app) CanAccessWorkspaceByName(ctx context.Context, action rbac.Action, organization, workspace string) (otf.Subject, error) {
+	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
+	if err != nil {
+		return nil, err
+	}
+	return a.CanAccessWorkspaceByID(ctx, action, ws.ID())
+}
+
+func (a *app) CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error) {
+	subj, err := otf.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	policy, err := a.db.GetWorkspacePolicy(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if subj.CanAccessWorkspace(action, policy) {
+		return subj, nil
+	}
+	a.Error(nil, "unauthorized action", "workspace", workspaceID, "organization", policy.Organization, "action", action, "subject", subj)
+	return nil, otf.ErrAccessNotPermitted
+}
+
+func (a *app) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+	ws, err := NewWorkspace(opts)
+	if err != nil {
+		a.Error(err, "constructing workspace")
+		return nil, err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateWorkspaceAction, ws.Organization())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
+		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
+		return nil, err
+	}
+
+	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
+
+	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
+
+	return ws, nil
 }
 
 func (a *app) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
@@ -208,28 +256,4 @@ func (a *app) delete(ctx context.Context, workspaceID string) (*Workspace, error
 // SetCurrentRun sets the current run for the workspace
 func (a *app) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
-}
-
-func (a *app) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
-	ws, err := NewWorkspace(opts)
-	if err != nil {
-		a.Error(err, "constructing workspace")
-		return nil, err
-	}
-
-	subject, err := a.CanAccessOrganization(ctx, rbac.CreateWorkspaceAction, ws.Organization())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
-		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
-		return nil, err
-	}
-
-	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
-
-	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
-
-	return ws, nil
 }

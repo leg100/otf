@@ -49,10 +49,10 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 		}
 		_, err = tx.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
 			Name:            sql.String(name),
-			NewName:         sql.String(org.Name()),
-			SessionRemember: org.SessionRemember(),
-			SessionTimeout:  org.SessionTimeout(),
-			UpdatedAt:       sql.Timestamptz(org.UpdatedAt()),
+			NewName:         sql.String(org.name),
+			SessionRemember: org.sessionRemember,
+			SessionTimeout:  org.sessionTimeout,
+			UpdatedAt:       sql.Timestamptz(org.updatedAt),
 		})
 		if err != nil {
 			return err

@@ -150,29 +150,48 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Setup url signer
 	signer := otf.NewSigner(d.secret)
 
-	// Setup workspace database
-	workspaceDB := workspace.NewDB(db)
+	// Site, org authorizers
+	siteAuthorizer := otf.NewSiteAuthorizer(logger)
 
-	// Setup authorizer
-	authorizer := otf.NewAuthorizer(logger, workspaceDB)
+	if d.DevMode {
+		logger.Info("enabled developer mode")
+	}
+
+	renderer, err := html.NewViewEngine(d.DevMode)
+	if err != nil {
+		return fmt.Errorf("setting up renderer: %w", err)
+	}
 
 	orgService := organization.NewService(organization.Options{
-		Authorizer: authorizer,
-	})
-
-	configService := configversion.NewService(configversion.Options{
-		Authorizer:    authorizer,
-		Cache:         cache,
-		Database:      db,
-		Signer:        signer,
-		Logger:        logger,
-		MaxUploadSize: d.maxConfigSize,
+		SiteAuthorizer: siteAuthorizer,
+		DB:             db,
+		Logger:         logger,
+		PubSubService:  hub,
+		Renderer:       renderer,
 	})
 
 	authService, err := auth.NewService(ctx, auth.Options{
-		Authorizer: authorizer,
-		Configs:    d.OAuthConfigs,
-		SiteToken:  d.siteToken,
+		OrganizationAuthorizer: orgService,
+		Configs:                d.OAuthConfigs,
+		SiteToken:              d.siteToken,
+	})
+
+	workspaceService := workspace.NewService(workspace.Options{
+		TokenMiddleware:        authService.TokenMiddleware,
+		OrganizationAuthorizer: orgService,
+		DB:                     db,
+		Logger:                 logger,
+		PubSubService:          hub,
+		Renderer:               renderer,
+	})
+
+	configService := configversion.NewService(configversion.Options{
+		WorkspaceAuthorizer: workspaceService,
+		Cache:               cache,
+		Database:            db,
+		Signer:              signer,
+		Logger:              logger,
+		MaxUploadSize:       d.maxConfigSize,
 	})
 
 	stateService := state.NewService(state.ServiceOptions{
@@ -194,14 +213,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
-	}
-
-	if d.ApplicationOptions.DevMode {
-		logger.Info("enabled developer mode")
-	}
-	renderer, err := html.NewViewEngine(d.ApplicationOptions.DevMode)
-	if err != nil {
-		return fmt.Errorf("setting up renderer: %w", err)
 	}
 
 	triggerer := triggerer.NewTriggerer(app, logger)

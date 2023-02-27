@@ -15,7 +15,7 @@ type application interface {
 }
 
 type app struct {
-	otf.Authorizer
+	otf.OrganizationAuthorizer
 	logr.Logger
 
 	db *pgdb

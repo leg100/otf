@@ -32,7 +32,7 @@ func (a *app) setPermission(ctx context.Context, workspaceID, team string, role 
 }
 
 func (a *app) listPermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error) {
-	return a.db.ListWorkspacePermissions(ctx, workspaceID)
+	return a.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 func (a *app) unsetPermission(ctx context.Context, workspaceID, team string) error {

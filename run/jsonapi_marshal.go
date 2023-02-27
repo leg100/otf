@@ -53,17 +53,11 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		return nil, err
 	}
 
-	workspacePerms, err := m.ListWorkspacePermissions(r.Context(), run.WorkspaceID())
+	policy, err := m.GetWorkspacePolicy(r.Context(), run.WorkspaceID())
 	if err != nil {
 		return nil, err
 	}
-	policy := &otf.WorkspacePolicy{
-		Organization: run.Organization(),
-		WorkspaceID:  run.WorkspaceID(),
-		Permissions:  workspacePerms,
-	}
-
-	runPerms := &jsonapi.RunPermissions{
+	perms := &jsonapi.RunPermissions{
 		CanDiscard:      subject.CanAccessWorkspace(rbac.DiscardRunAction, policy),
 		CanForceExecute: subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 		CanForceCancel:  subject.CanAccessWorkspace(rbac.CancelRunAction, policy),
@@ -145,7 +139,7 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		HasChanges:             run.Plan().HasChanges(),
 		IsDestroy:              run.IsDestroy(),
 		Message:                run.Message(),
-		Permissions:            runPerms,
+		Permissions:            perms,
 		PositionInQueue:        0,
 		Refresh:                run.Refresh(),
 		RefreshOnly:            run.RefreshOnly(),

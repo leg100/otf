@@ -171,3 +171,11 @@ func (a *app) getOutput(ctx context.Context, outputID string) (*output, error) {
 	a.V(2).Info("retrieved state version output", "id", outputID, "subject", subject)
 	return sv, nil
 }
+
+func (a *app) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error) {
+	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{ID: &svID})
+	if err != nil {
+		return nil, err
+	}
+	return a.CanAccessWorkspaceByID(ctx, action, sv.workspaceID)
+}

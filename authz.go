@@ -16,7 +16,7 @@ const subjectCtxKey subjectCtxKeyType = "subject"
 type Subject interface {
 	CanAccessSite(action rbac.Action) bool
 	CanAccessOrganization(action rbac.Action, name string) bool
-	CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool
+	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
 	Identity
 }
@@ -66,8 +66,8 @@ type Superuser struct {
 	Username string
 }
 
-func (*Superuser) CanAccessSite(action rbac.Action) bool                 { return true }
-func (*Superuser) CanAccessOrganization(rbac.Action, string) bool        { return true }
-func (*Superuser) CanAccessWorkspace(rbac.Action, *WorkspacePolicy) bool { return true }
-func (s *Superuser) String() string                                      { return s.Username }
-func (s *Superuser) ID() string                                          { return s.Username }
+func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
+func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
+func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
+func (s *Superuser) String() string                                     { return s.Username }
+func (s *Superuser) ID() string                                         { return s.Username }

@@ -402,7 +402,7 @@ func (f *fakeWorkspaceHandlerApp) StartRun(context.Context, string, otf.Configur
 	return f.runs[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ListWorkspacePermissions(context.Context, string) ([]*otf.WorkspacePermission, error) {
+func (f *fakeWorkspaceHandlerApp) GetWorkspacePolicy(context.Context, string) ([]*otf.WorkspacePermission, error) {
 	return nil, nil
 }
 

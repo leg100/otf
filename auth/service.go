@@ -23,7 +23,7 @@ type Service struct {
 func NewService(ctx context.Context, opts Options) (*Service, error) {
 	db := newDB(opts.DB, opts.Logger)
 	app := &app{
-		Authorizer: opts.Authorizer,
+		OrganizationAuthorizer: opts.OrganizationAuthorizer,
 		Logger:     opts.Logger,
 		db:         db,
 	}
@@ -65,7 +65,7 @@ type Options struct {
 	SiteToken string
 
 	organization.Service
-	otf.Authorizer
+	otf.OrganizationAuthorizer
 	otf.DB
 	otf.Renderer
 	otf.HostnameService

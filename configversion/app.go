@@ -34,7 +34,7 @@ type app interface {
 }
 
 type Application struct {
-	otf.Authorizer
+	otf.WorkspaceAuthorizer
 	logr.Logger
 
 	db    *db
@@ -99,7 +99,7 @@ func (a *Application) list(ctx context.Context, workspaceID string, opts Configu
 }
 
 func (a *Application) get(ctx context.Context, cvID string) (*ConfigurationVersion, error) {
-	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.GetConfigurationVersionAction, cvID)
+	subject, err := a.canAccess(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (a *Application) getLatest(ctx context.Context, workspaceID string) (*Confi
 }
 
 func (a *Application) delete(ctx context.Context, cvID string) error {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteConfigurationVersionAction, cvID)
+	subject, err := a.canAccess(ctx, rbac.DeleteConfigurationVersionAction, cvID)
 	if err != nil {
 		return err
 	}
@@ -161,16 +161,8 @@ func (a *Application) upload(ctx context.Context, cvID string, config []byte) er
 	return nil
 }
 
-type keyValue struct {
-	id     string
-	config []byte
-}
-
-func (kv keyValue) Key() string   { return kv.id }
-func (kv keyValue) Value() []byte { return kv.config }
-
 func (a *Application) download(ctx context.Context, cvID string) ([]byte, error) {
-	subject, err := a.CanAccessConfigurationVersion(ctx, rbac.DownloadConfigurationVersionAction, cvID)
+	subject, err := a.canAccess(ctx, rbac.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +170,7 @@ func (a *Application) download(ctx context.Context, cvID string) ([]byte, error)
 	if config, err := a.cache.Get(cacheKey(cvID)); err == nil {
 		return config, nil
 	}
-	config, err := a.db.GetConfig(context.Background(), cvID)
+	config, err := a.db.GetConfig(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,4 +179,12 @@ func (a *Application) download(ctx context.Context, cvID string) ([]byte, error)
 	}
 	a.V(2).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)
 	return config, nil
+}
+
+func (a *Application) canAccess(ctx context.Context, action rbac.Action, cvID string) (otf.Subject, error) {
+	cv, err := a.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
+	if err != nil {
+		return nil, err
+	}
+	return a.CanAccessWorkspaceByID(ctx, action, cv.workspaceID)
 }

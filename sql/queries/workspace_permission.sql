@@ -12,12 +12,12 @@ INSERT INTO workspace_permissions (
 ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = pggen.arg('role')
 ;
 
--- name: FindWorkspacePermissionsByID :many
+-- name: FindWorkspacePermissionsByID :one
 SELECT
     w.organization_name,
     w.workspace_id,
     (
-        SELECT array_remove(array_agg(o.name), NULL)
+        SELECT array_remove(array_agg(wp.*), NULL)
         FROM workspace_permissions wp
         WHERE wp.workspace_id = w.workspace_id
     ) AS workspace_permissions

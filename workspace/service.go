@@ -10,18 +10,18 @@ import (
 )
 
 type Service struct {
-	application
+	*app
 
 	api *api
 	web *web
 }
 
-func NewService(opts Options) (*Service, error) {
+func NewService(opts Options) *Service {
 	app := &app{
-		Authorizer:    opts.Authorizer,
-		PubSubService: opts.PubSubService,
-		db:            newPGDB(opts.DB),
-		Logger:        opts.Logger,
+		OrganizationAuthorizer: opts.OrganizationAuthorizer,
+		PubSubService:          opts.PubSubService,
+		db:                     newPGDB(opts.DB),
+		Logger:                 opts.Logger,
 	}
 	api := &api{
 		app:             app,
@@ -33,16 +33,16 @@ func NewService(opts Options) (*Service, error) {
 	}
 
 	return &Service{
-		application: app,
-		api:         api,
-		web:         web,
-	}, nil
+		app: app,
+		api: api,
+		web: web,
+	}
 }
 
 type Options struct {
 	TokenMiddleware mux.MiddlewareFunc
 
-	otf.Authorizer
+	otf.OrganizationAuthorizer
 	otf.DB
 	otf.PubSubService
 	otf.Renderer

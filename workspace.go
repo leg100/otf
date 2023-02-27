@@ -144,7 +144,7 @@ type WorkspaceService interface {
 
 type WorkspacePermissionService interface {
 	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]WorkspacePermission, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID string) (WorkspacePolicy, error)
 	UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 }
 
@@ -157,5 +157,5 @@ type WorkspaceDB interface {
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
 
-	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]WorkspacePermission, error)
+	GetWorkspacePolicy(ctx context.Context, workspaceID string) (WorkspacePolicy, error)
 }

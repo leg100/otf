@@ -33,7 +33,7 @@ func (t *AgentToken) CanAccessOrganization(action rbac.Action, name string) bool
 	return t.organization == name
 }
 
-func (t *AgentToken) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolicy) bool {
+func (t *AgentToken) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
 	// agent can access anything within its organization
 	return t.organization == policy.Organization
 }

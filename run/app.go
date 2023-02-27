@@ -98,7 +98,7 @@ func (a *Application) get(ctx context.Context, runID string) (*Run, error) {
 	return run, nil
 }
 
-// ListRuns retrieves multiple run objs. Use opts to filter and paginate the
+// ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
 func (a *Application) list(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
 	var subject otf.Subject
@@ -298,16 +298,16 @@ func (a *Application) uploadPlanFile(ctx context.Context, runID string, plan []b
 
 // delete a run.
 func (a *Application) delete(ctx context.Context, runID string) error {
-	subject, err := a.CanAccessRun(ctx, rbac.DeleteRunAction, runID)
-	if err != nil {
-		return err
-	}
-
-	// get run first so that we can include it in an event below
 	run, err := a.db.GetRun(ctx, runID)
 	if err != nil {
 		return err
 	}
+
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteRunAction, run.workspaceID)
+	if err != nil {
+		return err
+	}
+
 	if err := a.db.DeleteRun(ctx, runID); err != nil {
 		a.Error(err, "deleting run", "id", runID, "subject", subject)
 		return err
@@ -413,4 +413,12 @@ func (a *Application) createApplyReport(ctx context.Context, runID string) (Reso
 		return ResourceReport{}, err
 	}
 	return report, nil
+}
+
+func (a *Application) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
+	run, err := a.db.GetRun(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	return a.CanAccessWorkspaceByID(ctx, action, run.workspaceID)
 }

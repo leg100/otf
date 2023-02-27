@@ -280,7 +280,7 @@ func TestWorkspace_Create(t *testing.T) {
 		perm1 := createTestWorkspacePermission(t, db, ws, team1, rbac.WorkspaceAdminRole)
 		perm2 := createTestWorkspacePermission(t, db, ws, team2, rbac.WorkspacePlanRole)
 
-		perms, err := db.ListWorkspacePermissions(ctx, ws.ID())
+		perms, err := db.GetWorkspacePolicy(ctx, ws.ID())
 		require.NoError(t, err)
 		if assert.Equal(t, 2, len(perms)) {
 			assert.Contains(t, perms, perm1)
@@ -296,7 +296,7 @@ func TestWorkspace_Create(t *testing.T) {
 		err := db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
 		require.NoError(t, err)
 
-		perms, err := db.ListWorkspacePermissions(ctx, ws.ID())
+		perms, err := db.GetWorkspacePolicy(ctx, ws.ID())
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(perms))
 	})

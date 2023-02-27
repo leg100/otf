@@ -9,26 +9,29 @@ import (
 )
 
 type Service struct {
-	application
+	*app
+
 	api *api
 	web *web
 }
 
 func NewService(opts Options) *Service {
 	app := &app{
-		Authorizer: opts.Authorizer,
-		Logger:     opts.Logger,
-		db:         newDB(opts.DB),
+		SiteAuthorizer: opts.SiteAuthorizer,
+		Logger:         opts.Logger,
+		PubSubService:  opts.PubSubService,
+		db:             newDB(opts.DB),
 	}
 	return &Service{
-		application: app,
-		api:         &api{app},
+		app: app,
+		api: &api{app},
 	}
 }
 
 type Options struct {
-	otf.Authorizer
+	otf.SiteAuthorizer
 	otf.DB
+	otf.PubSubService
 	otf.Renderer
 	logr.Logger
 }

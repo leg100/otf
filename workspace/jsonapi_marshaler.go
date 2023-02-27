@@ -20,7 +20,7 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 	if err != nil {
 		return nil, err
 	}
-	perms, err := m.ListWorkspacePermissions(r.Context(), ws.id)
+	perms, err := m.GetWorkspacePolicy(r.Context(), ws.id)
 	if err != nil {
 		return nil, err
 	}

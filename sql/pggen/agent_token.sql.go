@@ -1019,12 +1019,12 @@ type Querier interface {
 	// UpsertWorkspacePermissionScan scans the result of an executed UpsertWorkspacePermissionBatch query.
 	UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindWorkspacePermissionsByID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspacePermissionsByIDRow, error)
+	FindWorkspacePermissionsByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePermissionsByIDRow, error)
 	// FindWorkspacePermissionsByIDBatch enqueues a FindWorkspacePermissionsByID query into batch to be executed
 	// later by the batch.
 	FindWorkspacePermissionsByIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// FindWorkspacePermissionsByIDScan scans the result of an executed FindWorkspacePermissionsByIDBatch query.
-	FindWorkspacePermissionsByIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByIDRow, error)
+	FindWorkspacePermissionsByIDScan(results pgx.BatchResults) (FindWorkspacePermissionsByIDRow, error)
 
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
@@ -1688,6 +1688,13 @@ type Webhooks struct {
 	Connected  int         `json:"connected"`
 }
 
+// WorkspacePermissions represents the Postgres composite type "workspace_permissions".
+type WorkspacePermissions struct {
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	TeamID      pgtype.Text `json:"team_id"`
+	Role        pgtype.Text `json:"role"`
+}
+
 // WorkspaceRepos represents the Postgres composite type "workspace_repos".
 type WorkspaceRepos struct {
 	Branch        pgtype.Text `json:"branch"`
@@ -1944,6 +1951,17 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 	)
 }
 
+// newWorkspacePermissions creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'workspace_permissions'.
+func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"workspace_permissions",
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
+		compositeField{"team_id", "text", &pgtype.Text{}},
+		compositeField{"role", "text", &pgtype.Text{}},
+	)
+}
+
 // newWorkspaceRepos creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'workspace_repos'.
 func (tr *typeResolver) newWorkspaceRepos() pgtype.ValueTranscoder {
@@ -1990,6 +2008,12 @@ func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 // '_teams' array type.
 func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_teams", "teams", tr.newTeams)
+}
+
+// newWorkspacePermissionsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_workspace_permissions' array type.
+func (tr *typeResolver) newWorkspacePermissionsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_workspace_permissions", "workspace_permissions", tr.newWorkspacePermissions)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (
