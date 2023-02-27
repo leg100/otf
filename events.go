@@ -35,8 +35,13 @@ type Event struct {
 type PubSubService interface {
 	// Publish an event
 	Publish(Event)
-	// Subscribe creates a subscription to a stream of errors. Name is a
-	// unique identifier describing the subscriber.
+	Subscriber
+}
+
+// Subscriber creates a subscription to OTF events.
+type Subscriber interface {
+	// Subscribe subscribes the caller to OTF events. Name uniquely identifies the
+	// caller.
 	Subscribe(ctx context.Context, name string) (<-chan Event, error)
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 func NewTestVariable(t *testing.T, ws otf.Workspace, opts otf.CreateVariableOptions) *Variable {
-	v, err := NewVariable(ws.ID(), opts)
+	v, err := NewVariable(ws.ID, opts)
 	require.NoError(t, err)
 	return v
 }

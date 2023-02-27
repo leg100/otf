@@ -28,8 +28,9 @@ func NewService(opts Options) *Service {
 		tokenMiddleware: opts.TokenMiddleware,
 	}
 	web := &web{
-		Renderer: opts.Renderer,
-		app:      app,
+		Renderer:          opts.Renderer,
+		app:               app,
+		sessionMiddleware: opts.SessionMiddleware,
 	}
 
 	return &Service{
@@ -40,7 +41,7 @@ func NewService(opts Options) *Service {
 }
 
 type Options struct {
-	TokenMiddleware mux.MiddlewareFunc
+	TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
 	otf.OrganizationAuthorizer
 	otf.DB

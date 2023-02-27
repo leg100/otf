@@ -30,16 +30,16 @@ func newPGDB(db otf.Database) *pgdb {
 	return &pgdb{db}
 }
 
-func (pdb *pgdb) create(ctx context.Context, ws *Variable) error {
+func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
 	_, err := pdb.InsertVariable(ctx, pggen.InsertVariableParams{
-		VariableID:  sql.String(ws.ID()),
-		Key:         sql.String(ws.Key()),
-		Value:       sql.String(ws.Value()),
-		Description: sql.String(ws.Description()),
-		Category:    sql.String(string(ws.Category())),
-		Sensitive:   ws.Sensitive(),
-		HCL:         ws.HCL(),
-		WorkspaceID: sql.String(ws.WorkspaceID()),
+		VariableID:  sql.String(v.id),
+		Key:         sql.String(v.key),
+		Value:       sql.String(v.value),
+		Description: sql.String(v.description),
+		Category:    sql.String(string(v.category)),
+		Sensitive:   v.sensitive,
+		HCL:         v.hcl,
+		WorkspaceID: sql.String(v.workspaceID),
 	})
 	if err != nil {
 		return sql.Error(err)

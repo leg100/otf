@@ -20,10 +20,15 @@ type web struct {
 	auth.TeamService
 	*vcsprovider.Service
 
-	app application
+	app               application
+	sessionMiddleware mux.MiddlewareFunc
 }
 
 func (h *web) addHandlers(r *mux.Router) {
+	r.Use(h.sessionMiddleware) // require session
+
+	r = r.PathPrefix("/app").Subrouter()
+
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/new", h.newWorkspace).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/create", h.createWorkspace).Methods("POST")

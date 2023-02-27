@@ -15,7 +15,7 @@ type service struct {
 
 func NewService(opts ServiceOptions) *service {
 	app := &app{
-		Authorizer: opts.Authorizer,
+		WorkspaceAuthorizer: opts.WorkspaceAuthorizer,
 		Logger:     opts.Logger,
 		db:         newPGDB(opts.Database),
 		cache:      opts.Cache,
@@ -27,7 +27,7 @@ func NewService(opts ServiceOptions) *service {
 }
 
 type ServiceOptions struct {
-	otf.Authorizer
+	otf.WorkspaceAuthorizer
 	otf.Database
 	otf.Cache
 	logr.Logger

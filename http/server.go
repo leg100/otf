@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
-	"github.com/gorilla/handlers"
+	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -61,7 +61,7 @@ type ServerConfig struct {
 	DevMode              bool
 }
 
-// Server provides an HTTP/S server
+// Server is the http server for OTF
 type Server struct {
 	logr.Logger
 	ServerConfig
@@ -69,8 +69,8 @@ type Server struct {
 	server *http.Server
 }
 
-// NewServer is the constructor for a http server
-func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Server, error) {
+// NewServer constructs the http server for OTF
+func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (*Server, error) {
 	s := &Server{
 		server:       &http.Server{},
 		Logger:       logger,
@@ -86,7 +86,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 	r := mux.NewRouter()
 
 	// Catch panics and return 500s
-	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
+	r.Use(gorillaHandlers.RecoveryHandler(gorillaHandlers.PrintRecoveryStack(true)))
 
 	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
 	// /runs. Uses an HTTP301.
@@ -105,15 +105,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 		w.Write(healthzPayload)
 	})
 
+	// Terraform discovery service
 	r.HandleFunc("/.well-known/terraform.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
 		w.Write(discoveryPayload)
 	})
 
 	// Add tfp api version header to every response
-	//
-	// TODO: only set this on api routes
-	r.Use(func(next http.Handler) http.Handler {
+	r.PathPrefix("/api/v2").Subrouter().Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Version 2.5 is the minimum version terraform requires for the
 			// newer 'cloud' configuration block:
@@ -123,17 +122,16 @@ func NewServer(logger logr.Logger, cfg ServerConfig, apis ...otf.HTTPAPI) (*Serv
 		})
 	})
 
-	// Get/set session organization
-	//
-	// TODO: only set this on web app routes
-	r.Use(html.SetOrganization)
-
 	r.HandleFunc("/api/v2/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	for _, api := range apis {
-		api.AddHandlers(r)
+	// Get/set session organization for web app
+	r.PathPrefix("/app").Subrouter().Use(html.SetOrganization)
+
+	// Add handlers for each service
+	for _, h := range handlers {
+		h.AddHandlers(r)
 	}
 
 	// Toggle logging HTTP requests

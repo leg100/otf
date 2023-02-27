@@ -29,7 +29,7 @@ type unlockOptions struct {
 }
 
 func (a *api) addHandlers(r *mux.Router) {
-	r.Use(a.tokenMiddleware)
+	r.Use(a.tokenMiddleware) // require bearer token
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list)
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create)

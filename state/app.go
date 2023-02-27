@@ -25,7 +25,7 @@ type appService interface {
 
 // app is the implementation of appService
 type app struct {
-	otf.Authorizer // authorize access
+	otf.WorkspaceAuthorizer // authorize access
 	logr.Logger
 
 	db              // access to state version database

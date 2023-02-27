@@ -11,8 +11,8 @@ import (
 )
 
 type Service struct {
-	// make token-checking middleware available to other packages
-	TokenMiddleware mux.MiddlewareFunc
+	// make available to other packages
+	TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
 	*app
 
@@ -24,8 +24,8 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	db := newDB(opts.DB, opts.Logger)
 	app := &app{
 		OrganizationAuthorizer: opts.OrganizationAuthorizer,
-		Logger:     opts.Logger,
-		db:         db,
+		Logger:                 opts.Logger,
+		db:                     db,
 	}
 	app.synchroniser = &synchroniser{opts.Logger, opts.Service, app}
 
@@ -53,10 +53,11 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	go db.startExpirer(ctx, defaultExpiry)
 
 	return &Service{
-		TokenMiddleware: AuthenticateToken(app),
-		app:             app,
-		api:             api,
-		web:             web,
+		TokenMiddleware:   AuthenticateToken(app),
+		SessionMiddleware: AuthenticateSession(app),
+		app:               app,
+		api:               api,
+		web:               web,
 	}, nil
 }
 

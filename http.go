@@ -2,8 +2,8 @@ package otf
 
 import "github.com/gorilla/mux"
 
-// HTTPAPI is an HTTP API
-type HTTPAPI interface {
-	// AddHandlers adds http handlers for to the given mux.
+// Handlers is an http application with handlers
+type Handlers interface {
+	// AddHandlers adds http handlers to the router.
 	AddHandlers(*mux.Router)
 }

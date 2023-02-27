@@ -104,6 +104,10 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	if d.DevMode {
+		logger.Info("enabled developer mode")
+	}
+
 	// Setup hostname service
 	hostnameService := otf.NewHostnameService(logger)
 
@@ -150,17 +154,17 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Setup url signer
 	signer := otf.NewSigner(d.secret)
 
-	// Site, org authorizers
+	// Authorizer for site-wide access
 	siteAuthorizer := otf.NewSiteAuthorizer(logger)
 
-	if d.DevMode {
-		logger.Info("enabled developer mode")
-	}
-
+	// Web app template renderer
 	renderer, err := html.NewViewEngine(d.DevMode)
 	if err != nil {
 		return fmt.Errorf("setting up renderer: %w", err)
 	}
+
+	// Build list of http handlers for each service
+	var handlers []otf.Handlers
 
 	orgService := organization.NewService(organization.Options{
 		SiteAuthorizer: siteAuthorizer,
@@ -169,21 +173,25 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		PubSubService:  hub,
 		Renderer:       renderer,
 	})
+	handlers = append(handlers, orgService)
 
 	authService, err := auth.NewService(ctx, auth.Options{
 		OrganizationAuthorizer: orgService,
 		Configs:                d.OAuthConfigs,
 		SiteToken:              d.siteToken,
 	})
+	handlers = append(handlers, authService)
 
 	workspaceService := workspace.NewService(workspace.Options{
 		TokenMiddleware:        authService.TokenMiddleware,
+		SessionMiddleware:      authService.SessionMiddleware,
 		OrganizationAuthorizer: orgService,
 		DB:                     db,
 		Logger:                 logger,
 		PubSubService:          hub,
 		Renderer:               renderer,
 	})
+	handlers = append(handlers, workspaceService)
 
 	configService := configversion.NewService(configversion.Options{
 		WorkspaceAuthorizer: workspaceService,
@@ -193,13 +201,24 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		Logger:              logger,
 		MaxUploadSize:       d.maxConfigSize,
 	})
+	handlers = append(handlers, configService)
 
 	stateService := state.NewService(state.ServiceOptions{
-		Authorizer: authorizer,
-		Logger:     logger,
-		Database:   db,
-		Cache:      cache,
+		WorkspaceAuthorizer: workspaceService,
+		Logger:              logger,
+		Database:            db,
+		Cache:               cache,
 	})
+	handlers = append(handlers, stateService)
+
+	variableService := variable.NewService(variable.Options{
+		WorkspaceAuthorizer: workspaceService,
+		Logger:              logger,
+		Database:            db,
+		WorkspaceService:    workspaceService,
+		Renderer:            renderer,
+	})
+	handlers = append(handlers, variableService)
 
 	// Setup application services
 	app, err := app.NewApplication(ctx, app.Options{
@@ -217,16 +236,8 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	triggerer := triggerer.NewTriggerer(app, logger)
 
-	variableService := variable.NewApplication(variable.Options{
-		Authorizer:       authorizer,
-		Logger:           logger,
-		Database:         db,
-		WorkspaceService: app.WorkspaceService,
-		Renderer:         renderer,
-	})
-
 	// Setup and start http server
-	server, err := http.NewServer(logger, *d.ServerConfig, stateService, variableService)
+	server, err := http.NewServer(logger, *d.ServerConfig, handlers...)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}

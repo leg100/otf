@@ -18,7 +18,7 @@ type application interface {
 }
 
 type app struct {
-	otf.Authorizer
+	otf.WorkspaceAuthorizer
 	logr.Logger
 
 	db
