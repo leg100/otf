@@ -15,6 +15,8 @@ type spawner struct {
 	logr.Logger
 	otf.Subscriber
 	otf.ConfigurationVersionService
+	otf.WorkspaceService
+	otf.VCSProviderService
 
 	app
 }
@@ -82,10 +84,10 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	// we have 1+ workspaces connected to this repo but we only need to retrieve
 	// the repo once, and to do so we'll use the VCS provider associated with
 	// the first workspace (any would do).
-	if workspaces[0].Repo() == nil {
-		return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID())
+	if workspaces[0].Repo == nil {
+		return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 	}
-	providerID := workspaces[0].Repo().ProviderID
+	providerID := workspaces[0].Repo.ProviderID
 
 	client, err := h.GetVCSClient(ctx, providerID)
 	if err != nil {
@@ -101,11 +103,11 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 
 	// create a config version for each workspace and trigger run.
 	for _, ws := range workspaces {
-		if ws.Repo() == nil {
-			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID())
+		if ws.Repo == nil {
+			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
 
-		cv, err := h.CreateConfigurationVersion(ctx, ws.ID(), otf.ConfigurationVersionCreateOptions{
+		cv, err := h.CreateConfigurationVersion(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(isPullRequest),
 			IngressAttributes: &otf.IngressAttributes{
 				// ID     string
@@ -117,7 +119,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 				// CompareURL        string
 				Identifier:      identifier,
 				IsPullRequest:   isPullRequest,
-				OnDefaultBranch: (ws.Repo().Branch == branch),
+				OnDefaultBranch: (ws.Repo.Branch == branch),
 			},
 		})
 		if err != nil {
@@ -126,7 +128,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err := h.UploadConfig(ctx, cv.ID(), tarball); err != nil {
 			return err
 		}
-		_, err = h.create(ctx, ws.ID(), RunCreateOptions{
+		_, err = h.create(ctx, ws.ID, RunCreateOptions{
 			ConfigurationVersionID: otf.String(cv.ID()),
 		})
 		if err != nil {

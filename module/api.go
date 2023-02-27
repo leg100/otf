@@ -7,26 +7,26 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/surl"
 )
 
-type handlers struct {
+type api struct {
 	*surl.Signer
 
-	app appService
+	app application
 }
 
 // Implements the Module Registry Protocol:
 //
 // https://developer.hashicorp.com/terraform/internals/module-registry-protocol
-func (h *handlers) AddHandlers(r *mux.Router) {
+func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listModuleVersions)
 	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink)
 
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use((&otfhttp.SignatureVerifier{h.Signer}).Handler)
+	signed.Use(otf.VerifySignedURL(h.Signer))
 	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
 }
 
@@ -43,7 +43,7 @@ type moduleVersion struct {
 	Version string
 }
 
-func (h *handlers) listModuleVersions(w http.ResponseWriter, r *http.Request) {
+func (h *api) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 	var opts GetModuleOptions
 	if err := decode.Route(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -74,7 +74,7 @@ func (h *handlers) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handlers) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
+func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
 	params := struct {
 		GetModuleOptions
 		Version string
@@ -106,7 +106,7 @@ func (h *handlers) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *handlers) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
+func (h *api) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("module_version_id", r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -18,7 +18,7 @@ type VCSProvider struct {
 }
 
 // VCSProviderService provides access to vcs providers
-type VCSProviderApp interface {
+type VCSProviderService interface {
 	GetVCSProvider(ctx context.Context, id string) (VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]VCSProvider, error)
 

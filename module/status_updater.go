@@ -5,7 +5,7 @@ import (
 )
 
 type statusUpdater struct {
-	db
+	*pgdb
 }
 
 // updateStatus updates a module version's status, and ensures its parent module's

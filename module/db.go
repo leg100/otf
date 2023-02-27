@@ -9,33 +9,9 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// db is a database of state and state versions
-type db interface {
-	otf.Database
-
-	CreateModule(context.Context, *Module) error
-	UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatusOptions) error
-	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
-	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
-	GetModuleByID(ctx context.Context, id string) (*Module, error)
-	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
-	DeleteModule(ctx context.Context, id string) error
-
-	CreateModuleVersion(context.Context, *ModuleVersion) error
-	UpdateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) (*ModuleVersion, error)
-	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
-	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
-
-	tx(context.Context, func(db) error) error
-}
-
-// pgdb is a state/state-version database on postgres
+// pgdb is the registry database on postgres
 type pgdb struct {
 	otf.Database // provides access to generated SQL queries
-}
-
-func newPGDB(db otf.Database) *pgdb {
-	return &pgdb{db}
 }
 
 func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {

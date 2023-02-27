@@ -9,8 +9,8 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// appService is the application service for modules
-type appService interface {
+// application is the application service for modules
+type application interface {
 	// PublishModule publishes a module from a VCS repository.
 	PublishModule(context.Context, PublishModuleOptions) (*Module, error)
 	// CreateModule creates a module without a connection to a VCS repository.
@@ -27,18 +27,18 @@ type appService interface {
 	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
 }
 
-// app is the implementation of appService
+// app is the implementation of app
 type app struct {
-	otf.Authorizer
+	otf.OrganizationAuthorizer
 	otf.VCSProviderService // for retrieving vcs client
 	logr.Logger
 	*Publisher
 
-	db
+	*pgdb
 }
 
 func (a *app) PublishModule(ctx context.Context, opts PublishModuleOptions) (*Module, error) {
-	subject, err := a.CanAccessOrganization(ctx, rbac.CreateModuleAction, opts.Organization.Name())
+	subject, err := a.CanAccessOrganization(ctx, rbac.CreateModuleAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}

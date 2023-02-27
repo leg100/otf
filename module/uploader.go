@@ -4,13 +4,13 @@ import (
 	"context"
 )
 
-type ModuleVersionUploader struct {
+type uploader struct {
 	db
 	statusUpdater
 }
 
 // Upload uploads a tarball for a module version.
-func (u *ModuleVersionUploader) Upload(ctx context.Context, opts UploadModuleVersionOptions) (*Module, *ModuleVersion, error) {
+func (u *uploader) Upload(ctx context.Context, opts UploadModuleVersionOptions) (*Module, *ModuleVersion, error) {
 	var mod *Module
 	var modver *ModuleVersion
 

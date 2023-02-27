@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
@@ -15,14 +16,36 @@ import (
 // Publisher publishes terraform modules.
 type Publisher struct {
 	otf.HookService // registering/de-registering webhook
+	otf.Subscriber
+	otf.VCSProviderService
+	logr.Logger
+
+	app
 }
 
-func NewPublisher(app otf.Application) *Publisher {
-	return &Publisher{
-		HookService: app,
-		ModuleVersionUploader: &ModuleVersionUploader{
-			Application: app,
-		},
+// Start handling VCS events and publish modules in response to events
+func (h *Publisher) Start(ctx context.Context) error {
+	h.V(2).Info("started")
+
+	sub, err := h.Subscribe(ctx, "module-publisher")
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case event := <-sub:
+			// skip non-vcs events
+			if event.Type != otf.EventVCS {
+				continue
+			}
+
+			if err := h.PublishFromEvent(ctx, event.Payload); err != nil {
+				h.Error(err, "handling vcs event")
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 
@@ -63,7 +86,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		mod = NewModule(CreateModuleOptions{
 			Name:         name,
 			Provider:     provider,
-			Organization: opts.Organization.Name(),
+			Organization: opts.Organization.Name,
 			Repo: &ModuleRepo{
 				WebhookID:  hookID,
 				ProviderID: opts.ProviderID,
@@ -75,7 +98,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	}
 	err = p.Hook(ctx, otf.HookOptions{
 		Identifier:   opts.Identifier,
-		Cloud:        vcsProvider.CloudConfig().Name,
+		Cloud:        vcsProvider.CloudConfig.Name,
 		Client:       client,
 		HookCallback: hookCallback,
 	})

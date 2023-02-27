@@ -189,7 +189,7 @@ type (
 	PublishModuleOptions struct {
 		Identifier   string
 		ProviderID   string
-		Organization *otf.Organization
+		Organization string
 	}
 	CreateModuleOptions struct {
 		Name         string

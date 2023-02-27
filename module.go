@@ -64,7 +64,7 @@ type (
 	PublishModuleOptions struct {
 		Identifier   string
 		ProviderID   string
-		Organization *Organization
+		Organization string
 	}
 	CreateModuleOptions struct {
 		Name         string

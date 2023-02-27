@@ -24,6 +24,7 @@ import (
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/triggerer"
 	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -220,6 +221,15 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	})
 	handlers = append(handlers, variableService)
 
+	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+		OrganizationAuthorizer: orgService,
+		Service:                cloudService,
+		DB:                     db,
+		Renderer:               renderer,
+		Logger:                 logger,
+	})
+	handlers = append(handlers, variableService)
+
 	// Setup application services
 	app, err := app.NewApplication(ctx, app.Options{
 		Logger:              logger,
@@ -233,8 +243,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}
-
-	triggerer := triggerer.NewTriggerer(app, logger)
 
 	// Setup and start http server
 	server, err := http.NewServer(logger, *d.ServerConfig, handlers...)

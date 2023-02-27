@@ -27,7 +27,7 @@ type application interface {
 
 // app is the implementation of application
 type app struct {
-	otf.Authorizer
+	otf.OrganizationAuthorizer
 	logr.Logger
 
 	db *pgdb
