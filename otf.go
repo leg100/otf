@@ -157,7 +157,7 @@ func NewID(rtype string) string {
 // characters of length size.
 func GenerateRandomString(size int) string {
 	// Without this, Go would generate the same random sequence each run.
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	buf := make([]byte, size)
 	for i := 0; i < size; i++ {
