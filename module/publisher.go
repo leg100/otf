@@ -86,7 +86,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		mod = NewModule(CreateModuleOptions{
 			Name:         name,
 			Provider:     provider,
-			Organization: opts.Organization.Name,
+			Organization: opts.Organization,
 			Repo: &ModuleRepo{
 				WebhookID:  hookID,
 				ProviderID: opts.ProviderID,

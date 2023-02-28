@@ -53,7 +53,7 @@
       Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be {{ "terraform-<PROVIDER>-<NAME>" }}.
     </div>
     <form action="{{ newModulePath $.Content.Organization }}" method="GET">
-      <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.VCSProviderID }}">
+      <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.VCSProvider.ID }}">
       <input type="hidden" name="step" id="select-repo-step" value="confirm-selection">
       <input type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
       <button>connect</button>

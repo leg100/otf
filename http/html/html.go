@@ -69,6 +69,6 @@ func printIf(s string, arg any, args ...any) (string, error) {
 	return s, nil
 }
 
-func markdownToHTML(md []byte) template.HTML {
+func MarkdownToHTML(md []byte) template.HTML {
 	return template.HTML(string(markdown.ToHTML(md, nil, nil)))
 }

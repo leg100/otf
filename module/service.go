@@ -12,7 +12,7 @@ type Service struct {
 	*app
 
 	api *api
-	web *app
+	web *web
 }
 
 func NewService(opts Options) *Service {
@@ -23,6 +23,10 @@ func NewService(opts Options) *Service {
 	}
 
 	return &Service{
+		api: &api{
+			app:    app,
+			Signer: opts.Signer,
+		},
 		app: app,
 		web: &web{
 			Renderer: opts.Renderer,
@@ -41,4 +45,6 @@ type Options struct {
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
+	s.api.addHandlers(r)
+	s.web.addHandlers(r)
 }

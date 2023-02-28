@@ -22,7 +22,6 @@ import (
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
-	"github.com/leg100/otf/triggerer"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"

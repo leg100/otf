@@ -16,6 +16,7 @@ import (
 type web struct {
 	otf.Signer
 	otf.Renderer
+	otf.VCSProviderService
 
 	app application
 }
@@ -28,7 +29,7 @@ const (
 	newModuleConfirmStep newModuleStep = "confirm-selection"
 )
 
-func (h *web) AddHTMLHandlers(r *mux.Router) {
+func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/modules", h.listModules)
 	r.HandleFunc("/organizations/{organization_name}/modules/new", h.newModule)
 	r.HandleFunc("/organizations/{organization_name}/modules/create", h.createModule)
@@ -37,7 +38,7 @@ func (h *web) AddHTMLHandlers(r *mux.Router) {
 }
 
 func (h *web) listModules(w http.ResponseWriter, r *http.Request) {
-	var opts otf.ListModulesOptions
+	var opts ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -58,18 +59,17 @@ func (h *web) listModules(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *web) getModule(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
+	var params struct {
 		ID      string `schema:"module_id,required"`
 		Version string `schema:"version"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	module, err := app.GetModuleByID(r.Context(), params.ID)
+	module, err := h.app.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,8 +78,8 @@ func (app *web) getModule(w http.ResponseWriter, r *http.Request) {
 	var tfmod *TerraformModule
 	var readme template.HTML
 	switch module.Status() {
-	case otf.ModuleStatusSetupComplete:
-		tarball, err := app.DownloadModuleVersion(r.Context(), otf.DownloadModuleOptions{
+	case ModuleStatusSetupComplete:
+		tarball, err := h.app.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
 			ModuleVersionID: module.Version(params.Version).ID(),
 		})
 		if err != nil {
@@ -88,13 +88,13 @@ func (app *web) getModule(w http.ResponseWriter, r *http.Request) {
 		}
 		tfmod, err = UnmarshalTerraformModule(tarball)
 		if err != nil {
-			web.Error(w, err.Error(), http.StatusInternalServerError)
+			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		readme = markdownToHTML(tfmod.Readme())
+		readme = html.MarkdownToHTML(tfmod.Readme())
 	}
 
-	app.render("module_get.tmpl", w, r, struct {
+	h.Render("module_get.tmpl", w, r, struct {
 		*otf.Module
 		TerraformModule *TerraformModule
 		Readme          template.HTML
@@ -105,15 +105,14 @@ func (app *web) getModule(w http.ResponseWriter, r *http.Request) {
 		TerraformModule: tfmod,
 		Readme:          readme,
 		CurrentVersion:  module.Version(params.Version),
-		Hostname:        app.Hostname(),
+		Hostname:        h.Hostname(),
 	})
 }
 
-func (app *web) newModule(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+func (h *web) newModule(w http.ResponseWriter, r *http.Request) {
+	var params struct {
 		Step newModuleStep `schema:"step"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -121,28 +120,28 @@ func (app *web) newModule(w http.ResponseWriter, r *http.Request) {
 
 	switch params.Step {
 	case newModuleConnectStep, "":
-		app.newModuleConnect(w, r)
+		h.newModuleConnect(w, r)
 	case newModuleRepoStep:
-		app.newModuleRepo(w, r)
+		h.newModuleRepo(w, r)
 	case newModuleConfirmStep:
-		app.newModuleConfirm(w, r)
+		h.newModuleConfirm(w, r)
 	}
 }
 
-func (app *web) newModuleConnect(w http.ResponseWriter, r *http.Request) {
+func (h *web) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	providers, err := app.ListVCSProviders(r.Context(), org)
+	providers, err := h.ListVCSProviders(r.Context(), org)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("module_new.tmpl", w, r, struct {
+	h.Render("module_new.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		Organization string
 		Step         newModuleStep
@@ -153,7 +152,7 @@ func (app *web) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
+func (h *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
@@ -164,30 +163,31 @@ func (app *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := otf.ListModuleRepositories(r.Context(), app, params.VCSProviderID)
+	repos, err := otf.ListModuleRepositories(r.Context(), h, params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("module_new.tmpl", w, r, struct {
-		Items []cloud.Repo
-		parameters
-		Step newModuleStep
+	h.Render("module_new.tmpl", w, r, struct {
+		Items         []cloud.Repo
+		Organization  string
+		VCSProviderID string
+		Step          newModuleStep
 	}{
-		Items:      repos,
-		parameters: params,
-		Step:       newModuleRepoStep,
+		Items:         repos,
+		Organization:  params.Organization,
+		VCSProviderID: params.VCSProviderID,
+		Step:          newModuleRepoStep,
 	})
 }
 
 func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
 		Identifier    string `schema:"identifier,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -200,13 +200,13 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_new.tmpl", w, r, struct {
-		parameters
-		Step newModuleStep
+		Organization string
+		Step         newModuleStep
 		otf.VCSProvider
 	}{
-		parameters:  params,
-		Step:        newModuleConfirmStep,
-		VCSProvider: provider,
+		Organization: params.Organization,
+		Step:         newModuleConfirmStep,
+		VCSProvider:  provider,
 	})
 }
 
@@ -221,7 +221,7 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.app.PublishModule(r.Context(), otf.PublishModuleOptions{
+	module, err := h.app.PublishModule(r.Context(), PublishModuleOptions{
 		Identifier:   params.Identifier,
 		ProviderID:   params.VCSProviderID,
 		Organization: params.Organization,
