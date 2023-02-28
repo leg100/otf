@@ -35,10 +35,6 @@ var (
 	ErrWarning = errors.New("warning")
 )
 
-type WarningError struct{}
-
-func (e *WarningError) Is(err error) bool { return err == ErrWarning }
-
 // Resource Errors
 var (
 	// ErrInvalidTerraformVersion is returned when a terraform version string is
