@@ -25,8 +25,15 @@ func TestTeam(t *testing.T) {
 			Organization: org.Name(),
 		})
 		require.NoError(t, err)
+		defer svc.DeleteTeam(ctx, team.ID())
 
-		svc.DeleteTeam(ctx, team.ID())
+		t.Run("duplicate name", func(t *testing.T) {
+			_, err := svc.CreateTeam(ctx, otf.CreateTeamOptions{
+				Name:         uuid.NewString(),
+				Organization: org.Name(),
+			})
+			require.Equal(t, otf.ErrResourceAlreadyExists, err)
+		})
 	})
 	t.Run("list", func(t *testing.T) {
 		team1 := testutil.CreateTeam(t, db, org)

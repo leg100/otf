@@ -1,7 +1,7 @@
 VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
-IMAGE_NAME = leg100/otf
+IMAGE_NAME = leg100/otfd
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 LD_FLAGS = " \
     -s -w \
@@ -134,4 +134,4 @@ actions:
 # Install staticcheck linter
 .PHONY: install-linter
 install-linter:
-	go install honnef.co/go/tools/cmd/staticcheck@2022.1.3
+	go install honnef.co/go/tools/cmd/staticcheck@latest
