@@ -8,14 +8,6 @@ import (
 	"github.com/leg100/otf/cloud"
 )
 
-// RepoDeleteError is a non-fatal error from attempting to remove a webhook from
-// a repository.
-type RepoDeleteError struct {
-	err error
-}
-
-func (e *RepoDeleteError) Is(err error) bool { return err == otf.ErrWarning }
-
 type Service struct {
 	db      // access to hook database
 	factory // produce new hooks

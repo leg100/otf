@@ -95,7 +95,6 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		Database:        db,
 		CloudService:    child.Service,
 		HostnameService: child,
-		Logger:          opts.Logger,
 	})
 	child.WorkspaceConnector = &workspace.Connector{
 		HookService:        child,
