@@ -1,7 +1,8 @@
-FROM alpine:3.14
+FROM alpine:3.17
 
-# for sandboxing
-RUN apk add bubblewrap
+# bubblewrap is for sandboxing, and git permits pulling modules via
+# the git protocol
+RUN apk add --no-cache bubblewrap git
 
 COPY otfd /usr/local/bin/otfd
 
