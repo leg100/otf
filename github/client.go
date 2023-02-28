@@ -97,9 +97,12 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 		}
 	}
 
+	// Convert each github team to a cloud team. Use the github slug rather than
+	// the github name because the latter often contains whitespace, and OTF
+	// names should not contain whitespace.
 	for _, gteam := range gteams {
 		user.Teams = append(user.Teams, cloud.Team{
-			Name:         gteam.GetName(),
+			Name:         gteam.GetSlug(),
 			Organization: gteam.GetOrganization().GetLogin(),
 		})
 	}

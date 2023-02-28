@@ -19,6 +19,12 @@ func TestTeam_Create(t *testing.T) {
 
 	err := db.CreateTeam(ctx, team)
 	require.NoError(t, err)
+
+	t.Run("duplicate name", func(t *testing.T) {
+		dup := otf.NewTeam("team-awesome", org)
+		err := db.CreateTeam(ctx, dup)
+		require.Equal(t, otf.ErrResourceAlreadyExists, err)
+	})
 }
 
 func TestTeam_Update_ByID(t *testing.T) {
