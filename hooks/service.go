@@ -66,11 +66,11 @@ func (s *Service) Hook(ctx context.Context, opts otf.HookOptions) error {
 // resource in the DB.
 //
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
-// fatal and the hook is still deleted from the database, but an error
+// fatal and the hook is still deleted from the database.
 func (s *Service) Unhook(ctx context.Context, opts otf.UnhookOptions) error {
 	// separately capture any error resulting from attempting to delete the
 	// webhook from the repo
-	var repoErr RepoDeleteError
+	var repoErr error
 
 	txErr := s.tx(ctx, func(tx db) error {
 		// disconnect connected resource
@@ -93,7 +93,7 @@ func (s *Service) Unhook(ctx context.Context, opts otf.UnhookOptions) error {
 			ID:         *hook.cloudID,
 		})
 		if err != nil {
-			repoErr = fmt.Errorf("deleting webhook from repo: %w", err)
+			repoErr = fmt.Errorf("%w: unable to delete webhook from repo: %w", otf.ErrWarning, err)
 		}
 		return nil
 	})
