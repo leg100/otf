@@ -30,6 +30,9 @@ var (
 	// update a resource that is referenced by another resource and the
 	// delete/update would orphan the reference.
 	ErrForeignKeyViolation = errors.New("foreign key constraint violation")
+
+	// ErrWarning is a non-fatal error
+	ErrWarning = errors.New("warning")
 )
 
 // Resource Errors

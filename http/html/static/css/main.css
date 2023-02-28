@@ -398,9 +398,15 @@ a.show-underline {
   border-width: 1px;
 }
 
+/* Flash alert color scheme sourced from Github's */
 .flash-error {
   background: #ffebe9;
   border-color: rgba(255, 129, 130, 0.4);
+}
+
+.flash-warning {
+  background: #fff8c5;
+  border-color: rgba(212, 167, 44, 0.4);
 }
 
 .flash-success {

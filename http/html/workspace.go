@@ -3,6 +3,7 @@ package html
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/leg100/otf"
@@ -472,14 +473,19 @@ func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ws, err := app.DisconnectWorkspace(r.Context(), workspaceID)
-	if err != nil {
+	var stack flashStack
+	_, err = app.DisconnectWorkspace(r.Context(), workspaceID)
+	if errors.Is(err, otf.ErrWarning) {
+		stack.push(FlashWarningType, err.Error())
+	} else if err != nil {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	FlashSuccess(w, "disconnected workspace from repo")
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	stack.push(FlashSuccessType, "disconnected workspace from repo")
+	stack.write(w)
+
+	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
