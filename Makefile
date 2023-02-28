@@ -129,4 +129,4 @@ paths:
 # Install staticcheck linter
 .PHONY: install-linter
 install-linter:
-	go install honnef.co/go/tools/cmd/staticcheck@2022.1.3
+	go install honnef.co/go/tools/cmd/staticcheck@latest
