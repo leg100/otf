@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 )
 
@@ -18,6 +19,23 @@ func SetFlagsFromEnvVariables(fs *pflag.FlagSet) {
 		envVar := flagToEnvVarName(f)
 		if val, present := os.LookupEnv(envVar); present {
 			fs.Set(f.Name, val)
+			return
+		}
+
+		// Do not look for _FILE if the application is already expecting a file.
+		if strings.HasSuffix(envVar, "_FILE") {
+			return
+		}
+
+		val, present := os.LookupEnv(envVar + "_FILE")
+		if present {
+			value, err := os.ReadFile(val)
+			if err != nil {
+				PrintError(errors.Wrapf(err, "failed to read file %s", envVar+"_FILE"))
+				return
+			}
+
+			fs.Set(f.Name, string(value))
 		}
 	})
 }
