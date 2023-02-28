@@ -27,8 +27,7 @@ func SetFlagsFromEnvVariables(fs *pflag.FlagSet) {
 			return
 		}
 
-		val, present := os.LookupEnv(envVar + "_FILE")
-		if present {
+		if val, present := os.LookupEnv(envVar + "_FILE"); present {
 			value, err := os.ReadFile(val)
 			if err != nil {
 				PrintError(errors.Wrapf(err, "failed to read file %s", envVar+"_FILE"))
