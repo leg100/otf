@@ -18,10 +18,10 @@ type web struct {
 	logr.Logger
 	*sse.Server
 
-	app
+	application
 }
 
-func newWebHandlers(app app, logger logr.Logger) *web {
+func newWebHandlers(app application, logger logr.Logger) *web {
 	// Create and configure SSE server
 	srv := sse.New()
 	// we don't use last-event-item functionality so turn it off
@@ -33,7 +33,7 @@ func newWebHandlers(app app, logger logr.Logger) *web {
 	return &web{
 		Server: srv,
 		Logger: logger,
-		app:    app,
+		application:    app,
 	}
 }
 
@@ -57,7 +57,7 @@ func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.app.tail(r.Context(), GetChunkOptions{
+	ch, err := h.application.tail(r.Context(), GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,

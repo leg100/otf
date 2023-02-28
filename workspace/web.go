@@ -172,22 +172,22 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Get existing perms
-	perms, err := h.app.listPermissions(r.Context(), workspaceID)
+
+	policy, err := h.app.GetPolicy(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Get unassigned that have not been assigned perms
-	unassigned, err := h.ListTeams(r.Context(), workspace.Organization())
+
+	// Get teams that have yet to be assigned a permission
+	unassigned, err := h.ListTeams(r.Context(), workspace.organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Filter teams, removing those already assigned perms
-	for _, p := range perms {
+	for _, perm := range policy.Permissions {
 		for it, t := range unassigned {
-			if t.ID == p.TeamID {
+			if t.ID == perm.TeamID {
 				unassigned = append(unassigned[:it], unassigned[it+1:]...)
 				break
 			}
@@ -201,7 +201,7 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		Roles       []rbac.Role
 	}{
 		Workspace:   workspace,
-		Permissions: perms,
+		Permissions: policy.Permissions,
 		Teams:       unassigned,
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,

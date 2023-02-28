@@ -52,8 +52,7 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 	if err != nil {
 		return nil, err
 	}
-
-	policy, err := m.GetWorkspacePolicy(r.Context(), run.WorkspaceID())
+	policy, err := m.GetPolicy(r.Context(), run.WorkspaceID())
 	if err != nil {
 		return nil, err
 	}

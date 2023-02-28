@@ -8,9 +8,14 @@ import (
 )
 
 type permissionsApp interface {
+	GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error)
+
 	setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-	listPermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error)
 	unsetPermission(ctx context.Context, workspaceID, team string) error
+}
+
+func (a *app) GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
+	return a.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 func (a *app) setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
@@ -29,10 +34,6 @@ func (a *app) setPermission(ctx context.Context, workspaceID, team string, role 
 	// TODO: publish event
 
 	return nil
-}
-
-func (a *app) listPermissions(ctx context.Context, workspaceID string) ([]otf.WorkspacePermission, error) {
-	return a.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
 func (a *app) unsetPermission(ctx context.Context, workspaceID, team string) error {

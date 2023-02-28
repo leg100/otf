@@ -17,7 +17,8 @@ type Service struct {
 
 func NewService(opts Options) *Service {
 	app := &app{
-		SiteAuthorizer: opts.SiteAuthorizer,
+		SiteAuthorizer: &otf.SiteAuthorizer{opts.Logger},
+		Authorizer:     &Authorizer{opts.Logger},
 		Logger:         opts.Logger,
 		PubSubService:  opts.PubSubService,
 		db:             newDB(opts.DB),
@@ -29,7 +30,6 @@ func NewService(opts Options) *Service {
 }
 
 type Options struct {
-	otf.SiteAuthorizer
 	otf.DB
 	otf.PubSubService
 	otf.Renderer

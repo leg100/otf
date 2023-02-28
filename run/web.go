@@ -18,7 +18,7 @@ type web struct {
 	otf.WorkspaceService
 	*RunStarter
 
-	app app
+	app application
 }
 
 type htmlLogChunk struct {

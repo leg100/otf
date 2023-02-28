@@ -11,33 +11,19 @@ import (
 )
 
 type Service struct {
-	logr.Logger
-	otf.Authorizer // authorize access
-	otf.PubSubService
-
-	app *Application
+	app *app
 	api *api
 	db  *pgdb
 	web *web
 }
 
 func NewService(opts Options) *Service {
+	app := newApp(opts)
 	db := newPGDB(opts.DB)
-	app := &Application{
-		Logger:        opts.Logger,
-		Authorizer:    opts.Authorizer,
-		PubSubService: opts.Hub,
-		proxy: &proxy{
-			Logger:        opts.Logger,
-			PubSubService: opts.Hub,
-			cache:         opts.Cache,
-			db:            newPGDB(opts.DB),
-		},
-	}
 	svc := &Service{
 		api: &api{
-			app:      app,
-			Verifier: opts.Verifier,
+			application: app,
+			Verifier:    opts.Verifier,
 		},
 		db:  db,
 		web: newWebHandlers(app, opts.Logger),
@@ -45,7 +31,7 @@ func NewService(opts Options) *Service {
 
 	// Must register table name and service with pubsub broker so that it knows
 	// how to lookup chunks in the DB and send them to us via a subscription
-	opts.Hub.Register("logs", svc)
+	opts.Register("logs", svc)
 
 	return svc
 }
@@ -57,6 +43,7 @@ type Options struct {
 	*pubsub.Hub
 	otf.Verifier
 	logr.Logger
+	RunAuthorizer
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {

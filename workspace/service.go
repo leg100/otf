@@ -11,6 +11,7 @@ import (
 
 type Service struct {
 	*app
+	*authorizer
 
 	api *api
 	web *web
@@ -18,10 +19,15 @@ type Service struct {
 
 func NewService(opts Options) *Service {
 	app := &app{
+		Logger:                 opts.Logger,
+		SiteAuthorizer:         &otf.SiteAuthorizer{opts.Logger},
 		OrganizationAuthorizer: opts.OrganizationAuthorizer,
 		PubSubService:          opts.PubSubService,
 		db:                     newPGDB(opts.DB),
-		Logger:                 opts.Logger,
+	}
+	app.authorizer = &authorizer{
+		Logger: opts.Logger,
+		db:     app.db,
 	}
 	api := &api{
 		app:             app,
@@ -34,9 +40,10 @@ func NewService(opts Options) *Service {
 	}
 
 	return &Service{
-		app: app,
-		api: api,
-		web: web,
+		app:        app,
+		authorizer: app.authorizer,
+		api:        api,
+		web:        web,
 	}
 }
 

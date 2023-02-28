@@ -7,10 +7,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/logs"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
 
-type app interface {
+type application interface {
 	create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 	get(ctx context.Context, runID string) (*Run, error)
 	list(ctx context.Context, opts otf.RunListOptions) (*RunList, error)
@@ -46,19 +47,39 @@ type app interface {
 	lockFileApp
 }
 
-type Application struct {
-	otf.Authorizer
+type app struct {
 	logr.Logger
-	logs.Service
+	*otf.SiteAuthorizer
+	*organization.Authorizer
+	*logs.Service
 	otf.PubSubService
 	otf.WorkspaceService
 
+	*authorizer
 	cache otf.Cache
 	db    *pgdb
 	*factory
 }
 
-func (a *Application) create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+func newApp(opts Options) *app {
+	db := newDB(opts.DB)
+	return &app{
+		Logger:           opts.Logger,
+		SiteAuthorizer:   &otf.SiteAuthorizer{opts.Logger},
+		Authorizer:       &organization.Authorizer{opts.Logger},
+		PubSubService:    opts.PubSubService,
+		WorkspaceService: opts.WorkspaceService,
+		cache:            opts.Cache,
+		db:               db,
+		authorizer:       &authorizer{db, opts.WorkspaceService},
+		factory: &factory{
+			opts.ConfigurationVersionService,
+			opts.WorkspaceService,
+		},
+	}
+}
+
+func (a *app) create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -82,7 +103,7 @@ func (a *Application) create(ctx context.Context, workspaceID string, opts RunCr
 }
 
 // GetRun retrieves a run from the db.
-func (a *Application) get(ctx context.Context, runID string) (*Run, error) {
+func (a *app) get(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -100,7 +121,7 @@ func (a *Application) get(ctx context.Context, runID string) (*Run, error) {
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (a *Application) list(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
+func (a *app) list(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var err error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -135,7 +156,7 @@ func (a *Application) list(ctx context.Context, opts otf.RunListOptions) (*RunLi
 }
 
 // apply enqueues an apply for the run.
-func (a *Application) apply(ctx context.Context, runID string) error {
+func (a *app) apply(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err
@@ -156,7 +177,7 @@ func (a *Application) apply(ctx context.Context, runID string) error {
 }
 
 // discard discards the run.
-func (a *Application) discard(ctx context.Context, runID string) error {
+func (a *app) discard(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -179,7 +200,7 @@ func (a *Application) discard(ctx context.Context, runID string) error {
 
 // cancel a run. If a run is in progress then a cancelation signal will be
 // sent out.
-func (a *Application) cancel(ctx context.Context, runID string) error {
+func (a *app) cancel(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -204,7 +225,7 @@ func (a *Application) cancel(ctx context.Context, runID string) error {
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (a *Application) forceCancel(ctx context.Context, runID string) error {
+func (a *app) forceCancel(ctx context.Context, runID string) error {
 	subject, err := a.CanAccessRun(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
@@ -227,7 +248,7 @@ func (a *Application) forceCancel(ctx context.Context, runID string) error {
 // enqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (a *Application) enqueuePlan(ctx context.Context, runID string) (*Run, error) {
+func (a *app) enqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.EnqueuePlanAction, runID)
 	if err != nil {
 		return nil, err
@@ -252,7 +273,7 @@ func planFileCacheKey(f otf.PlanFormat, id string) string {
 }
 
 // getPlanFile returns the plan file for the run.
-func (a *Application) getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+func (a *app) getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -276,7 +297,7 @@ func (a *Application) getPlanFile(ctx context.Context, runID string, format otf.
 
 // uploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (a *Application) uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
+func (a *app) uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
 	subject, err := a.CanAccessRun(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -297,7 +318,7 @@ func (a *Application) uploadPlanFile(ctx context.Context, runID string, plan []b
 }
 
 // delete a run.
-func (a *Application) delete(ctx context.Context, runID string) error {
+func (a *app) delete(ctx context.Context, runID string) error {
 	run, err := a.db.GetRun(ctx, runID)
 	if err != nil {
 		return err
@@ -318,7 +339,7 @@ func (a *Application) delete(ctx context.Context, runID string) error {
 }
 
 // startPhase starts a run phase.
-func (a *Application) startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*Run, error) {
+func (a *app) startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
@@ -338,7 +359,7 @@ func (a *Application) startPhase(ctx context.Context, runID string, phase otf.Ph
 
 // finishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (a *Application) finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error) {
+func (a *app) finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*Run, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
@@ -371,7 +392,7 @@ func (a *Application) finishPhase(ctx context.Context, runID string, phase otf.P
 }
 
 // createReport creates a report of changes for the phase.
-func (a *Application) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
+func (a *app) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
 	switch phase {
 	case otf.PlanPhase:
 		return a.createPlanReport(ctx, runID)
@@ -382,7 +403,7 @@ func (a *Application) createReport(ctx context.Context, runID string, phase otf.
 	}
 }
 
-func (a *Application) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
+func (a *app) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
 	plan, err := a.getPlanFile(ctx, runID, otf.PlanFormatJSON)
 	if err != nil {
 		return ResourceReport{}, err
@@ -397,7 +418,7 @@ func (a *Application) createPlanReport(ctx context.Context, runID string) (Resou
 	return report, nil
 }
 
-func (a *Application) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
+func (a *app) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
 	logs, err := a.GetChunk(ctx, logs.GetChunkOptions{
 		RunID: runID,
 		Phase: otf.ApplyPhase,
@@ -413,12 +434,4 @@ func (a *Application) createApplyReport(ctx context.Context, runID string) (Reso
 		return ResourceReport{}, err
 	}
 	return report, nil
-}
-
-func (a *Application) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
-	run, err := a.db.GetRun(ctx, runID)
-	if err != nil {
-		return nil, err
-	}
-	return a.CanAccessWorkspaceByID(ctx, action, run.workspaceID)
 }

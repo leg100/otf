@@ -3,6 +3,7 @@ package organization
 import (
 	"context"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
@@ -33,9 +34,6 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return nil
 }
 
-// UpdateOrganization persists an updated Organization to the DB. The existing
-// org is fetched from the DB, the supplied func is invoked on the org, and the
-// updated org is persisted back to the DB.
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
 	err := db.Transaction(ctx, func(tx otf.Database) error {
@@ -43,7 +41,8 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 		if err != nil {
 			return err
 		}
-		org = unmarshalRow(pggen.Organizations(result))
+		org = row(result).toOrganization()
+
 		if err := fn(org); err != nil {
 			return err
 		}
@@ -81,7 +80,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*OrganizationList, 
 
 	var items []*Organization
 	for _, r := range rows {
-		items = append(items, unmarshalRow(pggen.Organizations(r)))
+		items = append(items, row(r).toOrganization())
 	}
 
 	return &OrganizationList{
@@ -113,7 +112,7 @@ func (db *pgdb) listByUser(ctx context.Context, userID string, opts ListOptions)
 
 	var items []*Organization
 	for _, r := range rows {
-		items = append(items, unmarshalRow(pggen.Organizations(r)))
+		items = append(items, row(r).toOrganization())
 	}
 
 	return &OrganizationList{
@@ -127,7 +126,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return unmarshalRow(pggen.Organizations(r)), nil
+	return row(r).toOrganization(), nil
 }
 
 func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
@@ -135,7 +134,7 @@ func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return unmarshalRow(pggen.Organizations(r)), nil
+	return row(r).toOrganization(), nil
 }
 
 func (db *pgdb) delete(ctx context.Context, name string) error {
@@ -146,15 +145,24 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 	return nil
 }
 
+type row struct {
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
+}
+
 // unmarshalRow converts an organization database row into an
 // organization.
-func unmarshalRow(row pggen.Organizations) *Organization {
+func (r row) toOrganization() *Organization {
 	return &Organization{
-		id:              row.OrganizationID.String,
-		createdAt:       row.CreatedAt.Time.UTC(),
-		updatedAt:       row.UpdatedAt.Time.UTC(),
-		name:            row.Name.String,
-		sessionRemember: row.SessionRemember,
-		sessionTimeout:  row.SessionTimeout,
+		id:              r.OrganizationID.String,
+		createdAt:       r.CreatedAt.Time.UTC(),
+		updatedAt:       r.UpdatedAt.Time.UTC(),
+		name:            r.Name.String,
+		sessionRemember: r.SessionRemember,
+		sessionTimeout:  r.SessionTimeout,
 	}
 }

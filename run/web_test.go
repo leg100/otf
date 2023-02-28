@@ -87,7 +87,7 @@ func TestTailLogs(t *testing.T) {
 	chunks := make(chan otf.Chunk, 1)
 
 	// fake app
-	app := &Application{
+	app := &app{
 		Server: srv,
 		Application: &fakeTailApp{
 			run:    run,

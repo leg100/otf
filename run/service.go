@@ -9,24 +9,15 @@ import (
 )
 
 type Service struct {
-	app
+	application
+	*authorizer
 
 	api *api
 	web *web
 }
 
 func NewService(opts Options) *Service {
-	app := &Application{
-		Authorizer:    opts.Authorizer,
-		PubSubService: opts.PubSubService,
-		Logger:        opts.Logger,
-		cache:         opts.Cache,
-		db:            newDB(opts.DB),
-		factory: &factory{
-			opts.ConfigurationVersionService,
-			opts.WorkspaceService,
-		},
-	}
+	app := newApp(opts)
 	api := &api{
 		app: app,
 	}
@@ -35,14 +26,14 @@ func NewService(opts Options) *Service {
 		app:      app,
 	}
 	return &Service{
-		app: app,
-		api: api,
-		web: web,
+		application: app,
+		authorizer:  app.authorizer,
+		api:         api,
+		web:         web,
 	}
 }
 
 type Options struct {
-	otf.Authorizer
 	otf.Cache
 	otf.DB
 	otf.Renderer

@@ -18,7 +18,7 @@ type spawner struct {
 	otf.WorkspaceService
 	otf.VCSProviderService
 
-	app
+	application
 }
 
 // Start handling VCS events and triggering jobs

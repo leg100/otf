@@ -39,14 +39,14 @@ func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions
 		id:                     otf.NewID("run"),
 		createdAt:              otf.CurrentTimestamp(),
 		refresh:                DefaultRefresh,
-		organization:           ws.Organization(),
+		organization:           ws.Organization,
 		configurationVersionID: cv.ID(),
-		workspaceID:            ws.ID(),
+		workspaceID:            ws.ID,
 		speculative:            cv.Speculative(),
 		replaceAddrs:           opts.ReplaceAddrs,
 		targetAddrs:            opts.TargetAddrs,
-		executionMode:          ws.ExecutionMode(),
-		autoApply:              ws.AutoApply(),
+		executionMode:          ws.ExecutionMode,
+		autoApply:              ws.AutoApply,
 	}
 	run.plan = newPlan(&run)
 	run.apply = newApply(&run)

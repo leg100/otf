@@ -13,9 +13,8 @@ import (
 
 func NewOrganizationService(t *testing.T, db otf.DB) *organization.Service {
 	service := organization.NewService(organization.Options{
-		Authorizer: NewAllowAllAuthorizer(),
-		DB:         db,
-		Logger:     logr.Discard(),
+		DB:     db,
+		Logger: logr.Discard(),
 	})
 	return service
 }

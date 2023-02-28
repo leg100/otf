@@ -13,7 +13,7 @@ import (
 )
 
 type api struct {
-	app app
+	app application
 
 	JSONAPIConverter
 }

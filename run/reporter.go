@@ -149,19 +149,19 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 	if err != nil {
 		return err
 	}
-	if ws.Repo() == nil {
-		return fmt.Errorf("workspace not connected to repo: %s", ws.ID())
+	if ws.Repo == nil {
+		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
 	}
 
-	client, err := r.vcsproviderService.GetVCSClient(ctx, ws.Repo().ProviderID)
+	client, err := r.vcsproviderService.GetVCSClient(ctx, ws.Repo.ProviderID)
 	if err != nil {
 		return err
 	}
 
 	return client.SetStatus(ctx, cloud.SetStatusOptions{
-		Workspace:   ws.Name(),
+		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes().CommitSHA,
-		Identifier:  ws.Repo().Identifier,
+		Identifier:  ws.Repo.Identifier,
 		Status:      status,
 		Description: description,
 		TargetURL: (&url.URL{

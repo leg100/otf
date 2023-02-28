@@ -17,7 +17,7 @@ type RunStarter struct {
 	*vcsprovider.Service
 	otf.WorkspaceService
 
-	app
+	application
 }
 
 func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {

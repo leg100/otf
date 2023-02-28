@@ -12,9 +12,8 @@ import (
 
 func NewTestService(t *testing.T, db otf.DB) *Service {
 	service := NewService(Options{
-		Authorizer: otf.NewAllowAllAuthorizer(),
-		DB:         db,
-		Logger:     logr.Discard(),
+		DB:     db,
+		Logger: logr.Discard(),
 	})
 	return service
 }

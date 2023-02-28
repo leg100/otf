@@ -8,21 +8,39 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type app interface {
+type RunAuthorizer interface {
+	CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error)
+}
+
+type application interface {
 	get(ctx context.Context, opts GetChunkOptions) (Chunk, error)
 	put(ctx context.Context, chunk Chunk) error
 	tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
 }
 
-type Application struct {
-	otf.Authorizer    // authorize access
-	otf.PubSubService // subscribe to tail log updates
+type app struct {
 	logr.Logger
+	otf.PubSubService // subscribe to tail log updates
+	RunAuthorizer
 
 	proxy db
 }
 
-func (a *Application) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+func newApp(opts Options) *app {
+	return &app{
+		Logger:        opts.Logger,
+		PubSubService: opts.Hub,
+		proxy: &proxy{
+			Logger:        opts.Logger,
+			PubSubService: opts.Hub,
+			cache:         opts.Cache,
+			db:            newPGDB(opts.DB),
+		},
+		RunAuthorizer: opts.RunAuthorizer,
+	}
+}
+
+func (a *app) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 	logs, err := a.proxy.get(ctx, opts)
 	if err == otf.ErrResourceNotFound {
 		// ignore resource not found because no log chunks may not have been
@@ -36,7 +54,7 @@ func (a *Application) get(ctx context.Context, opts GetChunkOptions) (Chunk, err
 	return logs, nil
 }
 
-func (a *Application) put(ctx context.Context, chunk Chunk) error {
+func (a *app) put(ctx context.Context, chunk Chunk) error {
 	_, err := a.CanAccessRun(ctx, rbac.PutChunkAction, chunk.RunID)
 	if err != nil {
 		return err
@@ -57,7 +75,7 @@ func (a *Application) put(ctx context.Context, chunk Chunk) error {
 	return nil
 }
 
-func (a *Application) tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
+func (a *app) tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err

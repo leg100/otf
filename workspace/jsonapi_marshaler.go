@@ -20,14 +20,21 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 	if err != nil {
 		return nil, err
 	}
-	perms, err := m.GetWorkspacePolicy(r.Context(), ws.id)
+	policy, err := m.GetPolicy(r.Context(), ws.id)
 	if err != nil {
 		return nil, err
 	}
-	policy := &otf.WorkspacePolicy{
-		Organization: ws.Organization(),
-		WorkspaceID:  ws.ID(),
-		Permissions:  perms,
+	perms := &jsonapi.WorkspacePermissions{
+		CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
+		CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
+		CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
+		CanQueueApply:     subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanQueueDestroy:   subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanQueueRun:       subject.CanAccessWorkspace(rbac.CreateRunAction, policy),
+		CanDestroy:        subject.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
+		CanReadSettings:   subject.CanAccessWorkspace(rbac.GetWorkspaceAction, policy),
+		CanUpdate:         subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+		CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	}
 
 	org := &jsonapi.Organization{Name: ws.Organization()}
@@ -68,19 +75,8 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 		MigrationEnvironment: ws.MigrationEnvironment(),
 		Name:                 ws.Name(),
 		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations: ws.ExecutionMode() == "remote",
-		Permissions: &jsonapi.WorkspacePermissions{
-			CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
-			CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
-			CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
-			CanQueueApply:     subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-			CanQueueDestroy:   subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-			CanQueueRun:       subject.CanAccessWorkspace(rbac.CreateRunAction, policy),
-			CanDestroy:        subject.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
-			CanReadSettings:   subject.CanAccessWorkspace(rbac.GetWorkspaceAction, policy),
-			CanUpdate:         subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
-			CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
-		},
+		Operations:                 ws.ExecutionMode() == "remote",
+		Permissions:                perms,
 		QueueAllRuns:               ws.QueueAllRuns(),
 		SpeculativeEnabled:         ws.SpeculativeEnabled(),
 		SourceName:                 ws.SourceName(),

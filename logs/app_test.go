@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/testutil"
+	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -172,12 +172,12 @@ func TestTail(t *testing.T) {
 	})
 }
 
-func fakeTailApp(existing Chunk) *Application {
-	return &Application{
+func fakeTailApp(existing Chunk) *app {
+	return &app{
 		proxy:         &fakeTailProxy{chunk: existing},
 		PubSubService: newFakePubSubTailService(),
 		Logger:        logr.Discard(),
-		Authorizer:    &testutil.AllowAllAuthorizer{&otf.Superuser{}},
+		RunAuthorizer: &fakeRunAuthorizer{},
 	}
 }
 
@@ -206,4 +206,10 @@ func (f *fakePubSubTailService) Subscribe(context.Context, string) (<-chan otf.E
 
 func (f *fakePubSubTailService) Publish(event otf.Event) {
 	f.stream <- event
+}
+
+type fakeRunAuthorizer struct{}
+
+func (f *fakeRunAuthorizer) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
+	return &otf.Superuser{}, nil
 }

@@ -50,7 +50,7 @@ type fakeReporterApp struct {
 	cv            *ConfigurationVersion
 	statusUpdates chan cloud.SetStatusOptions
 
-	Application
+	app
 }
 
 func (f *fakeReporterApp) Hostname() string {

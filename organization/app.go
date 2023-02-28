@@ -20,23 +20,12 @@ type application interface {
 
 // app is the implementation of application
 type app struct {
-	otf.SiteAuthorizer
+	*otf.SiteAuthorizer
 	logr.Logger
 	otf.PubSubService
+	*Authorizer
 
 	db *pgdb
-}
-
-func (a *app) CanAccessOrganization(ctx context.Context, action rbac.Action, name string) (otf.Subject, error) {
-	subj, err := otf.SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if subj.CanAccessOrganization(action, name) {
-		return subj, nil
-	}
-	a.Error(nil, "unauthorized action", "organization", name, "action", action, "subject", subj)
-	return nil, otf.ErrAccessNotPermitted
 }
 
 func (a *app) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {

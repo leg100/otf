@@ -19,7 +19,7 @@ type lockFileApp interface {
 }
 
 // getLockFile returns the lock file for the run.
-func (a *Application) getLockFile(ctx context.Context, runID string) ([]byte, error) {
+func (a *app) getLockFile(ctx context.Context, runID string) ([]byte, error) {
 	subject, err := a.CanAccessRun(ctx, rbac.GetLockFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (a *Application) getLockFile(ctx context.Context, runID string) ([]byte, er
 }
 
 // uploadLockFile persists the lock file for a run.
-func (a *Application) uploadLockFile(ctx context.Context, runID string, file []byte) error {
+func (a *app) uploadLockFile(ctx context.Context, runID string, file []byte) error {
 	subject, err := a.CanAccessRun(ctx, rbac.UploadLockFileAction, runID)
 	if err != nil {
 		return err

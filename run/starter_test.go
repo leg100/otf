@@ -55,7 +55,7 @@ type fakeStartRunApp struct {
 	workspace *Workspace
 	cv        *ConfigurationVersion
 
-	Application
+	app
 }
 
 func (f *fakeStartRunApp) GetWorkspace(context.Context, string) (*Workspace, error) {
