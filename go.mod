@@ -1,6 +1,6 @@
 module github.com/leg100/otf
 
-go 1.18
+go 1.20
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
