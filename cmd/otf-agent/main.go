@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -80,7 +81,9 @@ func run(ctx context.Context, args []string) error {
 	// otfd.
 	cfg.External = true
 
-	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
+	if err = cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
+		return errors.Wrap(err, "failed to populate config from environment vars")
+	}
 
 	return cmd.ExecuteContext(ctx)
 }

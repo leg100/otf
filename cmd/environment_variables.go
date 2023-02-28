@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	EnvironmentVariablePrefix = "OTF_"
+	EnvironmentVariablePrefix     = "OTF_"
+	EnvironmentVariableFileSuffix = "_FILE"
 )
 
 // SetFlagsFromEnvVariables overrides flag values with environment variables.
-func SetFlagsFromEnvVariables(fs *pflag.FlagSet) {
+func SetFlagsFromEnvVariables(fs *pflag.FlagSet) error {
+	fileEnvs := make(map[string]*pflag.Flag, fs.NFlag())
 	fs.VisitAll(func(f *pflag.Flag) {
 		envVar := flagToEnvVarName(f)
 		if val, present := os.LookupEnv(envVar); present {
@@ -23,20 +25,25 @@ func SetFlagsFromEnvVariables(fs *pflag.FlagSet) {
 		}
 
 		// Do not look for _FILE if the application is already expecting a file.
-		if strings.HasSuffix(envVar, "_FILE") {
+		if strings.HasSuffix(envVar, EnvironmentVariableFileSuffix) {
 			return
 		}
 
-		if val, present := os.LookupEnv(envVar + "_FILE"); present {
-			value, err := os.ReadFile(val)
-			if err != nil {
-				PrintError(errors.Wrapf(err, "failed to read file %s", envVar+"_FILE"))
-				return
-			}
-
-			fs.Set(f.Name, string(value))
+		if _, present := os.LookupEnv(envVar + EnvironmentVariableFileSuffix); present {
+			fileEnvs[envVar+EnvironmentVariableFileSuffix] = f
 		}
 	})
+
+	for envVar, f := range fileEnvs {
+		value, err := os.ReadFile(os.Getenv(envVar))
+		if err != nil {
+			return errors.Wrapf(err, "failed to read file %s", envVar)
+		}
+
+		fs.Set(f.Name, string(value))
+	}
+
+	return nil
 }
 
 func flagToEnvVarName(f *pflag.Flag) string {
