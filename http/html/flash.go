@@ -10,6 +10,7 @@ import (
 
 const (
 	FlashSuccessType flashType = "success"
+	FlashWarningType flashType = "warning"
 	FlashErrorType   flashType = "error"
 	// name of flash cookie
 	flashCookie = "flash"
@@ -39,6 +40,11 @@ func setFlash(w http.ResponseWriter, f flash) {
 // FlashSuccess helper
 func FlashSuccess(w http.ResponseWriter, msg string) {
 	setFlash(w, flash{Type: FlashSuccessType, Message: msg})
+}
+
+// FlashWarning helper
+func FlashWarning(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashWarningType, Message: msg})
 }
 
 // FlashError helper

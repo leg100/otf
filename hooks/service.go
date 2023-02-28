@@ -2,10 +2,19 @@ package hooks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
+
+// RepoDeleteError is a non-fatal error from attempting to remove a webhook from
+// a repository.
+type RepoDeleteError struct {
+	err error
+}
+
+func (e *RepoDeleteError) Is(err error) bool { return err == otf.ErrWarning }
 
 type Service struct {
 	db      // access to hook database
@@ -55,8 +64,15 @@ func (s *Service) Hook(ctx context.Context, opts otf.HookOptions) error {
 // hooked up then the webhook is deleted from the repo. The caller provides a
 // callback with which to remove the relationship between the hook and the
 // resource in the DB.
+//
+// NOTE: if the webhook cannot be deleted from the repo then this is not deemed
+// fatal and the hook is still deleted from the database, but an error
 func (s *Service) Unhook(ctx context.Context, opts otf.UnhookOptions) error {
-	return s.tx(ctx, func(tx db) error {
+	// separately capture any error resulting from attempting to delete the
+	// webhook from the repo
+	var repoErr RepoDeleteError
+
+	txErr := s.tx(ctx, func(tx db) error {
 		// disconnect connected resource
 		if err := opts.UnhookCallback(ctx, tx); err != nil {
 			return err
@@ -71,10 +87,18 @@ func (s *Service) Unhook(ctx context.Context, opts otf.UnhookOptions) error {
 			return err
 		}
 
-		// remove hook from cloud
-		return opts.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
+		// remove hook from repo
+		err = opts.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
 			Identifier: hook.identifier,
 			ID:         *hook.cloudID,
 		})
+		if err != nil {
+			repoErr = fmt.Errorf("deleting webhook from repo: %w", err)
+		}
+		return nil
 	})
+	if txErr != nil {
+		return txErr
+	}
+	return repoErr
 }

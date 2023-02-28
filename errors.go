@@ -30,7 +30,14 @@ var (
 	// update a resource that is referenced by another resource and the
 	// delete/update would orphan the reference.
 	ErrForeignKeyViolation = errors.New("foreign key constraint violation")
+
+	// ErrWarning is a non-fatal error
+	ErrWarning = errors.New("warning")
 )
+
+type WarningError struct{}
+
+func (e *WarningError) Is(err error) bool { return err == ErrWarning }
 
 // Resource Errors
 var (
