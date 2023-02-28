@@ -10,12 +10,15 @@ import (
 
 const (
 	FlashSuccessType flashType = "success"
+	FlashWarningType flashType = "warning"
 	FlashErrorType   flashType = "error"
-	// name of flash cookie
-	flashCookie = "flash"
+
+	flashCookie = "flash" // name of flash cookie
 )
 
-// flash represents a flash message indicating success/failure to a user
+type flashType string
+
+// flash is a flash message for the web UI
 type flash struct {
 	Type    flashType
 	Message string
@@ -23,49 +26,54 @@ type flash struct {
 
 func (f *flash) HTML() template.HTML { return template.HTML(f.Message) }
 
-type flashType string
-
-// FlashSuccess helper
-func FlashSuccess(w http.ResponseWriter, msg string) {
-	setFlash(w, flash{Type: FlashSuccessType, Message: msg})
-}
-
-// FlashError helper
-func FlashError(w http.ResponseWriter, msg string) {
-	setFlash(w, flash{Type: FlashErrorType, Message: msg})
-}
-
-// setFlash sets flash message on response cookie
-func setFlash(w http.ResponseWriter, f flash) {
-	js, err := json.Marshal(f)
+// PopFlashes pops all flash messages off the stack
+func PopFlashes(w http.ResponseWriter, r *http.Request) ([]flash, error) {
+	cookie, err := r.Cookie(flashCookie)
 	if err != nil {
-		// reliant on middleware catching panic and sending HTTP500 to user
-		panic("marshalling flash message to json: " + err.Error())
+		// no cookie; return empty stack
+		return nil, nil
+	}
+	decoded, err := base64.URLEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		return nil, err
+	}
+	var flashes []flash
+	if err := json.Unmarshal(decoded, &flashes); err != nil {
+		return nil, err
+	}
+	// purge cookie from browser
+	SetCookie(w, flashCookie, "", &time.Time{})
+
+	return flashes, nil
+}
+
+// FlashStack is a stack of flash messages
+type FlashStack []flash
+
+func (s *FlashStack) Push(t flashType, msg string) {
+	*s = append(*s, flash{t, msg})
+}
+
+func (s FlashStack) Write(w http.ResponseWriter) {
+	js, err := json.Marshal(s)
+	if err != nil {
+		htmlPanic("marshalling flash messages to json: %v", err)
 	}
 	encoded := base64.URLEncoding.EncodeToString(js)
 	SetCookie(w, flashCookie, encoded, nil)
 }
 
-// popFlashFunc returns a func to pop a flash message for the current session - for
-// use in a go template
-func popFlashFunc(w http.ResponseWriter, r *http.Request) func() *flash {
-	c, err := r.Cookie(flashCookie)
-	if err != nil {
-		// err should only ever be http.ErrNoCookie
-		return func() *flash { return nil }
-	}
-	value, err := base64.URLEncoding.DecodeString(c.Value)
-	if err != nil {
-		// reliant on middleware catching panic and sending HTTP500 to user
-		panic("decoding flash message: " + err.Error())
-	}
-	var f flash
-	if err := json.Unmarshal(value, &f); err != nil {
-		// reliant on middleware catching panic and sending HTTP500 to user
-		panic("unmarshalling flash message: " + err.Error())
-	}
-	// purge cookie from client
-	SetCookie(w, flashCookie, "", &time.Time{})
+// FlashSuccess helper writes a single flash success message
+func FlashSuccess(w http.ResponseWriter, msg string) {
+	FlashStack{{Type: FlashSuccessType, Message: msg}}.Write(w)
+}
 
-	return func() *flash { return &f }
+// FlashWarning helper writes a single flash warning message
+func FlashWarning(w http.ResponseWriter, msg string) {
+	FlashStack{{Type: FlashWarningType, Message: msg}}.Write(w)
+}
+
+// FlashError helper writes a single flash error message
+func FlashError(w http.ResponseWriter, msg string) {
+	FlashStack{{Type: FlashErrorType, Message: msg}}.Write(w)
 }

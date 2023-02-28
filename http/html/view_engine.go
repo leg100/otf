@@ -26,11 +26,16 @@ func NewViewEngine(devmode bool) (*viewEngine, error) {
 // in a handler because it writes an HTTP5xx to the response if there is an
 // error.
 func (ve *viewEngine) Render(name string, w http.ResponseWriter, r *http.Request, content interface{}) {
-	err := ve.RenderTemplate(name, w, &view{
-		Content:     content,
-		flashPopper: popFlashFunc(w, r),
-		request:     r,
-		Version:     otf.Version,
+	flashes, err := PopFlashes(w, r)
+	if err != nil {
+		htmlPanic("reading flash messages: %v", err)
+	}
+
+	err = ve.RenderTemplate(name, w, &view{
+		Content: content,
+		Version: otf.Version,
+		request: r,
+		Flashes: flashes,
 	})
 	if err != nil {
 		Error(w, err.Error(), http.StatusInternalServerError)
@@ -39,14 +44,11 @@ func (ve *viewEngine) Render(name string, w http.ResponseWriter, r *http.Request
 
 // view provides data and methods to a template
 type view struct {
-	Content     interface{}   // arbitary data made available to the template
-	request     *http.Request // info regarding current request
-	flashPopper func() *flash // pop flash message in template
-	Version     string        // otf version string in footer
-}
+	Content interface{} // arbitary data made available to the template
+	Version string      // otf version string in footer
 
-func (v *view) PopFlash() *flash {
-	return v.flashPopper()
+	request *http.Request // info regarding current request
+	Flashes []flash       // flash messages to render in template
 }
 
 func (v *view) CurrentUser() otf.User {

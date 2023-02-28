@@ -290,7 +290,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
+		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
 	}
 }
 
