@@ -473,15 +473,18 @@ func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	var stack flashStack
 	_, err = app.DisconnectWorkspace(r.Context(), workspaceID)
 	if errors.Is(err, otf.ErrWarning) {
-		FlashWarning(w, err.Error())
+		stack.push(FlashWarningType, err.Error())
 	} else if err != nil {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	FlashSuccess(w, "disconnected workspace from repo")
+	stack.push(FlashSuccessType, "disconnected workspace from repo")
+	stack.write(w)
+
 	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 

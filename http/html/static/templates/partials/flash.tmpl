@@ -1,5 +1,5 @@
 {{ define "flash" }}
-{{ with .PopFlash }}
+{{ range .Flashes }}
   <div class="flash flash-{{ .Type }}" role="alert">
     {{ .HTML }}
   </div>

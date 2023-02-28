@@ -4,6 +4,7 @@ Package html provides the otf web app, serving up HTML formatted pages and assoc
 package html
 
 import (
+	"fmt"
 	"html/template"
 	"net/url"
 	"reflect"
@@ -73,4 +74,10 @@ func printIf(s string, arg any, args ...any) (string, error) {
 
 func markdownToHTML(md []byte) template.HTML {
 	return template.HTML(string(markdown.ToHTML(md, nil, nil)))
+}
+
+// htmlPanic raises a panic - an upstream middleware handler should catch the panic
+// and sends an HTTP500 to the user.
+func htmlPanic(format string, a ...any) {
+	panic(fmt.Sprintf(format, a...))
 }
