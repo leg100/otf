@@ -15,11 +15,11 @@ import (
 )
 
 type fakeWeb struct {
-	app *fakeApp
+	app *fakeService
 	otf.Renderer
 }
 
-func newFakeWeb(t *testing.T, app *fakeApp) *web {
+func newFakeWeb(t *testing.T, app *fakeService) *web {
 	renderer, err := html.NewViewEngine(true)
 	require.NoError(t, err)
 	return &web{

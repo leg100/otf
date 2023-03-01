@@ -63,7 +63,7 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 }
 
 func newTestAgentTokenHandlers(t *testing.T, org string) *web {
-	return newFakeWeb(t, &fakeApp{
+	return newFakeWeb(t, &fakeService{
 		fakeAgentTokenApp: &fakeAgentTokenApp{
 			token: NewTestAgentToken(t, org),
 		},

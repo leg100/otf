@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type sessionApp interface {
+type sessionService interface {
 	CreateSession(r *http.Request, userID string) (*Session, error)
 	GetSession(ctx context.Context, token string) (*Session, error)
 
@@ -14,19 +14,19 @@ type sessionApp interface {
 	deleteSession(ctx context.Context, token string) error
 }
 
-func (a *app) CreateSession(r *http.Request, userID string) (*Session, error) {
+func (a *Service) CreateSession(r *http.Request, userID string) (*Session, error) {
 	return a.createSession(r, userID)
 }
 
-func (a *app) GetSession(ctx context.Context, token string) (*Session, error) {
+func (a *Service) GetSession(ctx context.Context, token string) (*Session, error) {
 	return a.db.getSessionByToken(ctx, token)
 }
 
-func (a *app) DeleteSession(ctx context.Context, token string) error {
+func (a *Service) DeleteSession(ctx context.Context, token string) error {
 	return a.deleteSession(ctx, token)
 }
 
-func (a *app) createSession(r *http.Request, userID string) (*Session, error) {
+func (a *Service) createSession(r *http.Request, userID string) (*Session, error) {
 	session, err := newSession(r, userID)
 	if err != nil {
 		a.Error(err, "building new session", "uid", userID)
@@ -42,11 +42,11 @@ func (a *app) createSession(r *http.Request, userID string) (*Session, error) {
 	return session, nil
 }
 
-func (a *app) listSessions(ctx context.Context, userID string) ([]*Session, error) {
+func (a *Service) listSessions(ctx context.Context, userID string) ([]*Session, error) {
 	return a.db.listSessions(ctx, userID)
 }
 
-func (a *app) deleteSession(ctx context.Context, token string) error {
+func (a *Service) deleteSession(ctx context.Context, token string) error {
 	if err := a.db.deleteSession(ctx, token); err != nil {
 		a.Error(err, "deleting session")
 		return err

@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-type tokenApp interface {
+type tokenService interface {
 	// CreateToken creates a user token.
 	CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error)
 	// ListTokens lists API tokens for a user
@@ -18,7 +18,7 @@ type tokenApp interface {
 
 // CreateToken creates a user token. Only users can create a user token, and
 // they can only create a token for themselves.
-func (a *app) CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error) {
+func (a *Service) CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error) {
 	subject, err := otf.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -43,11 +43,11 @@ func (a *app) CreateToken(ctx context.Context, userID string, opts *TokenCreateO
 	return token, nil
 }
 
-func (a *app) ListTokens(ctx context.Context, userID string) ([]*Token, error) {
+func (a *Service) ListTokens(ctx context.Context, userID string) ([]*Token, error) {
 	return a.db.ListTokens(ctx, userID)
 }
 
-func (a *app) DeleteToken(ctx context.Context, userID string, tokenID string) error {
+func (a *Service) DeleteToken(ctx context.Context, userID string, tokenID string) error {
 	subject, err := otf.UserFromContext(ctx)
 	if err != nil {
 		return err

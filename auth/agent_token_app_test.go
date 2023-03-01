@@ -9,7 +9,7 @@ import (
 type fakeAgentTokenApp struct {
 	token *AgentToken
 
-	agentTokenApp
+	agentTokenService
 }
 
 func (f *fakeAgentTokenApp) createAgentToken(context.Context, otf.CreateAgentTokenOptions) (*AgentToken, error) {

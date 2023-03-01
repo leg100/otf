@@ -170,29 +170,26 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	var handlers []otf.Handlers
 
 	orgService := organization.NewService(organization.Options{
-		SiteAuthorizer: siteAuthorizer,
-		DB:             db,
-		Logger:         logger,
-		PubSubService:  hub,
-		Renderer:       renderer,
+		DB:            db,
+		Logger:        logger,
+		PubSubService: hub,
+		Renderer:      renderer,
 	})
 	handlers = append(handlers, orgService)
 
 	authService, err := auth.NewService(ctx, auth.Options{
-		OrganizationAuthorizer: orgService,
-		Configs:                d.OAuthConfigs,
-		SiteToken:              d.siteToken,
+		Configs:   d.OAuthConfigs,
+		SiteToken: d.siteToken,
 	})
 	handlers = append(handlers, authService)
 
 	workspaceService := workspace.NewService(workspace.Options{
-		TokenMiddleware:        authService.TokenMiddleware,
-		SessionMiddleware:      authService.SessionMiddleware,
-		OrganizationAuthorizer: orgService,
-		DB:                     db,
-		Logger:                 logger,
-		PubSubService:          hub,
-		Renderer:               renderer,
+		TokenMiddleware:   authService.TokenMiddleware,
+		SessionMiddleware: authService.SessionMiddleware,
+		DB:                db,
+		Logger:            logger,
+		PubSubService:     hub,
+		Renderer:          renderer,
 	})
 	handlers = append(handlers, workspaceService)
 

@@ -15,7 +15,7 @@ import (
 func TestTeam_GetHandler(t *testing.T) {
 	owners := newTestOwners(t, "acme-org")
 	owner := NewTestUser(t, WithTeams(owners))
-	app := newFakeWeb(t, &fakeApp{
+	app := newFakeWeb(t, &fakeService{
 		fakeTeamApp: &fakeTeamApp{
 			team:    owners,
 			members: []*User{owner},
@@ -34,7 +34,7 @@ func TestTeam_GetHandler(t *testing.T) {
 
 func TestTeam_UpdateHandler(t *testing.T) {
 	team := NewTestTeam(t, "acme-org")
-	app := newFakeWeb(t, &fakeApp{
+	app := newFakeWeb(t, &fakeService{
 		fakeTeamApp: &fakeTeamApp{
 			team: team,
 		},
@@ -52,7 +52,7 @@ func TestTeam_UpdateHandler(t *testing.T) {
 
 func TestTeam_ListHandler(t *testing.T) {
 	team := NewTestTeam(t, "acme-org")
-	app := newFakeWeb(t, &fakeApp{
+	app := newFakeWeb(t, &fakeService{
 		fakeTeamApp: &fakeTeamApp{
 			team: team,
 		},

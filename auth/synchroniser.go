@@ -25,14 +25,14 @@ type synchroniser struct {
 	logr.Logger
 	organization.Service
 
-	application
+	service
 }
 
 func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error) {
 	// ensure user exists
 	user, err := s.getUser(ctx, otf.UserSpec{Username: otf.String(from.Name)})
 	if err == otf.ErrResourceNotFound {
-		user, err = s.application.createUser(ctx, from.Name)
+		user, err = s.service.createUser(ctx, from.Name)
 		if err != nil {
 			return nil, err
 		}

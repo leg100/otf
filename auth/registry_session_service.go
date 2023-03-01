@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type registrySessionApp interface {
+type registrySessionService interface {
 	CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error)
 	// GetRegistrySession retrieves a registry session using a token. Intended
 	// as means of checking whether a given token is valid.
@@ -18,11 +18,11 @@ type registrySessionApp interface {
 
 // Registry session services
 
-func (a *app) CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error) {
+func (a *Service) CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error) {
 	return a.createRegistrySession(ctx, organization)
 }
 
-func (a *app) GetRegistrySession(ctx context.Context, token string) (otf.RegistrySession, error) {
+func (a *Service) GetRegistrySession(ctx context.Context, token string) (otf.RegistrySession, error) {
 	session, err := a.db.getRegistrySession(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving registry session", "token", "*****")
@@ -34,8 +34,8 @@ func (a *app) GetRegistrySession(ctx context.Context, token string) (otf.Registr
 	return session, nil
 }
 
-func (a *app) createRegistrySession(ctx context.Context, organization string) (*registrySession, error) {
-	subject, err := a.CanAccessOrganization(ctx, rbac.CreateRegistrySessionAction, organization)
+func (a *Service) createRegistrySession(ctx context.Context, organization string) (*registrySession, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateRegistrySessionAction, organization)
 	if err != nil {
 		return nil, err
 	}

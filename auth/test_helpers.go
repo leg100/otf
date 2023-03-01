@@ -47,3 +47,9 @@ func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 	require.NoError(t, err)
 	return token
 }
+
+type fakeService struct {
+	registrySessionService
+	sessionService
+	userService
+}

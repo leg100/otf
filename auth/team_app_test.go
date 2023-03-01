@@ -6,7 +6,7 @@ type fakeTeamApp struct {
 	team    *Team
 	members []*User
 
-	teamApp
+	teamService
 }
 
 func (f *fakeTeamApp) getTeamByID(ctx context.Context, teamID string) (*Team, error) {

@@ -6,7 +6,7 @@ type fakeUserApp struct {
 	// IDs of orgs and teams added and removed
 	addedOrgs, removedOrgs, addedTeams, removedTeams []string
 
-	userApp
+	userService
 }
 
 func (f *fakeUserApp) AddOrganizationMembership(ctx context.Context, userID, orgID string) error {

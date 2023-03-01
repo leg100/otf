@@ -10,55 +10,58 @@ import (
 	"github.com/leg100/otf/organization"
 )
 
+type service interface {
+	agentTokenService
+	registrySessionService
+	sessionService
+	teamService
+	tokenService
+	userService
+}
+
 type Service struct {
-	// make available to other packages
+	logr.Logger
 	TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
-	*app
+	*synchroniser
 
-	api *api
-	web *web
+	api          *api
+	db           *pgdb
+	organization otf.Authorizer
+	web          *web
 }
 
 func NewService(ctx context.Context, opts Options) (*Service, error) {
-	db := newDB(opts.DB, opts.Logger)
-	app := &app{
-		OrganizationAuthorizer: opts.OrganizationAuthorizer,
-		Logger:                 opts.Logger,
-		db:                     db,
-	}
-	app.synchroniser = &synchroniser{opts.Logger, opts.Service, app}
+	svc := Service{Logger: opts.Logger}
+	svc.TokenMiddleware = AuthenticateToken(&svc)
+	svc.SessionMiddleware = AuthenticateSession(&svc)
 
 	authenticators, err := newAuthenticators(authenticatorOptions{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
-		application:     app,
+		service:         &svc,
 		configs:         opts.Configs,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	api := &api{
-		app: app,
-	}
-	web := &web{
+	db := newDB(opts.DB, opts.Logger)
+	// purge expired sessions
+	go db.startExpirer(ctx, defaultExpiry)
+
+	svc.synchroniser = &synchroniser{opts.Logger, opts.Service, &svc}
+	svc.api = &api{app: &svc}
+	svc.db = db
+	svc.organization = &organization.Authorizer{opts.Logger}
+	svc.web = &web{
 		Renderer:       opts.Renderer,
-		app:            app,
+		app:            &svc,
 		authenticators: authenticators,
 		siteToken:      opts.SiteToken,
 	}
 
-	// purge expired sessions
-	go db.startExpirer(ctx, defaultExpiry)
-
-	return &Service{
-		TokenMiddleware:   AuthenticateToken(app),
-		SessionMiddleware: AuthenticateSession(app),
-		app:               app,
-		api:               api,
-		web:               web,
-	}, nil
+	return &svc, nil
 }
 
 type Options struct {
@@ -66,7 +69,6 @@ type Options struct {
 	SiteToken string
 
 	organization.Service
-	otf.OrganizationAuthorizer
 	otf.DB
 	otf.Renderer
 	otf.HostnameService

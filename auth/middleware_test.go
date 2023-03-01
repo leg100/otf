@@ -75,7 +75,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		// implicitly respond with 200 OK
 	}
 	mw := (&authMiddleware{
-		Application: &fakeApp{
+		Application: &fakeService{
 			fakeUser: otf.NewUser("user-fake"),
 		},
 	}).authenticate(http.HandlerFunc(upstream))
