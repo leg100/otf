@@ -27,7 +27,7 @@ type application interface {
 
 // app is the implementation of application
 type app struct {
-	otf.OrganizationAuthorizer
+	organization otf.Authorizer
 	logr.Logger
 
 	db *pgdb
@@ -51,7 +51,7 @@ func (a *app) GetVCSClient(ctx context.Context, providerID string) (cloud.Client
 }
 
 func (a *app) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
-	subject, err := a.CanAccessOrganization(ctx, rbac.CreateVCSProviderAction, opts.Organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (a *app) get(ctx context.Context, id string) (*VCSProvider, error) {
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, rbac.GetVCSProviderAction, provider.Organization())
+	subject, err := a.organization.CanAccess(ctx, rbac.GetVCSProviderAction, provider.Organization())
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (a *app) get(ctx context.Context, id string) (*VCSProvider, error) {
 }
 
 func (a *app) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	subject, err := a.CanAccessOrganization(ctx, rbac.ListVCSProvidersAction, organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (a *app) delete(ctx context.Context, id string) (*VCSProvider, error) {
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, rbac.DeleteVCSProviderAction, provider.Organization())
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteVCSProviderAction, provider.Organization())
 	if err != nil {
 		return nil, err
 	}

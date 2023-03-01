@@ -12,7 +12,7 @@ type SiteAuthorizer struct {
 	logr.Logger
 }
 
-func (a *SiteAuthorizer) CanAccessSite(ctx context.Context, action rbac.Action) (Subject, error) {
+func (a *SiteAuthorizer) CanAccess(ctx context.Context, action rbac.Action, _ string) (Subject, error) {
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

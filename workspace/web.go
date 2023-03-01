@@ -21,7 +21,7 @@ type web struct {
 	auth.TeamService
 	*vcsprovider.Service
 
-	app               application
+	svc               service
 	sessionMiddleware mux.MiddlewareFunc
 }
 
@@ -59,7 +59,7 @@ func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.app.list(r.Context(), WorkspaceListOptions{
+	workspaces, err := h.svc.list(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -94,7 +94,7 @@ func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.create(r.Context(), opts)
+	ws, err := h.svc.create(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		html.FlashError(w, "workspace already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewWorkspace(*opts.Organization), http.StatusFound)
@@ -115,7 +115,7 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.get(r.Context(), id)
+	ws, err := h.svc.get(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -151,7 +151,7 @@ func (h *web) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.svc.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -167,13 +167,13 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := h.app.get(r.Context(), workspaceID)
+	workspace, err := h.svc.get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	policy, err := h.app.GetPolicy(r.Context(), workspaceID)
+	policy, err := h.svc.GetPolicy(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -228,7 +228,7 @@ func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.app.update(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
+	ws, err := h.svc.update(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,
@@ -253,7 +253,7 @@ func (h *web) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.delete(r.Context(), workspaceID)
+	ws, err := h.svc.delete(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -269,7 +269,7 @@ func (h *web) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.lock(r.Context(), id, nil)
+	ws, err := h.svc.lock(r.Context(), id, nil)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -284,7 +284,7 @@ func (h *web) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.unlock(r.Context(), id, false)
+	ws, err := h.svc.unlock(r.Context(), id, false)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -299,7 +299,7 @@ func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	ws, err := h.app.get(r.Context(), workspaceID)
+	ws, err := h.svc.get(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -331,7 +331,7 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.app.get(r.Context(), params.WorkspaceID)
+	ws, err := h.svc.get(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -377,7 +377,7 @@ func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	params.Cloud = provider.CloudConfig().Name
 
-	err = h.app.connect(r.Context(), params.WorkspaceID, params.connectOptions)
+	err = h.svc.connect(r.Context(), params.WorkspaceID, params.connectOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -395,7 +395,7 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var stack html.FlashStack
-	ws, err := h.app.disconnect(r.Context(), workspaceID)
+	ws, err := h.svc.disconnect(r.Context(), workspaceID)
 	if errors.Is(err, otf.ErrWarning) {
 		stack.Push(html.FlashWarningType, err.Error())
 	} else if err != nil {

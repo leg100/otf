@@ -51,3 +51,20 @@ func createTestOrganization(t *testing.T, db *pgdb) *Organization {
 	})
 	return org
 }
+
+type fakeService struct {
+	orgs []*Organization
+
+	service
+}
+
+func (f *fakeService) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
+	return NewOrganization(opts)
+}
+
+func (f *fakeService) list(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
+	return &OrganizationList{
+		Items:      f.orgs,
+		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
+	}, nil
+}

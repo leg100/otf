@@ -4,6 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/organization"
 )
 
 type Service struct {
@@ -13,8 +14,8 @@ type Service struct {
 
 func NewService(opts Options) *Service {
 	app := &app{
-		OrganizationAuthorizer: opts.OrganizationAuthorizer,
-		db:                     newDB(opts.DB, opts.Service),
+		organization: &organization.Authorizer{opts.Logger},
+		db:           newDB(opts.DB, opts.Service),
 		factory: &factory{
 			Service: opts.Service,
 		},
@@ -31,7 +32,6 @@ func NewService(opts Options) *Service {
 }
 
 type Options struct {
-	otf.OrganizationAuthorizer
 	cloud.Service
 	otf.DB
 	otf.Renderer

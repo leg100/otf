@@ -14,7 +14,7 @@ import (
 type web struct {
 	otf.Renderer
 
-	app application
+	svc service
 }
 
 func (a *web) addHandlers(r *mux.Router) {
@@ -38,7 +38,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.app.create(r.Context(), opts)
+	org, err := a.svc.create(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		html.FlashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)
@@ -60,7 +60,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organizations, err := a.app.list(r.Context(), opts)
+	organizations, err := a.svc.list(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,7 +82,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.app.get(r.Context(), name)
+	org, err := a.svc.get(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -98,7 +98,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organization, err := a.app.get(r.Context(), name)
+	organization, err := a.svc.get(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -117,7 +117,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.app.update(r.Context(), params.Name, params.Options)
+	org, err := a.svc.update(r.Context(), params.Name, params.Options)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -134,7 +134,7 @@ func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.app.delete(r.Context(), organization)
+	err = a.svc.delete(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

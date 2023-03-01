@@ -12,7 +12,7 @@ import (
 type api struct {
 	*JSONAPIMarshaler
 
-	app             application
+	svc             service
 	tokenMiddleware mux.MiddlewareFunc
 }
 
@@ -59,7 +59,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.app.create(r.Context(), CreateWorkspaceOptions{
+	ws, err := a.svc.create(r.Context(), CreateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -98,7 +98,7 @@ func (a *api) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.app.get(r.Context(), id)
+	ws, err := a.svc.get(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -119,7 +119,7 @@ func (a *api) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.app.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.svc.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -143,7 +143,7 @@ func (s *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := s.app.list(r.Context(), WorkspaceListOptions{
+	wsl, err := s.svc.list(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -183,7 +183,7 @@ func (s *api) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.app.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := s.svc.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -199,7 +199,7 @@ func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.app.lock(r.Context(), id, nil)
+	ws, err := s.svc.lock(r.Context(), id, nil)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -228,7 +228,7 @@ func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.app.unlock(r.Context(), id, opts.Force)
+	ws, err := s.svc.unlock(r.Context(), id, opts.Force)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -252,7 +252,7 @@ func (s *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.app.delete(r.Context(), workspaceID)
+	_, err = s.svc.delete(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -267,12 +267,12 @@ func (s *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.app.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := s.svc.getByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	_, err = s.app.delete(r.Context(), ws.ID())
+	_, err = s.svc.delete(r.Context(), ws.ID())
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -291,7 +291,7 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	ws, err := s.app.update(r.Context(), workspaceID, UpdateWorkspaceOptions{
+	ws, err := s.svc.update(r.Context(), workspaceID, UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,

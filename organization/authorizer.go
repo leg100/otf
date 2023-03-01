@@ -13,7 +13,7 @@ type Authorizer struct {
 	logr.Logger
 }
 
-func (a *Authorizer) CanAccessOrganization(ctx context.Context, action rbac.Action, name string) (otf.Subject, error) {
+func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

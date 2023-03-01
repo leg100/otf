@@ -18,16 +18,16 @@ func TestWeb(t *testing.T) {
 		wd, _ := os.Getwd()
 		t.Log(wd)
 
-		app := newFakeWeb(t, &fakeApp{})
+		svc := newFakeWeb(t, &fakeService{})
 
 		r := httptest.NewRequest("GET", "/?", nil)
 		w := httptest.NewRecorder()
-		app.new(w, r)
+		svc.new(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("create", func(t *testing.T) {
-		app := newFakeWeb(t, &fakeApp{})
+		svc := newFakeWeb(t, &fakeService{})
 
 		form := strings.NewReader(url.Values{
 			"name": {"my-new-org"},
@@ -37,7 +37,7 @@ func TestWeb(t *testing.T) {
 		r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 		w := httptest.NewRecorder()
-		app.create(w, r)
+		svc.create(w, r)
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, err := w.Result().Location()
@@ -54,12 +54,12 @@ func TestWeb(t *testing.T) {
 			NewTestOrganization(t),
 			NewTestOrganization(t),
 		}
-		app := newFakeWeb(t, &fakeApp{orgs: orgs})
+		svc := newFakeWeb(t, &fakeService{orgs: orgs})
 
 		t.Run("first page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
 			w := httptest.NewRecorder()
-			app.list(w, r)
+			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
 			assert.NotContains(t, w.Body.String(), "Previous Page")
 			assert.Contains(t, w.Body.String(), "Next Page")
@@ -68,7 +68,7 @@ func TestWeb(t *testing.T) {
 		t.Run("second page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
 			w := httptest.NewRecorder()
-			app.list(w, r)
+			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
 			assert.Contains(t, w.Body.String(), "Previous Page")
 			assert.Contains(t, w.Body.String(), "Next Page")
@@ -77,7 +77,7 @@ func TestWeb(t *testing.T) {
 		t.Run("last page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
 			w := httptest.NewRecorder()
-			app.list(w, r)
+			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
 			assert.Contains(t, w.Body.String(), "Previous Page")
 			assert.NotContains(t, w.Body.String(), "Next Page")
@@ -86,15 +86,15 @@ func TestWeb(t *testing.T) {
 }
 
 type fakeWeb struct {
-	app *fakeApp
+	svc *fakeService
 	otf.Renderer
 }
 
-func newFakeWeb(t *testing.T, app *fakeApp) *web {
+func newFakeWeb(t *testing.T, svc *fakeService) *web {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 	return &web{
-		app:      app,
+		svc:      svc,
 		Renderer: renderer,
 	}
 }
