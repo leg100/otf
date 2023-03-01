@@ -58,7 +58,7 @@ func (s *Session) UserID() string       { return s.userID }
 func (s *Session) Address() string      { return s.address }
 func (s *Session) Expiry() time.Time    { return s.expiry }
 
-func (s *Session) SetCookie(w http.ResponseWriter) {
+func (s *Session) setCookie(w http.ResponseWriter) {
 	html.SetCookie(w, sessionCookie, s.token, otf.Time(s.Expiry()))
 }
 

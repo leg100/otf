@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,15 +35,19 @@ func newTestSession(t *testing.T, userID string, expiry *time.Time) *Session {
 }
 
 type fakeSessionService struct {
-	sessions []*otf.Session
+	sessions []*Session
 
 	sessionService
 }
 
-func (f *fakeSessionService) ListSessions(context.Context, string) ([]*otf.Session, error) {
+func (f *fakeSessionService) ListSessions(context.Context, string) ([]*Session, error) {
 	return f.sessions, nil
 }
 
 func (f *fakeSessionService) DeleteSession(context.Context, string) error {
 	return nil
+}
+
+func (f *fakeSessionService) createSession(*http.Request, string) (*Session, error) {
+	return &Session{}, nil
 }

@@ -115,8 +115,7 @@ func (app *web) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set session cookie
-	session.SetCookie(w)
+	session.setCookie(w)
 
 	returnUserOriginalPage(w, r)
 }

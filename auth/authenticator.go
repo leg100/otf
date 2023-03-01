@@ -91,7 +91,7 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session.SetCookie(w)
+	session.setCookie(w)
 
 	returnUserOriginalPage(w, r)
 }
