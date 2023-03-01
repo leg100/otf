@@ -56,7 +56,7 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.web = &web{
 		Renderer:       opts.Renderer,
-		app:            &svc,
+		svc:            &svc,
 		authenticators: authenticators,
 		siteToken:      opts.SiteToken,
 	}

@@ -22,12 +22,12 @@ func (h *web) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.app.getTeamByID(r.Context(), teamID)
+	team, err := h.svc.getTeamByID(r.Context(), teamID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	members, err := h.app.listTeamMembers(r.Context(), teamID)
+	members, err := h.svc.listTeamMembers(r.Context(), teamID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func (h *web) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.app.updateTeam(r.Context(), params.TeamID, params.UpdateTeamOptions)
+	team, err := h.svc.updateTeam(r.Context(), params.TeamID, params.UpdateTeamOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,7 +69,7 @@ func (h *web) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teams, err := h.app.listTeams(r.Context(), organization)
+	teams, err := h.svc.listTeams(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

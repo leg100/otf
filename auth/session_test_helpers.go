@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,4 +32,18 @@ func newTestSession(t *testing.T, userID string, expiry *time.Time) *Session {
 	}
 
 	return session
+}
+
+type fakeSessionService struct {
+	sessions []*otf.Session
+
+	sessionService
+}
+
+func (f *fakeSessionService) ListSessions(context.Context, string) ([]*otf.Session, error) {
+	return f.sessions, nil
+}
+
+func (f *fakeSessionService) DeleteSession(context.Context, string) error {
+	return nil
 }

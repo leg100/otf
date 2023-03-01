@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
@@ -14,9 +15,9 @@ import (
 // up first.
 func TestTeam_GetHandler(t *testing.T) {
 	owners := newTestOwners(t, "acme-org")
-	owner := newTestUser(t, WithTeams(owners))
+	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	app := newFakeWeb(t, &fakeService{
-		fakeTeamApp: &fakeTeamApp{
+		teamService: &fakeTeamApp{
 			team:    owners,
 			members: []*User{owner},
 		},
@@ -35,7 +36,7 @@ func TestTeam_GetHandler(t *testing.T) {
 func TestTeam_UpdateHandler(t *testing.T) {
 	team := NewTestTeam(t, "acme-org")
 	app := newFakeWeb(t, &fakeService{
-		fakeTeamApp: &fakeTeamApp{
+		teamService: &fakeTeamApp{
 			team: team,
 		},
 	})
@@ -53,7 +54,7 @@ func TestTeam_UpdateHandler(t *testing.T) {
 func TestTeam_ListHandler(t *testing.T) {
 	team := NewTestTeam(t, "acme-org")
 	app := newFakeWeb(t, &fakeService{
-		fakeTeamApp: &fakeTeamApp{
+		teamService: &fakeTeamApp{
 			team: team,
 		},
 	})

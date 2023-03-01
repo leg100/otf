@@ -27,7 +27,7 @@ func (app *web) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessions, err := app.app.listSessions(r.Context(), user.ID())
+	sessions, err := app.svc.listSessions(r.Context(), user.ID())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,7 +54,7 @@ func (app *web) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := app.app.deleteSession(r.Context(), token); err != nil {
+	if err := app.svc.deleteSession(r.Context(), token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

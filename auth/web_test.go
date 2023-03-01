@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
@@ -19,21 +20,21 @@ type fakeWeb struct {
 	otf.Renderer
 }
 
-func newFakeWeb(t *testing.T, app *fakeService) *web {
+func newFakeWeb(t *testing.T, svc service) *web {
 	renderer, err := html.NewViewEngine(true)
 	require.NoError(t, err)
 	return &web{
-		app:      app,
+		svc:      svc,
 		Renderer: renderer,
 	}
 }
 
 func TestSessionHandlers(t *testing.T) {
-	user := otf.NewTestUser(t)
-	active := otf.NewTestSession(t, user.ID())
-	other := otf.NewTestSession(t, user.ID())
+	user := NewUser(uuid.NewString())
+	active := newTestSession(t, user.id, nil)
+	other := newTestSession(t, user.id, nil)
 
-	app := newFakeWebApp(t, &fakeSessionHandlerApp{sessions: []*otf.Session{active, other}})
+	h := newFakeWeb(t, &fakeSessionService{sessions: []*otf.Session{active, other}})
 
 	t.Run("list sessions", func(t *testing.T) {
 		// add user and active session to request
@@ -42,7 +43,7 @@ func TestSessionHandlers(t *testing.T) {
 		r = r.WithContext(addSessionCtx(r.Context(), active))
 
 		w := httptest.NewRecorder()
-		app.sessionsHandler(w, r)
+		h.sessionsHandler(w, r)
 
 		assert.Equal(t, 200, w.Code)
 	})
@@ -55,7 +56,7 @@ func TestSessionHandlers(t *testing.T) {
 		r := httptest.NewRequest("POST", "/sessions/delete", form)
 		r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		w := httptest.NewRecorder()
-		app.revokeSessionHandler(w, r)
+		h.revokeSessionHandler(w, r)
 
 		assert.Equal(t, 302, w.Code)
 	})
@@ -98,19 +99,6 @@ func TestAdminLoginHandler(t *testing.T) {
 			}
 		})
 	}
-}
-
-type fakeSessionHandlerApp struct {
-	sessions []*otf.Session
-	otf.Application
-}
-
-func (f *fakeSessionHandlerApp) ListSessions(context.Context, string) ([]*otf.Session, error) {
-	return f.sessions, nil
-}
-
-func (f *fakeSessionHandlerApp) DeleteSession(context.Context, string) error {
-	return nil
 }
 
 // TestLoginHandler tests the login page handler, testing for the presence of a

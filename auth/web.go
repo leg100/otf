@@ -15,12 +15,14 @@ import (
 type web struct {
 	otf.Renderer
 
-	app            service
+	svc            service
 	authenticators []*authenticator
 	siteToken      string
 }
 
 func (h *web) addHandlers(r *mux.Router) {
+	r = r.PathPrefix("/app").Subrouter()
+
 	r.HandleFunc("/login", h.loginHandler)
 	for _, auth := range h.authenticators {
 		r.HandleFunc(auth.RequestPath(), auth.RequestHandler)
@@ -31,7 +33,7 @@ func (h *web) addHandlers(r *mux.Router) {
 	// Authenticated routes
 	//
 	r = r.NewRoute().Subrouter()
-	r.Use(AuthenticateSession(h.app))
+	r.Use(AuthenticateSession(h.svc))
 
 	h.addAgentTokenHandlers(r)
 	h.addSessionHandlers(r)
@@ -53,7 +55,7 @@ func (h *web) listUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.app.listUsers(r.Context(), name)
+	users, err := h.svc.listUsers(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -81,7 +83,7 @@ func (app *web) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := app.app.deleteSession(r.Context(), session.token); err != nil {
+	if err := app.svc.deleteSession(r.Context(), session.token); err != nil {
 		return
 	}
 	html.SetCookie(w, sessionCookie, session.token, &time.Time{})
@@ -107,7 +109,7 @@ func (app *web) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := app.app.createSession(r, otf.SiteAdminID)
+	session, err := app.svc.createSession(r, otf.SiteAdminID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

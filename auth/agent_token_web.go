@@ -35,7 +35,7 @@ func (h *web) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.app.createAgentToken(r.Context(), opts)
+	token, err := h.svc.createAgentToken(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -59,7 +59,7 @@ func (app *web) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := app.app.listAgentTokens(r.Context(), organization)
+	tokens, err := app.svc.listAgentTokens(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func (app *web) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, err := app.app.deleteAgentToken(r.Context(), id)
+	at, err := app.svc.deleteAgentToken(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -16,6 +16,7 @@ type fakeService struct {
 	agentTokenService
 	registrySessionService
 	sessionService
+	teamService
 	userService
 }
 
