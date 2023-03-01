@@ -49,8 +49,11 @@ type application interface {
 
 type app struct {
 	logr.Logger
-	*otf.SiteAuthorizer
-	*organization.Authorizer
+
+	site         otf.Authorizer
+	organization otf.Authorizer
+	workspace    otf.Authorizer
+
 	*logs.Service
 	otf.PubSubService
 	otf.WorkspaceService
@@ -138,7 +141,7 @@ func (a *app) list(ctx context.Context, opts otf.RunListOptions) (*RunList, erro
 		subject, err = a.CanAccessOrganization(ctx, rbac.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, err = a.CanAccessSite(ctx, rbac.ListRunsAction)
+		subject, err = a.site.CanAccess(ctx, rbac.ListRunsAction)
 	}
 	if err != nil {
 		return nil, err

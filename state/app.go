@@ -25,11 +25,12 @@ type appService interface {
 
 // app is the implementation of appService
 type app struct {
-	otf.WorkspaceAuthorizer // authorize access
 	logr.Logger
+	otf.WorkspaceService
 
-	db              // access to state version database
-	cache otf.Cache // cache state file
+	db                  // access to state version database
+	cache     otf.Cache // cache state file
+	workspace otf.Authorizer
 }
 
 // stateVersionGetOptions are options for retrieving a single StateVersion.
@@ -65,7 +66,7 @@ func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOpti
 	if opts.WorkspaceID == nil {
 		return nil, errors.New("workspace ID is required")
 	}
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.CreateStateVersionAction, *opts.WorkspaceID)
+	subject, err := a.workspace.CanAccess(ctx, rbac.CreateStateVersionAction, *opts.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +90,8 @@ func (a *app) createVersion(ctx context.Context, opts otf.CreateStateVersionOpti
 }
 
 func (a *app) listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error) {
+	a.GetWorkspace
+
 	subject, err := a.CanAccessWorkspaceByName(ctx, rbac.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err

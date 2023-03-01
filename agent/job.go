@@ -10,8 +10,14 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/environment"
-	"github.com/leg100/otf/run"
 	"github.com/pkg/errors"
+)
+
+const (
+	localStateFilename = "terraform.tfstate"
+	planFilename       = "plan.out"
+	jsonPlanFilename   = "plan.out.json"
+	lockFilename       = ".terraform.lock.hcl"
 )
 
 type Job struct {
@@ -66,10 +72,10 @@ func (r *Job) doPlan() error {
 	if err := r.doTerraformPlan(); err != nil {
 		return err
 	}
-	if err := r.RunCLI("sh", "-c", fmt.Sprintf("%s show -json %s > %s", r.TerraformPath(), PlanFilename, JSONPlanFilename)); err != nil {
+	if err := r.RunCLI("sh", "-c", fmt.Sprintf("%s show -json %s > %s", r.TerraformPath(), planFilename, jsonPlanFilename)); err != nil {
 		return err
 	}
-	if err := r.uploadPlan(); err != nil {
+	if err := r.RunFunc(r.uploadPlan); err != nil {
 		return err
 	}
 	if err := r.RunFunc(r.uploadJSONPlan); err != nil {
@@ -132,14 +138,14 @@ func (r *Job) downloadState(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(r.WorkingDir(), run.LocalStateFilename), statefile, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(r.WorkingDir(), localStateFilename), statefile, 0o644); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 	return nil
 }
 
 func (r *Job) uploadPlan(ctx context.Context) error {
-	file, err := os.ReadFile(filepath.Join(r.WorkingDir(), run.PlanFilename))
+	file, err := os.ReadFile(filepath.Join(r.WorkingDir(), planFilename))
 	if err != nil {
 		return err
 	}
@@ -151,12 +157,12 @@ func (r *Job) uploadPlan(ctx context.Context) error {
 	return nil
 }
 
-func (r *Job) uploadJSONPlan(ctx context.Context, env environment.Environment) error {
-	jsonFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), run.JSONPlanFilename))
+func (r *Job) uploadJSONPlan(ctx context.Context) error {
+	jsonFile, err := os.ReadFile(filepath.Join(r.WorkingDir(), jsonPlanFilename))
 	if err != nil {
 		return err
 	}
-	if err := env.UploadPlanFile(ctx, r.ID, jsonFile, otf.PlanFormatJSON); err != nil {
+	if err := r.UploadPlanFile(ctx, r.ID, jsonFile, otf.PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -165,44 +171,44 @@ func (r *Job) uploadJSONPlan(ctx context.Context, env environment.Environment) e
 // downloadLockFile downloads the .terraform.lock.hcl file into the working
 // directory. If one has not been uploaded then this will simply write an empty
 // file, which is harmless.
-func (r *Job) downloadLockFile(ctx context.Context, env environment.Environment) error {
-	lockFile, err := env.GetLockFile(ctx, r.ID)
+func (r *Job) downloadLockFile(ctx context.Context) error {
+	lockFile, err := r.GetLockFile(ctx, r.ID)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(env.WorkingDir(), run.LockFilename), lockFile, 0o644)
+	return os.WriteFile(filepath.Join(r.WorkingDir(), lockFilename), lockFile, 0o644)
 }
 
-func (r *Job) uploadLockFile(ctx context.Context, env environment.Environment) error {
-	lockFile, err := os.ReadFile(filepath.Join(env.WorkingDir(), run.LockFilename))
+func (r *Job) uploadLockFile(ctx context.Context) error {
+	lockFile, err := os.ReadFile(filepath.Join(r.WorkingDir(), lockFilename))
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, "reading lock file")
 	}
-	if err := env.UploadLockFile(ctx, r.ID, lockFile); err != nil {
+	if err := r.UploadLockFile(ctx, r.ID, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
 	}
 	return nil
 }
 
-func (r *Job) downloadPlanFile(ctx context.Context, env environment.Environment) error {
-	plan, err := env.GetPlanFile(ctx, r.ID, otf.PlanFormatBinary)
+func (r *Job) downloadPlanFile(ctx context.Context) error {
+	plan, err := r.GetPlanFile(ctx, r.ID, otf.PlanFormatBinary)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(env.WorkingDir(), run.PlanFilename), plan, 0o644)
+	return os.WriteFile(filepath.Join(r.WorkingDir(), planFilename), plan, 0o644)
 }
 
 // uploadState reads, parses, and uploads terraform state
-func (r *Job) uploadState(ctx context.Context, env environment.Environment) error {
-	state, err := os.ReadFile(filepath.Join(env.WorkingDir(), run.LocalStateFilename))
+func (r *Job) uploadState(ctx context.Context) error {
+	state, err := os.ReadFile(filepath.Join(r.WorkingDir(), localStateFilename))
 	if err != nil {
 		return err
 	}
-	err = env.CreateStateVersion(ctx, otf.CreateStateVersionOptions{
+	err = r.CreateStateVersion(ctx, otf.CreateStateVersionOptions{
 		WorkspaceID: &r.WorkspaceID,
 		State:       state,
 	})
@@ -210,13 +216,13 @@ func (r *Job) uploadState(ctx context.Context, env environment.Environment) erro
 }
 
 // doTerraformPlan invokes terraform plan
-func (r *Job) doTerraformPlan(env environment.Environment) error {
+func (r *Job) doTerraformPlan() error {
 	var args []string
 	if r.IsDestroy {
 		args = append(args, "-destroy")
 	}
-	args = append(args, "-out="+run.PlanFilename)
-	return env.RunTerraform("plan", args...)
+	args = append(args, "-out="+planFilename)
+	return r.RunTerraform("plan", args...)
 }
 
 // doTerraformApply invokes terraform apply
@@ -225,6 +231,6 @@ func (r *Job) doTerraformApply() error {
 	if r.IsDestroy {
 		args = append(args, "-destroy")
 	}
-	args = append(args, run.PlanFilename)
+	args = append(args, planFilename)
 	return r.RunTerraform("apply", args...)
 }

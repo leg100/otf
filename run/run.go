@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/environment"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -165,21 +164,6 @@ func (r *Run) ForceCancel() error {
 		return nil
 	}
 	return ErrRunForceCancelNotAllowed
-}
-
-// Do executes the current phase
-func (r *Run) Do(env environment.Environment) error {
-	if err := r.setupEnv(env); err != nil {
-		return err
-	}
-	switch r.status {
-	case otf.RunPlanning:
-		return r.doPlan(env)
-	case otf.RunApplying:
-		return r.doApply(env)
-	default:
-		return fmt.Errorf("invalid status: %s", r.status)
-	}
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
@@ -363,86 +347,6 @@ func (r *Run) Confirmable() bool {
 	default:
 		return false
 	}
-}
-
-func (r *Run) doPlan(env environment.Environment) error {
-	if err := r.doTerraformPlan(env); err != nil {
-		return err
-	}
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("%s show -json %s > %s", env.TerraformPath(), PlanFilename, JSONPlanFilename)); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.uploadPlan); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.uploadJSONPlan); err != nil {
-		return err
-	}
-	// upload lock file for use in the apply phase - see note in setupEnv.
-	if err := env.RunFunc(r.uploadLockFile); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Run) doApply(env environment.Environment) error {
-	if err := env.RunFunc(r.downloadPlanFile); err != nil {
-		return err
-	}
-	if err := r.doTerraformApply(env); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.uploadState); err != nil {
-		return err
-	}
-	return nil
-}
-
-// doTerraformPlan invokes terraform plan
-func (r *Run) doTerraformPlan(env environment.Environment) error {
-	var args []string
-	if r.isDestroy {
-		args = append(args, "-destroy")
-	}
-	args = append(args, "-out="+PlanFilename)
-	return env.RunTerraform("plan", args...)
-}
-
-// doTerraformApply invokes terraform apply
-func (r *Run) doTerraformApply(env environment.Environment) error {
-	var args []string
-	if r.isDestroy {
-		args = append(args, "-destroy")
-	}
-	args = append(args, PlanFilename)
-	return env.RunTerraform("apply", args...)
-}
-
-// setupEnv invokes the necessary steps before a plan or apply can proceed.
-func (r *Run) setupEnv(env environment.Environment) error {
-	if err := env.RunFunc(r.downloadTerraform); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.downloadConfig); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.deleteBackendConfig); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.downloadState); err != nil {
-		return err
-	}
-	if r.status == otf.RunApplying {
-		// Download lock file from plan phase for the apply phase, to ensure
-		// same providers are used in both phases.
-		if err := env.RunFunc(r.downloadLockFile); err != nil {
-			return err
-		}
-	}
-	if err := env.RunTerraform("init"); err != nil {
-		return fmt.Errorf("running terraform init: %w", err)
-	}
-	return nil
 }
 
 type RunStatusTimestamp struct {

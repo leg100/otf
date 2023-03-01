@@ -27,19 +27,19 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 	}
 
 	var cv otf.ConfigurationVersion
-	if ws.Repo() != nil {
-		client, err := rs.GetVCSClient(ctx, ws.Repo().ProviderID)
+	if ws.Repo != nil {
+		client, err := rs.GetVCSClient(ctx, ws.Repo.ProviderID)
 		if err != nil {
 			return nil, err
 		}
 		tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-			Identifier: ws.Repo().Identifier,
-			Ref:        ws.Repo().Branch,
+			Identifier: ws.Repo.Identifier,
+			Ref:        ws.Repo.Branch,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 		}
-		cv, err = rs.CreateConfigurationVersion(ctx, ws.ID(), opts)
+		cv, err = rs.CreateConfigurationVersion(ctx, ws.ID, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 			return nil, err
 		}
 	} else {
-		latest, err := rs.GetLatestConfigurationVersion(ctx, ws.ID())
+		latest, err := rs.GetLatestConfigurationVersion(ctx, ws.ID)
 		if err != nil {
 			if errors.Is(err, otf.ErrResourceNotFound) {
 				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")

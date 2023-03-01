@@ -2,13 +2,6 @@ package run
 
 import "github.com/leg100/otf"
 
-const (
-	LocalStateFilename = "terraform.tfstate"
-	PlanFilename       = "plan.out"
-	JSONPlanFilename   = "plan.out.json"
-	LockFilename       = ".terraform.lock.hcl"
-)
-
 // Plan is the plan phase of a run
 type Plan struct {
 	// report of planned resource changes
