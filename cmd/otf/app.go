@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -45,10 +46,9 @@ func (a *application) run(ctx context.Context, args []string, out io.Writer) err
 	cmd.AddCommand(a.runCommand())
 	cmd.AddCommand(a.agentCommand())
 
-	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
-
-	if err := cmd.ExecuteContext(ctx); err != nil {
-		return err
+	if err = cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
+		return errors.Wrap(err, "failed to populate config from environment vars")
 	}
-	return nil
+
+	return cmd.ExecuteContext(ctx)
 }

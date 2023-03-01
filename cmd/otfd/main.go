@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -68,7 +69,9 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&d.database, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().StringVar(&d.hostname, "hostname", "", "User-facing hostname for otf")
 
-	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
+	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
+		return errors.Wrap(err, "failed to populate config from environment vars")
+	}
 
 	cmd.SetArgs(args)
 	return cmd.ExecuteContext(ctx)
