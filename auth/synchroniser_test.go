@@ -20,7 +20,7 @@ func TestUserSyncMemberships(t *testing.T) {
 	team2 := newTeam(createTeamOptions{"team-2", org2.Name()})
 	team3 := newTeam(createTeamOptions{"team-2", org3.Name()})
 
-	user := NewTestUser(t,
+	user := newTestUser(t,
 		WithOrganizations(org1.Name(), org2.Name()),
 		WithTeams(team1, team2))
 

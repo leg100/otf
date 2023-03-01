@@ -6,22 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSession(t *testing.T) {
 	ctx := context.Background()
-	db := &pgdb{sql.NewTestDB(t), logr.Discard()}
 	r := httptest.NewRequest("", "/", nil)
-
-	user := NewUser(uuid.NewString())
-	err := db.CreateUser(ctx, NewUser(uuid.NewString()))
-	require.NoError(t, err)
+	db := newTestDB(t)
+	user := createTestUser(t, db)
 
 	t.Run("create", func(t *testing.T) {
 		session, err := newSession(r, user.ID())
@@ -58,7 +52,7 @@ func TestSession(t *testing.T) {
 		_ = createTestSession(t, db, user.ID(), otf.Time(time.Now()))
 		_ = createTestSession(t, db, user.ID(), otf.Time(time.Now()))
 
-		err := db.deleteExpired(ctx)
+		_, err := db.DeleteSessionsExpired(ctx)
 		require.NoError(t, err)
 
 		sessions, err := db.listSessions(ctx, user.ID())

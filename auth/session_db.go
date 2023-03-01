@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"time"
 
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
@@ -43,32 +42,6 @@ func (db *pgdb) deleteSession(ctx context.Context, token string) error {
 	_, err := db.DeleteSessionByToken(ctx, sql.String(token))
 	if err != nil {
 		return sql.Error(err)
-	}
-	return nil
-}
-
-func (db *pgdb) startExpirer(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	for {
-		select {
-		case <-ticker.C:
-			if err := db.deleteExpired(ctx); err != nil {
-				db.Error(err, "purging expired user sessions")
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func (db *pgdb) deleteExpired(ctx context.Context) error {
-	_, err := db.DeleteSessionsExpired(ctx)
-	if err != nil {
-		return err
-	}
-	_, err = db.DeleteExpiredRegistrySessions(ctx)
-	if err != nil {
-		return err
 	}
 	return nil
 }

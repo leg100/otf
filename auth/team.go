@@ -2,13 +2,10 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/leg100/otf"
 )
-
-var ErrInvalidTeamSpec = errors.New("invalid team spec options")
 
 // Team is a group of users sharing a level of authorization.
 type Team struct {
@@ -72,11 +69,6 @@ type TeamStore interface {
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 	// ListTeamMembers lists users that are members of the given team
 	ListTeamMembers(ctx context.Context, teamID string) ([]otf.User, error)
-}
-
-type TeamSpec struct {
-	Name         string `schema:"team_name,required"`
-	Organization string `schema:"organization_name,required"`
 }
 
 // OrganizationAccess defines a team's organization access.

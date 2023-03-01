@@ -7,17 +7,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTestToken(t *testing.T, db db, userID, description string) *Token {
+func createTestToken(t *testing.T, db *pgdb, userID, description string) *Token {
 	ctx := context.Background()
 
 	token, err := NewToken(userID, description)
 	require.NoError(t, err)
 
-	err = tokenDB.CreateToken(ctx, token)
+	err = db.CreateToken(ctx, token)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		tokenDB.DeleteToken(ctx, token.Token())
+		db.DeleteToken(ctx, token.Token())
 	})
 	return token
 }

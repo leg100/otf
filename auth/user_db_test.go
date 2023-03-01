@@ -1,4 +1,4 @@
-package auth_test
+package auth
 
 import (
 	"context"
@@ -11,14 +11,16 @@ import (
 )
 
 func TestUser_Get(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
 	org1 := organization.CreateTestOrganization(t, db)
 	org2 := organization.CreateTestOrganization(t, db)
-	team1 := CreateTestTeam(t, db, org1.Name())
-	team2 := CreateTestTeam(t, db, org2.Name())
+	team1 := CreateTestTeam(t, db, org1.Name)
+	team2 := CreateTestTeam(t, db, org2.Name)
 
 	user := createTestUser(t, db,
-		withOrganizations(org1.Name(), org2.Name()),
-		withTeams(team1, team2))
+		WithOrganizations(org1.Name, org2.Name),
+		WithTeams(team1, team2))
 
 	session1 := createTestSession(t, db, user.ID(), nil)
 	_ = createTestSession(t, db, user.ID(), nil)
@@ -49,7 +51,7 @@ func TestUser_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.getUser(context.Background(), tt.spec)
+			got, err := db.getUser(ctx, tt.spec)
 			require.NoError(t, err)
 
 			assert.Equal(t, got.ID(), user.ID())
@@ -75,11 +77,11 @@ func TestUser_List(t *testing.T) {
 
 	org := organization.CreateTestOrganization(t, db)
 	user1 := createTestUser(t, db)
-	user2 := createTestUser(t, db, withOrganizations(org.Name()))
-	user3 := createTestUser(t, db, withOrganizations(org.Name()))
+	user2 := createTestUser(t, db, WithOrganizations(org.Name))
+	user3 := createTestUser(t, db, WithOrganizations(org.Name))
 
 	// Retrieve all users
-	users, err := db.listUsers(ctx, org.Name())
+	users, err := db.listUsers(ctx, org.Name)
 	require.NoError(t, err)
 
 	require.Contains(t, users, user1)
@@ -87,7 +89,7 @@ func TestUser_List(t *testing.T) {
 	assert.Contains(t, users, user3)
 
 	// Retrieve users in org
-	users, err = db.listUsers(ctx, org.Name())
+	users, err = db.listUsers(ctx, org.Name)
 	require.NoError(t, err)
 
 	assert.NotContains(t, users, user1)
@@ -114,8 +116,8 @@ func TestUser_AddTeamMembership(t *testing.T) {
 	db := newTestDB(t)
 
 	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name())
-	user := createTestUser(t, db, withOrganizations(org.Name()))
+	team := CreateTestTeam(t, db, org.Name)
+	user := createTestUser(t, db, WithOrganizations(org.Name))
 
 	err := db.addTeamMembership(ctx, user.ID(), team.ID())
 	require.NoError(t, err)
@@ -131,8 +133,8 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 	db := newTestDB(t)
 
 	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name())
-	user := createTestUser(t, db, withOrganizations(org.Name()), withTeams(team))
+	team := CreateTestTeam(t, db, org.Name)
+	user := createTestUser(t, db, WithOrganizations(org.Name), WithTeams(team))
 
 	err := db.removeTeamMembership(ctx, user.ID(), team.ID())
 	require.NoError(t, err)

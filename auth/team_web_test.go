@@ -14,7 +14,7 @@ import (
 // up first.
 func TestTeam_GetHandler(t *testing.T) {
 	owners := newTestOwners(t, "acme-org")
-	owner := NewTestUser(t, WithTeams(owners))
+	owner := newTestUser(t, WithTeams(owners))
 	app := newFakeWeb(t, &fakeService{
 		fakeTeamApp: &fakeTeamApp{
 			team:    owners,

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,15 +13,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_AuthenticateToken(t *testing.T) {
-	upstream := func(w http.ResponseWriter, r *http.Request) {
-		// implicitly respond with 200 OK
-	}
-	mw := (&authTokenMiddleware{
-		UserService:       &fakeUserService{token: "user.token"},
-		AgentTokenService: &fakeAgentTokenService{token: "agent.token"},
-		siteToken:         "site.token",
-	}).handler(http.HandlerFunc(upstream))
+func TestMiddleware_AuthenticateToken(t *testing.T) {
+	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// implicitly responds with 200 OK
+	})
+	mw := AuthenticateToken(&fakeMiddlewareService{
+		agentToken:    "agent.token",
+		registryToken: "registry.token",
+		userToken:     "user.token",
+	})
 
 	tests := []struct {
 		name string
@@ -64,27 +66,25 @@ func Test_AuthenticateToken(t *testing.T) {
 			if tt.token != nil {
 				r.Header.Add("Authorization", "Bearer "+*tt.token)
 			}
-			mw.ServeHTTP(w, r)
+			mw(upstream).ServeHTTP(w, r)
 			assert.Equal(t, tt.want, w.Code)
 		})
 	}
 }
 
 func Test_AuthenticateUser(t *testing.T) {
-	upstream := func(w http.ResponseWriter, r *http.Request) {
+	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// implicitly respond with 200 OK
-	}
-	mw := (&authMiddleware{
-		Application: &fakeService{
-			fakeUser: otf.NewUser("user-fake"),
-		},
-	}).authenticate(http.HandlerFunc(upstream))
+	})
+	mw := AuthenticateSession(&fakeMiddlewareService{
+		sessionToken: "session.token",
+	})
 
 	t.Run("with session", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/", nil)
-		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "anythingwilldo"})
-		mw.ServeHTTP(w, r)
+		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "session.token"})
+		mw(upstream).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -92,10 +92,51 @@ func Test_AuthenticateUser(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/", nil)
 		// deliberately omit session cookie
-		mw.ServeHTTP(w, r)
+		mw(upstream).ServeHTTP(w, r)
 		assert.Equal(t, 302, w.Code)
 		loc, err := w.Result().Location()
 		require.NoError(t, err)
 		assert.Equal(t, paths.Login(), loc.Path)
 	})
+}
+
+type fakeMiddlewareService struct {
+	agentToken    string
+	registryToken string
+	sessionToken  string
+	userToken     string
+}
+
+func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
+	if f.agentToken == token {
+		return nil, nil
+	}
+	return nil, errors.New("invalid")
+}
+
+func (f *fakeMiddlewareService) GetRegistrySession(ctx context.Context, token string) (otf.RegistrySession, error) {
+	if f.registryToken == token {
+		return nil, nil
+	}
+	return nil, errors.New("invalid")
+}
+
+func (f *fakeMiddlewareService) GetSession(ctx context.Context, token string) (*Session, error) {
+	if f.sessionToken == token {
+		return nil, nil
+	}
+	return nil, errors.New("invalid")
+}
+
+func (f *fakeMiddlewareService) getUser(ctx context.Context, spec otf.UserSpec) (*User, error) {
+	if spec.AuthenticationToken != nil {
+		if f.userToken == *spec.AuthenticationToken {
+			return nil, nil
+		}
+	} else if spec.SessionToken != nil {
+		if f.sessionToken == *spec.SessionToken {
+			return nil, nil
+		}
+	}
+	return nil, errors.New("invalid")
 }
