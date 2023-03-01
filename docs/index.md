@@ -201,6 +201,17 @@ helm show values otf/otf
 !!! note
     The helm chart is maintained in a separate [github repo](https://github.com/leg100/otf-charts).
 
+### Configuration from env vars
+
+OTF can be configured from environment variables. Arguments can be converted to the equivalent env var by prefixing
+it with `OTF_`, replacing all `-` with `_`, and upper-casing it. For example:
+
+- `--secret` becomes `OTF_SECRET`
+- `--site-token` becomes `OTF_SITE_TOKEN`
+
+Env variables can be suffixed with `_FILE` to tell otf to read the values from a file. This is useful for container
+environments where secrets are often mounted as files.
+
 ## Authentication
 
 Users sign into OTF primarily via an SSO provider. Support currently exists for:

@@ -25,6 +25,7 @@ import (
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
@@ -78,7 +79,9 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&d.secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
 	cmd.Flags().Int64Var(&d.maxConfigSize, "max-config-size", configversion.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
 
-	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
+	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
+		return errors.Wrap(err, "failed to populate config from environment vars")
+	}
 
 	cmd.SetArgs(args)
 	return cmd.ExecuteContext(ctx)
