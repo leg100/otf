@@ -55,8 +55,8 @@ func (c *Connector) connect(ctx context.Context, workspaceID string, opts connec
 
 // Disconnect a repo from a workspace. The repo's webhook is deleted if no other
 // workspace is connected to the repo.
-func (c *Connector) disconnect(ctx context.Context, ws *Workspace) (*Workspace, error) {
-	repo := ws.Repo()
+func (c *Connector) disconnect(ctx context.Context, ws *otf.Workspace) (*otf.Workspace, error) {
+	repo := ws.Repo
 	client, err := c.GetVCSClient(ctx, repo.ProviderID)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (c *Connector) disconnect(ctx context.Context, ws *Workspace) (*Workspace, 
 	// 1. delete workspace repo from db
 	// 2. delete webhook from db
 	unhookCallback := func(ctx context.Context, tx otf.DB) error {
-		ws, err = newdb(tx).DeleteWorkspaceRepo(ctx, ws.id)
+		ws, err = newdb(tx).DeleteWorkspaceRepo(ctx, ws.ID)
 		return err
 	}
 	err = c.Unhook(ctx, otf.UnhookOptions{

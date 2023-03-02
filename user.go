@@ -1,30 +1,54 @@
-package auth
+package otf
 
 import (
+	"context"
 	"time"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-var SiteAdmin = User{id: otf.SiteAdminID, username: "site-admin"}
+var SiteAdmin = User{ID: SiteAdminID, Username: "site-admin"}
 
-// User represents an otf user account.
-type User struct {
-	id            string // ID uniquely identifies users
-	createdAt     time.Time
-	updatedAt     time.Time
-	username      string   // username is globally unique
-	organizations []string // user belongs to many organizations
-	teams         []*Team  // user belongs to many teams
-}
+type (
+	// User represents an otf user account.
+	User struct {
+		ID            string // ID uniquely identifies users
+		CreatedAt     time.Time
+		UpdatedAt     time.Time
+		Username      string   // username is globally unique
+		Organizations []string // user belongs to many organizations
+		Teams         []*Team  // user belongs to many teams
+	}
+
+	// UserListOptions are options for the ListUsers endpoint.
+	UserListOptions struct {
+		Organization *string
+		TeamName     *string
+	}
+
+	NewUserOption func(*User)
+
+	// UserService provides methods to interact with user accounts and their
+	// sessions.
+	UserService interface {
+		// Get retrieves a user according to the spec.
+		GetUser(ctx context.Context, spec UserSpec) (User, error)
+	}
+
+	UserSpec struct {
+		UserID              *string
+		Username            *string
+		SessionToken        *string
+		AuthenticationToken *string
+	}
+)
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		id:        otf.NewID("user"),
-		username:  username,
-		createdAt: otf.CurrentTimestamp(),
-		updatedAt: otf.CurrentTimestamp(),
+		ID:        NewID("user"),
+		Username:  username,
+		CreatedAt: CurrentTimestamp(),
+		UpdatedAt: CurrentTimestamp(),
 	}
 	for _, fn := range opts {
 		fn(user)
@@ -32,38 +56,31 @@ func NewUser(username string, opts ...NewUserOption) *User {
 	return user
 }
 
-type NewUserOption func(*User)
-
 func WithOrganizations(organizations ...string) NewUserOption {
 	return func(user *User) {
-		user.organizations = organizations
+		user.Organizations = organizations
 	}
 }
 
 func WithTeams(memberships ...*Team) NewUserOption {
 	return func(user *User) {
-		user.teams = memberships
+		user.Teams = memberships
 	}
 }
 
-func (u *User) ID() string              { return u.id }
-func (u *User) Username() string        { return u.username }
-func (u *User) CreatedAt() time.Time    { return u.createdAt }
-func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
-func (u *User) String() string          { return u.username }
-func (u *User) Organizations() []string { return u.organizations }
+func (u *User) String() string { return u.Username }
 
 // IsTeamMember determines whether user is a member of the given team.
 func (u *User) IsTeamMember(teamID string) bool {
-	for _, t := range u.teams {
-		if t.ID() == teamID {
+	for _, t := range u.Teams {
+		if t.ID == teamID {
 			return true
 		}
 	}
 	return false
 }
 
-func (u *User) IsSiteAdmin() bool { return u.id == otf.SiteAdminID }
+func (u *User) IsSiteAdmin() bool { return u.ID == SiteAdminID }
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	// Only site admin can perform actions on the site
@@ -76,26 +93,26 @@ func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 		return true
 	}
 	// fallback to finer-grained organization-level perms
-	for _, team := range u.teams {
-		if team.Organization() == name {
-			if team.isOwners() {
+	for _, team := range u.Teams {
+		if team.Organization == name {
+			if team.IsOwners() {
 				// owner team members can perform all actions on organization
 				return true
 			}
 			if rbac.OrganizationGuestRole.IsAllowed(action) {
 				return true
 			}
-			if team.access.ManageWorkspaces {
+			if team.Access.ManageWorkspaces {
 				if rbac.WorkspaceManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
-			if team.access.ManageVCS {
+			if team.Access.ManageVCS {
 				if rbac.VCSManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
-			if team.access.ManageRegistry {
+			if team.Access.ManageRegistry {
 				if rbac.VCSManagerRole.IsAllowed(action) {
 					return true
 				}
@@ -105,15 +122,15 @@ func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool {
 	// coarser-grained organization perms take precedence.
 	if u.CanAccessOrganization(action, policy.Organization) {
 		return true
 	}
 	// fallback to checking finer-grained workspace perms
-	for _, team := range u.teams {
+	for _, team := range u.Teams {
 		for _, perm := range policy.Permissions {
-			if team.id == perm.TeamID {
+			if team.ID == perm.TeamID {
 				return perm.Role.IsAllowed(action)
 			}
 		}
@@ -123,18 +140,12 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy
 
 // IsOwner determines if user is an owner of an organization
 func (u *User) IsOwner(organization string) bool {
-	for _, team := range u.teams {
-		if team.Organization() == organization {
-			if team.isOwners() {
+	for _, team := range u.Teams {
+		if team.Organization == organization {
+			if team.IsOwners() {
 				return true
 			}
 		}
 	}
 	return false
-}
-
-// UserListOptions are options for the ListUsers endpoint.
-type UserListOptions struct {
-	Organization *string
-	TeamName     *string
 }

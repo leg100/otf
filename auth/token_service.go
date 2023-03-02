@@ -23,7 +23,7 @@ func (a *Service) CreateToken(ctx context.Context, userID string, opts *TokenCre
 	if err != nil {
 		return nil, err
 	}
-	if subject.ID() != userID {
+	if subject.ID != userID {
 		return nil, fmt.Errorf("cannot create a token for a different user")
 	}
 
@@ -52,7 +52,7 @@ func (a *Service) DeleteToken(ctx context.Context, userID string, tokenID string
 	if err != nil {
 		return err
 	}
-	if subject.ID() != userID {
+	if subject.ID != userID {
 		return fmt.Errorf("cannot delete a token for a different user")
 	}
 

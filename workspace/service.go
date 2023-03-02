@@ -12,16 +12,16 @@ import (
 )
 
 type service interface {
-	create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
-	get(ctx context.Context, workspaceID string) (*Workspace, error)
-	getByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-	list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
-	delete(ctx context.Context, workspaceID string) (*Workspace, error)
+	create(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error)
+	get(ctx context.Context, workspaceID string) (*otf.Workspace, error)
+	getByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error)
+	list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
+	listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error)
+	update(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error)
+	delete(ctx context.Context, workspaceID string) (*otf.Workspace, error)
 
 	connect(ctx context.Context, workspaceID string, opts connectOptions) error
-	disconnect(ctx context.Context, workspaceID string) (*Workspace, error)
+	disconnect(ctx context.Context, workspaceID string) (*otf.Workspace, error)
 
 	lockService
 	permissionsService
@@ -83,67 +83,67 @@ func (a *Service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 }
 
-func (s *Service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+func (s *Service) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
 	return s.create(ctx, opts)
 }
 
-func (s *Service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (s *Service) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*WorkspaceList, error) {
+func (s *Service) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return nil, nil
 }
 
-func (s *Service) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+func (s *Service) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
+func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) LockWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *Service) LockWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	return s.lock(ctx, workspaceID, nil)
 }
 
-func (s *Service) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
+func (s *Service) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*otf.Workspace, error) {
 	return s.unlock(ctx, workspaceID, force)
 }
 
-func (a *Service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
-	ws, err := NewWorkspace(opts)
+func (a *Service) create(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
+	ws, err := otf.NewWorkspace(opts)
 	if err != nil {
 		a.Error(err, "constructing workspace")
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization())
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
-		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
+		a.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 		return nil, err
 	}
 
-	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
+	a.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
 	return ws, nil
 }
 
-func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
+func (a *Service) update(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -151,8 +151,8 @@ func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWor
 
 	// retain ref to existing name so a name change can be detected
 	var name string
-	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *Workspace) error {
-		name = ws.Name()
+	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *otf.Workspace) error {
+		name = ws.Name
 		return ws.Update(opts)
 	})
 	if err != nil {
@@ -160,7 +160,7 @@ func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWor
 		return nil, err
 	}
 
-	if updated.Name() != name {
+	if updated.Name != name {
 		a.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: updated})
 	}
 
@@ -169,7 +169,7 @@ func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWor
 	return updated, nil
 }
 
-func (a *Service) listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+func (a *Service) listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
 	return a.db.ListWorkspacesByWebhookID(ctx, id)
 }
 
@@ -190,7 +190,7 @@ func (a *Service) connect(ctx context.Context, workspaceID string, opts connectO
 	return nil
 }
 
-func (a *Service) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
+func (a *Service) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*otf.Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (a *Service) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, r
 	return ws, nil
 }
 
-func (a *Service) disconnect(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (a *Service) disconnect(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func (a *Service) disconnect(ctx context.Context, workspaceID string) (*Workspac
 	return ws, nil
 }
 
-func (a *Service) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (a *Service) list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := a.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
@@ -257,7 +257,7 @@ func (a *Service) list(ctx context.Context, opts WorkspaceListOptions) (*Workspa
 	return a.db.ListWorkspaces(ctx, opts)
 }
 
-func (a *Service) get(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (a *Service) get(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -274,14 +274,14 @@ func (a *Service) get(ctx context.Context, workspaceID string) (*Workspace, erro
 	return ws, nil
 }
 
-func (a *Service) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (a *Service) getByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
 	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
 	if err != nil {
 		a.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
 		return nil, err
 	}
 
-	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, ws.id)
+	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +291,7 @@ func (a *Service) getByName(ctx context.Context, organization, workspace string)
 	return ws, nil
 }
 
-func (a *Service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (a *Service) delete(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -302,19 +302,19 @@ func (a *Service) delete(ctx context.Context, workspaceID string) (*Workspace, e
 		return nil, err
 	}
 
-	if err := a.db.DeleteWorkspace(ctx, ws.ID()); err != nil {
-		a.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name(), "subject", subject)
+	if err := a.db.DeleteWorkspace(ctx, ws.ID); err != nil {
+		a.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 		return nil, err
 	}
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
-	a.V(0).Info("deleted workspace", "id", ws.ID(), "name", ws.Name(), "subject", subject)
+	a.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 
 	return ws, nil
 }
 
 // SetCurrentRun sets the current run for the workspace
-func (a *Service) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+func (a *Service) setCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
 }

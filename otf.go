@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"math/rand"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -92,12 +93,18 @@ type Database interface {
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 }
 
-// Identity is an identifiable otf entity.
-type Identity interface {
-	// Human friendly identification of the entity.
-	String() string
-	// Uniquely identifies the entity.
-	ID() string
+// GetID retrieves the value corresponding to the ID field of a struct contained
+// in s. If s is not a struct, or there is no ID field, then false is returned.
+func GetID(s any) (string, bool) {
+	v := reflect.ValueOf(s)
+	if v.Kind() != reflect.Struct {
+		return "", false
+	}
+	f := v.FieldByName("ID")
+	if f.IsZero() {
+		return "", false
+	}
+	return f.String(), true
 }
 
 func String(str string) *string   { return &str }

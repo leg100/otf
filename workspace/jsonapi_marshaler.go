@@ -15,12 +15,12 @@ type JSONAPIMarshaler struct {
 	otf.Application
 }
 
-func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
+func (m *JSONAPIMarshaler) toJSONAPI(ws *otf.Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
 	}
-	policy, err := m.GetPolicy(r.Context(), ws.id)
+	policy, err := m.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 		CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	}
 
-	org := &jsonapi.Organization{Name: ws.Organization()}
+	org := &jsonapi.Organization{Name: ws.Organization}
 
 	// Support including related resources:
 	//
@@ -50,7 +50,7 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "organization":
-				org, err = m.GetOrganizationJSONAPI(r.Context(), ws.Organization())
+				org, err = m.GetOrganizationJSONAPI(r.Context(), ws.Organization)
 				if err != nil {
 					return nil, err
 				}
@@ -58,39 +58,39 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 		}
 	}
 	return &jsonapi.Workspace{
-		ID: ws.ID(),
+		ID: ws.ID,
 		Actions: &jsonapi.WorkspaceActions{
 			IsDestroyable: true,
 		},
-		AllowDestroyPlan:     ws.AllowDestroyPlan(),
-		AutoApply:            ws.AutoApply(),
-		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
-		CreatedAt:            ws.CreatedAt(),
-		Description:          ws.Description(),
-		Environment:          ws.Environment(),
-		ExecutionMode:        string(ws.ExecutionMode()),
-		FileTriggersEnabled:  ws.FileTriggersEnabled(),
-		GlobalRemoteState:    ws.GlobalRemoteState(),
+		AllowDestroyPlan:     ws.AllowDestroyPlan,
+		AutoApply:            ws.AutoApply,
+		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan,
+		CreatedAt:            ws.CreatedAt,
+		Description:          ws.Description,
+		Environment:          ws.Environment,
+		ExecutionMode:        string(ws.ExecutionMode),
+		FileTriggersEnabled:  ws.FileTriggersEnabled,
+		GlobalRemoteState:    ws.GlobalRemoteState,
 		Locked:               ws.Locked(),
-		MigrationEnvironment: ws.MigrationEnvironment(),
-		Name:                 ws.Name(),
+		MigrationEnvironment: ws.MigrationEnvironment,
+		Name:                 ws.Name,
 		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations:                 ws.ExecutionMode() == "remote",
+		Operations:                 ws.ExecutionMode == "remote",
 		Permissions:                perms,
-		QueueAllRuns:               ws.QueueAllRuns(),
-		SpeculativeEnabled:         ws.SpeculativeEnabled(),
-		SourceName:                 ws.SourceName(),
-		SourceURL:                  ws.SourceURL(),
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           ws.TerraformVersion(),
-		TriggerPrefixes:            ws.TriggerPrefixes(),
-		WorkingDirectory:           ws.WorkingDirectory(),
-		UpdatedAt:                  ws.UpdatedAt(),
+		QueueAllRuns:               ws.QueueAllRuns,
+		SpeculativeEnabled:         ws.SpeculativeEnabled,
+		SourceName:                 ws.SourceName,
+		SourceURL:                  ws.SourceURL,
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+		TerraformVersion:           ws.TerraformVersion,
+		TriggerPrefixes:            ws.TriggerPrefixes,
+		WorkingDirectory:           ws.WorkingDirectory,
+		UpdatedAt:                  ws.UpdatedAt,
 		Organization:               org,
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toJSONAPIList(list *WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
+func (m *JSONAPIMarshaler) toJSONAPIList(list *otf.WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
 	var items []*jsonapi.Workspace
 	for _, ws := range list.Items {
 		item, err := m.toJSONAPI(ws, r)

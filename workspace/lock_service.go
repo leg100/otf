@@ -8,14 +8,14 @@ import (
 )
 
 type lockService interface {
-	lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
-	unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error)
+	lock(ctx context.Context, workspaceID string, runID *string) (*otf.Workspace, error)
+	unlock(ctx context.Context, workspaceID string, force bool) (*otf.Workspace, error)
 }
 
 // lock the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
+func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string) (*otf.Workspace, error) {
 	subject, err := svc.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 		return nil, otf.ErrWorkspaceUnlockDenied
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
+	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *otf.Workspace) error {
 		return ws.Lock.Lock(state)
 	})
 	if err != nil {
@@ -45,7 +45,7 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 	return ws, nil
 }
 
-func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
+func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) (*otf.Workspace, error) {
 	action := rbac.UnlockWorkspaceAction
 	if force {
 		action = rbac.ForceUnlockWorkspaceAction
@@ -56,7 +56,7 @@ func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) 
 		return nil, err
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
+	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *otf.Workspace) error {
 		return ws.Unlock(subject, force)
 	})
 	if err != nil {

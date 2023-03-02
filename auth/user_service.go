@@ -32,14 +32,14 @@ func (a *Service) CreateUser(ctx context.Context, username string, opts ...NewUs
 	return a.createUser(ctx, username, opts...)
 }
 
-func (a *Service) GetUser(ctx context.Context, spec otf.UserSpec) (otf.User, error) {
+func (a *Service) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	user, err := a.db.getUser(ctx, spec)
 	if err != nil {
 		a.V(2).Info("retrieving user", "spec", spec)
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved user", "username", user.Username())
+	a.V(2).Info("retrieved user", "username", user.Username)
 
 	return user, nil
 }

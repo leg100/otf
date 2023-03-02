@@ -37,7 +37,7 @@ func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &jsonapi.User{ID: user.ID(), Username: user.Username()})
+	jsonapi.WriteResponse(w, r, &jsonapi.User{ID: user.ID, Username: user.Username})
 }
 
 // Registry session routes

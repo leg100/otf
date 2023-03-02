@@ -142,8 +142,8 @@ func (a *Service) list(ctx context.Context, opts ListOptions) (*OrganizationList
 	if err != nil {
 		return nil, err
 	}
-	if user, ok := subj.(otf.User); ok && !user.IsSiteAdmin() {
-		return a.db.listByUser(ctx, user.ID(), opts)
+	if user, ok := subj.(*otf.User); ok && !user.IsSiteAdmin {
+		return a.db.listByUser(ctx, user.ID, opts)
 	}
 	return a.db.list(ctx, opts)
 }

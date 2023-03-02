@@ -51,7 +51,7 @@ type view struct {
 	Flashes []flash       // flash messages to render in template
 }
 
-func (v *view) CurrentUser() otf.User {
+func (v *view) CurrentUser() *otf.User {
 	user, err := otf.UserFromContext(v.request.Context())
 	if err != nil {
 		return nil

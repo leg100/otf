@@ -18,7 +18,7 @@ type Subject interface {
 	CanAccessOrganization(action rbac.Action, name string) bool
 	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
-	Identity
+	String() string
 }
 
 // WorkspacePolicy binds workspace permissions to a workspace
@@ -49,12 +49,12 @@ func SubjectFromContext(ctx context.Context) (Subject, error) {
 }
 
 // UserFromContext retrieves a user from a context
-func UserFromContext(ctx context.Context) (User, error) {
+func UserFromContext(ctx context.Context) (*User, error) {
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	user, ok := subj.(User)
+	user, ok := subj.(*User)
 	if !ok {
 		return nil, fmt.Errorf("subject found in context but it is not a user")
 	}

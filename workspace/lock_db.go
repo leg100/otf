@@ -11,8 +11,8 @@ import (
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Workspace) error) (*Workspace, error) {
-	var ws *Workspace
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*otf.Workspace) error) (*otf.Workspace, error) {
+	var ws *otf.Workspace
 	err := db.tx(ctx, func(tx *pgdb) error {
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
@@ -41,15 +41,15 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 	return ws, err
 }
 
-func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDParams, error) {
+func MarshalWorkspaceLockParams(ws *otf.Workspace) (pggen.UpdateWorkspaceLockByIDParams, error) {
 	params := pggen.UpdateWorkspaceLockByIDParams{
-		WorkspaceID: pgtype.Text{String: ws.ID(), Status: pgtype.Present},
+		WorkspaceID: pgtype.Text{String: ws.ID, Status: pgtype.Present},
 	}
-	switch state := ws.state.(type) {
-	case RunLock:
+	switch state := ws.LockedState.(type) {
+	case otf.RunLock:
 		params.RunID = pgtype.Text{String: state.ID(), Status: pgtype.Present}
 		params.UserID = pgtype.Text{Status: pgtype.Null}
-	case UserLock:
+	case otf.UserLock:
 		params.UserID = pgtype.Text{String: state.ID(), Status: pgtype.Present}
 		params.RunID = pgtype.Text{Status: pgtype.Null}
 	case nil:
@@ -61,13 +61,14 @@ func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDPar
 	return params, nil
 }
 
-func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceResult) error {
+func unmarshalWorkspaceLock(dst *otf.Workspace, row *WorkspaceResult) error {
 	if row.UserLock == nil && row.RunLock == nil {
-		dst.state = nil
+		dst.LockedState = nil
 	} else if row.UserLock != nil {
-		dst.state = UserLock{id: row.UserLock.UserID.String, username: row.UserLock.Username.String}
+		dst.LockedState = otf.UserLock{
+			ID: row.UserLock.UserID.String, username: row.UserLock.Username.String}
 	} else if row.RunLock != nil {
-		dst.state = RunLock{id: row.RunLock.RunID.String}
+		dst.LockedState = otf.RunLock{id: row.RunLock.RunID.String}
 	} else {
 		return fmt.Errorf("workspace cannot be locked by both a run and a user")
 	}

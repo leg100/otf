@@ -69,7 +69,7 @@ func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_list.tmpl", w, r, struct {
-		*WorkspaceList
+		*otf.WorkspaceList
 		Organization string
 	}{
 		WorkspaceList: workspaces,
@@ -131,7 +131,7 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_get.tmpl", w, r, struct {
-		*Workspace
+		*otf.Workspace
 		LatestRun      otf.Run
 		LatestStreamID string
 	}{
@@ -195,7 +195,7 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_edit.tmpl", w, r, struct {
-		*Workspace
+		*otf.Workspace
 		Permissions []otf.WorkspacePermission
 		Teams       []otf.Team
 		Roles       []rbac.Role
@@ -312,7 +312,7 @@ func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) 
 
 	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
 		Items []*vcsprovider.VCSProvider
-		*Workspace
+		*otf.Workspace
 	}{
 		Items:     providers,
 		Workspace: ws,
@@ -351,7 +351,7 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
 		Items []cloud.Repo
-		*Workspace
+		*otf.Workspace
 		VCSProviderID string
 	}{
 		Items:         repos,

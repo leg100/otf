@@ -1,12 +1,8 @@
-package workspace
-
-import (
-	"github.com/leg100/otf"
-)
+package otf
 
 var (
-	EventLocked   otf.EventType = "workspace_locked"
-	EventUnlocked otf.EventType = "workspace_unlocked"
+	EventLocked   EventType = "workspace_locked"
+	EventUnlocked EventType = "workspace_unlocked"
 )
 
 // Lock is a workspace lock, which blocks runs from running and prevents state from being
@@ -14,46 +10,43 @@ var (
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings#locking
 type Lock struct {
-	state LockedState // nil means unlocked
+	LockedState // nil means unlocked
 }
 
 // Locked determines whether lock is locked.
 func (l *Lock) Locked() bool {
-	return l.state != nil
+	return l.LockedState != nil
 }
 
 // Lock transfers a workspace into the given locked state
 func (l *Lock) Lock(state LockedState) error {
-	if l.state == nil {
+	if l.LockedState == nil {
 		// anything can lock an unlocked lock
 		return nil
 	}
-	if err := l.state.CanLock(state); err != nil {
+	if err := l.LockedState.CanLock(state); err != nil {
 		return err
 	}
-	l.state = state
+	l.LockedState = state
 	return nil
 }
 
 // Unlock the lock. The given identity and toggling force determines
 // whether permission is granted and the operation succeeds.
-func (l *Lock) Unlock(iden otf.Identity, force bool) error {
-	if l.state == nil {
-		return otf.ErrWorkspaceAlreadyUnlocked
+func (l *Lock) Unlock(iden any, force bool) error {
+	if l.LockedState == nil {
+		return ErrWorkspaceAlreadyUnlocked
 	}
-	if err := l.state.CanUnlock(iden, force); err != nil {
+	if err := l.LockedState.CanUnlock(iden, force); err != nil {
 		return err
 	}
-	l.state = nil
+	l.LockedState = nil
 	return nil
 }
 
 // LockedState is the workspace lock in a locked state, revealing who/what has
 // locked it and whether it can be locked/unlocked.
 type LockedState interface {
-	// Who/what has locked the workspace
-	otf.Identity
-
 	// CanLock checks whether it can be replaced with the given locked state
 	CanLock(lock LockedState) error
 	// CanUnlock checks whether subject is permitted to transfer it into the,
@@ -63,27 +56,26 @@ type LockedState interface {
 
 // RunLock is a workspace lock held by a run
 type RunLock struct {
-	id string
+	ID string
 }
 
-func (l RunLock) ID() string     { return l.id }
-func (l RunLock) String() string { return l.id }
+func (l RunLock) String() string { return l.ID }
 
 func (RunLock) CanLock(lock LockedState) error {
 	// a run lock can only be replaced by another run lock
 	if _, ok := lock.(RunLock); ok {
 		return nil
 	}
-	return otf.ErrWorkspaceAlreadyLocked
+	return ErrWorkspaceAlreadyLocked
 }
 
 func (RunLock) CanUnlock(subject any, force bool) error {
 	// users are only allowed to unlock a run lock forceably
-	if _, ok := subject.(otf.User); ok {
+	if _, ok := subject.(User); ok {
 		if force {
 			return nil
 		}
-		return otf.ErrWorkspaceLockedByDifferentUser
+		return ErrWorkspaceLockedByDifferentUser
 	}
 	// anyone/anything else is allowed to unlock a run lock
 	return nil
@@ -91,22 +83,21 @@ func (RunLock) CanUnlock(subject any, force bool) error {
 
 // UserLock is a lock held by a user
 type UserLock struct {
-	id, username string
+	ID, Username string
 }
 
-func (l UserLock) ID() string     { return l.id }
-func (l UserLock) String() string { return l.username }
+func (l UserLock) String() string { return l.Username }
 
 func (l UserLock) CanLock(lock LockedState) error {
 	// nothing can replace a user lock; it can only be unlocked
-	return otf.ErrWorkspaceAlreadyLocked
+	return ErrWorkspaceAlreadyLocked
 }
 
 func (l UserLock) CanUnlock(subject any, force bool) error {
 	// only users can unlock a user lock
-	user, ok := subject.(otf.User)
+	user, ok := subject.(*User)
 	if !ok {
-		return otf.ErrWorkspaceUnlockDenied
+		return ErrWorkspaceUnlockDenied
 	}
 
 	if force {
@@ -116,8 +107,8 @@ func (l UserLock) CanUnlock(subject any, force bool) error {
 	}
 
 	// a user can only unlock their own lock
-	if l.id == user.ID() {
+	if l.ID == user.ID {
 		return nil
 	}
-	return otf.ErrWorkspaceLockedByDifferentUser
+	return ErrWorkspaceLockedByDifferentUser
 }

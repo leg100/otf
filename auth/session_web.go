@@ -27,7 +27,7 @@ func (app *web) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessions, err := app.svc.listSessions(r.Context(), user.ID())
+	sessions, err := app.svc.listSessions(r.Context(), user.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

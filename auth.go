@@ -34,45 +34,11 @@ type RegistrySessionApp interface {
 	GetRegistrySession(ctx context.Context, token string) (RegistrySession, error)
 }
 
-type User interface {
-	Username() string
-	IsSiteAdmin() bool
-	Organizations() []string
-
-	Subject
-}
-
-// UserService provides methods to interact with user accounts and their
-// sessions.
-type UserService interface {
-	// Get retrieves a user according to the spec.
-	GetUser(ctx context.Context, spec UserSpec) (User, error)
-}
-
-type UserSpec struct {
-	UserID              *string
-	Username            *string
-	SessionToken        *string
-	AuthenticationToken *string
-}
-
 func (s UserSpec) MarshalLog() any {
 	if s.AuthenticationToken != nil {
 		s.AuthenticationToken = String("*****")
 	}
 	return s
-}
-
-type Team struct {
-	ID           string
-	Name         string
-	Organization string
-	IsOwners     bool
-}
-
-type CreateTeamOptions struct {
-	Name         string `schema:"team_name,required"`
-	Organization string `schema:"organization_name,required"`
 }
 
 type AgentToken interface {
@@ -95,11 +61,6 @@ type AgentTokenService interface {
 type Session interface {
 	Expiry() time.Time
 	SetCookie(w http.ResponseWriter)
-}
-
-type TeamService interface {
-	// GetTeam(ctx context.Context, teamID string) (Team, error)
-	ListTeams(ctx context.Context, organization string) ([]Team, error)
 }
 
 type SessionService interface {

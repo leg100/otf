@@ -59,7 +59,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.svc.create(r.Context(), CreateWorkspaceOptions{
+	ws, err := a.svc.create(r.Context(), otf.CreateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -143,7 +143,7 @@ func (s *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := s.svc.list(r.Context(), WorkspaceListOptions{
+	wsl, err := s.svc.list(r.Context(), otf.WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -189,7 +189,7 @@ func (s *api) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.updateWorkspace(w, r, ws.ID())
+	s.updateWorkspace(w, r, ws.ID)
 }
 
 func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +272,7 @@ func (s *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	_, err = s.svc.delete(r.Context(), ws.ID())
+	_, err = s.svc.delete(r.Context(), ws.ID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -291,7 +291,7 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	ws, err := s.svc.update(r.Context(), workspaceID, UpdateWorkspaceOptions{
+	ws, err := s.svc.update(r.Context(), workspaceID, otf.UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,

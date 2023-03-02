@@ -49,34 +49,34 @@ type WorkspaceResult struct {
 	Webhook                    *pggen.Webhooks       `json:"webhook"`
 }
 
-func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
-	ws := Workspace{
-		id:                         result.WorkspaceID.String,
-		createdAt:                  result.CreatedAt.Time.UTC(),
-		updatedAt:                  result.UpdatedAt.Time.UTC(),
-		allowDestroyPlan:           result.AllowDestroyPlan,
-		autoApply:                  result.AutoApply,
-		canQueueDestroyPlan:        result.CanQueueDestroyPlan,
-		description:                result.Description.String,
-		environment:                result.Environment.String,
-		executionMode:              otf.ExecutionMode(result.ExecutionMode.String),
-		fileTriggersEnabled:        result.FileTriggersEnabled,
-		globalRemoteState:          result.GlobalRemoteState,
-		migrationEnvironment:       result.MigrationEnvironment.String,
-		name:                       result.Name.String,
-		queueAllRuns:               result.QueueAllRuns,
-		speculativeEnabled:         result.SpeculativeEnabled,
-		structuredRunOutputEnabled: result.StructuredRunOutputEnabled,
-		sourceName:                 result.SourceName.String,
-		sourceURL:                  result.SourceURL.String,
-		terraformVersion:           result.TerraformVersion.String,
-		triggerPrefixes:            result.TriggerPrefixes,
-		workingDirectory:           result.WorkingDirectory.String,
-		organization:               result.OrganizationName.String,
+func UnmarshalWorkspaceResult(result WorkspaceResult) (*otf.Workspace, error) {
+	ws := otf.Workspace{
+		ID:                         result.WorkspaceID.String,
+		CreatedAt:                  result.CreatedAt.Time.UTC(),
+		UpdatedAt:                  result.UpdatedAt.Time.UTC(),
+		AllowDestroyPlan:           result.AllowDestroyPlan,
+		AutoApply:                  result.AutoApply,
+		CanQueueDestroyPlan:        result.CanQueueDestroyPlan,
+		Description:                result.Description.String,
+		Environment:                result.Environment.String,
+		ExecutionMode:              otf.ExecutionMode(result.ExecutionMode.String),
+		FileTriggersEnabled:        result.FileTriggersEnabled,
+		GlobalRemoteState:          result.GlobalRemoteState,
+		MigrationEnvironment:       result.MigrationEnvironment.String,
+		Name:                       result.Name.String,
+		QueueAllRuns:               result.QueueAllRuns,
+		SpeculativeEnabled:         result.SpeculativeEnabled,
+		StructuredRunOutputEnabled: result.StructuredRunOutputEnabled,
+		SourceName:                 result.SourceName.String,
+		SourceURL:                  result.SourceURL.String,
+		TerraformVersion:           result.TerraformVersion.String,
+		TriggerPrefixes:            result.TriggerPrefixes,
+		WorkingDirectory:           result.WorkingDirectory.String,
+		Organization:               result.OrganizationName.String,
 	}
 
 	if result.WorkspaceRepo != nil {
-		ws.repo = &WorkspaceRepo{
+		ws.Repo = &otf.WorkspaceRepo{
 			Branch:     result.WorkspaceRepo.Branch.String,
 			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
 			WebhookID:  result.Webhook.WebhookID.Bytes,
@@ -85,7 +85,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 	}
 
 	if result.LatestRunID.Status == pgtype.Present {
-		ws.latestRunID = &result.LatestRunID.String
+		ws.LatestRunID = &result.LatestRunID.String
 	}
 
 	if err := unmarshalWorkspaceLock(&ws, &result); err != nil {
@@ -99,41 +99,41 @@ func newdb(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
-func (db *pgdb) CreateWorkspace(ctx context.Context, ws *Workspace) error {
+func (db *pgdb) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-			ID:                         sql.String(ws.ID()),
-			CreatedAt:                  sql.Timestamptz(ws.CreatedAt()),
-			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt()),
-			Name:                       sql.String(ws.Name()),
-			AllowDestroyPlan:           ws.AllowDestroyPlan(),
-			AutoApply:                  ws.AutoApply(),
-			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
-			Environment:                sql.String(ws.Environment()),
-			Description:                sql.String(ws.Description()),
-			ExecutionMode:              sql.String(string(ws.ExecutionMode())),
-			FileTriggersEnabled:        ws.FileTriggersEnabled(),
-			GlobalRemoteState:          ws.GlobalRemoteState(),
-			MigrationEnvironment:       sql.String(ws.MigrationEnvironment()),
-			SourceName:                 sql.String(ws.SourceName()),
-			SourceURL:                  sql.String(ws.SourceURL()),
-			SpeculativeEnabled:         ws.SpeculativeEnabled(),
-			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-			TerraformVersion:           sql.String(ws.TerraformVersion()),
-			TriggerPrefixes:            ws.TriggerPrefixes(),
-			QueueAllRuns:               ws.QueueAllRuns(),
-			WorkingDirectory:           sql.String(ws.WorkingDirectory()),
-			OrganizationName:           sql.String(ws.Organization()),
+			ID:                         sql.String(ws.ID),
+			CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
+			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+			Name:                       sql.String(ws.Name),
+			AllowDestroyPlan:           ws.AllowDestroyPlan,
+			AutoApply:                  ws.AutoApply,
+			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
+			Environment:                sql.String(ws.Environment),
+			Description:                sql.String(ws.Description),
+			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+			FileTriggersEnabled:        ws.FileTriggersEnabled,
+			GlobalRemoteState:          ws.GlobalRemoteState,
+			MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
+			SourceName:                 sql.String(ws.SourceName),
+			SourceURL:                  sql.String(ws.SourceURL),
+			SpeculativeEnabled:         ws.SpeculativeEnabled,
+			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+			TerraformVersion:           sql.String(ws.TerraformVersion),
+			TriggerPrefixes:            ws.TriggerPrefixes,
+			QueueAllRuns:               ws.QueueAllRuns,
+			WorkingDirectory:           sql.String(ws.WorkingDirectory),
+			OrganizationName:           sql.String(ws.Organization),
 		})
 		if err != nil {
 			return sql.Error(err)
 		}
-		if ws.Repo() != nil {
+		if ws.Repo != nil {
 			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-				Branch:        sql.String(ws.Repo().Branch),
-				WebhookID:     sql.UUID(ws.Repo().WebhookID),
-				VCSProviderID: sql.String(ws.Repo().ProviderID),
-				WorkspaceID:   sql.String(ws.ID()),
+				Branch:        sql.String(ws.Repo.Branch),
+				WebhookID:     sql.UUID(ws.Repo.WebhookID),
+				VCSProviderID: sql.String(ws.Repo.ProviderID),
+				WorkspaceID:   sql.String(ws.ID),
 			})
 			if err != nil {
 				return sql.Error(err)
@@ -147,8 +147,8 @@ func (db *pgdb) CreateWorkspace(ctx context.Context, ws *Workspace) error {
 	return nil
 }
 
-func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
-	var ws *Workspace
+func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
+	var ws *otf.Workspace
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		var err error
 		// retrieve workspace
@@ -166,26 +166,26 @@ func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func
 		}
 		// persist update
 		_, err = tx.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
-			ID:                         sql.String(ws.ID()),
-			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt()),
-			AllowDestroyPlan:           ws.AllowDestroyPlan(),
-			AutoApply:                  ws.AutoApply(),
-			Description:                sql.String(ws.Description()),
-			ExecutionMode:              sql.String(string(ws.ExecutionMode())),
-			Name:                       sql.String(ws.Name()),
-			QueueAllRuns:               ws.QueueAllRuns(),
-			SpeculativeEnabled:         ws.SpeculativeEnabled(),
-			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-			TerraformVersion:           sql.String(ws.TerraformVersion()),
-			TriggerPrefixes:            ws.TriggerPrefixes(),
-			WorkingDirectory:           sql.String(ws.WorkingDirectory()),
+			ID:                         sql.String(ws.ID),
+			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+			AllowDestroyPlan:           ws.AllowDestroyPlan,
+			AutoApply:                  ws.AutoApply,
+			Description:                sql.String(ws.Description),
+			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+			Name:                       sql.String(ws.Name),
+			QueueAllRuns:               ws.QueueAllRuns,
+			SpeculativeEnabled:         ws.SpeculativeEnabled,
+			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+			TerraformVersion:           sql.String(ws.TerraformVersion),
+			TriggerPrefixes:            ws.TriggerPrefixes,
+			WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		})
 		return err
 	})
 	return ws, err
 }
 
-func (db *pgdb) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
+func (db *pgdb) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*otf.Workspace, error) {
 	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
 		Branch:        sql.String(repo.Branch),
 		WebhookID:     sql.UUID(repo.WebhookID),
@@ -199,7 +199,7 @@ func (db *pgdb) CreateWorkspaceRepo(ctx context.Context, workspaceID string, rep
 	return ws, sql.Error(err)
 }
 
-func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
+func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*otf.Workspace, error) {
 	_, err := db.UpdateWorkspaceRepoByID(ctx, sql.String(repo.Branch), sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -208,7 +208,7 @@ func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, rep
 	return ws, sql.Error(err)
 }
 
-func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	_, err := db.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -218,7 +218,7 @@ func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*W
 }
 
 // SetCurrentRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, sql.String(runID), sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -226,7 +226,7 @@ func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	return db.GetWorkspace(ctx, workspaceID)
 }
 
-func (db *pgdb) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -257,7 +257,7 @@ func (db *pgdb) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (
 		return nil, err
 	}
 
-	var items []*Workspace
+	var items []*otf.Workspace
 	for _, r := range rows {
 		ws, err := UnmarshalWorkspaceResult(WorkspaceResult(r))
 		if err != nil {
@@ -266,19 +266,19 @@ func (db *pgdb) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (
 		items = append(items, ws)
 	}
 
-	return &WorkspaceList{
+	return &otf.WorkspaceList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
+func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
 	rows, err := db.FindWorkspacesByWebhookID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*Workspace
+	var items []*otf.Workspace
 	for _, r := range rows {
 		ws, err := UnmarshalWorkspaceResult(WorkspaceResult(r))
 		if err != nil {
@@ -290,7 +290,7 @@ func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]
 	return items, nil
 }
 
-func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
@@ -312,7 +312,7 @@ func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organ
 		return nil, err
 	}
 
-	var items []*Workspace
+	var items []*otf.Workspace
 	for _, r := range rows {
 		ws, err := UnmarshalWorkspaceResult(WorkspaceResult(r))
 		if err != nil {
@@ -321,7 +321,7 @@ func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organ
 		items = append(items, ws)
 	}
 
-	return &WorkspaceList{
+	return &otf.WorkspaceList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts, *count),
 	}, nil
@@ -351,7 +351,7 @@ func (db *pgdb) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, 
 	return workspaceID.String, nil
 }
 
-func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	result, err := db.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -359,7 +359,7 @@ func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*Workspac
 	return UnmarshalWorkspaceResult(WorkspaceResult(result))
 }
 
-func (db *pgdb) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (db *pgdb) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
 	result, err := db.FindWorkspaceByName(ctx, sql.String(workspace), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)

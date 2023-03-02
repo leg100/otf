@@ -182,8 +182,8 @@ func (b *Hub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
 
 // marshal an otf event into a JSON-encoded postgres message
 func (b *Hub) marshal(event otf.Event) ([]byte, error) {
-	obj, ok := event.Payload.(otf.Identity)
-	if !ok {
+	id, hasID := otf.GetID(event.Payload)
+	if !hasID {
 		return nil, fmt.Errorf("cannot marshal event without an identifiable payload")
 	}
 	parts := strings.SplitN(string(event.Type), "_", 2)
@@ -194,7 +194,7 @@ func (b *Hub) marshal(event otf.Event) ([]byte, error) {
 	return json.Marshal(&message{
 		Table:  parts[0],
 		Action: parts[1],
-		ID:     obj.ID(),
+		ID:     id,
 		PID:    b.pid,
 	})
 }
