@@ -21,7 +21,7 @@ type (
 		HookCallback
 		cloud.Client
 	}
-	HookCallback func(ctx context.Context, tx Database, hookID uuid.UUID) error
+	HookCallback func(ctx context.Context, tx DB, hookID uuid.UUID) error
 
 	UnhookOptions struct {
 		HookID uuid.UUID
@@ -29,5 +29,5 @@ type (
 		UnhookCallback
 		cloud.Client
 	}
-	UnhookCallback func(ctx context.Context, tx Database) error
+	UnhookCallback func(ctx context.Context, tx DB) error
 )

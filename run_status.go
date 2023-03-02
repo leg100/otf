@@ -1,0 +1,42 @@
+package otf
+
+const (
+	// List all available run statuses supported in OTF.
+	RunApplied            RunStatus = "applied"
+	RunApplyQueued        RunStatus = "apply_queued"
+	RunApplying           RunStatus = "applying"
+	RunCanceled           RunStatus = "canceled"
+	RunForceCanceled      RunStatus = "force_canceled"
+	RunConfirmed          RunStatus = "confirmed"
+	RunDiscarded          RunStatus = "discarded"
+	RunErrored            RunStatus = "errored"
+	RunPending            RunStatus = "pending"
+	RunPlanQueued         RunStatus = "plan_queued"
+	RunPlanned            RunStatus = "planned"
+	RunPlannedAndFinished RunStatus = "planned_and_finished"
+	RunPlanning           RunStatus = "planning"
+)
+
+var (
+	ActiveRun = []RunStatus{
+		RunApplyQueued,
+		RunApplying,
+		RunConfirmed,
+		RunPlanQueued,
+		RunPlanned,
+		RunPlanning,
+	}
+	IncompleteRun = append(ActiveRun, RunPending)
+	CompletedRun  = []RunStatus{
+		RunApplied,
+		RunErrored,
+		RunDiscarded,
+		RunCanceled,
+		RunForceCanceled,
+	}
+)
+
+// RunStatus represents a run state.
+type RunStatus string
+
+func (r RunStatus) String() string { return string(r) }

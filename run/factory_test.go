@@ -15,7 +15,7 @@ func TestRunFactory(t *testing.T) {
 	tests := []struct {
 		name string
 		opts RunCreateOptions
-		want func(*testing.T, *Run, error)
+		want func(*testing.T, *otf.Run, error)
 		ws   *Workspace
 		cv   *ConfigurationVersion
 	}{
@@ -24,7 +24,7 @@ func TestRunFactory(t *testing.T) {
 			ws:   ws,
 			cv:   cv,
 			opts: RunCreateOptions{},
-			want: func(t *testing.T, run *Run, err error) {
+			want: func(t *testing.T, run *otf.Run, err error) {
 				assert.Equal(t, RunPending, run.status)
 				assert.NotZero(t, run.createdAt)
 				assert.False(t, run.speculative)
@@ -39,7 +39,7 @@ func TestRunFactory(t *testing.T) {
 				Speculative: Bool(true),
 			}),
 			opts: RunCreateOptions{},
-			want: func(t *testing.T, run *Run, err error) {
+			want: func(t *testing.T, run *otf.Run, err error) {
 				assert.True(t, run.speculative)
 			},
 		},
@@ -48,7 +48,7 @@ func TestRunFactory(t *testing.T) {
 			ws:   NewTestWorkspace(t, org, AutoApply()),
 			cv:   cv,
 			opts: RunCreateOptions{},
-			want: func(t *testing.T, run *Run, err error) {
+			want: func(t *testing.T, run *otf.Run, err error) {
 				assert.True(t, run.autoApply)
 			},
 		},
@@ -57,7 +57,7 @@ func TestRunFactory(t *testing.T) {
 			ws:   NewTestWorkspace(t, org),
 			cv:   cv,
 			opts: RunCreateOptions{AutoApply: Bool(true)},
-			want: func(t *testing.T, run *Run, err error) {
+			want: func(t *testing.T, run *otf.Run, err error) {
 				assert.True(t, run.autoApply)
 			},
 		},

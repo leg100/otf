@@ -15,6 +15,8 @@ import (
 const (
 	defaultExpiry          = 24 * time.Hour
 	defaultCleanupInterval = 5 * time.Minute
+	// path cookie stores the last path the user attempted to access
+	pathCookie = "path"
 )
 
 // Session is a user session for the web UI
@@ -77,8 +79,15 @@ func getClientIP(r *http.Request) (string, error) {
 	return host, err
 }
 
+// sendUserToLoginPage sends user to the login prompt page, saving the original
+// page they tried to access so it can return them there after login.
+func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
+	html.SetCookie(w, pathCookie, r.URL.Path, nil)
+	http.Redirect(w, r, paths.Login(), http.StatusFound)
+}
+
 // returnUserOriginalPage returns a user to the original page they tried to
-// access before they were redirected elsewhere.
+// access before they were redirected to the login page.
 func returnUserOriginalPage(w http.ResponseWriter, r *http.Request) {
 	// Return user to the original path they attempted to access
 	if cookie, err := r.Cookie(pathCookie); err == nil {

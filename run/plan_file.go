@@ -2,6 +2,8 @@ package run
 
 import (
 	"encoding/json"
+
+	"github.com/leg100/otf"
 )
 
 const (
@@ -28,7 +30,7 @@ type Change struct {
 type ChangeAction string
 
 // Changes provides a tally of the types of changes proposed in the plan file.
-func (pf *PlanFile) Changes() (tally ResourceReport) {
+func (pf *PlanFile) Changes() (tally otf.ResourceReport) {
 	for _, rc := range pf.ResourceChanges {
 		for _, action := range rc.Change.Actions {
 			switch action {
@@ -47,10 +49,10 @@ func (pf *PlanFile) Changes() (tally ResourceReport) {
 
 // CompilePlanReport compiles a report of planned changes from a JSON
 // representation of a plan file.
-func CompilePlanReport(planJSON []byte) (ResourceReport, error) {
+func CompilePlanReport(planJSON []byte) (otf.ResourceReport, error) {
 	planFile := PlanFile{}
 	if err := json.Unmarshal(planJSON, &planFile); err != nil {
-		return ResourceReport{}, err
+		return otf.ResourceReport{}, err
 	}
 
 	// Parse plan output

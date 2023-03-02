@@ -7,14 +7,10 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type workspaceAuthorizer interface {
-	CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error)
-}
-
 // authorizer authorizes access to a run
 type authorizer struct {
-	db *pgdb
-	workspaceAuthorizer
+	db        *pgdb
+	workspace otf.Authorizer
 }
 
 func (a *authorizer) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
@@ -22,5 +18,5 @@ func (a *authorizer) CanAccessRun(ctx context.Context, action rbac.Action, runID
 	if err != nil {
 		return nil, err
 	}
-	return a.CanAccessWorkspaceByID(ctx, action, run.workspaceID)
+	return a.workspace.CanAccess(ctx, action, run.WorkspaceID)
 }

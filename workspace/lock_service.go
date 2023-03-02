@@ -16,7 +16,7 @@ type lockService interface {
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
 func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
-	subject, err := svc.CanAccessWorkspaceByID(ctx, rbac.LockWorkspaceAction, workspaceID)
+	subject, err := svc.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) 
 		action = rbac.ForceUnlockWorkspaceAction
 	}
 
-	subject, err := svc.CanAccessWorkspaceByID(ctx, action, workspaceID)
+	subject, err := svc.CanAccess(ctx, action, workspaceID)
 	if err != nil {
 		return nil, err
 	}

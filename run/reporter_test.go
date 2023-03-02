@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func TestReporter_HandleRun(t *testing.T) {
 
 // newTestReporter creates a reporter for testing purposes, returning a run
 // with the given status and a channel of status updates.
-func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan cloud.SetStatusOptions) {
+func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *otf.Run, <-chan cloud.SetStatusOptions) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
 	repo := NewTestWorkspaceRepo(provider)

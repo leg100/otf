@@ -22,39 +22,39 @@ func newDB(db otf.Database) *pgdb {
 }
 
 // CreateRun persists a Run to the DB.
-func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
+func (db *pgdb) CreateRun(ctx context.Context, run *otf.Run) error {
 	return db.tx(ctx, func(tx *pgdb) error {
 		_, err := tx.InsertRun(ctx, pggen.InsertRunParams{
-			ID:                     sql.String(run.ID()),
-			CreatedAt:              sql.Timestamptz(run.CreatedAt()),
-			IsDestroy:              run.IsDestroy(),
-			Refresh:                run.Refresh(),
-			RefreshOnly:            run.RefreshOnly(),
-			Status:                 sql.String(string(run.Status())),
-			ReplaceAddrs:           run.ReplaceAddrs(),
-			TargetAddrs:            run.TargetAddrs(),
-			AutoApply:              run.AutoApply(),
-			ConfigurationVersionID: sql.String(run.ConfigurationVersionID()),
-			WorkspaceID:            sql.String(run.WorkspaceID()),
+			ID:                     sql.String(run.ID),
+			CreatedAt:              sql.Timestamptz(run.CreatedAt),
+			IsDestroy:              run.IsDestroy,
+			Refresh:                run.Refresh,
+			RefreshOnly:            run.RefreshOnly,
+			Status:                 sql.String(string(run.Status)),
+			ReplaceAddrs:           run.ReplaceAddrs,
+			TargetAddrs:            run.TargetAddrs,
+			AutoApply:              run.AutoApply,
+			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
+			WorkspaceID:            sql.String(run.WorkspaceID),
 		})
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
 		}
-		_, err = tx.InsertPlan(ctx, sql.String(run.ID()), sql.String(string(run.Plan().Status())))
+		_, err = tx.InsertPlan(ctx, sql.String(run.ID), sql.String(string(run.Plan.Status)))
 		if err != nil {
 			return fmt.Errorf("inserting plan: %w", err)
 		}
-		_, err = tx.InsertApply(ctx, sql.String(run.ID()), sql.String(string(run.Apply().Status())))
+		_, err = tx.InsertApply(ctx, sql.String(run.ID), sql.String(string(run.Apply.Status)))
 		if err != nil {
 			return fmt.Errorf("inserting apply: %w", err)
 		}
 		if err := tx.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
+		if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
+		if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -62,8 +62,8 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
-func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) error) (*Run, error) {
-	var run *Run
+func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) error) (*otf.Run, error) {
+	var run *otf.Run
 	err := db.tx(ctx, func(tx *pgdb) error {
 		// select ...for update
 		result, err := tx.FindRunByIDForUpdate(ctx, sql.String(runID))
@@ -76,17 +76,17 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 		}
 
 		// Make copies of run attributes before update
-		runStatus := run.Status()
-		planStatus := run.Plan().Status()
-		applyStatus := run.Apply().Status()
-		forceCancelAvailableAt := run.ForceCancelAvailableAt()
+		runStatus := run.Status
+		planStatus := run.Plan.Status
+		applyStatus := run.Apply.Status
+		forceCancelAvailableAt := run.ForceCancelAvailableAt
 
 		if err := fn(run); err != nil {
 			return err
 		}
 
-		if run.Status() != runStatus {
-			_, err := tx.UpdateRunStatus(ctx, sql.String(string(run.Status())), sql.String(run.ID()))
+		if run.Status != runStatus {
+			_, err := tx.UpdateRunStatus(ctx, sql.String(string(run.Status)), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
@@ -96,30 +96,30 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 			}
 		}
 
-		if run.Plan().Status() != planStatus {
-			_, err := tx.UpdatePlanStatusByID(ctx, sql.String(string(run.Plan().Status())), sql.String(run.ID()))
+		if run.Plan.Status != planStatus {
+			_, err := tx.UpdatePlanStatusByID(ctx, sql.String(string(run.Plan.Status)), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
 
-			if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
+			if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
 				return err
 			}
 		}
 
-		if run.Apply().Status() != applyStatus {
-			_, err := tx.UpdateApplyStatusByID(ctx, sql.String(string(run.Apply().Status())), sql.String(run.ID()))
+		if run.Apply.Status != applyStatus {
+			_, err := tx.UpdateApplyStatusByID(ctx, sql.String(string(run.Apply.Status)), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
 
-			if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
+			if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
 				return err
 			}
 		}
 
-		if run.ForceCancelAvailableAt() != forceCancelAvailableAt && run.ForceCancelAvailableAt() != nil {
-			_, err := tx.UpdateRunForceCancelAvailableAt(ctx, sql.Timestamptz(*run.ForceCancelAvailableAt()), sql.String(run.ID()))
+		if run.ForceCancelAvailableAt != forceCancelAvailableAt && run.ForceCancelAvailableAt != nil {
+			_, err := tx.UpdateRunForceCancelAvailableAt(ctx, sql.Timestamptz(*run.ForceCancelAvailableAt), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
@@ -130,7 +130,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 	return run, err
 }
 
-func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report ResourceReport) error {
+func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report otf.ResourceReport) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    report.Additions,
@@ -143,7 +143,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report Resou
 	return err
 }
 
-func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report ResourceReport) error {
+func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report otf.ResourceReport) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    report.Additions,
@@ -156,7 +156,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Reso
 	return err
 }
 
-func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*RunList, error) {
+func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	batch := &pgx.Batch{}
 	organizationName := "%"
 	if opts.Organization != nil {
@@ -207,7 +207,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*RunList
 		return nil, err
 	}
 
-	var items []*Run
+	var items []*otf.Run
 	for _, r := range rows {
 		run, err := UnmarshalRunResult(RunResult(r))
 		if err != nil {
@@ -216,14 +216,14 @@ func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*RunList
 		items = append(items, run)
 	}
 
-	return &RunList{
+	return &otf.RunList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
 // GetRun retrieves a run using the get options
-func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
+func (db *pgdb) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	result, err := db.FindRunByID(ctx, sql.String(runID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -274,28 +274,28 @@ func (db *pgdb) DeleteRun(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
-	ts, err := run.StatusTimestamp(run.Status())
+func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error {
+	ts, err := run.StatusTimestamp(run.Status)
 	if err != nil {
 		return err
 	}
 	_, err = db.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
-		ID:        sql.String(run.ID()),
-		Status:    sql.String(string(run.Status())),
+		ID:        sql.String(run.ID),
+		Status:    sql.String(string(run.Status)),
 		Timestamp: sql.Timestamptz(ts),
 	})
 	return err
 }
 
 func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase otf.Phase) error {
-	ts, err := phase.StatusTimestamp(phase.Status())
+	ts, err := phase.StatusTimestamp(phase.Status)
 	if err != nil {
 		return err
 	}
 	_, err = db.InsertPhaseStatusTimestamp(ctx, pggen.InsertPhaseStatusTimestampParams{
-		RunID:     sql.String(phase.ID()),
-		Phase:     sql.String(string(phase.Phase())),
-		Status:    sql.String(string(phase.Status())),
+		RunID:     sql.String(phase.RunID),
+		Phase:     sql.String(string(phase.PhaseType)),
+		Status:    sql.String(string(phase.Status)),
 		Timestamp: sql.Timestamptz(ts),
 	})
 	return err
@@ -344,54 +344,50 @@ type RunResult struct {
 	ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
 }
 
-func UnmarshalRunResult(result RunResult) (*Run, error) {
-	run := Run{
-		id:                     result.RunID.String,
-		createdAt:              result.CreatedAt.Time.UTC(),
-		isDestroy:              result.IsDestroy,
-		positionInQueue:        result.PositionInQueue,
-		refresh:                result.Refresh,
-		refreshOnly:            result.RefreshOnly,
-		status:                 otf.RunStatus(result.Status.String),
-		statusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
-		replaceAddrs:           result.ReplaceAddrs,
-		targetAddrs:            result.TargetAddrs,
-		autoApply:              result.AutoApply,
-		speculative:            result.Speculative,
-		executionMode:          otf.ExecutionMode(result.ExecutionMode.String),
-		latest:                 result.Latest,
-		organization:           result.OrganizationName.String,
-		workspaceID:            result.WorkspaceID.String,
-		configurationVersionID: result.ConfigurationVersionID.String,
-		plan: &Plan{
-			runID: result.RunID.String,
-			phaseStatus: &phaseStatus{
-				status:           otf.PhaseStatus(result.PlanStatus.String),
-				statusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
-			},
-			ResourceReport: (*ResourceReport)(result.PlannedChanges),
+func UnmarshalRunResult(result RunResult) (*otf.Run, error) {
+	run := otf.Run{
+		ID:                     result.RunID.String,
+		CreatedAt:              result.CreatedAt.Time.UTC(),
+		IsDestroy:              result.IsDestroy,
+		PositionInQueue:        result.PositionInQueue,
+		Refresh:                result.Refresh,
+		RefreshOnly:            result.RefreshOnly,
+		Status:                 otf.RunStatus(result.Status.String),
+		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
+		ReplaceAddrs:           result.ReplaceAddrs,
+		TargetAddrs:            result.TargetAddrs,
+		AutoApply:              result.AutoApply,
+		Speculative:            result.Speculative,
+		ExecutionMode:          otf.ExecutionMode(result.ExecutionMode.String),
+		Latest:                 result.Latest,
+		Organization:           result.OrganizationName.String,
+		WorkspaceID:            result.WorkspaceID.String,
+		ConfigurationVersionID: result.ConfigurationVersionID.String,
+		Plan: otf.Phase{
+			RunID:            result.RunID.String,
+			Status:           otf.PhaseStatus(result.PlanStatus.String),
+			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
+			ResourceReport:   (*otf.ResourceReport)(result.PlannedChanges),
 		},
-		apply: &Apply{
-			runID: result.RunID.String,
-			phaseStatus: &phaseStatus{
-				status:           otf.PhaseStatus(result.ApplyStatus.String),
-				statusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
-			},
-			ResourceReport: (*ResourceReport)(result.AppliedChanges),
+		Apply: otf.Phase{
+			RunID:            result.RunID.String,
+			Status:           otf.PhaseStatus(result.ApplyStatus.String),
+			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
+			ResourceReport:   (*otf.ResourceReport)(result.AppliedChanges),
 		},
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
-		run.forceCancelAvailableAt = otf.Time(result.ForceCancelAvailableAt.Time.UTC())
+		run.ForceCancelAvailableAt = otf.Time(result.ForceCancelAvailableAt.Time.UTC())
 	}
 	if result.IngressAttributes != nil {
-		run.commit = &result.IngressAttributes.CommitSHA.String
+		run.Commit = &result.IngressAttributes.CommitSHA.String
 	}
 	return &run, nil
 }
 
-func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
+func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []otf.RunStatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, RunStatusTimestamp{
+		timestamps = append(timestamps, otf.RunStatusTimestamp{
 			Status:    otf.RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})

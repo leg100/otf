@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
 )
 
 const (
@@ -100,9 +99,4 @@ func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
-	html.SetCookie(w, pathCookie, r.URL.Path, nil)
-	http.Redirect(w, r, paths.Login(), http.StatusFound)
 }

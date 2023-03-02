@@ -17,10 +17,10 @@ type RunStarter struct {
 	*vcsprovider.Service
 	otf.WorkspaceService
 
-	application
+	service
 }
 
-func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {
+func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
 	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 		}
 	}
 
-	return rs.create(ctx, workspaceID, RunCreateOptions{
+	return rs.create(ctx, workspaceID, otf.RunCreateOptions{
 		ConfigurationVersionID: otf.String(cv.ID()),
 	})
 }

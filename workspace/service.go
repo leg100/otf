@@ -31,28 +31,31 @@ type Service struct {
 	logr.Logger
 	otf.PubSubService
 
+	site         otf.Authorizer
+	organization otf.Authorizer
 	*authorizer
 
-	api          *api
-	connector    *Connector
-	db           *pgdb
-	organization otf.Authorizer
-	site         otf.Authorizer
-	web          *web
+	connector *Connector
+	db        *pgdb
+
+	api *api
+	web *web
 }
 
 func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:        opts.Logger,
 		PubSubService: opts.PubSubService,
-		db:            newPGDB(opts.DB),
+		db:            newdb(opts.DB),
 	}
+
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.site = &otf.SiteAuthorizer{opts.Logger}
 	svc.authorizer = &authorizer{
 		Logger: opts.Logger,
 		db:     svc.db,
 	}
+
 	svc.api = &api{
 		svc:             &svc,
 		tokenMiddleware: opts.TokenMiddleware,
@@ -141,7 +144,7 @@ func (a *Service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 }
 
 func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +174,7 @@ func (a *Service) listByWebhook(ctx context.Context, id uuid.UUID) ([]*Workspace
 }
 
 func (a *Service) connect(ctx context.Context, workspaceID string, opts connectOptions) error {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -188,7 +191,7 @@ func (a *Service) connect(ctx context.Context, workspaceID string, opts connectO
 }
 
 func (a *Service) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +208,7 @@ func (a *Service) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, r
 }
 
 func (a *Service) disconnect(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +258,7 @@ func (a *Service) list(ctx context.Context, opts WorkspaceListOptions) (*Workspa
 }
 
 func (a *Service) get(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetWorkspaceAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +281,7 @@ func (a *Service) getByName(ctx context.Context, organization, workspace string)
 		return nil, err
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetWorkspaceAction, ws.id)
+	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, ws.id)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +292,7 @@ func (a *Service) getByName(ctx context.Context, organization, workspace string)
 }
 
 func (a *Service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteWorkspaceAction, workspaceID)
+	subject, err := a.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}

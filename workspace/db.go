@@ -13,7 +13,7 @@ import (
 
 // pgdb is a state/state-version database on postgres
 type pgdb struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
 // WorkspaceResult represents the result of a database query for a workspace.
@@ -95,11 +95,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 	return &ws, nil
 }
 
-func NewDB(db otf.Database) *pgdb {
-	return newPGDB(db)
-}
-
-func newPGDB(db otf.Database) *pgdb {
+func newdb(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
@@ -389,7 +385,7 @@ func (db *pgdb) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceI
 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Transaction(ctx, func(tx otf.Database) error {
-		return callback(newPGDB(tx))
+	return db.Tx(ctx, func(tx otf.DB) error {
+		return callback(newdb(tx))
 	})
 }

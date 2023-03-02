@@ -30,7 +30,7 @@ type PhaseWriter struct {
 func NewPhaseWriter(ctx context.Context, logger logr.Logger, w logWriter, run otf.Run) *PhaseWriter {
 	return &PhaseWriter{
 		id:        run.ID,
-		phase:     run.Phase,
+		phase:     run.Phase(),
 		logWriter: w,
 		Logger:    logger,
 		ctx:       ctx,

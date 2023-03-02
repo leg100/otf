@@ -19,7 +19,7 @@ func (svc *Service) GetPolicy(ctx context.Context, workspaceID string) (otf.Work
 }
 
 func (svc *Service) setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
-	subject, err := svc.CanAccessWorkspaceByID(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
+	subject, err := svc.CanAccess(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func (svc *Service) setPermission(ctx context.Context, workspaceID, team string,
 }
 
 func (svc *Service) unsetPermission(ctx context.Context, workspaceID, team string) error {
-	subject, err := svc.CanAccessWorkspaceByID(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
+	subject, err := svc.CanAccess(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		svc.Error(err, "unsetting workspace permission", "team", team, "subject", subject, "workspace", workspaceID)
 		return err

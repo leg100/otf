@@ -13,9 +13,9 @@ import (
 )
 
 type api struct {
-	app application
+	svc service
 
-	JSONAPIConverter
+	*JSONAPIMarshaler
 }
 
 // planFileOptions are options for the plan file API
@@ -65,7 +65,7 @@ func (s *api) create(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.app.create(r.Context(), opts.Workspace.ID, RunCreateOptions{
+	run, err := s.svc.create(r.Context(), opts.Workspace.ID, otf.RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -93,7 +93,7 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.app.startPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
+	run, err := s.svc.startPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -112,7 +112,7 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.app.finishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
+	run, err := s.svc.finishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -128,7 +128,7 @@ func (s *api) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.app.get(r.Context(), id)
+	run, err := s.svc.get(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -153,7 +153,7 @@ func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListO
 		return
 	}
 
-	list, err := s.app.list(r.Context(), opts)
+	list, err := s.svc.list(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -169,7 +169,7 @@ func (s *api) applyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.app.apply(r.Context(), id); err != nil {
+	if err := s.svc.apply(r.Context(), id); err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
@@ -184,7 +184,7 @@ func (s *api) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.app.discard(r.Context(), id); err == ErrRunDiscardNotAllowed {
+	if err = s.svc.discard(r.Context(), id); err == otf.ErrRunDiscardNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -202,7 +202,7 @@ func (s *api) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.app.cancel(r.Context(), id); err == ErrRunCancelNotAllowed {
+	if err = s.svc.cancel(r.Context(), id); err == otf.ErrRunCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -220,8 +220,8 @@ func (s *api) forceCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.app.forceCancel(r.Context(), id)
-	if err == ErrRunForceCancelNotAllowed {
+	err = s.svc.forceCancel(r.Context(), id)
+	if err == otf.ErrRunForceCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -244,7 +244,7 @@ func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := s.app.getPlanFile(r.Context(), id, opts.Format)
+	file, err := s.svc.getPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -274,7 +274,7 @@ func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.app.uploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
+	err = s.svc.uploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -290,7 +290,7 @@ func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := s.app.getLockFile(r.Context(), id)
+	file, err := s.svc.getLockFile(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -315,7 +315,7 @@ func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.app.uploadLockFile(r.Context(), id, buf.Bytes())
+	err = s.svc.uploadLockFile(r.Context(), id, buf.Bytes())
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -332,7 +332,6 @@ func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 // getPlan retrieves a plan object in JSON-API format.
 //
 // https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
-//
 func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
@@ -341,13 +340,13 @@ func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := s.app.get(r.Context(), otf.ConvertID(id, "run"))
+	run, err := s.svc.get(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	s.writeResponse(w, r, run.plan)
+	s.writeResponse(w, r, run.Plan)
 }
 
 // getPlanJSON retrieves a plan object's plan file in JSON format.
@@ -361,7 +360,7 @@ func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := s.app.getPlanFile(r.Context(), otf.ConvertID(id, "run"), otf.PlanFormatJSON)
+	json, err := s.svc.getPlanFile(r.Context(), otf.ConvertID(id, "run"), otf.PlanFormatJSON)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -380,13 +379,13 @@ func (s *api) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := s.app.get(r.Context(), otf.ConvertID(id, "run"))
+	run, err := s.svc.get(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	s.writeResponse(w, r, run.apply)
+	s.writeResponse(w, r, run.Apply)
 }
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.
@@ -395,14 +394,12 @@ func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 	var err error
 
 	switch v := v.(type) {
-	case *RunList:
-		payload, err = s.toJSONAPIList(v, r)
-	case *Run:
-		payload, err = s.toJSONAPI(v, r)
-	case *Plan:
-		payload, err = s.plan().toJSONAPI(v, r)
-	case *Apply:
-		payload, err = s.apply().toJSONAPI(v, r)
+	case *otf.RunList:
+		payload, err = s.toList(v, r)
+	case *otf.Run:
+		payload, err = s.toRun(v, r)
+	case otf.Phase:
+		payload, err = s.toPhase(v, r)
 	}
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)

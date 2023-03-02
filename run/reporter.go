@@ -89,7 +89,7 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case event := <-sub:
-			run, ok := event.Payload.(Run)
+			run, ok := event.Payload.(*otf.Run)
 			if !ok {
 				// Skip non-run events
 				continue
@@ -104,8 +104,8 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 // reinitialize retrieves workspaces and runs from the DB and listens to events,
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
-func (r *Reporter) handleRun(ctx context.Context, run Run) error {
-	cv, err := r.configService.GetConfigurationVersion(ctx, run.ConfigurationVersionID())
+func (r *Reporter) handleRun(ctx context.Context, run *otf.Run) error {
+	cv, err := r.configService.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 
 	var status cloud.VCSStatus
 	var description string
-	switch run.Status() {
+	switch run.Status {
 	case otf.RunPending, otf.RunPlanQueued, otf.RunApplyQueued:
 		status = cloud.VCSPendingStatus
 	case otf.RunPlanning, otf.RunApplying, otf.RunPlanned, otf.RunConfirmed:
@@ -131,21 +131,21 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 	case otf.RunPlannedAndFinished:
 		status = cloud.VCSSuccessStatus
 		if run.HasChanges() {
-			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport)
+			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
 		} else {
 			description = "no changes"
 		}
 	case otf.RunApplied:
 		status = cloud.VCSSuccessStatus
-		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport)
+		description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 	case otf.RunErrored, otf.RunCanceled, otf.RunForceCanceled, otf.RunDiscarded:
 		status = cloud.VCSErrorStatus
-		description = run.Status().String()
+		description = run.Status.String()
 	default:
-		return fmt.Errorf("unknown run status: %s", run.Status())
+		return fmt.Errorf("unknown run status: %s", run.Status)
 	}
 
-	ws, err := r.GetWorkspace(ctx, run.WorkspaceID())
+	ws, err := r.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (r *Reporter) handleRun(ctx context.Context, run Run) error {
 		TargetURL: (&url.URL{
 			Scheme: "https",
 			Host:   r.Hostname(),
-			Path:   paths.Run(run.ID()),
+			Path:   paths.Run(run.ID),
 		}).String(),
 	})
 }

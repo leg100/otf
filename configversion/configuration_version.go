@@ -65,7 +65,6 @@ func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source 
 func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
 func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
 func (cv *ConfigurationVersion) WorkspaceID() string         { return cv.workspaceID }
-func (cv *ConfigurationVersion) Key() string                 { return cacheKey(cv.id) }
 func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }

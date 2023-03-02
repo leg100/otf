@@ -51,7 +51,7 @@ func TestStartRun(t *testing.T) {
 }
 
 type fakeStartRunApp struct {
-	run       *Run
+	run       *otf.Run
 	workspace *Workspace
 	cv        *ConfigurationVersion
 
@@ -78,7 +78,7 @@ func (f *fakeStartRunApp) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeStartRunApp) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
+func (f *fakeStartRunApp) CreateRun(context.Context, string, RunCreateOptions) (*otf.Run, error) {
 	return f.run, nil
 }
 

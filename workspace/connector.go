@@ -33,8 +33,8 @@ func (c *Connector) connect(ctx context.Context, workspaceID string, opts connec
 		return errors.Wrap(err, "retrieving repository info")
 	}
 
-	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
-		_, err := newPGDB(tx).CreateWorkspaceRepo(ctx, workspaceID, WorkspaceRepo{
+	hookCallback := func(ctx context.Context, tx otf.DB, hookID uuid.UUID) error {
+		_, err := newdb(tx).CreateWorkspaceRepo(ctx, workspaceID, WorkspaceRepo{
 			Branch:     repo.Branch,
 			ProviderID: opts.ProviderID,
 			WebhookID:  hookID,
@@ -65,8 +65,8 @@ func (c *Connector) disconnect(ctx context.Context, ws *Workspace) (*Workspace, 
 	// Perform multiple operations within a transaction:
 	// 1. delete workspace repo from db
 	// 2. delete webhook from db
-	unhookCallback := func(ctx context.Context, tx otf.Database) error {
-		ws, err = newPGDB(tx).DeleteWorkspaceRepo(ctx, ws.id)
+	unhookCallback := func(ctx context.Context, tx otf.DB) error {
+		ws, err = newdb(tx).DeleteWorkspaceRepo(ctx, ws.id)
 		return err
 	}
 	err = c.Unhook(ctx, otf.UnhookOptions{

@@ -15,15 +15,7 @@ type authorizer struct {
 	db *pgdb
 }
 
-func (a *authorizer) CanAccessWorkspaceByName(ctx context.Context, action rbac.Action, organization, workspace string) (otf.Subject, error) {
-	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
-	if err != nil {
-		return nil, err
-	}
-	return a.CanAccessWorkspaceByID(ctx, action, ws.ID())
-}
-
-func (a *authorizer) CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspaceID string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

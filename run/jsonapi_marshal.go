@@ -13,29 +13,23 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// JSONAPIConverter converts a run into a json:api struct
-type JSONAPIConverter struct {
+// JSONAPIMarshaler marshals structs into the json:api encoding
+type JSONAPIMarshaler struct {
 	otf.WorkspaceService // for retrieving workspace and workspace permissions
 
-	*jsonapiPlanConverter
-	*jsonapiApplyConverter
+	*logURLGenerator
 }
 
-func newJSONAPIConverter(svc otf.WorkspaceService, signer otf.Signer) *JSONAPIConverter {
-	return &JSONAPIConverter{
+func newJSONAPIMarshaler(svc otf.WorkspaceService, signer otf.Signer) *JSONAPIMarshaler {
+	return &JSONAPIMarshaler{
 		WorkspaceService: svc,
-		jsonapiPlanConverter: &jsonapiPlanConverter{
-			logURLGenerator: &logURLGenerator{signer, otf.PlanPhase},
-		},
-		jsonapiApplyConverter: &jsonapiApplyConverter{
-			logURLGenerator: &logURLGenerator{signer, otf.ApplyPhase},
-		},
+		logURLGenerator:  &logURLGenerator{signer},
 	}
 }
 
 // MarshalJSONAPI marshals a run into json:api encoded data
-func (m *JSONAPIConverter) MarshalJSONAPI(run *Run, r *http.Request) ([]byte, error) {
-	jrun, err := m.toJSONAPI(run, r)
+func (m *JSONAPIMarshaler) MarshalJSONAPI(run *otf.Run, r *http.Request) ([]byte, error) {
+	jrun, err := m.toRun(run, r)
 	if err != nil {
 		return nil, err
 	}
@@ -47,12 +41,13 @@ func (m *JSONAPIConverter) MarshalJSONAPI(run *Run, r *http.Request) ([]byte, er
 	return buf.Bytes(), nil
 }
 
-func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, error) {
+// toRun converts a run into its equivalent json:api struct
+func (m *JSONAPIMarshaler) toRun(run *otf.Run, r *http.Request) (*jsonapi.Run, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
 	}
-	policy, err := m.GetPolicy(r.Context(), run.WorkspaceID())
+	policy, err := m.GetPolicy(r.Context(), run.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +59,7 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		CanApply:        subject.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 	}
 
-	workspace := &jsonapi.Workspace{ID: run.WorkspaceID()}
+	workspace := &jsonapi.Workspace{ID: run.WorkspaceID}
 
 	// Support including related resources:
 	//
@@ -77,7 +72,7 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "workspace":
-				workspace, err = m.GetWorkspaceJSONAPI(r.Context(), run.WorkspaceID())
+				workspace, err = m.GetWorkspaceJSONAPI(r.Context(), run.WorkspaceID)
 				if err != nil {
 					return nil, err
 				}
@@ -86,7 +81,7 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 	}
 
 	var timestamps jsonapi.RunStatusTimestamps
-	for _, rst := range run.StatusTimestamps() {
+	for _, rst := range run.StatusTimestamps {
 		switch rst.Status {
 		case otf.RunPending:
 			timestamps.PlanQueueableAt = &rst.Timestamp
@@ -115,38 +110,38 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 		}
 	}
 
-	plan, err := m.plan().toJSONAPI(run.plan, r)
+	plan, err := m.toPlan(run.Plan, r)
 	if err != nil {
 		return nil, err
 	}
-	apply, err := m.apply().toJSONAPI(run.apply, r)
+	apply, err := m.toApply(run.Apply, r)
 	if err != nil {
 		return nil, err
 	}
 
 	return &jsonapi.Run{
-		ID: run.ID(),
+		ID: run.ID,
 		Actions: &jsonapi.RunActions{
 			IsCancelable:      run.Cancelable(),
 			IsConfirmable:     run.Confirmable(),
-			IsForceCancelable: run.ForceCancelAvailableAt() != nil,
+			IsForceCancelable: run.ForceCancelAvailableAt != nil,
 			IsDiscardable:     run.Discardable(),
 		},
-		CreatedAt:              run.CreatedAt(),
-		ExecutionMode:          string(run.ExecutionMode()),
-		ForceCancelAvailableAt: run.ForceCancelAvailableAt(),
-		HasChanges:             run.Plan().HasChanges(),
-		IsDestroy:              run.IsDestroy(),
-		Message:                run.Message(),
+		CreatedAt:              run.CreatedAt,
+		ExecutionMode:          string(run.ExecutionMode),
+		ForceCancelAvailableAt: run.ForceCancelAvailableAt,
+		HasChanges:             run.Plan.HasChanges(),
+		IsDestroy:              run.IsDestroy,
+		Message:                run.Message,
 		Permissions:            perms,
 		PositionInQueue:        0,
-		Refresh:                run.Refresh(),
-		RefreshOnly:            run.RefreshOnly(),
-		ReplaceAddrs:           run.ReplaceAddrs(),
+		Refresh:                run.Refresh,
+		RefreshOnly:            run.RefreshOnly,
+		ReplaceAddrs:           run.ReplaceAddrs,
 		Source:                 otf.DefaultConfigurationSource,
-		Status:                 string(run.Status()),
+		Status:                 string(run.Status),
 		StatusTimestamps:       &timestamps,
-		TargetAddrs:            run.TargetAddrs(),
+		TargetAddrs:            run.TargetAddrs,
 		// Relations
 		Plan:  plan,
 		Apply: apply,
@@ -156,16 +151,16 @@ func (m *JSONAPIConverter) toJSONAPI(run *Run, r *http.Request) (*jsonapi.Run, e
 			Username: otf.DefaultUsername,
 		},
 		ConfigurationVersion: &jsonapi.ConfigurationVersion{
-			ID: run.ConfigurationVersionID(),
+			ID: run.ConfigurationVersionID,
 		},
 		Workspace: workspace,
 	}, nil
 }
 
-func (m JSONAPIConverter) toJSONAPIList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
+func (m JSONAPIMarshaler) toList(list *otf.RunList, r *http.Request) (*jsonapi.RunList, error) {
 	var items []*jsonapi.Run
 	for _, run := range list.Items {
-		jrun, err := m.toJSONAPI(run, r)
+		jrun, err := m.toRun(run, r)
 		if err != nil {
 			return nil, err
 		}
@@ -177,72 +172,61 @@ func (m JSONAPIConverter) toJSONAPIList(list *RunList, r *http.Request) (*jsonap
 	}, nil
 }
 
-func (m *JSONAPIConverter) plan() *jsonapiPlanConverter   { return m.jsonapiPlanConverter }
-func (m *JSONAPIConverter) apply() *jsonapiApplyConverter { return m.jsonapiApplyConverter }
-
-// jsonapiPlanConverter converts a plan into a json:api struct
-type jsonapiPlanConverter struct {
-	*logURLGenerator
+func (m *JSONAPIMarshaler) toPhase(from otf.Phase, r *http.Request) (any, error) {
+	switch from.PhaseType {
+	case otf.PlanPhase:
+		return m.toPlan(from, r)
+	case otf.ApplyPhase:
+		return m.toApply(from, r)
+	default:
+		return nil, fmt.Errorf("unsupported phase: %s", from.PhaseType)
+	}
 }
 
-func (m *jsonapiPlanConverter) toJSONAPI(plan *Plan, r *http.Request) (*jsonapi.Plan, error) {
-	var report jsonapi.ResourceReport
-	if plan.ResourceReport != nil {
-		report.Additions = &plan.Additions
-		report.Changes = &plan.Changes
-		report.Destructions = &plan.Destructions
-	}
-
-	var timestamps jsonapi.PhaseStatusTimestamps
-	for _, ts := range plan.StatusTimestamps() {
-		switch ts.Status {
-		case otf.PhasePending:
-			timestamps.PendingAt = &ts.Timestamp
-		case otf.PhaseCanceled:
-			timestamps.CanceledAt = &ts.Timestamp
-		case otf.PhaseErrored:
-			timestamps.ErroredAt = &ts.Timestamp
-		case otf.PhaseFinished:
-			timestamps.FinishedAt = &ts.Timestamp
-		case otf.PhaseQueued:
-			timestamps.QueuedAt = &ts.Timestamp
-		case otf.PhaseRunning:
-			timestamps.StartedAt = &ts.Timestamp
-		case otf.PhaseUnreachable:
-			timestamps.UnreachableAt = &ts.Timestamp
-		}
-	}
-
-	logURL, err := m.logURL(r, plan.runID)
+func (m *JSONAPIMarshaler) toPlan(plan otf.Phase, r *http.Request) (*jsonapi.Plan, error) {
+	logURL, err := m.logURL(r, plan)
 	if err != nil {
 		return nil, err
 	}
 
 	return &jsonapi.Plan{
-		ID:               otf.ConvertID(plan.ID(), "plan"),
+		ID:               otf.ConvertID(plan.RunID, "plan"),
 		HasChanges:       plan.HasChanges(),
 		LogReadURL:       logURL,
-		ResourceReport:   report,
-		Status:           string(plan.Status()),
-		StatusTimestamps: &timestamps,
+		ResourceReport:   m.toResourceReport(plan.ResourceReport),
+		Status:           string(plan.Status),
+		StatusTimestamps: m.toPhaseTimestamps(plan.StatusTimestamps),
 	}, nil
 }
 
-// jsonapiApplyConverter converts an apply into a json:api struct
-type jsonapiApplyConverter struct {
-	*logURLGenerator
-}
-
-func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsonapi.Apply, error) {
-	var report jsonapi.ResourceReport
-	if apply.ResourceReport != nil {
-		report.Additions = &apply.Additions
-		report.Changes = &apply.Changes
-		report.Destructions = &apply.Destructions
+func (m *JSONAPIMarshaler) toApply(apply otf.Phase, r *http.Request) (*jsonapi.Apply, error) {
+	logURL, err := m.logURL(r, apply)
+	if err != nil {
+		return nil, err
 	}
 
+	return &jsonapi.Apply{
+		ID:               otf.ConvertID(apply.RunID, "apply"),
+		LogReadURL:       logURL,
+		ResourceReport:   m.toResourceReport(apply.ResourceReport),
+		Status:           string(apply.Status),
+		StatusTimestamps: m.toPhaseTimestamps(apply.StatusTimestamps),
+	}, nil
+}
+
+func (m *JSONAPIMarshaler) toResourceReport(from *otf.ResourceReport) jsonapi.ResourceReport {
+	var to jsonapi.ResourceReport
+	if from != nil {
+		to.Additions = &from.Additions
+		to.Changes = &from.Changes
+		to.Destructions = &from.Destructions
+	}
+	return to
+}
+
+func (m *JSONAPIMarshaler) toPhaseTimestamps(from []otf.PhaseStatusTimestamp) *jsonapi.PhaseStatusTimestamps {
 	var timestamps jsonapi.PhaseStatusTimestamps
-	for _, ts := range apply.StatusTimestamps() {
+	for _, ts := range from {
 		switch ts.Status {
 		case otf.PhasePending:
 			timestamps.PendingAt = &ts.Timestamp
@@ -260,30 +244,16 @@ func (m *jsonapiApplyConverter) toJSONAPI(apply *Apply, r *http.Request) (*jsona
 			timestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
-
-	logURL, err := m.logURL(r, apply.runID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &jsonapi.Apply{
-		ID:               otf.ConvertID(apply.ID(), "apply"),
-		LogReadURL:       logURL,
-		ResourceReport:   report,
-		Status:           string(apply.Status()),
-		StatusTimestamps: &timestamps,
-	}, nil
+	return &timestamps
 }
 
 // logURLGenerator creates a signed URL for retrieving logs for a run phase.
 type logURLGenerator struct {
 	otf.Signer
-
-	phase otf.PhaseType
 }
 
-func (s *logURLGenerator) logURL(r *http.Request, runID string) (string, error) {
-	logs := fmt.Sprintf("/runs/%s/logs/%s", runID, s.phase)
+func (s *logURLGenerator) logURL(r *http.Request, phase otf.Phase) (string, error) {
+	logs := fmt.Sprintf("/runs/%s/logs/%s", phase.RunID, phase.PhaseType)
 	logs, err := s.Sign(logs, time.Hour)
 	if err != nil {
 		return "", err

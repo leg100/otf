@@ -12,28 +12,30 @@ import (
 	"github.com/leg100/surl"
 )
 
-type api struct {
-	app          app
-	otf.Verifier // for verifying upload url
+type (
+	api struct {
+		otf.Verifier // for verifying upload url
 
-	jsonapiMarshaler
+		jsonapiMarshaler
 
-	max int64 // Maximum permitted config upload size in bytes
-}
+		svc service
+		max int64 // Maximum permitted config upload size in bytes
+	}
+
+	apiOptions struct {
+		service
+		max int64
+		*surl.Signer
+	}
+)
 
 func newAPI(opts apiOptions) *api {
 	return &api{
-		app:              opts.app,
-		max:              opts.max,
-		jsonapiMarshaler: jsonapiMarshaler{opts.Signer},
 		Verifier:         opts.Signer,
+		jsonapiMarshaler: jsonapiMarshaler{opts.Signer},
+		svc:              opts.service,
+		max:              opts.max,
 	}
-}
-
-type apiOptions struct {
-	app
-	max int64
-	*surl.Signer
 }
 
 func (s *api) AddHandlers(r *mux.Router) {
@@ -60,7 +62,7 @@ func (s *api) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cv, err := s.app.create(r.Context(), workspaceID, otf.ConfigurationVersionCreateOptions{
+	cv, err := s.svc.create(r.Context(), workspaceID, otf.ConfigurationVersionCreateOptions{
 		AutoQueueRuns: opts.AutoQueueRuns,
 		Speculative:   opts.Speculative,
 	})
@@ -79,7 +81,7 @@ func (s *api) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cv, err := s.app.get(r.Context(), id)
+	cv, err := s.svc.get(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -98,7 +100,7 @@ func (s *api) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cvl, err := s.app.list(r.Context(), params.WorkspaceID, ConfigurationVersionListOptions{
+	cvl, err := s.svc.list(r.Context(), params.WorkspaceID, ConfigurationVersionListOptions{
 		ListOptions: params.ListOptions,
 	})
 	if err != nil {
@@ -122,7 +124,7 @@ func (s *api) UploadConfigurationVersion() http.HandlerFunc {
 			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 			return
 		}
-		if err := s.app.upload(r.Context(), id, buf.Bytes()); err != nil {
+		if err := s.svc.upload(r.Context(), id, buf.Bytes()); err != nil {
 			jsonapi.Error(w, http.StatusNotFound, err)
 			return
 		}
@@ -137,7 +139,7 @@ func (s *api) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	resp, err := s.app.download(r.Context(), id)
+	resp, err := s.svc.download(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

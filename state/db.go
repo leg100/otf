@@ -25,10 +25,10 @@ type db interface {
 
 // pgdb is a state/state-version database on postgres
 type pgdb struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
-func newPGDB(db otf.Database) *pgdb {
+func newPGDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 

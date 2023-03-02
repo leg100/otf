@@ -18,7 +18,7 @@ type web struct {
 	otf.WorkspaceService
 	*RunStarter
 
-	app application
+	svc service
 }
 
 type htmlLogChunk struct {
@@ -53,7 +53,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.app.list(r.Context(), otf.RunListOptions{
+	runs, err := h.svc.list(r.Context(), otf.RunListOptions{
 		ListOptions: params.ListOptions,
 		WorkspaceID: &params.WorkspaceID,
 	})
@@ -63,7 +63,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("run_list.tmpl", w, r, struct {
-		*RunList
+		*otf.RunList
 		otf.Workspace
 		StreamID string
 	}{
@@ -80,12 +80,12 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.app.get(r.Context(), runID)
+	run, err := h.svc.get(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), run.WorkspaceID())
+	ws, err := h.GetWorkspace(r.Context(), run.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -94,7 +94,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 	// Get existing logs thus far received for each phase. If none are found then don't treat
 	// that as an error because it merely means no logs have yet been received.
 	planLogs, err := h.GetChunk(r.Context(), logs.GetChunkOptions{
-		RunID: run.ID(),
+		RunID: run.ID,
 		Phase: otf.PlanPhase,
 	})
 	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
@@ -102,7 +102,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	applyLogs, err := h.GetChunk(r.Context(), logs.GetChunkOptions{
-		RunID: run.ID(),
+		RunID: run.ID,
 		Phase: otf.ApplyPhase,
 	})
 	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
@@ -111,7 +111,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("run_get.tmpl", w, r, struct {
-		*Run
+		*otf.Run
 		Workspace otf.Workspace
 		PlanLogs  *htmlLogChunk
 		ApplyLogs *htmlLogChunk
@@ -130,17 +130,17 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.app.get(r.Context(), runID)
+	run, err := h.svc.get(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = h.app.delete(r.Context(), runID)
+	err = h.svc.delete(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(run.WorkspaceID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) cancel(w http.ResponseWriter, r *http.Request) {
@@ -150,18 +150,18 @@ func (h *web) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.app.get(r.Context(), runID)
+	run, err := h.svc.get(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = h.app.cancel(r.Context(), runID)
+	err = h.svc.cancel(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, paths.Runs(run.WorkspaceID()), http.StatusFound)
+	http.Redirect(w, r, paths.Runs(run.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) apply(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +171,7 @@ func (h *web) apply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.app.apply(r.Context(), runID)
+	err = h.svc.apply(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -186,7 +186,7 @@ func (h *web) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.app.discard(r.Context(), runID)
+	err = h.svc.discard(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -224,5 +224,5 @@ func (h *web) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }

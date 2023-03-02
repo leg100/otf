@@ -11,15 +11,14 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type handlers struct {
-	app appService
+type api struct {
+	svc service
 }
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
-//
-func (h *handlers) AddHandlers(r *mux.Router) {
+func (h *api) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion).Methods("GET")
 	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
@@ -30,7 +29,7 @@ func (h *handlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/state-version-outputs/{id}", h.getOutput).Methods("GET")
 }
 
-func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
+func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -67,7 +66,7 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 	// send different values for each and expect the serial in the create
 	// options to take precedence, without error. We've opted to support that
 	// behaviour.
-	sv, err := h.app.createVersion(r.Context(), otf.CreateStateVersionOptions{
+	sv, err := h.svc.createVersion(r.Context(), otf.CreateStateVersionOptions{
 		WorkspaceID: otf.String(workspaceID),
 		State:       decoded,
 		Serial:      opts.Serial,
@@ -79,13 +78,13 @@ func (h *handlers) createVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (h *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
+func (h *api) listVersions(w http.ResponseWriter, r *http.Request) {
 	var opts stateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	svl, err := h.app.listVersions(r.Context(), opts)
+	svl, err := h.svc.listVersions(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -93,14 +92,14 @@ func (h *handlers) listVersions(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, svl)
 }
 
-func (h *handlers) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
+func (h *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	sv, err := h.app.currentVersion(r.Context(), workspaceID)
+	sv, err := h.svc.currentVersion(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -108,13 +107,13 @@ func (h *handlers) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (h *handlers) getVersion(w http.ResponseWriter, r *http.Request) {
+func (h *api) getVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	sv, err := h.app.getVersion(r.Context(), versionID)
+	sv, err := h.svc.getVersion(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -122,13 +121,13 @@ func (h *handlers) getVersion(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv)
 }
 
-func (h *handlers) downloadState(w http.ResponseWriter, r *http.Request) {
+func (h *api) downloadState(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	resp, err := h.app.downloadState(r.Context(), versionID)
+	resp, err := h.svc.downloadState(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -136,13 +135,13 @@ func (h *handlers) downloadState(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-func (h *handlers) listOutputs(w http.ResponseWriter, r *http.Request) {
+func (h *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	sv, err := h.app.getVersion(r.Context(), versionID)
+	sv, err := h.svc.getVersion(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -150,13 +149,13 @@ func (h *handlers) listOutputs(w http.ResponseWriter, r *http.Request) {
 	jsonapi.WriteResponse(w, r, sv.outputs)
 }
 
-func (h *handlers) getOutput(w http.ResponseWriter, r *http.Request) {
+func (h *api) getOutput(w http.ResponseWriter, r *http.Request) {
 	outputID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	out, err := h.app.getOutput(r.Context(), outputID)
+	out, err := h.svc.getOutput(r.Context(), outputID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

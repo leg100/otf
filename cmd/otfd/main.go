@@ -203,7 +203,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	})
 	handlers = append(handlers, configService)
 
-	stateService := state.NewService(state.ServiceOptions{
+	stateService := state.NewService(state.Options{
 		WorkspaceAuthorizer: workspaceService,
 		Logger:              logger,
 		Database:            db,

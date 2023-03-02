@@ -14,7 +14,7 @@ type factory struct {
 
 // NewRun constructs a new run at the beginning of its lifecycle using the
 // provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
 	ws, err := f.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -30,42 +30,5 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
-	return NewRun(cv, ws, opts), nil
-}
-
-// NewRun creates a new run with defaults.
-func NewRun(cv otf.ConfigurationVersion, ws otf.Workspace, opts RunCreateOptions) *Run {
-	run := Run{
-		id:                     otf.NewID("run"),
-		createdAt:              otf.CurrentTimestamp(),
-		refresh:                DefaultRefresh,
-		organization:           ws.Organization,
-		configurationVersionID: cv.ID(),
-		workspaceID:            ws.ID,
-		speculative:            cv.Speculative(),
-		replaceAddrs:           opts.ReplaceAddrs,
-		targetAddrs:            opts.TargetAddrs,
-		executionMode:          ws.ExecutionMode,
-		autoApply:              ws.AutoApply,
-	}
-	run.plan = newPlan(&run)
-	run.apply = newApply(&run)
-	run.updateStatus(otf.RunPending)
-
-	if opts.IsDestroy != nil {
-		run.isDestroy = *opts.IsDestroy
-	}
-	if opts.Message != nil {
-		run.message = *opts.Message
-	}
-	if opts.Refresh != nil {
-		run.refresh = *opts.Refresh
-	}
-	if opts.AutoApply != nil {
-		run.autoApply = *opts.AutoApply
-	}
-	if cv.IngressAttributes() != nil {
-		run.commit = &cv.IngressAttributes().CommitSHA
-	}
-	return &run
+	return otf.NewRun(cv, ws, opts), nil
 }

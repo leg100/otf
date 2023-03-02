@@ -1,4 +1,4 @@
-package run
+package otf
 
 import "fmt"
 
@@ -11,10 +11,7 @@ type ResourceReport struct {
 }
 
 func (r ResourceReport) HasChanges() bool {
-	if r.Additions > 0 || r.Changes > 0 || r.Destructions > 0 {
-		return true
-	}
-	return false
+	return r != ResourceReport{}
 }
 
 func (r ResourceReport) String() string {

@@ -140,12 +140,7 @@ type WorkspaceService interface {
 	DeleteWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 
 	WorkspacePermissionService
-	WorkspaceAuthorizer
-}
-
-type WorkspaceAuthorizer interface {
-	CanAccessWorkspaceByName(ctx context.Context, action rbac.Action, organization, workspace string) (Subject, error)
-	CanAccessWorkspaceByID(ctx context.Context, action rbac.Action, workspaceID string) (Subject, error)
+	Authorizer
 }
 
 type WorkspacePermissionService interface {

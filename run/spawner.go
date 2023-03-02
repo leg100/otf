@@ -18,7 +18,7 @@ type spawner struct {
 	otf.WorkspaceService
 	otf.VCSProviderService
 
-	application
+	service
 }
 
 // Start handling VCS events and triggering jobs
@@ -128,7 +128,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err := h.UploadConfig(ctx, cv.ID(), tarball); err != nil {
 			return err
 		}
-		_, err = h.create(ctx, ws.ID, RunCreateOptions{
+		_, err = h.create(ctx, ws.ID, otf.RunCreateOptions{
 			ConfigurationVersionID: otf.String(cv.ID()),
 		})
 		if err != nil {
