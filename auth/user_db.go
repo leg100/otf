@@ -10,25 +10,25 @@ import (
 )
 
 // CreateUser persists a User to the DB.
-func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
+func (db *pgdb) CreateUser(ctx context.Context, user *otf.User) error {
 	return db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertUser(ctx, pggen.InsertUserParams{
-			ID:        sql.String(user.ID()),
-			Username:  sql.String(user.Username()),
-			CreatedAt: sql.Timestamptz(user.CreatedAt()),
-			UpdatedAt: sql.Timestamptz(user.UpdatedAt()),
+			ID:        sql.String(user.ID),
+			Username:  sql.String(user.Username),
+			CreatedAt: sql.Timestamptz(user.CreatedAt),
+			UpdatedAt: sql.Timestamptz(user.UpdatedAt),
 		})
 		if err != nil {
 			return err
 		}
-		for _, org := range user.Organizations() {
-			_, err = tx.InsertOrganizationMembership(ctx, sql.String(user.ID()), sql.String(org))
+		for _, org := range user.Organizations {
+			_, err = tx.InsertOrganizationMembership(ctx, sql.String(user.ID), sql.String(org))
 			if err != nil {
 				return err
 			}
 		}
-		for _, team := range user.teams {
-			_, err = tx.InsertTeamMembership(ctx, sql.String(user.ID()), sql.String(team.ID()))
+		for _, team := range user.Teams {
+			_, err = tx.InsertTeamMembership(ctx, sql.String(user.ID), sql.String(team.ID))
 			if err != nil {
 				return err
 			}
@@ -37,26 +37,26 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 	})
 }
 
-func (db *pgdb) listUsers(ctx context.Context, organization string) ([]*User, error) {
+func (db *pgdb) listUsers(ctx context.Context, organization string) ([]*otf.User, error) {
 	result, err := db.FindUsersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
 
-	var users []*User
+	var users []*otf.User
 	for _, r := range result {
 		users = append(users, userRow(r).toUser())
 	}
 	return users, nil
 }
 
-func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*otf.User, error) {
 	result, err := db.FindUsersByTeamID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*User
+	var items []*otf.User
 	for _, r := range result {
 		items = append(items, userRow(r).toUser())
 	}
@@ -64,7 +64,7 @@ func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, er
 }
 
 // getUser retrieves a user from the DB, along with its sessions.
-func (db *pgdb) getUser(ctx context.Context, spec otf.UserSpec) (*User, error) {
+func (db *pgdb) getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	if spec.UserID != nil {
 		result, err := db.FindUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {

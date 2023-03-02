@@ -18,7 +18,7 @@ const (
 type AuthenticateTokenService interface {
 	GetAgentToken(context.Context, string) (*AgentToken, error)
 	GetRegistrySession(context.Context, string) (otf.RegistrySession, error)
-	getUser(ctx context.Context, spec otf.UserSpec) (*User, error)
+	getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 }
 
 // AuthenticateToken checks the request has a valid API token
@@ -64,7 +64,7 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 
 type AuthenticateSessionService interface {
 	GetSession(ctx context.Context, token string) (*Session, error)
-	getUser(context.Context, otf.UserSpec) (*User, error)
+	getUser(context.Context, otf.UserSpec) (*otf.User, error)
 }
 
 // AuthenticateSession middleware checks incoming request possesses a valid session cookie,

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -34,8 +35,8 @@ func (h *web) getTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("team_get.tmpl", w, r, struct {
-		*Team
-		Members []*User
+		*otf.Team
+		Members []*otf.User
 	}{
 		Team:    team,
 		Members: members,
@@ -45,7 +46,7 @@ func (h *web) getTeam(w http.ResponseWriter, r *http.Request) {
 func (h *web) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID string `schema:"team_id,required"`
-		UpdateTeamOptions
+		otf.UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -59,7 +60,7 @@ func (h *web) updateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, paths.Team(team.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
 }
 
 func (h *web) listTeams(w http.ResponseWriter, r *http.Request) {

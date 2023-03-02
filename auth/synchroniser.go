@@ -28,7 +28,7 @@ type synchroniser struct {
 	service
 }
 
-func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error) {
+func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*otf.User, error) {
 	// ensure user exists
 	user, err := s.getUser(ctx, otf.UserSpec{Username: otf.String(from.Name)})
 	if err == otf.ErrResourceNotFound {
@@ -56,10 +56,10 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	}
 
 	// A user also gets their own personal organization matching their username
-	personal, err := s.GetOrganization(ctx, user.username)
+	personal, err := s.GetOrganization(ctx, user.Username)
 	if err == otf.ErrResourceNotFound {
 		personal, err = s.CreateOrganization(ctx, otf.OrganizationCreateOptions{
-			Name: otf.String(user.username),
+			Name: otf.String(user.Username),
 		})
 		if err != nil {
 			return nil, err
@@ -68,11 +68,11 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	organizations = append(organizations, personal.Name)
 
 	// Create team for each cloud team
-	var teams []*Team
+	var teams []*otf.Team
 	for _, want := range from.Teams {
 		got, err := s.getTeam(ctx, want.Organization, want.Name)
 		if err == otf.ErrResourceNotFound {
-			got, err = s.createTeam(ctx, createTeamOptions{
+			got, err = s.createTeam(ctx, otf.NewTeamOptions{
 				Name:         want.Name,
 				Organization: want.Organization,
 			})
@@ -88,7 +88,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	// And make them an owner of their personal org
 	owners, err := s.getTeam(ctx, personal.Name, "owners")
 	if err == otf.ErrResourceNotFound {
-		owners, err = s.createTeam(ctx, createTeamOptions{
+		owners, err = s.createTeam(ctx, otf.NewTeamOptions{
 			Name:         "owners",
 			Organization: personal.Name,
 		})
@@ -112,11 +112,11 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 }
 
 // syncOrganizations updates a user's organization memberships to match those in wanted
-func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []string) error {
+func (s *synchroniser) syncOrganizations(ctx context.Context, u *otf.User, wanted []string) error {
 	// Add org memberships
 	for _, want := range wanted {
-		if !otf.Contains(u.organizations, want) {
-			if err := s.addOrganizationMembership(ctx, u.ID(), want); err != nil {
+		if !otf.Contains(u.Organizations, want) {
+			if err := s.addOrganizationMembership(ctx, u.ID, want); err != nil {
 				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate orgs
@@ -129,9 +129,9 @@ func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []
 	}
 
 	// Remove org memberships
-	for _, got := range u.organizations {
+	for _, got := range u.Organizations {
 		if !otf.Contains(wanted, got) {
-			if err := s.removeOrganizationMembership(ctx, u.ID(), got); err != nil {
+			if err := s.removeOrganizationMembership(ctx, u.ID, got); err != nil {
 				return err
 			}
 		}
@@ -141,11 +141,11 @@ func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []
 }
 
 // syncTeams updates a user's team memberships to match those in wanted.
-func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) error {
+func (s *synchroniser) syncTeams(ctx context.Context, u *otf.User, wanted []*otf.Team) error {
 	// Add team memberships
 	for _, want := range wanted {
-		if !u.IsTeamMember(want.id) {
-			if err := s.addTeamMembership(ctx, u.ID(), want.ID()); err != nil {
+		if !u.IsTeamMember(want.ID) {
+			if err := s.addTeamMembership(ctx, u.ID, want.ID); err != nil {
 				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate teams
@@ -158,9 +158,9 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 	}
 
 	// Remove team memberships
-	for _, team := range u.teams {
-		if !inTeamList(wanted, team.id) {
-			if err := s.removeTeamMembership(ctx, u.ID(), team.ID()); err != nil {
+	for _, team := range u.Teams {
+		if !inTeamList(wanted, team.ID) {
+			if err := s.removeTeamMembership(ctx, u.ID, team.ID); err != nil {
 				return err
 			}
 		}
@@ -169,9 +169,9 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 	return nil
 }
 
-func inTeamList(teams []*Team, name string) bool {
+func inTeamList(teams []*otf.Team, name string) bool {
 	for _, team := range teams {
-		if team.name == name {
+		if team.Name == name {
 			return true
 		}
 	}

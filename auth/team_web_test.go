@@ -15,11 +15,11 @@ import (
 // up first.
 func TestTeam_GetHandler(t *testing.T) {
 	owners := newTestOwners(t, "acme-org")
-	owner := NewUser(uuid.NewString(), WithTeams(owners))
+	owner := otf.NewUser(uuid.NewString(), otf.WithTeams(owners))
 	app := newFakeWeb(t, &fakeService{
 		teamService: &fakeTeamApp{
 			team:    owners,
-			members: []*User{owner},
+			members: []*otf.User{owner},
 		},
 	})
 
@@ -47,7 +47,7 @@ func TestTeam_UpdateHandler(t *testing.T) {
 	app.updateTeam(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.Team(team.ID()), redirect.Path)
+		assert.Equal(t, paths.Team(team.ID), redirect.Path)
 	}
 }
 

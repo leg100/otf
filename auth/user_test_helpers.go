@@ -9,15 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTestUser(t *testing.T, db *pgdb, opts ...NewUserOption) *User {
+func createTestUser(t *testing.T, db *pgdb, opts ...otf.NewUserOption) *otf.User {
 	ctx := context.Background()
 
-	user := NewUser(uuid.NewString(), opts...)
+	user := otf.NewUser(uuid.NewString(), opts...)
 	err := db.CreateUser(ctx, user)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteUser(ctx, otf.UserSpec{UserID: &user.id})
+		db.DeleteUser(ctx, otf.UserSpec{UserID: &user.ID})
 	})
 	return user
 }

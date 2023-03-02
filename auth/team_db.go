@@ -3,22 +3,23 @@ package auth
 import (
 	"context"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func (pdb *pgdb) createTeam(ctx context.Context, team *Team) error {
+func (pdb *pgdb) createTeam(ctx context.Context, team *otf.Team) error {
 	_, err := pdb.InsertTeam(ctx, pggen.InsertTeamParams{
-		ID:               sql.String(team.ID()),
-		Name:             sql.String(team.Name()),
-		CreatedAt:        sql.Timestamptz(team.CreatedAt()),
-		OrganizationName: sql.String(team.Organization()),
+		ID:               sql.String(team.ID),
+		Name:             sql.String(team.Name),
+		CreatedAt:        sql.Timestamptz(team.CreatedAt),
+		OrganizationName: sql.String(team.Organization),
 	})
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
-	var team *Team
+func (pdb *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*otf.Team) error) (*otf.Team, error) {
+	var team *otf.Team
 	err := pdb.tx(ctx, func(tx *pgdb) error {
 		var err error
 
@@ -48,7 +49,7 @@ func (pdb *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) e
 	return team, err
 }
 
-func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {
+func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*otf.Team, error) {
 	result, err := db.FindTeamByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -56,7 +57,7 @@ func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, 
 	return teamRow(result).toTeam(), nil
 }
 
-func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
+func (db *pgdb) getTeamByID(ctx context.Context, id string) (*otf.Team, error) {
 	result, err := db.FindTeamByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -64,13 +65,13 @@ func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
 	return teamRow(result).toTeam(), nil
 }
 
-func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, error) {
+func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*otf.Team, error) {
 	result, err := db.FindTeamsByOrg(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*Team
+	var items []*otf.Team
 	for _, r := range result {
 		items = append(items, teamRow(r).toTeam())
 	}

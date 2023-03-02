@@ -44,7 +44,7 @@ func newAuthenticators(opts authenticatorOptions) ([]*authenticator, error) {
 		}
 		authenticators = append(authenticators, &authenticator{
 			oauthClient: client,
-			service:         opts.service,
+			service:     opts.service,
 		})
 		opts.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
 	}
@@ -85,7 +85,7 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := a.createSession(r, user.ID())
+	session, err := a.createSession(r, user.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

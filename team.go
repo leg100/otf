@@ -16,7 +16,7 @@ type (
 		Access OrganizationAccess
 	}
 
-	CreateTeamOptions struct {
+	NewTeamOptions struct {
 		Name         string `schema:"team_name,required"`
 		Organization string `schema:"organization_name,required"`
 	}
@@ -53,11 +53,6 @@ type (
 		ManageWorkspaces bool `schema:"manage_workspaces"` // admin access on all workspaces
 		ManageVCS        bool `schema:"manage_vcs"`        // manage VCS providers
 		ManageRegistry   bool `schema:"manage_registry"`   // manage module and provider registry
-	}
-
-	NewTeamOptions struct {
-		Name         string `schema:"team_name,required"`
-		Organization string `schema:"organization_name,required"`
 	}
 
 	UpdateTeamOptions struct {

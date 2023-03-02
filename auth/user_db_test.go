@@ -19,14 +19,14 @@ func TestUser_Get(t *testing.T) {
 	team2 := CreateTestTeam(t, db, org2.Name)
 
 	user := createTestUser(t, db,
-		WithOrganizations(org1.Name, org2.Name),
-		WithTeams(team1, team2))
+		otf.WithOrganizations(org1.Name, org2.Name),
+		otf.WithTeams(team1, team2))
 
-	session1 := createTestSession(t, db, user.ID(), nil)
-	_ = createTestSession(t, db, user.ID(), nil)
+	session1 := createTestSession(t, db, user.ID, nil)
+	_ = createTestSession(t, db, user.ID, nil)
 
-	token1 := createTestToken(t, db, user.ID(), "testing")
-	_ = createTestToken(t, db, user.ID(), "testing")
+	token1 := createTestToken(t, db, user.ID, "testing")
+	_ = createTestToken(t, db, user.ID, "testing")
 
 	tests := []struct {
 		name string
@@ -34,11 +34,11 @@ func TestUser_Get(t *testing.T) {
 	}{
 		{
 			name: "id",
-			spec: otf.UserSpec{UserID: otf.String(user.ID())},
+			spec: otf.UserSpec{UserID: otf.String(user.ID)},
 		},
 		{
 			name: "username",
-			spec: otf.UserSpec{Username: otf.String(user.Username())},
+			spec: otf.UserSpec{Username: otf.String(user.Username)},
 		},
 		{
 			name: "session token",
@@ -54,12 +54,12 @@ func TestUser_Get(t *testing.T) {
 			got, err := db.getUser(ctx, tt.spec)
 			require.NoError(t, err)
 
-			assert.Equal(t, got.ID(), user.ID())
-			assert.Equal(t, got.Username(), user.Username())
-			assert.Equal(t, got.CreatedAt(), user.CreatedAt())
-			assert.Equal(t, got.UpdatedAt(), user.UpdatedAt())
-			assert.Equal(t, 2, len(got.Organizations()))
-			assert.Equal(t, 2, len(got.teams))
+			assert.Equal(t, got.ID, user.ID)
+			assert.Equal(t, got.Username, user.Username)
+			assert.Equal(t, got.CreatedAt, user.CreatedAt)
+			assert.Equal(t, got.UpdatedAt, user.UpdatedAt)
+			assert.Equal(t, 2, len(got.Organizations))
+			assert.Equal(t, 2, len(got.Teams))
 		})
 	}
 }
@@ -77,8 +77,8 @@ func TestUser_List(t *testing.T) {
 
 	org := organization.CreateTestOrganization(t, db)
 	user1 := createTestUser(t, db)
-	user2 := createTestUser(t, db, WithOrganizations(org.Name))
-	user3 := createTestUser(t, db, WithOrganizations(org.Name))
+	user2 := createTestUser(t, db, otf.WithOrganizations(org.Name))
+	user3 := createTestUser(t, db, otf.WithOrganizations(org.Name))
 
 	// Retrieve all users
 	users, err := db.listUsers(ctx, org.Name)
@@ -103,7 +103,7 @@ func TestUser_Delete(t *testing.T) {
 
 	user := createTestUser(t, db)
 
-	spec := otf.UserSpec{Username: otf.String(user.Username())}
+	spec := otf.UserSpec{Username: otf.String(user.Username)}
 	err := db.DeleteUser(ctx, spec)
 	require.NoError(t, err)
 
@@ -117,15 +117,15 @@ func TestUser_AddTeamMembership(t *testing.T) {
 
 	org := organization.CreateTestOrganization(t, db)
 	team := CreateTestTeam(t, db, org.Name)
-	user := createTestUser(t, db, WithOrganizations(org.Name))
+	user := createTestUser(t, db, otf.WithOrganizations(org.Name))
 
-	err := db.addTeamMembership(ctx, user.ID(), team.ID())
+	err := db.addTeamMembership(ctx, user.ID, team.ID)
 	require.NoError(t, err)
 
-	got, err := db.getUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
+	got, err := db.getUser(ctx, otf.UserSpec{Username: otf.String(user.Username)})
 	require.NoError(t, err)
 
-	assert.Contains(t, got.teams, team)
+	assert.Contains(t, got.Teams, team)
 }
 
 func TestUser_RemoveTeamMembership(t *testing.T) {
@@ -134,13 +134,13 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 
 	org := organization.CreateTestOrganization(t, db)
 	team := CreateTestTeam(t, db, org.Name)
-	user := createTestUser(t, db, WithOrganizations(org.Name), WithTeams(team))
+	user := createTestUser(t, db, otf.WithOrganizations(org.Name), otf.WithTeams(team))
 
-	err := db.removeTeamMembership(ctx, user.ID(), team.ID())
+	err := db.removeTeamMembership(ctx, user.ID, team.ID)
 	require.NoError(t, err)
 
-	got, err := db.getUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
+	got, err := db.getUser(ctx, otf.UserSpec{Username: otf.String(user.Username)})
 	require.NoError(t, err)
 
-	assert.NotContains(t, got.teams, team)
+	assert.NotContains(t, got.Teams, team)
 }

@@ -13,9 +13,9 @@ import (
 )
 
 func TestSessionHandlers(t *testing.T) {
-	user := NewUser(uuid.NewString())
-	active := newTestSession(t, user.id, nil)
-	other := newTestSession(t, user.id, nil)
+	user := otf.NewUser(uuid.NewString())
+	active := newTestSession(t, user.ID, nil)
+	other := newTestSession(t, user.ID, nil)
 
 	h := newFakeWeb(t, &fakeService{
 		sessionService: &fakeSessionService{

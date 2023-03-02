@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,8 +83,8 @@ type fakeAuthenticatorService struct {
 	service
 }
 
-func (f *fakeAuthenticatorService) sync(context.Context, cloud.User) (*User, error) {
-	return NewUser("fake-user"), nil
+func (f *fakeAuthenticatorService) sync(context.Context, cloud.User) (*otf.User, error) {
+	return otf.NewUser("fake-user"), nil
 }
 
 func (f *fakeAuthenticatorService) createSession(*http.Request, string) (*Session, error) {

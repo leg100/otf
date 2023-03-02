@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -15,19 +16,19 @@ type userRow struct {
 	Teams         []pggen.Teams      `json:"teams"`
 }
 
-func (row userRow) toUser() *User {
-	user := User{
-		id:        row.UserID.String,
-		createdAt: row.CreatedAt.Time.UTC(),
-		updatedAt: row.UpdatedAt.Time.UTC(),
-		username:  row.Username.String,
+func (row userRow) toUser() *otf.User {
+	user := otf.User{
+		ID:        row.UserID.String,
+		CreatedAt: row.CreatedAt.Time.UTC(),
+		UpdatedAt: row.UpdatedAt.Time.UTC(),
+		Username:  row.Username.String,
 	}
 	// avoid assigning empty slice to ensure equality in tests
 	if len(row.Organizations) > 0 {
-		user.organizations = row.Organizations
+		user.Organizations = row.Organizations
 	}
 	for _, tr := range row.Teams {
-		user.teams = append(user.teams, teamRow(tr).toTeam())
+		user.Teams = append(user.Teams, teamRow(tr).toTeam())
 	}
 
 	return &user
@@ -44,13 +45,13 @@ type teamRow struct {
 	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
-func (row teamRow) toTeam() *Team {
-	return &Team{
-		id:           row.TeamID.String,
-		createdAt:    row.CreatedAt.Time.UTC(),
-		name:         row.Name.String,
-		organization: row.OrganizationName.String,
-		access: OrganizationAccess{
+func (row teamRow) toTeam() *otf.Team {
+	return &otf.Team{
+		ID:           row.TeamID.String,
+		CreatedAt:    row.CreatedAt.Time.UTC(),
+		Name:         row.Name.String,
+		Organization: row.OrganizationName.String,
+		Access: otf.OrganizationAccess{
 			ManageWorkspaces: row.PermissionManageWorkspaces,
 			ManageVCS:        row.PermissionManageVCS,
 			ManageRegistry:   row.PermissionManageRegistry,
