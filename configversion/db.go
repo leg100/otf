@@ -22,13 +22,13 @@ func newPGDB(otfdb otf.Database) *db {
 func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
 	return pdb.tx(ctx, func(tx *db) error {
 		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
-			ID:            sql.String(cv.ID()),
+			ID:            sql.String(cv.ID),
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt()),
 			AutoQueueRuns: cv.AutoQueueRuns(),
 			Source:        sql.String(string(cv.Source())),
 			Speculative:   cv.Speculative(),
 			Status:        sql.String(string(cv.Status())),
-			WorkspaceID:   sql.String(cv.WorkspaceID()),
+			WorkspaceID:   sql.String(cv.WorkspaceID),
 		})
 		if err != nil {
 			return err
@@ -42,7 +42,7 @@ func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *Configuration
 				Identifier:             sql.String(ia.Identifier),
 				IsPullRequest:          ia.IsPullRequest,
 				OnDefaultBranch:        ia.OnDefaultBranch,
-				ConfigurationVersionID: sql.String(cv.ID()),
+				ConfigurationVersionID: sql.String(cv.ID),
 			})
 			if err != nil {
 				return err
@@ -66,7 +66,7 @@ func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn fun
 		}
 		cv := pgRow(result).toConfigVersion()
 
-		if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
+		if err := fn(cv, newConfigUploader(tx, cv.ID)); err != nil {
 			return err
 		}
 		return nil
@@ -140,7 +140,7 @@ func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVers
 		return err
 	}
 	_, err = db.InsertConfigurationVersionStatusTimestamp(ctx, pggen.InsertConfigurationVersionStatusTimestampParams{
-		ID:        sql.String(cv.ID()),
+		ID:        sql.String(cv.ID),
 		Status:    sql.String(string(cv.Status())),
 		Timestamp: sql.Timestamptz(sts),
 	})

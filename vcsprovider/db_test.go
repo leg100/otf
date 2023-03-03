@@ -29,7 +29,7 @@ func TestDB(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		want := createTestVCSProvider(t, db, org)
 
-		got, err := providerDB.get(ctx, want.ID())
+		got, err := providerDB.get(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -59,7 +59,7 @@ func TestDB(t *testing.T) {
 		org := sql.CreateTestOrganization(t, db)
 		provider := createTestVCSProvider(t, providerDB, org)
 
-		err := providerDB.delete(ctx, provider.ID())
+		err := providerDB.delete(ctx, provider.ID)
 		require.NoError(t, err)
 
 		got, err := providerDB.list(ctx, org.Name())
@@ -77,7 +77,7 @@ func createTestVCSProvider(t *testing.T, db *pgdb, organization otf.Organization
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.delete(ctx, provider.ID())
+		db.delete(ctx, provider.ID)
 	})
 	return provider
 }

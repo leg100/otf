@@ -22,7 +22,7 @@ func (u *statusUpdater) updateStatus(ctx context.Context, opts UpdateModuleVersi
 		}
 
 		// ensure module status reflects version status
-		mod, err = tx.GetModuleByID(ctx, modver.ModuleID())
+		mod, err = tx.GetModuleByID(ctx, modver.ModuleID)
 		if err != nil {
 			return err
 		}
@@ -30,7 +30,7 @@ func (u *statusUpdater) updateStatus(ctx context.Context, opts UpdateModuleVersi
 		if nextStatus != mod.Status() {
 			mod.UpdateStatus(nextStatus)
 			err = tx.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
-				ID:     mod.ID(),
+				ID:     mod.ID,
 				Status: nextStatus,
 			})
 			if err != nil {

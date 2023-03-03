@@ -44,7 +44,7 @@ func WithModuleRepo() NewTestModuleOption {
 
 func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
 	createOpts := CreateModuleVersionOptions{
-		ModuleID: mod.ID(),
+		ModuleID: mod.ID,
 		Version:  version,
 	}
 	modver := NewModuleVersion(createOpts)
@@ -60,7 +60,7 @@ func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteModule(ctx, module.ID())
+		db.DeleteModule(ctx, module.ID)
 	})
 	return module
 }

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
-	otfrun "github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -31,7 +30,7 @@ type fakeRunJSONAPIConverter struct {
 	want []byte
 }
 
-func (f *fakeRunJSONAPIConverter) MarshalJSONAPI(*otfrun.Run, *http.Request) ([]byte, error) {
+func (f *fakeRunJSONAPIConverter) MarshalJSONAPI(*otf.Run, *http.Request) ([]byte, error) {
 	return f.want, nil
 }
 

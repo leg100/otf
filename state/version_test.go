@@ -21,24 +21,24 @@ func TestVersion_new(t *testing.T) {
 	}
 	got, err := newVersion(opts)
 	require.NoError(t, err)
-	assert.Equal(t, int64(999), got.serial)
-	assert.Equal(t, "ws-123", got.workspaceID)
-	assert.Equal(t, 3, len(got.outputs))
+	assert.Equal(t, int64(999), got.Serial)
+	assert.Equal(t, "ws-123", got.WorkspaceID)
+	assert.Equal(t, 3, len(got.Outputs))
 
-	assert.Equal(t, "foo", got.outputs["foo"].name)
-	assert.Equal(t, "string", got.outputs["foo"].typ)
-	assert.Equal(t, `"stringy"`, got.outputs["foo"].value)
-	assert.True(t, got.outputs["foo"].sensitive)
+	assert.Equal(t, "foo", got.Outputs["foo"].name)
+	assert.Equal(t, "string", got.Outputs["foo"].typ)
+	assert.Equal(t, `"stringy"`, got.Outputs["foo"].value)
+	assert.True(t, got.Outputs["foo"].sensitive)
 
-	assert.Equal(t, "bar", got.outputs["bar"].name)
-	assert.Equal(t, "tuple", got.outputs["bar"].typ)
-	assert.Equal(t, `["item1","item2"]`, compactJSON(t, got.outputs["bar"].value))
-	assert.False(t, got.outputs["bar"].sensitive)
+	assert.Equal(t, "bar", got.Outputs["bar"].name)
+	assert.Equal(t, "tuple", got.Outputs["bar"].typ)
+	assert.Equal(t, `["item1","item2"]`, compactJSON(t, got.Outputs["bar"].value))
+	assert.False(t, got.Outputs["bar"].sensitive)
 
-	assert.Equal(t, "baz", got.outputs["baz"].name)
-	assert.Equal(t, "object", got.outputs["baz"].typ)
-	assert.Equal(t, `{"key1":"value1","key2":"value2"}`, compactJSON(t, got.outputs["baz"].value))
-	assert.False(t, got.outputs["baz"].sensitive)
+	assert.Equal(t, "baz", got.Outputs["baz"].name)
+	assert.Equal(t, "object", got.Outputs["baz"].typ)
+	assert.Equal(t, `{"key1":"value1","key2":"value2"}`, compactJSON(t, got.Outputs["baz"].value))
+	assert.False(t, got.Outputs["baz"].sensitive)
 }
 
 func compactJSON(t *testing.T, src string) string {

@@ -21,7 +21,7 @@ func TestLog_PutChunk(t *testing.T) {
 
 	t.Run("upload chunk", func(t *testing.T) {
 		got, err := db.PutChunk(ctx, otf.Chunk{
-			RunID: run.ID(),
+			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
 		})
@@ -30,7 +30,7 @@ func TestLog_PutChunk(t *testing.T) {
 		want := otf.PersistedChunk{
 			ChunkID: got.ChunkID,
 			Chunk: otf.Chunk{
-				RunID: run.ID(),
+				RunID: run.ID,
 				Phase: otf.PlanPhase,
 				Data:  []byte("\x02hello world\x03"),
 			},
@@ -41,7 +41,7 @@ func TestLog_PutChunk(t *testing.T) {
 
 	t.Run("reject empty chunk", func(t *testing.T) {
 		_, err := db.PutChunk(ctx, otf.Chunk{
-			RunID: run.ID(),
+			RunID: run.ID,
 			Phase: otf.PlanPhase,
 		})
 		assert.Error(t, err)
@@ -57,14 +57,14 @@ func TestLog_GetChunk(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := db.PutChunk(ctx, otf.Chunk{
-		RunID: run.ID(),
+		RunID: run.ID,
 		Phase: otf.PlanPhase,
 		Data:  []byte("\x02hello"),
 	})
 	require.NoError(t, err)
 
 	_, err = db.PutChunk(ctx, otf.Chunk{
-		RunID: run.ID(),
+		RunID: run.ID,
 		Phase: otf.PlanPhase,
 		Data:  []byte(" world\x03"),
 	})
@@ -78,11 +78,11 @@ func TestLog_GetChunk(t *testing.T) {
 		{
 			name: "all chunks",
 			opts: otf.GetChunkOptions{
-				RunID: run.ID(),
+				RunID: run.ID,
 				Phase: otf.PlanPhase,
 			},
 			want: otf.Chunk{
-				RunID:  run.ID(),
+				RunID:  run.ID,
 				Phase:  otf.PlanPhase,
 				Data:   []byte("\x02hello world\x03"),
 				Offset: 0,
@@ -91,12 +91,12 @@ func TestLog_GetChunk(t *testing.T) {
 		{
 			name: "first chunk",
 			opts: otf.GetChunkOptions{
-				RunID: run.ID(),
+				RunID: run.ID,
 				Phase: otf.PlanPhase,
 				Limit: 4,
 			},
 			want: otf.Chunk{
-				RunID:  run.ID(),
+				RunID:  run.ID,
 				Phase:  otf.PlanPhase,
 				Data:   []byte("\x02hel"),
 				Offset: 0,
@@ -105,13 +105,13 @@ func TestLog_GetChunk(t *testing.T) {
 		{
 			name: "intermediate chunk",
 			opts: otf.GetChunkOptions{
-				RunID:  run.ID(),
+				RunID:  run.ID,
 				Phase:  otf.PlanPhase,
 				Offset: 4,
 				Limit:  3,
 			},
 			want: otf.Chunk{
-				RunID:  run.ID(),
+				RunID:  run.ID,
 				Phase:  otf.PlanPhase,
 				Data:   []byte("lo "),
 				Offset: 4,
@@ -120,12 +120,12 @@ func TestLog_GetChunk(t *testing.T) {
 		{
 			name: "last chunk",
 			opts: otf.GetChunkOptions{
-				RunID:  run.ID(),
+				RunID:  run.ID,
 				Phase:  otf.PlanPhase,
 				Offset: 7,
 			},
 			want: otf.Chunk{
-				RunID:  run.ID(),
+				RunID:  run.ID,
 				Phase:  otf.PlanPhase,
 				Data:   []byte("world\x03"),
 				Offset: 7,
@@ -151,7 +151,7 @@ func TestLog_GetChunkByID(t *testing.T) {
 	ctx := context.Background()
 
 	want, err := db.PutChunk(ctx, otf.Chunk{
-		RunID:  run.ID(),
+		RunID:  run.ID,
 		Phase:  otf.PlanPhase,
 		Data:   []byte("\x02hello world\x03"),
 		Offset: 0,

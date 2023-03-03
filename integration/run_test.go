@@ -22,14 +22,14 @@ func TestRunCreate(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
-		var got *run.Run
+		var got *otf.Run
 		t.Cleanup(func() {
-			svc.Delete(ctx, got.ID())
+			svc.Delete(ctx, got.ID)
 		})
 
 		var err error
-		got, err = svc.Create(ctx, ws.ID(), run.RunCreateOptions{
-			ConfigurationVersionID: otf.String(cv.ID()),
+		got, err = svc.Create(ctx, ws.ID, run.RunCreateOptions{
+			ConfigurationVersionID: otf.String(cv.ID),
 		})
 		require.NoError(t, err)
 	})
@@ -38,7 +38,7 @@ func TestRunCreate(t *testing.T) {
 		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 		run := testutil.CreateRun(t, db, ws, cv)
 
-		got, err := svc.EnqueuePlan(ctx, run.ID())
+		got, err := svc.EnqueuePlan(ctx, run.ID)
 		require.NoError(t, err)
 		assert.Equal(t, otf.RunPlanQueued, got.Status())
 
@@ -51,7 +51,7 @@ func TestRunCreate(t *testing.T) {
 		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 		run := testutil.CreateRun(t, db, ws, cv)
 
-		_, err := svc.Get(ctx, run.ID())
+		_, err := svc.Get(ctx, run.ID)
 		require.NoError(t, err)
 	})
 }
@@ -101,7 +101,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by workspace id",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID())},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
@@ -175,10 +175,10 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.CreatePlanReport(context.Background(), run.ID(), report)
+	err := db.CreatePlanReport(context.Background(), run.ID, report)
 	require.NoError(t, err)
 
-	run, err = db.GetRun(context.Background(), run.ID())
+	run, err = db.GetRun(context.Background(), run.ID)
 	require.NoError(t, err)
 
 	assert.NotNil(t, run.Plan().ResourceReport)

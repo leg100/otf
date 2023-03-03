@@ -4,32 +4,102 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type Organization struct {
-	Name string
+const (
+	DefaultSessionTimeout    = 20160
+	DefaultSessionExpiration = 20160
+)
+
+type (
+	// Organization is an OTF Organization, comprising workspaces, users, etc.
+	Organization struct {
+		ID              string
+		CreatedAt       time.Time
+		UpdatedAt       time.Time
+		Name            string
+		SessionRemember int
+		SessionTimeout  int
+	}
+
+	// OrganizationList represents a list of Organizations.
+	OrganizationList struct {
+		*Pagination
+		Items []*Organization
+	}
+
+	OrganizationService interface {
+		CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
+		EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
+		GetOrganization(ctx context.Context, name string) (Organization, error)
+		GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
+	}
+
+	// OrganizationCreateOptions represents the options for creating an
+	// organization. See dto.OrganizationCreateOptions for more details.
+	OrganizationCreateOptions struct {
+		Name            *string `schema:"name,required"`
+		SessionRemember *int
+		SessionTimeout  *int
+	}
+
+	// ListOptions represents the options for listing organizations.
+	OrganizationListOptions struct {
+		ListOptions
+	}
+
+	// UpdateOptions represents the options for updating an
+	// organization.
+	OrganizationUpdateOptions struct {
+		Name            *string
+		SessionRemember *int
+		SessionTimeout  *int
+	}
+)
+
+func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+	org := Organization{
+		Name:            *opts.Name,
+		CreatedAt:       CurrentTimestamp(),
+		UpdatedAt:       CurrentTimestamp(),
+		ID:              NewID("org"),
+		SessionTimeout:  DefaultSessionTimeout,
+		SessionRemember: DefaultSessionExpiration,
+	}
+	if opts.SessionTimeout != nil {
+		org.SessionTimeout = *opts.SessionTimeout
+	}
+	if opts.SessionRemember != nil {
+		org.SessionRemember = *opts.SessionRemember
+	}
+	return &org, nil
 }
 
-type OrganizationList struct {
-	*Pagination
-	Items []Organization
+func (org *Organization) String() string { return org.ID }
+
+func (org *Organization) Update(opts OrganizationUpdateOptions) error {
+	if opts.Name != nil {
+		org.Name = *opts.Name
+	}
+	if opts.SessionTimeout != nil {
+		org.SessionTimeout = *opts.SessionTimeout
+	}
+	if opts.SessionRemember != nil {
+		org.SessionRemember = *opts.SessionRemember
+	}
+	return nil
 }
 
-type OrganizationService interface {
-	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
-	EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (Organization, error)
-	GetOrganization(ctx context.Context, name string) (Organization, error)
-	GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
-}
-
-// OrganizationCreateOptions represents the options for creating an
-// organization. See dto.OrganizationCreateOptions for more details.
-type OrganizationCreateOptions struct {
-	Name            *string `schema:"name,required"`
-	SessionRemember *int
-	SessionTimeout  *int
+func (org *Organization) toValue() Organization {
+	return Organization{
+		Name: org.Name,
+	}
 }
 
 func (opts *OrganizationCreateOptions) Validate() error {

@@ -28,7 +28,7 @@ func (w *Worker) handle(ctx context.Context, run otf.Run) {
 	log := w.Logger.WithValues("run", run.ID, "phase", run.Phase)
 
 	// Claim run job
-	run, err := w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
+	run, err := w.StartPhase(ctx, run.ID, run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "starting phase")
 		return

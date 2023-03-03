@@ -71,7 +71,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 	app.cancelRun(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.Runs(ws.ID()), redirect.Path)
+		assert.Equal(t, paths.Runs(ws.ID), redirect.Path)
 	}
 }
 
@@ -103,7 +103,7 @@ func TestTailLogs(t *testing.T) {
 	defer webSrv.Close()
 
 	// setup SSE client and subscribe to stream
-	client := sse.NewClient(webSrv.URL + "/" + run.ID() + "?offset=0&stream=tail-123&phase=plan")
+	client := sse.NewClient(webSrv.URL + "/" + run.ID + "?offset=0&stream=tail-123&phase=plan")
 	client.Connection.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}

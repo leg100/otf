@@ -86,14 +86,14 @@ func UpdateModuleVersionStatus(ctx context.Context, app otf.Application, opts Up
 			return err
 		}
 
-		mod, err = tx.DB().GetModuleByID(ctx, modver.ModuleID())
+		mod, err = tx.DB().GetModuleByID(ctx, modver.ModuleID)
 		if err != nil {
 			return err
 		}
 		newModStatus := NextModuleStatus(mod.Status(), modver.Status())
 		if newModStatus != mod.Status() {
 			mod, err = tx.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
-				ID:     mod.ID(),
+				ID:     mod.ID,
 				Status: newModStatus,
 			})
 			if err != nil {

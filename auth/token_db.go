@@ -10,10 +10,10 @@ import (
 // CreateToken inserts the token, associating it with the user.
 func (db *pgdb) CreateToken(ctx context.Context, token *Token) error {
 	_, err := db.InsertToken(ctx, pggen.InsertTokenParams{
-		TokenID:     sql.String(token.ID()),
+		TokenID:     sql.String(token.ID),
 		Token:       sql.String(token.Token()),
 		Description: sql.String(token.Description()),
-		UserID:      sql.String(token.UserID()),
+		UserID:      sql.String(token.UserID),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt()),
 	})
 	return err

@@ -11,7 +11,7 @@ import (
 )
 
 func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
-	cv, err := NewConfigurationVersion(ws.ID(), opts)
+	cv, err := NewConfigurationVersion(ws.ID, opts)
 	require.NoError(t, err)
 	return cv
 }
@@ -20,11 +20,11 @@ func CreateConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, opts 
 	ctx := context.Background()
 	configService := NewConfigVersionService(db)
 
-	cv, err := configService.CreateConfigurationVersion(ctx, ws.ID(), otf.ConfigurationVersionCreateOptions{})
+	cv, err := configService.CreateConfigurationVersion(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		configService.DeleteConfigurationVersion(ctx, cv.ID())
+		configService.DeleteConfigurationVersion(ctx, cv.ID)
 	})
 	return cv
 }

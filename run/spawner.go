@@ -125,11 +125,11 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err != nil {
 			return err
 		}
-		if err := h.UploadConfig(ctx, cv.ID(), tarball); err != nil {
+		if err := h.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
 		_, err = h.create(ctx, ws.ID, otf.RunCreateOptions{
-			ConfigurationVersionID: otf.String(cv.ID()),
+			ConfigurationVersionID: otf.String(cv.ID),
 		})
 		if err != nil {
 			return err

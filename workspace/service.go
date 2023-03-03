@@ -247,7 +247,7 @@ func (a *Service) list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf
 				return nil, err
 			}
 			if user, ok := subject.(otf.User); ok {
-				return a.db.ListWorkspacesByUserID(ctx, user.ID(), *opts.Organization, opts.ListOptions)
+				return a.db.ListWorkspacesByUserID(ctx, user.ID, *opts.Organization, opts.ListOptions)
 			}
 		} else if err != nil {
 			return nil, err

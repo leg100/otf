@@ -25,7 +25,7 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 	if runID != nil {
 		state = RunLock{id: *runID}
 	} else if user, ok := subject.(otf.User); ok {
-		state = UserLock{id: user.ID(), username: user.Username()}
+		state = UserLock{id: user.ID, username: user.Username()}
 	} else {
 		svc.Error(otf.ErrWorkspaceUnlockDenied, "subject", subject, "workspace", workspaceID)
 		return nil, otf.ErrWorkspaceUnlockDenied

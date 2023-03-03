@@ -22,7 +22,7 @@ func TestDB_Create(t *testing.T) {
 		Category: VariableCategoryPtr(otf.CategoryTerraform),
 	})
 
-	defer variableDB.delete(ctx, v.ID())
+	defer variableDB.delete(ctx, v.ID)
 
 	err := variableDB.create(ctx, v)
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestDB_Update(t *testing.T) {
 		Category: VariableCategoryPtr(otf.CategoryTerraform),
 	})
 
-	got, err := variableDB.update(ctx, country.ID(), func(v *Variable) error {
+	got, err := variableDB.update(ctx, country.ID, func(v *Variable) error {
 		return v.Update(otf.UpdateVariableOptions{
 			Value: otf.String("luxembourg"),
 		})
@@ -67,7 +67,7 @@ func TestDB_List(t *testing.T) {
 		Category: VariableCategoryPtr(otf.CategoryTerraform),
 	})
 
-	got, err := variableDB.list(ctx, ws.ID())
+	got, err := variableDB.list(ctx, ws.ID)
 	require.NoError(t, err)
 
 	if assert.Equal(t, 2, len(got)) {
@@ -88,7 +88,7 @@ func TestDB_Get(t *testing.T) {
 		Category: VariableCategoryPtr(otf.CategoryTerraform),
 	})
 
-	got, err := variableDB.get(ctx, want.ID())
+	got, err := variableDB.get(ctx, want.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, want, got)
@@ -106,7 +106,7 @@ func TestDB_Delete(t *testing.T) {
 		Category: VariableCategoryPtr(otf.CategoryTerraform),
 	})
 
-	got, err := variableDB.delete(ctx, want.ID())
+	got, err := variableDB.delete(ctx, want.ID)
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -114,14 +114,14 @@ func TestDB_Delete(t *testing.T) {
 func createTestVariable(t *testing.T, db *pgdb, ws *otf.Workspace, opts otf.CreateVariableOptions) *Variable {
 	ctx := context.Background()
 
-	v, err := NewVariable(ws.ID(), opts)
+	v, err := NewVariable(ws.ID, opts)
 	require.NoError(t, err)
 
 	err = db.create(ctx, v)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.delete(ctx, v.ID())
+		db.delete(ctx, v.ID)
 	})
 	return v
 }

@@ -11,10 +11,10 @@ import (
 )
 
 type service interface {
-	create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error)
-	get(ctx context.Context, name string) (*Organization, error)
-	list(ctx context.Context, opts ListOptions) (*OrganizationList, error)
-	update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
+	create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error)
+	get(ctx context.Context, name string) (*otf.Organization, error)
+	list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error)
+	update(ctx context.Context, name string, opts otf.OrganizationUpdateOptions) (*otf.Organization, error)
 	delete(ctx context.Context, name string) error
 	getEntitlements(ctx context.Context, organization string) (Entitlements, error)
 }
@@ -55,72 +55,50 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (otf.Organization, error) {
-	org, err := a.create(ctx, opts)
-	if err != nil {
-		return otf.Organization{}, nil
-	}
-	return org.toValue(), nil
+func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	return a.create(ctx, opts)
 }
 
-func (a *Service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (otf.Organization, error) {
-	org, err := a.update(ctx, name, opts)
-	if err != nil {
-		return otf.Organization{}, nil
-	}
-	return org.toValue(), nil
+func (a *Service) UpdateOrganization(ctx context.Context, name string, opts otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+	return a.update(ctx, name, opts)
 }
 
-func (a *Service) ListOrganizations(ctx context.Context, opts ListOptions) (otf.OrganizationList, error) {
-	from, err := a.list(ctx, opts)
-	if err != nil {
-		return otf.OrganizationList{}, nil
-	}
-	to := otf.OrganizationList{
-		Pagination: from.Pagination,
-	}
-	for _, org := range from.Items {
-		to.Items = append(to.Items, org.toValue())
-	}
-	return to, nil
+func (a *Service) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+	return a.list(ctx, opts)
 }
 
-func (a *Service) GetOrganization(ctx context.Context, name string) (otf.Organization, error) {
-	org, err := a.get(ctx, name)
-	if err != nil {
-		return otf.Organization{}, nil
-	}
-	return org.toValue(), nil
+func (a *Service) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
+	return a.get(ctx, name)
 }
 
 func (a *Service) DeleteOrganization(ctx context.Context, name string) error {
 	return a.delete(ctx, name)
 }
 
-func (a *Service) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
+func (a *Service) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.CreateOrganizationAction, "")
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := NewOrganization(opts)
+	org, err := otf.NewOrganization(opts)
 	if err != nil {
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
 	if err := a.db.create(ctx, org); err != nil {
-		a.Error(err, "creating organization", "id", org.ID(), "subject", subject)
+		a.Error(err, "creating organization", "id", org.ID, "subject", subject)
 		return nil, err
 	}
 
 	a.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	a.V(0).Info("created organization", "id", org.ID(), "name", org.Name(), "subject", subject)
+	a.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
 
 	return org, nil
 }
 
-func (a *Service) get(ctx context.Context, name string) (*Organization, error) {
+func (a *Service) get(ctx context.Context, name string) (*otf.Organization, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -132,12 +110,12 @@ func (a *Service) get(ctx context.Context, name string) (*Organization, error) {
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved organization", "name", name, "id", org.ID(), "subject", subject)
+	a.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
 }
 
-func (a *Service) list(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
+func (a *Service) list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -148,13 +126,13 @@ func (a *Service) list(ctx context.Context, opts ListOptions) (*OrganizationList
 	return a.db.list(ctx, opts)
 }
 
-func (a *Service) update(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
+func (a *Service) update(ctx context.Context, name string, opts otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.db.update(ctx, name, func(org *Organization) error {
+	org, err := a.db.update(ctx, name, func(org *otf.Organization) error {
 		return org.Update(opts)
 	})
 	if err != nil {
@@ -162,7 +140,7 @@ func (a *Service) update(ctx context.Context, name string, opts UpdateOptions) (
 		return nil, err
 	}
 
-	a.V(2).Info("updated organization", "name", name, "id", org.ID(), "subject", subject)
+	a.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
 }
@@ -193,5 +171,5 @@ func (a *Service) getEntitlements(ctx context.Context, organization string) (Ent
 	if err != nil {
 		return Entitlements{}, err
 	}
-	return defaultEntitlements(org.ID()), nil
+	return defaultEntitlements(org.ID), nil
 }

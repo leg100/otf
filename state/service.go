@@ -87,7 +87,7 @@ func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID string) 
 	if err != nil {
 		return nil, err
 	}
-	return a.downloadState(ctx, v.id)
+	return a.downloadState(ctx, v.ID)
 }
 
 func (a *Service) createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*version, error) {
@@ -109,11 +109,11 @@ func (a *Service) createVersion(ctx context.Context, opts otf.CreateStateVersion
 		return nil, err
 	}
 
-	if err := a.cache.Set(cacheKey(sv.id), sv.State()); err != nil {
+	if err := a.cache.Set(cacheKey(sv.ID), sv.State); err != nil {
 		return nil, fmt.Errorf("caching state version: %w", err)
 	}
 
-	a.V(0).Info("created state version", "id", sv.ID(), "workspace", *opts.WorkspaceID, "serial", sv.Serial(), "subject", subject)
+	a.V(0).Info("created state version", "id", sv.ID, "workspace", *opts.WorkspaceID, "serial", sv.Serial, "subject", subject)
 	return sv, nil
 }
 
@@ -210,5 +210,5 @@ func (a *Service) CanAccessStateVersion(ctx context.Context, action rbac.Action,
 	if err != nil {
 		return nil, err
 	}
-	return a.workspace.CanAccess(ctx, action, sv.workspaceID)
+	return a.workspace.CanAccess(ctx, action, sv.WorkspaceID)
 }

@@ -33,19 +33,19 @@ func NewRunService(db otf.DB) *run.Service {
 func CreateRun(t *testing.T, db otf.DB, ws otf.Workspace, cv otf.ConfigurationVersion) otf.Run {
 	ctx := context.Background()
 	svc := NewRunService(db)
-	run, err := svc.Create(ctx, ws.ID(), run.RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID()),
+	run, err := svc.Create(ctx, ws.ID, run.RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID),
 	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		svc.Delete(ctx, run.ID())
+		svc.Delete(ctx, run.ID)
 	})
 	return run
 }
 
 // NewTestRun creates a new run. Expressly for testing purposes.
-func NewRun(t *testing.T, opts TestRunCreateOptions) *run.Run {
+func NewRun(t *testing.T, opts TestRunCreateOptions) *otf.Run {
 	org := NewOrganization(t)
 
 	ws := opts.Workspace
@@ -58,7 +58,7 @@ func NewRun(t *testing.T, opts TestRunCreateOptions) *run.Run {
 		require.NoError(t, err)
 	}
 
-	cv, err := NewConfigurationVersion(ws.ID(), ConfigurationVersionCreateOptions{
+	cv, err := NewConfigurationVersion(ws.ID, ConfigurationVersionCreateOptions{
 		IngressAttributes: opts.IngressAttributes,
 		Speculative:       otf.Bool(opts.Speculative),
 	})

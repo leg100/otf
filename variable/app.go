@@ -67,7 +67,7 @@ func (a *app) get(ctx context.Context, variableID string) (*Variable, error) {
 		return nil, err
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetVariableAction, variable.WorkspaceID())
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.GetVariableAction, variable.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (a *app) update(ctx context.Context, variableID string, opts otf.UpdateVari
 		return nil, errors.Wrap(err, "retrieving variable")
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateVariableAction, existing.WorkspaceID())
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateVariableAction, existing.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (a *app) update(ctx context.Context, variableID string, opts otf.UpdateVari
 		return v.Update(opts)
 	})
 	if err != nil {
-		a.Error(err, "updating variable", "subject", subject, "variable_id", variableID, "workspace_id", existing.WorkspaceID())
+		a.Error(err, "updating variable", "subject", subject, "variable_id", variableID, "workspace_id", existing.WorkspaceID)
 		return nil, err
 	}
 	a.V(1).Info("updated variable", "subject", subject, "before", existing, "after", updated)
@@ -108,7 +108,7 @@ func (a *app) delete(ctx context.Context, variableID string) (*Variable, error) 
 		return nil, errors.Wrap(err, "retrieving variable")
 	}
 
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteVariableAction, existing.WorkspaceID())
+	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.DeleteVariableAction, existing.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}

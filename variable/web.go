@@ -124,7 +124,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), variable.WorkspaceID())
+	ws, err := h.GetWorkspace(r.Context(), variable.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -139,7 +139,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		Workspace:  ws,
 		Variable:   variable,
 		EditMode:   true,
-		FormAction: paths.UpdateVariable(variable.ID()),
+		FormAction: paths.UpdateVariable(variable.ID),
 	})
 }
 
@@ -181,7 +181,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "updated variable: "+variable.Key())
-	http.Redirect(w, r, paths.Variables(variable.WorkspaceID()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) delete(w http.ResponseWriter, r *http.Request) {
@@ -198,5 +198,5 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "deleted variable: "+variable.Key())
-	http.Redirect(w, r, paths.Variables(variable.WorkspaceID()), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
 }

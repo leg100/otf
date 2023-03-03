@@ -42,7 +42,7 @@ func TestStateVersion_Create(t *testing.T) {
 		}{
 			{
 				name: "by id",
-				opts: stateVersionGetOptions{ID: otf.String(sv.ID())},
+				opts: stateVersionGetOptions{ID: otf.String(sv.ID)},
 				want: func(t *testing.T, got *version, err error) {
 					if assert.NoError(t, err) {
 						assert.Equal(t, sv, got)
@@ -58,7 +58,7 @@ func TestStateVersion_Create(t *testing.T) {
 			},
 			{
 				name: "by workspace",
-				opts: stateVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
+				opts: stateVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
 				want: func(t *testing.T, got *version, err error) {
 					if assert.NoError(t, err) {
 						assert.Equal(t, sv, got)
@@ -130,7 +130,7 @@ func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *otf.Workspace, outp
 	err := stateDB.createVersion(ctx, sv)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		stateDB.deleteVersion(ctx, sv.ID())
+		stateDB.deleteVersion(ctx, sv.ID)
 	})
 	return sv
 }

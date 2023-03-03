@@ -21,7 +21,7 @@ func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {
 func createModule(ctx context.Context, db otf.Database, mod *Module) error {
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
-			ID:               sql.String(mod.ID()),
+			ID:               sql.String(mod.ID),
 			CreatedAt:        sql.Timestamptz(mod.CreatedAt()),
 			UpdatedAt:        sql.Timestamptz(mod.UpdatedAt()),
 			Name:             sql.String(mod.Name()),
@@ -36,7 +36,7 @@ func createModule(ctx context.Context, db otf.Database, mod *Module) error {
 			_, err = tx.InsertModuleRepo(ctx, pggen.InsertModuleRepoParams{
 				WebhookID:     sql.UUID(mod.Repo().WebhookID),
 				VCSProviderID: sql.String(mod.Repo().ProviderID),
-				ModuleID:      sql.String(mod.ID()),
+				ModuleID:      sql.String(mod.ID),
 			})
 			if err != nil {
 				return err
@@ -105,11 +105,11 @@ func (db *pgdb) DeleteModule(ctx context.Context, id string) error {
 
 func (db *pgdb) CreateModuleVersion(ctx context.Context, version *ModuleVersion) error {
 	_, err := db.InsertModuleVersion(ctx, pggen.InsertModuleVersionParams{
-		ModuleVersionID: sql.String(version.ID()),
+		ModuleVersionID: sql.String(version.ID),
 		Version:         sql.String(version.Version()),
 		CreatedAt:       sql.Timestamptz(version.CreatedAt()),
 		UpdatedAt:       sql.Timestamptz(version.UpdatedAt()),
-		ModuleID:        sql.String(version.ModuleID()),
+		ModuleID:        sql.String(version.ModuleID),
 		Status:          sql.String(string(version.Status())),
 	})
 	if err != nil {

@@ -19,7 +19,7 @@ func TestOrganization_Create(t *testing.T) {
 		org := NewTestOrganization(t)
 
 		t.Cleanup(func() {
-			db.delete(ctx, org.name)
+			db.delete(ctx, org.Name)
 		})
 
 		err := db.create(ctx, org)
@@ -35,13 +35,13 @@ func TestOrganization_Create(t *testing.T) {
 		org := createTestOrganization(t, db)
 
 		want := uuid.NewString()
-		org, err := db.update(ctx, org.Name(), func(org *Organization) error {
-			org.name = want
+		org, err := db.update(ctx, org.Name, func(org *otf.Organization) error {
+			org.Name = want
 			return nil
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, want, org.Name())
+		assert.Equal(t, want, org.Name)
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
@@ -49,21 +49,21 @@ func TestOrganization_Create(t *testing.T) {
 		_ = createTestOrganization(t, db)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := db.list(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := db.list(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := db.list(ctx, ListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := db.list(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
@@ -73,7 +73,7 @@ func TestOrganization_Create(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		want := createTestOrganization(t, db)
 
-		got, err := db.get(ctx, want.name)
+		got, err := db.get(ctx, want.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -82,10 +82,10 @@ func TestOrganization_Create(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		org := createTestOrganization(t, db)
 
-		err := db.delete(ctx, org.name)
+		err := db.delete(ctx, org.Name)
 		require.NoError(t, err)
 
-		_, err = db.get(ctx, org.name)
+		_, err = db.get(ctx, org.Name)
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 	})
 

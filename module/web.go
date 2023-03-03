@@ -80,7 +80,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 	switch module.Status() {
 	case ModuleStatusSetupComplete:
 		tarball, err := h.app.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
-			ModuleVersionID: module.Version(params.Version).ID(),
+			ModuleVersionID: module.Version(params.Version).ID,
 		})
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -232,7 +232,7 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "published module: "+module.Name())
-	http.Redirect(w, r, paths.Module(module.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Module(module.ID), http.StatusFound)
 }
 
 func (h *web) deleteModule(w http.ResponseWriter, r *http.Request) {

@@ -15,7 +15,7 @@ func TestModule_Create(t *testing.T) {
 	org := CreateTestOrganization(t, db)
 	module := otf.NewTestModule(org)
 
-	defer db.DeleteModule(ctx, module.ID())
+	defer db.DeleteModule(ctx, module.ID)
 
 	err := db.CreateModule(ctx, module)
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestModule_GetByID(t *testing.T) {
 	org := CreateTestOrganization(t, db)
 	want := createTestModule(t, db, org)
 
-	got, err := db.GetModuleByID(ctx, want.ID())
+	got, err := db.GetModuleByID(ctx, want.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, want, got)
@@ -73,7 +73,7 @@ func TestModule_Delete(t *testing.T) {
 	org := CreateTestOrganization(t, db)
 	module := createTestModule(t, db, org)
 
-	err := db.DeleteModule(ctx, module.ID())
+	err := db.DeleteModule(ctx, module.ID)
 	require.NoError(t, err)
 
 	got, err := db.ListModules(ctx, otf.ListModulesOptions{Organization: org.Name()})

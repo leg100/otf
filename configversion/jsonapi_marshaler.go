@@ -39,7 +39,7 @@ type marshalable struct {
 
 func (m marshalable) ToJSONAPI() any {
 	cv := &jsonapi.ConfigurationVersion{
-		ID:               m.ID(),
+		ID:               m.ID,
 		AutoQueueRuns:    m.AutoQueueRuns(),
 		Speculative:      m.Speculative(),
 		Source:           string(m.Source()),

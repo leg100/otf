@@ -48,7 +48,7 @@ func TestWorkspace_Create(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspace(ws.ID()), redirect.Path)
+		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
 	}
 }
 
@@ -78,7 +78,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspace(ws.ID()), redirect.Path)
+		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
 	}
 }
 
@@ -169,7 +169,7 @@ func TestLockWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID), redirect.Path)
 	}
 }
 
@@ -191,7 +191,7 @@ func TestUnlockWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID), redirect.Path)
 	}
 }
 
@@ -312,7 +312,7 @@ func TestStartRunHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/runs/%s", run.ID()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/runs/%s", run.ID), redirect.Path)
 	}
 }
 

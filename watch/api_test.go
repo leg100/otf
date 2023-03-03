@@ -19,7 +19,7 @@ func TestWatch(t *testing.T) {
 
 	// inject input event
 	in <- otf.Event{
-		Payload: &otfrun.Run{},
+		Payload: &otf.Run{},
 		Type:    otf.EventRunCreated,
 	}
 	// expected output event

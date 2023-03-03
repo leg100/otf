@@ -14,12 +14,12 @@ import (
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
 type version struct {
-	id          string
-	createdAt   time.Time
-	serial      int64
-	state       []byte     // state file
-	outputs     outputList // state version has many outputs
-	workspaceID string     // state version belongs to a workspace
+	ID          string
+	CreatedAt   time.Time
+	Serial      int64
+	State       []byte     // state file
+	Outputs     outputList // state version has many outputs
+	WorkspaceID string     // state version belongs to a workspace
 }
 
 // newVersion constructs a new state version.
@@ -37,52 +37,48 @@ func newVersion(opts otf.CreateStateVersionOptions) (*version, error) {
 	}
 
 	sv := version{
-		id:          otf.NewID("sv"),
-		createdAt:   otf.CurrentTimestamp(),
-		serial:      f.Serial,
-		state:       opts.State,
-		workspaceID: *opts.WorkspaceID,
+		ID:          otf.NewID("sv"),
+		CreatedAt:   otf.CurrentTimestamp(),
+		Serial:      f.Serial,
+		State:       opts.State,
+		WorkspaceID: *opts.WorkspaceID,
 	}
 	// Serial provided in options takes precedence over that extracted from the
 	// state file.
 	if opts.Serial != nil {
-		sv.serial = *opts.Serial
+		sv.Serial = *opts.Serial
 	}
 
-	sv.outputs = make(outputList, len(f.Outputs))
+	sv.Outputs = make(outputList, len(f.Outputs))
 	for k, v := range f.Outputs {
 		hclType, err := newHCLType(v.Value)
 		if err != nil {
 			return nil, err
 		}
 
-		sv.outputs[k] = &output{
+		sv.Outputs[k] = &output{
 			id:             otf.NewID("wsout"),
 			name:           k,
 			typ:            hclType,
 			value:          string(v.Value),
 			sensitive:      v.Sensitive,
-			stateVersionID: sv.id,
+			stateVersionID: sv.ID,
 		}
 	}
 	return &sv, nil
 }
 
-func (v *version) ID() string           { return v.id }
-func (v *version) CreatedAt() time.Time { return v.createdAt }
-func (v *version) String() string       { return v.id }
-func (v *version) Serial() int64        { return v.serial }
-func (v *version) State() []byte        { return v.state }
+func (v *version) String() string { return v.ID }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
 func (v *version) ToJSONAPI() any {
 	j := &jsonapiVersion{
-		ID:          v.ID(),
-		CreatedAt:   v.CreatedAt(),
-		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", v.ID()),
-		Serial:      v.Serial(),
+		ID:          v.ID,
+		CreatedAt:   v.CreatedAt,
+		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", v.ID),
+		Serial:      v.Serial,
 	}
-	for _, out := range v.outputs {
+	for _, out := range v.Outputs {
 		j.Outputs = append(j.Outputs, out.ToJSONAPI().(*jsonapiVersionOutput))
 	}
 	return j

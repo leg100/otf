@@ -31,7 +31,7 @@ func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, o
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		cvDB.DeleteConfigurationVersion(ctx, cv.ID())
+		cvDB.DeleteConfigurationVersion(ctx, cv.ID)
 	})
 	return cv
 }

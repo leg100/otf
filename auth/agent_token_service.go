@@ -22,7 +22,7 @@ func (a *Service) getAgentToken(ctx context.Context, token string) (*AgentToken,
 		a.Error(err, "retrieving agent token", "token", "******")
 		return nil, err
 	}
-	a.V(2).Info("retrieved agent token", "organization", at.Organization(), "id", at.ID())
+	a.V(2).Info("retrieved agent token", "organization", at.Organization(), "id", at.ID)
 	return at, nil
 }
 
@@ -37,10 +37,10 @@ func (a *Service) createAgentToken(ctx context.Context, opts otf.CreateAgentToke
 		return nil, err
 	}
 	if err := a.db.CreateAgentToken(ctx, token); err != nil {
-		a.Error(err, "creating agent token", "organization", opts.Organization, "id", token.ID(), "subject", subject)
+		a.Error(err, "creating agent token", "organization", opts.Organization, "id", token.ID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created agent token", "organization", opts.Organization, "id", token.ID(), "subject", subject)
+	a.V(0).Info("created agent token", "organization", opts.Organization, "id", token.ID, "subject", subject)
 	return token, nil
 }
 

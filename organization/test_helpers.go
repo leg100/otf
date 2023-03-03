@@ -18,15 +18,15 @@ func NewTestService(t *testing.T, db otf.DB) *Service {
 	return service
 }
 
-func NewTestOrganization(t *testing.T) *Organization {
-	org, err := NewOrganization(otf.OrganizationCreateOptions{
+func NewTestOrganization(t *testing.T) *otf.Organization {
+	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
 	return org
 }
 
-func CreateTestOrganization(t *testing.T, db otf.DB) otf.Organization {
+func CreateTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	ctx := context.Background()
 	svc := NewTestService(t, db)
 	org, err := svc.CreateOrganization(ctx, otf.OrganizationCreateOptions{
@@ -40,30 +40,30 @@ func CreateTestOrganization(t *testing.T, db otf.DB) otf.Organization {
 	return org
 }
 
-func createTestOrganization(t *testing.T, db *pgdb) *Organization {
+func createTestOrganization(t *testing.T, db *pgdb) *otf.Organization {
 	ctx := context.Background()
 	org := NewTestOrganization(t)
 	err := db.create(ctx, org)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.delete(ctx, org.name)
+		db.delete(ctx, org.Name)
 	})
 	return org
 }
 
 type fakeService struct {
-	orgs []*Organization
+	orgs []*otf.Organization
 
 	service
 }
 
-func (f *fakeService) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*Organization, error) {
-	return NewOrganization(opts)
+func (f *fakeService) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	return otf.NewOrganization(opts)
 }
 
-func (f *fakeService) list(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
-	return &OrganizationList{
+func (f *fakeService) list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+	return &otf.OrganizationList{
 		Items:      f.orgs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil

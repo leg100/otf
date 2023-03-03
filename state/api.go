@@ -146,7 +146,7 @@ func (h *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, sv.outputs)
+	jsonapi.WriteResponse(w, r, sv.Outputs)
 }
 
 func (h *api) getOutput(w http.ResponseWriter, r *http.Request) {

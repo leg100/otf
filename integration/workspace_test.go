@@ -43,7 +43,7 @@ func TestWorkspace_Create(t *testing.T) {
 		org := testutil.CreateOrganization(t, db)
 		ws := testutil.CreateWorkspace(t, db, org.Name())
 
-		got, err := svc.UpdateWorkspace(ctx, ws.ID(), workspace.UpdateWorkspaceOptions{
+		got, err := svc.UpdateWorkspace(ctx, ws.ID, workspace.UpdateWorkspaceOptions{
 			Description: otf.String("updated description"),
 		})
 		require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestWorkspace_Create(t *testing.T) {
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
-		want, err := svc.GetWorkspace(ctx, ws.ID())
+		want, err := svc.GetWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -59,7 +59,7 @@ func TestWorkspace_Create(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		want := testutil.CreateWorkspace(t, db, org.Name())
 
-		got, err := svc.GetWorkspace(ctx, want.ID())
+		got, err := svc.GetWorkspace(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -77,16 +77,16 @@ func TestWorkspace_Create(t *testing.T) {
 		ctx := otf.AddSubjectToContext(ctx, user)
 
 		ws := testutil.CreateWorkspace(t, db, org.Name())
-		got, err := svc.LockWorkspace(ctx, ws.ID())
+		got, err := svc.LockWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("unlock", func(t *testing.T) {
 		ws := testutil.CreateWorkspace(t, db, org.Name())
-		_, err := svc.LockWorkspace(ctx, ws.ID())
+		_, err := svc.LockWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
-		got, err := svc.UnlockWorkspace(ctx, ws.ID(), false)
+		got, err := svc.UnlockWorkspace(ctx, ws.ID, false)
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
@@ -181,7 +181,7 @@ func TestWorkspace_Create(t *testing.T) {
 		}{
 			{
 				name:         "show both workspaces",
-				userID:       user.ID(),
+				userID:       user.ID,
 				organization: org.Name(),
 				want: func(t *testing.T, l *otf.WorkspaceList) {
 					assert.Equal(t, 2, len(l.Items))
@@ -191,7 +191,7 @@ func TestWorkspace_Create(t *testing.T) {
 			},
 			{
 				name:         "query non-existent org",
-				userID:       user.ID(),
+				userID:       user.ID,
 				organization: "acme-corp",
 				want: func(t *testing.T, l *otf.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
@@ -207,7 +207,7 @@ func TestWorkspace_Create(t *testing.T) {
 			},
 			{
 				name:         "paginated results ordered by updated_at",
-				userID:       user.ID(),
+				userID:       user.ID,
 				organization: org.Name(),
 				opts:         otf.ListOptions{PageNumber: 1, PageSize: 1},
 				want: func(t *testing.T, l *otf.WorkspaceList) {
@@ -237,7 +237,7 @@ func TestWorkspace_Create(t *testing.T) {
 		runService := testutil.NewRunService(db)
 		configService := testutil.NewConfigVersionService(db)
 
-		_, err := svc.DeleteWorkspace(ctx, ws.ID())
+		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		results, err := svc.ListWorkspaces(ctx, otf.WorkspaceListOptions{Organization: otf.String(org.Name())})
@@ -246,13 +246,13 @@ func TestWorkspace_Create(t *testing.T) {
 		assert.Equal(t, 0, len(results.Items))
 
 		// Test ON CASCADE DELETE functionality for runs
-		rl, err := runService.ListRuns(ctx, otf.RunListOptions{WorkspaceID: otf.String(ws.ID())})
+		rl, err := runService.ListRuns(ctx, otf.RunListOptions{WorkspaceID: otf.String(ws.ID)})
 		require.NoError(t, err)
 
 		assert.Equal(t, 0, len(rl.Items))
 
 		// Test ON CASCADE DELETE functionality for config versions
-		cvl, err := configService.ListConfigurationVersions(ctx, ws.ID(), otf.ConfigurationVersionListOptions{})
+		cvl, err := configService.ListConfigurationVersions(ctx, ws.ID, otf.ConfigurationVersionListOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, 0, len(cvl.Items))
@@ -263,11 +263,11 @@ func TestWorkspace_Create(t *testing.T) {
 		ws := testutil.CreateWorkspace(t, db, org.Name())
 		team := createTestTeam(t, db, org)
 
-		err := svc.SetWorkspacePermission(ctx, ws.ID(), team.Name(), rbac.WorkspacePlanRole)
+		err := svc.SetWorkspacePermission(ctx, ws.ID, team.Name(), rbac.WorkspacePlanRole)
 		require.NoError(t, err)
 
 		t.Run("Update", func(t *testing.T) {
-			err := svc.SetWorkspacePermission(ctx, ws.ID(), team.Name(), rbac.WorkspaceAdminRole)
+			err := svc.SetWorkspacePermission(ctx, ws.ID, team.Name(), rbac.WorkspaceAdminRole)
 			require.NoError(t, err)
 		})
 	})
@@ -280,7 +280,7 @@ func TestWorkspace_Create(t *testing.T) {
 		perm1 := createTestWorkspacePermission(t, db, ws, team1, rbac.WorkspaceAdminRole)
 		perm2 := createTestWorkspacePermission(t, db, ws, team2, rbac.WorkspacePlanRole)
 
-		perms, err := db.GetWorkspacePolicy(ctx, ws.ID())
+		perms, err := db.GetWorkspacePolicy(ctx, ws.ID)
 		require.NoError(t, err)
 		if assert.Equal(t, 2, len(perms)) {
 			assert.Contains(t, perms, perm1)
@@ -293,10 +293,10 @@ func TestWorkspace_Create(t *testing.T) {
 		team := createTestTeam(t, db, org)
 		_ = createTestWorkspacePermission(t, db, ws, team, rbac.WorkspaceAdminRole)
 
-		err := db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
+		err := db.UnsetWorkspacePermission(ctx, ws.ID, team.Name())
 		require.NoError(t, err)
 
-		perms, err := db.GetWorkspacePolicy(ctx, ws.ID())
+		perms, err := db.GetWorkspacePolicy(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(perms))
 	})

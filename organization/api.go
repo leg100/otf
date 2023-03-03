@@ -16,7 +16,6 @@ type api struct {
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
-//
 func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations", h.ListOrganizations)
 	r.HandleFunc("/organizations", h.CreateOrganization)
@@ -63,7 +62,7 @@ func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts ListOptions
+	var opts otf.OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -90,7 +89,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.svc.update(r.Context(), name, UpdateOptions{
+	org, err := h.svc.update(r.Context(), name, otf.OrganizationUpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,

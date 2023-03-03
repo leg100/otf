@@ -54,7 +54,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				if !ok {
 					return
 				}
-				run, ok := event.Payload.(*run.Run)
+				run, ok := event.Payload.(*otf.Run)
 				if !ok {
 					// skip non-run events
 					continue
@@ -71,7 +71,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				if params.Latest && !run.Latest() {
 					// skip: run is not the latest run for a workspace
 					continue
-				} else if params.RunID != "" && params.RunID != run.ID() {
+				} else if params.RunID != "" && params.RunID != run.ID {
 					// skip: event is for a run which does not match the
 					// filter
 					continue
@@ -106,7 +106,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					PlanStatusHTML  string        `json:"plan-status-html"`
 					ApplyStatusHTML string        `json:"apply-status-html"`
 				}{
-					ID:              run.ID(),
+					ID:              run.ID,
 					RunStatus:       run.Status(),
 					RunItemHTML:     itemHTML.String(),
 					RunStatusHTML:   runStatusHTML.String(),
@@ -114,7 +114,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					ApplyStatusHTML: applyStatusHTML.String(),
 				})
 				if err != nil {
-					h.Error(err, "marshalling watched run", "run", run.ID())
+					h.Error(err, "marshalling watched run", "run", run.ID)
 					continue
 				}
 				h.Server.Publish(params.StreamID, &sse.Event{

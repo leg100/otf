@@ -105,7 +105,7 @@ func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "created workspace: "+ws.Name())
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -122,8 +122,8 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var latest otf.Run
-	if ws.LatestRunID() != nil {
-		latest, err = h.GetRun(r.Context(), *ws.LatestRunID())
+	if ws.LatestRunID != nil {
+		latest, err = h.GetRun(r.Context(), *ws.LatestRunID)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -157,7 +157,7 @@ func (h *web) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +243,7 @@ func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
 }
 
 func (h *web) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -274,7 +274,7 @@ func (h *web) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *web) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -289,7 +289,7 @@ func (h *web) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -406,7 +406,7 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	stack.Push(html.FlashSuccessType, "disconnected workspace from repo")
 	stack.Write(w)
 
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
 func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {

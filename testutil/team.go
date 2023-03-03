@@ -22,7 +22,7 @@ func CreateTeam(t *testing.T, db otf.DB, org *organization.Organization) *auth.T
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		svc.DeleteTeam(ctx, team.ID())
+		svc.DeleteTeam(ctx, team.ID)
 	})
 	return team
 }

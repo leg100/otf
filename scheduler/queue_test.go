@@ -29,21 +29,21 @@ func TestQueue(t *testing.T) {
 		err := q.handleEvent(ctx, otf.Event{Payload: run1})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
-		assert.Equal(t, run1.ID(), q.current.ID())
+		assert.Equal(t, run1.ID, q.current.ID)
 		assert.True(t, q.ws.Locked())
 
 		// enqueue run2, check it is in queue
 		err = q.handleEvent(ctx, otf.Event{Payload: run2})
 		require.NoError(t, err)
 		assert.Equal(t, 1, len(q.queue))
-		assert.Equal(t, run2.ID(), q.queue[0].ID())
+		assert.Equal(t, run2.ID, q.queue[0].ID)
 		assert.True(t, q.ws.Locked())
 
 		// enqueue run3, check it is in queue
 		err = q.handleEvent(ctx, otf.Event{Payload: run3})
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(q.queue))
-		assert.Equal(t, run3.ID(), q.queue[1].ID())
+		assert.Equal(t, run3.ID, q.queue[1].ID)
 		assert.True(t, q.ws.Locked())
 
 		// cancel run2, check it is removed from queue and run3 is shuffled forward
@@ -52,7 +52,7 @@ func TestQueue(t *testing.T) {
 		err = q.handleEvent(ctx, otf.Event{Payload: run2})
 		require.NoError(t, err)
 		assert.Equal(t, 1, len(q.queue))
-		assert.Equal(t, run3.ID(), q.queue[0].ID())
+		assert.Equal(t, run3.ID, q.queue[0].ID)
 		assert.True(t, q.ws.Locked())
 
 		// cancel run1; check run3 takes its place as current run
@@ -61,7 +61,7 @@ func TestQueue(t *testing.T) {
 		err = q.handleEvent(ctx, otf.Event{Payload: run1})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
-		assert.Equal(t, run3.ID(), q.current.ID())
+		assert.Equal(t, run3.ID, q.current.ID)
 		assert.True(t, q.ws.Locked())
 
 		// cancel run3; check everything is empty and workspace is unlocked
@@ -86,7 +86,7 @@ func TestQueue(t *testing.T) {
 		err := q.handleEvent(ctx, otf.Event{Payload: run})
 		require.NoError(t, err)
 		// should be scheduled but not enqueued onto workspace q
-		assert.Contains(t, app.scheduled, run.ID())
+		assert.Contains(t, app.scheduled, run.ID)
 		assert.Equal(t, 0, len(q.queue))
 	})
 
@@ -105,7 +105,7 @@ func TestQueue(t *testing.T) {
 		err = q.handleEvent(ctx, otf.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
-		assert.Equal(t, run.ID(), q.current.ID())
+		assert.Equal(t, run.ID, q.current.ID)
 		assert.Equal(t, bob, q.ws.GetLock())
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
@@ -113,8 +113,8 @@ func TestQueue(t *testing.T) {
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
 		require.NoError(t, err)
-		assert.Equal(t, run.ID(), q.current.ID())
-		assert.Equal(t, run.ID(), q.ws.GetLock().ID())
+		assert.Equal(t, run.ID, q.current.ID)
+		assert.Equal(t, run.ID, q.ws.GetLock().ID)
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
@@ -128,22 +128,22 @@ func TestQueue(t *testing.T) {
 
 		err := q.handleEvent(ctx, otf.Event{Payload: run})
 		require.NoError(t, err)
-		assert.Equal(t, run.ID(), q.current.ID())
-		assert.NotContains(t, q.Application.(*fakeQueueApp).scheduled, run.ID())
+		assert.Equal(t, run.ID, q.current.ID)
+		assert.NotContains(t, q.Application.(*fakeQueueApp).scheduled, run.ID)
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
 		ws := otf.NewTestWorkspace(t, org)
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 		run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-		ws.SetLatestRun(run.ID())
+		ws.SetLatestRun(run.ID)
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
 		err := q.handleEvent(ctx, otf.Event{Payload: run})
 		require.NoError(t, err)
-		assert.Equal(t, run.ID(), q.current.ID())
-		assert.NotContains(t, app.current, run.ID())
+		assert.Equal(t, run.ID, q.current.ID)
+		assert.NotContains(t, app.current, run.ID)
 	})
 }
 
@@ -167,7 +167,7 @@ type fakeQueueApp struct {
 func newFakeQueueApp(ws *otf.Workspace, runs ...*otf.Run) *fakeQueueApp {
 	db := make(map[string]*otf.Run, len(runs))
 	for _, r := range runs {
-		db[r.ID()] = r
+		db[r.ID] = r
 	}
 	return &fakeQueueApp{ws: ws, runs: db}
 }

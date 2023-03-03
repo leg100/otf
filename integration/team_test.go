@@ -25,7 +25,7 @@ func TestTeam(t *testing.T) {
 			Organization: org.Name(),
 		})
 		require.NoError(t, err)
-		defer svc.DeleteTeam(ctx, team.ID())
+		defer svc.DeleteTeam(ctx, team.ID)
 
 		t.Run("duplicate name", func(t *testing.T) {
 			_, err := svc.CreateTeam(ctx, otf.CreateTeamOptions{
@@ -58,7 +58,7 @@ func TestTeam(t *testing.T) {
 		user1 := testutil.CreateUser(t, db, memberships...)
 		user2 := testutil.CreateUser(t, db, memberships...)
 
-		got, err := svc.ListTeamMembers(context.Background(), team.ID())
+		got, err := svc.ListTeamMembers(context.Background(), team.ID)
 		require.NoError(t, err)
 
 		assert.Contains(t, got, user1)
@@ -68,7 +68,7 @@ func TestTeam(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		team := testutil.CreateTeam(t, db, org)
 
-		got, err := svc.UpdateTeam(ctx, team.ID(), auth.UpdateTeamOptions{
+		got, err := svc.UpdateTeam(ctx, team.ID, auth.UpdateTeamOptions{
 			OrganizationAccess: auth.OrganizationAccess{
 				ManageWorkspaces: true,
 				ManageVCS:        true,
@@ -94,7 +94,7 @@ func TestTeam(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		want := testutil.CreateTeam(t, db, org)
 
-		got, err := svc.GetTeamByID(ctx, want.ID())
+		got, err := svc.GetTeamByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)

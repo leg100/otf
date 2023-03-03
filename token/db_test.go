@@ -15,10 +15,10 @@ func TestToken_CreateToken(t *testing.T) {
 	tokenDB := newPGDB(db)
 
 	user := user.CreateTestUser(t, db)
-	token, err := NewToken(user.ID(), "testing")
+	token, err := NewToken(user.ID, "testing")
 	require.NoError(t, err)
 
-	defer tokenDB.DeleteToken(ctx, token.ID())
+	defer tokenDB.DeleteToken(ctx, token.ID)
 
 	err = tokenDB.CreateToken(ctx, token)
 	require.NoError(t, err)
@@ -29,8 +29,8 @@ func TestToken_DeleteToken(t *testing.T) {
 	tokenDB := newPGDB(db)
 
 	user := user.CreateTestUser(t, db)
-	token := createTestToken(t, db, user.ID(), "testing")
+	token := createTestToken(t, db, user.ID, "testing")
 
-	err := tokenDB.DeleteToken(context.Background(), token.ID())
+	err := tokenDB.DeleteToken(context.Background(), token.ID)
 	require.NoError(t, err)
 }

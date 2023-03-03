@@ -116,14 +116,14 @@ func (a *Service) create(ctx context.Context, workspaceID string, opts otf.Confi
 
 	cv, err := NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
-		a.Error(err, "constructing configuration version", "id", cv.ID(), "subject", subject)
+		a.Error(err, "constructing configuration version", "id", cv.ID, "subject", subject)
 		return nil, err
 	}
 	if err := a.db.CreateConfigurationVersion(ctx, cv); err != nil {
-		a.Error(err, "creating configuration version", "id", cv.ID(), "subject", subject)
+		a.Error(err, "creating configuration version", "id", cv.ID, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("created configuration version", "id", cv.ID(), "subject", subject)
+	a.V(2).Info("created configuration version", "id", cv.ID, "subject", subject)
 	return cv, nil
 }
 
@@ -133,7 +133,7 @@ func (a *Service) clone(ctx context.Context, cvID string, opts otf.Configuration
 		return nil, err
 	}
 
-	cv, err = a.create(ctx, cv.WorkspaceID(), opts)
+	cv, err = a.create(ctx, cv.WorkspaceID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (a *Service) clone(ctx context.Context, cvID string, opts otf.Configuration
 		return nil, err
 	}
 
-	if err := a.upload(ctx, cv.ID(), config); err != nil {
+	if err := a.upload(ctx, cv.ID, config); err != nil {
 		return nil, err
 	}
 

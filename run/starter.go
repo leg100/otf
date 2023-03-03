@@ -43,7 +43,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 		if err != nil {
 			return nil, err
 		}
-		if err := rs.UploadConfig(ctx, cv.ID(), tarball); err != nil {
+		if err := rs.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return nil, err
 		}
 	} else {
@@ -54,13 +54,13 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 			}
 			return nil, err
 		}
-		cv, err = rs.CloneConfigurationVersion(ctx, latest.ID(), opts)
+		cv, err = rs.CloneConfigurationVersion(ctx, latest.ID, opts)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return rs.create(ctx, workspaceID, otf.RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID()),
+		ConfigurationVersionID: otf.String(cv.ID),
 	})
 }

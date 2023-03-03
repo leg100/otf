@@ -35,24 +35,24 @@ func newPGDB(db otf.DB) *pgdb {
 func (db *pgdb) createVersion(ctx context.Context, v *version) error {
 	return db.Transaction(ctx, func(db otf.Database) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
-			ID:          sql.String(v.id),
-			CreatedAt:   sql.Timestamptz(v.createdAt),
-			Serial:      int(v.serial),
-			State:       v.state,
-			WorkspaceID: sql.String(v.workspaceID),
+			ID:          sql.String(v.ID),
+			CreatedAt:   sql.Timestamptz(v.CreatedAt),
+			Serial:      int(v.Serial),
+			State:       v.State,
+			WorkspaceID: sql.String(v.WorkspaceID),
 		})
 		if err != nil {
 			return err
 		}
 
-		for _, svo := range v.outputs {
+		for _, svo := range v.Outputs {
 			_, err := db.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
 				ID:             sql.String(svo.id),
 				Name:           sql.String(svo.name),
 				Sensitive:      svo.sensitive,
 				Type:           sql.String(svo.typ),
 				Value:          sql.String(svo.value),
-				StateVersionID: sql.String(v.id),
+				StateVersionID: sql.String(v.ID),
 			})
 			if err != nil {
 				return err
@@ -139,15 +139,15 @@ type pgRow struct {
 
 func (row pgRow) toVersion() *version {
 	sv := version{
-		id:          row.StateVersionID.String,
-		createdAt:   row.CreatedAt.Time.UTC(),
-		serial:      int64(row.Serial),
-		state:       row.State,
-		workspaceID: row.WorkspaceID.String,
-		outputs:     make(outputList, len(row.StateVersionOutputs)),
+		ID:          row.StateVersionID.String,
+		CreatedAt:   row.CreatedAt.Time.UTC(),
+		Serial:      int64(row.Serial),
+		State:       row.State,
+		WorkspaceID: row.WorkspaceID.String,
+		Outputs:     make(outputList, len(row.StateVersionOutputs)),
 	}
 	for _, r := range row.StateVersionOutputs {
-		sv.outputs[r.Name.String] = outputRow(r).toOutput()
+		sv.Outputs[r.Name.String] = outputRow(r).toOutput()
 	}
 	return &sv
 }

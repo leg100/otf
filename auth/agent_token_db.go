@@ -10,7 +10,7 @@ import (
 // CreateAgentToken inserts an agent token, associating it with an organization
 func (db *pgdb) CreateAgentToken(ctx context.Context, token *AgentToken) error {
 	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
-		TokenID:          sql.String(token.ID()),
+		TokenID:          sql.String(token.ID),
 		Token:            sql.String(token.Token()),
 		Description:      sql.String(token.Description()),
 		OrganizationName: sql.String(token.Organization()),

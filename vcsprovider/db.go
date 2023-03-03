@@ -23,7 +23,7 @@ func newDB(db otf.DB, cloudService cloud.Service) *pgdb {
 // CreateVCSProvider inserts an agent token, associating it with an organization
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	_, err := db.InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
-		VCSProviderID:    sql.String(provider.ID()),
+		VCSProviderID:    sql.String(provider.ID),
 		Token:            sql.String(provider.Token()),
 		Name:             sql.String(provider.Name()),
 		Cloud:            sql.String(provider.CloudConfig().Name),

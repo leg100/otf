@@ -96,7 +96,7 @@ func (a *Agent) Start(ctx context.Context) error {
 		for {
 			select {
 			case cancelation := <-a.GetCancelation():
-				a.Cancel(cancelation.Run.ID(), cancelation.Forceful)
+				a.Cancel(cancelation.Run.ID, cancelation.Forceful)
 			case <-ctx.Done():
 				return nil
 			}

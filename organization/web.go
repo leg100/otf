@@ -49,12 +49,12 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.FlashSuccess(w, "created organization: "+org.Name())
-	http.Redirect(w, r, paths.Organization(org.Name()), http.StatusFound)
+	html.FlashSuccess(w, "created organization: "+org.Name)
+	http.Redirect(w, r, paths.Organization(org.Name), http.StatusFound)
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
-	var opts ListOptions
+	var opts otf.OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -67,11 +67,11 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Render("organization_list.tmpl", w, r, struct {
-		*OrganizationList
-		ListOptions
+		*otf.OrganizationList
+		otf.OrganizationListOptions
 	}{
-		OrganizationList: organizations,
-		ListOptions:      opts,
+		OrganizationList:        organizations,
+		OrganizationListOptions: opts,
 	})
 }
 
@@ -109,7 +109,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Options UpdateOptions
+		Options otf.OrganizationUpdateOptions
 		Name    string `schema:"name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -124,7 +124,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "updated organization")
-	http.Redirect(w, r, paths.EditOrganization(org.Name()), http.StatusFound)
+	http.Redirect(w, r, paths.EditOrganization(org.Name), http.StatusFound)
 }
 
 func (a *web) delete(w http.ResponseWriter, r *http.Request) {

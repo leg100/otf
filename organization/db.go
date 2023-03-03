@@ -19,14 +19,14 @@ func newDB(db otf.Database) *pgdb {
 	return &pgdb{db}
 }
 
-func (db *pgdb) create(ctx context.Context, org *Organization) error {
+func (db *pgdb) create(ctx context.Context, org *otf.Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-		ID:              sql.String(org.ID()),
-		CreatedAt:       sql.Timestamptz(org.CreatedAt()),
-		UpdatedAt:       sql.Timestamptz(org.UpdatedAt()),
-		Name:            sql.String(org.Name()),
-		SessionRemember: org.SessionRemember(),
-		SessionTimeout:  org.SessionTimeout(),
+		ID:              sql.String(org.ID),
+		CreatedAt:       sql.Timestamptz(org.CreatedAt),
+		UpdatedAt:       sql.Timestamptz(org.UpdatedAt),
+		Name:            sql.String(org.Name),
+		SessionRemember: org.SessionRemember,
+		SessionTimeout:  org.SessionTimeout,
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -34,8 +34,8 @@ func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	return nil
 }
 
-func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
-	var org *Organization
+func (db *pgdb) update(ctx context.Context, name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
+	var org *otf.Organization
 	err := db.Transaction(ctx, func(tx otf.Database) error {
 		result, err := tx.FindOrganizationByNameForUpdate(ctx, sql.String(name))
 		if err != nil {
@@ -48,10 +48,10 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 		}
 		_, err = tx.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
 			Name:            sql.String(name),
-			NewName:         sql.String(org.name),
-			SessionRemember: org.sessionRemember,
-			SessionTimeout:  org.sessionTimeout,
-			UpdatedAt:       sql.Timestamptz(org.updatedAt),
+			NewName:         sql.String(org.Name),
+			SessionRemember: org.SessionRemember,
+			SessionTimeout:  org.SessionTimeout,
+			UpdatedAt:       sql.Timestamptz(org.UpdatedAt),
 		})
 		if err != nil {
 			return err
@@ -61,7 +61,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 	return org, err
 }
 
-func (db *pgdb) list(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
+func (db *pgdb) list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
@@ -78,18 +78,18 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*OrganizationList, 
 		return nil, err
 	}
 
-	var items []*Organization
+	var items []*otf.Organization
 	for _, r := range rows {
 		items = append(items, row(r).toOrganization())
 	}
 
-	return &OrganizationList{
+	return &otf.OrganizationList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) listByUser(ctx context.Context, userID string, opts ListOptions) (*OrganizationList, error) {
+func (db *pgdb) listByUser(ctx context.Context, userID string, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsByUserIDBatch(batch, pggen.FindOrganizationsByUserIDParams{
@@ -110,18 +110,18 @@ func (db *pgdb) listByUser(ctx context.Context, userID string, opts ListOptions)
 		return nil, err
 	}
 
-	var items []*Organization
+	var items []*otf.Organization
 	for _, r := range rows {
 		items = append(items, row(r).toOrganization())
 	}
 
-	return &OrganizationList{
+	return &otf.OrganizationList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
+func (db *pgdb) get(ctx context.Context, name string) (*otf.Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -129,7 +129,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
+func (db *pgdb) getByID(ctx context.Context, id string) (*otf.Organization, error) {
 	r, err := db.FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -156,13 +156,13 @@ type row struct {
 
 // unmarshalRow converts an organization database row into an
 // organization.
-func (r row) toOrganization() *Organization {
-	return &Organization{
-		id:              r.OrganizationID.String,
-		createdAt:       r.CreatedAt.Time.UTC(),
-		updatedAt:       r.UpdatedAt.Time.UTC(),
-		name:            r.Name.String,
-		sessionRemember: r.SessionRemember,
-		sessionTimeout:  r.SessionTimeout,
+func (r row) toOrganization() *otf.Organization {
+	return &otf.Organization{
+		ID:              r.OrganizationID.String,
+		CreatedAt:       r.CreatedAt.Time.UTC(),
+		UpdatedAt:       r.UpdatedAt.Time.UTC(),
+		Name:            r.Name.String,
+		SessionRemember: r.SessionRemember,
+		SessionTimeout:  r.SessionTimeout,
 	}
 }

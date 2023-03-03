@@ -62,7 +62,7 @@ func (a *app) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Even
 
 				// apply workspace filter
 				if opts.WorkspaceID != nil {
-					if res.WorkspaceID() != *opts.WorkspaceID {
+					if res.WorkspaceID != *opts.WorkspaceID {
 						continue
 					}
 				}

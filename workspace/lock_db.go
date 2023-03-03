@@ -47,10 +47,10 @@ func MarshalWorkspaceLockParams(ws *otf.Workspace) (pggen.UpdateWorkspaceLockByI
 	}
 	switch state := ws.LockedState.(type) {
 	case otf.RunLock:
-		params.RunID = pgtype.Text{String: state.ID(), Status: pgtype.Present}
+		params.RunID = pgtype.Text{String: state.ID, Status: pgtype.Present}
 		params.UserID = pgtype.Text{Status: pgtype.Null}
 	case otf.UserLock:
-		params.UserID = pgtype.Text{String: state.ID(), Status: pgtype.Present}
+		params.UserID = pgtype.Text{String: state.ID, Status: pgtype.Present}
 		params.RunID = pgtype.Text{Status: pgtype.Null}
 	case nil:
 		params.RunID = pgtype.Text{Status: pgtype.Null}

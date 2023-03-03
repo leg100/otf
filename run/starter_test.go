@@ -25,7 +25,7 @@ func TestStartRun(t *testing.T) {
 			},
 		}
 
-		got, err := app.StartRun(ctx, ws.ID(), ConfigurationVersionCreateOptions{})
+		got, err := app.StartRun(ctx, ws.ID, ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -44,7 +44,7 @@ func TestStartRun(t *testing.T) {
 			},
 		}
 
-		got, err := app.StartRun(ctx, ws.ID(), ConfigurationVersionCreateOptions{})
+		got, err := app.StartRun(ctx, ws.ID, ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})

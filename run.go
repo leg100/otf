@@ -78,9 +78,9 @@ func NewRun(cv ConfigurationVersion, ws Workspace, opts RunCreateOptions) *Run {
 		CreatedAt:              CurrentTimestamp(),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,
-		ConfigurationVersionID: cv.ID(),
+		ConfigurationVersionID: cv.ID,
 		WorkspaceID:            ws.ID,
-		Speculative:            cv.Speculative(),
+		Speculative:            cv.Speculative,
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		TargetAddrs:            opts.TargetAddrs,
 		ExecutionMode:          ws.ExecutionMode,
@@ -102,8 +102,8 @@ func NewRun(cv ConfigurationVersion, ws Workspace, opts RunCreateOptions) *Run {
 	if opts.AutoApply != nil {
 		run.AutoApply = *opts.AutoApply
 	}
-	if cv.IngressAttributes() != nil {
-		run.Commit = &cv.IngressAttributes().CommitSHA
+	if cv.IngressAttributes != nil {
+		run.Commit = &cv.IngressAttributes.CommitSHA
 	}
 	return &run
 }

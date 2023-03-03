@@ -115,7 +115,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	}
 	if len(tags) == 0 {
 		return p.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
-			ID:     mod.ID(),
+			ID:     mod.ID,
 			Status: ModuleStatusNoVersionTags,
 		})
 	}
@@ -133,7 +133,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		}
 
 		mod, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
-			ModuleID: mod.ID(),
+			ModuleID: mod.ID,
 			// strip off v prefix if it has one
 			Version:    strings.TrimPrefix(version, "v"),
 			Ref:        tag,
@@ -167,7 +167,7 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 		return err
 	}
 	if module.Repo() == nil {
-		return fmt.Errorf("module is not connected to a repo: %s", module.ID())
+		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
 
 	// skip older or equal versions
@@ -177,7 +177,7 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 	}
 
 	_, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
-		ModuleID: module.ID(),
+		ModuleID: module.ID,
 		// strip off v prefix if it has one
 		Version:    strings.TrimPrefix(tag.Tag, "v"),
 		Ref:        tag.CommitSHA,
@@ -221,14 +221,14 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 	})
 	if err != nil {
 		return UpdateModuleVersionStatus(ctx, p, UpdateModuleVersionStatusOptions{
-			ID:     modver.ID(),
+			ID:     modver.ID,
 			Status: ModuleVersionStatusCloneFailed,
 			Error:  err.Error(),
 		})
 	}
 
 	return p.Upload(ctx, UploadModuleVersionOptions{
-		ModuleVersionID: modver.ID(),
+		ModuleVersionID: modver.ID,
 		Tarball:         tarball,
 	})
 }

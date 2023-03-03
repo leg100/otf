@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	otfrun "github.com/leg100/otf/run"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +22,7 @@ func TestApp(t *testing.T) {
 
 	// inject input event
 	want := otf.Event{
-		Payload: &otfrun.Run{},
+		Payload: &otf.Run{},
 		Type:    otf.EventRunCreated,
 	}
 	in <- want

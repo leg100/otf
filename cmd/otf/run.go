@@ -34,7 +34,7 @@ func (a *application) runDownloadCommand() *cobra.Command {
 				return errors.Wrap(err, "retrieving run")
 			}
 
-			tarball, err := a.DownloadConfig(cmd.Context(), run.ConfigurationVersionID())
+			tarball, err := a.DownloadConfig(cmd.Context(), run.ConfigurationVersionID)
 			if err != nil {
 				return errors.Wrap(err, "downloading tarball")
 			}

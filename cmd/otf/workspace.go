@@ -113,7 +113,7 @@ func (a *application) workspaceEditCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.UpdateWorkspace(cmd.Context(), ws.ID(), opts)
+			ws, err = a.UpdateWorkspace(cmd.Context(), ws.ID, opts)
 			if err != nil {
 				return err
 			}
@@ -150,7 +150,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.LockWorkspace(cmd.Context(), ws.ID(), otf.WorkspaceLockOptions{})
+			ws, err = a.LockWorkspace(cmd.Context(), ws.ID, otf.WorkspaceLockOptions{})
 			if err != nil {
 				return err
 			}
@@ -183,7 +183,7 @@ func (a *application) workspaceUnlockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID(), force)
+			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID, force)
 			if err != nil {
 				return err
 			}

@@ -51,7 +51,7 @@ func (app *htmlApp) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := app.CreateToken(r.Context(), user.ID(), &opts)
+	token, err := app.CreateToken(r.Context(), user.ID, &opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -74,7 +74,7 @@ func (app *htmlApp) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tokens, err := app.ListTokens(r.Context(), user.ID())
+	tokens, err := app.ListTokens(r.Context(), user.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,7 +102,7 @@ func (app *htmlApp) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := app.DeleteToken(r.Context(), user.ID(), id); err != nil {
+	if err := app.DeleteToken(r.Context(), user.ID, id); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

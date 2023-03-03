@@ -28,13 +28,13 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	ws := CreateTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
-	err := db.UploadConfigurationVersion(context.Background(), cv.ID(), func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+	err := db.UploadConfigurationVersion(context.Background(), cv.ID, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		_, err := uploader.Upload(context.Background(), nil)
 		return err
 	})
 	require.NoError(t, err)
 
-	got, err := db.GetConfigurationVersion(context.Background(), otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID())})
+	got, err := db.GetConfigurationVersion(context.Background(), otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID)})
 	require.NoError(t, err)
 
 	assert.Equal(t, otf.ConfigurationUploaded, got.Status())
@@ -52,11 +52,11 @@ func TestConfigurationVersion_Get(t *testing.T) {
 	}{
 		{
 			name: "by id",
-			opts: ConfigurationVersionGetOptions{ID: otf.String(cv.ID())},
+			opts: ConfigurationVersionGetOptions{ID: otf.String(cv.ID)},
 		},
 		{
 			name: "by workspace",
-			opts: ConfigurationVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
+			opts: ConfigurationVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
 		},
 	}
 
@@ -85,7 +85,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 	}{
 		{
 			name:        "no pagination",
-			workspaceID: ws.ID(),
+			workspaceID: ws.ID,
 			want: func(t *testing.T, got *ConfigurationVersionList) {
 				assert.Equal(t, 2, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
@@ -95,7 +95,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 		},
 		{
 			name:        "pagination",
-			workspaceID: ws.ID(),
+			workspaceID: ws.ID,
 			opts:        ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
 			want: func(t *testing.T, got *ConfigurationVersionList) {
 				assert.Equal(t, 1, len(got.Items))
@@ -104,7 +104,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 		},
 		{
 			name:        "stray pagination",
-			workspaceID: ws.ID(),
+			workspaceID: ws.ID,
 			opts:        ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
 			want: func(t *testing.T, got *ConfigurationVersionList) {
 				// Zero items but total count should ignore pagination

@@ -1,35 +1,38 @@
 package organization
 
-import "github.com/leg100/otf/http/jsonapi"
+import (
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
+)
 
-func newFromJSONAPI(from jsonapi.Organization) *Organization {
-	return &Organization{
-		id:              from.ExternalID,
-		createdAt:       from.CreatedAt,
-		name:            from.Name,
-		sessionRemember: from.SessionRemember,
-		sessionTimeout:  from.SessionTimeout,
+func newFromJSONAPI(from jsonapi.Organization) *otf.Organization {
+	return &otf.Organization{
+		ID:              from.ExternalID,
+		CreatedAt:       from.CreatedAt,
+		Name:            from.Name,
+		SessionRemember: from.SessionRemember,
+		SessionTimeout:  from.SessionTimeout,
 	}
 }
 
 // ToJSONAPI assembles a JSONAPI DTO
-func toJSONAPI(org *Organization) *jsonapi.Organization {
+func toJSONAPI(org *otf.Organization) *jsonapi.Organization {
 	return &jsonapi.Organization{
-		Name:            org.name,
-		CreatedAt:       org.createdAt,
-		ExternalID:      org.id,
+		Name:            org.Name,
+		CreatedAt:       org.CreatedAt,
+		ExternalID:      org.ID,
 		Permissions:     &jsonapi.DefaultOrganizationPermissions,
-		SessionRemember: org.sessionRemember,
-		SessionTimeout:  org.sessionTimeout,
+		SessionRemember: org.SessionRemember,
+		SessionTimeout:  org.SessionTimeout,
 	}
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (l *OrganizationList) listToJSONAPI(from *OrganizationList) *jsonapi.OrganizationList {
+func listToJSONAPI(from *otf.OrganizationList) *jsonapi.OrganizationList {
 	to := &jsonapi.OrganizationList{
-		Pagination: l.Pagination.ToJSONAPI(),
+		Pagination: from.Pagination.ToJSONAPI(),
 	}
-	for _, item := range l.Items {
+	for _, item := range from.Items {
 		to.Items = append(to.Items, toJSONAPI(item))
 	}
 	return to

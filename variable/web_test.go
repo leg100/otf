@@ -69,7 +69,7 @@ func TestVariable_Update(t *testing.T) {
 			// create existing variable for test to update
 			v := NewTestVariable(t, ws, tt.existing)
 
-			r := httptest.NewRequest("POST", "/?variable_id="+v.ID(), strings.NewReader(tt.form.Encode()))
+			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.form.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
@@ -78,7 +78,7 @@ func TestVariable_Update(t *testing.T) {
 			if assert.Equal(t, 302, w.Code) {
 				redirect, err := w.Result().Location()
 				require.NoError(t, err)
-				assert.Equal(t, paths.Variables(v.WorkspaceID()), redirect.Path)
+				assert.Equal(t, paths.Variables(v.WorkspaceID), redirect.Path)
 			}
 			tt.want(t, v)
 		})

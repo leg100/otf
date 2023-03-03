@@ -124,23 +124,23 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 			switch payload := event.Payload.(type) {
 			case *otf.Workspace:
 				if event.Type == otf.EventWorkspaceDeleted {
-					delete(s.queues, payload.ID())
+					delete(s.queues, payload.ID)
 					continue
 				}
 				// create workspace queue if it doesn't exist
-				q, ok := s.queues[payload.ID()]
+				q, ok := s.queues[payload.ID]
 				if !ok {
 					q = s.newQueue(s.Application, s.Logger, payload)
-					s.queues[payload.ID()] = q
+					s.queues[payload.ID] = q
 				}
 				if err := q.handleEvent(ctx, event); err != nil {
 					return err
 				}
 			case *otf.Run:
-				q, ok := s.queues[payload.WorkspaceID()]
+				q, ok := s.queues[payload.WorkspaceID]
 				if !ok {
 					// should never happen
-					s.Error(fmt.Errorf("workspace queue does not exist for run event"), "workspace", payload.WorkspaceID(), "run", payload.ID())
+					s.Error(fmt.Errorf("workspace queue does not exist for run event"), "workspace", payload.WorkspaceID, "run", payload.ID)
 					continue
 				}
 				if err := q.handleEvent(ctx, event); err != nil {
