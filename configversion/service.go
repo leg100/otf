@@ -11,14 +11,14 @@ import (
 
 type (
 	service interface {
-		create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+		create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error)
 		// CloneConfigurationVersion creates a new configuration version using the
 		// config tarball of an existing configuration version.
-		clone(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+		clone(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error)
 
-		get(ctx context.Context, id string) (*ConfigurationVersion, error)
-		getLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-		list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+		get(ctx context.Context, id string) (*otf.ConfigurationVersion, error)
+		getLatest(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error)
+		list(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error)
 		delete(ctx context.Context, cvID string) error
 
 		// Upload handles verification and upload of the config tarball, updating
@@ -108,7 +108,7 @@ func (s *Service) DownloadConfig(ctx context.Context, workspaceID string) ([]byt
 	return s.svc.download(ctx, workspaceID)
 }
 
-func (a *Service) create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func (a *Service) create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.CreateConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (a *Service) create(ctx context.Context, workspaceID string, opts otf.Confi
 	return cv, nil
 }
 
-func (a *Service) clone(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func (a *Service) clone(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	cv, err := a.get(ctx, cvID)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (a *Service) clone(ctx context.Context, cvID string, opts otf.Configuration
 	return cv, nil
 }
 
-func (a *Service) list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
+func (a *Service) list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (a *Service) list(ctx context.Context, workspaceID string, opts Configurati
 	return cvl, nil
 }
 
-func (a *Service) get(ctx context.Context, cvID string) (*ConfigurationVersion, error) {
+func (a *Service) get(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
 	subject, err := a.canAccess(ctx, rbac.GetConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (a *Service) get(ctx context.Context, cvID string) (*ConfigurationVersion, 
 	return cv, nil
 }
 
-func (a *Service) getLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error) {
+func (a *Service) getLatest(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.GetConfigurationVersionAction, workspaceID)
 	if err != nil {
 		return nil, err

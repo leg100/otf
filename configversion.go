@@ -53,7 +53,7 @@ type (
 	// ConfigurationVersionList represents a list of configuration versions.
 	ConfigurationVersionList struct {
 		*Pagination
-		Items []ConfigurationVersion
+		Items []*ConfigurationVersion
 	}
 
 	// ConfigurationVersionCreateOptions represents the options for creating a

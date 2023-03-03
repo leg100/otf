@@ -85,7 +85,7 @@ func TestDeleteVCSProvidersHandler(t *testing.T) {
 	assert.Equal(t, 302, w.Code)
 }
 
-func fakeHTMLApp(t *testing.T, provider *VCSProvider) *web {
+func fakeHTMLApp(t *testing.T, provider *otf.VCSProvider) *web {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 	return &web{
@@ -96,19 +96,19 @@ func fakeHTMLApp(t *testing.T, provider *VCSProvider) *web {
 }
 
 type fakeApp struct {
-	provider *VCSProvider
+	provider *otf.VCSProvider
 
-	application
+	service
 }
 
-func (f *fakeApp) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
+func (f *fakeApp) create(ctx context.Context, opts createOptions) (*otf.VCSProvider, error) {
 	return f.provider, nil
 }
 
-func (f *fakeApp) list(context.Context, string) ([]*VCSProvider, error) {
-	return []*VCSProvider{f.provider}, nil
+func (f *fakeApp) list(context.Context, string) ([]*otf.VCSProvider, error) {
+	return []*otf.VCSProvider{f.provider}, nil
 }
 
-func (f *fakeApp) delete(context.Context, string) (*VCSProvider, error) {
+func (f *fakeApp) delete(context.Context, string) (*otf.VCSProvider, error) {
 	return f.provider, nil
 }

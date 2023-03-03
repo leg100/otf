@@ -19,23 +19,23 @@ func newPGDB(otfdb otf.Database) *db {
 	return &db{otfdb}
 }
 
-func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
+func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *otf.ConfigurationVersion) error {
 	return pdb.tx(ctx, func(tx *db) error {
 		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 			ID:            sql.String(cv.ID),
-			CreatedAt:     sql.Timestamptz(cv.CreatedAt()),
-			AutoQueueRuns: cv.AutoQueueRuns(),
-			Source:        sql.String(string(cv.Source())),
-			Speculative:   cv.Speculative(),
-			Status:        sql.String(string(cv.Status())),
+			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
+			AutoQueueRuns: cv.AutoQueueRuns,
+			Source:        sql.String(string(cv.Source)),
+			Speculative:   cv.Speculative,
+			Status:        sql.String(string(cv.Status)),
 			WorkspaceID:   sql.String(cv.WorkspaceID),
 		})
 		if err != nil {
 			return err
 		}
 
-		if cv.IngressAttributes() != nil {
-			ia := cv.IngressAttributes()
+		if cv.IngressAttributes != nil {
+			ia := cv.IngressAttributes
 			_, err := tx.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
@@ -57,7 +57,7 @@ func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *Configuration
 	})
 }
 
-func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
+func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
 	return pdb.tx(ctx, func(tx *db) error {
 		// select ...for update
 		result, err := tx.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
@@ -73,7 +73,7 @@ func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn fun
 	})
 }
 
-func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
+func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
@@ -93,18 +93,18 @@ func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string,
 		return nil, err
 	}
 
-	var items []*ConfigurationVersion
+	var items []*otf.ConfigurationVersion
 	for _, r := range rows {
 		items = append(items, pgRow(r).toConfigVersion())
 	}
 
-	return &ConfigurationVersionList{
+	return &otf.ConfigurationVersionList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *db) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
+func (db *db) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	if opts.ID != nil {
 		result, err := db.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
@@ -134,7 +134,7 @@ func (db *db) DeleteConfigurationVersion(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVersion) error {
+func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *otf.ConfigurationVersion) error {
 	sts, err := cv.StatusTimestamp(cv.Status())
 	if err != nil {
 		return err
@@ -168,7 +168,7 @@ type pgRow struct {
 	IngressAttributes                    *pggen.IngressAttributes                     `json:"ingress_attributes"`
 }
 
-func (result pgRow) toConfigVersion() *ConfigurationVersion {
+func (result pgRow) toConfigVersion() *otf.ConfigurationVersion {
 	cv := ConfigurationVersion{
 		id:               result.ConfigurationVersionID.String,
 		createdAt:        result.CreatedAt.Time.UTC(),

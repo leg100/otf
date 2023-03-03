@@ -96,12 +96,6 @@ func (org *Organization) Update(opts OrganizationUpdateOptions) error {
 	return nil
 }
 
-func (org *Organization) toValue() Organization {
-	return Organization{
-		Name: org.Name,
-	}
-}
-
 func (opts *OrganizationCreateOptions) Validate() error {
 	if opts.Name == nil {
 		return errors.New("name required")

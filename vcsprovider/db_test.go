@@ -69,7 +69,7 @@ func TestDB(t *testing.T) {
 	})
 }
 
-func createTestVCSProvider(t *testing.T, db *pgdb, organization otf.Organization) *VCSProvider {
+func createTestVCSProvider(t *testing.T, db *pgdb, organization otf.Organization) *otf.VCSProvider {
 	provider := NewTestVCSProvider(t, organization)
 	ctx := context.Background()
 

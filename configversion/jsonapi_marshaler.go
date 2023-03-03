@@ -14,7 +14,7 @@ type jsonapiMarshaler struct {
 	otf.Signer // for signing upload url
 }
 
-func (m jsonapiMarshaler) toMarshalable(cv *ConfigurationVersion) marshalable {
+func (m jsonapiMarshaler) toMarshalable(cv *otf.ConfigurationVersion) marshalable {
 	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.id)
 	uploadURL, err := m.Sign(uploadURL, time.Hour)
 	if err != nil {
@@ -24,7 +24,7 @@ func (m jsonapiMarshaler) toMarshalable(cv *ConfigurationVersion) marshalable {
 	return marshalable{cv, uploadURL}
 }
 
-func (m jsonapiMarshaler) toMarshableList(list *ConfigurationVersionList) marshalableList {
+func (m jsonapiMarshaler) toMarshableList(list *otf.ConfigurationVersionList) marshalableList {
 	var items []marshalable
 	for _, i := range list.Items {
 		items = append(items, m.toMarshalable(i))
@@ -33,7 +33,7 @@ func (m jsonapiMarshaler) toMarshableList(list *ConfigurationVersionList) marsha
 }
 
 type marshalable struct {
-	*ConfigurationVersion
+	*otf.ConfigurationVersion
 	uploadURL string
 }
 

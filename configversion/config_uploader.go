@@ -3,6 +3,7 @@ package configversion
 import (
 	"context"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 )
 
@@ -27,11 +28,11 @@ func (u *cvUploader) SetErrored(ctx context.Context) error {
 	return nil
 }
 
-func (u *cvUploader) Upload(ctx context.Context, config []byte) (ConfigurationStatus, error) {
+func (u *cvUploader) Upload(ctx context.Context, config []byte) (otf.ConfigurationStatus, error) {
 	// TODO: add status timestamp
 	_, err := u.db.UpdateConfigurationVersionConfigByID(ctx, config, sql.String(u.id))
 	if err != nil {
-		return ConfigurationErrored, err
+		return otf.ConfigurationErrored, err
 	}
-	return ConfigurationUploaded, nil
+	return otf.ConfigurationUploaded, nil
 }

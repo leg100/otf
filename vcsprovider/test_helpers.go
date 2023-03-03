@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestVCSProvider(t *testing.T, org otf.Organization) *VCSProvider {
+func NewTestVCSProvider(t *testing.T, org otf.Organization) *otf.VCSProvider {
 	factory := &factory{inmem.NewTestCloudService()}
 	provider, err := factory.new(createOptions{
 		Organization: org.Name,

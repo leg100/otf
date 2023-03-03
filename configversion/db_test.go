@@ -81,12 +81,12 @@ func TestConfigurationVersion_List(t *testing.T) {
 		name        string
 		workspaceID string
 		opts        ConfigurationVersionListOptions
-		want        func(*testing.T, *ConfigurationVersionList)
+		want        func(*testing.T, *otf.ConfigurationVersionList)
 	}{
 		{
 			name:        "no pagination",
 			workspaceID: ws.ID,
-			want: func(t *testing.T, got *ConfigurationVersionList) {
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				assert.Equal(t, 2, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
 				assert.Contains(t, got.Items, cv1)
@@ -97,7 +97,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 			name:        "pagination",
 			workspaceID: ws.ID,
 			opts:        ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
-			want: func(t *testing.T, got *ConfigurationVersionList) {
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				assert.Equal(t, 1, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
 			},
@@ -106,7 +106,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 			name:        "stray pagination",
 			workspaceID: ws.ID,
 			opts:        ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
-			want: func(t *testing.T, got *ConfigurationVersionList) {
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				// Zero items but total count should ignore pagination
 				assert.Equal(t, 0, len(got.Items))
 				assert.Equal(t, 2, got.TotalCount())
@@ -115,7 +115,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 		{
 			name:        "query non-existent workspace",
 			workspaceID: "ws-non-existent",
-			want: func(t *testing.T, got *ConfigurationVersionList) {
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				assert.Empty(t, got.Items)
 				assert.Equal(t, 0, got.TotalCount())
 			},

@@ -16,13 +16,13 @@ func (f *fakeConfigurationVersionApp) UploadConfig(context.Context, string, []by
 	return nil
 }
 
-func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
+func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
 	cv, err := NewConfigurationVersion(ws.ID, opts)
 	require.NoError(t, err)
 	return cv
 }
 
-func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
+func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
 	ctx := context.Background()
 	cv := NewTestConfigurationVersion(t, ws, opts)
 	cvDB := newPGDB(db)

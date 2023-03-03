@@ -16,7 +16,7 @@ func cacheKey(cvID string) string {
 //
 // NOTE: unauthenticated - access granted only via signed URL
 func (a *Service) upload(ctx context.Context, cvID string, config []byte) error {
-	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
+	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *otf.ConfigurationVersion, uploader ConfigUploader) error {
 		return cv.Upload(ctx, config, uploader)
 	})
 	if err != nil {

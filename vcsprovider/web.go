@@ -17,7 +17,7 @@ type web struct {
 	otf.WorkspaceService
 	cloud.Service
 
-	app application
+	app service
 }
 
 func (a *web) AddHandlers(r *mux.Router) {
@@ -65,8 +65,8 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "created provider: "+provider.Name())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
+	html.FlashSuccess(w, "created provider: "+provider.Name)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Render("vcs_provider_list.tmpl", w, r, struct {
-		Items        []*VCSProvider
+		Items        []*otf.VCSProvider
 		CloudConfigs []cloud.Config
 		Organization string
 	}{
@@ -105,6 +105,6 @@ func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted provider: "+provider.Name())
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
+	html.FlashSuccess(w, "deleted provider: "+provider.Name)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }

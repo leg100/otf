@@ -12,25 +12,25 @@ type factory struct {
 	cloud.Service
 }
 
-func (f *factory) new(opts createOptions) (*VCSProvider, error) {
+func (f *factory) new(opts createOptions) (*otf.VCSProvider, error) {
 	cloudConfig, err := f.GetCloudConfig(opts.Cloud)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := &VCSProvider{
-		id:           otf.NewID("vcs"),
-		createdAt:    otf.CurrentTimestamp(),
-		name:         opts.Name,
-		organization: opts.Organization,
-		cloudConfig:  cloudConfig,
-		token:        opts.Token,
+	provider := &otf.VCSProvider{
+		ID:           otf.NewID("vcs"),
+		CreatedAt:    otf.CurrentTimestamp(),
+		Name:         opts.Name,
+		Organization: opts.Organization,
+		CloudConfig:  cloudConfig,
+		Token:        opts.Token,
 	}
 	if opts.ID != nil {
-		provider.id = *opts.ID
+		provider.ID = *opts.ID
 	}
 	if opts.CreatedAt != nil {
-		provider.createdAt = *opts.CreatedAt
+		provider.CreatedAt = *opts.CreatedAt
 	}
 	return provider, nil
 }
