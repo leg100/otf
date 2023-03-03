@@ -75,9 +75,9 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
-		ID:           at.id,
-		Token:        otf.String(at.token),
-		Organization: at.organization,
+		ID:           at.ID,
+		Token:        otf.String(at.Token),
+		Organization: at.Organization,
 	})
 }
 
@@ -88,8 +88,8 @@ func (h *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
-		ID:           at.id,
+		ID:           at.ID,
 		Token:        nil, // deliberately omit token
-		Organization: at.organization,
+		Organization: at.Organization,
 	})
 }

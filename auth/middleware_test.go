@@ -107,7 +107,7 @@ type fakeMiddlewareService struct {
 	userToken     string
 }
 
-func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
+func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
 	if f.agentToken == token {
 		return nil, nil
 	}

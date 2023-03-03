@@ -17,7 +17,7 @@ func (f *fakeConfigurationVersionApp) UploadConfig(context.Context, string, []by
 }
 
 func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
-	cv, err := NewConfigurationVersion(ws.ID, opts)
+	cv, err := otf.NewConfigurationVersion(ws.ID, opts)
 	require.NoError(t, err)
 	return cv
 }

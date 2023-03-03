@@ -15,7 +15,7 @@ type jsonapiMarshaler struct {
 }
 
 func (m jsonapiMarshaler) toMarshalable(cv *otf.ConfigurationVersion) marshalable {
-	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.id)
+	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
 	uploadURL, err := m.Sign(uploadURL, time.Hour)
 	if err != nil {
 		// upstream middleware converts panics to HTTP500's
@@ -40,20 +40,20 @@ type marshalable struct {
 func (m marshalable) ToJSONAPI() any {
 	cv := &jsonapi.ConfigurationVersion{
 		ID:               m.ID,
-		AutoQueueRuns:    m.AutoQueueRuns(),
-		Speculative:      m.Speculative(),
-		Source:           string(m.Source()),
-		Status:           string(m.Status()),
+		AutoQueueRuns:    m.AutoQueueRuns,
+		Speculative:      m.Speculative,
+		Source:           string(m.Source),
+		Status:           string(m.Status),
 		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
 		UploadURL:        m.uploadURL,
 	}
-	for _, ts := range m.StatusTimestamps() {
+	for _, ts := range m.StatusTimestamps {
 		switch ts.Status {
-		case ConfigurationPending:
+		case otf.ConfigurationPending:
 			cv.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case ConfigurationErrored:
+		case otf.ConfigurationErrored:
 			cv.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case ConfigurationUploaded:
+		case otf.ConfigurationUploaded:
 			cv.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}

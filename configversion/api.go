@@ -100,7 +100,7 @@ func (s *api) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cvl, err := s.svc.list(r.Context(), params.WorkspaceID, ConfigurationVersionListOptions{
+	cvl, err := s.svc.list(r.Context(), params.WorkspaceID, otf.ConfigurationVersionListOptions{
 		ListOptions: params.ListOptions,
 	})
 	if err != nil {

@@ -41,23 +41,6 @@ func (s UserSpec) MarshalLog() any {
 	return s
 }
 
-type AgentToken interface {
-	Token() string
-	Organization() string
-
-	Subject
-}
-
-type CreateAgentTokenOptions struct {
-	Organization string `schema:"organization_name,required"`
-	Description  string `schema:"description,required"`
-}
-
-// AgentTokenService provides access to agent tokens
-type AgentTokenService interface {
-	GetAgentToken(ctx context.Context, token string) (AgentToken, error)
-}
-
 type Session interface {
 	Expiry() time.Time
 	SetCookie(w http.ResponseWriter)

@@ -65,15 +65,15 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (s *Service) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
+func (s *Service) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	return s.svc.create(ctx, workspaceID, opts)
 }
 
-func (s *Service) CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (otf.ConfigurationVersion, error) {
+func (s *Service) CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	return s.svc.clone(ctx, cvID, opts)
 }
 
-func (s *Service) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (s *Service) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	// convert from list of concrete CVs to list of interface CVs
 	from, err := s.svc.list(ctx, workspaceID, opts)
 	if err != nil {
@@ -88,11 +88,11 @@ func (s *Service) ListConfigurationVersions(ctx context.Context, workspaceID str
 	return &to, nil
 }
 
-func (s *Service) GetConfigurationVersion(ctx context.Context, cvID string) (otf.ConfigurationVersion, error) {
+func (s *Service) GetConfigurationVersion(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
 	return s.svc.get(ctx, cvID)
 }
 
-func (s *Service) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (otf.ConfigurationVersion, error) {
+func (s *Service) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
 	return s.svc.getLatest(ctx, workspaceID)
 }
 
@@ -114,7 +114,7 @@ func (a *Service) create(ctx context.Context, workspaceID string, opts otf.Confi
 		return nil, err
 	}
 
-	cv, err := NewConfigurationVersion(workspaceID, opts)
+	cv, err := otf.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		a.Error(err, "constructing configuration version", "id", cv.ID, "subject", subject)
 		return nil, err
@@ -150,13 +150,13 @@ func (a *Service) clone(ctx context.Context, cvID string, opts otf.Configuration
 	return cv, nil
 }
 
-func (a *Service) list(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (a *Service) list(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	cvl, err := a.db.ListConfigurationVersions(ctx, workspaceID, ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+	cvl, err := a.db.ListConfigurationVersions(ctx, workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
 		a.Error(err, "listing configuration versions", "subject", subject)
 		return nil, err
@@ -171,7 +171,7 @@ func (a *Service) get(ctx context.Context, cvID string) (*otf.ConfigurationVersi
 		return nil, err
 	}
 
-	cv, err := a.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
+	cv, err := a.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		a.Error(err, "retrieving configuration version", "id", cvID, "subject", subject)
 		return nil, err
@@ -186,7 +186,7 @@ func (a *Service) getLatest(ctx context.Context, workspaceID string) (*otf.Confi
 		return nil, err
 	}
 
-	cv, err := a.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+	cv, err := a.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		a.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -211,9 +211,9 @@ func (a *Service) delete(ctx context.Context, cvID string) error {
 }
 
 func (a *Service) canAccess(ctx context.Context, action rbac.Action, cvID string) (otf.Subject, error) {
-	cv, err := a.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
+	cv, err := a.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		return nil, err
 	}
-	return a.workspace.CanAccess(ctx, action, cv.workspaceID)
+	return a.workspace.CanAccess(ctx, action, cv.WorkspaceID)
 }

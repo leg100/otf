@@ -67,13 +67,13 @@ type agentTokenRow struct {
 	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
-func (row agentTokenRow) toAgentToken() *AgentToken {
-	return &AgentToken{
-		id:           row.TokenID.String,
-		createdAt:    row.CreatedAt.Time,
-		token:        row.Token.String,
-		description:  row.Description.String,
-		organization: row.OrganizationName.String,
+func (row agentTokenRow) toAgentToken() *otf.AgentToken {
+	return &otf.AgentToken{
+		ID:           row.TokenID.String,
+		CreatedAt:    row.CreatedAt.Time,
+		Token:        row.Token.String,
+		Description:  row.Description.String,
+		Organization: row.OrganizationName.String,
 	}
 }
 

@@ -43,7 +43,7 @@ func (h *web) createAgentToken(w http.ResponseWriter, r *http.Request) {
 
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	if err := h.RenderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
+	if err := h.RenderTemplate("token_created.tmpl", buf, token.Token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -69,7 +69,7 @@ func (app *web) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items        []*AgentToken
+		Items        []*otf.AgentToken
 		Organization string
 	}{
 		Pagination:   &otf.Pagination{},
@@ -91,6 +91,6 @@ func (app *web) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.FlashSuccess(w, "Deleted token: "+at.Description())
-	http.Redirect(w, r, paths.AgentTokens(at.Organization()), http.StatusFound)
+	html.FlashSuccess(w, "Deleted token: "+at.Description)
+	http.Redirect(w, r, paths.AgentTokens(at.Organization), http.StatusFound)
 }

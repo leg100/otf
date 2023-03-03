@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestAgentToken(t *testing.T, org string) *AgentToken {
-	token, err := newAgentToken(otf.CreateAgentTokenOptions{
+func NewTestAgentToken(t *testing.T, org string) *otf.AgentToken {
+	token, err := otf.NewAgentToken(otf.CreateAgentTokenOptions{
 		Organization: org,
 		Description:  "lorem ipsum...",
 	})
@@ -18,19 +18,19 @@ func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 }
 
 type fakeAgentTokenService struct {
-	token *AgentToken
+	token *otf.AgentToken
 
 	agentTokenService
 }
 
-func (f *fakeAgentTokenService) createAgentToken(context.Context, otf.CreateAgentTokenOptions) (*AgentToken, error) {
+func (f *fakeAgentTokenService) createAgentToken(context.Context, otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	return f.token, nil
 }
 
-func (f *fakeAgentTokenService) listAgentTokens(context.Context, string) ([]*AgentToken, error) {
-	return []*AgentToken{f.token}, nil
+func (f *fakeAgentTokenService) listAgentTokens(context.Context, string) ([]*otf.AgentToken, error) {
+	return []*otf.AgentToken{f.token}, nil
 }
 
-func (f *fakeAgentTokenService) deleteAgentToken(context.Context, string) (*AgentToken, error) {
+func (f *fakeAgentTokenService) deleteAgentToken(context.Context, string) (*otf.AgentToken, error) {
 	return f.token, nil
 }

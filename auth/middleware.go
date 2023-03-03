@@ -16,7 +16,7 @@ const (
 )
 
 type AuthenticateTokenService interface {
-	GetAgentToken(context.Context, string) (*AgentToken, error)
+	GetAgentToken(context.Context, string) (*otf.AgentToken, error)
 	GetRegistrySession(context.Context, string) (otf.RegistrySession, error)
 	getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 }

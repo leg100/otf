@@ -3,35 +3,36 @@ package auth
 import (
 	"context"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 // CreateToken inserts the token, associating it with the user.
-func (db *pgdb) CreateToken(ctx context.Context, token *Token) error {
+func (db *pgdb) CreateToken(ctx context.Context, token *otf.Token) error {
 	_, err := db.InsertToken(ctx, pggen.InsertTokenParams{
 		TokenID:     sql.String(token.ID),
-		Token:       sql.String(token.Token()),
-		Description: sql.String(token.Description()),
+		Token:       sql.String(token.Token),
+		Description: sql.String(token.Description),
 		UserID:      sql.String(token.UserID),
-		CreatedAt:   sql.Timestamptz(token.CreatedAt()),
+		CreatedAt:   sql.Timestamptz(token.CreatedAt),
 	})
 	return err
 }
 
-func (db *pgdb) ListTokens(ctx context.Context, userID string) ([]*Token, error) {
+func (db *pgdb) ListTokens(ctx context.Context, userID string) ([]*otf.Token, error) {
 	result, err := db.FindTokensByUserID(ctx, sql.String(userID))
 	if err != nil {
 		return nil, err
 	}
-	var tokens []*Token
+	var tokens []*otf.Token
 	for _, row := range result {
-		tokens = append(tokens, &Token{
-			id:          row.TokenID.String,
-			createdAt:   row.CreatedAt.Time,
-			token:       row.Token.String,
-			description: row.Description.String,
-			userID:      row.UserID.String,
+		tokens = append(tokens, &otf.Token{
+			ID:          row.TokenID.String,
+			CreatedAt:   row.CreatedAt.Time,
+			Token:       row.Token.String,
+			Description: row.Description.String,
+			UserID:      row.UserID.String,
 		})
 	}
 	return tokens, nil
