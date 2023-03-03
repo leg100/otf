@@ -11,7 +11,7 @@ import (
 )
 
 type api struct {
-	application
+	service
 	otf.Verifier // for verifying upload url
 }
 
@@ -26,13 +26,13 @@ func (s *api) addHandlers(r *mux.Router) {
 }
 
 func (s *api) getLogs(w http.ResponseWriter, r *http.Request) {
-	var opts GetChunkOptions
+	var opts otf.GetChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	chunk, err := s.application.get(r.Context(), opts)
+	chunk, err := s.service.GetChunk(r.Context(), opts)
 	// ignore not found errors because terraform-cli may call this endpoint
 	// before any logs have been written and it'll exit with an error if a not
 	// found error is received.
@@ -48,7 +48,7 @@ func (s *api) getLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) putLogs(w http.ResponseWriter, r *http.Request) {
-	chunk := Chunk{}
+	chunk := otf.Chunk{}
 	if err := decode.All(&chunk, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -60,7 +60,7 @@ func (s *api) putLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chunk.Data = buf.Bytes()
-	if err := s.application.put(r.Context(), chunk); err != nil {
+	if err := s.service.PutChunk(r.Context(), chunk); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}

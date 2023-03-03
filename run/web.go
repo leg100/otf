@@ -9,20 +9,15 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/logs"
 )
 
 type web struct {
-	logs.LogService
+	otf.LogService
 	otf.Renderer
 	otf.WorkspaceService
 	*RunStarter
 
 	svc service
-}
-
-type htmlLogChunk struct {
-	otf.Chunk
 }
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -93,7 +88,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 
 	// Get existing logs thus far received for each phase. If none are found then don't treat
 	// that as an error because it merely means no logs have yet been received.
-	planLogs, err := h.GetChunk(r.Context(), logs.GetChunkOptions{
+	planLogs, err := h.GetChunk(r.Context(), otf.GetChunkOptions{
 		RunID: run.ID,
 		Phase: otf.PlanPhase,
 	})
@@ -101,7 +96,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.GetChunk(r.Context(), logs.GetChunkOptions{
+	applyLogs, err := h.GetChunk(r.Context(), otf.GetChunkOptions{
 		RunID: run.ID,
 		Phase: otf.ApplyPhase,
 	})
@@ -113,13 +108,13 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 	h.Render("run_get.tmpl", w, r, struct {
 		*otf.Run
 		Workspace otf.Workspace
-		PlanLogs  *htmlLogChunk
-		ApplyLogs *htmlLogChunk
+		PlanLogs  otf.Chunk
+		ApplyLogs otf.Chunk
 	}{
 		Run:       run,
 		Workspace: ws,
-		PlanLogs:  &htmlLogChunk{planLogs},
-		ApplyLogs: &htmlLogChunk{applyLogs},
+		PlanLogs:  planLogs,
+		ApplyLogs: applyLogs,
 	})
 }
 

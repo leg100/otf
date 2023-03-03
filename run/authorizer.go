@@ -13,7 +13,7 @@ type authorizer struct {
 	workspace otf.Authorizer
 }
 
-func (a *authorizer) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
 	run, err := a.db.GetRun(ctx, runID)
 	if err != nil {
 		return nil, err

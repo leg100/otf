@@ -20,7 +20,7 @@ type lockFileService interface {
 
 // getLockFile returns the lock file for the run.
 func (s *Service) getLockFile(ctx context.Context, runID string) ([]byte, error) {
-	subject, err := s.CanAccessRun(ctx, rbac.GetLockFileAction, runID)
+	subject, err := s.CanAccess(ctx, rbac.GetLockFileAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *Service) getLockFile(ctx context.Context, runID string) ([]byte, error)
 
 // uploadLockFile persists the lock file for a run.
 func (s *Service) uploadLockFile(ctx context.Context, runID string, file []byte) error {
-	subject, err := s.CanAccessRun(ctx, rbac.UploadLockFileAction, runID)
+	subject, err := s.CanAccess(ctx, rbac.UploadLockFileAction, runID)
 	if err != nil {
 		return err
 	}

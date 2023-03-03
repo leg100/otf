@@ -42,7 +42,7 @@ func (c *proxy) Start(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			chunk, ok := event.Payload.(PersistedChunk)
+			chunk, ok := event.Payload.(otf.PersistedChunk)
 			if !ok {
 				// skip non-log events
 				continue
@@ -58,43 +58,43 @@ func (c *proxy) Start(ctx context.Context) error {
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (c *proxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+func (c *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	key := cacheKey(opts.RunID, opts.Phase)
 
 	// Try the cache first
 	if data, err := c.cache.Get(key); err == nil {
-		return Chunk{Data: data}.Cut(opts), nil
+		return otf.Chunk{Data: data}.Cut(opts), nil
 	}
 	// Fall back to getting chunk from backend
 	chunk, err := c.db.get(ctx, opts)
 	if err != nil {
-		return Chunk{}, err
+		return otf.Chunk{}, err
 	}
 	// Cache it
 	if err := c.cache.Set(key, chunk.Data); err != nil {
-		return Chunk{}, err
+		return otf.Chunk{}, err
 	}
 	// Cut chunk down to requested size.
 	return chunk.Cut(opts), nil
 }
 
 // PutChunk writes a chunk of data to the backend store before caching it.
-func (c *proxy) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
+func (c *proxy) put(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
 	// Write to backend
 	persisted, err := c.db.put(ctx, chunk)
 	if err != nil {
-		return PersistedChunk{}, err
+		return otf.PersistedChunk{}, err
 	}
 
 	// Then cache it
 	if err := c.cacheChunk(ctx, persisted.Chunk); err != nil {
-		return PersistedChunk{}, err
+		return otf.PersistedChunk{}, err
 	}
 
 	return persisted, nil
 }
 
-func (c *proxy) cacheChunk(ctx context.Context, chunk Chunk) error {
+func (c *proxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
 	key := cacheKey(chunk.RunID, chunk.Phase)
 
 	// first chunk: don't append
@@ -106,7 +106,7 @@ func (c *proxy) cacheChunk(ctx context.Context, chunk Chunk) error {
 		return c.cache.Set(key, append(previous, chunk.Data...))
 	}
 	// no cache entry; repopulate cache from db
-	all, err := c.db.get(ctx, GetChunkOptions{
+	all, err := c.db.get(ctx, otf.GetChunkOptions{
 		RunID: chunk.RunID,
 		Phase: chunk.Phase,
 	})

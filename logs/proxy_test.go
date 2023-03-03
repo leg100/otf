@@ -21,23 +21,23 @@ func TestProxy_Put(t *testing.T) {
 		// existing cache content
 		cache *fakeCache
 		// chunk to be written
-		chunk Chunk
+		chunk otf.Chunk
 	}{
 		{
 			name:    "first chunk",
-			chunk:   Chunk{"run-123", otf.PlanPhase, 0, []byte("\x02hello")},
+			chunk:   otf.Chunk{"run-123", otf.PlanPhase, 0, []byte("\x02hello")},
 			backend: newFakeBackend(),
 			cache:   newFakeCache(),
 		},
 		{
 			name:    "second chunk",
-			chunk:   Chunk{"run-123", otf.PlanPhase, 0, []byte(" world")},
+			chunk:   otf.Chunk{"run-123", otf.PlanPhase, 0, []byte(" world")},
 			backend: newFakeBackend("run-123.plan.log", "\x02hello"),
 			cache:   newFakeCache("run-123.plan.log", "\x02hello"),
 		},
 		{
 			name:    "third and final chunk",
-			chunk:   Chunk{"run-123", otf.PlanPhase, 0, []byte{0x03}},
+			chunk:   otf.Chunk{"run-123", otf.PlanPhase, 0, []byte{0x03}},
 			backend: newFakeBackend("run-123.plan.log", "\x02hello world"),
 			cache:   newFakeCache("run-123.plan.log", "\x02hello world"),
 		},
@@ -58,7 +58,7 @@ func TestProxy_Put(t *testing.T) {
 func TestProxy_Get(t *testing.T) {
 	ctx := context.Background()
 
-	opts := GetChunkOptions{
+	opts := otf.GetChunkOptions{
 		RunID:  "run-123",
 		Phase:  otf.PlanPhase,
 		Offset: 3,
@@ -72,7 +72,7 @@ func TestProxy_Get(t *testing.T) {
 		got, err := proxy.get(ctx, opts)
 		require.NoError(t, err)
 
-		want := Chunk{Offset: 3, Data: []byte("lo w")}
+		want := otf.Chunk{Offset: 3, Data: []byte("lo w")}
 		assert.Equal(t, want, got)
 	})
 
@@ -84,7 +84,7 @@ func TestProxy_Get(t *testing.T) {
 		got, err := proxy.get(ctx, opts)
 		require.NoError(t, err)
 
-		want := Chunk{Offset: 3, Data: []byte("lo w")}
+		want := otf.Chunk{Offset: 3, Data: []byte("lo w")}
 		assert.Equal(t, want, got)
 
 		// cache should be populated now

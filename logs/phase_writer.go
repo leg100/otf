@@ -8,7 +8,7 @@ import (
 )
 
 type logWriter interface {
-	PutChunk(ctx context.Context, chunk Chunk) error
+	PutChunk(ctx context.Context, chunk otf.Chunk) error
 }
 
 // PhaseWriter writes logs on behalf of a run phase.
@@ -42,7 +42,7 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 	data := make([]byte, len(p))
 	copy(data, p)
 
-	chunk := Chunk{
+	chunk := otf.Chunk{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Data:   data,
@@ -65,7 +65,7 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (w *PhaseWriter) Close() error {
-	chunk := Chunk{
+	chunk := otf.Chunk{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Offset: w.offset,

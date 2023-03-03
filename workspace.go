@@ -161,7 +161,6 @@ type (
 		DeleteWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 
 		WorkspacePermissionService
-		Authorizer
 	}
 
 	WorkspacePermissionService interface {

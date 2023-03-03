@@ -12,10 +12,10 @@ import (
 
 type db interface {
 	// get fetches a chunk of logs.
-	get(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
 	// put uploads a chunk, receiving back the chunk along with a unique
 	// ID.
-	put(ctx context.Context, chunk Chunk) (PersistedChunk, error)
+	put(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error)
 }
 
 // pgdb is a logs database on postgres
@@ -28,9 +28,9 @@ func newPGDB(db otf.Database) *pgdb {
 }
 
 // put persists a log chunk to the DB.
-func (db *pgdb) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
+func (db *pgdb) put(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
 	if len(chunk.Data) == 0 {
-		return PersistedChunk{}, fmt.Errorf("refusing to persist empty chunk")
+		return otf.PersistedChunk{}, fmt.Errorf("refusing to persist empty chunk")
 	}
 	id, err := db.InsertLogChunk(ctx, pggen.InsertLogChunkParams{
 		RunID:  sql.String(chunk.RunID),
@@ -39,16 +39,16 @@ func (db *pgdb) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
 		Offset: chunk.Offset,
 	})
 	if err != nil {
-		return PersistedChunk{}, sql.Error(err)
+		return otf.PersistedChunk{}, sql.Error(err)
 	}
-	return PersistedChunk{
+	return otf.PersistedChunk{
 		ChunkID: id,
 		Chunk:   chunk,
 	}, nil
 }
 
 // get retrieves a log chunk from the DB.
-func (db *pgdb) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+func (db *pgdb) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
 	// maximum a postgres INT can hold.
 	if opts.Limit == 0 {
@@ -61,9 +61,9 @@ func (db *pgdb) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 		Limit:  opts.Limit,
 	})
 	if err != nil {
-		return Chunk{}, sql.Error(err)
+		return otf.Chunk{}, sql.Error(err)
 	}
-	return Chunk{
+	return otf.Chunk{
 		RunID:  opts.RunID,
 		Phase:  opts.Phase,
 		Data:   data,
@@ -72,14 +72,14 @@ func (db *pgdb) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
 }
 
 // getByID retrieves a log chunk from the DB using its unique ID.
-func (db *pgdb) getByID(ctx context.Context, chunkID int) (PersistedChunk, error) {
+func (db *pgdb) getByID(ctx context.Context, chunkID int) (otf.PersistedChunk, error) {
 	chunk, err := db.FindLogChunkByID(ctx, chunkID)
 	if err != nil {
-		return PersistedChunk{}, sql.Error(err)
+		return otf.PersistedChunk{}, sql.Error(err)
 	}
-	return PersistedChunk{
+	return otf.PersistedChunk{
 		ChunkID: chunkID,
-		Chunk: Chunk{
+		Chunk: otf.Chunk{
 			RunID:  chunk.RunID.String,
 			Phase:  otf.PhaseType(chunk.Phase.String),
 			Data:   chunk.Chunk,

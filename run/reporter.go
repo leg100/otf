@@ -111,7 +111,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *otf.Run) error {
 	}
 
 	// Skip runs that were not triggered via VCS
-	if cv.IngressAttributes() == nil {
+	if cv.IngressAttributes == nil {
 		return nil
 	}
 
@@ -160,7 +160,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *otf.Run) error {
 
 	return client.SetStatus(ctx, cloud.SetStatusOptions{
 		Workspace:   ws.Name,
-		Ref:         cv.IngressAttributes().CommitSHA,
+		Ref:         cv.IngressAttributes.CommitSHA,
 		Identifier:  ws.Repo.Identifier,
 		Status:      status,
 		Description: description,

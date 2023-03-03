@@ -2,10 +2,8 @@ package logs
 
 import (
 	"encoding/json"
-	"html/template"
 	"net/http"
 
-	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -18,10 +16,10 @@ type web struct {
 	logr.Logger
 	*sse.Server
 
-	application
+	service
 }
 
-func newWebHandlers(app application, logger logr.Logger) *web {
+func newWebHandlers(app service, logger logr.Logger) *web {
 	// Create and configure SSE server
 	srv := sse.New()
 	// we don't use last-event-item functionality so turn it off
@@ -31,9 +29,9 @@ func newWebHandlers(app application, logger logr.Logger) *web {
 	srv.EncodeBase64 = true
 
 	return &web{
-		Server: srv,
-		Logger: logger,
-		application:    app,
+		Server:  srv,
+		Logger:  logger,
+		service: app,
 	}
 }
 
@@ -57,7 +55,7 @@ func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.application.tail(r.Context(), GetChunkOptions{
+	ch, err := h.service.tail(r.Context(), otf.GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,
@@ -78,8 +76,7 @@ func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 					})
 					return
 				}
-				htmlChunk := &htmlLogChunk{chunk}
-				html := htmlChunk.ToHTML()
+				html := chunk.ToHTML()
 				if len(html) == 0 {
 					// don't send empty chunks
 					continue
@@ -89,7 +86,7 @@ func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 					NextOffset int    `json:"offset"`
 				}{
 					HTML:       string(html) + "<br>",
-					NextOffset: htmlChunk.NextOffset(),
+					NextOffset: chunk.NextOffset(),
 				})
 				if err != nil {
 					h.Error(err, "marshalling data")
@@ -105,24 +102,4 @@ func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	h.Server.ServeHTTP(w, r)
-}
-
-// htmlLogChunk is a log chunk rendered in html
-type htmlLogChunk struct {
-	Chunk
-}
-
-func (l *htmlLogChunk) ToHTML() template.HTML {
-	chunk := l.RemoveStartMarker()
-	chunk = chunk.RemoveEndMarker()
-
-	// convert ANSI escape sequences to HTML
-	data := string(term2html.Render(chunk.Data))
-
-	return template.HTML(data)
-}
-
-// NextOffset returns the offset for the next chunk
-func (l *htmlLogChunk) NextOffset() int {
-	return l.Chunk.Offset + len(l.Chunk.Data)
 }

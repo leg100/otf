@@ -44,22 +44,25 @@ func newFakeBackend(keyvalues ...string) *fakeBackend {
 	return &fakeBackend{db}
 }
 
-func (s *fakeBackend) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
-	data, ok := s.store[opts.Key()]
+func (s *fakeBackend) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	key := cacheKey(opts.RunID, opts.Phase)
+	data, ok := s.store[key]
 	if !ok {
-		return Chunk{}, otf.ErrResourceNotFound
+		return otf.Chunk{}, otf.ErrResourceNotFound
 	}
-	return Chunk{Data: data}, nil
+	return otf.Chunk{Data: data}, nil
 }
 
-func (s *fakeBackend) put(ctx context.Context, chunk Chunk) (PersistedChunk, error) {
-	if existing, ok := s.store[chunk.Key()]; ok {
-		s.store[chunk.Key()] = append(existing, chunk.Data...)
+func (s *fakeBackend) put(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
+	key := cacheKey(chunk.RunID, chunk.Phase)
+
+	if existing, ok := s.store[key]; ok {
+		s.store[key] = append(existing, chunk.Data...)
 	} else {
-		s.store[chunk.Key()] = chunk.Data
+		s.store[key] = chunk.Data
 	}
 
-	return PersistedChunk{
+	return otf.PersistedChunk{
 		ChunkID: 123,
 		Chunk:   chunk,
 	}, nil

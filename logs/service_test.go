@@ -15,22 +15,22 @@ func TestTail(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("receive published chunk", func(t *testing.T) {
-		app := fakeTailApp(Chunk{})
+		app := fakeService(otf.Chunk{})
 
-		stream, err := app.tail(ctx, GetChunkOptions{
+		stream, err := app.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
 		require.NoError(t, err)
 
-		want := Chunk{
+		want := otf.Chunk{
 			RunID:  "run-123",
 			Phase:  otf.PlanPhase,
 			Data:   []byte("\x02hello world\x03"),
 			Offset: 6,
 		}
 		app.Publish(otf.Event{
-			Payload: PersistedChunk{
+			Payload: otf.PersistedChunk{
 				Chunk: want,
 			},
 		})
@@ -38,14 +38,14 @@ func TestTail(t *testing.T) {
 	})
 
 	t.Run("receive existing chunk", func(t *testing.T) {
-		want := Chunk{
+		want := otf.Chunk{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app := fakeTailApp(want)
+		app := fakeService(want)
 
-		stream, err := app.tail(ctx, GetChunkOptions{
+		stream, err := app.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -55,14 +55,14 @@ func TestTail(t *testing.T) {
 	})
 
 	t.Run("receive existing chunk and overlapping published chunk", func(t *testing.T) {
-		want := Chunk{
+		want := otf.Chunk{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app := fakeTailApp(want)
+		app := fakeService(want)
 
-		stream, err := app.tail(ctx, GetChunkOptions{
+		stream, err := app.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -73,8 +73,8 @@ func TestTail(t *testing.T) {
 
 		// receive overlapping chunk
 		app.Publish(otf.Event{
-			Payload: PersistedChunk{
-				Chunk: Chunk{
+			Payload: otf.PersistedChunk{
+				Chunk: otf.Chunk{
 					RunID:  "run-123",
 					Phase:  otf.PlanPhase,
 					Data:   []byte("lo world\x03"),
@@ -84,7 +84,7 @@ func TestTail(t *testing.T) {
 		})
 
 		// receive existing chunk
-		want = Chunk{
+		want = otf.Chunk{
 			RunID:  "run-123",
 			Phase:  otf.PlanPhase,
 			Data:   []byte("world\x03"),
@@ -94,14 +94,14 @@ func TestTail(t *testing.T) {
 	})
 
 	t.Run("ignore duplicate chunk", func(t *testing.T) {
-		want := Chunk{
+		want := otf.Chunk{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app := fakeTailApp(want)
+		app := fakeService(want)
 
-		stream, err := app.tail(ctx, GetChunkOptions{
+		stream, err := app.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -112,8 +112,8 @@ func TestTail(t *testing.T) {
 
 		// publish duplicate chunk
 		app.Publish(otf.Event{
-			Payload: PersistedChunk{
-				Chunk: Chunk{
+			Payload: otf.PersistedChunk{
+				Chunk: otf.Chunk{
 					RunID: "run-123",
 					Phase: otf.PlanPhase,
 					Data:  []byte("\x02hello"),
@@ -122,13 +122,13 @@ func TestTail(t *testing.T) {
 		})
 
 		// publish non-duplicate chunk
-		want = Chunk{
+		want = otf.Chunk{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 			Data:  []byte(" world\x03"),
 		}
 		app.Publish(otf.Event{
-			Payload: PersistedChunk{
+			Payload: otf.PersistedChunk{
 				Chunk: want,
 			},
 		})
@@ -137,9 +137,9 @@ func TestTail(t *testing.T) {
 	})
 
 	t.Run("ignore chunk for other run", func(t *testing.T) {
-		app := fakeTailApp(Chunk{})
+		app := fakeService(otf.Chunk{})
 
-		stream, err := app.tail(ctx, GetChunkOptions{
+		stream, err := app.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -147,8 +147,8 @@ func TestTail(t *testing.T) {
 
 		// publish chunk for other run
 		app.Publish(otf.Event{
-			Payload: PersistedChunk{
-				Chunk: Chunk{
+			Payload: otf.PersistedChunk{
+				Chunk: otf.Chunk{
 					RunID: "run-456",
 					Phase: otf.PlanPhase,
 					Data:  []byte("workers of the world, unite"),
@@ -157,13 +157,13 @@ func TestTail(t *testing.T) {
 		})
 
 		// publish chunk for tailed run
-		want := Chunk{
+		want := otf.Chunk{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
 		app.Publish(otf.Event{
-			Payload: PersistedChunk{
+			Payload: otf.PersistedChunk{
 				Chunk: want,
 			},
 		})
@@ -172,23 +172,23 @@ func TestTail(t *testing.T) {
 	})
 }
 
-func fakeTailApp(existing Chunk) *app {
-	return &app{
+func fakeService(existing otf.Chunk) *Service {
+	return &Service{
 		proxy:         &fakeTailProxy{chunk: existing},
-		PubSubService: newFakePubSubTailService(),
+		PubSubService: newFakePubSubService(),
 		Logger:        logr.Discard(),
-		RunAuthorizer: &fakeRunAuthorizer{},
+		run:           &fakeAuthorizer{},
 	}
 }
 
 type fakeTailProxy struct {
 	// fake chunk to return
-	chunk Chunk
+	chunk otf.Chunk
 
 	db
 }
 
-func (f *fakeTailProxy) get(ctx context.Context, opts GetChunkOptions) (Chunk, error) {
+func (f *fakeTailProxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	return f.chunk, nil
 }
 
@@ -196,7 +196,7 @@ type fakePubSubTailService struct {
 	stream chan otf.Event
 }
 
-func newFakePubSubTailService() *fakePubSubTailService {
+func newFakePubSubService() *fakePubSubTailService {
 	return &fakePubSubTailService{stream: make(chan otf.Event)}
 }
 
@@ -208,8 +208,8 @@ func (f *fakePubSubTailService) Publish(event otf.Event) {
 	f.stream <- event
 }
 
-type fakeRunAuthorizer struct{}
+type fakeAuthorizer struct{}
 
-func (f *fakeRunAuthorizer) CanAccessRun(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
+func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (otf.Subject, error) {
 	return &otf.Superuser{}, nil
 }
