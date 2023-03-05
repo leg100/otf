@@ -38,17 +38,7 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 		if err != nil {
 			return Error(err)
 		}
-		if ws.Repo() != nil {
-			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-				Branch:        String(ws.Repo().Branch),
-				WebhookID:     UUID(ws.Repo().WebhookID),
-				VCSProviderID: String(ws.Repo().ProviderID),
-				WorkspaceID:   String(ws.ID()),
-			})
-			if err != nil {
-				return Error(err)
-			}
-		}
+
 		return nil
 	})
 	if err != nil {

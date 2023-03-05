@@ -17,9 +17,14 @@ type Connector struct {
 }
 
 func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
-	client, err := c.GetVCSClient(ctx, opts.ProviderID)
+	provider, err := c.GetVCSProvider(ctx, opts.ProviderID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "retrieving provider")
+	}
+
+	client, err := provider.NewClient(ctx)
+	if err != nil {
+		return errors.Wrap(err, "creating vcs client")
 	}
 
 	repo, err := client.GetRepository(ctx, opts.Identifier)
@@ -27,16 +32,25 @@ func (c *Connector) Connect(ctx context.Context, workspaceID string, opts otf.Co
 		return errors.Wrap(err, "retrieving repository info")
 	}
 
+	branch := opts.Branch
+	if branch == "" {
+		branch = repo.Branch
+	}
+
 	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
-		return sql.CreateWorkspaceRepo(ctx, tx, workspaceID, otf.WorkspaceRepo{
-			Branch:     repo.Branch,
+		err := sql.CreateWorkspaceRepo(ctx, tx, workspaceID, otf.WorkspaceRepo{
+			Branch:     branch,
 			ProviderID: opts.ProviderID,
 			WebhookID:  hookID,
 		})
+		if err != nil {
+			return errors.Wrap(err, "creating workspace")
+		}
+		return nil
 	}
 	err = c.Hook(ctx, otf.HookOptions{
 		Identifier:   opts.Identifier,
-		Cloud:        opts.Cloud,
+		Cloud:        provider.CloudConfig().Name,
 		HookCallback: hookCallback,
 		Client:       client,
 	})

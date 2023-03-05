@@ -136,7 +136,21 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.Application.CreateWorkspace(r.Context(), otf.CreateWorkspaceOptions{
+	var repo *otf.WorkspaceRepo
+	if opts.VCSRepo != nil {
+		repo = new(otf.WorkspaceRepo)
+		if identifier := opts.VCSRepo.Identifier; identifier != nil {
+			repo.Identifier = *identifier
+		}
+		if branch := opts.VCSRepo.Branch; branch != nil {
+			repo.Branch = *branch
+		}
+		if providerID := opts.VCSRepo.OAuthTokenID; providerID != nil {
+			repo.ProviderID = *providerID
+		}
+	}
+
+	ws, err := otf.CreateWorkspace(r.Context(), s.Application, otf.CreateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -154,6 +168,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		TerraformVersion:           opts.TerraformVersion,
 		TriggerPrefixes:            opts.TriggerPrefixes,
 		WorkingDirectory:           opts.WorkingDirectory,
+		Repo:                       repo,
 	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)

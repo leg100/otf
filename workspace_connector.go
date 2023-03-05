@@ -14,5 +14,6 @@ type WorkspaceConnector interface {
 type ConnectWorkspaceOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	ProviderID string `schema:"vcs_provider_id,required"`
+	Branch     string // branch of the VCS
 	Cloud      string // cloud host of the repo
 }
