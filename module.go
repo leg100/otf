@@ -30,7 +30,7 @@ type Module struct {
 	name         string
 	provider     string
 	organization string      // Module belongs to an organization
-	repo         *ModuleRepo // Module optionally connected to vcs repo
+	repo         *Connection // Module optionally connected to vcs repo
 	status       ModuleStatus
 	versions     SortedModuleVersions
 }
@@ -44,7 +44,6 @@ func NewModule(opts CreateModuleOptions) *Module {
 		provider:     opts.Provider,
 		status:       ModuleStatusPending,
 		organization: opts.Organization,
-		repo:         opts.Repo,
 	}
 }
 
@@ -53,13 +52,17 @@ func (m *Module) CreatedAt() time.Time           { return m.createdAt }
 func (m *Module) UpdatedAt() time.Time           { return m.updatedAt }
 func (m *Module) Name() string                   { return m.name }
 func (m *Module) Provider() string               { return m.provider }
-func (m *Module) Repo() *ModuleRepo              { return m.repo }
+func (m *Module) Repo() *Connection              { return m.repo }
 func (m *Module) Status() ModuleStatus           { return m.status }
 func (m *Module) Versions() SortedModuleVersions { return m.versions }
 func (m *Module) Latest() *ModuleVersion         { return m.versions.latest() }
 func (m *Module) Organization() string           { return m.organization }
 
 func (m *Module) UpdateStatus(status ModuleStatus) { m.status = status }
+
+func (m *Module) AddConnection(conn *Connection) {
+	m.repo = conn
+}
 
 // Add adds a version to a module's list of versions
 func (m *Module) Add(modver *ModuleVersion) {
@@ -121,12 +124,6 @@ func NextModuleStatus(current ModuleStatus, versionStatus ModuleVersionStatus) M
 	}
 }
 
-type ModuleRepo struct {
-	ProviderID string
-	WebhookID  uuid.UUID
-	Identifier string // identifier is <repo_owner>/<repo_name>
-}
-
 type ModuleService interface {
 	// PublishModule publishes a module from a VCS repository.
 	PublishModule(context.Context, PublishModuleOptions) (*Module, error)
@@ -151,7 +148,7 @@ type ModuleStore interface {
 }
 
 type ModuleDeleter interface {
-	Delete(ctx context.Context, moduleID string) error
+	Delete(ctx context.Context, module *Module) error
 }
 
 type (
@@ -164,7 +161,6 @@ type (
 		Name         string
 		Provider     string
 		Organization string
-		Repo         *ModuleRepo
 	}
 	UpdateModuleStatusOptions struct {
 		ID     string
@@ -243,7 +239,7 @@ type ModuleRow struct {
 	Provider         pgtype.Text            `json:"provider"`
 	Status           pgtype.Text            `json:"status"`
 	OrganizationName pgtype.Text            `json:"organization_name"`
-	ModuleRepo       *pggen.ModuleRepos     `json:"module_repo"`
+	ModuleConnection *pggen.RepoConnections `json:"module_connection"`
 	Webhook          *pggen.Webhooks        `json:"webhook"`
 	Versions         []pggen.ModuleVersions `json:"versions"`
 }
@@ -259,11 +255,11 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 		status:       ModuleStatus(row.Status.String),
 		organization: row.OrganizationName.String,
 	}
-	if row.ModuleRepo != nil {
-		module.repo = &ModuleRepo{
-			ProviderID: row.ModuleRepo.VCSProviderID.String,
-			WebhookID:  row.Webhook.WebhookID.Bytes,
-			Identifier: row.Webhook.Identifier.String,
+	if row.ModuleConnection != nil {
+		module.repo = &Connection{
+			VCSProviderID: row.ModuleConnection.VCSProviderID.String,
+			WebhookID:     row.Webhook.WebhookID.Bytes,
+			Identifier:    row.Webhook.Identifier.String,
 		}
 	}
 	for _, version := range row.Versions {

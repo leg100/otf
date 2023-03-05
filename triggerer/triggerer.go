@@ -65,7 +65,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 	var webhookID uuid.UUID
 	var isPullRequest bool
 	var identifier string
-	var branch string
+	var branch, defaultBranch string
 	var sha string
 
 	switch event := event.(type) {
@@ -74,6 +74,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 		identifier = event.Identifier
 		sha = event.CommitSHA
 		branch = event.Branch
+		defaultBranch = event.DefaultBranch
 	case cloud.VCSPullEvent:
 		if event.Action != cloud.VCSPullEventUpdated {
 			// ignore all other pull events
@@ -83,6 +84,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 		identifier = event.Identifier
 		sha = event.CommitSHA
 		branch = event.Branch
+		defaultBranch = event.DefaultBranch
 		isPullRequest = true
 	}
 
@@ -111,7 +113,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 	}
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Identifier: identifier,
-		Ref:        sha,
+		Ref:        &sha,
 	})
 	if err != nil {
 		return fmt.Errorf("retrieving repository tarball: %w", err)
@@ -135,7 +137,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 				// CompareURL        string
 				Identifier:      identifier,
 				IsPullRequest:   isPullRequest,
-				OnDefaultBranch: (ws.Repo().Branch == branch),
+				OnDefaultBranch: branch == defaultBranch,
 			},
 		})
 		if err != nil {

@@ -28,7 +28,6 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts Con
 		}
 		tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 			Identifier: ws.Repo().Identifier,
-			Ref:        ws.Repo().Branch,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)

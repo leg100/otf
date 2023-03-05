@@ -4,47 +4,36 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/sql"
 )
 
 // deleter deletes registry modules
 type deleter struct {
-	otf.HookService        // for unhooking from webhook
-	otf.ModuleService      // for retrieving and deleting module
-	otf.VCSProviderService // for retrieving cloud client
+	otf.RepoService // for disconnecting from repo
+	otf.DB          // for deleting module from db
 }
 
 func NewDeleter(app otf.Application) *deleter {
 	return &deleter{
-		HookService:        app,
-		ModuleService:      app,
-		VCSProviderService: app,
+		RepoService: app,
+		DB:          app.DB(),
 	}
 }
 
-// Delete deletes the module and unhooks it from a webhook
-func (c *deleter) Delete(ctx context.Context, moduleID string) error {
-	ws, err := c.GetModuleByID(ctx, moduleID)
-	if err != nil {
-		return err
-	}
-	if ws.Repo() == nil {
-		// there is no webhook to unhook from, so just delete the module
-		_, err = c.DeleteModule(ctx, moduleID)
-		return err
-	}
+// Delete deletes the module and disconnects it from a VCS repo.
+func (c *deleter) Delete(ctx context.Context, mod *otf.Module) error {
+	return c.Tx(ctx, func(tx otf.DB) error {
+		if err := tx.DeleteModule(ctx, mod.ID()); err != nil {
+			return err
+		}
 
-	client, err := c.GetVCSClient(ctx, ws.Repo().ProviderID)
-	if err != nil {
-		return err
-	}
+		if mod.Repo() == nil {
+			return nil // not connected; skip disconnection
+		}
 
-	unhookCallback := func(ctx context.Context, tx otf.Database) error {
-		return sql.DeleteModule(ctx, tx, moduleID)
-	}
-	return c.Unhook(ctx, otf.UnhookOptions{
-		HookID:         ws.Repo().WebhookID,
-		Client:         client,
-		UnhookCallback: unhookCallback,
+		return c.RepoService.Disconnect(ctx, otf.DisconnectOptions{
+			ConnectionType: otf.ModuleConnection,
+			ResourceID:     mod.ID(),
+			Tx:             tx,
+		})
 	})
 }

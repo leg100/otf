@@ -38,7 +38,7 @@ type WorkspaceResult struct {
 	OrganizationName           pgtype.Text           `json:"organization_name"`
 	UserLock                   *pggen.Users          `json:"user_lock"`
 	RunLock                    *pggen.Runs           `json:"run_lock"`
-	WorkspaceRepo              *pggen.WorkspaceRepos `json:"workspace_repo"`
+	WorkspaceConnection        *pggen.RepoConnections   `json:"workspace_connection"`
 	Webhook                    *pggen.Webhooks       `json:"webhook"`
 }
 
@@ -68,10 +68,9 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		organization:               result.OrganizationName.String,
 	}
 
-	if result.WorkspaceRepo != nil {
+	if result.WorkspaceConnection != nil {
 		ws.repo = &WorkspaceRepo{
-			Branch:     result.WorkspaceRepo.Branch.String,
-			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
+			ProviderID: result.WorkspaceConnection.VCSProviderID.String,
 			WebhookID:  result.Webhook.WebhookID.Bytes,
 			Identifier: result.Webhook.Identifier.String,
 		}

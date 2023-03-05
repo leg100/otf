@@ -5,23 +5,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
-	"github.com/leg100/otf/sql"
-	"github.com/pkg/errors"
 )
 
 // Publisher publishes terraform modules.
 type Publisher struct {
 	*otf.ModuleVersionUploader
-	otf.HookService // for registering and unregistering connections to webhooks
+	otf.RepoService // for registering and unregistering connections to webhooks
 }
 
 func NewPublisher(app otf.Application) *Publisher {
 	return &Publisher{
-		HookService: app,
+		RepoService: app,
 		ModuleVersionUploader: &otf.ModuleVersionUploader{
 			Application: app,
 		},
@@ -31,21 +28,6 @@ func NewPublisher(app otf.Application) *Publisher {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
-	client, err := p.GetVCSClient(ctx, opts.ProviderID)
-	if err != nil {
-		return nil, err
-	}
-
-	repo, err := client.GetRepository(ctx, opts.Identifier)
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving repository info")
-	}
-
-	vcsProvider, err := p.GetVCSProvider(ctx, opts.ProviderID)
-	if err != nil {
-		return nil, err
-	}
-
 	_, repoName, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -57,30 +39,36 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 	provider := parts[1]
 	name := parts[2]
 
-	var mod *otf.Module
-
-	// hook up module to a webhook - the callback establishes a relationship in
-	// the DB between the module and the webhook.
-	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
-		mod = otf.NewModule(otf.CreateModuleOptions{
-			Name:         name,
-			Provider:     provider,
-			Organization: opts.Organization.Name(),
-			Repo: &otf.ModuleRepo{
-				WebhookID:  hookID,
-				ProviderID: opts.ProviderID,
-				Identifier: repo.Identifier,
-			},
-		})
-
-		return sql.CreateModule(ctx, tx, mod)
-	}
-	err = p.Hook(ctx, otf.HookOptions{
-		Identifier:   opts.Identifier,
-		Cloud:        vcsProvider.CloudConfig().Name,
-		Client:       client,
-		HookCallback: hookCallback,
+	mod := otf.NewModule(otf.CreateModuleOptions{
+		Name:         name,
+		Provider:     provider,
+		Organization: opts.Organization.Name(),
 	})
+
+	// persist mod to db and connect mod to repo
+	err := p.DB().Tx(ctx, func(tx otf.DB) error {
+		if err := tx.CreateModule(ctx, mod); err != nil {
+			return err
+		}
+
+		connection, err := p.RepoService.Connect(ctx, otf.ConnectionOptions{
+			ConnectionType: otf.ModuleConnection,
+			ResourceID:     mod.ID(),
+			VCSProviderID:  opts.ProviderID,
+			Identifier:     opts.Identifier,
+			Tx:             tx,
+		})
+		if err != nil {
+			return err
+		}
+		mod.AddConnection(connection)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := p.GetVCSClient(ctx, opts.ProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +105,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 			Version:    strings.TrimPrefix(version, "v"),
 			Ref:        tag,
 			Identifier: opts.Identifier,
-			ProviderID: mod.Repo().ProviderID,
+			ProviderID: mod.Repo().VCSProviderID,
 		})
 		if err != nil {
 			return nil, err
@@ -161,7 +149,7 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 		Version:    strings.TrimPrefix(tag.Tag, "v"),
 		Ref:        tag.CommitSHA,
 		Identifier: tag.Identifier,
-		ProviderID: module.Repo().ProviderID,
+		ProviderID: module.Repo().VCSProviderID,
 	})
 	if err != nil {
 		return err
@@ -196,7 +184,7 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Identifier: opts.Identifier,
-		Ref:        opts.Ref,
+		Ref:        &opts.Ref,
 	})
 	if err != nil {
 		return otf.UpdateModuleVersionStatus(ctx, p, otf.UpdateModuleVersionStatusOptions{

@@ -169,7 +169,7 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	return token
 }
 
-func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
+func NewTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
 	factory := &otf.VCSProviderFactory{inmem.NewTestCloudService()}
 	provider, err := factory.NewVCSProvider(otf.VCSProviderCreateOptions{
 		Organization: org.Name(),
@@ -183,8 +183,8 @@ func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
 	return provider
 }
 
-func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
-	provider := newTestVCSProvider(t, organization)
+func CreateTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
+	provider := NewTestVCSProvider(t, organization)
 	ctx := context.Background()
 
 	err := db.CreateVCSProvider(ctx, provider)
@@ -196,7 +196,7 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 	return provider
 }
 
-func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
+func CreateTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 	ctx := context.Background()
 
 	module := otf.NewTestModule(org)

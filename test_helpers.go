@@ -104,7 +104,6 @@ func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
 func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
 	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
-		Branch:     "master",
 		Identifier: "leg100/" + uuid.NewString(),
 	}
 }
@@ -138,7 +137,7 @@ func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModule
 
 func WithModuleRepo() NewTestModuleOption {
 	return func(mod *Module) {
-		mod.repo = &ModuleRepo{}
+		mod.repo = &Connection{}
 	}
 }
 

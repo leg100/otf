@@ -1,5 +1,4 @@
-// Package hooks manages webhooks on VCS repos.
-package hooks
+package repo
 
 import (
 	"context"
@@ -12,17 +11,14 @@ import (
 	"github.com/leg100/otf/cloud"
 )
 
-var (
-	// defaultEvents are the VCS events that hooks subscribe to.
-	defaultEvents = []cloud.VCSEventType{
-		cloud.VCSPushEventType,
-		cloud.VCSPullEventType,
-	}
-	// errConnected is returned when an attempt is made to delete a
-	// webhook but the webhook is still connected e.g. to a module or a
-	// workspace.
-	errConnected = errors.New("webhook still connected")
-)
+// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
+const handlerPrefix = "/webhooks/vcs"
+
+// defaultEvents are the VCS events that hooks subscribe to.
+var defaultEvents = []cloud.VCSEventType{
+	cloud.VCSPushEventType,
+	cloud.VCSPullEventType,
+}
 
 // hook is a webhook for a VCS repo
 type hook struct {
@@ -38,9 +34,9 @@ type hook struct {
 }
 
 // sync synchronises a hook with the cloud
-func (h *hook) sync(ctx context.Context, opts cloud.Client) error {
+func (h *hook) sync(ctx context.Context, client cloud.Client) error {
 	if h.cloudID == nil {
-		cloudID, err := opts.CreateWebhook(ctx, h.createOpts())
+		cloudID, err := client.CreateWebhook(ctx, h.createOpts())
 		if err != nil {
 			return err
 		}
@@ -50,13 +46,13 @@ func (h *hook) sync(ctx context.Context, opts cloud.Client) error {
 
 	// existing hook in DB; check it exists in cloud and create/update
 	// accordingly
-	cloudHook, err := opts.GetWebhook(ctx, cloud.GetWebhookOptions{
+	cloudHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
 		Identifier: h.identifier,
 		ID:         *h.cloudID,
 	})
 	if errors.Is(err, otf.ErrResourceNotFound) {
 		// hook not found in cloud; create it
-		cloudID, err := opts.CreateWebhook(ctx, h.createOpts())
+		cloudID, err := client.CreateWebhook(ctx, h.createOpts())
 		if err != nil {
 			return err
 		}
@@ -75,7 +71,7 @@ func (h *hook) sync(ctx context.Context, opts cloud.Client) error {
 	}
 
 	// differences found; update hook on cloud
-	err = opts.UpdateWebhook(ctx, cloud.UpdateWebhookOptions{
+	err = client.UpdateWebhook(ctx, cloud.UpdateWebhookOptions{
 		ID:                   cloudHook.ID,
 		CreateWebhookOptions: h.createOpts(),
 	})

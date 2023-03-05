@@ -449,14 +449,7 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	provider, err := app.GetVCSProvider(r.Context(), params.ProviderID)
-	if err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	params.Cloud = provider.CloudConfig().Name
-
-	err = app.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
+	err := app.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
 		Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -474,7 +467,7 @@ func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Reque
 	}
 
 	var stack flashStack
-	_, err = app.DisconnectWorkspace(r.Context(), workspaceID)
+	err = app.DisconnectWorkspace(r.Context(), workspaceID)
 	if errors.Is(err, otf.ErrWarning) {
 		stack.push(FlashWarningType, err.Error())
 	} else if err != nil {

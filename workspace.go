@@ -301,8 +301,7 @@ type WorkspaceService interface {
 
 type WorkspaceConnectionService interface {
 	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
-	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	DisconnectWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+	DisconnectWorkspace(ctx context.Context, workspaceID string) error
 }
 
 type WorkspacePermissionService interface {
@@ -329,15 +328,6 @@ type WorkspaceStore interface {
 	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
-
-	// CreateWorkspaceRepo creates a workspace repo in the persistence store.
-	CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	// UpdateWorkspaceRepo updates a workspace's repo in the persistence store.
-	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	// DeleteWorkspaceRepo deletes a workspace's repo from the persistence
-	// store, returning the workspace without the repo as well the original repo, or an
-	// error.
-	DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*Workspace, error)
 
 	WorkspaceLockService
 	CurrentRunService

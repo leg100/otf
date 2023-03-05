@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
@@ -68,7 +69,13 @@ func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, 
 		return err
 	}
 
-	err = a.Connect(ctx, workspaceID, opts)
+	_, err = a.Connect(ctx, otf.ConnectionOptions{
+		ConnectionType: otf.WorkspaceConnection,
+		ResourceID:     workspaceID,
+		VCSProviderID:  opts.ProviderID,
+		Identifier:     opts.Identifier,
+	})
+
 	if err != nil {
 		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.Identifier)
 		return err
@@ -79,38 +86,25 @@ func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, 
 	return nil
 }
 
-func (a *Application) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
+func (a *Application) DisconnectWorkspace(ctx context.Context, workspaceID string) error {
 	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	ws, err := a.db.UpdateWorkspaceRepo(ctx, workspaceID, repo)
-	if err != nil {
-		a.Error(err, "updating workspace repo connection", "workspace", workspaceID, "subject", subject, "repo", repo)
-		return nil, err
-	}
-
-	a.V(0).Info("updated workspace repo connection", "workspace", workspaceID, "subject", subject, "repo", repo)
-
-	return ws, nil
-}
-
-func (a *Application) DisconnectWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspaceByID(ctx, rbac.UpdateWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := a.Disconnect(ctx, workspaceID)
-	if err != nil {
+	err = a.RepoService.Disconnect(ctx, otf.DisconnectOptions{
+		ConnectionType: otf.WorkspaceConnection,
+		ResourceID:     workspaceID,
+	})
+	// ignore warnings; the repo is still disconnected successfully
+	if err != nil && !errors.Is(err, otf.ErrWarning) {
 		a.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
-		return nil, err
+		return err
 	}
 
 	a.V(0).Info("disconnected workspace", "workspace", workspaceID, "subject", subject)
 
-	return ws, nil
+	return nil
 }
 
 func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {

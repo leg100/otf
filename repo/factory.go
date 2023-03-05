@@ -1,4 +1,4 @@
-package hooks
+package repo
 
 import (
 	"fmt"
@@ -51,7 +51,7 @@ func (f factory) newHook(opts newHookOpts) (*hook, error) {
 	hook.endpoint = (&url.URL{
 		Scheme: "https",
 		Host:   f.Hostname(),
-		Path:   path.Join("/webhooks/vcs", hook.id.String()),
+		Path:   path.Join(handlerPrefix, hook.id.String()),
 	}).String()
 
 	return &hook, nil

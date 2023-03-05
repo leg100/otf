@@ -10,51 +10,31 @@ import (
 )
 
 func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
-	err := db.tx(ctx, func(tx *DB) error {
-		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-			ID:                         String(ws.ID()),
-			CreatedAt:                  Timestamptz(ws.CreatedAt()),
-			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
-			Name:                       String(ws.Name()),
-			AllowDestroyPlan:           ws.AllowDestroyPlan(),
-			AutoApply:                  ws.AutoApply(),
-			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
-			Environment:                String(ws.Environment()),
-			Description:                String(ws.Description()),
-			ExecutionMode:              String(string(ws.ExecutionMode())),
-			FileTriggersEnabled:        ws.FileTriggersEnabled(),
-			GlobalRemoteState:          ws.GlobalRemoteState(),
-			MigrationEnvironment:       String(ws.MigrationEnvironment()),
-			SourceName:                 String(ws.SourceName()),
-			SourceURL:                  String(ws.SourceURL()),
-			SpeculativeEnabled:         ws.SpeculativeEnabled(),
-			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-			TerraformVersion:           String(ws.TerraformVersion()),
-			TriggerPrefixes:            ws.TriggerPrefixes(),
-			QueueAllRuns:               ws.QueueAllRuns(),
-			WorkingDirectory:           String(ws.WorkingDirectory()),
-			OrganizationName:           String(ws.Organization()),
-		})
-		if err != nil {
-			return Error(err)
-		}
-		if ws.Repo() != nil {
-			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-				Branch:        String(ws.Repo().Branch),
-				WebhookID:     UUID(ws.Repo().WebhookID),
-				VCSProviderID: String(ws.Repo().ProviderID),
-				WorkspaceID:   String(ws.ID()),
-			})
-			if err != nil {
-				return Error(err)
-			}
-		}
-		return nil
+	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
+		ID:                         String(ws.ID()),
+		CreatedAt:                  Timestamptz(ws.CreatedAt()),
+		UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
+		Name:                       String(ws.Name()),
+		AllowDestroyPlan:           ws.AllowDestroyPlan(),
+		AutoApply:                  ws.AutoApply(),
+		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
+		Environment:                String(ws.Environment()),
+		Description:                String(ws.Description()),
+		ExecutionMode:              String(string(ws.ExecutionMode())),
+		FileTriggersEnabled:        ws.FileTriggersEnabled(),
+		GlobalRemoteState:          ws.GlobalRemoteState(),
+		MigrationEnvironment:       String(ws.MigrationEnvironment()),
+		SourceName:                 String(ws.SourceName()),
+		SourceURL:                  String(ws.SourceURL()),
+		SpeculativeEnabled:         ws.SpeculativeEnabled(),
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
+		TerraformVersion:           String(ws.TerraformVersion()),
+		TriggerPrefixes:            ws.TriggerPrefixes(),
+		QueueAllRuns:               ws.QueueAllRuns(),
+		WorkingDirectory:           String(ws.WorkingDirectory()),
+		OrganizationName:           String(ws.Organization()),
 	})
-	if err != nil {
-		return Error(err)
-	}
-	return nil
+	return Error(err)
 }
 
 func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
@@ -93,53 +73,6 @@ func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*
 		return err
 	})
 	return ws, err
-}
-
-func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
-	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-		Branch:        String(repo.Branch),
-		WebhookID:     UUID(repo.WebhookID),
-		VCSProviderID: String(repo.ProviderID),
-		WorkspaceID:   String(workspaceID),
-	})
-	if err != nil {
-		return nil, Error(err)
-	}
-	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, Error(err)
-}
-
-func CreateWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string, repo otf.WorkspaceRepo) error {
-	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-		Branch:        String(repo.Branch),
-		WebhookID:     UUID(repo.WebhookID),
-		VCSProviderID: String(repo.ProviderID),
-		WorkspaceID:   String(workspaceID),
-	})
-	return Error(err)
-}
-
-func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
-	_, err := db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), String(workspaceID))
-	if err != nil {
-		return nil, Error(err)
-	}
-	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, Error(err)
-}
-
-func (db *DB) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	_, err := db.Querier.DeleteWorkspaceRepoByID(ctx, String(workspaceID))
-	if err != nil {
-		return nil, Error(err)
-	}
-	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, Error(err)
-}
-
-func DeleteWorkspaceRepo(ctx context.Context, db otf.Database, workspaceID string) error {
-	_, err := db.DeleteWorkspaceRepoByID(ctx, String(workspaceID))
-	return Error(err)
 }
 
 // LockWorkspace locks the specified workspace.
