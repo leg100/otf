@@ -18,7 +18,7 @@ type web struct {
 	otf.Renderer
 	otf.VCSProviderService
 
-	app application
+	app service
 }
 
 type newModuleStep string
@@ -77,7 +77,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 
 	var tfmod *TerraformModule
 	var readme template.HTML
-	switch module.Status() {
+	switch module.status {
 	case ModuleStatusSetupComplete:
 		tarball, err := h.app.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
 			ModuleVersionID: module.Version(params.Version).ID,
@@ -163,7 +163,13 @@ func (h *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := otf.ListModuleRepositories(r.Context(), h, params.VCSProviderID)
+	client, err := h.GetVCSClient(r.Context(), params.VCSProviderID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repos, err := listTerraformModuleRepos(r.Context(), client)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

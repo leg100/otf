@@ -12,7 +12,7 @@ import (
 // connector connects a workspace to a VCS repo, subscribing it to
 // VCS events that trigger runs.
 type Connector struct {
-	otf.HookService      // for registering and unregistering connections to webhooks
+	otf.RepoService      // for registering and unregistering connections to webhooks
 	*vcsprovider.Service // for retrieving cloud client
 }
 
@@ -41,11 +41,13 @@ func (c *Connector) connect(ctx context.Context, workspaceID string, opts connec
 		})
 		return err
 	}
-	err = c.Hook(ctx, otf.HookOptions{
-		Identifier:   opts.Identifier,
-		Cloud:        opts.Cloud,
-		HookCallback: hookCallback,
-		Client:       client,
+	err = c.Connect(ctx, otf.ConnectionOptions{
+		Identifier:     opts.Identifier,
+		Cloud:          opts.Cloud,
+		VCSProviderID:  opts.ProviderID,
+		ResourceID:     workspaceID,
+		ConnectionType: otf.WorkspaceConnection,
+		Tx: c.db,
 	})
 	if err != nil {
 		return errors.Wrap(err, "registering webhook connection")
@@ -69,7 +71,7 @@ func (c *Connector) disconnect(ctx context.Context, ws *otf.Workspace) (*otf.Wor
 		ws, err = newdb(tx).DeleteWorkspaceRepo(ctx, ws.ID)
 		return err
 	}
-	err = c.Unhook(ctx, otf.UnhookOptions{
+	err = c.Unhook(ctx, otf.DisconnectOptions{
 		HookID:         repo.WebhookID,
 		Client:         client,
 		UnhookCallback: unhookCallback,

@@ -59,7 +59,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("run_list.tmpl", w, r, struct {
 		*otf.RunList
-		otf.Workspace
+		*otf.Workspace
 		StreamID string
 	}{
 		RunList:   runs,
@@ -107,7 +107,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("run_get.tmpl", w, r, struct {
 		*otf.Run
-		Workspace otf.Workspace
+		Workspace *otf.Workspace
 		PlanLogs  otf.Chunk
 		ApplyLogs otf.Chunk
 	}{

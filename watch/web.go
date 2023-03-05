@@ -19,7 +19,7 @@ type web struct {
 	otf.Renderer
 	*sse.Server
 
-	app application
+	svc service
 }
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -38,7 +38,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := h.app.Watch(r.Context(), otf.WatchOptions{
+	events, err := h.svc.Watch(r.Context(), otf.WatchOptions{
 		WorkspaceID: otf.String(params.WorkspaceID),
 	})
 	if err != nil {

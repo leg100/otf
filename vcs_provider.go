@@ -21,8 +21,8 @@ type (
 
 	// VCSProviderService provides access to vcs providers
 	VCSProviderService interface {
-		GetVCSProvider(ctx context.Context, id string) (VCSProvider, error)
-		ListVCSProviders(ctx context.Context, organization string) ([]VCSProvider, error)
+		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
+		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 
 		// GetVCSClient combines retrieving a vcs provider and construct a cloud
 		// client from that provider.

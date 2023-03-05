@@ -50,12 +50,11 @@ type Application interface {
 	EventService
 	SessionService
 	// TokenService
-	LockableApplication
 	cloud.Service
 	ModuleService
 	ModuleVersionService
 	HostnameService
-	HookService
+	RepoService
 	UserService
 	TeamService
 	AgentTokenService
@@ -63,34 +62,25 @@ type Application interface {
 	PubSubService
 }
 
-// LockableApplication is an application that holds an exclusive lock with the given ID.
-type LockableApplication interface {
-	WithLock(ctx context.Context, id int64, cb func(Application) error) error
-}
-
-// DB provides access to otf database
-type DB interface {
-	Database
-
-	Pool() (*pgxpool.Pool, error)
-	Tx(ctx context.Context, tx func(DB) error) error
-	// WaitAndLock obtains a DB with a session-level advisory lock.
-	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
-	Close()
-}
-
-// Database provides access to generated SQL queries as well as wrappers for
+// DB provides access to generated SQL queries as well as wrappers for
 // performing queries within a transaction or a lock.
-type Database interface {
+type DB interface {
+	Pool() (*pgxpool.Pool, error)
+	// Tx provides a transaction within which to operate on the store.
+	Tx(ctx context.Context, tx func(DB) error) error
+	Close()
+
 	// Send batches of SQL queries over the wire.
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 
 	pggen.Querier // generated SQL queries
 
-	// Tx provides a transaction within which to operate on the store.
-	Transaction(ctx context.Context, tx func(Database) error) error
 	// WaitAndLock obtains a DB with a session-level advisory lock.
-	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
+	WaitAndLock(ctx context.Context, id int64) (DatabaseLock, error)
+}
+
+type DatabaseLock interface {
+	Release()
 }
 
 // GetID retrieves the value corresponding to the ID field of a struct contained

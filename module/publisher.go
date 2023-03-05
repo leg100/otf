@@ -15,15 +15,15 @@ import (
 
 // Publisher publishes terraform modules.
 type Publisher struct {
-	otf.HookService // registering/de-registering webhook
+	otf.RepoService // registering/de-registering webhook
 	otf.Subscriber
 	otf.VCSProviderService
 	logr.Logger
 
-	app
+	service
 }
 
-// Start handling VCS events and publish modules in response to events
+// Start handling VCS events and create module versions for new VCS tags
 func (h *Publisher) Start(ctx context.Context) error {
 	h.V(2).Info("started")
 
@@ -57,7 +57,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		return nil, err
 	}
 
-	repo, err := client.GetRepository(ctx, opts.Identifier)
+	_, err = client.GetRepository(ctx, opts.Identifier)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving repository info")
 	}
@@ -82,21 +82,21 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 
 	// hook up module to a webhook - the callback establishes a relationship in
 	// the DB between the module and the webhook.
-	hookCallback := func(ctx context.Context, tx otf.Database, hookID uuid.UUID) error {
-		mod = NewModule(CreateModuleOptions{
+	hookCallback := func(ctx context.Context, tx otf.DB, hookID uuid.UUID) error {
+		mod = newModule(CreateModuleOptions{
 			Name:         name,
 			Provider:     provider,
 			Organization: opts.Organization,
-			Repo: &ModuleRepo{
+			Repo: &connection{
 				WebhookID:  hookID,
 				ProviderID: opts.ProviderID,
-				Identifier: repo.Identifier,
+				Identifier: opts.Identifier,
 			},
 		})
 
 		return createModule(ctx, tx, mod)
 	}
-	err = p.Hook(ctx, otf.HookOptions{
+	err = p.Hook(ctx, otf.ConnectionOptions{
 		Identifier:   opts.Identifier,
 		Cloud:        vcsProvider.CloudConfig.Name,
 		Client:       client,
@@ -115,7 +115,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	}
 	if len(tags) == 0 {
 		return p.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
-			ID:     mod.ID,
+			ID:     mod.id,
 			Status: ModuleStatusNoVersionTags,
 		})
 	}
@@ -133,12 +133,12 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		}
 
 		mod, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
-			ModuleID: mod.ID,
+			ModuleID: mod.id,
 			// strip off v prefix if it has one
 			Version:    strings.TrimPrefix(version, "v"),
 			Ref:        tag,
 			Identifier: opts.Identifier,
-			ProviderID: mod.Repo().ProviderID,
+			ProviderID: opts.ProviderID,
 		})
 		if err != nil {
 			return nil, err
@@ -149,40 +149,40 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 
 // PublishFromEvent publishes a module version in response to a vcs event.
 func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) error {
-	// only publish when new tag is created
-	tag, ok := event.(cloud.VCSTagEvent)
+	// only publish when new tagEvent is created
+	tagEvent, ok := event.(cloud.VCSTagEvent)
 	if !ok {
 		return nil
 	}
-	if tag.Action != cloud.VCSTagEventCreatedAction {
+	if tagEvent.Action != cloud.VCSTagEventCreatedAction {
 		return nil
 	}
 	// only interested in tags that look like semantic versions
-	if !semver.IsValid(tag.Tag) {
+	if !semver.IsValid(tagEvent.Tag) {
 		return nil
 	}
 
-	module, err := p.GetModuleByWebhookID(ctx, tag.WebhookID)
+	module, err := p.GetModuleByWebhookID(ctx, tagEvent.WebhookID)
 	if err != nil {
 		return err
 	}
-	if module.Repo() == nil {
-		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
+	if module.connection == nil {
+		return fmt.Errorf("module is not connected to a repo: %s", module.id)
 	}
 
 	// skip older or equal versions
-	latestVersion := module.Latest().Version()
-	if n := semver.Compare(tag.Tag, latestVersion); n <= 0 {
+	latestVersion := module.latest.Version()
+	if n := semver.Compare(tagEvent.Tag, latestVersion); n <= 0 {
 		return nil
 	}
 
 	_, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
-		ModuleID: module.ID,
+		ModuleID: module.id,
 		// strip off v prefix if it has one
-		Version:    strings.TrimPrefix(tag.Tag, "v"),
-		Ref:        tag.CommitSHA,
-		Identifier: tag.Identifier,
-		ProviderID: module.Repo().ProviderID,
+		Version:    strings.TrimPrefix(tagEvent.Tag, "v"),
+		Ref:        tagEvent.CommitSHA,
+		Identifier: tagEvent.Identifier,
+		ProviderID: module.connection.ProviderID,
 	})
 	if err != nil {
 		return err
@@ -221,14 +221,14 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 	})
 	if err != nil {
 		return UpdateModuleVersionStatus(ctx, p, UpdateModuleVersionStatusOptions{
-			ID:     modver.ID,
+			ID:     modver.id,
 			Status: ModuleVersionStatusCloneFailed,
 			Error:  err.Error(),
 		})
 	}
 
 	return p.Upload(ctx, UploadModuleVersionOptions{
-		ModuleVersionID: modver.ID,
-		Tarball:         tarball,
+		VersionID: modver.id,
+		Tarball:   tarball,
 	})
 }

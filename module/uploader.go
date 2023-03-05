@@ -5,7 +5,7 @@ import (
 )
 
 type uploader struct {
-	db
+	*pgdb
 	statusUpdater
 }
 
@@ -24,8 +24,8 @@ func (u *uploader) Upload(ctx context.Context, opts UploadModuleVersionOptions) 
 	}
 
 	// upload tarball and set status
-	err := u.tx(ctx, func(tx db) (err error) {
-		mod, modver, err = tx.UpdateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
+	err := u.tx(ctx, func(tx *pgdb) (err error) {
+		modver, err = tx.UpdateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
 			ID:     opts.ModuleVersionID,
 			Status: ModuleVersionStatusOk,
 		})

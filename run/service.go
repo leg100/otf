@@ -450,12 +450,7 @@ func (a *Service) finishPhase(ctx context.Context, runID string, phase otf.Phase
 		a.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("finished "+string(phase), "id", runID,
-		"additions", report.Additions,
-		"changes", report.Changes,
-		"destructions", report.Destructions,
-		"subject", subject,
-	)
+	a.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
 	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }

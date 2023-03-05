@@ -11,11 +11,11 @@ import (
 
 func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *Module {
 	createOpts := CreateModuleOptions{
-		Organization: org.Name(),
+		Organization: org.Name,
 		Provider:     uuid.NewString(),
 		Name:         uuid.NewString(),
 	}
-	mod := NewModule(createOpts)
+	mod := newModule(createOpts)
 	for _, o := range opts {
 		o(mod)
 	}
@@ -32,19 +32,19 @@ func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
 
 func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModuleOption {
 	return func(mod *Module) {
-		mod.Add(NewTestModuleVersion(mod, version, status))
+		mod.addNewVersion(NewTestModuleVersion(mod, version, status))
 	}
 }
 
 func WithModuleRepo() NewTestModuleOption {
 	return func(mod *Module) {
-		mod.repo = &ModuleRepo{}
+		mod.connection = &connection{}
 	}
 }
 
 func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
 	createOpts := CreateModuleVersionOptions{
-		ModuleID: mod.ID,
+		ModuleID: mod.id,
 		Version:  version,
 	}
 	modver := NewModuleVersion(createOpts)
@@ -52,10 +52,10 @@ func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatu
 	return modver
 }
 
-func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
+func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *Module {
 	ctx := context.Background()
 
-	module := otf.NewTestModule(org)
+	module := NewTestModule(org)
 	err := db.CreateModule(ctx, module)
 	require.NoError(t, err)
 

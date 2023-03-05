@@ -52,12 +52,12 @@ SELECT
     w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"workspace_repos" AS workspace_repo,
+    (vr.*)::"repo_connections" AS workspace_connection,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.name                LIKE pggen.arg('prefix') || '%'
 AND   w.organization_name   LIKE ANY(pggen.arg('organization_names'))
 ORDER BY w.updated_at DESC
@@ -77,12 +77,12 @@ SELECT
     w.*,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
-    (vr.*)::"workspace_repos" AS workspace_repo,
+    (vr.*)::"repo_connections" AS workspace_connection,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
-JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 
@@ -91,13 +91,13 @@ SELECT
     w.*,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
-    (vr.*)::"workspace_repos" AS workspace_repo,
+    (vr.*)::"repo_connections" AS workspace_connection,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
-LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u ON tm.user_id = u.user_id
@@ -148,12 +148,12 @@ AND workspaces.organization_name = pggen.arg('organization_name');
 SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"workspace_repos" AS workspace_repo,
+    (vr.*)::"repo_connections" AS workspace_connection,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.name              = pggen.arg('name')
 AND   w.organization_name = pggen.arg('organization_name')
 ;
@@ -162,12 +162,12 @@ AND   w.organization_name = pggen.arg('organization_name')
 SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"workspace_repos" AS workspace_repo,
+    (vr.*)::"repo_connections" AS workspace_connection,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.workspace_id = pggen.arg('id')
 ;
 
@@ -175,12 +175,12 @@ WHERE w.workspace_id = pggen.arg('id')
 SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"workspace_repos" AS workspace_repo,
+    (vr.*)::"repo_connections" AS workspace_connection,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.workspace_id = pggen.arg('id')
 FOR UPDATE OF w;
 

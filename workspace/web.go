@@ -406,7 +406,7 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	stack.Push(html.FlashSuccessType, "disconnected workspace from repo")
 	stack.Write(w)
 
-	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 
 func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {

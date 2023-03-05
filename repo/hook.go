@@ -1,5 +1,4 @@
-// Package hooks manages webhooks on VCS repos.
-package hooks
+package repo
 
 import (
 	"context"

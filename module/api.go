@@ -15,7 +15,7 @@ import (
 type api struct {
 	*surl.Signer
 
-	app application
+	svc service
 }
 
 // Implements the Module Registry Protocol:
@@ -28,10 +28,6 @@ func (h *api) addHandlers(r *mux.Router) {
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
 	signed.Use(otf.VerifySignedURL(h.Signer))
 	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
-}
-
-type listModuleVersionsResponse struct {
-	Modules []module
 }
 
 type module struct {
@@ -50,23 +46,33 @@ func (h *api) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mod, err := h.app.GetModule(r.Context(), opts)
+	mod, err := h.svc.GetModule(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-type", "application/json")
-	response := listModuleVersionsResponse{
-		Modules: []module{
+
+	type responseVersion struct {
+		Version string
+	}
+	type responseModule struct {
+		Source   string
+		Versions []responseVersion
+	}
+	response := struct {
+		Modules []responseModule
+	}{
+		Modules: []responseModule{
 			{
 				Source: strings.Join([]string{opts.Organization, opts.Provider, opts.Name}, "/"),
 			},
 		},
 	}
-	for _, ver := range mod.Versions() {
-		response.Modules[0].Versions = append(response.Modules[0].Versions, moduleVersion{
-			Version: ver.Version(),
+	for _, ver := range mod.versions {
+		response.Modules[0].Versions = append(response.Modules[0].Versions, responseVersion{
+			Version: ver.version,
 		})
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -75,28 +81,28 @@ func (h *api) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+	var params struct {
 		GetModuleOptions
 		Version string
-	}{}
+	}
 	if err := decode.Route(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	mod, err := h.app.GetModule(r.Context(), params.GetModuleOptions)
+	mod, err := h.svc.GetModule(r.Context(), params.GetModuleOptions)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	version := mod.Version(params.Version)
+	version := mod.versions[params.Version]
 	if version == nil {
 		http.Error(w, "version not found", http.StatusNotFound)
 		return
 	}
 
-	signed, err := h.Sign("/modules/download/"+version.ID+".tar.gz", time.Hour)
+	signed, err := h.Sign("/modules/download/"+version.id+".tar.gz", time.Hour)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -113,7 +119,7 @@ func (h *api) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tarball, err := h.app.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
+	tarball, err := h.svc.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
 		ModuleVersionID: id,
 	})
 	if err != nil {

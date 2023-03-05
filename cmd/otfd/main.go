@@ -157,9 +157,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Setup url signer
 	signer := otf.NewSigner(d.secret)
 
-	// Authorizer for site-wide access
-	siteAuthorizer := otf.NewSiteAuthorizer(logger)
-
 	// Web app template renderer
 	renderer, err := html.NewViewEngine(d.DevMode)
 	if err != nil {

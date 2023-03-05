@@ -172,13 +172,6 @@ type Querier interface {
 	// InsertModuleScan scans the result of an executed InsertModuleBatch query.
 	InsertModuleScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertModuleRepo(ctx context.Context, params InsertModuleRepoParams) (pgconn.CommandTag, error)
-	// InsertModuleRepoBatch enqueues a InsertModuleRepo query into batch to be executed
-	// later by the batch.
-	InsertModuleRepoBatch(batch genericBatch, params InsertModuleRepoParams)
-	// InsertModuleRepoScan scans the result of an executed InsertModuleRepoBatch query.
-	InsertModuleRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
 	InsertModuleVersion(ctx context.Context, params InsertModuleVersionParams) (InsertModuleVersionRow, error)
 	// InsertModuleVersionBatch enqueues a InsertModuleVersion query into batch to be executed
 	// later by the batch.
@@ -241,13 +234,6 @@ type Querier interface {
 	UpdateModuleVersionStatusByIDBatch(batch genericBatch, params UpdateModuleVersionStatusByIDParams)
 	// UpdateModuleVersionStatusByIDScan scans the result of an executed UpdateModuleVersionStatusByIDBatch query.
 	UpdateModuleVersionStatusByIDScan(results pgx.BatchResults) (UpdateModuleVersionStatusByIDRow, error)
-
-	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
-	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
-	// later by the batch.
-	DeleteModuleByIDBatch(batch genericBatch, id pgtype.Text)
-	// DeleteModuleByIDScan scans the result of an executed DeleteModuleByIDBatch query.
-	DeleteModuleByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
@@ -437,6 +423,34 @@ type Querier interface {
 	DeleteExpiredRegistrySessionsBatch(batch genericBatch)
 	// DeleteExpiredRegistrySessionsScan scans the result of an executed DeleteExpiredRegistrySessionsBatch query.
 	DeleteExpiredRegistrySessionsScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	InsertRepoConnection(ctx context.Context, params InsertRepoConnectionParams) (pgconn.CommandTag, error)
+	// InsertRepoConnectionBatch enqueues a InsertRepoConnection query into batch to be executed
+	// later by the batch.
+	InsertRepoConnectionBatch(batch genericBatch, params InsertRepoConnectionParams)
+	// InsertRepoConnectionScan scans the result of an executed InsertRepoConnectionBatch query.
+	InsertRepoConnectionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (*int, error)
+	// CountRepoConnectionsByIDBatch enqueues a CountRepoConnectionsByID query into batch to be executed
+	// later by the batch.
+	CountRepoConnectionsByIDBatch(batch genericBatch, webhookID pgtype.UUID)
+	// CountRepoConnectionsByIDScan scans the result of an executed CountRepoConnectionsByIDBatch query.
+	CountRepoConnectionsByIDScan(results pgx.BatchResults) (*int, error)
+
+	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (pgtype.UUID, error)
+	// DeleteWorkspaceConnectionByIDBatch enqueues a DeleteWorkspaceConnectionByID query into batch to be executed
+	// later by the batch.
+	DeleteWorkspaceConnectionByIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// DeleteWorkspaceConnectionByIDScan scans the result of an executed DeleteWorkspaceConnectionByIDBatch query.
+	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
+
+	DeleteModuleConnectionByID(ctx context.Context, id pgtype.Text) (pgtype.UUID, error)
+	// DeleteModuleConnectionByIDBatch enqueues a DeleteModuleConnectionByID query into batch to be executed
+	// later by the batch.
+	DeleteModuleConnectionByIDBatch(batch genericBatch, id pgtype.Text)
+	// DeleteModuleConnectionByIDScan scans the result of an executed DeleteModuleConnectionByIDBatch query.
+	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
@@ -851,12 +865,12 @@ type Querier interface {
 	// DeleteVCSProviderByIDScan scans the result of an executed DeleteVCSProviderByIDBatch query.
 	DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpsertWebhook(ctx context.Context, params UpsertWebhookParams) (UpsertWebhookRow, error)
-	// UpsertWebhookBatch enqueues a UpsertWebhook query into batch to be executed
+	InsertWebhook(ctx context.Context, params InsertWebhookParams) (InsertWebhookRow, error)
+	// InsertWebhookBatch enqueues a InsertWebhook query into batch to be executed
 	// later by the batch.
-	UpsertWebhookBatch(batch genericBatch, params UpsertWebhookParams)
-	// UpsertWebhookScan scans the result of an executed UpsertWebhookBatch query.
-	UpsertWebhookScan(results pgx.BatchResults) (UpsertWebhookRow, error)
+	InsertWebhookBatch(batch genericBatch, params InsertWebhookParams)
+	// InsertWebhookScan scans the result of an executed InsertWebhookBatch query.
+	InsertWebhookScan(results pgx.BatchResults) (InsertWebhookRow, error)
 
 	UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, webhookID pgtype.UUID) (UpdateWebhookVCSIDRow, error)
 	// UpdateWebhookVCSIDBatch enqueues a UpdateWebhookVCSID query into batch to be executed
@@ -872,19 +886,12 @@ type Querier interface {
 	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
 	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
 
-	FindWebhookByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) (FindWebhookByRepoRow, error)
-	// FindWebhookByRepoBatch enqueues a FindWebhookByRepo query into batch to be executed
+	FindWebhooksByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) ([]FindWebhooksByRepoRow, error)
+	// FindWebhooksByRepoBatch enqueues a FindWebhooksByRepo query into batch to be executed
 	// later by the batch.
-	FindWebhookByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
-	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
-	FindWebhookByRepoScan(results pgx.BatchResults) (FindWebhookByRepoRow, error)
-
-	DisconnectWebhook(ctx context.Context, webhookID pgtype.UUID) (DisconnectWebhookRow, error)
-	// DisconnectWebhookBatch enqueues a DisconnectWebhook query into batch to be executed
-	// later by the batch.
-	DisconnectWebhookBatch(batch genericBatch, webhookID pgtype.UUID)
-	// DisconnectWebhookScan scans the result of an executed DisconnectWebhookBatch query.
-	DisconnectWebhookScan(results pgx.BatchResults) (DisconnectWebhookRow, error)
+	FindWebhooksByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
+	// FindWebhooksByRepoScan scans the result of an executed FindWebhooksByRepoBatch query.
+	FindWebhooksByRepoScan(results pgx.BatchResults) ([]FindWebhooksByRepoRow, error)
 
 	DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookByIDRow, error)
 	// DeleteWebhookByIDBatch enqueues a DeleteWebhookByID query into batch to be executed
@@ -1032,27 +1039,6 @@ type Querier interface {
 	DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamName pgtype.Text)
 	// DeleteWorkspacePermissionByIDScan scans the result of an executed DeleteWorkspacePermissionByIDBatch query.
 	DeleteWorkspacePermissionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertWorkspaceRepo(ctx context.Context, params InsertWorkspaceRepoParams) (pgconn.CommandTag, error)
-	// InsertWorkspaceRepoBatch enqueues a InsertWorkspaceRepo query into batch to be executed
-	// later by the batch.
-	InsertWorkspaceRepoBatch(batch genericBatch, params InsertWorkspaceRepoParams)
-	// InsertWorkspaceRepoScan scans the result of an executed InsertWorkspaceRepoBatch query.
-	InsertWorkspaceRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	UpdateWorkspaceRepoByID(ctx context.Context, branch pgtype.Text, workspaceID pgtype.Text) (pgtype.Text, error)
-	// UpdateWorkspaceRepoByIDBatch enqueues a UpdateWorkspaceRepoByID query into batch to be executed
-	// later by the batch.
-	UpdateWorkspaceRepoByIDBatch(batch genericBatch, branch pgtype.Text, workspaceID pgtype.Text)
-	// UpdateWorkspaceRepoByIDScan scans the result of an executed UpdateWorkspaceRepoByIDBatch query.
-	UpdateWorkspaceRepoByIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	DeleteWorkspaceRepoByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceRepoByIDRow, error)
-	// DeleteWorkspaceRepoByIDBatch enqueues a DeleteWorkspaceRepoByID query into batch to be executed
-	// later by the batch.
-	DeleteWorkspaceRepoByIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// DeleteWorkspaceRepoByIDScan scans the result of an executed DeleteWorkspaceRepoByIDBatch query.
-	DeleteWorkspaceRepoByIDScan(results pgx.BatchResults) (DeleteWorkspaceRepoByIDRow, error)
 }
 
 type DBQuerier struct {
@@ -1193,9 +1179,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModule': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertModuleRepoSQL, insertModuleRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertModuleRepo': %w", err)
-	}
 	if _, err := p.Prepare(ctx, insertModuleVersionSQL, insertModuleVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModuleVersion': %w", err)
 	}
@@ -1222,9 +1205,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateModuleVersionStatusByIDSQL, updateModuleVersionStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateModuleVersionStatusByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
@@ -1306,6 +1286,18 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteExpiredRegistrySessionsSQL, deleteExpiredRegistrySessionsSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteExpiredRegistrySessions': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertRepoConnectionSQL, insertRepoConnectionSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRepoConnection': %w", err)
+	}
+	if _, err := p.Prepare(ctx, countRepoConnectionsByIDSQL, countRepoConnectionsByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountRepoConnectionsByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteWorkspaceConnectionByIDSQL, deleteWorkspaceConnectionByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWorkspaceConnectionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteModuleConnectionByIDSQL, deleteModuleConnectionByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteModuleConnectionByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRun': %w", err)
@@ -1484,8 +1476,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteVCSProviderByIDSQL, deleteVCSProviderByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVCSProviderByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, upsertWebhookSQL, upsertWebhookSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpsertWebhook': %w", err)
+	if _, err := p.Prepare(ctx, insertWebhookSQL, insertWebhookSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWebhook': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateWebhookVCSIDSQL, updateWebhookVCSIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWebhookVCSID': %w", err)
@@ -1493,11 +1485,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)
-	}
-	if _, err := p.Prepare(ctx, disconnectWebhookSQL, disconnectWebhookSQL); err != nil {
-		return fmt.Errorf("prepare query 'DisconnectWebhook': %w", err)
+	if _, err := p.Prepare(ctx, findWebhooksByRepoSQL, findWebhooksByRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhooksByRepo': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWebhookByIDSQL, deleteWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhookByID': %w", err)
@@ -1562,15 +1551,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertWorkspaceRepoSQL, insertWorkspaceRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertWorkspaceRepo': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateWorkspaceRepoByIDSQL, updateWorkspaceRepoByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateWorkspaceRepoByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspaceRepoByIDSQL, deleteWorkspaceRepoByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspaceRepoByID': %w", err)
-	}
 	return nil
 }
 
@@ -1591,13 +1571,6 @@ type IngressAttributes struct {
 	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
 }
 
-// ModuleRepos represents the Postgres composite type "module_repos".
-type ModuleRepos struct {
-	WebhookID     pgtype.UUID `json:"webhook_id"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-	ModuleID      pgtype.Text `json:"module_id"`
-}
-
 // ModuleVersions represents the Postgres composite type "module_versions".
 type ModuleVersions struct {
 	ModuleVersionID pgtype.Text        `json:"module_version_id"`
@@ -1615,6 +1588,14 @@ type PhaseStatusTimestamps struct {
 	Phase     pgtype.Text        `json:"phase"`
 	Status    pgtype.Text        `json:"status"`
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
+}
+
+// RepoConnections represents the Postgres composite type "repo_connections".
+type RepoConnections struct {
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	ModuleID      pgtype.Text `json:"module_id"`
+	WorkspaceID   pgtype.Text `json:"workspace_id"`
 }
 
 // Report represents the Postgres composite type "report".
@@ -1685,7 +1666,6 @@ type Webhooks struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	Cloud      pgtype.Text `json:"cloud"`
-	Connected  int         `json:"connected"`
 }
 
 // WorkspacePermissions represents the Postgres composite type "workspace_permissions".
@@ -1693,14 +1673,6 @@ type WorkspacePermissions struct {
 	WorkspaceID pgtype.Text `json:"workspace_id"`
 	TeamID      pgtype.Text `json:"team_id"`
 	Role        pgtype.Text `json:"role"`
-}
-
-// WorkspaceRepos represents the Postgres composite type "workspace_repos".
-type WorkspaceRepos struct {
-	Branch        pgtype.Text `json:"branch"`
-	WebhookID     pgtype.UUID `json:"webhook_id"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-	WorkspaceID   pgtype.Text `json:"workspace_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1814,17 +1786,6 @@ func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
 	)
 }
 
-// newModuleRepos creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'module_repos'.
-func (tr *typeResolver) newModuleRepos() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"module_repos",
-		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
-		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
-		compositeField{"module_id", "text", &pgtype.Text{}},
-	)
-}
-
 // newModuleVersions creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'module_versions'.
 func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
@@ -1849,6 +1810,18 @@ func (tr *typeResolver) newPhaseStatusTimestamps() pgtype.ValueTranscoder {
 		compositeField{"phase", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+	)
+}
+
+// newRepoConnections creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'repo_connections'.
+func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"repo_connections",
+		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+		compositeField{"module_id", "text", &pgtype.Text{}},
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)
 }
 
@@ -1947,7 +1920,6 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
 		compositeField{"cloud", "text", &pgtype.Text{}},
-		compositeField{"connected", "int4", &pgtype.Int4{}},
 	)
 }
 
@@ -1959,18 +1931,6 @@ func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
 		compositeField{"team_id", "text", &pgtype.Text{}},
 		compositeField{"role", "text", &pgtype.Text{}},
-	)
-}
-
-// newWorkspaceRepos creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspace_repos'.
-func (tr *typeResolver) newWorkspaceRepos() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspace_repos",
-		compositeField{"branch", "text", &pgtype.Text{}},
-		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
-		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)
 }
 

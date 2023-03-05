@@ -47,13 +47,6 @@ type Subscriber interface {
 
 // EventService allows interacting with events. Access is authenticated.
 type EventService interface {
-	// Watch provides access to a stream of events. The WatchOptions filters
-	// events. Context must be cancelled to close stream.
-	//
-	// TODO(@leg100): it would be clearer to the caller if the stream is closed by
-	// returning a stream object with a Close() method. The calling code would
-	// call Watch(), and then defer a Close(), which is more readable IMO.
-	Watch(context.Context, WatchOptions) (<-chan Event, error)
 	// WatchLogs provides access to a stream of phase logs. The WatchLogsOptions filters
 	// events. Context must be cancelled to close stream.
 	//
@@ -61,15 +54,6 @@ type EventService interface {
 	// returning a stream object with a Close() method. The calling code would
 	// call WatchLogs(), and then defer a Close(), which is more readable IMO.
 	WatchLogs(context.Context, WatchLogsOptions) (<-chan Chunk, error)
-}
-
-// WatchOptions filters events returned by the Watch endpoint.
-type WatchOptions struct {
-	// Name to uniquely describe the watcher. If not provided then a
-	// name will be auto generated.
-	Name         *string
-	Organization *string `schema:"organization_name"` // filter by organization name
-	WorkspaceID  *string `schema:"workspace_id"`      // filter by workspace ID; mutually exclusive with organization filter
 }
 
 // WatchLogsOptions filters logs returned by the WatchLogs endpoint.

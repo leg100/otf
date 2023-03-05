@@ -14,7 +14,7 @@ func TestApp(t *testing.T) {
 	// input event channel
 	in := make(chan otf.Event, 1)
 
-	app := &app{
+	app := &Service{
 		Authorizer:    otf.NewAllowAllAuthorizer(),
 		Logger:        logr.Discard(),
 		PubSubService: &fakePubSubService{ch: in},

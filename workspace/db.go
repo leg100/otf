@@ -100,7 +100,7 @@ func newdb(db otf.DB) *pgdb {
 }
 
 func (db *pgdb) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
-	err := db.Transaction(ctx, func(tx otf.Database) error {
+	err := db.Tx(ctx, func(tx *sql.DB) error {
 		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 			ID:                         sql.String(ws.ID),
 			CreatedAt:                  sql.Timestamptz(ws.CreatedAt),

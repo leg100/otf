@@ -20,7 +20,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts otf.RunCr
 		return nil, err
 	}
 
-	var cv otf.ConfigurationVersion
+	var cv *otf.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
 		cv, err = f.GetConfigurationVersion(ctx, *opts.ConfigurationVersionID)
 	} else {

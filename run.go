@@ -72,7 +72,7 @@ type (
 )
 
 // NewRun creates a new run with defaults.
-func NewRun(cv ConfigurationVersion, ws Workspace, opts RunCreateOptions) *Run {
+func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		ID:                     NewID("run"),
 		CreatedAt:              CurrentTimestamp(),

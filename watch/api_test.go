@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	otfrun "github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +28,7 @@ func TestWatch(t *testing.T) {
 	}
 
 	srv := &api{
-		app:                 &fakeApp{ch: in},
+		svc:                 &fakeApp{ch: in},
 		Logger:              logr.Discard(),
 		eventsServer:        &fakeEventsServer{published: out},
 		runJSONAPIConverter: &fakeRunJSONAPIConverter{want: want.Data},

@@ -26,7 +26,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf
 		return nil, err
 	}
 
-	var cv otf.ConfigurationVersion
+	var cv *otf.ConfigurationVersion
 	if ws.Repo != nil {
 		client, err := rs.GetVCSClient(ctx, ws.Repo.ProviderID)
 		if err != nil {

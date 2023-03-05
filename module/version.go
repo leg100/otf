@@ -43,14 +43,6 @@ func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	}
 }
 
-func (v *ModuleVersion) ID() string                  { return v.id }
-func (v *ModuleVersion) ModuleID() string            { return v.moduleID }
-func (v *ModuleVersion) Version() string             { return v.version }
-func (v *ModuleVersion) Status() ModuleVersionStatus { return v.status }
-func (v *ModuleVersion) StatusError() string         { return v.statusError }
-func (v *ModuleVersion) CreatedAt() time.Time        { return v.createdAt }
-func (v *ModuleVersion) UpdatedAt() time.Time        { return v.updatedAt }
-
 func (v *ModuleVersion) MarshalLog() any {
 	return struct {
 		ID, ModuleID, Version string

@@ -51,10 +51,6 @@ func NewService(opts Options) *Service {
 
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.site = &otf.SiteAuthorizer{opts.Logger}
-	svc.authorizer = &authorizer{
-		Logger: opts.Logger,
-		db:     svc.db,
-	}
 
 	svc.api = &api{
 		svc:             &svc,
@@ -66,7 +62,19 @@ func NewService(opts Options) *Service {
 		sessionMiddleware: opts.SessionMiddleware,
 	}
 
-	return &svc
+	return serviceWithDB(&svc, newdb(opts.DB))
+}
+
+func serviceWithDB(parent *Service, db *pgdb) *Service {
+	child := *parent
+	child.db = db
+	child.authorizer = &authorizer{
+		Logger: parent.Logger,
+		db:     db,
+	}
+	// TODO: construct connector
+
+	return &child
 }
 
 type Options struct {
@@ -317,4 +325,11 @@ func (a *Service) delete(ctx context.Context, workspaceID string) (*otf.Workspac
 // SetCurrentRun sets the current run for the workspace
 func (a *Service) setCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
+}
+
+// tx returns a service in a callback, with its database calls wrapped within a transaction
+func (a *Service) tx(ctx context.Context, txFunc func(*Service) error) error {
+	return a.db.Tx(ctx, func(db otf.DB) error {
+		return txFunc(serviceWithDB(a, newdb(db)))
+	})
 }

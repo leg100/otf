@@ -8,11 +8,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-// cacheKey generates a key for caching log chunks.
-func cacheKey(runID string, phase otf.PhaseType) string {
-	return fmt.Sprintf("%s.%s.log", runID, string(phase))
-}
-
 // proxy is a caching proxy for log chunks
 type proxy struct {
 	cache otf.Cache
@@ -114,4 +109,9 @@ func (c *proxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
 		return err
 	}
 	return c.cache.Set(key, all.Data)
+}
+
+// cacheKey generates a key for caching log chunks.
+func cacheKey(runID string, phase otf.PhaseType) string {
+	return fmt.Sprintf("%s.%s.log", runID, string(phase))
 }

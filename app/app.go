@@ -31,7 +31,7 @@ type Application struct {
 	*otf.RunFactory
 	*otf.VCSProviderFactory
 	otf.WorkspaceConnector
-	otf.HookService
+	otf.RepoService
 	*otf.RunStarter
 	*module.Publisher
 	*otf.ModuleVersionUploader
@@ -90,12 +90,12 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		WorkspaceService:            child,
 		ConfigurationVersionService: child,
 	}
-	child.HookService = hooks.NewService(hooks.NewServiceOptions{
+	child.RepoService = hooks.NewService(hooks.NewServiceOptions{
 		Database:     db,
 		CloudService: child.Service,
 	})
 	child.WorkspaceConnector = &workspace.Connector{
-		HookService:        child,
+		RepoService:        child,
 		WorkspaceService:   child,
 		VCSProviderService: child,
 	}

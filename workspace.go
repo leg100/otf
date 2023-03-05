@@ -32,8 +32,7 @@ var (
 )
 
 type (
-
-	// Workspace represents a Terraform Enterprise workspace.
+	// Workspace is a terraform workspace.
 	Workspace struct {
 		ID                         string
 		CreatedAt                  time.Time
@@ -66,17 +65,10 @@ type (
 
 	ExecutionMode string
 
-	// WorkspaceList represents a list of Workspaces.
+	// WorkspaceList is a list of workspaces.
 	WorkspaceList struct {
 		*Pagination
 		Items []*Workspace
-	}
-
-	// WorkspaceResource is a resource that is associated with a workspace,
-	// (including a workspace), e.g. a Run, StateVersion, etc.
-	WorkspaceResource interface {
-		WorkspaceID() string
-		Organization() string
 	}
 
 	// CreateWorkspaceOptions represents the options for creating a new workspace.
@@ -149,16 +141,16 @@ type (
 	}
 
 	WorkspaceService interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
-		GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
+		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error)
-		ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (WorkspaceList, error)
+		ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 		//
 		// TODO: rename to ListConnectedWorkspaces
-		ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]Workspace, error)
+		ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
 		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
-		DeleteWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
+		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
 		WorkspacePermissionService
 	}
@@ -270,10 +262,6 @@ func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
 }
 
 func (ws *Workspace) String() string { return ws.Organization + "/" + ws.Name }
-
-// WorkspaceID returns the workspace's ID. Implemented in order to satisfy
-// WorkspaceResource.
-func (ws *Workspace) WorkspaceID() string { return ws.ID }
 
 func (ws *Workspace) SetLatestRun(runID string) {
 	ws.LatestRunID = String(runID)

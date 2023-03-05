@@ -79,25 +79,3 @@ func NewRun(t *testing.T, opts TestRunCreateOptions) *otf.Run {
 	}
 	return run
 }
-
-type fakeRunFactoryWorkspaceService struct {
-	ws *Workspace
-	WorkspaceService
-}
-
-func (f *fakeRunFactoryWorkspaceService) GetWorkspace(context.Context, string) (*Workspace, error) {
-	return f.ws, nil
-}
-
-type fakeRunFactoryConfigurationVersionService struct {
-	cv *ConfigurationVersion
-	ConfigurationVersionService
-}
-
-func (f *fakeRunFactoryConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
-	return f.cv, nil
-}
-
-func (f *fakeRunFactoryConfigurationVersionService) GetLatestConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
-	return f.cv, nil
-}
