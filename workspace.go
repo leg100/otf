@@ -2,12 +2,12 @@ package otf
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -332,6 +332,40 @@ type WorkspaceStore interface {
 	WorkspaceLockService
 	CurrentRunService
 	WorkspacePermissionService
+}
+
+func CreateWorkspace(ctx context.Context, app Application, opts CreateWorkspaceOptions) (*Workspace, error) {
+	var (
+		ws  *Workspace
+		err error
+	)
+
+	err = app.Tx(ctx, func(a Application) error {
+		// First create the workspace.
+		ws, err = a.CreateWorkspace(ctx, opts)
+		if err != nil {
+			return err
+		}
+
+		// If needed, connect the VCS repository.
+		if repo := opts.Repo; repo != nil {
+			err = a.ConnectWorkspace(ctx, ws.ID(), ConnectWorkspaceOptions{
+				ProviderID: repo.ProviderID,
+				Identifier: repo.Identifier,
+				Branch:     repo.Branch,
+			})
+			if err != nil {
+				return errors.Wrap(err, "connecting workspace")
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ws, nil
 }
 
 // CurrentRunService provides interaction with the current run for a workspace,

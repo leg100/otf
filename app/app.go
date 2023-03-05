@@ -74,7 +74,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		cache:               opts.Cache,
 		PubSubService:       opts.PubSub,
 		Service:             opts.CloudService,
-		Authorizer:          opts.Authorizer,
+		Authorizer:          otf.NewAuthorizer(opts.Logger, db),
 		StateVersionService: opts.StateVersionService,
 		RunFactory:          parent.RunFactory,
 		proxy:               parent.proxy,
