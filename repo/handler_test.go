@@ -18,7 +18,7 @@ func TestWebhookHandler(t *testing.T) {
 	handler := handler{
 		events: got,
 		Logger: logr.Discard(),
-		db:     &fakeDB{hook: hook},
+		db:     &fakeHandlerDB{hook: hook},
 	}
 
 	w := httptest.NewRecorder()

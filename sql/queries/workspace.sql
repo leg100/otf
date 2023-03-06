@@ -5,6 +5,7 @@ INSERT INTO workspaces (
     updated_at,
     allow_destroy_plan,
     auto_apply,
+    branch,
     can_queue_destroy_plan,
     description,
     environment,
@@ -28,6 +29,7 @@ INSERT INTO workspaces (
     pggen.arg('updated_at'),
     pggen.arg('allow_destroy_plan'),
     pggen.arg('auto_apply'),
+    pggen.arg('branch'),
     pggen.arg('can_queue_destroy_plan'),
     pggen.arg('description'),
     pggen.arg('environment'),
@@ -189,6 +191,7 @@ UPDATE workspaces
 SET
     allow_destroy_plan              = pggen.arg('allow_destroy_plan'),
     auto_apply                      = pggen.arg('auto_apply'),
+    branch                          = pggen.arg('branch'),
     description                     = pggen.arg('description'),
     execution_mode                  = pggen.arg('execution_mode'),
     name                            = pggen.arg('name'),

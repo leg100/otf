@@ -21,12 +21,12 @@ WHERE webhook_id = pggen.arg('webhook_id')
 DELETE
 FROM repo_connections
 WHERE workspace_id = pggen.arg('workspace_id')
-RETURNING webhook_id
+RETURNING webhook_id, vcs_provider_id
 ;
 
 -- name: DeleteModuleConnectionByID :one
 DELETE
 FROM repo_connections
 WHERE module_id = pggen.arg('id')
-RETURNING webhook_id
+RETURNING webhook_id, vcs_provider_id
 ;

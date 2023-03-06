@@ -7,55 +7,78 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/sql"
 )
 
 type Service struct {
 	logr.Logger
 	otf.VCSProviderService
+	otf.DB
 
-	db      *pgdb // access to hook database
-	factory       // produce new hooks
+	factory // produce new hooks
+	*handler
 }
 
 func NewService(opts NewServiceOptions) *Service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
+	handler := &handler{
+		Logger:        opts.Logger,
+		PubSubService: opts.PubSubService,
+		db:            newPGDB(opts.DB, factory),
+	}
 	return &Service{
 		Logger:             opts.Logger,
 		VCSProviderService: opts.VCSProviderService,
-		db:                 newPGDB(opts.DB, factory),
+		DB:                 opts.DB,
 		factory:            factory,
+		handler:            handler,
 	}
 }
 
 type NewServiceOptions struct {
 	CloudService cloud.Service
 
-	*sql.DB
+	otf.DB
 	logr.Logger
 	otf.HostnameService
+	otf.PubSubService
 	otf.VCSProviderService
 }
 
 // Connect an OTF resource to a VCS repo.
-func (s *Service) Connect(ctx context.Context, opts otf.ConnectionOptions) error {
-	unsynced, err := s.newHook(newHookOpts{
-		identifier: opts.Identifier,
-		cloud:      opts.Cloud,
-	})
+func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Connection, error) {
+	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	_, err = client.GetRepository(ctx, opts.Identifier)
+	if err != nil {
+		return nil, fmt.Errorf("checking repository exists: %w", err)
+	}
+
+	hook, err := s.newHook(newHookOpts{
+		identifier: opts.Identifier,
+		cloud:      vcsProvider.CloudConfig().Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// allow caller to provide their own tx
+	var db *pgdb
+	if opts.Tx != nil {
+		db = newPGDB(opts.Tx, s.factory)
+	} else {
+		db = newPGDB(s.DB, s.factory)
 	}
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	return s.db.lock(ctx, func(tx *pgdb) error {
-		hook, err := tx.getOrCreate(ctx, unsynced)
+	err = db.lock(ctx, func(tx *pgdb) error {
+		hook, err = tx.getOrCreateHook(ctx, hook)
 		if err != nil {
 			return err
 		}
@@ -64,26 +87,40 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectionOptions) error
 			return err
 		}
 
-		if err := tx.updateCloudID(ctx, hook.id, *hook.cloudID); err != nil {
+		if err := tx.updateHookCloudID(ctx, hook.id, *hook.cloudID); err != nil {
 			return err
 		}
 
 		return tx.createConnection(ctx, hook.id, opts)
 	})
+	return &otf.Connection{
+		WebhookID:     hook.id,
+		VCSProviderID: opts.VCSProviderID,
+		Identifier:    opts.Identifier,
+	}, nil
 }
 
+// Disconnect resource from repo
+//
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
 // fatal and the hook is still deleted from the database.
-func (s *Service) Disconnect(ctx context.Context, opts otf.ConnectionOptions) error {
+func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) error {
 	// separately capture any error resulting from attempting to delete the
 	// webhook from the VCS repo
 	var repoErr error
 
+	// allow caller to provide their own tx
+	var db *pgdb
+	if opts.Tx != nil {
+		db = newPGDB(opts.Tx, s.factory)
+	} else {
+		db = newPGDB(s.DB, s.factory)
+	}
+
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err := s.db.lock(ctx, func(tx *pgdb) error {
-		// disconnect connected resource
-		hookID, err := tx.deleteConnection(ctx, opts)
+	err := db.lock(ctx, func(tx *pgdb) error {
+		hookID, vcsProviderID, err := tx.deleteConnection(ctx, opts)
 		if err != nil {
 			return err
 		}
@@ -102,7 +139,7 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.ConnectionOptions) er
 		if err != nil {
 			return err
 		}
-		client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
+		client, err := s.GetVCSClient(ctx, vcsProviderID)
 		if err != nil {
 			return err
 		}
@@ -111,6 +148,7 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.ConnectionOptions) er
 			ID:         *hook.cloudID,
 		})
 		if err != nil {
+			s.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
 			repoErr = fmt.Errorf("%w: unable to delete webhook from repo: %w", otf.ErrWarning, err)
 		} else {
 			s.V(0).Info("deleted webhook", "repo", hook.identifier, "cloud", hook.cloud)

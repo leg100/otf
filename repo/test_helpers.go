@@ -80,11 +80,10 @@ func (f *fakeCloudClient) UpdateWebhook(context.Context, cloud.UpdateWebhookOpti
 	return nil
 }
 
-type fakeDB struct {
+type fakeHandlerDB struct {
 	hook *hook
-	db
 }
 
-func (db *fakeDB) get(context.Context, uuid.UUID) (*hook, error) {
+func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) {
 	return db.hook, nil
 }

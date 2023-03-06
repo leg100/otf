@@ -149,7 +149,7 @@ func (r *reporter) handleRun(ctx context.Context, run *otf.Run) error {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
 	}
 
-	client, err := r.GetVCSClient(ctx, ws.Repo.ProviderID)
+	client, err := r.GetVCSClient(ctx, ws.Repo.VCSProviderID)
 	if err != nil {
 		return err
 	}

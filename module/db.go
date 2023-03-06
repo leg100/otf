@@ -25,37 +25,21 @@ type (
 		Provider         pgtype.Text            `json:"provider"`
 		Status           pgtype.Text            `json:"status"`
 		OrganizationName pgtype.Text            `json:"organization_name"`
-		ModuleRepo       *pggen.ModuleRepos     `json:"module_repo"`
+		ModuleRepo       *pggen.RepoConnections `json:"module_repo"`
 		Webhook          *pggen.Webhooks        `json:"webhook"`
 		Versions         []pggen.ModuleVersions `json:"versions"`
 	}
 )
 
 func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {
-	err := db.Tx(ctx, func(tx otf.DB) error {
-		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
-			ID:               sql.String(mod.id),
-			CreatedAt:        sql.Timestamptz(mod.createdAt),
-			UpdatedAt:        sql.Timestamptz(mod.updatedAt),
-			Name:             sql.String(mod.name),
-			Provider:         sql.String(mod.provider),
-			Status:           sql.String(string(mod.status)),
-			OrganizationName: sql.String(mod.organization),
-		})
-		if err != nil {
-			return err
-		}
-		if mod.connection != nil {
-			_, err = tx.InsertModuleRepo(ctx, pggen.InsertModuleRepoParams{
-				WebhookID:     sql.UUID(mod.connection.WebhookID),
-				VCSProviderID: sql.String(mod.connection.ProviderID),
-				ModuleID:      sql.String(mod.id),
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+	_, err := db.InsertModule(ctx, pggen.InsertModuleParams{
+		ID:               sql.String(mod.id),
+		CreatedAt:        sql.Timestamptz(mod.createdAt),
+		UpdatedAt:        sql.Timestamptz(mod.updatedAt),
+		Name:             sql.String(mod.name),
+		Provider:         sql.String(mod.provider),
+		Status:           sql.String(string(mod.status)),
+		OrganizationName: sql.String(mod.organization),
 	})
 	return sql.Error(err)
 }
@@ -163,7 +147,7 @@ func (db *pgdb) tx(ctx context.Context, txFunc func(*pgdb) error) error {
 	})
 }
 
-func deleteModule(ctx context.Context, db otf.Database, id string) error {
+func deleteModule(ctx context.Context, db otf.DB, id string) error {
 	_, err := db.DeleteModuleByID(ctx, sql.String(id))
 	return sql.Error(err)
 }

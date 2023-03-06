@@ -12,6 +12,7 @@ import (
 
 const insertWebhookSQL = `INSERT INTO webhooks (
     webhook_id,
+    vcs_id,
     secret,
     identifier,
     cloud
@@ -19,13 +20,15 @@ const insertWebhookSQL = `INSERT INTO webhooks (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
 )
 RETURNING *
 ;`
 
 type InsertWebhookParams struct {
 	WebhookID  pgtype.UUID
+	VCSID      pgtype.Text
 	Secret     pgtype.Text
 	Identifier pgtype.Text
 	Cloud      pgtype.Text
@@ -42,7 +45,7 @@ type InsertWebhookRow struct {
 // InsertWebhook implements Querier.InsertWebhook.
 func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParams) (InsertWebhookRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWebhook")
-	row := q.conn.QueryRow(ctx, insertWebhookSQL, params.WebhookID, params.Secret, params.Identifier, params.Cloud)
+	row := q.conn.QueryRow(ctx, insertWebhookSQL, params.WebhookID, params.VCSID, params.Secret, params.Identifier, params.Cloud)
 	var item InsertWebhookRow
 	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 		return item, fmt.Errorf("query InsertWebhook: %w", err)
@@ -52,7 +55,7 @@ func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParam
 
 // InsertWebhookBatch implements Querier.InsertWebhookBatch.
 func (q *DBQuerier) InsertWebhookBatch(batch genericBatch, params InsertWebhookParams) {
-	batch.Queue(insertWebhookSQL, params.WebhookID, params.Secret, params.Identifier, params.Cloud)
+	batch.Queue(insertWebhookSQL, params.WebhookID, params.VCSID, params.Secret, params.Identifier, params.Cloud)
 }
 
 // InsertWebhookScan implements Querier.InsertWebhookScan.

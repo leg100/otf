@@ -43,10 +43,11 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
 		return cloud.VCSPushEvent{
-			WebhookID:  opts.WebhookID,
-			Branch:     refParts[2],
-			Identifier: event.Project.PathWithNamespace,
-			CommitSHA:  event.After,
+			WebhookID:     opts.WebhookID,
+			Branch:        refParts[2],
+			Identifier:    event.Project.PathWithNamespace,
+			CommitSHA:     event.After,
+			DefaultBranch: event.Project.DefaultBranch,
 		}, nil
 	case *gitlab.TagEvent:
 		refParts := strings.Split(event.Ref, "/")
@@ -57,8 +58,9 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			WebhookID: opts.WebhookID,
 			Tag:       refParts[2],
 			// Action:     action,
-			Identifier: event.Project.PathWithNamespace,
-			CommitSHA:  event.After,
+			Identifier:    event.Project.PathWithNamespace,
+			CommitSHA:     event.After,
+			DefaultBranch: event.Project.DefaultBranch,
 		}, nil
 	case *gitlab.MergeEvent:
 	}

@@ -32,8 +32,8 @@ type ClientOptions struct {
 }
 
 type GetRepoTarballOptions struct {
-	Identifier string // repo identifier, <owner>/<repo>
-	Ref        string // branch/tag/SHA ref
+	Identifier string  // repo identifier, <owner>/<repo>
+	Ref        *string // branch/tag/SHA ref, nil means default branch
 }
 
 type ListRepositoriesOptions struct {

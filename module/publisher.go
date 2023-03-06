@@ -6,20 +6,19 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
-	"github.com/pkg/errors"
 )
 
 // Publisher publishes terraform modules.
 type Publisher struct {
-	otf.RepoService // registering/de-registering webhook
+	otf.RepoService // for registering and unregistering connections to webhooks
 	otf.Subscriber
 	otf.VCSProviderService
 	logr.Logger
 
+	db *pgdb
 	service
 }
 
@@ -52,21 +51,6 @@ func (h *Publisher) Start(ctx context.Context) error {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions) (*Module, error) {
-	client, err := p.GetVCSClient(ctx, opts.ProviderID)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = client.GetRepository(ctx, opts.Identifier)
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving repository info")
-	}
-
-	vcsProvider, err := p.GetVCSProvider(ctx, opts.ProviderID)
-	if err != nil {
-		return nil, err
-	}
-
 	_, repoName, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -78,30 +62,35 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	provider := parts[1]
 	name := parts[2]
 
-	var mod *Module
-
-	// hook up module to a webhook - the callback establishes a relationship in
-	// the DB between the module and the webhook.
-	hookCallback := func(ctx context.Context, tx otf.DB, hookID uuid.UUID) error {
-		mod = newModule(CreateModuleOptions{
-			Name:         name,
-			Provider:     provider,
-			Organization: opts.Organization,
-			Repo: &connection{
-				WebhookID:  hookID,
-				ProviderID: opts.ProviderID,
-				Identifier: opts.Identifier,
-			},
-		})
-
-		return createModule(ctx, tx, mod)
-	}
-	err = p.Hook(ctx, otf.ConnectionOptions{
-		Identifier:   opts.Identifier,
-		Cloud:        vcsProvider.CloudConfig.Name,
-		Client:       client,
-		HookCallback: hookCallback,
+	mod := newModule(CreateModuleOptions{
+		Name:         name,
+		Provider:     provider,
+		Organization: opts.Organization,
 	})
+
+	// persist module to db and connect mod to repo
+	err := p.db.tx(ctx, func(tx *pgdb) error {
+		if err := tx.CreateModule(ctx, mod); err != nil {
+			return err
+		}
+		connection, err := p.RepoService.Connect(ctx, otf.ConnectOptions{
+			ConnectionType: otf.ModuleConnection,
+			ResourceID:     mod.id,
+			VCSProviderID:  opts.ProviderID,
+			Identifier:     opts.Identifier,
+			Tx:             tx,
+		})
+		if err != nil {
+			return err
+		}
+		mod.repo = connection
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := p.GetVCSClient(ctx, opts.ProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +155,12 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 	if err != nil {
 		return err
 	}
-	if module.connection == nil {
+	if module.repo == nil {
 		return fmt.Errorf("module is not connected to a repo: %s", module.id)
 	}
 
 	// skip older or equal versions
-	latestVersion := module.latest.Version()
+	latestVersion := module.latest.version
 	if n := semver.Compare(tagEvent.Tag, latestVersion); n <= 0 {
 		return nil
 	}
@@ -182,7 +171,7 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 		Version:    strings.TrimPrefix(tagEvent.Tag, "v"),
 		Ref:        tagEvent.CommitSHA,
 		Identifier: tagEvent.Identifier,
-		ProviderID: module.connection.ProviderID,
+		ProviderID: module.repo.VCSProviderID,
 	})
 	if err != nil {
 		return err
@@ -217,7 +206,7 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Identifier: opts.Identifier,
-		Ref:        opts.Ref,
+		Ref:        &opts.Ref,
 	})
 	if err != nil {
 		return UpdateModuleVersionStatus(ctx, p, UpdateModuleVersionStatusOptions{

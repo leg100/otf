@@ -13,47 +13,43 @@ import (
 
 // pgdb is the repo database on postgres
 type pgdb struct {
-	*sql.DB
+	otf.DB
 	factory
 }
 
-func newPGDB(db *sql.DB, f factory) *pgdb {
+func newPGDB(db otf.DB, f factory) *pgdb {
 	return &pgdb{db, f}
-}
-
-// create idempotently persists a hook to the db in a three-step synchronisation process:
-// 1) create hook or get existing hook from db
-// 2) invoke callback with hook, which returns the cloud provider's hook ID
-// 3) update hook in DB with the ID
-
-func (db *pgdb) updateCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
-	_, err := db.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
 }
 
 // getOrCreate gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
-func (db *pgdb) getOrCreate(ctx context.Context, hook *hook) (*hook, error) {
+func (db *pgdb) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	result, err := db.FindWebhooksByRepo(ctx, sql.String(hook.identifier), sql.String(hook.cloud))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	if len(result) > 0 {
-		return db.unmarshal(pgRow(result[0]))
+		return db.unmarshal(hookRow(result[0]))
 	}
 
 	// not found; create instead
 
-	insertResult, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{
+	params := pggen.InsertWebhookParams{
 		WebhookID:  sql.UUID(hook.id),
 		Secret:     sql.String(hook.secret),
 		Identifier: sql.String(hook.identifier),
 		Cloud:      sql.String(hook.cloud),
-	})
-	return db.unmarshal(pgRow(insertResult))
+	}
+	if hook.cloudID != nil {
+		params.VCSID = sql.String(*hook.cloudID)
+	} else {
+		params.VCSID = pgtype.Text{Status: pgtype.Null}
+	}
+	insertResult, err := db.InsertWebhook(ctx, params)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return db.unmarshal(hookRow(insertResult))
 }
 
 func (db *pgdb) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
@@ -61,10 +57,18 @@ func (db *pgdb) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return db.unmarshal(pgRow(result))
+	return db.unmarshal(hookRow(result))
 }
 
-func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf.ConnectionOptions) error {
+func (db *pgdb) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
+	_, err := db.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf.ConnectOptions) error {
 	params := pggen.InsertRepoConnectionParams{
 		WebhookID:     sql.UUID(hookID),
 		VCSProviderID: sql.String(opts.VCSProviderID),
@@ -78,7 +82,7 @@ func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf
 		params.ModuleID = sql.String(opts.ResourceID)
 		params.WorkspaceID = pgtype.Text{Status: pgtype.Null}
 	default:
-		return fmt.Errorf("unknown connection type: %s", opts.ConnectionType)
+		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
 
 	if _, err := db.InsertRepoConnection(ctx, params); err != nil {
@@ -87,22 +91,23 @@ func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf
 	return nil
 }
 
-func (db *pgdb) deleteConnection(ctx context.Context, opts otf.ConnectionOptions) (uuid.UUID, error) {
-	var hookID pgtype.UUID
-	var err error
-
+func (db *pgdb) deleteConnection(ctx context.Context, opts otf.DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
 	switch opts.ConnectionType {
 	case otf.WorkspaceConnection:
-		hookID, err = db.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
+		result, err := db.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
+		if err != nil {
+			return uuid.UUID{}, "", sql.Error(err)
+		}
+		return result.WebhookID.Bytes, result.VCSProviderID.String, nil
 	case otf.ModuleConnection:
-		hookID, err = db.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
+		result, err := db.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
+		if err != nil {
+			return uuid.UUID{}, "", sql.Error(err)
+		}
+		return result.WebhookID.Bytes, result.VCSProviderID.String, nil
 	default:
-		return uuid.UUID{}, fmt.Errorf("unknown connection type: %s", opts.ConnectionType)
+		return uuid.UUID{}, "", fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
-	if err != nil {
-		return uuid.UUID{}, sql.Error(err)
-	}
-	return uuid.FromBytes(hookID.Bytes[:])
 }
 
 func (db *pgdb) countConnections(ctx context.Context, hookID uuid.UUID) (*int, error) {
@@ -114,12 +119,12 @@ func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return db.unmarshal(pgRow(result))
+	return db.unmarshal(hookRow(result))
 }
 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx *sql.DB) error {
+	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := tx.Exec(ctx, "LOCK webhooks")
 		if err != nil {
 			return err
@@ -128,7 +133,7 @@ func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
 	})
 }
 
-type pgRow struct {
+type hookRow struct {
 	WebhookID  pgtype.UUID `json:"webhook_id"`
 	VCSID      pgtype.Text `json:"vcs_id"`
 	Secret     pgtype.Text `json:"secret"`
@@ -136,7 +141,7 @@ type pgRow struct {
 	Cloud      pgtype.Text `json:"cloud"`
 }
 
-func (db *pgdb) unmarshal(row pgRow) (*hook, error) {
+func (db *pgdb) unmarshal(row hookRow) (*hook, error) {
 	opts := newHookOpts{
 		id:         otf.UUID(row.WebhookID.Bytes),
 		secret:     otf.String(row.Secret.String),

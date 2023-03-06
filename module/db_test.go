@@ -25,7 +25,7 @@ func TestModule_Get(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
-	want := createTestModule(t, db, org)
+	want := CreateTestModule(t, db, org)
 
 	got, err := db.GetModule(ctx, otf.GetModuleOptions{
 		Organization: org.Name(),
@@ -41,7 +41,7 @@ func TestModule_GetByID(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
-	want := createTestModule(t, db, org)
+	want := CreateTestModule(t, db, org)
 
 	got, err := db.GetModuleByID(ctx, want.ID)
 	require.NoError(t, err)
@@ -53,9 +53,9 @@ func TestModule_List(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
-	module1 := createTestModule(t, db, org)
-	module2 := createTestModule(t, db, org)
-	module3 := createTestModule(t, db, org)
+	module1 := CreateTestModule(t, db, org)
+	module2 := CreateTestModule(t, db, org)
+	module3 := CreateTestModule(t, db, org)
 
 	got, err := db.ListModules(ctx, otf.ListModulesOptions{
 		Organization: org.Name(),
@@ -71,7 +71,7 @@ func TestModule_Delete(t *testing.T) {
 	ctx := context.Background()
 	db := NewTestDB(t)
 	org := CreateTestOrganization(t, db)
-	module := createTestModule(t, db, org)
+	module := CreateTestModule(t, db, org)
 
 	err := db.DeleteModule(ctx, module.ID)
 	require.NoError(t, err)

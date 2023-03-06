@@ -88,7 +88,7 @@ func (h *web) newWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var opts CreateWorkspaceOptions
+	var opts otf.CreateWorkspaceOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -104,7 +104,7 @@ func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "created workspace: "+ws.Name())
+	html.FlashSuccess(w, "created workspace: "+ws.Name)
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
@@ -180,7 +180,7 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get teams that have yet to be assigned a permission
-	unassigned, err := h.ListTeams(r.Context(), workspace.organization)
+	unassigned, err := h.ListTeams(r.Context(), workspace.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -363,21 +363,14 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		connectOptions
+		otf.ConnectWorkspaceOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	provider, err := h.GetVCSProvider(r.Context(), params.ProviderID)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	params.Cloud = provider.CloudConfig().Name
-
-	err = h.svc.connect(r.Context(), params.WorkspaceID, params.connectOptions)
+	err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -395,7 +388,7 @@ func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var stack html.FlashStack
-	ws, err := h.svc.disconnect(r.Context(), workspaceID)
+	err = h.svc.disconnect(r.Context(), workspaceID)
 	if errors.Is(err, otf.ErrWarning) {
 		stack.Push(html.FlashWarningType, err.Error())
 	} else if err != nil {

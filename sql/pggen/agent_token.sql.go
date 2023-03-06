@@ -438,19 +438,19 @@ type Querier interface {
 	// CountRepoConnectionsByIDScan scans the result of an executed CountRepoConnectionsByIDBatch query.
 	CountRepoConnectionsByIDScan(results pgx.BatchResults) (*int, error)
 
-	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (pgtype.UUID, error)
+	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceConnectionByIDRow, error)
 	// DeleteWorkspaceConnectionByIDBatch enqueues a DeleteWorkspaceConnectionByID query into batch to be executed
 	// later by the batch.
 	DeleteWorkspaceConnectionByIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// DeleteWorkspaceConnectionByIDScan scans the result of an executed DeleteWorkspaceConnectionByIDBatch query.
-	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
+	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (DeleteWorkspaceConnectionByIDRow, error)
 
-	DeleteModuleConnectionByID(ctx context.Context, id pgtype.Text) (pgtype.UUID, error)
+	DeleteModuleConnectionByID(ctx context.Context, id pgtype.Text) (DeleteModuleConnectionByIDRow, error)
 	// DeleteModuleConnectionByIDBatch enqueues a DeleteModuleConnectionByID query into batch to be executed
 	// later by the batch.
 	DeleteModuleConnectionByIDBatch(batch genericBatch, id pgtype.Text)
 	// DeleteModuleConnectionByIDScan scans the result of an executed DeleteModuleConnectionByIDBatch query.
-	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
+	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (DeleteModuleConnectionByIDRow, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed

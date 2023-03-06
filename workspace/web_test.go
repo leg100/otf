@@ -374,8 +374,8 @@ func (f *fakeWorkspaceHandlerApp) ConnectWorkspace(context.Context, string, otf.
 	return nil
 }
 
-func (f *fakeWorkspaceHandlerApp) DisconnectWorkspace(context.Context, string) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
+func (f *fakeWorkspaceHandlerApp) DisconnectWorkspace(context.Context, string) error {
+	return nil
 }
 
 func (f *fakeWorkspaceHandlerApp) UploadConfig(context.Context, string, []byte) error {

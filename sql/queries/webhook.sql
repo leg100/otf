@@ -1,11 +1,13 @@
 -- name: InsertWebhook :one
 INSERT INTO webhooks (
     webhook_id,
+    vcs_id,
     secret,
     identifier,
     cloud
 ) VALUES (
     pggen.arg('webhook_id'),
+    pggen.arg('vcs_id'),
     pggen.arg('secret'),
     pggen.arg('identifier'),
     pggen.arg('cloud')

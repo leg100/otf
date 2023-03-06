@@ -23,14 +23,8 @@ type Module struct {
 	name         string
 	provider     string
 	organization string      // Module belongs to an organization
-	repo         *ModuleRepo // Module optionally connected to vcs repo
+	repo         *Connection // Module optionally connected to vcs repo
 	status       ModuleStatus
-}
-
-type ModuleRepo struct {
-	ProviderID string
-	WebhookID  uuid.UUID
-	Identifier string // identifier is <repo_owner>/<repo_name>
 }
 
 type ModuleService interface {
@@ -57,7 +51,7 @@ type ModuleStore interface {
 }
 
 type ModuleDeleter interface {
-	Delete(ctx context.Context, moduleID string) error
+	Delete(ctx context.Context, module *Module) error
 }
 
 type (
@@ -70,7 +64,6 @@ type (
 		Name         string
 		Provider     string
 		Organization string
-		Repo         *ModuleRepo
 	}
 	UpdateModuleStatusOptions struct {
 		ID     string

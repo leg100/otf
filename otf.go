@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/cloud"
@@ -72,6 +73,8 @@ type DB interface {
 
 	// Send batches of SQL queries over the wire.
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+	// Execute arbitrary SQL
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 
 	pggen.Querier // generated SQL queries
 

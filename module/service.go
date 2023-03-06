@@ -13,7 +13,7 @@ import (
 )
 
 type (
-	// service is the service service for modules
+	// service is the service for modules
 	service interface {
 		// PublishModule publishes a module from a VCS repository.
 		PublishModule(context.Context, PublishModuleOptions) (*Module, error)
@@ -36,19 +36,22 @@ type (
 		logr.Logger
 		*Publisher
 
-		db *pgdb
+		db   *pgdb
+		repo otf.RepoService
 
 		organization otf.Authorizer
 
 		api *api
 		web *web
 	}
+
 	Options struct {
 		OrganizationAuthorizer otf.Authorizer
 		CloudService           cloud.Service
 		otf.DB
 		*surl.Signer
 		otf.Renderer
+		otf.RepoService
 		logr.Logger
 	}
 )
@@ -57,7 +60,8 @@ func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:       opts.Logger,
 		organization: opts.OrganizationAuthorizer,
-		db:         &pgdb{opts.DB},
+		db:           &pgdb{opts.DB},
+		repo:         opts.RepoService,
 	}
 
 	svc.api = &api{
@@ -168,7 +172,7 @@ func (a *Service) GetModuleByID(ctx context.Context, id string) (*Module, error)
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.GetModuleAction, module.Organization())
+	subject, err := a.organization.CanAccess(ctx, rbac.GetModuleAction, module.organization)
 	if err != nil {
 		return nil, err
 	}
@@ -188,39 +192,29 @@ func (a *Service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.DeleteModuleAction, module.Organization())
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteModuleAction, module.organization)
 	if err != nil {
 		return nil, err
 	}
 
-	if module.Repo() == nil {
-		// there is no webhook to unhook from, so just delete the module
-		if err = a.db.DeleteModule(ctx, id); err != nil {
-			a.Error(err, "deleting module", "subject", subject, "module", module)
-			return nil, err
+	err = a.db.tx(ctx, func(tx *pgdb) error {
+		// disconnect module prior to deletion
+		if module.repo != nil {
+			err := a.repo.Disconnect(ctx, otf.DisconnectOptions{
+				ConnectionType: otf.ModuleConnection,
+				ResourceID:     module.id,
+				Tx:             tx,
+			})
+			if err != nil {
+				return err
+			}
 		}
-		a.V(2).Info("deleted module", "subject", subject, "module", module)
-		return module, nil
-	}
-
-	client, err := a.GetVCSClient(ctx, module.Repo().ProviderID)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete webhook as well as module
-	err = a.Unhook(ctx, otf.DisconnectOptions{
-		HookID: module.Repo().WebhookID,
-		Client: client,
-		UnhookCallback: func(ctx context.Context, tx otf.DB) error {
-			return deleteModule(ctx, tx, id)
-		},
+		return tx.DeleteModule(ctx, id)
 	})
 	if err != nil {
 		a.Error(err, "deleting module", "subject", subject, "module", module)
 		return nil, err
 	}
-
 	a.V(2).Info("deleted module", "subject", subject, "module", module)
 	return module, nil
 }

@@ -185,20 +185,6 @@ type WorkspaceCreateOptions struct {
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
 }
 
-func (opts *WorkspaceCreateOptions) Validate() error {
-	if opts.Operations != nil && opts.ExecutionMode != nil {
-		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
-	}
-	if opts.Operations != nil {
-		if *opts.Operations {
-			opts.ExecutionMode = &remoteExecutionMode
-		} else {
-			opts.ExecutionMode = &localExecutionMode
-		}
-	}
-	return nil
-}
-
 // WorkspaceUpdateOptions represents the options for updating a workspace.
 type WorkspaceUpdateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via

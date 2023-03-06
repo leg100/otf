@@ -18,35 +18,36 @@ type pgdb struct {
 
 // WorkspaceResult represents the result of a database query for a workspace.
 type WorkspaceResult struct {
-	WorkspaceID                pgtype.Text           `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz    `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz    `json:"updated_at"`
-	AllowDestroyPlan           bool                  `json:"allow_destroy_plan"`
-	AutoApply                  bool                  `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                  `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text           `json:"description"`
-	Environment                pgtype.Text           `json:"environment"`
-	ExecutionMode              pgtype.Text           `json:"execution_mode"`
-	FileTriggersEnabled        bool                  `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                  `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text           `json:"migration_environment"`
-	Name                       pgtype.Text           `json:"name"`
-	QueueAllRuns               bool                  `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                  `json:"speculative_enabled"`
-	SourceName                 pgtype.Text           `json:"source_name"`
-	SourceURL                  pgtype.Text           `json:"source_url"`
-	StructuredRunOutputEnabled bool                  `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text           `json:"terraform_version"`
-	TriggerPrefixes            []string              `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text           `json:"working_directory"`
-	LockRunID                  pgtype.Text           `json:"lock_run_id"`
-	LockUserID                 pgtype.Text           `json:"lock_user_id"`
-	LatestRunID                pgtype.Text           `json:"latest_run_id"`
-	OrganizationName           pgtype.Text           `json:"organization_name"`
-	UserLock                   *pggen.Users          `json:"user_lock"`
-	RunLock                    *pggen.Runs           `json:"run_lock"`
-	WorkspaceRepo              *pggen.WorkspaceRepos `json:"workspace_repo"`
-	Webhook                    *pggen.Webhooks       `json:"webhook"`
+	WorkspaceID                pgtype.Text            `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
+	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
+	AutoApply                  bool                   `json:"auto_apply"`
+	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text            `json:"description"`
+	Environment                pgtype.Text            `json:"environment"`
+	ExecutionMode              pgtype.Text            `json:"execution_mode"`
+	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool                   `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
+	Name                       pgtype.Text            `json:"name"`
+	QueueAllRuns               bool                   `json:"queue_all_runs"`
+	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
+	SourceName                 pgtype.Text            `json:"source_name"`
+	SourceURL                  pgtype.Text            `json:"source_url"`
+	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text            `json:"terraform_version"`
+	TriggerPrefixes            []string               `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text            `json:"working_directory"`
+	LockRunID                  pgtype.Text            `json:"lock_run_id"`
+	LockUserID                 pgtype.Text            `json:"lock_user_id"`
+	LatestRunID                pgtype.Text            `json:"latest_run_id"`
+	OrganizationName           pgtype.Text            `json:"organization_name"`
+	Branch                     pgtype.Text            `json:"branch"`
+	UserLock                   *pggen.Users           `json:"user_lock"`
+	RunLock                    *pggen.Runs            `json:"run_lock"`
+	WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
+	Webhook                    *pggen.Webhooks        `json:"webhook"`
 }
 
 func UnmarshalWorkspaceResult(result WorkspaceResult) (*otf.Workspace, error) {
@@ -56,6 +57,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*otf.Workspace, error) {
 		UpdatedAt:                  result.UpdatedAt.Time.UTC(),
 		AllowDestroyPlan:           result.AllowDestroyPlan,
 		AutoApply:                  result.AutoApply,
+		Branch:                     result.Branch.String,
 		CanQueueDestroyPlan:        result.CanQueueDestroyPlan,
 		Description:                result.Description.String,
 		Environment:                result.Environment.String,
@@ -75,12 +77,11 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*otf.Workspace, error) {
 		Organization:               result.OrganizationName.String,
 	}
 
-	if result.WorkspaceRepo != nil {
-		ws.Repo = &otf.WorkspaceRepo{
-			Branch:     result.WorkspaceRepo.Branch.String,
-			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
-			WebhookID:  result.Webhook.WebhookID.Bytes,
-			Identifier: result.Webhook.Identifier.String,
+	if result.WorkspaceConnection != nil {
+		ws.Repo = &otf.Connection{
+			VCSProviderID: result.WorkspaceConnection.VCSProviderID.String,
+			WebhookID:     result.Webhook.WebhookID.Bytes,
+			Identifier:    result.Webhook.Identifier.String,
 		}
 	}
 
@@ -100,56 +101,36 @@ func newdb(db otf.DB) *pgdb {
 }
 
 func (db *pgdb) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
-	err := db.Tx(ctx, func(tx *sql.DB) error {
-		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-			ID:                         sql.String(ws.ID),
-			CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
-			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-			Name:                       sql.String(ws.Name),
-			AllowDestroyPlan:           ws.AllowDestroyPlan,
-			AutoApply:                  ws.AutoApply,
-			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
-			Environment:                sql.String(ws.Environment),
-			Description:                sql.String(ws.Description),
-			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-			FileTriggersEnabled:        ws.FileTriggersEnabled,
-			GlobalRemoteState:          ws.GlobalRemoteState,
-			MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
-			SourceName:                 sql.String(ws.SourceName),
-			SourceURL:                  sql.String(ws.SourceURL),
-			SpeculativeEnabled:         ws.SpeculativeEnabled,
-			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
-			TerraformVersion:           sql.String(ws.TerraformVersion),
-			TriggerPrefixes:            ws.TriggerPrefixes,
-			QueueAllRuns:               ws.QueueAllRuns,
-			WorkingDirectory:           sql.String(ws.WorkingDirectory),
-			OrganizationName:           sql.String(ws.Organization),
-		})
-		if err != nil {
-			return sql.Error(err)
-		}
-		if ws.Repo != nil {
-			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-				Branch:        sql.String(ws.Repo.Branch),
-				WebhookID:     sql.UUID(ws.Repo.WebhookID),
-				VCSProviderID: sql.String(ws.Repo.ProviderID),
-				WorkspaceID:   sql.String(ws.ID),
-			})
-			if err != nil {
-				return sql.Error(err)
-			}
-		}
-		return nil
+	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
+		ID:                         sql.String(ws.ID),
+		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
+		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
+		Name:                       sql.String(ws.Name),
+		AllowDestroyPlan:           ws.AllowDestroyPlan,
+		AutoApply:                  ws.AutoApply,
+		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
+		Environment:                sql.String(ws.Environment),
+		Description:                sql.String(ws.Description),
+		ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+		FileTriggersEnabled:        ws.FileTriggersEnabled,
+		GlobalRemoteState:          ws.GlobalRemoteState,
+		MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
+		SourceName:                 sql.String(ws.SourceName),
+		SourceURL:                  sql.String(ws.SourceURL),
+		SpeculativeEnabled:         ws.SpeculativeEnabled,
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+		TerraformVersion:           sql.String(ws.TerraformVersion),
+		TriggerPrefixes:            ws.TriggerPrefixes,
+		QueueAllRuns:               ws.QueueAllRuns,
+		WorkingDirectory:           sql.String(ws.WorkingDirectory),
+		OrganizationName:           sql.String(ws.Organization),
 	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
+	return sql.Error(err)
 }
 
 func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	var ws *otf.Workspace
-	err := db.Transaction(ctx, func(tx otf.Database) error {
+	err := db.Tx(ctx, func(tx otf.DB) error {
 		var err error
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
@@ -170,6 +151,7 @@ func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func
 			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
 			AllowDestroyPlan:           ws.AllowDestroyPlan,
 			AutoApply:                  ws.AutoApply,
+			Branch:                     sql.String(ws.Branch),
 			Description:                sql.String(ws.Description),
 			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
 			Name:                       sql.String(ws.Name),
@@ -183,38 +165,6 @@ func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func
 		return err
 	})
 	return ws, err
-}
-
-func (db *pgdb) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*otf.Workspace, error) {
-	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
-		Branch:        sql.String(repo.Branch),
-		WebhookID:     sql.UUID(repo.WebhookID),
-		VCSProviderID: sql.String(repo.ProviderID),
-		WorkspaceID:   sql.String(workspaceID),
-	})
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, sql.Error(err)
-}
-
-func (db *pgdb) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*otf.Workspace, error) {
-	_, err := db.UpdateWorkspaceRepoByID(ctx, sql.String(repo.Branch), sql.String(workspaceID))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, sql.Error(err)
-}
-
-func (db *pgdb) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	_, err := db.DeleteWorkspaceRepoByID(ctx, sql.String(workspaceID))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	ws, err := db.GetWorkspace(ctx, workspaceID)
-	return ws, sql.Error(err)
 }
 
 // SetCurrentRun sets the ID of the current run for the specified workspace.

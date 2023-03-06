@@ -2,13 +2,13 @@ package otf
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -39,6 +39,7 @@ type (
 		UpdatedAt                  time.Time
 		AllowDestroyPlan           bool
 		AutoApply                  bool
+		Branch                     string
 		CanQueueDestroyPlan        bool
 		Description                string
 		Environment                string
@@ -57,7 +58,7 @@ type (
 		WorkingDirectory           string
 		Organization               string
 		LatestRunID                *string
-		Repo                       *WorkspaceRepo
+		Repo                       *Connection
 		Permissions                []WorkspacePermission
 
 		Lock
@@ -75,6 +76,7 @@ type (
 	CreateWorkspaceOptions struct {
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
+	Branch                     *string
 		Description                *string
 		ExecutionMode              *ExecutionMode
 		FileTriggersEnabled        *bool
@@ -90,7 +92,7 @@ type (
 		TriggerPrefixes            []string
 		WorkingDirectory           *string
 		Organization               *string `schema:"organization_name,required"`
-		Repo                       *WorkspaceRepo
+		Repo                       *Connection
 	}
 
 	UpdateWorkspaceOptions struct {
@@ -155,6 +157,16 @@ type (
 		WorkspacePermissionService
 	}
 
+	WorkspaceConnectionService interface {
+		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
+		DisconnectWorkspace(ctx context.Context, workspaceID string) error
+	}
+
+	ConnectWorkspaceOptions struct {
+		Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
+		ProviderID string `schema:"vcs_provider_id,required"`
+	}
+
 	WorkspacePermissionService interface {
 		GetPolicy(ctx context.Context, workspaceID string) (WorkspacePolicy, error)
 
@@ -217,6 +229,9 @@ func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 	}
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
+	}
+	if opts.Branch != nil {
+		ws.Branch = *opts.Branch
 	}
 	if opts.Description != nil {
 		ws.Description = *opts.Description
@@ -390,4 +405,46 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	}
 	ws.TerraformVersion = v
 	return nil
+}
+
+func CreateWorkspace(ctx context.Context, app Application, opts CreateWorkspaceOptions) (*Workspace, error) {
+	var (
+		ws  *Workspace
+		err error
+	)
+
+	err = app.Tx(ctx, func(a Application) error {
+		// First create the workspace.
+		ws, err = a.CreateWorkspace(ctx, opts)
+		if err != nil {
+			return err
+		}
+
+		// If needed, connect the VCS repository.
+		if repo := opts.Repo; repo != nil {
+			err = a.ConnectWorkspace(ctx, ws.ID(), ConnectWorkspaceOptions{
+				ProviderID: repo.VCSProviderID,
+				Identifier: repo.Identifier,
+			})
+			if err != nil {
+				return errors.Wrap(err, "connecting workspace")
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ws, nil
+}
+
+// CurrentRunService provides interaction with the current run for a workspace,
+// i.e. the current, or most recently current, non-speculative, run.
+type CurrentRunService interface {
+	// SetCurrentRun sets the ID of the latest run for a workspace.
+	//
+	// Take full run obj as param
+	SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 }

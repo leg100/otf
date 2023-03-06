@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"net/http"
 	"path"
 
@@ -12,22 +13,21 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
-// handler is the first point of entry for incoming VCS events, relaying them onto
-// a cloud-specific handler.
-type handler struct {
-	logr.Logger
-	otf.PubSubService
+type (
+	// handler is the first point of entry for incoming VCS events, relaying them onto
+	// a cloud-specific handler.
+	handler struct {
+		logr.Logger
+		otf.PubSubService
 
-	db
-}
-
-func NewHandler(logger logr.Logger, app otf.Application) *handler {
-	return &handler{
-		Logger:        logger,
-		PubSubService: app,
-		db:            newPGDB(app.DB(), newFactory(app, app)),
+		db handlerDB
 	}
-}
+
+	// handleDB is the database the handler interacts with
+	handlerDB interface {
+		getHookByID(context.Context, uuid.UUID) (*hook, error)
+	}
+)
 
 func (h *handler) AddHandlers(r *mux.Router) {
 	r.Handle(path.Join(handlerPrefix, "{webhook_id}"), h)
@@ -42,7 +42,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hook, err := h.get(r.Context(), opts.ID)
+	hook, err := h.db.getHookByID(r.Context(), opts.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

@@ -171,16 +171,18 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 	return tags, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, topts cloud.GetRepoTarballOptions) ([]byte, error) {
-	owner, name, found := strings.Cut(topts.Identifier, "/")
+func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", topts.Identifier)
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
 	}
 
-	opts := github.RepositoryContentGetOptions{
-		Ref: topts.Ref,
+	var gopts github.RepositoryContentGetOptions
+	if opts.Ref != nil {
+		gopts.Ref = *opts.Ref
 	}
-	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &opts, true)
+
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &gopts, true)
 	if err != nil {
 		return nil, err
 	}

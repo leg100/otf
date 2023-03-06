@@ -14,17 +14,11 @@ import (
 // handlerPrefix is the URL path prefix for the endpoint receiving vcs events
 const handlerPrefix = "/webhooks/vcs"
 
-var (
-	// defaultEvents are the VCS events that hooks subscribe to.
-	defaultEvents = []cloud.VCSEventType{
-		cloud.VCSPushEventType,
-		cloud.VCSPullEventType,
-	}
-	// errConnected is returned when an attempt is made to delete a
-	// webhook but the webhook is still connected e.g. to a module or a
-	// workspace.
-	errConnected = errors.New("webhook still connected")
-)
+// defaultEvents are the VCS events that hooks subscribe to.
+var defaultEvents = []cloud.VCSEventType{
+	cloud.VCSPushEventType,
+	cloud.VCSPullEventType,
+}
 
 // hook is a webhook for a VCS repo
 type hook struct {

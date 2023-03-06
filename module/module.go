@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
@@ -36,13 +35,7 @@ type (
 		versions     map[string]*ModuleVersion
 		latest       *ModuleVersion
 
-		*connection // optional vcs repo connection
-	}
-
-	connection struct {
-		ProviderID string
-		WebhookID  uuid.UUID
-		Identifier string // identifier is <repo_owner>/<repo_name>
+		repo *otf.Connection // optional vcs repo connection
 	}
 
 	ModuleDeleter interface {
@@ -58,7 +51,7 @@ type (
 		Name         string
 		Provider     string
 		Organization string
-		Repo         *connection
+		Repo         *otf.Connection
 	}
 	UpdateModuleStatusOptions struct {
 		ID     string
@@ -107,7 +100,7 @@ func newModule(opts CreateModuleOptions) *Module {
 		provider:     opts.Provider,
 		status:       ModuleStatusPending,
 		organization: opts.Organization,
-		connection:   opts.Repo,
+		repo:         opts.Repo,
 	}
 }
 
