@@ -1,19 +1,17 @@
--- name: UpsertWebhook :one
+-- name: InsertWebhook :one
 INSERT INTO webhooks (
     webhook_id,
+    vcs_id,
     secret,
     identifier,
-    cloud,
-    connected
+    cloud
 ) VALUES (
     pggen.arg('webhook_id'),
+    pggen.arg('vcs_id'),
     pggen.arg('secret'),
     pggen.arg('identifier'),
-    pggen.arg('cloud'),
-    1
-) ON CONFLICT (identifier, cloud) DO
-    UPDATE
-    SET connected = webhooks.connected + 1
+    pggen.arg('cloud')
+)
 RETURNING *
 ;
 
@@ -29,18 +27,11 @@ SELECT *
 FROM webhooks
 WHERE webhook_id = pggen.arg('webhook_id');
 
--- name: FindWebhookByRepo :one
+-- name: FindWebhooksByRepo :many
 SELECT *
 FROM webhooks
 WHERE identifier = pggen.arg('identifier')
 AND   cloud = pggen.arg('cloud');
-
--- name: DisconnectWebhook :one
-UPDATE webhooks
-SET connected = connected - 1
-WHERE webhook_id = pggen.arg('webhook_id')
-RETURNING *
-;
 
 -- name: DeleteWebhookByID :one
 DELETE

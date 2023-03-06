@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql/pggen"
@@ -61,7 +62,7 @@ type Application interface {
 	ModuleService
 	ModuleVersionService
 	HostnameService
-	HookService
+	RepoService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -97,6 +98,8 @@ type DB interface {
 type Database interface {
 	// Send batches of SQL queries over the wire.
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+	// Execute arbitrary SQL
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 
 	pggen.Querier // generated SQL queries
 

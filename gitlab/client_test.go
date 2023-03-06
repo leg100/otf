@@ -75,7 +75,6 @@ func TestClient(t *testing.T) {
 
 		got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 			Identifier: "acme/terraform",
-			Ref:        "master",
 		})
 		require.NoError(t, err)
 

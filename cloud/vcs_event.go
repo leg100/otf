@@ -17,11 +17,12 @@ type VCSEvent any
 
 // VCSPullEvent occurs when an action is carried out on a pull request
 type VCSPullEvent struct {
-	WebhookID  uuid.UUID
-	Action     VCSPullEventAction
-	Identifier string // repo identifier, <owner>/<repo>
-	CommitSHA  string
-	Branch     string // head branch
+	WebhookID     uuid.UUID
+	Action        VCSPullEventAction
+	Identifier    string // repo identifier, <owner>/<repo>
+	CommitSHA     string
+	Branch        string // head branch
+	DefaultBranch string
 }
 
 type VCSPullEventAction string
@@ -35,19 +36,21 @@ const (
 
 // VCSPushEvent occurs when a commit is pushed to a repo.
 type VCSPushEvent struct {
-	WebhookID  uuid.UUID
-	Identifier string // repo identifier, <owner>/<repo>
-	CommitSHA  string
-	Branch     string
+	WebhookID     uuid.UUID
+	Identifier    string // repo identifier, <owner>/<repo>
+	CommitSHA     string
+	Branch        string
+	DefaultBranch string
 }
 
 // VCSTagEvent occurs when a tag is created or deleted on a repo.
 type VCSTagEvent struct {
-	WebhookID  uuid.UUID
-	Identifier string // repo identifier, <owner>/<repo>
-	CommitSHA  string
-	Tag        string
-	Action     VCSTagEventAction
+	WebhookID     uuid.UUID
+	Identifier    string // repo identifier, <owner>/<repo>
+	CommitSHA     string
+	Tag           string
+	Action        VCSTagEventAction
+	DefaultBranch string
 }
 
 type VCSTagEventAction string

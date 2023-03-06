@@ -155,7 +155,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 
 	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
 		Format: otf.String("tar.gz"),
-		SHA:    otf.String(opts.Ref),
+		SHA:    opts.Ref,
 	})
 	if err != nil {
 		return nil, err

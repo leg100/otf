@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -122,54 +123,62 @@ func (l *WorkspaceList) ToJSONAPI() any {
 }
 
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
-	var opts jsonapi.WorkspaceCreateOptions
-	if err := decode.Route(&opts, r); err != nil {
+	var params jsonapi.WorkspaceCreateOptions
+	if err := decode.Route(&params, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := opts.Validate(); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
+	opts := otf.CreateWorkspaceOptions{
+		AllowDestroyPlan:           params.AllowDestroyPlan,
+		AutoApply:                  params.AutoApply,
+		Description:                params.Description,
+		ExecutionMode:              (*otf.ExecutionMode)(params.ExecutionMode),
+		FileTriggersEnabled:        params.FileTriggersEnabled,
+		GlobalRemoteState:          params.GlobalRemoteState,
+		MigrationEnvironment:       params.MigrationEnvironment,
+		Name:                       params.Name,
+		Organization:               params.Organization,
+		QueueAllRuns:               params.QueueAllRuns,
+		SpeculativeEnabled:         params.SpeculativeEnabled,
+		SourceName:                 params.SourceName,
+		SourceURL:                  params.SourceURL,
+		StructuredRunOutputEnabled: params.StructuredRunOutputEnabled,
+		TerraformVersion:           params.TerraformVersion,
+		TriggerPrefixes:            params.TriggerPrefixes,
+		WorkingDirectory:           params.WorkingDirectory,
+	}
+	if params.Operations != nil {
+		if params.ExecutionMode != nil {
+			err := errors.New("operations is deprecated and cannot be specified when execution mode is used")
+			writeError(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		if *params.Operations {
+			opts.ExecutionMode = otf.ExecutionModePtr(otf.RemoteExecutionMode)
+		} else {
+			opts.ExecutionMode = otf.ExecutionModePtr(otf.LocalExecutionMode)
+		}
 	}
 
-	var repo *otf.WorkspaceRepo
-	if opts.VCSRepo != nil {
-		repo = new(otf.WorkspaceRepo)
-		if identifier := opts.VCSRepo.Identifier; identifier != nil {
-			repo.Identifier = *identifier
+	if params.VCSRepo != nil {
+		if params.VCSRepo.Identifier == nil || params.VCSRepo.OAuthTokenID == nil {
+			err := errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo")
+			writeError(w, http.StatusUnprocessableEntity, err)
+			return
 		}
-		if branch := opts.VCSRepo.Branch; branch != nil {
-			repo.Branch = *branch
+		opts.Repo = &otf.Connection{
+			Identifier:    *params.VCSRepo.Identifier,
+			VCSProviderID: *params.VCSRepo.OAuthTokenID,
 		}
-		if providerID := opts.VCSRepo.OAuthTokenID; providerID != nil {
-			repo.ProviderID = *providerID
+		if params.VCSRepo.Branch != nil {
+			opts.Branch = params.VCSRepo.Branch
 		}
 	}
-
-	ws, err := otf.CreateWorkspace(r.Context(), s.Application, otf.CreateWorkspaceOptions{
-		AllowDestroyPlan:           opts.AllowDestroyPlan,
-		AutoApply:                  opts.AutoApply,
-		Description:                opts.Description,
-		ExecutionMode:              (*otf.ExecutionMode)(opts.ExecutionMode),
-		FileTriggersEnabled:        opts.FileTriggersEnabled,
-		GlobalRemoteState:          opts.GlobalRemoteState,
-		MigrationEnvironment:       opts.MigrationEnvironment,
-		Name:                       opts.Name,
-		Organization:               opts.Organization,
-		QueueAllRuns:               opts.QueueAllRuns,
-		SpeculativeEnabled:         opts.SpeculativeEnabled,
-		SourceName:                 opts.SourceName,
-		SourceURL:                  opts.SourceURL,
-		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
-		TerraformVersion:           opts.TerraformVersion,
-		TriggerPrefixes:            opts.TriggerPrefixes,
-		WorkingDirectory:           opts.WorkingDirectory,
-		Repo:                       repo,
-	})
+	ws, err := otf.CreateWorkspace(r.Context(), s.Application, opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

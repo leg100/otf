@@ -52,18 +52,20 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			}
 
 			return cloud.VCSTagEvent{
-				WebhookID:  opts.WebhookID,
-				Tag:        parts[2],
-				Action:     action,
-				Identifier: event.GetRepo().GetFullName(),
-				CommitSHA:  event.GetAfter(),
+				WebhookID:     opts.WebhookID,
+				Tag:           parts[2],
+				Action:        action,
+				Identifier:    event.GetRepo().GetFullName(),
+				CommitSHA:     event.GetAfter(),
+				DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			}, nil
 		case "heads":
 			return cloud.VCSPushEvent{
-				WebhookID:  opts.WebhookID,
-				Branch:     parts[2],
-				Identifier: event.GetRepo().GetFullName(),
-				CommitSHA:  event.GetAfter(),
+				WebhookID:     opts.WebhookID,
+				Branch:        parts[2],
+				Identifier:    event.GetRepo().GetFullName(),
+				CommitSHA:     event.GetAfter(),
+				DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			}, nil
 		default:
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
@@ -84,11 +86,12 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		}
 
 		return cloud.VCSPullEvent{
-			WebhookID:  opts.WebhookID,
-			Action:     action,
-			Identifier: event.GetRepo().GetFullName(),
-			Branch:     event.PullRequest.Head.GetRef(),
-			CommitSHA:  event.GetPullRequest().GetHead().GetSHA(),
+			WebhookID:     opts.WebhookID,
+			Action:        action,
+			Identifier:    event.GetRepo().GetFullName(),
+			Branch:        event.PullRequest.Head.GetRef(),
+			CommitSHA:     event.GetPullRequest().GetHead().GetSHA(),
+			DefaultBranch: event.GetRepo().GetDefaultBranch(),
 		}, nil
 	default:
 		return nil, nil

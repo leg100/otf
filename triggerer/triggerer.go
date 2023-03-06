@@ -65,7 +65,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 	var webhookID uuid.UUID
 	var isPullRequest bool
 	var identifier string
-	var branch string
+	var branch, defaultBranch string
 	var sha string
 
 	switch event := event.(type) {
@@ -74,15 +74,19 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 		identifier = event.Identifier
 		sha = event.CommitSHA
 		branch = event.Branch
+		defaultBranch = event.DefaultBranch
 	case cloud.VCSPullEvent:
-		if event.Action != cloud.VCSPullEventUpdated {
-			// ignore all other pull events
+		// only trigger runs when opening a PR and pushing to a PR
+		switch event.Action {
+		case cloud.VCSPullEventOpened, cloud.VCSPullEventUpdated:
+		default:
 			return nil
 		}
 		webhookID = event.WebhookID
 		identifier = event.Identifier
 		sha = event.CommitSHA
 		branch = event.Branch
+		defaultBranch = event.DefaultBranch
 		isPullRequest = true
 	}
 
@@ -103,7 +107,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 	if workspaces[0].Repo() == nil {
 		return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID())
 	}
-	providerID := workspaces[0].Repo().ProviderID
+	providerID := workspaces[0].Repo().VCSProviderID
 
 	client, err := h.GetVCSClient(ctx, providerID)
 	if err != nil {
@@ -111,18 +115,40 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 	}
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Identifier: identifier,
-		Ref:        sha,
+		Ref:        &sha,
 	})
 	if err != nil {
 		return fmt.Errorf("retrieving repository tarball: %w", err)
 	}
 
+	// Determine which workspaces to trigger runs for. If its a PR then a
+	// (speculative) run is
+	// triggered for all workspaces. Otherwise each workspace's branch setting
+	// is checked and if it set then it must match the event's branch. If it is
+	// not set then the event's branch must match the repo's default branch. If
+	// neither of these conditions are true then the workspace is skipped.
+	filterFunc := func(unfiltered []*otf.Workspace) (filtered []*otf.Workspace) {
+		for _, ws := range unfiltered {
+			if ws.Branch() != "" && ws.Branch() == branch {
+				filtered = append(filtered, ws)
+			} else if branch == defaultBranch {
+				filtered = append(filtered, ws)
+			} else {
+				continue
+			}
+		}
+		return
+	}
+	if !isPullRequest {
+		workspaces = filterFunc(workspaces)
+	}
+
 	// create a config version for each workspace and trigger run.
 	for _, ws := range workspaces {
 		if ws.Repo() == nil {
+			// Should never happen...
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID())
 		}
-
 		cv, err := h.CreateConfigurationVersion(ctx, ws.ID(), otf.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(isPullRequest),
 			IngressAttributes: &otf.IngressAttributes{
@@ -135,7 +161,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 				// CompareURL        string
 				Identifier:      identifier,
 				IsPullRequest:   isPullRequest,
-				OnDefaultBranch: (ws.Repo().Branch == branch),
+				OnDefaultBranch: branch == defaultBranch,
 			},
 		})
 		if err != nil {

@@ -9,34 +9,14 @@ import (
 )
 
 func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
-	return CreateModule(ctx, db, mod)
-}
-
-func CreateModule(ctx context.Context, db otf.Database, mod *otf.Module) error {
-	err := db.Transaction(ctx, func(tx otf.Database) error {
-		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
-			ID:               String(mod.ID()),
-			CreatedAt:        Timestamptz(mod.CreatedAt()),
-			UpdatedAt:        Timestamptz(mod.UpdatedAt()),
-			Name:             String(mod.Name()),
-			Provider:         String(mod.Provider()),
-			Status:           String(string(mod.Status())),
-			OrganizationName: String(mod.Organization()),
-		})
-		if err != nil {
-			return err
-		}
-		if mod.Repo() != nil {
-			_, err = tx.InsertModuleRepo(ctx, pggen.InsertModuleRepoParams{
-				WebhookID:     UUID(mod.Repo().WebhookID),
-				VCSProviderID: String(mod.Repo().ProviderID),
-				ModuleID:      String(mod.ID()),
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+	_, err := db.InsertModule(ctx, pggen.InsertModuleParams{
+		ID:               String(mod.ID()),
+		CreatedAt:        Timestamptz(mod.CreatedAt()),
+		UpdatedAt:        Timestamptz(mod.UpdatedAt()),
+		Name:             String(mod.Name()),
+		Provider:         String(mod.Provider()),
+		Status:           String(string(mod.Status())),
+		OrganizationName: String(mod.Organization()),
 	})
 	return Error(err)
 }

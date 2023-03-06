@@ -22,13 +22,12 @@ func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts Con
 
 	var cv *ConfigurationVersion
 	if ws.Repo() != nil {
-		client, err := rs.GetVCSClient(ctx, ws.Repo().ProviderID)
+		client, err := rs.GetVCSClient(ctx, ws.Repo().VCSProviderID)
 		if err != nil {
 			return nil, err
 		}
 		tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 			Identifier: ws.Repo().Identifier,
-			Ref:        ws.Repo().Branch,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)

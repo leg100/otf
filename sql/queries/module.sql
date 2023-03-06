@@ -17,17 +17,6 @@ INSERT INTO modules (
     pggen.arg('organization_name')
 );
 
--- name: InsertModuleRepo :exec
-INSERT INTO module_repos (
-    webhook_id,
-    vcs_provider_id,
-    module_id
-) VALUES (
-    pggen.arg('webhook_id'),
-    pggen.arg('vcs_provider_id'),
-    pggen.arg('module_id')
-);
-
 -- name: InsertModuleVersion :one
 INSERT INTO module_versions (
     module_version_id,
@@ -55,7 +44,7 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"module_repos" AS module_repo,
+    (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
@@ -63,7 +52,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE m.organization_name = pggen.arg('organization_name')
 ;
 
@@ -76,7 +65,7 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"module_repos" AS module_repo,
+    (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
@@ -84,7 +73,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE m.organization_name = pggen.arg('organization_name')
 AND   m.name = pggen.arg('name')
 AND   m.provider = pggen.arg('provider')
@@ -99,7 +88,7 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"module_repos" AS module_repo,
+    (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
@@ -107,7 +96,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE m.module_id = pggen.arg('id')
 ;
 
@@ -120,7 +109,7 @@ SELECT
     m.provider,
     m.status,
     m.organization_name,
-    (r.*)::"module_repos" AS module_repo,
+    (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
@@ -128,7 +117,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 

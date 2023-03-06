@@ -11,10 +11,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/hooks"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/module"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/repo"
 )
 
 var _ otf.Application = (*Application)(nil)
@@ -31,8 +30,7 @@ type Application struct {
 
 	*otf.RunFactory
 	*otf.VCSProviderFactory
-	otf.WorkspaceConnector
-	otf.HookService
+	otf.RepoService
 	*otf.RunStarter
 	*module.Publisher
 	*otf.ModuleVersionUploader
@@ -91,16 +89,13 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		WorkspaceService:            child,
 		ConfigurationVersionService: child,
 	}
-	child.HookService = hooks.NewService(hooks.NewServiceOptions{
-		Database:        db,
-		CloudService:    child.Service,
-		HostnameService: child,
-	})
-	child.WorkspaceConnector = &workspace.Connector{
-		HookService:        child,
-		WorkspaceService:   child,
+	child.RepoService = repo.NewService(repo.NewServiceOptions{
+		Logger:             opts.Logger,
+		Database:           db,
+		CloudService:       child.Service,
+		HostnameService:    child,
 		VCSProviderService: child,
-	}
+	})
 	child.Publisher = module.NewPublisher(child)
 	child.RunStarter = &otf.RunStarter{child}
 	child.ModuleVersionUploader = &otf.ModuleVersionUploader{child}

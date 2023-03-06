@@ -36,6 +36,7 @@ type Workspace struct {
 	updatedAt                  time.Time
 	allowDestroyPlan           bool
 	autoApply                  bool
+	branch                     string
 	canQueueDestroyPlan        bool
 	description                string
 	environment                string
@@ -55,7 +56,7 @@ type Workspace struct {
 	workingDirectory           string
 	organization               string
 	latestRunID                *string
-	repo                       *WorkspaceRepo
+	repo                       *Connection
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
@@ -65,6 +66,7 @@ func (ws *Workspace) String() string                   { return ws.organization 
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
 func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
+func (ws *Workspace) Branch() string                   { return ws.branch }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
 func (ws *Workspace) Environment() string              { return ws.environment }
 func (ws *Workspace) Description() string              { return ws.description }
@@ -83,7 +85,7 @@ func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefix
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) Organization() string             { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
-func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
+func (ws *Workspace) Repo() *Connection                { return ws.repo }
 
 func (ws *Workspace) SetLatestRun(runID string) { ws.latestRunID = String(runID) }
 
@@ -301,8 +303,12 @@ type WorkspaceService interface {
 
 type WorkspaceConnectionService interface {
 	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
-	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	DisconnectWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+	DisconnectWorkspace(ctx context.Context, workspaceID string) error
+}
+
+type ConnectWorkspaceOptions struct {
+	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
+	ProviderID string `schema:"vcs_provider_id,required"`
 }
 
 type WorkspacePermissionService interface {
@@ -330,15 +336,6 @@ type WorkspaceStore interface {
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 
-	// CreateWorkspaceRepo creates a workspace repo in the persistence store.
-	CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	// UpdateWorkspaceRepo updates a workspace's repo in the persistence store.
-	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
-	// DeleteWorkspaceRepo deletes a workspace's repo from the persistence
-	// store, returning the workspace without the repo as well the original repo, or an
-	// error.
-	DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*Workspace, error)
-
 	WorkspaceLockService
 	CurrentRunService
 	WorkspacePermissionService
@@ -360,9 +357,8 @@ func CreateWorkspace(ctx context.Context, app Application, opts CreateWorkspaceO
 		// If needed, connect the VCS repository.
 		if repo := opts.Repo; repo != nil {
 			err = a.ConnectWorkspace(ctx, ws.ID(), ConnectWorkspaceOptions{
-				ProviderID: repo.ProviderID,
+				ProviderID: repo.VCSProviderID,
 				Identifier: repo.Identifier,
-				Branch:     repo.Branch,
 			})
 			if err != nil {
 				return errors.Wrap(err, "connecting workspace")

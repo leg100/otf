@@ -11,35 +11,36 @@ import (
 
 // WorkspaceResult represents the result of a database query for a workspace.
 type WorkspaceResult struct {
-	WorkspaceID                pgtype.Text           `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz    `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz    `json:"updated_at"`
-	AllowDestroyPlan           bool                  `json:"allow_destroy_plan"`
-	AutoApply                  bool                  `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                  `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text           `json:"description"`
-	Environment                pgtype.Text           `json:"environment"`
-	ExecutionMode              pgtype.Text           `json:"execution_mode"`
-	FileTriggersEnabled        bool                  `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                  `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text           `json:"migration_environment"`
-	Name                       pgtype.Text           `json:"name"`
-	QueueAllRuns               bool                  `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                  `json:"speculative_enabled"`
-	SourceName                 pgtype.Text           `json:"source_name"`
-	SourceURL                  pgtype.Text           `json:"source_url"`
-	StructuredRunOutputEnabled bool                  `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text           `json:"terraform_version"`
-	TriggerPrefixes            []string              `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text           `json:"working_directory"`
-	LockRunID                  pgtype.Text           `json:"lock_run_id"`
-	LockUserID                 pgtype.Text           `json:"lock_user_id"`
-	LatestRunID                pgtype.Text           `json:"latest_run_id"`
-	OrganizationName           pgtype.Text           `json:"organization_name"`
-	UserLock                   *pggen.Users          `json:"user_lock"`
-	RunLock                    *pggen.Runs           `json:"run_lock"`
-	WorkspaceRepo              *pggen.WorkspaceRepos `json:"workspace_repo"`
-	Webhook                    *pggen.Webhooks       `json:"webhook"`
+	WorkspaceID                pgtype.Text            `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
+	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
+	AutoApply                  bool                   `json:"auto_apply"`
+	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text            `json:"description"`
+	Environment                pgtype.Text            `json:"environment"`
+	ExecutionMode              pgtype.Text            `json:"execution_mode"`
+	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool                   `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
+	Name                       pgtype.Text            `json:"name"`
+	QueueAllRuns               bool                   `json:"queue_all_runs"`
+	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
+	SourceName                 pgtype.Text            `json:"source_name"`
+	SourceURL                  pgtype.Text            `json:"source_url"`
+	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text            `json:"terraform_version"`
+	TriggerPrefixes            []string               `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text            `json:"working_directory"`
+	LockRunID                  pgtype.Text            `json:"lock_run_id"`
+	LockUserID                 pgtype.Text            `json:"lock_user_id"`
+	LatestRunID                pgtype.Text            `json:"latest_run_id"`
+	OrganizationName           pgtype.Text            `json:"organization_name"`
+	Branch                     pgtype.Text            `json:"branch"`
+	UserLock                   *pggen.Users           `json:"user_lock"`
+	RunLock                    *pggen.Runs            `json:"run_lock"`
+	WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
+	Webhook                    *pggen.Webhooks        `json:"webhook"`
 }
 
 func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
@@ -49,6 +50,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		updatedAt:                  result.UpdatedAt.Time.UTC(),
 		allowDestroyPlan:           result.AllowDestroyPlan,
 		autoApply:                  result.AutoApply,
+		branch:                     result.Branch.String,
 		canQueueDestroyPlan:        result.CanQueueDestroyPlan,
 		description:                result.Description.String,
 		environment:                result.Environment.String,
@@ -68,12 +70,11 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		organization:               result.OrganizationName.String,
 	}
 
-	if result.WorkspaceRepo != nil {
-		ws.repo = &WorkspaceRepo{
-			Branch:     result.WorkspaceRepo.Branch.String,
-			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
-			WebhookID:  result.Webhook.WebhookID.Bytes,
-			Identifier: result.Webhook.Identifier.String,
+	if result.WorkspaceConnection != nil {
+		ws.repo = &Connection{
+			VCSProviderID: result.WorkspaceConnection.VCSProviderID.String,
+			WebhookID:     result.Webhook.WebhookID.Bytes,
+			Identifier:    result.Webhook.Identifier.String,
 		}
 	}
 

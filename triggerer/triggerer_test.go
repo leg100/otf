@@ -13,32 +13,75 @@ import (
 )
 
 func TestTriggerer(t *testing.T) {
+	ctx := context.Background()
 	org := otf.NewTestOrganization(t)
 	provider := otf.NewTestVCSProvider(t, org)
 	repo := otf.NewTestWorkspaceRepo(provider)
-	app := &fakeTriggererApp{
-		workspaces: []*otf.Workspace{
-			otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
-			otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
-			otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+
+	tests := []struct {
+		name    string
+		ws      *otf.Workspace
+		event   cloud.VCSEvent
+		trigger bool
+	}{
+		{
+			name:    "trigger run for push to default branch",
+			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
+			trigger: true,
+		},
+		{
+			name:    "skip run for push to non-default branch",
+			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
+			trigger: false,
+		},
+		{
+			name:    "trigger run for push to user-specified branch",
+			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo), otf.WithBranch("dev")),
+			event:   cloud.VCSPushEvent{Branch: "dev"},
+			trigger: true,
+		},
+		{
+			name:    "skip run for push to branch not matching user-specified branch",
+			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo), otf.WithBranch("dev")),
+			event:   cloud.VCSPushEvent{Branch: "staging"},
+			trigger: false,
+		},
+		{
+			name:    "trigger run for opened pr",
+			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
+			trigger: true,
+		},
+		{
+			name:    "trigger run for push to pr",
+			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
+			trigger: true,
 		},
 	}
-	triggerer := Triggerer{
-		Application: app,
-		Logger:      logr.Discard(),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := &fakeTriggererApp{
+				workspaces: []*otf.Workspace{tt.ws},
+			}
+			triggerer := Triggerer{
+				Application: app,
+				Logger:      logr.Discard(),
+			}
+			err := triggerer.handle(ctx, tt.event)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.trigger, app.triggered)
+		})
 	}
-
-	err := triggerer.handle(context.Background(), cloud.VCSPushEvent{
-		Branch: "main",
-	})
-	require.NoError(t, err)
-
-	assert.Equal(t, 3, len(app.created))
 }
 
 type fakeTriggererApp struct {
 	workspaces []*otf.Workspace
 	created    []*otf.ConfigurationVersion // created config versions
+	triggered  bool                        // whether a run was triggered
 
 	otf.Application
 }
@@ -61,6 +104,7 @@ func (f *fakeTriggererApp) UploadConfig(context.Context, string, []byte) error {
 }
 
 func (f *fakeTriggererApp) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
+	f.triggered = true
 	return nil, nil
 }
 
