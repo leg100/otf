@@ -14,7 +14,7 @@ type TestRunCreateOptions struct {
 	ExecutionMode     *ExecutionMode
 	Status            RunStatus
 	AutoApply         *bool
-	Repo              *WorkspaceRepo
+	Repo              *Connection
 	IngressAttributes *IngressAttributes
 	Workspace         *Workspace // run's workspace; if nil a workspace is auto created
 }

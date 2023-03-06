@@ -33,9 +33,15 @@ func WorkspaceName(name string) NewTestWorkspaceOption {
 	}
 }
 
-func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
+func WithRepo(repo *Connection) NewTestWorkspaceOption {
 	return func(ws *Workspace) {
 		ws.repo = repo
+	}
+}
+
+func WithBranch(branch string) NewTestWorkspaceOption {
+	return func(ws *Workspace) {
+		ws.branch = branch
 	}
 }
 
@@ -101,10 +107,10 @@ func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
 	}
 }
 
-func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
-	return &WorkspaceRepo{
-		ProviderID: provider.ID(),
-		Identifier: "leg100/" + uuid.NewString(),
+func NewTestWorkspaceRepo(provider *VCSProvider) *Connection {
+	return &Connection{
+		VCSProviderID: provider.ID(),
+		Identifier:    "leg100/" + uuid.NewString(),
 	}
 }
 

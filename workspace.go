@@ -36,6 +36,7 @@ type Workspace struct {
 	updatedAt                  time.Time
 	allowDestroyPlan           bool
 	autoApply                  bool
+	branch                     string
 	canQueueDestroyPlan        bool
 	description                string
 	environment                string
@@ -55,7 +56,7 @@ type Workspace struct {
 	workingDirectory           string
 	organization               string
 	latestRunID                *string
-	repo                       *WorkspaceRepo
+	repo                       *Connection
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
@@ -65,6 +66,7 @@ func (ws *Workspace) String() string                   { return ws.organization 
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
 func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
+func (ws *Workspace) Branch() string                   { return ws.branch }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
 func (ws *Workspace) Environment() string              { return ws.environment }
 func (ws *Workspace) Description() string              { return ws.description }
@@ -83,7 +85,7 @@ func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefix
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) Organization() string             { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
-func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
+func (ws *Workspace) Repo() *Connection                { return ws.repo }
 
 func (ws *Workspace) SetLatestRun(runID string) { ws.latestRunID = String(runID) }
 
@@ -304,6 +306,11 @@ type WorkspaceConnectionService interface {
 	DisconnectWorkspace(ctx context.Context, workspaceID string) error
 }
 
+type ConnectWorkspaceOptions struct {
+	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
+	ProviderID string `schema:"vcs_provider_id,required"`
+}
+
 type WorkspacePermissionService interface {
 	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
 	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
@@ -350,9 +357,8 @@ func CreateWorkspace(ctx context.Context, app Application, opts CreateWorkspaceO
 		// If needed, connect the VCS repository.
 		if repo := opts.Repo; repo != nil {
 			err = a.ConnectWorkspace(ctx, ws.ID(), ConnectWorkspaceOptions{
-				ProviderID: repo.ProviderID,
+				ProviderID: repo.VCSProviderID,
 				Identifier: repo.Identifier,
-				Branch:     repo.Branch,
 			})
 			if err != nil {
 				return errors.Wrap(err, "connecting workspace")

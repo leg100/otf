@@ -79,6 +79,7 @@ func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 type CreateWorkspaceOptions struct {
 	AllowDestroyPlan           *bool
 	AutoApply                  *bool
+	Branch                     *string
 	Description                *string
 	ExecutionMode              *ExecutionMode
 	FileTriggersEnabled        *bool
@@ -94,5 +95,5 @@ type CreateWorkspaceOptions struct {
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
 	Organization               *string `schema:"organization_name,required"`
-	Repo                       *WorkspaceRepo
+	Repo                       *Connection
 }

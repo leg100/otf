@@ -180,6 +180,15 @@ func (a *Application) DeleteWorkspace(ctx context.Context, workspaceID string) (
 		return nil, err
 	}
 
+	// disconnect repo before deleting
+	if ws.Repo() != nil {
+		err = a.DisconnectWorkspace(ctx, ws.ID())
+		// ignore warnings; the repo is still disconnected successfully
+		if err != nil && !errors.Is(err, otf.ErrWarning) {
+			return nil, err
+		}
+	}
+
 	if err := a.db.DeleteWorkspace(ctx, ws.ID()); err != nil {
 		a.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name(), "subject", subject)
 		return nil, err
