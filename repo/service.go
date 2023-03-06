@@ -37,7 +37,7 @@ type NewServiceOptions struct {
 }
 
 // Connect an OTF resource to a VCS repo.
-func (s *Service) Connect(ctx context.Context, opts otf.ConnectionOptions) (*otf.Connection, error) {
+func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Connection, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err

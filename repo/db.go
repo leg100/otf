@@ -68,7 +68,7 @@ func (db *pgdb) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID str
 	return nil
 }
 
-func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf.ConnectionOptions) error {
+func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf.ConnectOptions) error {
 	params := pggen.InsertRepoConnectionParams{
 		WebhookID:     sql.UUID(hookID),
 		VCSProviderID: sql.String(opts.VCSProviderID),

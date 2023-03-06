@@ -59,7 +59,7 @@ func TestDB(t *testing.T) {
 		ws := createWorkspace(t)
 		hook := createHook(t, db, nil)
 
-		err := db.createConnection(ctx, hook.id, otf.ConnectionOptions{
+		err := db.createConnection(ctx, hook.id, otf.ConnectOptions{
 			ConnectionType: otf.WorkspaceConnection,
 			VCSProviderID:  provider.ID(),
 			ResourceID:     ws.ID(),
@@ -72,7 +72,7 @@ func TestDB(t *testing.T) {
 		module := createModule(t)
 		hook := createHook(t, db, nil)
 
-		err := db.createConnection(ctx, hook.id, otf.ConnectionOptions{
+		err := db.createConnection(ctx, hook.id, otf.ConnectOptions{
 			ConnectionType: otf.ModuleConnection,
 			VCSProviderID:  provider.ID(),
 			ResourceID:     module.ID(),
@@ -151,7 +151,7 @@ func createHook(t *testing.T, db *pgdb, cloudID *string) *hook {
 func createConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hook *hook, connType otf.ConnectionType, resourceID string) *otf.Connection {
 	ctx := context.Background()
 
-	err := db.createConnection(ctx, hook.id, otf.ConnectionOptions{
+	err := db.createConnection(ctx, hook.id, otf.ConnectOptions{
 		ConnectionType: connType,
 		VCSProviderID:  provider.ID(),
 		ResourceID:     resourceID,

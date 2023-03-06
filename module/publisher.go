@@ -51,7 +51,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 			return err
 		}
 
-		connection, err := p.RepoService.Connect(ctx, otf.ConnectionOptions{
+		connection, err := p.RepoService.Connect(ctx, otf.ConnectOptions{
 			ConnectionType: otf.ModuleConnection,
 			ResourceID:     mod.ID(),
 			VCSProviderID:  opts.ProviderID,

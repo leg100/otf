@@ -28,14 +28,14 @@ type (
 	RepoService interface {
 		// Connect adds a connection between a VCS repo and an OTF resource. A
 		// webhook is created if one doesn't exist already.
-		Connect(ctx context.Context, opts ConnectionOptions) (*Connection, error)
+		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
 		// Disconnect removes a connection between a VCS repo and an OTF
 		// resource. If there are no more connections then its
 		// webhook is removed.
 		Disconnect(ctx context.Context, opts DisconnectOptions) error
 	}
 
-	ConnectionOptions struct {
+	ConnectOptions struct {
 		ConnectionType // OTF resource type
 
 		VCSProviderID string // vcs provider of repo

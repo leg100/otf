@@ -69,7 +69,7 @@ func (a *Application) ConnectWorkspace(ctx context.Context, workspaceID string, 
 		return err
 	}
 
-	_, err = a.Connect(ctx, otf.ConnectionOptions{
+	_, err = a.Connect(ctx, otf.ConnectOptions{
 		ConnectionType: otf.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.ProviderID,
