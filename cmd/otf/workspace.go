@@ -38,7 +38,7 @@ func (a *application) workspaceListCommand() *cobra.Command {
 					return err
 				}
 				for _, ws := range list.Items {
-					fmt.Fprintln(cmd.OutOrStdout(), ws.Name())
+					fmt.Fprintln(cmd.OutOrStdout(), ws.Name)
 				}
 				if list.NextPage() == nil {
 					break
@@ -154,7 +154,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully locked workspace %s\n", ws.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully locked workspace %s\n", ws.Name)
 
 			return nil
 		},
@@ -188,7 +188,7 @@ func (a *application) workspaceUnlockCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully unlocked workspace %s\n", ws.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully unlocked workspace %s\n", ws.Name)
 
 			return nil
 		},

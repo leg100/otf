@@ -11,7 +11,7 @@ import (
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *otf.User) error {
-	return db.Transaction(ctx, func(tx otf.Database) error {
+	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := tx.InsertUser(ctx, pggen.InsertUserParams{
 			ID:        sql.String(user.ID),
 			Username:  sql.String(user.Username),

@@ -19,10 +19,10 @@ type db interface {
 
 // DB is a database of API tokens
 type DB struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
-func newPGDB(db otf.Database) *DB {
+func newPGDB(db otf.DB) *DB {
 	return &DB{db}
 }
 

@@ -142,9 +142,21 @@ func (a *Service) create(ctx context.Context, opts otf.CreateWorkspaceOptions) (
 		return nil, err
 	}
 
-	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
+	err = a.db.tx(ctx, func(tx *pgdb) error {
+		if err := tx.CreateWorkspace(ctx, ws); err != nil {
+			return err
+		}
+		// If needed, connect the VCS repository.
+		if repo := opts.Repo; repo != nil {
+			return serviceWithDB(a, tx).connect(ctx, ws.ID, otf.ConnectWorkspaceOptions{
+				ProviderID: repo.VCSProviderID,
+				Identifier: repo.Identifier,
+			})
+		}
+		return nil
+	})
+	if err != nil {
 		a.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
-		return nil, err
 	}
 
 	a.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
@@ -244,7 +256,7 @@ func (a *Service) list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf
 			if err != nil {
 				return nil, err
 			}
-			if user, ok := subject.(otf.User); ok {
+			if user, ok := subject.(*otf.User); ok {
 				return a.db.ListWorkspacesByUserID(ctx, user.ID, *opts.Organization, opts.ListOptions)
 			}
 		} else if err != nil {

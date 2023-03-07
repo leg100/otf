@@ -14,10 +14,10 @@ import (
 
 // pgdb is a database of runs on postgres
 type pgdb struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
-func newDB(db otf.Database) *pgdb {
+func newDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
@@ -303,7 +303,7 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase otf.Phase)
 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Transaction(ctx, func(tx otf.Database) error {
+	return db.Tx(ctx, func(tx otf.DB) error {
 		return callback(newDB(tx))
 	})
 }

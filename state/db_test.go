@@ -96,7 +96,7 @@ func TestStateVersion_Create(t *testing.T) {
 		}{
 			{
 				name: "filter by workspace",
-				opts: stateVersionListOptions{Workspace: ws.Name(), Organization: org.Name()},
+				opts: stateVersionListOptions{Workspace: ws.Name, Organization: org.Name},
 				want: func(t *testing.T, l *versionList, created ...*version) {
 					assert.Equal(t, 2, len(l.Items))
 					for _, c := range created {

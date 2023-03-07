@@ -88,7 +88,7 @@ func TestWorkspaceLock(t *testing.T) {
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
-	want := fmt.Sprintf("Successfully locked workspace %s\n", ws.Name())
+	want := fmt.Sprintf("Successfully locked workspace %s\n", ws.Name)
 	assert.Equal(t, want, got.String())
 
 	t.Run("missing name", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestWorkspaceUnlock(t *testing.T) {
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
-	want := fmt.Sprintf("Successfully unlocked workspace %s\n", ws.Name())
+	want := fmt.Sprintf("Successfully unlocked workspace %s\n", ws.Name)
 	assert.Equal(t, want, got.String())
 
 	t.Run("missing name", func(t *testing.T) {

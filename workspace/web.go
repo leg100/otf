@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
@@ -18,7 +17,7 @@ import (
 type web struct {
 	otf.Renderer
 	otf.RunService
-	auth.TeamService
+	otf.TeamService
 	*vcsprovider.Service
 
 	svc               service
@@ -59,7 +58,7 @@ func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.svc.list(r.Context(), WorkspaceListOptions{
+	workspaces, err := h.svc.list(r.Context(), otf.WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -228,7 +227,7 @@ func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.svc.update(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
+	ws, err := h.svc.update(r.Context(), params.WorkspaceID, otf.UpdateWorkspaceOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,
@@ -258,8 +257,8 @@ func (h *web) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted workspace: "+ws.Name())
-	http.Redirect(w, r, paths.Workspaces(ws.Organization()), http.StatusFound)
+	html.FlashSuccess(w, "deleted workspace: "+ws.Name)
+	http.Redirect(w, r, paths.Workspaces(ws.Organization), http.StatusFound)
 }
 
 func (h *web) lockWorkspace(w http.ResponseWriter, r *http.Request) {

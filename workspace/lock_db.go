@@ -46,11 +46,11 @@ func MarshalWorkspaceLockParams(ws *otf.Workspace) (pggen.UpdateWorkspaceLockByI
 		WorkspaceID: pgtype.Text{String: ws.ID, Status: pgtype.Present},
 	}
 	switch state := ws.LockedState.(type) {
-	case otf.RunLock:
-		params.RunID = pgtype.Text{String: state.ID, Status: pgtype.Present}
+	case RunLock:
+		params.RunID = pgtype.Text{String: state.id, Status: pgtype.Present}
 		params.UserID = pgtype.Text{Status: pgtype.Null}
-	case otf.UserLock:
-		params.UserID = pgtype.Text{String: state.ID, Status: pgtype.Present}
+	case UserLock:
+		params.UserID = pgtype.Text{String: state.id, Status: pgtype.Present}
 		params.RunID = pgtype.Text{Status: pgtype.Null}
 	case nil:
 		params.RunID = pgtype.Text{Status: pgtype.Null}
@@ -65,10 +65,11 @@ func unmarshalWorkspaceLock(dst *otf.Workspace, row *WorkspaceResult) error {
 	if row.UserLock == nil && row.RunLock == nil {
 		dst.LockedState = nil
 	} else if row.UserLock != nil {
-		dst.LockedState = otf.UserLock{
-			ID: row.UserLock.UserID.String, username: row.UserLock.Username.String}
+		dst.LockedState = UserLock{
+			id: row.UserLock.UserID.String, username: row.UserLock.Username.String,
+		}
 	} else if row.RunLock != nil {
-		dst.LockedState = otf.RunLock{id: row.RunLock.RunID.String}
+		dst.LockedState = RunLock{id: row.RunLock.RunID.String}
 	} else {
 		return fmt.Errorf("workspace cannot be locked by both a run and a user")
 	}

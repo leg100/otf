@@ -14,7 +14,7 @@ type web struct {
 	otf.Renderer
 	otf.WorkspaceService
 
-	app application
+	svc service
 }
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -40,13 +40,13 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_new.tmpl", w, r, struct {
-		Workspace  otf.Workspace
-		Variable   *Variable
+		Workspace  *otf.Workspace
+		Variable   *otf.Variable
 		EditMode   bool
 		FormAction string
 	}{
 		Workspace:  ws,
-		Variable:   &Variable{},
+		Variable:   &otf.Variable{},
 		EditMode:   false,
 		FormAction: paths.CreateVariable(workspaceID),
 	})
@@ -68,7 +68,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.app.create(r.Context(), params.WorkspaceID, otf.CreateVariableOptions{
+	variable, err := h.svc.create(r.Context(), params.WorkspaceID, otf.CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -81,7 +81,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.FlashSuccess(w, "added variable: "+variable.Key())
+	html.FlashSuccess(w, "added variable: "+variable.Key)
 	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
 }
 
@@ -92,7 +92,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := h.app.list(r.Context(), workspaceID)
+	variables, err := h.svc.list(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,8 +104,8 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_list.tmpl", w, r, struct {
-		Workspace otf.Workspace
-		Variables []*Variable
+		Workspace *otf.Workspace
+		Variables []*otf.Variable
 	}{
 		Workspace: ws,
 		Variables: variables,
@@ -119,7 +119,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.app.get(r.Context(), variableID)
+	variable, err := h.svc.get(r.Context(), variableID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -131,8 +131,8 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_edit.tmpl", w, r, struct {
-		Workspace  otf.Workspace
-		Variable   *Variable
+		Workspace  *otf.Workspace
+		Variable   *otf.Variable
 		EditMode   bool
 		FormAction string
 	}{
@@ -167,7 +167,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		params.Value = nil
 	}
 
-	variable, err := h.app.update(r.Context(), params.VariableID, otf.UpdateVariableOptions{
+	variable, err := h.svc.update(r.Context(), params.VariableID, otf.UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -180,7 +180,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.FlashSuccess(w, "updated variable: "+variable.Key())
+	html.FlashSuccess(w, "updated variable: "+variable.Key)
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
 }
 
@@ -191,12 +191,12 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.app.delete(r.Context(), variableID)
+	variable, err := h.svc.delete(r.Context(), variableID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "deleted variable: "+variable.Key())
+	html.FlashSuccess(w, "deleted variable: "+variable.Key)
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
 }

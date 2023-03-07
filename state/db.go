@@ -13,7 +13,7 @@ import (
 
 // db is a database of state and state versions
 type db interface {
-	otf.Database
+	otf.DB
 
 	createVersion(context.Context, *version) error
 	listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
@@ -33,7 +33,7 @@ func newPGDB(db otf.DB) *pgdb {
 }
 
 func (db *pgdb) createVersion(ctx context.Context, v *version) error {
-	return db.Transaction(ctx, func(db otf.Database) error {
+	return db.Tx(ctx, func(db otf.DB) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 			ID:          sql.String(v.ID),
 			CreatedAt:   sql.Timestamptz(v.CreatedAt),

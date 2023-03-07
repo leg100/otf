@@ -1,6 +1,7 @@
 package variable
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -10,13 +11,12 @@ import (
 )
 
 type api struct {
-	app application
+	svc service
 }
 
 // Implements TFC workspace variables API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables#update-variables
-//
 func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.create).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.list).Methods("GET")
@@ -25,31 +25,18 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.delete).Methods("DELETE")
 }
 
-// variableList assembles a workspace list JSONAPI DTO
-type variableList struct {
-	variables []*Variable
-}
-
-func (l *variableList) ToJSONAPI() any {
-	variables := &jsonapiList{}
-	for _, v := range l.variables {
-		variables.Items = append(variables.Items, v.ToJSONAPI().(*jsonapiVariable))
-	}
-	return variables
-}
-
 func (h *api) create(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var opts jsonapiVariableCreateOptions
+	var opts jsonapi.VariableCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variable, err := h.app.create(r.Context(), workspaceID, otf.CreateVariableOptions{
+	variable, err := h.svc.create(r.Context(), workspaceID, otf.CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -61,7 +48,7 @@ func (h *api) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, variable, jsonapi.WithCode(http.StatusCreated))
+	h.writeResponse(w, r, variable, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (h *api) get(w http.ResponseWriter, r *http.Request) {
@@ -70,12 +57,12 @@ func (h *api) get(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variable, err := h.app.get(r.Context(), variableID)
+	variable, err := h.svc.get(r.Context(), variableID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, variable)
+	h.writeResponse(w, r, variable)
 }
 
 func (h *api) list(w http.ResponseWriter, r *http.Request) {
@@ -84,12 +71,12 @@ func (h *api) list(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variables, err := h.app.list(r.Context(), workspaceID)
+	variables, err := h.svc.list(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &variableList{variables})
+	h.writeResponse(w, r, variables)
 }
 
 func (h *api) update(w http.ResponseWriter, r *http.Request) {
@@ -98,12 +85,12 @@ func (h *api) update(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var opts jsonapiVariableUpdateOptions
+	var opts jsonapi.VariableUpdateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	updated, err := h.app.update(r.Context(), variableID, otf.UpdateVariableOptions{
+	updated, err := h.svc.update(r.Context(), variableID, otf.UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -115,7 +102,7 @@ func (h *api) update(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, updated)
+	h.writeResponse(w, r, updated)
 }
 
 func (h *api) delete(w http.ResponseWriter, r *http.Request) {
@@ -124,9 +111,49 @@ func (h *api) delete(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	_, err = h.app.delete(r.Context(), variableID)
+	_, err = h.svc.delete(r.Context(), variableID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
+}
+
+// writeResponse encodes v as json:api and writes it to the body of the http response.
+func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+	var payload any
+
+	convert := func(from *otf.Variable) *jsonapi.Variable {
+		to := jsonapi.Variable{
+			ID:          from.ID,
+			Key:         from.Key,
+			Value:       from.Value,
+			Description: from.Description,
+			Category:    string(from.Category),
+			Sensitive:   from.Sensitive,
+			HCL:         from.HCL,
+			Workspace: &jsonapi.Workspace{
+				ID: from.WorkspaceID,
+			},
+		}
+		if to.Sensitive {
+			to.Value = "" // scrub sensitive values
+		}
+		return &to
+	}
+
+	switch v := v.(type) {
+	case *otf.Variable:
+		payload = convert(v)
+	case []*otf.Variable:
+		var to jsonapi.VariableList
+		for _, from := range v {
+			to.Items = append(to.Items, convert(from))
+		}
+		payload = &to
+	default:
+		err := fmt.Errorf("no json:api struct found for %T", v)
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, payload, opts...)
 }

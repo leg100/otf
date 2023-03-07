@@ -45,7 +45,7 @@ type (
 		MaxUploadSize       int64
 
 		otf.Cache
-		otf.Database
+		otf.DB
 		*surl.Signer
 	}
 )

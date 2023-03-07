@@ -21,11 +21,11 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 		return nil, err
 	}
 
-	var state LockedState
+	var state otf.LockedState
 	if runID != nil {
 		state = RunLock{id: *runID}
-	} else if user, ok := subject.(otf.User); ok {
-		state = UserLock{id: user.ID, username: user.Username()}
+	} else if user, ok := subject.(*otf.User); ok {
+		state = UserLock{id: user.ID, username: user.Username}
 	} else {
 		svc.Error(otf.ErrWorkspaceUnlockDenied, "subject", subject, "workspace", workspaceID)
 		return nil, otf.ErrWorkspaceUnlockDenied
@@ -40,7 +40,7 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 	}
 	svc.V(1).Info("locked workspace", "subject", subject, "workspace", workspaceID)
 
-	svc.Publish(otf.Event{Type: EventLocked, Payload: ws})
+	svc.Publish(otf.Event{Type: otf.EventLocked, Payload: ws})
 
 	return ws, nil
 }
@@ -65,7 +65,7 @@ func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) 
 	}
 	svc.V(1).Info("unlocked workspace", "subject", subject, "workspace", workspaceID)
 
-	svc.Publish(otf.Event{Type: EventUnlocked, Payload: ws})
+	svc.Publish(otf.Event{Type: otf.EventUnlocked, Payload: ws})
 
 	return ws, nil
 }

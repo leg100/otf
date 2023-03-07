@@ -12,10 +12,10 @@ import (
 
 // pgdb is a database of organizations on postgres
 type pgdb struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
-func newDB(db otf.Database) *pgdb {
+func newDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
@@ -36,7 +36,7 @@ func (db *pgdb) create(ctx context.Context, org *otf.Organization) error {
 
 func (db *pgdb) update(ctx context.Context, name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
 	var org *otf.Organization
-	err := db.Transaction(ctx, func(tx otf.Database) error {
+	err := db.Tx(ctx, func(tx otf.DB) error {
 		result, err := tx.FindOrganizationByNameForUpdate(ctx, sql.String(name))
 		if err != nil {
 			return err

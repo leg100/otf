@@ -12,7 +12,7 @@ import (
 func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) otf.Workspace {
 	ctx := context.Background()
 	wsDB := newdb(db)
-	ws, err := NewWorkspace(CreateWorkspaceOptions{
+	ws, err := otf.NewWorkspace(otf.CreateWorkspaceOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &organization,
 	})
@@ -20,10 +20,10 @@ func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) otf.Works
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		wsDB.DeleteWorkspace(ctx, ws.id)
+		wsDB.DeleteWorkspace(ctx, ws.ID)
 	})
 	return otf.Workspace{
-		ID:   ws.id,
-		Name: ws.name,
+		ID:   ws.ID,
+		Name: ws.Name,
 	}
 }

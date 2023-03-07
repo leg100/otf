@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Run represents a Terraform Enterprise run.
+// Run is a terraform run.
 type Run struct {
 	ID                     string               `jsonapi:"primary,runs"`
 	Actions                *RunActions          `jsonapi:"attr,actions"`

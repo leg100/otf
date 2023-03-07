@@ -76,7 +76,7 @@ type (
 	CreateWorkspaceOptions struct {
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
-	Branch                     *string
+		Branch                     *string
 		Description                *string
 		ExecutionMode              *ExecutionMode
 		FileTriggersEnabled        *bool
@@ -405,39 +405,6 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	}
 	ws.TerraformVersion = v
 	return nil
-}
-
-func CreateWorkspace(ctx context.Context, app Application, opts CreateWorkspaceOptions) (*Workspace, error) {
-	var (
-		ws  *Workspace
-		err error
-	)
-
-	err = app.Tx(ctx, func(a Application) error {
-		// First create the workspace.
-		ws, err = a.CreateWorkspace(ctx, opts)
-		if err != nil {
-			return err
-		}
-
-		// If needed, connect the VCS repository.
-		if repo := opts.Repo; repo != nil {
-			err = a.ConnectWorkspace(ctx, ws.ID(), ConnectWorkspaceOptions{
-				ProviderID: repo.VCSProviderID,
-				Identifier: repo.Identifier,
-			})
-			if err != nil {
-				return errors.Wrap(err, "connecting workspace")
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return ws, nil
 }
 
 // CurrentRunService provides interaction with the current run for a workspace,

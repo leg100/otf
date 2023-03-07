@@ -12,10 +12,10 @@ import (
 )
 
 type db struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
-func newPGDB(otfdb otf.Database) *db {
+func newPGDB(otfdb otf.DB) *db {
 	return &db{otfdb}
 }
 
@@ -149,7 +149,7 @@ func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *otf.Configuration
 
 // tx constructs a new pgdb within a transaction.
 func (db *db) tx(ctx context.Context, callback func(*db) error) error {
-	return db.Transaction(ctx, func(tx otf.Database) error {
+	return db.Tx(ctx, func(tx otf.DB) error {
 		return callback(newPGDB(tx))
 	})
 }

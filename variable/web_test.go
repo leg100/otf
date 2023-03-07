@@ -90,6 +90,6 @@ func fakeHTMLApp(t *testing.T, variable *Variable) *web {
 	require.NoError(t, err)
 	return &web{
 		Renderer: renderer,
-		app:      &fakeService{variable: variable},
+		svc:      &fakeService{variable: variable},
 	}
 }
