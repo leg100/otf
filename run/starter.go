@@ -7,20 +7,19 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/vcsprovider"
 )
 
-// RunStarter starts a run triggered via the UI (whereas the terraform CLI takes
+// starter starts a run triggered via the UI (whereas the terraform CLI takes
 // care of calling all the API endpoints to start a run itself).
-type RunStarter struct {
+type starter struct {
 	otf.ConfigurationVersionService
-	*vcsprovider.Service
+	otf.VCSProviderService
 	otf.WorkspaceService
 
 	service
 }
 
-func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
+func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
 	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err

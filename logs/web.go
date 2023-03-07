@@ -12,14 +12,14 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-type web struct {
+type webHandlers struct {
 	logr.Logger
 	*sse.Server
 
 	service
 }
 
-func newWebHandlers(app service, logger logr.Logger) *web {
+func newWebHandlers(app service, logger logr.Logger) *webHandlers {
 	// Create and configure SSE server
 	srv := sse.New()
 	// we don't use last-event-item functionality so turn it off
@@ -28,18 +28,18 @@ func newWebHandlers(app service, logger logr.Logger) *web {
 	// the SSE protocol
 	srv.EncodeBase64 = true
 
-	return &web{
+	return &webHandlers{
 		Server:  srv,
 		Logger:  logger,
 		service: app,
 	}
 }
 
-func (h *web) addHandlers(r *mux.Router) {
+func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 }
 
-func (h *web) tailRun(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		// Phase to tail. Must be either plan or apply.
 		Phase otf.PhaseType `schema:"phase,required"`

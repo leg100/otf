@@ -27,7 +27,7 @@ type (
 		db    *pgdb
 
 		api *api
-		web *web
+		web *webHandlers
 	}
 
 	Options struct {

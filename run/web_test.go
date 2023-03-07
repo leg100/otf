@@ -2,37 +2,32 @@ package run
 
 import (
 	"context"
-	"crypto/tls"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
-	"github.com/r3labs/sse/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListRunsHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-	runs := []*otf.Run{
-		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
-		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
-		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
-		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
-		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
-	}
-	app := newFakeWebApp(t, &fakeRunsHandlerApp{ws: ws, runs: runs})
+	app := newTestWebHandlers(t,
+		withWorkspaces(&otf.Workspace{ID: "ws-123"}),
+		withRuns(
+			&otf.Run{ID: "run-1"},
+			&otf.Run{ID: "run-2"},
+			&otf.Run{ID: "run-3"},
+			&otf.Run{ID: "run-4"},
+			&otf.Run{ID: "run-5"},
+		),
+	)
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1&page[size]=2", nil)
 		w := httptest.NewRecorder()
-		app.listRuns(w, r)
+		app.list(w, r)
 		assert.Equal(t, 200, w.Code)
 		assert.NotContains(t, w.Body.String(), "Previous Page")
 		assert.Contains(t, w.Body.String(), "Next Page")
@@ -41,7 +36,7 @@ func TestListRunsHandler(t *testing.T) {
 	t.Run("second page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2&page[size]=2", nil)
 		w := httptest.NewRecorder()
-		app.listRuns(w, r)
+		app.list(w, r)
 		assert.Equal(t, 200, w.Code)
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.Contains(t, w.Body.String(), "Next Page")
@@ -50,7 +45,7 @@ func TestListRunsHandler(t *testing.T) {
 	t.Run("last page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3&page[size]=2", nil)
 		w := httptest.NewRecorder()
-		app.listRuns(w, r)
+		app.list(w, r)
 		assert.Equal(t, 200, w.Code)
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.NotContains(t, w.Body.String(), "Next Page")
@@ -58,113 +53,76 @@ func TestListRunsHandler(t *testing.T) {
 }
 
 func TestRuns_CancelHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	app := newFakeWebApp(t, &fakeRunsHandlerApp{
-		runs: []*otf.Run{run},
-	})
+	app := newTestWebHandlers(t, withRuns(&otf.Run{ID: "run-1", WorkspaceID: "ws-1"}))
 
 	r := httptest.NewRequest("POST", "/?run_id=run-123", nil)
 	w := httptest.NewRecorder()
-	app.cancelRun(w, r)
+	app.cancel(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.Runs(ws.ID), redirect.Path)
+		assert.Equal(t, paths.Runs("ws-1"), redirect.Path)
 	}
 }
 
-func TestTailLogs(t *testing.T) {
-	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
+type (
+	fakeWebServices struct {
+		runs []*otf.Run
+		ws   *otf.Workspace
 
-	// setup SSE server
-	srv := sse.New()
-	srv.AutoStream = true
-	srv.AutoReplay = false
+		service
 
-	// setup logs channel - send a chunk and then close
-	chunks := make(chan otf.Chunk, 1)
-
-	// fake app
-	app := &app{
-		Server: srv,
-		Application: &fakeTailApp{
-			run:    run,
-			chunks: chunks,
-		},
-		Logger: logr.Discard(),
+		otf.RunService
+		otf.WorkspaceService
 	}
 
-	// setup web server
-	router := mux.NewRouter()
-	router.HandleFunc("/{run_id}", app.tailRun)
-	webSrv := httptest.NewTLSServer(router)
-	defer webSrv.Close()
+	fakeWebServiceOption func(*fakeWebServices)
+)
 
-	// setup SSE client and subscribe to stream
-	client := sse.NewClient(webSrv.URL + "/" + run.ID + "?offset=0&stream=tail-123&phase=plan")
-	client.Connection.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+func withWorkspaces(workspace *otf.Workspace) fakeWebServiceOption {
+	return func(svc *fakeWebServices) {
+		svc.ws = workspace
 	}
-	events := make(chan *sse.Event, 99)
-	require.NoError(t, client.SubscribeChan("tail-123", events))
-	defer client.Unsubscribe(events)
-
-	// Client connected to server, now have the tail handler receive an event
-	chunks <- otf.Chunk{Data: []byte("some logs")}
-	close(chunks)
-
-	// Wait for client to receive relayed event
-	logs := <-events
-	assert.Equal(t, "new-log-chunk", string(logs.Event))
-	assert.Equal(t, "{\"html\":\"some logs\\u003cbr\\u003e\",\"offset\":9}", string(logs.Data))
-	// Closing channel should result in a finished event.
-	finished := <-events
-	assert.Equal(t, "finished", string(finished.Event))
-	assert.Equal(t, "no more logs", string(finished.Data))
 }
 
-type fakeRunsHandlerApp struct {
-	ws   *otf.Workspace
-	runs []*otf.Run
-	otf.Application
+func withRuns(runs ...*otf.Run) fakeWebServiceOption {
+	return func(svc *fakeWebServices) {
+		svc.runs = runs
+	}
 }
 
-func (f *fakeRunsHandlerApp) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
+func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
+	renderer, err := html.NewViewEngine(false)
+	require.NoError(t, err)
+
+	var svc fakeWebServices
+	for _, fn := range opts {
+		fn(&svc)
+	}
+
+	return &webHandlers{
+		Renderer:         renderer,
+		WorkspaceService: &svc,
+		svc:              &svc,
+	}
+}
+
+func (f *fakeWebServices) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeRunsHandlerApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeWebServices) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeRunsHandlerApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (f *fakeWebServices) list(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
 	}, nil
 }
 
-func (f *fakeRunsHandlerApp) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+func (f *fakeWebServices) get(ctx context.Context, runID string) (*otf.Run, error) {
 	return f.runs[0], nil
 }
 
-func (f *fakeRunsHandlerApp) CancelRun(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
-	return nil
-}
-
-type fakeTailApp struct {
-	run    *otf.Run
-	chunks chan otf.Chunk
-
-	otf.Application
-}
-
-func (f *fakeTailApp) GetRun(context.Context, string) (*otf.Run, error) {
-	return f.run, nil
-}
-
-func (f *fakeTailApp) Tail(context.Context, otf.GetChunkOptions) (<-chan otf.Chunk, error) {
-	return f.chunks, nil
-}
+func (f *fakeWebServices) cancel(ctx context.Context, runID string) error { return nil }

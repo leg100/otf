@@ -25,7 +25,7 @@ func TestReporter_HandleRun(t *testing.T) {
 			run:  &otf.Run{Status: otf.RunPending},
 			ws: &otf.Workspace{
 				Name: "dev",
-				Repo: &otf.WorkspaceRepo{Identifier: "leg100/otf"},
+				Repo: &otf.Connection{Identifier: "leg100/otf"},
 			},
 			cv: &otf.ConfigurationVersion{
 				IngressAttributes: &otf.IngressAttributes{CommitSHA: "abc123"},

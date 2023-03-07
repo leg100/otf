@@ -256,15 +256,11 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 }
 
 type (
-	fakeResources struct {
+	fakeWebService struct {
 		run        *otf.Run
 		workspaces []*otf.Workspace
 		providers  []*otf.VCSProvider
 		repos      []cloud.Repo
-	}
-
-	fakeWebService struct {
-		fakeResources
 
 		service
 
@@ -273,48 +269,48 @@ type (
 		otf.VCSProviderService
 	}
 
-	fakeResourceOption func(*fakeResources)
+	fakeWebServiceOption func(*fakeWebService)
 )
 
-func withWorkspaces(workspaces ...*otf.Workspace) fakeResourceOption {
-	return func(resources *fakeResources) {
-		resources.workspaces = workspaces
+func withWorkspaces(workspaces ...*otf.Workspace) fakeWebServiceOption {
+	return func(svc *fakeWebService) {
+		svc.workspaces = workspaces
 	}
 }
 
-func withVCSProviders(providers ...*otf.VCSProvider) fakeResourceOption {
-	return func(resources *fakeResources) {
-		resources.providers = providers
+func withVCSProviders(providers ...*otf.VCSProvider) fakeWebServiceOption {
+	return func(svc *fakeWebService) {
+		svc.providers = providers
 	}
 }
 
-func withRepos(repos ...cloud.Repo) fakeResourceOption {
-	return func(resources *fakeResources) {
-		resources.repos = repos
+func withRepos(repos ...cloud.Repo) fakeWebServiceOption {
+	return func(svc *fakeWebService) {
+		svc.repos = repos
 	}
 }
 
-func withRun(run *otf.Run) fakeResourceOption {
-	return func(resources *fakeResources) {
-		resources.run = run
+func withRun(run *otf.Run) fakeWebServiceOption {
+	return func(svc *fakeWebService) {
+		svc.run = run
 	}
 }
 
-func fakeWeb(t *testing.T, opts ...fakeResourceOption) *web {
+func fakeWeb(t *testing.T, opts ...fakeWebServiceOption) *web {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 
-	var resources fakeResources
+	var svc fakeWebService
 	for _, fn := range opts {
-		fn(&resources)
+		fn(&svc)
 	}
 
 	return &web{
 		Renderer:           renderer,
-		RunService:         &fakeWebService{fakeResources: resources},
-		TeamService:        &fakeWebService{fakeResources: resources},
-		VCSProviderService: &fakeWebService{fakeResources: resources},
-		svc:                &fakeWebService{fakeResources: resources},
+		RunService:         &svc,
+		TeamService:        &svc,
+		VCSProviderService: &svc,
+		svc:                &svc,
 	}
 }
 

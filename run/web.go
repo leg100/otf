@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -11,16 +12,22 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-type web struct {
-	otf.LogService
-	otf.Renderer
-	otf.WorkspaceService
-	*RunStarter
+type (
+	webHandlers struct {
+		otf.LogService
+		otf.Renderer
+		otf.WorkspaceService
 
-	svc service
-}
+		starter runStarter
+		svc     service
+	}
 
-func (h *web) addHandlers(r *mux.Router) {
+	runStarter interface {
+		startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error)
+	}
+)
+
+func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list)
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get)
@@ -33,7 +40,7 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/app/{organization_name}/{workspace_id}/runs/{run_id}", h.get)
 }
 
-func (h *web) list(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		otf.ListOptions
 		WorkspaceID string `schema:"workspace_id,required"`
@@ -68,7 +75,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) get(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -118,7 +125,7 @@ func (h *web) get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) delete(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -138,7 +145,7 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) cancel(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -159,7 +166,7 @@ func (h *web) cancel(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Runs(run.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) apply(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -174,7 +181,7 @@ func (h *web) apply(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
 }
 
-func (h *web) discard(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -189,7 +196,7 @@ func (h *web) discard(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 }
 
-func (h *web) startRun(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		Strategy    string `schema:"strategy,required"`
@@ -199,20 +206,18 @@ func (h *web) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var speculative bool
+	var opts otf.ConfigurationVersionCreateOptions
 	switch params.Strategy {
 	case "plan-only":
-		speculative = true
+		opts.Speculative = otf.Bool(true)
 	case "plan-and-apply":
-		speculative = false
+		opts.Speculative = otf.Bool(false)
 	default:
 		html.Error(w, "invalid strategy", http.StatusUnprocessableEntity)
 		return
 	}
 
-	run, err := h.StartRun(r.Context(), params.WorkspaceID, otf.ConfigurationVersionCreateOptions{
-		Speculative: otf.Bool(speculative),
-	})
+	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)

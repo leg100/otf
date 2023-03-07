@@ -53,6 +53,9 @@ func TestNextModuleStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mod := newModule(CreateModuleOptions{})
+			mod.status = tt.current
+			mod.updateVersionStatus
 			got := NextModuleStatus(tt.current, tt.versionStatus)
 			assert.Equal(t, tt.want, got)
 		})

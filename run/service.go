@@ -65,7 +65,7 @@ type (
 		*factory
 
 		api *api
-		web *web
+		web *webHandlers
 	}
 
 	Options struct {
@@ -107,7 +107,7 @@ func NewService(opts Options) *Service {
 		svc:              &svc,
 		JSONAPIMarshaler: newJSONAPIMarshaler(opts.WorkspaceService, opts.Signer),
 	}
-	svc.web = &web{
+	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}

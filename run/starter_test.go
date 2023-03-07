@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,78 +12,88 @@ import (
 
 func TestStartRun(t *testing.T) {
 	ctx := context.Background()
-	org := NewTestOrganization(t)
 
 	t.Run("not connected to repo", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org)
-		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
-		want := NewRun(cv, ws, RunCreateOptions{})
-		app := RunStarter{
-			Application: &fakeStartRunApp{
-				run:       want,
-				workspace: ws,
-				cv:        cv,
-			},
-		}
+		ws := &otf.Workspace{}
+		cv := &otf.ConfigurationVersion{}
+		want := &otf.Run{}
+		starter := newTestStarter(fakeStarterService{
+			run:       want,
+			workspace: ws,
+			cv:        cv,
+		})
 
-		got, err := app.StartRun(ctx, ws.ID, ConfigurationVersionCreateOptions{})
+		got, err := starter.startRun(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("connected to repo", func(t *testing.T) {
-		provider := NewTestVCSProvider(t, org)
-		repo := NewTestWorkspaceRepo(provider)
-		ws := NewTestWorkspace(t, org, WithRepo(repo))
-		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
-		want := NewRun(cv, ws, RunCreateOptions{})
-		app := RunStarter{
-			Application: &fakeStartRunApp{
-				run:       want,
-				workspace: ws,
-				cv:        cv,
-			},
-		}
+		ws := &otf.Workspace{Repo: &otf.Connection{}}
+		cv := &otf.ConfigurationVersion{}
+		provider := &otf.VCSProvider{}
+		want := &otf.Run{}
+		starter := newTestStarter(fakeStarterService{
+			run:       want,
+			workspace: ws,
+			cv:        cv,
+			provider:  provider,
+		})
 
-		got, err := app.StartRun(ctx, ws.ID, ConfigurationVersionCreateOptions{})
+		got, err := starter.startRun(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 }
 
-type fakeStartRunApp struct {
-	run       *otf.Run
-	workspace *Workspace
-	cv        *ConfigurationVersion
+type (
+	fakeStarterService struct {
+		run       *otf.Run
+		workspace *otf.Workspace
+		cv        *otf.ConfigurationVersion
+		provider  *otf.VCSProvider
 
-	app
+		otf.WorkspaceService
+		otf.VCSProviderService
+		otf.ConfigurationVersionService
+		service
+	}
+)
+
+func newTestStarter(svc fakeStarterService) *starter {
+	return &starter{
+		ConfigurationVersionService: &svc,
+		VCSProviderService:          &svc,
+		WorkspaceService:            &svc,
+		service:                     &svc,
+	}
 }
 
-func (f *fakeStartRunApp) GetWorkspace(context.Context, string) (*Workspace, error) {
+func (f *fakeStarterService) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *fakeStartRunApp) CreateConfigurationVersion(context.Context, string, ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func (f *fakeStarterService) CreateConfigurationVersion(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeStartRunApp) GetLatestConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
+func (f *fakeStarterService) GetLatestConfigurationVersion(context.Context, string) (*otf.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeStartRunApp) CloneConfigurationVersion(context.Context, string, ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+func (f *fakeStarterService) CloneConfigurationVersion(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeStartRunApp) UploadConfig(context.Context, string, []byte) error {
+func (f *fakeStarterService) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeStartRunApp) CreateRun(context.Context, string, RunCreateOptions) (*otf.Run, error) {
+func (f *fakeStarterService) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
 	return f.run, nil
 }
 
-func (f *fakeStartRunApp) GetVCSClient(context.Context, string) (cloud.Client, error) {
+func (f *fakeStarterService) GetVCSClient(context.Context, string) (cloud.Client, error) {
 	return &fakeStartRunCloudClient{}, nil
 }
 
