@@ -11,14 +11,13 @@ import (
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/vcsprovider"
 )
 
 type web struct {
 	otf.Renderer
 	otf.RunService
 	otf.TeamService
-	*vcsprovider.Service
+	otf.VCSProviderService
 
 	svc               service
 	sessionMiddleware mux.MiddlewareFunc
@@ -41,8 +40,8 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/unlock", h.unlockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-provider", h.listWorkspaceVCSProviders).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-repo", h.listWorkspaceVCSRepos).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connectWorkspace).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/disconnect", h.disconnectWorkspace).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connect).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/disconnect", h.disconnect).Methods("POST")
 
 	r.HandleFunc("/workspaces/{workspace_id}/set-permission", h.setWorkspacePermission).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unset-permission", h.unsetWorkspacePermission).Methods("POST")
@@ -120,7 +119,7 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var latest otf.Run
+	var latest *otf.Run
 	if ws.LatestRunID != nil {
 		latest, err = h.GetRun(r.Context(), *ws.LatestRunID)
 		if err != nil {
@@ -131,7 +130,7 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_get.tmpl", w, r, struct {
 		*otf.Workspace
-		LatestRun      otf.Run
+		LatestRun      *otf.Run
 		LatestStreamID string
 	}{
 		Workspace:      ws,
@@ -196,7 +195,7 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_edit.tmpl", w, r, struct {
 		*otf.Workspace
 		Permissions []otf.WorkspacePermission
-		Teams       []otf.Team
+		Teams       []*otf.Team
 		Roles       []rbac.Role
 	}{
 		Workspace:   workspace,
@@ -303,14 +302,14 @@ func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) 
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	providers, err := h.ListVCSProviders(r.Context(), ws.Organization())
+	providers, err := h.ListVCSProviders(r.Context(), ws.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
-		Items []*vcsprovider.VCSProvider
+		Items []*otf.VCSProvider
 		*otf.Workspace
 	}{
 		Items:     providers,
@@ -359,7 +358,7 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *web) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		otf.ConnectWorkspaceOptions
@@ -379,7 +378,7 @@ func (h *web) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *web) disconnect(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -417,7 +416,7 @@ func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.SetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName, role)
+	err = h.svc.setPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -436,7 +435,7 @@ func (h *web) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.UnsetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName)
+	err := h.svc.unsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

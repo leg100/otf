@@ -31,9 +31,9 @@ type (
 		// Get retrieves a team with the given ID
 		GetTeam(ctx context.Context, teamID string) (*Team, error)
 		// ListTeams lists teams in an organization.
-		ListTeams(ctx context.Context, organization string) ([]Team, error)
+		ListTeams(ctx context.Context, organization string) ([]*Team, error)
 		// ListTeamMembers lists users that are members of the given team
-		ListTeamMembers(ctx context.Context, teamID string) ([]User, error)
+		ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 	}
 
 	// TeamStore is a persistence store for team accounts.

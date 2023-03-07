@@ -57,7 +57,7 @@ func NewService(opts Options) *Service {
 
 	svc.workspace = opts.WorkspaceAuthorizer
 
-	svc.db = newPGDB(opts.Database)
+	svc.db = newPGDB(opts.DB)
 	svc.cache = opts.Cache
 
 	svc.api = newAPI(apiOptions{&svc, opts.MaxUploadSize, opts.Signer})

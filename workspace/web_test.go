@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,8 +18,7 @@ import (
 // TODO: rename tests to TestWorkspace_<handler>
 
 func TestNewWorkspaceHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{org: org})
+	app := fakeWeb(t)
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
@@ -31,12 +30,8 @@ func TestNewWorkspaceHandler(t *testing.T) {
 }
 
 func TestWorkspace_Create(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		org:        org,
-		workspaces: []*otf.Workspace{ws},
-	})
+	ws := &otf.Workspace{ID: "ws-123"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"name": {"dev"},
@@ -53,9 +48,8 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+	ws := &otf.Workspace{ID: "ws-123"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -64,12 +58,13 @@ func TestGetWorkspaceHandler(t *testing.T) {
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(t, w.Body.String())
 	}
+
+	// TODO: another test for retrieving latest run
 }
 
 func TestWorkspace_GetByName(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+	ws := &otf.Workspace{ID: "ws-123"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	q := "/?organization_name=acme-corp&workspace_name=fake-ws"
 	r := httptest.NewRequest("GET", q, nil)
@@ -83,9 +78,8 @@ func TestWorkspace_GetByName(t *testing.T) {
 }
 
 func TestEditWorkspaceHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+	ws := &otf.Workspace{ID: "ws-123"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -95,15 +89,12 @@ func TestEditWorkspaceHandler(t *testing.T) {
 }
 
 func TestListWorkspacesHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	workspaces := []*otf.Workspace{
-		otf.NewTestWorkspace(t, org),
-		otf.NewTestWorkspace(t, org),
-		otf.NewTestWorkspace(t, org),
-		otf.NewTestWorkspace(t, org),
-		otf.NewTestWorkspace(t, org),
-	}
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{org: org, workspaces: workspaces})
+	ws1 := &otf.Workspace{ID: "ws-1"}
+	ws2 := &otf.Workspace{ID: "ws-2"}
+	ws3 := &otf.Workspace{ID: "ws-3"}
+	ws4 := &otf.Workspace{ID: "ws-4"}
+	ws5 := &otf.Workspace{ID: "ws-5"}
+	app := fakeWeb(t, withWorkspaces(ws1, ws2, ws3, ws4, ws5))
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1&page[size]=2", nil)
@@ -134,11 +125,8 @@ func TestListWorkspacesHandler(t *testing.T) {
 }
 
 func TestDeleteWorkspace(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		workspaces: []*otf.Workspace{ws},
-	})
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -147,16 +135,13 @@ func TestDeleteWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Workspaces(org.Name()), redirect.Path)
+		assert.Equal(t, paths.Workspaces("acme-corp"), redirect.Path)
 	}
 }
 
 func TestLockWorkspace(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		workspaces: []*otf.Workspace{ws},
-	})
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id": {"ws-123"},
@@ -169,16 +154,13 @@ func TestLockWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID), redirect.Path)
+		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
 	}
 }
 
 func TestUnlockWorkspace(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		workspaces: []*otf.Workspace{ws},
-	})
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id": {"ws-123"},
@@ -191,24 +173,17 @@ func TestUnlockWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID), redirect.Path)
+		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
 	}
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	workspaces := []*otf.Workspace{
-		otf.NewTestWorkspace(t, org),
-	}
-	providers := []*otf.VCSProvider{
-		otf.NewTestVCSProvider(t, org),
-		otf.NewTestVCSProvider(t, org),
-		otf.NewTestVCSProvider(t, org),
-	}
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		providers:  providers,
-		workspaces: workspaces,
-	})
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws), withVCSProviders(
+		&otf.VCSProvider{},
+		&otf.VCSProvider{},
+		&otf.VCSProvider{},
+	))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -218,22 +193,15 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		providers: []*otf.VCSProvider{
-			otf.NewTestVCSProvider(t, org),
-		},
-		workspaces: []*otf.Workspace{
-			otf.NewTestWorkspace(t, org),
-		},
-		repos: []cloud.Repo{
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}),
+		withRepos(
 			cloud.NewTestRepo(),
 			cloud.NewTestRepo(),
 			cloud.NewTestRepo(),
 			cloud.NewTestRepo(),
 			cloud.NewTestRepo(),
-		},
-	})
+		))
 
 	q := "/?workspace_id=ws-123&vcs_provider_id=fake-provider"
 	r := httptest.NewRequest("GET", q, nil)
@@ -245,12 +213,8 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		workspaces: []*otf.Workspace{ws},
-		providers:  []*otf.VCSProvider{otf.NewTestVCSProvider(t, org)},
-	})
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id":    {"ws-123"},
@@ -263,7 +227,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	app.connectWorkspace(w, r)
+	app.connect(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
@@ -273,11 +237,8 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		workspaces: []*otf.Workspace{ws},
-	})
+	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWeb(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id": {"ws-123"},
@@ -285,7 +246,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	app.disconnectWorkspace(w, r)
+	app.disconnect(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
@@ -294,132 +255,146 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 	}
 }
 
-func TestStartRunHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		workspaces: []*otf.Workspace{ws},
-		runs:       []*otf.Run{run},
-	})
+type (
+	fakeResources struct {
+		run        *otf.Run
+		workspaces []*otf.Workspace
+		providers  []*otf.VCSProvider
+		repos      []cloud.Repo
+	}
 
-	q := "/?workspace_id=ws-123&strategy=plan-only"
-	r := httptest.NewRequest("POST", q, nil)
-	w := httptest.NewRecorder()
-	app.startRun(w, r)
+	fakeWebService struct {
+		fakeResources
 
-	if assert.Equal(t, 302, w.Code) {
-		redirect, err := w.Result().Location()
-		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/runs/%s", run.ID), redirect.Path)
+		service
+
+		otf.RunService
+		otf.TeamService
+		otf.VCSProviderService
+	}
+
+	fakeResourceOption func(*fakeResources)
+)
+
+func withWorkspaces(workspaces ...*otf.Workspace) fakeResourceOption {
+	return func(resources *fakeResources) {
+		resources.workspaces = workspaces
 	}
 }
 
-type fakeWorkspaceHandlerApp struct {
-	org            *otf.Organization
-	runs           []*otf.Run
-	workspaces     []*otf.Workspace
-	configVersions []*otf.ConfigurationVersion
-	providers      []*otf.VCSProvider
-	repos          []cloud.Repo
-
-	otf.Application
+func withVCSProviders(providers ...*otf.VCSProvider) fakeResourceOption {
+	return func(resources *fakeResources) {
+		resources.providers = providers
+	}
 }
 
-func (f *fakeWorkspaceHandlerApp) CreateWorkspace(context.Context, otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
+func withRepos(repos ...cloud.Repo) fakeResourceOption {
+	return func(resources *fakeResources) {
+		resources.repos = repos
+	}
+}
+
+func withRun(run *otf.Run) fakeResourceOption {
+	return func(resources *fakeResources) {
+		resources.run = run
+	}
+}
+
+func fakeWeb(t *testing.T, opts ...fakeResourceOption) *web {
+	renderer, err := html.NewViewEngine(false)
+	require.NoError(t, err)
+
+	var resources fakeResources
+	for _, fn := range opts {
+		fn(&resources)
+	}
+
+	return &web{
+		Renderer:           renderer,
+		RunService:         &fakeWebService{fakeResources: resources},
+		TeamService:        &fakeWebService{fakeResources: resources},
+		VCSProviderService: &fakeWebService{fakeResources: resources},
+		svc:                &fakeWebService{fakeResources: resources},
+	}
+}
+
+func (f *fakeWebService) GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
+	return otf.WorkspacePolicy{}, nil
+}
+
+func (f *fakeWebService) GetVCSProvider(ctx context.Context, providerID string) (*otf.VCSProvider, error) {
+	return f.providers[0], nil
+}
+
+func (f *fakeWebService) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
+	return f.providers, nil
+}
+
+func (f *fakeWebService) UploadConfig(context.Context, string, []byte) error {
+	return nil
+}
+
+func (f *fakeWebService) GetRun(context.Context, string) (*otf.Run, error) {
+	return f.run, nil
+}
+
+func (f *fakeWebService) GetWorkspacePolicy(context.Context, string) ([]*otf.WorkspacePermission, error) {
+	return nil, nil
+}
+
+func (f *fakeWebService) ListTeams(context.Context, string) ([]*otf.Team, error) {
+	return nil, nil
+}
+
+func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+	return &fakeWebCloudClient{repos: f.repos}, nil
+}
+
+func (f *fakeWebService) create(context.Context, otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
-	return f.org, nil
-}
-
-func (f *fakeWorkspaceHandlerApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) LockWorkspace(context.Context, string, otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) UnlockWorkspace(context.Context, string, otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) DeleteWorkspace(context.Context, string) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (f *fakeWebService) list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),
 	}, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetVCSProvider(ctx context.Context, providerID string) (*otf.VCSProvider, error) {
-	return f.providers[0], nil
+func (f *fakeWebService) get(context.Context, string) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
-	return f.providers, nil
+func (f *fakeWebService) getByName(context.Context, string, string) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ConnectWorkspace(context.Context, string, otf.ConnectWorkspaceOptions) error {
+func (f *fakeWebService) delete(context.Context, string) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeWebService) lock(context.Context, string, *string) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeWebService) unlock(context.Context, string, bool) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeWebService) connect(context.Context, string, otf.ConnectWorkspaceOptions) error {
 	return nil
 }
 
-func (f *fakeWorkspaceHandlerApp) DisconnectWorkspace(context.Context, string) error {
+func (f *fakeWebService) disconnect(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeWorkspaceHandlerApp) UploadConfig(context.Context, string, []byte) error {
-	return nil
-}
-
-func (f *fakeWorkspaceHandlerApp) GetLatestConfigurationVersion(context.Context, string) (*otf.ConfigurationVersion, error) {
-	return f.configVersions[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) CreateConfigurationVersion(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	return f.configVersions[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) CloneConfigurationVersion(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	return f.configVersions[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
-	return f.runs[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) StartRun(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
-	return f.runs[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) GetWorkspacePolicy(context.Context, string) ([]*otf.WorkspacePermission, error) {
-	return nil, nil
-}
-
-func (f *fakeWorkspaceHandlerApp) ListTeams(context.Context, string) ([]*otf.Team, error) {
-	return nil, nil
-}
-
-func (f *fakeWorkspaceHandlerApp) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
-	return &fakeWorkspaceHandlerCloudClient{repos: f.repos}, nil
-}
-
-type fakeWorkspaceHandlerCloudClient struct {
+type fakeWebCloudClient struct {
 	repos []cloud.Repo
 
 	cloud.Client
 }
 
-func (f *fakeWorkspaceHandlerCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (f *fakeWebCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
 	return f.repos, nil
 }

@@ -14,6 +14,10 @@ type permissionsService interface {
 	unsetPermission(ctx context.Context, workspaceID, team string) error
 }
 
+// GetPolicy retrieves a workspace policy.
+//
+// NOTE: no authz protects this endpoint because it's used in the process of making
+// authz decisions.
 func (svc *Service) GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
 	return svc.db.GetWorkspacePolicy(ctx, workspaceID)
 }
