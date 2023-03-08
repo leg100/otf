@@ -33,7 +33,6 @@ type Application struct {
 	*otf.RunStarter
 	*module.Publisher
 	*otf.ModuleVersionUploader
-	otf.ModuleDeleter
 	cloud.Service
 	otf.PubSubService
 	logr.Logger
@@ -98,7 +97,6 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 	child.Publisher = module.NewPublisher(child)
 	child.RunStarter = &otf.RunStarter{child}
 	child.ModuleVersionUploader = &otf.ModuleVersionUploader{child}
-	child.ModuleDeleter = module.NewDeleter(child)
 
 	return child
 }

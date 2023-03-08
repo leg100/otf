@@ -22,7 +22,7 @@ type api struct {
 //
 // https://developer.hashicorp.com/terraform/internals/module-registry-protocol
 func (h *api) addHandlers(r *mux.Router) {
-	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listModuleVersions)
+	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions)
 	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink)
 
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
@@ -30,23 +30,38 @@ func (h *api) addHandlers(r *mux.Router) {
 	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
 }
 
-type module struct {
-	Source   string
-	Versions []moduleVersion
-}
+type (
+	listAvailableVersionsResponse struct {
+		Modules []listAvailableVersionsModule
+	}
+	listAvailableVersionsModule struct {
+		Source   string
+		Versions []listAvailableVersionsVersion
+	}
+	listAvailableVersionsVersion struct {
+		Version string
+	}
+)
 
-type moduleVersion struct {
-	Version string
-}
-
-func (h *api) listModuleVersions(w http.ResponseWriter, r *http.Request) {
-	var opts GetModuleOptions
-	if err := decode.Route(&opts, r); err != nil {
+// List Available Versions for a Specific Module.
+//
+// https://developer.hashicorp.com/terraform/registry/api-docs#list-available-versions-for-a-specific-module
+func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Name         string `schema:"name,required"`
+		Provider     string `schema:"provider,required"`
+		Organization string `schema:"organization,required"`
+	}
+	if err := decode.Route(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	mod, err := h.svc.GetModule(r.Context(), opts)
+	mod, err := h.svc.GetModule(r.Context(), otf.GetModuleOptions{
+		Name:         params.Name,
+		Provider:     params.Provider,
+		Organization: params.Organization,
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -54,25 +69,16 @@ func (h *api) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-type", "application/json")
 
-	type responseVersion struct {
-		Version string
-	}
-	type responseModule struct {
-		Source   string
-		Versions []responseVersion
-	}
-	response := struct {
-		Modules []responseModule
-	}{
-		Modules: []responseModule{
+	response := listAvailableVersionsResponse{
+		Modules: []listAvailableVersionsModule{
 			{
-				Source: strings.Join([]string{opts.Organization, opts.Provider, opts.Name}, "/"),
+				Source: strings.Join([]string{params.Organization, params.Provider, params.Name}, "/"),
 			},
 		},
 	}
-	for _, ver := range mod.versions {
-		response.Modules[0].Versions = append(response.Modules[0].Versions, responseVersion{
-			Version: ver.version,
+	for _, ver := range mod.AvailableVersions() {
+		response.Modules[0].Versions = append(response.Modules[0].Versions, listAvailableVersionsVersion{
+			Version: ver.Version,
 		})
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -82,27 +88,33 @@ func (h *api) listModuleVersions(w http.ResponseWriter, r *http.Request) {
 
 func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		GetModuleOptions
-		Version string
+		Name         string `schema:"name,required"`
+		Provider     string `schema:"provider,required"`
+		Organization string `schema:"organization,required"`
+		Version      string `schema:"version,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	mod, err := h.svc.GetModule(r.Context(), params.GetModuleOptions)
+	mod, err := h.svc.GetModule(r.Context(), otf.GetModuleOptions{
+		Name:         params.Name,
+		Provider:     params.Provider,
+		Organization: params.Organization,
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	version := mod.versions[params.Version]
+	version := mod.Versions[params.Version]
 	if version == nil {
 		http.Error(w, "version not found", http.StatusNotFound)
 		return
 	}
 
-	signed, err := h.Sign("/modules/download/"+version.id+".tar.gz", time.Hour)
+	signed, err := h.Sign("/modules/download/"+version.ID+".tar.gz", time.Hour)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

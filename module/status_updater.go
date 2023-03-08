@@ -10,9 +10,9 @@ type statusUpdater struct {
 
 // updateStatus updates a module version's status, and ensures its parent module's
 // status reflects the version's status
-func (u *statusUpdater) updateStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) (*Module, *ModuleVersion, error) {
-	var mod *Module
-	var modver *ModuleVersion
+func (u *statusUpdater) updateStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) (*otf.Module, *otf.ModuleVersion, error) {
+	var mod *otf.Module
+	var modver *otf.ModuleVersion
 
 	err := u.tx(ctx, func(tx db) (err error) {
 		// update version status

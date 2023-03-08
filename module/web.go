@@ -18,7 +18,7 @@ type web struct {
 	otf.Renderer
 	otf.VCSProviderService
 
-	app service
+	svc service
 }
 
 type newModuleStep string
@@ -32,26 +32,26 @@ const (
 func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/modules", h.listModules)
 	r.HandleFunc("/organizations/{organization_name}/modules/new", h.newModule)
-	r.HandleFunc("/organizations/{organization_name}/modules/create", h.createModule)
 	r.HandleFunc("/modules/{module_id}", h.getModule)
 	r.HandleFunc("/modules/{module_id}/delete", h.deleteModule)
+	r.HandleFunc("/modules/create", h.createModule)
 }
 
 func (h *web) listModules(w http.ResponseWriter, r *http.Request) {
-	var opts ListModulesOptions
+	var opts otf.ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	modules, err := h.app.ListModules(r.Context(), opts)
+	modules, err := h.svc.ListModules(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.Render("module_list.tmpl", w, r, struct {
-		Items        []*Module
+		Items        []*otf.Module
 		Organization string
 	}{
 		Items:        modules,
@@ -69,7 +69,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.app.GetModuleByID(r.Context(), params.ID)
+	module, err := h.svc.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -77,16 +77,16 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 
 	var tfmod *TerraformModule
 	var readme template.HTML
-	switch module.status {
-	case ModuleStatusSetupComplete:
-		tarball, err := h.app.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
+	switch module.Status {
+	case otf.ModuleStatusSetupComplete:
+		tarball, err := h.svc.downloadVersion(r.Context(), DownloadModuleOptions{
 			ModuleVersionID: module.Version(params.Version).ID,
 		})
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		tfmod, err = UnmarshalTerraformModule(tarball)
+		tfmod, err = unmarshalTerraformModule(tarball)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -199,7 +199,7 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.app.GetVCSProvider(r.Context(), params.VCSProviderID)
+	provider, err := h.svc.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -216,9 +216,9 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// TODO: rename to publishModule
 func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
 		Identifier    string `schema:"identifier,required"`
 	}
@@ -227,17 +227,16 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.app.PublishModule(r.Context(), PublishModuleOptions{
+	module, err := h.svc.PublishModule(r.Context(), otf.PublishModuleOptions{
 		Identifier:   params.Identifier,
-		ProviderID:   params.VCSProviderID,
-		Organization: params.Organization,
+		VCSProviderID:   params.VCSProviderID,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "published module: "+module.Name())
+	html.FlashSuccess(w, "published module: "+module.Name)
 	http.Redirect(w, r, paths.Module(module.ID), http.StatusFound)
 }
 
@@ -248,12 +247,12 @@ func (h *web) deleteModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleted, err := h.app.DeleteModule(r.Context(), id)
+	deleted, err := h.svc.DeleteModule(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "deleted module: "+deleted.Name())
-	http.Redirect(w, r, paths.Modules(deleted.Organization()), http.StatusFound)
+	html.FlashSuccess(w, "deleted module: "+deleted.Name)
+	http.Redirect(w, r, paths.Modules(deleted.Organization), http.StatusFound)
 }

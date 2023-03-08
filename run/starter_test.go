@@ -89,12 +89,12 @@ func (f *fakeStarterService) UploadConfig(context.Context, string, []byte) error
 	return nil
 }
 
-func (f *fakeStarterService) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
-	return f.run, nil
-}
-
 func (f *fakeStarterService) GetVCSClient(context.Context, string) (cloud.Client, error) {
 	return &fakeStartRunCloudClient{}, nil
+}
+
+func (f *fakeStarterService) create(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
+	return f.run, nil
 }
 
 type fakeStartRunCloudClient struct {

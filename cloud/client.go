@@ -81,7 +81,7 @@ type DeleteWebhookOptions struct {
 
 // SetStatusOptions are options for setting a status on a VCS repo
 type SetStatusOptions struct {
-	Workspace   string
+	Workspace   string // workspace name
 	Identifier  string // <owner>/<repo>
 	Ref         string // git ref
 	Status      VCSStatus

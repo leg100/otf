@@ -33,7 +33,7 @@ func TestGetModule(t *testing.T) {
 	mod := otf.NewTestModule(org,
 		otf.WithModuleRepo(),
 		otf.WithModuleStatus(otf.ModuleStatusSetupComplete),
-		otf.WithModuleVersion("1.0.0", otf.ModuleVersionStatusOk),
+		otf.WithModuleVersion("1.0.0", otf.ModuleVersionStatusOK),
 	)
 	tarball, err := os.ReadFile("./testdata/module.tar.gz")
 	require.NoError(t, err)

@@ -207,12 +207,26 @@ type Querier interface {
 	// FindModuleByWebhookIDScan scans the result of an executed FindModuleByWebhookIDBatch query.
 	FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error)
 
+	FindModuleByModuleVersionID(ctx context.Context, moduleVersionID pgtype.Text) (FindModuleByModuleVersionIDRow, error)
+	// FindModuleByModuleVersionIDBatch enqueues a FindModuleByModuleVersionID query into batch to be executed
+	// later by the batch.
+	FindModuleByModuleVersionIDBatch(batch genericBatch, moduleVersionID pgtype.Text)
+	// FindModuleByModuleVersionIDScan scans the result of an executed FindModuleByModuleVersionIDBatch query.
+	FindModuleByModuleVersionIDScan(results pgx.BatchResults) (FindModuleByModuleVersionIDRow, error)
+
 	UpdateModuleStatusByID(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
 	// UpdateModuleStatusByIDBatch enqueues a UpdateModuleStatusByID query into batch to be executed
 	// later by the batch.
 	UpdateModuleStatusByIDBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text)
 	// UpdateModuleStatusByIDScan scans the result of an executed UpdateModuleStatusByIDBatch query.
 	UpdateModuleStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	UpdateModuleLatestVersionByID(ctx context.Context, latestModuleVersionID pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
+	// UpdateModuleLatestVersionByIDBatch enqueues a UpdateModuleLatestVersionByID query into batch to be executed
+	// later by the batch.
+	UpdateModuleLatestVersionByIDBatch(batch genericBatch, latestModuleVersionID pgtype.Text, moduleID pgtype.Text)
+	// UpdateModuleLatestVersionByIDScan scans the result of an executed UpdateModuleLatestVersionByIDBatch query.
+	UpdateModuleLatestVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error)
 	// InsertModuleTarballBatch enqueues a InsertModuleTarball query into batch to be executed
@@ -234,6 +248,20 @@ type Querier interface {
 	UpdateModuleVersionStatusByIDBatch(batch genericBatch, params UpdateModuleVersionStatusByIDParams)
 	// UpdateModuleVersionStatusByIDScan scans the result of an executed UpdateModuleVersionStatusByIDBatch query.
 	UpdateModuleVersionStatusByIDScan(results pgx.BatchResults) (UpdateModuleVersionStatusByIDRow, error)
+
+	DeleteModuleByID(ctx context.Context, moduleID pgtype.Text) (pgtype.Text, error)
+	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
+	// later by the batch.
+	DeleteModuleByIDBatch(batch genericBatch, moduleID pgtype.Text)
+	// DeleteModuleByIDScan scans the result of an executed DeleteModuleByIDBatch query.
+	DeleteModuleByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteModuleVersionByID(ctx context.Context, moduleVersionID pgtype.Text) (pgtype.Text, error)
+	// DeleteModuleVersionByIDBatch enqueues a DeleteModuleVersionByID query into batch to be executed
+	// later by the batch.
+	DeleteModuleVersionByIDBatch(batch genericBatch, moduleVersionID pgtype.Text)
+	// DeleteModuleVersionByIDScan scans the result of an executed DeleteModuleVersionByIDBatch query.
+	DeleteModuleVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
@@ -1194,8 +1222,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findModuleByModuleVersionIDSQL, findModuleByModuleVersionIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByModuleVersionID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateModuleStatusByIDSQL, updateModuleStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateModuleStatusByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateModuleLatestVersionByIDSQL, updateModuleLatestVersionByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleLatestVersionByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleTarballSQL, insertModuleTarballSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModuleTarball': %w", err)
@@ -1205,6 +1239,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateModuleVersionStatusByIDSQL, updateModuleVersionStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateModuleVersionStatusByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteModuleVersionByIDSQL, deleteModuleVersionByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteModuleVersionByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)

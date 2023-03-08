@@ -22,7 +22,7 @@ func TestReporter_HandleRun(t *testing.T) {
 	}{
 		{
 			name: "pending run",
-			run:  &otf.Run{Status: otf.RunPending},
+			run:  &otf.Run{ID: "run-123", Status: otf.RunPending},
 			ws: &otf.Workspace{
 				Name: "dev",
 				Repo: &otf.Connection{Identifier: "leg100/otf"},
@@ -31,7 +31,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				IngressAttributes: &otf.IngressAttributes{CommitSHA: "abc123"},
 			},
 			want: cloud.SetStatusOptions{
-				Workspace:  "ws-123",
+				Workspace:  "dev",
 				Ref:        "abc123",
 				Identifier: "leg100/otf",
 				Status:     cloud.VCSPendingStatus,

@@ -6,6 +6,7 @@ INSERT INTO modules (
     name,
     provider,
     status,
+    latest,
     organization_name
 ) VALUES (
     pggen.arg('id'),
@@ -14,6 +15,7 @@ INSERT INTO modules (
     pggen.arg('name'),
     pggen.arg('provider'),
     pggen.arg('status'),
+    pggen.arg('latest'),
     pggen.arg('organization_name')
 );
 
@@ -43,6 +45,7 @@ SELECT
     m.name,
     m.provider,
     m.status,
+    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -64,6 +67,7 @@ SELECT
     m.name,
     m.provider,
     m.status,
+    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -87,6 +91,7 @@ SELECT
     m.name,
     m.provider,
     m.status,
+    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -108,6 +113,7 @@ SELECT
     m.name,
     m.provider,
     m.status,
+    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -121,9 +127,39 @@ JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 
+-- name: FindModuleByModuleVersionID :one
+SELECT
+    m.module_id,
+    m.created_at,
+    m.updated_at,
+    m.name,
+    m.provider,
+    m.status,
+    m.latest,
+    m.organization_name,
+    (r.*)::"repo_connections" AS module_connection,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
+FROM modules m
+JOIN module_versions mv USING (module_id)
+LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
+WHERE mv.module_version_id = pggen.arg('module_version_id')
+;
+
 -- name: UpdateModuleStatusByID :one
 UPDATE modules
 SET status = pggen.arg('status')
+WHERE module_id = pggen.arg('module_id')
+RETURNING module_id
+;
+
+-- name: UpdateModuleLatestVersionByID :one
+UPDATE modules
+SET latest = pggen.arg('latest_module_version_id')
 WHERE module_id = pggen.arg('module_id')
 RETURNING module_id
 ;
@@ -151,4 +187,18 @@ SET
     status_error = pggen.arg('status_error')
 WHERE module_version_id = pggen.arg('module_version_id')
 RETURNING *
+;
+
+-- name: DeleteModuleByID :one
+DELETE
+FROM modules
+WHERE module_id = pggen.arg('module_id')
+RETURNING module_id
+;
+
+-- name: DeleteModuleVersionByID :one
+DELETE
+FROM module_versions
+WHERE module_version_id = pggen.arg('module_version_id')
+RETURNING module_version_id
 ;

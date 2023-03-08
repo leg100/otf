@@ -53,7 +53,6 @@ type Application interface {
 	// TokenService
 	cloud.Service
 	ModuleService
-	ModuleVersionService
 	HostnameService
 	RepoService
 	UserService

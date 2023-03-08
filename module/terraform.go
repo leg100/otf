@@ -18,7 +18,7 @@ type TerraformModule struct {
 	readme []byte
 }
 
-func UnmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
+func unmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "creating temporary directory")

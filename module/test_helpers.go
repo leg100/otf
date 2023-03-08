@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *Module {
+func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *otf.Module {
 	createOpts := CreateModuleOptions{
 		Organization: org.Name,
 		Provider:     uuid.NewString(),
@@ -22,29 +22,29 @@ func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *Module {
 	return mod
 }
 
-type NewTestModuleOption func(*Module)
+type NewTestModuleOption func(*otf.Module)
 
 func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
-	return func(mod *Module) {
-		mod.status = status
+	return func(mod *otf.Module) {
+		mod.Status = status
 	}
 }
 
 func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModuleOption {
-	return func(mod *Module) {
+	return func(mod *otf.Module) {
 		mod.addNewVersion(NewTestModuleVersion(mod, version, status))
 	}
 }
 
 func WithModuleRepo() NewTestModuleOption {
-	return func(mod *Module) {
+	return func(mod *otf.Module) {
 		mod.connection = &connection{}
 	}
 }
 
-func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
+func NewTestModuleVersion(mod *otf.Module, version string, status ModuleVersionStatus) *otf.ModuleVersion {
 	createOpts := CreateModuleVersionOptions{
-		ModuleID: mod.id,
+		ModuleID: mod.ID,
 		Version:  version,
 	}
 	modver := NewModuleVersion(createOpts)
@@ -52,7 +52,7 @@ func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatu
 	return modver
 }
 
-func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *Module {
+func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *otf.Module {
 	ctx := context.Background()
 
 	module := NewTestModule(org)

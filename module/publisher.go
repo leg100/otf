@@ -30,7 +30,6 @@ func (h *Publisher) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	for {
 		select {
 		case event := <-sub:
@@ -38,7 +37,6 @@ func (h *Publisher) Start(ctx context.Context) error {
 			if event.Type != otf.EventVCS {
 				continue
 			}
-
 			if err := h.PublishFromEvent(ctx, event.Payload); err != nil {
 				h.Error(err, "handling vcs event")
 			}
@@ -50,7 +48,7 @@ func (h *Publisher) Start(ctx context.Context) error {
 
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
-func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions) (*Module, error) {
+func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
 	_, repoName, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -69,14 +67,15 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	})
 
 	// persist module to db and connect mod to repo
-	err := p.db.tx(ctx, func(tx *pgdb) error {
+	err := p.tx(ctx, func(tx *pgdb) error {
+		svc := serviceWithDB(p.service, tx)
 		if err := tx.CreateModule(ctx, mod); err != nil {
 			return err
 		}
 		connection, err := p.RepoService.Connect(ctx, otf.ConnectOptions{
 			ConnectionType: otf.ModuleConnection,
 			ResourceID:     mod.id,
-			VCSProviderID:  opts.ProviderID,
+			VCSProviderID:  opts.VCSProviderID,
 			Identifier:     opts.Identifier,
 			Tx:             tx,
 		})
@@ -90,7 +89,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		return nil, err
 	}
 
-	client, err := p.GetVCSClient(ctx, opts.ProviderID)
+	client, err := p.GetVCSClient(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +126,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 			Version:    strings.TrimPrefix(version, "v"),
 			Ref:        tag,
 			Identifier: opts.Identifier,
-			ProviderID: opts.ProviderID,
+			ProviderID: opts.VCSProviderID,
 		})
 		if err != nil {
 			return nil, err
@@ -155,29 +154,19 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 	if err != nil {
 		return err
 	}
-	if module.repo == nil {
-		return fmt.Errorf("module is not connected to a repo: %s", module.id)
-	}
-
-	// skip older or equal versions
-	latestVersion := module.latest.version
-	if n := semver.Compare(tagEvent.Tag, latestVersion); n <= 0 {
-		return nil
+	if module.Repo == nil {
+		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
 
 	_, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
-		ModuleID: module.id,
+		ModuleID: module.ID,
 		// strip off v prefix if it has one
 		Version:    strings.TrimPrefix(tagEvent.Tag, "v"),
 		Ref:        tagEvent.CommitSHA,
 		Identifier: tagEvent.Identifier,
-		ProviderID: module.repo.VCSProviderID,
+		ProviderID: module.Repo.VCSProviderID,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 type PublishModuleVersionOptions struct {
@@ -190,8 +179,8 @@ type PublishModuleVersionOptions struct {
 
 // PublishVersion publishes a module version, retrieving its contents from a repository and
 // uploading it to the module store.
-func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*Module, *ModuleVersion, error) {
-	modver, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
+func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*otf.Module, *otf.ModuleVersion, error) {
+	modver, err := p.CreateModuleVersion(ctx, otf.CreateModuleVersionOptions{
 		ModuleID: opts.ModuleID,
 		Version:  opts.Version,
 	})
@@ -209,15 +198,12 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 		Ref:        &opts.Ref,
 	})
 	if err != nil {
-		return UpdateModuleVersionStatus(ctx, p, UpdateModuleVersionStatusOptions{
+		return UpdateModuleVersionStatus(ctx, p, otf.UpdateModuleVersionStatusOptions{
 			ID:     modver.id,
-			Status: ModuleVersionStatusCloneFailed,
+			Status: otf.ModuleVersionStatusCloneFailed,
 			Error:  err.Error(),
 		})
 	}
 
-	return p.Upload(ctx, UploadModuleVersionOptions{
-		VersionID: modver.id,
-		Tarball:   tarball,
-	})
+	return p.uploadVersion(ctx, modver.id, tarball)
 }

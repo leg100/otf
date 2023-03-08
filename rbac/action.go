@@ -29,6 +29,7 @@ const (
 	ListModulesAction
 	GetModuleAction
 	DeleteModuleAction
+	DeleteModuleVersionAction
 
 	CreateVariableAction
 	UpdateVariableAction

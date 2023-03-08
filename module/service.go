@@ -16,23 +16,24 @@ type (
 	// service is the service for modules
 	service interface {
 		// PublishModule publishes a module from a VCS repository.
-		PublishModule(context.Context, PublishModuleOptions) (*Module, error)
+		PublishModule(context.Context, otf.PublishModuleOptions) (*otf.Module, error)
 		// CreateModule creates a module without a connection to a VCS repository.
-		CreateModule(context.Context, CreateModuleOptions) (*Module, error)
-		UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatusOptions) (*Module, error)
-		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
-		GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
-		GetModuleByID(ctx context.Context, id string) (*Module, error)
-		GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
-		DeleteModule(ctx context.Context, id string) (*Module, error)
+		CreateModule(context.Context, otf.CreateModuleOptions) (*otf.Module, error)
+		UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) (*otf.Module, error)
+		ListModules(context.Context, otf.ListModulesOptions) ([]*otf.Module, error)
+		GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error)
+		GetModuleByID(ctx context.Context, id string) (*otf.Module, error)
+		GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Module, error)
+		DeleteModule(ctx context.Context, id string) (*otf.Module, error)
 
-		CreateModuleVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
-		UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) (*ModuleVersion, error)
-		DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
+		CreateModuleVersion(context.Context, otf.CreateModuleVersionOptions) (*otf.ModuleVersion, error)
+
+		uploadVersion(ctx context.Context, versionID string, tarball []byte) (*otf.ModuleVersion, error)
+		downloadVersion(ctx context.Context, versionID string) ([]byte, error)
 	}
 
 	Service struct {
-		otf.VCSProviderService // for retrieving vcs client
+		otf.VCSProviderService
 		logr.Logger
 		*Publisher
 
@@ -48,7 +49,9 @@ type (
 	Options struct {
 		OrganizationAuthorizer otf.Authorizer
 		CloudService           cloud.Service
+
 		otf.DB
+		otf.VCSProviderService
 		*surl.Signer
 		otf.Renderer
 		otf.RepoService
@@ -70,9 +73,15 @@ func NewService(opts Options) *Service {
 	}
 	svc.web = &web{
 		Renderer: opts.Renderer,
-		app:      &svc,
+		svc:      &svc,
 	}
 	return &svc
+}
+
+func serviceWithDB(parent *Service, db *pgdb) *Service {
+	child := *parent
+	child.db = db
+	return &child
 }
 
 func (s *Service) AddHandlers(r *mux.Router) {
@@ -80,28 +89,33 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (a *Service) PublishModule(ctx context.Context, opts PublishModuleOptions) (*Module, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateModuleAction, opts.Organization)
+func (s *Service) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
+	vcsprov, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
 	}
 
-	module, err := a.Publisher.PublishModule(ctx, opts)
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateModuleAction, vcsprov.Organization)
 	if err != nil {
-		a.Error(err, "publishing module", "subject", subject, "repo", opts.Identifier)
 		return nil, err
 	}
-	a.V(0).Info("published module", "subject", subject, "module", module)
+
+	module, err := s.Publisher.PublishModule(ctx, opts)
+	if err != nil {
+		s.Error(err, "publishing module", "subject", subject, "repo", opts.Identifier)
+		return nil, err
+	}
+	s.V(0).Info("published module", "subject", subject, "module", module)
 	return module, nil
 }
 
-func (a *Service) CreateModule(ctx context.Context, opts CreateModuleOptions) (*Module, error) {
+func (a *Service) CreateModule(ctx context.Context, opts otf.CreateModuleOptions) (*otf.Module, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateModuleAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	module := newModule(opts)
+	module := otf.NewModule(opts)
 
 	if err := a.db.CreateModule(ctx, module); err != nil {
 		a.Error(err, "creating module", "subject", subject, "module", module)
@@ -111,19 +125,7 @@ func (a *Service) CreateModule(ctx context.Context, opts CreateModuleOptions) (*
 	return module, nil
 }
 
-func (a *Service) UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatusOptions) (*Module, error) {
-	// retrieve module first in order to get organization for authorization
-	module, err := a.db.GetModuleByID(ctx, opts.ID)
-	if err != nil {
-		return nil, err
-	}
-	organization := module.Organization()
-
-	subject, err := a.organization.CanAccess(ctx, rbac.UpdateModuleAction, organization)
-	if err != nil {
-		return nil, err
-	}
-
+func (a *Service) UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) (*otf.Module, error) {
 	module.UpdateStatus(opts.Status)
 
 	if err := a.db.UpdateModuleStatus(ctx, opts); err != nil {
@@ -134,7 +136,7 @@ func (a *Service) UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatu
 	return module, nil
 }
 
-func (a *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
+func (a *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*otf.Module, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListModulesAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -149,7 +151,7 @@ func (a *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*
 	return modules, nil
 }
 
-func (a *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
+func (a *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*otf.Module, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.GetModuleAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -165,14 +167,14 @@ func (a *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module
 	return module, nil
 }
 
-func (a *Service) GetModuleByID(ctx context.Context, id string) (*Module, error) {
+func (a *Service) GetModuleByID(ctx context.Context, id string) (*otf.Module, error) {
 	module, err := a.db.GetModuleByID(ctx, id)
 	if err != nil {
 		a.Error(err, "retrieving module", "id", id)
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.GetModuleAction, module.organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.GetModuleAction, module.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -181,28 +183,28 @@ func (a *Service) GetModuleByID(ctx context.Context, id string) (*Module, error)
 	return module, nil
 }
 
-func (a *Service) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error) {
+func (a *Service) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Module, error) {
 	return a.db.GetModuleByWebhookID(ctx, id)
 }
 
-func (a *Service) DeleteModule(ctx context.Context, id string) (*Module, error) {
+func (a *Service) DeleteModule(ctx context.Context, id string) (*otf.Module, error) {
 	module, err := a.db.GetModuleByID(ctx, id)
 	if err != nil {
 		a.Error(err, "retrieving module", "id", id)
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.DeleteModuleAction, module.organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteModuleAction, module.Organization)
 	if err != nil {
 		return nil, err
 	}
 
 	err = a.db.tx(ctx, func(tx *pgdb) error {
 		// disconnect module prior to deletion
-		if module.repo != nil {
+		if module.Repo != nil {
 			err := a.repo.Disconnect(ctx, otf.DisconnectOptions{
 				ConnectionType: otf.ModuleConnection,
-				ResourceID:     module.id,
+				ResourceID:     module.ID,
 				Tx:             tx,
 			})
 			if err != nil {
@@ -219,63 +221,119 @@ func (a *Service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 	return module, nil
 }
 
-func (a *Service) CreateModuleVersion(ctx context.Context, opts CreateModuleVersionOptions) (*ModuleVersion, error) {
+func (a *Service) CreateModuleVersion(ctx context.Context, opts otf.CreateModuleVersionOptions) (*otf.ModuleVersion, error) {
 	module, err := a.db.GetModuleByID(ctx, opts.ModuleID)
 	if err != nil {
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateModuleAction, module.organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateModuleVersionAction, module.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	version, err := module.addNewVersion(opts)
-
-	if err := a.db.CreateModuleVersion(ctx, version); err != nil {
-		a.Error(err, "creating module version", "organization", module.organization, "subject", subject, "module_version", version)
-		return nil, err
-	}
-	a.V(0).Info("created module version", "organization", module.organization, "subject", subject, "module_version", version)
-	return version, nil
-}
-
-func (a *Service) UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) (*ModuleVersion, error) {
-	module, err := a.db.GetModuleByID(ctx, opts.ModuleID)
-	if err != nil {
+	modver := otf.NewModuleVersion(opts)
+	if err := module.AddVersion(modver); err != nil {
 		return nil, err
 	}
 
-	err = module.upload(opts.Version, opts.TarballGetter)
-	if err != nil {
-		a.Error(err, "uploading module version", "module_version_id", opts.ModuleVersionID)
+	if err := a.db.CreateModuleVersion(ctx, modver); err != nil {
+		a.Error(err, "creating module version", "organization", module.Organization, "subject", subject, "module_version", modver)
 		return nil, err
 	}
-	if modver.Status() != ModuleVersionStatusOk {
-		a.Error(err, "uploading module version", "module_version", modver)
-		return modver, err
-	}
-
-	// check tarball is legit and if not set bad status
-	if _, err := UnmarshalTerraformModule(opts.Tarball); err != nil {
-		return a.UpdateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
-			ID:     opts.ModuleVersionID,
-			Status: ModuleVersionStatusRegIngressFailed,
-			Error:  err.Error(),
-		})
-	}
-
-	a.V(0).Info("uploaded module version", "module_version", modver)
+	a.V(0).Info("created module version", "organization", module.Organization, "subject", subject, "module_version", modver)
 	return modver, nil
 }
 
-// DownloadModuleVersion should be accessed via signed URL
-func (a *Service) DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error) {
-	tarball, err := a.db.DownloadModuleVersion(ctx, opts)
+func (a *Service) uploadVersion(ctx context.Context, versionID string, tarball []byte) error {
+	module, err := a.db.getModuleByVersionID(ctx, versionID)
 	if err != nil {
-		a.Error(err, "downloading module", "module_version_id", opts.ModuleVersionID)
+		return err
+	}
+
+	// validate tarball
+	if _, err := unmarshalTerraformModule(tarball); err != nil {
+		a.Error(err, "uploading module version", "module_version", versionID)
+		_, err = a.db.UpdateModuleVersionStatus(ctx, otf.UpdateModuleVersionStatusOptions{
+			ID:     versionID,
+			Status: otf.ModuleVersionStatusRegIngressFailed,
+			Error:  err.Error(),
+		})
+		return err
+	}
+
+	// save tarball, set status, and make it the latest version
+	err = a.db.tx(ctx, func(tx *pgdb) error {
+		if err := tx.saveTarball(ctx, versionID, tarball); err != nil {
+			return err
+		}
+		_, err := tx.UpdateModuleVersionStatus(ctx, otf.UpdateModuleVersionStatusOptions{
+			ID:     versionID,
+			Status: otf.ModuleVersionStatusOK,
+		})
+		if err != nil {
+			return err
+		}
+		return tx.updateLatest(ctx, module.ID, versionID)
+	})
+	if err != nil {
+		a.Error(err, "uploading module version", "module_version_id", versionID)
+		return err
+	}
+
+	a.V(0).Info("uploaded module version", "module_version", versionID)
+	return nil
+}
+
+// downloadVersion should be accessed via signed URL
+func (a *Service) downloadVersion(ctx context.Context, versionID string) ([]byte, error) {
+	tarball, err := a.db.DownloadModuleVersion(ctx, versionID)
+	if err != nil {
+		a.Error(err, "downloading module", "module_version_id", versionID)
 		return nil, err
 	}
-	a.V(2).Info("downloaded module", "module_version_id", opts.ModuleVersionID)
+	a.V(2).Info("downloaded module", "module_version_id", versionID)
 	return tarball, nil
+}
+
+func (a *Service) deleteVersion(ctx context.Context, versionID string) (*otf.Module, error) {
+	module, err := a.db.GetModuleByID(ctx, versionID)
+	if err != nil {
+		a.Error(err, "retrieving module", "id", versionID)
+		return nil, err
+	}
+
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteModuleVersionAction, module.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := module.RemoveVersion(versionID); err != nil {
+		return nil, err
+	}
+
+	err = a.db.tx(ctx, func(tx *pgdb) error {
+		if err := tx.deleteModuleVersion(ctx, versionID); err != nil {
+			return err
+		}
+		if module.SetLatest() {
+			if err := tx.updateLatest(ctx, module.ID, module.Latest); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		a.Error(err, "deleting module", "subject", subject, "module", module)
+		return nil, err
+	}
+	a.V(2).Info("deleted module", "subject", subject, "module", module)
+	return module, nil
+}
+
+// tx returns a service in a callback, with its database calls wrapped within a transaction
+func (a *Service) tx(ctx context.Context, txFunc func(*Service) error) error {
+	return a.db.Tx(ctx, func(db otf.DB) error {
+		return txFunc(serviceWithDB(a, &pgdb{db}))
+	})
 }

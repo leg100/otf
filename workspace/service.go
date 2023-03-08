@@ -12,36 +12,48 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type service interface {
-	create(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error)
-	get(ctx context.Context, workspaceID string) (*otf.Workspace, error)
-	getByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error)
-	list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
-	listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error)
-	update(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error)
-	delete(ctx context.Context, workspaceID string) (*otf.Workspace, error)
+type (
+	service interface {
+		create(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error)
+		get(ctx context.Context, workspaceID string) (*otf.Workspace, error)
+		getByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error)
+		list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
+		listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error)
+		update(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error)
+		delete(ctx context.Context, workspaceID string) (*otf.Workspace, error)
 
-	connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error
-	disconnect(ctx context.Context, workspaceID string) error
+		connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error
+		disconnect(ctx context.Context, workspaceID string) error
 
-	lockService
-	permissionsService
-}
+		lockService
+		permissionsService
+	}
 
-type Service struct {
-	logr.Logger
-	otf.PubSubService
+	Service struct {
+		logr.Logger
+		otf.PubSubService
 
-	site         otf.Authorizer
-	organization otf.Authorizer
-	*authorizer
+		site         otf.Authorizer
+		organization otf.Authorizer
+		*authorizer
 
-	db   *pgdb
-	repo otf.RepoService
+		db   *pgdb
+		repo otf.RepoService
 
-	api *api
-	web *web
-}
+		api *api
+		web *web
+	}
+
+	Options struct {
+		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
+
+		otf.DB
+		otf.PubSubService
+		otf.Renderer
+		otf.RepoService
+		logr.Logger
+	}
+)
 
 func NewService(opts Options) *Service {
 	svc := Service{
@@ -67,6 +79,7 @@ func NewService(opts Options) *Service {
 	return serviceWithDB(&svc, newdb(opts.DB))
 }
 
+// serviceWithDB is for wrapping the service's db inside a tx
 func serviceWithDB(parent *Service, db *pgdb) *Service {
 	child := *parent
 	child.db = db
@@ -77,16 +90,6 @@ func serviceWithDB(parent *Service, db *pgdb) *Service {
 	// TODO: construct connector
 
 	return &child
-}
-
-type Options struct {
-	TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
-
-	otf.DB
-	otf.PubSubService
-	otf.Renderer
-	otf.RepoService
-	logr.Logger
 }
 
 func (a *Service) AddHandlers(r *mux.Router) {
@@ -148,10 +151,14 @@ func (a *Service) create(ctx context.Context, opts otf.CreateWorkspaceOptions) (
 		}
 		// If needed, connect the VCS repository.
 		if repo := opts.Repo; repo != nil {
-			return serviceWithDB(a, tx).connect(ctx, ws.ID, otf.ConnectWorkspaceOptions{
+			conn, err := serviceWithDB(a, tx).connect(ctx, ws.ID, otf.ConnectWorkspaceOptions{
 				ProviderID: repo.VCSProviderID,
 				Identifier: repo.Identifier,
 			})
+			if err != nil {
+				return err
+			}
+			ws.Repo = conn
 		}
 		return nil
 	})
@@ -196,13 +203,13 @@ func (a *Service) listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Works
 	return a.db.ListWorkspacesByWebhookID(ctx, id)
 }
 
-func (a *Service) connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error {
+func (a *Service) connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) (*otf.Connection, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = a.repo.Connect(ctx, otf.ConnectOptions{
+	conn, err := a.repo.Connect(ctx, otf.ConnectOptions{
 		ConnectionType: otf.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.ProviderID,
@@ -210,12 +217,12 @@ func (a *Service) connect(ctx context.Context, workspaceID string, opts otf.Conn
 	})
 	if err != nil {
 		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.Identifier)
-		return err
+		return nil, err
 	}
 
 	a.V(0).Info("connected workspace repo", "workspace", workspaceID, "subject", subject, "repo", opts)
 
-	return nil
+	return conn, nil
 }
 
 func (a *Service) disconnect(ctx context.Context, workspaceID string) error {
