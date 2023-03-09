@@ -47,7 +47,7 @@ func (h *hook) sync(ctx context.Context, client cloud.Client) error {
 	// existing hook in DB; check it exists in cloud and create/update
 	// accordingly
 	cloudHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
-		Identifier: h.identifier,
+		Repo: h.identifier,
 		ID:         *h.cloudID,
 	})
 	if errors.Is(err, otf.ErrResourceNotFound) {
@@ -80,7 +80,7 @@ func (h *hook) sync(ctx context.Context, client cloud.Client) error {
 
 func (h *hook) createOpts() cloud.CreateWebhookOptions {
 	return cloud.CreateWebhookOptions{
-		Identifier: h.identifier,
+		Repo: h.identifier,
 		Secret:     h.secret,
 		Events:     defaultEvents,
 		Endpoint:   h.endpoint,

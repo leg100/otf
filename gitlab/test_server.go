@@ -143,10 +143,7 @@ func WithGitlabUser(user *cloud.User) TestGitlabServerOption {
 
 func WithGitlabRepo(repo cloud.Repo) TestGitlabServerOption {
 	return func(db *testServerDB) {
-		db.project = &gitlab.Project{
-			PathWithNamespace: repo.Identifier,
-			DefaultBranch:     repo.Branch,
-		}
+		db.project = &gitlab.Project{PathWithNamespace: repo.String()}
 	}
 }
 

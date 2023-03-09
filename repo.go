@@ -18,13 +18,10 @@ type (
 	// Connection is a connection between a VCS repo and an OTF resource.
 	Connection struct {
 		VCSProviderID string
-		WebhookID     uuid.UUID
-		// TODO: this is redundant info (identifier can be retrieved via
-		// webhookID)
-		Identifier string // identifier is <repo_owner>/<repo_name>
+		RepoID        uuid.UUID
 	}
 
-	// RepoService manages configuration of VCS repositories
+	// RepoService manages VCS repositories
 	RepoService interface {
 		// Connect adds a connection between a VCS repo and an OTF resource. A
 		// webhook is created if one doesn't exist already.
@@ -33,6 +30,8 @@ type (
 		// resource. If there are no more connections then its
 		// webhook is removed.
 		Disconnect(ctx context.Context, opts DisconnectOptions) error
+		// GetRepo returns a VCS repo with the given ID
+		GetRepo(ctx context.Context, repoID uuid.UUID) (string, error)
 	}
 
 	ConnectOptions struct {

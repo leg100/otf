@@ -296,7 +296,7 @@ func withRun(run *otf.Run) fakeWebServiceOption {
 	}
 }
 
-func fakeWeb(t *testing.T, opts ...fakeWebServiceOption) *web {
+func fakeWeb(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 
@@ -305,7 +305,7 @@ func fakeWeb(t *testing.T, opts ...fakeWebServiceOption) *web {
 		fn(&svc)
 	}
 
-	return &web{
+	return &webHandlers{
 		Renderer:           renderer,
 		RunService:         &svc,
 		TeamService:        &svc,
@@ -377,8 +377,8 @@ func (f *fakeWebService) unlock(context.Context, string, bool) (*otf.Workspace, 
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) connect(context.Context, string, otf.ConnectWorkspaceOptions) error {
-	return nil
+func (f *fakeWebService) connect(context.Context, string, otf.ConnectWorkspaceOptions) (*otf.Connection, error) {
+	return nil, nil
 }
 
 func (f *fakeWebService) disconnect(context.Context, string) error {

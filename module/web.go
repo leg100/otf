@@ -79,7 +79,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 	var readme template.HTML
 	switch module.Status {
 	case otf.ModuleStatusSetupComplete:
-		tarball, err := h.svc.downloadVersion(r.Context(), DownloadModuleOptions{
+		tarball, err := h.svc.downloadVersion(r.Context(), otf.DownloadModuleOptions{
 			ModuleVersionID: module.Version(params.Version).ID,
 		})
 		if err != nil {
@@ -199,7 +199,7 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.svc.GetVCSProvider(r.Context(), params.VCSProviderID)
+	vcsprov, err := h.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -208,11 +208,11 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	h.Render("module_new.tmpl", w, r, struct {
 		Organization string
 		Step         newModuleStep
-		otf.VCSProvider
+		*otf.VCSProvider
 	}{
 		Organization: params.Organization,
 		Step:         newModuleConfirmStep,
-		VCSProvider:  provider,
+		VCSProvider:  vcsprov,
 	})
 }
 
@@ -220,7 +220,7 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Identifier    string `schema:"identifier,required"`
+		Repo          string `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -228,8 +228,8 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	module, err := h.svc.PublishModule(r.Context(), otf.PublishModuleOptions{
-		Identifier:   params.Identifier,
-		VCSProviderID:   params.VCSProviderID,
+		RepoPath:      params.Repo,
+		VCSProviderID: params.VCSProviderID,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

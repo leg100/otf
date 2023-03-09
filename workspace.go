@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
@@ -58,7 +59,7 @@ type (
 		WorkingDirectory           string
 		Organization               string
 		LatestRunID                *string
-		Repo                       *Connection
+		Connection                 *Connection
 		Permissions                []WorkspacePermission
 
 		Lock
@@ -92,7 +93,8 @@ type (
 		TriggerPrefixes            []string
 		WorkingDirectory           *string
 		Organization               *string `schema:"organization_name,required"`
-		Repo                       *Connection
+
+		*ConnectWorkspaceOptions
 	}
 
 	UpdateWorkspaceOptions struct {
@@ -130,18 +132,6 @@ type (
 		UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (Workspace, error)
 	}
 
-	// WorkspaceRepo represents a connection between a workspace and a VCS
-	// repository.
-	//
-	// TODO: rename WorkspaceConnection
-	WorkspaceRepo struct {
-		ProviderID  string
-		WebhookID   uuid.UUID
-		Identifier  string // identifier is <repo_owner>/<repo_name>
-		Branch      string // branch for which applies are run
-		WorkspaceID string
-	}
-
 	WorkspaceService interface {
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
@@ -150,7 +140,7 @@ type (
 		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 		//
 		// TODO: rename to ListConnectedWorkspaces
-		ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
+		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
 		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
@@ -158,13 +148,13 @@ type (
 	}
 
 	WorkspaceConnectionService interface {
-		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) error
+		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*Connection, error)
 		DisconnectWorkspace(ctx context.Context, workspaceID string) error
 	}
 
 	ConnectWorkspaceOptions struct {
-		Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
-		ProviderID string `schema:"vcs_provider_id,required"`
+		RepoPath      cloud.Repo `schema:"identifier,required"` // repo id: <owner>/<repo>
+		VCSProviderID string     `schema:"vcs_provider_id,required"`
 	}
 
 	WorkspacePermissionService interface {
@@ -264,9 +254,6 @@ func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
-	}
-	if opts.Repo != nil {
-		ws.Repo = opts.Repo
 	}
 	return &ws, nil
 }

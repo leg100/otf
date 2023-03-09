@@ -109,7 +109,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64) (otf.DatabaseLock, erro
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(*DB) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err

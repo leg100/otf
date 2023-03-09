@@ -44,18 +44,18 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("GetRepository", func(t *testing.T) {
-		want := cloud.Repo{Identifier: "acme/terraform", Branch: "master"}
+		want := cloud.Repo("acme/terraform")
 
 		provider := newTestClient(t, WithGitlabRepo(want))
 
-		got, err := provider.GetRepository(ctx, want.Identifier)
+		got, err := provider.GetRepository(ctx, string(want))
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("ListRepositories", func(t *testing.T) {
-		want := []cloud.Repo{{Identifier: "acme/terraform", Branch: "master"}}
+		want := []cloud.Repo{"acme/terraform"}
 
 		provider := newTestClient(t, WithGitlabRepo(want[0]))
 
@@ -69,12 +69,12 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 
 		client := newTestClient(t,
-			WithGitlabRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
+			WithGitlabRepo(cloud.Repo("acme/terraform")),
 			WithGitlabTarball(want),
 		)
 
 		got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-			Identifier: "acme/terraform",
+			Repo: "acme/terraform",
 		})
 		require.NoError(t, err)
 

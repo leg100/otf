@@ -15,6 +15,7 @@ type spawner struct {
 	logr.Logger
 	otf.Subscriber
 	otf.ConfigurationVersionService
+	otf.RepoService
 	otf.WorkspaceService
 	otf.VCSProviderService
 
@@ -46,16 +47,14 @@ func (h *spawner) Start(ctx context.Context) error {
 }
 
 func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
-	var webhookID uuid.UUID
+	var repoID uuid.UUID
 	var isPullRequest bool
-	var identifier string
 	var branch, defaultBranch string
 	var sha string
 
 	switch event := event.(type) {
 	case cloud.VCSPushEvent:
-		webhookID = event.WebhookID
-		identifier = event.Identifier
+		repoID = event.RepoID
 		sha = event.CommitSHA
 		branch = event.Branch
 		defaultBranch = event.DefaultBranch
@@ -66,17 +65,16 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		default:
 			return nil
 		}
-		webhookID = event.WebhookID
-		identifier = event.Identifier
+		repoID = event.RepoID
 		sha = event.CommitSHA
 		branch = event.Branch
 		defaultBranch = event.DefaultBranch
 		isPullRequest = true
 	}
 
-	h.Info("triggering run", "hook", webhookID)
+	h.Info("triggering run", "repo_id", repoID)
 
-	workspaces, err := h.ListWorkspacesByWebhookID(ctx, webhookID)
+	workspaces, err := h.ListWorkspacesByRepoID(ctx, repoID)
 	if err != nil {
 		return err
 	}
@@ -88,18 +86,22 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	// we have 1+ workspaces connected to this repo but we only need to retrieve
 	// the repo once, and to do so we'll use the VCS provider associated with
 	// the first workspace (any would do).
-	if workspaces[0].Repo == nil {
+	if workspaces[0].Connection == nil {
 		return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 	}
-	providerID := workspaces[0].Repo.VCSProviderID
+	providerID := workspaces[0].Connection.VCSProviderID
 
+	repo, err := h.GetRepo(ctx, repoID)
+	if err != nil {
+		return err
+	}
 	client, err := h.GetVCSClient(ctx, providerID)
 	if err != nil {
 		return err
 	}
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-		Identifier: identifier,
-		Ref:        &sha,
+		Repo: repo,
+		Ref:  &sha,
 	})
 	if err != nil {
 		return fmt.Errorf("retrieving repository tarball: %w", err)
@@ -129,7 +131,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 
 	// create a config version for each workspace and trigger run.
 	for _, ws := range workspaces {
-		if ws.Repo == nil {
+		if ws.Connection == nil {
 			// Should never happen...
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
@@ -143,7 +145,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 				CommitSHA: sha,
 				// CommitURL         string
 				// CompareURL        string
-				Identifier:      identifier,
+				Repo:            repo,
 				IsPullRequest:   isPullRequest,
 				OnDefaultBranch: branch == defaultBranch,
 			},

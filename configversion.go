@@ -115,7 +115,7 @@ type (
 		CommitSHA string
 		// CommitURL         string
 		// CompareURL        string
-		Identifier      string
+		Repo            string
 		IsPullRequest   bool
 		OnDefaultBranch bool
 		// PullRequestNumber int

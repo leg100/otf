@@ -13,6 +13,7 @@ import (
 // care of calling all the API endpoints to start a run itself).
 type starter struct {
 	otf.ConfigurationVersionService
+	otf.RepoService
 	otf.VCSProviderService
 	otf.WorkspaceService
 
@@ -26,8 +27,8 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.Co
 	}
 
 	var cv *otf.ConfigurationVersion
-	if ws.Repo != nil {
-		client, err := rs.GetVCSClient(ctx, ws.Repo.VCSProviderID)
+	if ws.Connection != nil {
+		client, err := rs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 		if err != nil {
 			return nil, err
 		}
@@ -36,9 +37,13 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.Co
 		if ws.Branch != "" {
 			ref = &ws.Branch
 		}
+		repo, err := rs.GetRepo(ctx, ws.Connection.RepoID)
+		if err != nil {
+			return nil, err
+		}
 		tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-			Identifier: ws.Repo.Identifier,
-			Ref:        ref,
+			Repo: repo,
+			Ref:  ref,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)

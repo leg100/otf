@@ -1,4 +1,4 @@
-package triggerer
+package run
 
 import (
 	"context"

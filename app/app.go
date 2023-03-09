@@ -87,7 +87,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		WorkspaceService:            child,
 		ConfigurationVersionService: child,
 	}
-	child.RepoService = repo.NewService(repo.NewServiceOptions{
+	child.RepoService = repo.NewService(repo.Options{
 		Logger:             opts.Logger,
 		Database:           db,
 		CloudService:       child.Service,

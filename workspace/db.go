@@ -78,10 +78,9 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*otf.Workspace, error) {
 	}
 
 	if result.WorkspaceConnection != nil {
-		ws.Repo = &otf.Connection{
+		ws.Connection = &otf.Connection{
 			VCSProviderID: result.WorkspaceConnection.VCSProviderID.String,
-			WebhookID:     result.Webhook.WebhookID.Bytes,
-			Identifier:    result.Webhook.Identifier.String,
+			RepoID:        result.Webhook.WebhookID.Bytes,
 		}
 	}
 

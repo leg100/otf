@@ -33,7 +33,7 @@ type (
 		Status       ModuleStatus
 		Versions     map[string]*ModuleVersion
 		Latest       *ModuleVersion
-		Repo         *Connection // optional vcs repo connection
+		Connection   *Connection // optional vcs repo connection
 	}
 
 	ModuleService interface {
@@ -59,7 +59,7 @@ type (
 		DeleteModule(ctx context.Context, id string) error
 	}
 	PublishModuleOptions struct {
-		Identifier    string
+		RepoPath      string
 		VCSProviderID string
 	}
 	CreateModuleOptions struct {

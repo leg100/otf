@@ -18,11 +18,10 @@ type (
 		get(ctx context.Context, workspaceID string) (*otf.Workspace, error)
 		getByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error)
 		list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
-		listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error)
 		update(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error)
 		delete(ctx context.Context, workspaceID string) (*otf.Workspace, error)
 
-		connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) error
+		connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) (*otf.Connection, error)
 		disconnect(ctx context.Context, workspaceID string) error
 
 		lockService
@@ -41,7 +40,7 @@ type (
 		repo otf.RepoService
 
 		api *api
-		web *web
+		web *webHandlers
 	}
 
 	Options struct {
@@ -70,7 +69,7 @@ func NewService(opts Options) *Service {
 		svc:             &svc,
 		tokenMiddleware: opts.TokenMiddleware,
 	}
-	svc.web = &web{
+	svc.web = &webHandlers{
 		Renderer:          opts.Renderer,
 		svc:               &svc,
 		sessionMiddleware: opts.SessionMiddleware,
@@ -113,8 +112,8 @@ func (s *Service) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOpti
 	return nil, nil
 }
 
-func (s *Service) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
-	return nil, nil
+func (s *Service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*otf.Workspace, error) {
+	return s.db.ListWorkspacesByWebhookID(ctx, repoID)
 }
 
 func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
@@ -145,20 +144,17 @@ func (a *Service) create(ctx context.Context, opts otf.CreateWorkspaceOptions) (
 		return nil, err
 	}
 
-	err = a.db.tx(ctx, func(tx *pgdb) error {
-		if err := tx.CreateWorkspace(ctx, ws); err != nil {
+	err = a.tx(ctx, func(tx *Service) error {
+		if err := tx.db.CreateWorkspace(ctx, ws); err != nil {
 			return err
 		}
 		// If needed, connect the VCS repository.
-		if repo := opts.Repo; repo != nil {
-			conn, err := serviceWithDB(a, tx).connect(ctx, ws.ID, otf.ConnectWorkspaceOptions{
-				ProviderID: repo.VCSProviderID,
-				Identifier: repo.Identifier,
-			})
+		if opts.ConnectWorkspaceOptions != nil {
+			conn, err := tx.connect(ctx, ws.ID, *opts.ConnectWorkspaceOptions)
 			if err != nil {
 				return err
 			}
-			ws.Repo = conn
+			ws.Connection = conn
 		}
 		return nil
 	})
@@ -199,10 +195,6 @@ func (a *Service) update(ctx context.Context, workspaceID string, opts otf.Updat
 	return updated, nil
 }
 
-func (a *Service) listByWebhook(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
-	return a.db.ListWorkspacesByWebhookID(ctx, id)
-}
-
 func (a *Service) connect(ctx context.Context, workspaceID string, opts otf.ConnectWorkspaceOptions) (*otf.Connection, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
@@ -212,11 +204,11 @@ func (a *Service) connect(ctx context.Context, workspaceID string, opts otf.Conn
 	conn, err := a.repo.Connect(ctx, otf.ConnectOptions{
 		ConnectionType: otf.WorkspaceConnection,
 		ResourceID:     workspaceID,
-		VCSProviderID:  opts.ProviderID,
-		Identifier:     opts.Identifier,
+		VCSProviderID:  opts.VCSProviderID,
+		Identifier:     opts.RepoPath.String(),
 	})
 	if err != nil {
-		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.Identifier)
+		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)
 		return nil, err
 	}
 
@@ -320,7 +312,7 @@ func (a *Service) delete(ctx context.Context, workspaceID string) (*otf.Workspac
 	}
 
 	// disconnect repo before deleting
-	if ws.Repo != nil {
+	if ws.Connection != nil {
 		err = a.disconnect(ctx, ws.ID)
 		// ignore warnings; the repo is still disconnected successfully
 		if err != nil && !errors.Is(err, otf.ErrWarning) {

@@ -49,9 +49,9 @@ func (h *Publisher) Start(ctx context.Context) error {
 // PublishModule publishes a new module from a VCS repository, enumerating through
 // its git tags and releasing a module version for each tag.
 func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
-	_, repoName, found := strings.Cut(opts.Identifier, "/")
+	_, repoName, found := strings.Cut(opts.RepoPath, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return nil, fmt.Errorf("malformed identifier: %s", opts.RepoPath)
 	}
 	parts := strings.SplitN(repoName, "-", 3)
 	if len(parts) < 3 {
@@ -60,10 +60,10 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 	provider := parts[1]
 	name := parts[2]
 
-	mod := newModule(CreateModuleOptions{
-		Name:         name,
-		Provider:     provider,
-		Organization: opts.Organization,
+	mod := otf.NewModule(otf.CreateModuleOptions{
+		Name:     name,
+		Provider: provider,
+		// TODO: need organization
 	})
 
 	// persist module to db and connect mod to repo
@@ -76,7 +76,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 			ConnectionType: otf.ModuleConnection,
 			ResourceID:     mod.id,
 			VCSProviderID:  opts.VCSProviderID,
-			Identifier:     opts.Identifier,
+			Identifier:     opts.RepoPath,
 			Tx:             tx,
 		})
 		if err != nil {
@@ -96,15 +96,15 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 
 	// Make new version for each tag that looks like a semantic version.
 	tags, err := client.ListTags(ctx, cloud.ListTagsOptions{
-		Identifier: opts.Identifier,
+		Repo: opts.RepoPath,
 	})
 	if err != nil {
 		return nil, err
 	}
 	if len(tags) == 0 {
-		return p.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
+		return p.UpdateModuleStatus(ctx, otf.UpdateModuleStatusOptions{
 			ID:     mod.id,
-			Status: ModuleStatusNoVersionTags,
+			Status: otf.ModuleStatusNoVersionTags,
 		})
 	}
 
@@ -125,7 +125,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts otf.PublishModuleOpt
 			// strip off v prefix if it has one
 			Version:    strings.TrimPrefix(version, "v"),
 			Ref:        tag,
-			Identifier: opts.Identifier,
+			Identifier: opts.RepoPath,
 			ProviderID: opts.VCSProviderID,
 		})
 		if err != nil {
@@ -150,11 +150,11 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 		return nil
 	}
 
-	module, err := p.GetModuleByWebhookID(ctx, tagEvent.WebhookID)
+	module, err := p.GetModuleByRepoID(ctx, tagEvent.RepoID)
 	if err != nil {
 		return err
 	}
-	if module.Repo == nil {
+	if module.Connection == nil {
 		return fmt.Errorf("module is not connected to a repo: %s", module.ID)
 	}
 
@@ -164,7 +164,7 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) 
 		Version:    strings.TrimPrefix(tagEvent.Tag, "v"),
 		Ref:        tagEvent.CommitSHA,
 		Identifier: tagEvent.Identifier,
-		ProviderID: module.Repo.VCSProviderID,
+		ProviderID: module.Connection.VCSProviderID,
 	})
 	return err
 }
@@ -194,7 +194,7 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 	}
 
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-		Identifier: opts.Identifier,
+		Repo: opts.Identifier,
 		Ref:        &opts.Ref,
 	})
 	if err != nil {

@@ -5,20 +5,33 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
 
-type Service struct {
-	logr.Logger
-	otf.VCSProviderService
-	otf.DB
+type (
+	Service struct {
+		logr.Logger
+		otf.VCSProviderService
+		otf.DB
 
-	factory // produce new hooks
-	*handler
-}
+		factory // produce new hooks
+		*handler
+	}
 
-func NewService(opts NewServiceOptions) *Service {
+	Options struct {
+		CloudService cloud.Service
+
+		otf.DB
+		logr.Logger
+		otf.HostnameService
+		otf.PubSubService
+		otf.VCSProviderService
+	}
+)
+
+func NewService(opts Options) *Service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
 	handler := &handler{
 		Logger:        opts.Logger,
@@ -32,16 +45,6 @@ func NewService(opts NewServiceOptions) *Service {
 		factory:            factory,
 		handler:            handler,
 	}
-}
-
-type NewServiceOptions struct {
-	CloudService cloud.Service
-
-	otf.DB
-	logr.Logger
-	otf.HostnameService
-	otf.PubSubService
-	otf.VCSProviderService
 }
 
 // Connect an OTF resource to a VCS repo.
@@ -61,7 +64,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 
 	hook, err := s.newHook(newHookOpts{
 		identifier: opts.Identifier,
-		cloud:      vcsProvider.CloudConfig().Name,
+		cloud:      vcsProvider.CloudConfig.Name,
 	})
 	if err != nil {
 		return nil, err
@@ -94,9 +97,8 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 		return tx.createConnection(ctx, hook.id, opts)
 	})
 	return &otf.Connection{
-		WebhookID:     hook.id,
+		RepoID:        hook.id,
 		VCSProviderID: opts.VCSProviderID,
-		Identifier:    opts.Identifier,
 	}, nil
 }
 
@@ -144,8 +146,8 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) er
 			return err
 		}
 		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
-			Identifier: hook.identifier,
-			ID:         *hook.cloudID,
+			Repo: hook.identifier,
+			ID:   *hook.cloudID,
 		})
 		if err != nil {
 			s.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
@@ -159,4 +161,12 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) er
 		return err
 	}
 	return repoErr
+}
+
+func (s *Service) GetRepo(ctx context.Context, repoID uuid.UUID) (string, error) {
+	hook, err := s.db.getHookByID(ctx, repoID)
+	if err != nil {
+		return "", err
+	}
+	return hook.identifier, nil
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type web struct {
+type webHandlers struct {
 	otf.Renderer
 	otf.RunService
 	otf.TeamService
@@ -23,7 +23,7 @@ type web struct {
 	sessionMiddleware mux.MiddlewareFunc
 }
 
-func (h *web) addHandlers(r *mux.Router) {
+func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.Use(h.sessionMiddleware) // require session
 
 	r = r.PathPrefix("/app").Subrouter()
@@ -47,7 +47,7 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/unset-permission", h.unsetWorkspacePermission).Methods("POST")
 }
 
-func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization    string `schema:"organization_name,required"`
 		otf.ListOptions        // Pagination
@@ -75,7 +75,7 @@ func (h *web) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) newWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -85,7 +85,7 @@ func (h *web) newWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_new.tmpl", w, r, organization)
 }
 
-func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var opts otf.CreateWorkspaceOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -106,7 +106,7 @@ func (h *web) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -139,7 +139,7 @@ func (h *web) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Name         string `schema:"workspace_name,required"`
 		Organization string `schema:"organization_name,required"`
@@ -158,7 +158,7 @@ func (h *web) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -210,7 +210,7 @@ func (h *web) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		AutoApply        bool `schema:"auto_apply"`
 		Name             *string
@@ -244,7 +244,7 @@ func (h *web) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID), http.StatusFound)
 }
 
-func (h *web) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -260,7 +260,7 @@ func (h *web) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspaces(ws.Organization), http.StatusFound)
 }
 
-func (h *web) lockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -275,7 +275,7 @@ func (h *web) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *web) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -290,7 +290,7 @@ func (h *web) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 
-func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -317,7 +317,7 @@ func (h *web) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID     string `schema:"workspace_id,required"`
 		VCSProviderID   string `schema:"vcs_provider_id,required"`
@@ -358,7 +358,7 @@ func (h *web) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) connect(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		otf.ConnectWorkspaceOptions
@@ -368,7 +368,7 @@ func (h *web) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
+	_, err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -378,7 +378,7 @@ func (h *web) connect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) disconnect(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -400,7 +400,7 @@ func (h *web) disconnect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 
-func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		TeamName    string `schema:"team_name,required"`
@@ -425,7 +425,7 @@ func (h *web) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
 		TeamName    string `schema:"team_name,required"`

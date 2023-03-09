@@ -104,7 +104,7 @@ func TestModule(t *testing.T) {
 	// generate and send push tag event for v1.0.0
 	pushTpl, err := os.ReadFile("fixtures/github_push_tag.json")
 	require.NoError(t, err)
-	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Identifier)
+	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
 	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)
 
 	// v1.0.0 should appear as latest module on workspace

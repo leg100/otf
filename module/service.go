@@ -23,7 +23,7 @@ type (
 		ListModules(context.Context, otf.ListModulesOptions) ([]*otf.Module, error)
 		GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error)
 		GetModuleByID(ctx context.Context, id string) (*otf.Module, error)
-		GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Module, error)
+		GetModuleByRepoID(ctx context.Context, repoID uuid.UUID) (*otf.Module, error)
 		DeleteModule(ctx context.Context, id string) (*otf.Module, error)
 
 		CreateModuleVersion(context.Context, otf.CreateModuleVersionOptions) (*otf.ModuleVersion, error)
@@ -102,7 +102,7 @@ func (s *Service) PublishModule(ctx context.Context, opts otf.PublishModuleOptio
 
 	module, err := s.Publisher.PublishModule(ctx, opts)
 	if err != nil {
-		s.Error(err, "publishing module", "subject", subject, "repo", opts.Identifier)
+		s.Error(err, "publishing module", "subject", subject, "repo", opts.RepoPath)
 		return nil, err
 	}
 	s.V(0).Info("published module", "subject", subject, "module", module)
@@ -201,7 +201,7 @@ func (a *Service) DeleteModule(ctx context.Context, id string) (*otf.Module, err
 
 	err = a.db.tx(ctx, func(tx *pgdb) error {
 		// disconnect module prior to deletion
-		if module.Repo != nil {
+		if module.Connection != nil {
 			err := a.repo.Disconnect(ctx, otf.DisconnectOptions{
 				ConnectionType: otf.ModuleConnection,
 				ResourceID:     module.ID,
@@ -287,7 +287,7 @@ func (a *Service) uploadVersion(ctx context.Context, versionID string, tarball [
 
 // downloadVersion should be accessed via signed URL
 func (a *Service) downloadVersion(ctx context.Context, versionID string) ([]byte, error) {
-	tarball, err := a.db.DownloadModuleVersion(ctx, versionID)
+	tarball, err := a.db.getTarball(ctx, versionID)
 	if err != nil {
 		a.Error(err, "downloading module", "module_version_id", versionID)
 		return nil, err

@@ -144,14 +144,6 @@ func (db *pgdb) UpdateModuleVersionStatus(ctx context.Context, opts otf.UpdateMo
 	return UnmarshalModuleVersionRow(versionRow(row)), nil
 }
 
-func (db *pgdb) DownloadModuleVersion(ctx context.Context, versionID string) ([]byte, error) {
-	tarball, err := db.FindModuleTarball(ctx, sql.String(versionID))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return tarball, nil
-}
-
 func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID string) (*otf.Module, error) {
 	row, err := db.FindModuleByModuleVersionID(ctx, sql.String(versionID))
 	if err != nil {
@@ -168,6 +160,14 @@ func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID string) error
 func (db *pgdb) saveTarball(ctx context.Context, versionID string, tarball []byte) error {
 	_, err := db.InsertModuleTarball(ctx, tarball, sql.String(versionID))
 	return sql.Error(err)
+}
+
+func (db *pgdb) getTarball(ctx context.Context, versionID string) ([]byte, error) {
+	tarball, err := db.FindModuleTarball(ctx, sql.String(versionID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return tarball, nil
 }
 
 func (db *pgdb) updateLatest(ctx context.Context, moduleID string, modver *otf.ModuleVersion) error {
@@ -201,9 +201,9 @@ func UnmarshalModuleRow(row moduleRow) *otf.Module {
 		Organization: row.OrganizationName.String,
 	}
 	if row.ModuleConnection != nil {
-		module.Repo = &otf.Connection{
+		module.Connection = &otf.Connection{
 			VCSProviderID: row.ModuleConnection.VCSProviderID.String,
-			WebhookID:     row.Webhook.WebhookID.Bytes,
+			RepoID:        row.Webhook.WebhookID.Bytes,
 			Identifier:    row.Webhook.Identifier.String,
 		}
 	}

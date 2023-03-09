@@ -39,7 +39,7 @@ func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *otf.Configura
 			_, err := tx.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
-				Identifier:             sql.String(ia.Identifier),
+				Identifier:             sql.String(ia.Repo),
 				IsPullRequest:          ia.IsPullRequest,
 				OnDefaultBranch:        ia.OnDefaultBranch,
 				ConfigurationVersionID: sql.String(cv.ID),
@@ -183,7 +183,7 @@ func (result pgRow) toConfigVersion() *otf.ConfigurationVersion {
 		cv.IngressAttributes = &otf.IngressAttributes{
 			Branch:          result.IngressAttributes.Branch.String,
 			CommitSHA:       result.IngressAttributes.CommitSHA.String,
-			Identifier:      result.IngressAttributes.Identifier.String,
+			Repo:      result.IngressAttributes.Identifier.String,
 			IsPullRequest:   result.IngressAttributes.IsPullRequest,
 			OnDefaultBranch: result.IngressAttributes.IsPullRequest,
 		}

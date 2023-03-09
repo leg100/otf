@@ -49,7 +49,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, WebhookID: hook.id})
+	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, RepoID: hook.id})
 	if event != nil {
 		h.Publish(otf.Event{
 			Type:    otf.EventVCS,

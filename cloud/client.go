@@ -32,8 +32,8 @@ type ClientOptions struct {
 }
 
 type GetRepoTarballOptions struct {
-	Identifier string  // repo identifier, <owner>/<repo>
-	Ref        *string // branch/tag/SHA ref, nil means default branch
+	Repo string  // repo identifier, <owner>/<repo>
+	Ref  *string // branch/tag/SHA ref, nil means default branch
 }
 
 type ListRepositoriesOptions struct {
@@ -42,23 +42,23 @@ type ListRepositoriesOptions struct {
 
 // ListTagsOptions are options for listing tags on a vcs repository
 type ListTagsOptions struct {
-	Identifier string // repo identifier, <owner>/<repo>
-	Prefix     string // only list tags that start with this string
+	Repo   string // repo identifier, <owner>/<repo>
+	Prefix string // only list tags that start with this string
 }
 
 // Webhook is a cloud's configuration for a webhook on OTF.
 type Webhook struct {
-	ID         string // cloud's webhook ID
-	Identifier string // identifier is <repo_owner>/<repo_name>
-	Events     []VCSEventType
-	Endpoint   string // the OTF URL that receives events
+	ID       string // cloud's webhook ID
+	Repo     string // identifier is <repo_owner>/<repo_name>
+	Events   []VCSEventType
+	Endpoint string // the OTF URL that receives events
 }
 
 type CreateWebhookOptions struct {
-	Identifier string // repo identifier, <owner>/<repo>
-	Secret     string // secret string for generating signature
-	Endpoint   string // otf's external-facing host[:port]
-	Events     []VCSEventType
+	Repo     string // repo identifier, <owner>/<repo>
+	Secret   string // secret string for generating signature
+	Endpoint string // otf's external-facing host[:port]
+	Events   []VCSEventType
 }
 
 type UpdateWebhookOptions struct {
@@ -69,20 +69,20 @@ type UpdateWebhookOptions struct {
 
 // GetWebhookOptions are options for retrieving a webhook.
 type GetWebhookOptions struct {
-	Identifier string // Repository identifier, <owner>/<repo>
-	ID         string // vcs' webhook ID
+	Repo string // Repository identifier, <owner>/<repo>
+	ID   string // vcs' webhook ID
 }
 
 // DeleteWebhookOptions are options for deleting a webhook.
 type DeleteWebhookOptions struct {
-	Identifier string // Repository identifier, <owner>/<repo>
-	ID         string // vcs' webhook ID
+	Repo string // Repository identifier, <owner>/<repo>
+	ID   string // vcs' webhook ID
 }
 
 // SetStatusOptions are options for setting a status on a VCS repo
 type SetStatusOptions struct {
 	Workspace   string // workspace name
-	Identifier  string // <owner>/<repo>
+	Repo        string // <owner>/<repo>
 	Ref         string // git ref
 	Status      VCSStatus
 	TargetURL   string

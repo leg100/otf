@@ -145,11 +145,11 @@ func (r *reporter) handleRun(ctx context.Context, run *otf.Run) error {
 	if err != nil {
 		return err
 	}
-	if ws.Repo == nil {
+	if ws.Connection == nil {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
 	}
 
-	client, err := r.GetVCSClient(ctx, ws.Repo.VCSProviderID)
+	client, err := r.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (r *reporter) handleRun(ctx context.Context, run *otf.Run) error {
 	return client.SetStatus(ctx, cloud.SetStatusOptions{
 		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes.CommitSHA,
-		Identifier:  ws.Repo.Identifier,
+		Repo:  cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
 		TargetURL: (&url.URL{

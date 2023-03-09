@@ -29,7 +29,7 @@ func TestStartRun(t *testing.T) {
 	})
 
 	t.Run("connected to repo", func(t *testing.T) {
-		ws := &otf.Workspace{Repo: &otf.Connection{}}
+		ws := &otf.Workspace{Connection: &otf.Connection{}}
 		cv := &otf.ConfigurationVersion{}
 		provider := &otf.VCSProvider{}
 		want := &otf.Run{}

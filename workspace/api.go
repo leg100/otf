@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
@@ -92,8 +93,8 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 			return
 		}
-		opts.Repo = &otf.Connection{
-			Identifier:    *params.VCSRepo.Identifier,
+		opts.ConnectWorkspaceOptions = &otf.ConnectWorkspaceOptions{
+			RepoPath:      cloud.Repo(*params.VCSRepo.Identifier),
 			VCSProviderID: *params.VCSRepo.OAuthTokenID,
 		}
 		if params.VCSRepo.Branch != nil {

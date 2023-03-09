@@ -56,8 +56,8 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("create workspace connection", func(t *testing.T) {
-		ws := createWorkspace(t)
-		hook := createHook(t, db, nil)
+		ws := createTestWorkspace(t)
+		hook := createTestHook(t, db, nil)
 
 		err := db.createConnection(ctx, hook.id, otf.ConnectOptions{
 			ConnectionType: otf.WorkspaceConnection,
@@ -69,8 +69,8 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("create module connection", func(t *testing.T) {
-		module := createModule(t)
-		hook := createHook(t, db, nil)
+		module := createTestModule(t)
+		hook := createTestHook(t, db, nil)
 
 		err := db.createConnection(ctx, hook.id, otf.ConnectOptions{
 			ConnectionType: otf.ModuleConnection,
@@ -82,9 +82,9 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("delete workspace connection", func(t *testing.T) {
-		ws := createWorkspace(t)
-		hook := createHook(t, db, nil)
-		_ = createConnection(t, db, provider, hook, otf.WorkspaceConnection, ws.ID)
+		ws := createTestWorkspace(t)
+		hook := createTestHook(t, db, nil)
+		_ = createTestConnection(t, db, provider, hook, otf.WorkspaceConnection, ws.ID)
 
 		gotHookID, gotProviderID, err := db.deleteConnection(ctx, otf.DisconnectOptions{
 			ConnectionType: otf.WorkspaceConnection,
@@ -96,9 +96,9 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("delete module connection", func(t *testing.T) {
-		module := createModule(t)
-		hook := createHook(t, db, nil)
-		_ = createConnection(t, db, provider, hook, otf.ModuleConnection, module.ID)
+		module := createTestModule(t)
+		hook := createTestHook(t, db, nil)
+		_ = createTestConnection(t, db, provider, hook, otf.ModuleConnection, module.ID)
 
 		gotHookID, gotProviderID, err := db.deleteConnection(ctx, otf.DisconnectOptions{
 			ConnectionType: otf.ModuleConnection,
@@ -110,14 +110,14 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("count connections", func(t *testing.T) {
-		ws1 := createWorkspace(t)
-		ws2 := createWorkspace(t)
-		module1 := createModule(t)
+		ws1 := createTestWorkspace(t)
+		ws2 := createTestWorkspace(t)
+		module1 := createTestModule(t)
 
-		hook := createHook(t, db, nil)
-		_ = createConnection(t, db, provider, hook, otf.WorkspaceConnection, ws1.ID)
-		_ = createConnection(t, db, provider, hook, otf.WorkspaceConnection, ws2.ID)
-		_ = createConnection(t, db, provider, hook, otf.ModuleConnection, module1.ID)
+		hook := createTestHook(t, db, nil)
+		_ = createTestConnection(t, db, provider, hook, otf.WorkspaceConnection, ws1.ID)
+		_ = createTestConnection(t, db, provider, hook, otf.WorkspaceConnection, ws2.ID)
+		_ = createTestConnection(t, db, provider, hook, otf.ModuleConnection, module1.ID)
 
 		got, err := db.countConnections(ctx, hook.id)
 		require.NoError(t, err)
@@ -135,7 +135,7 @@ func newTestDB(t *testing.T) *pgdb {
 	}
 }
 
-func createHook(t *testing.T, db *pgdb, cloudID *string) *hook {
+func createTestHook(t *testing.T, db *pgdb, cloudID *string) *hook {
 	ctx := context.Background()
 	hook := newTestHook(t, db.factory, cloudID)
 
@@ -148,7 +148,7 @@ func createHook(t *testing.T, db *pgdb, cloudID *string) *hook {
 	return hook
 }
 
-func createConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hook *hook, connType otf.ConnectionType, resourceID string) *otf.Connection {
+func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hook *hook, connType otf.ConnectionType, resourceID string) *otf.Connection {
 	ctx := context.Background()
 
 	err := db.createConnection(ctx, hook.id, otf.ConnectOptions{
@@ -167,18 +167,17 @@ func createConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hook *h
 	})
 	return &otf.Connection{
 		VCSProviderID: provider.ID,
-		WebhookID:     hook.id,
-		Identifier:    hook.identifier,
+		RepoID:        hook.id,
 	}
 }
 
-func createWorkspace(t *testing.T) *otf.Workspace {
+func createTestWorkspace(t *testing.T) *otf.Workspace {
 	db := sql.NewTestDB(t)
 	org := sql.CreateTestOrganization(t, db)
 	return sql.CreateTestWorkspace(t, db, org)
 }
 
-func createModule(t *testing.T) *otf.Module {
+func createTestModule(t *testing.T) *otf.Module {
 	db := sql.NewTestDB(t)
 	org := sql.CreateTestOrganization(t, db)
 	return sql.CreateTestModule(t, db, org)

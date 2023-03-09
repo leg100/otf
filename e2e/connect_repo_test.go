@@ -83,7 +83,7 @@ func TestConnectRepo(t *testing.T) {
 	// generate push event using template
 	pushTpl, err := os.ReadFile("fixtures/github_push.json")
 	require.NoError(t, err)
-	push := fmt.Sprintf(string(pushTpl), repo.Identifier)
+	push := fmt.Sprintf(string(pushTpl), repo)
 
 	// send push event
 	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)

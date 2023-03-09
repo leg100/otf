@@ -11,11 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestWorkspaceRepo(provider VCSProvider) *WorkspaceRepo {
-	return &WorkspaceRepo{
-		ProviderID: provider.ID,
-		Branch:     "master",
-		Identifier: "leg100/" + uuid.NewString(),
+func NewTestWorkspaceRepo(provider VCSProvider) *Connection {
+	return &Connection{
+		VCSProviderID: provider.ID,
+		RepoID:        uuid.New(),
 	}
 }
 
