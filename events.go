@@ -33,9 +33,13 @@ type Event struct {
 // PubSubService provides low-level access to pub-sub behaviours. Access is
 // unauthenticated.
 type PubSubService interface {
+	Publisher
+	Subscriber
+}
+
+type Publisher interface {
 	// Publish an event
 	Publish(Event)
-	Subscriber
 }
 
 // Subscriber creates a subscription to OTF events.

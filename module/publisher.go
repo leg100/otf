@@ -71,13 +71,12 @@ func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error
 	if err != nil {
 		return err
 	}
-	_, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
+	return p.PublishVersion(ctx, PublishModuleVersionOptions{
 		ModuleID: module.ID,
 		// strip off v prefix if it has one
 		Version: strings.TrimPrefix(tagEvent.Tag, "v"),
 		Ref:     tagEvent.CommitSHA,
-		Repo:    otf.ModuleRepo(module.Connection.Repo),
+		Repo:    repo(module.Connection.Repo),
 		Client:  client,
 	})
-	return err
 }

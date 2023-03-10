@@ -8,115 +8,99 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListModules(t *testing.T) {
-	org := organization.NewTestOrganization(t)
-	mod := otf.NewTestModule(org)
-	app := newFakeWebApp(t, &fakeModulesApp{mod: mod})
+	h := newTestWebHandlers(t, withMod(&Module{}))
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.listModules(w, r)
+	h.list(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}
 }
 
 func TestGetModule(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	mod := otf.NewTestModule(org,
-		otf.WithModuleRepo(),
-		otf.WithModuleStatus(otf.ModuleStatusSetupComplete),
-		otf.WithModuleVersion("1.0.0", otf.ModuleVersionStatusOK),
-	)
+	mod := Module{
+		Connection: &otf.Connection{},
+		Status:     ModuleStatusSetupComplete,
+		Latest:     &ModuleVersion{},
+		Versions: map[string]*ModuleVersion{
+			"1.0.0": {},
+		},
+	}
 	tarball, err := os.ReadFile("./testdata/module.tar.gz")
 	require.NoError(t, err)
-	app := newFakeWebApp(t, &fakeModulesApp{
-		mod:     mod,
-		tarball: tarball,
-	})
+	h := newTestWebHandlers(t, withMod(&mod), withTarball(tarball))
 
 	q := "/?module_id=mod-123"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.getModule(w, r)
+	h.get(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}
 }
 
 func TestNewModule_Connect(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org)
-	app := newFakeWebApp(t, &fakeModulesApp{
-		provider: provider,
-	})
+	h := newTestWebHandlers(t, withVCSProviders(
+		&otf.VCSProvider{},
+		&otf.VCSProvider{},
+	))
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.newModuleConnect(w, r)
+	h.newModuleConnect(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}
 }
 
 func TestNewModule_Repo(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org)
-	app := newFakeWebApp(t, &fakeModulesApp{
-		provider: provider,
-		repos: []string{
+	h := newTestWebHandlers(t,
+		withVCSProviders(&otf.VCSProvider{}),
+		withRepos(
 			cloud.NewTestModuleRepo("aws", "vpc"),
 			cloud.NewTestModuleRepo("aws", "s3"),
-		},
-	})
+		),
+	)
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.newModuleRepo(w, r)
+	h.newModuleRepo(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}
 }
 
 func TestNewModule_Confirm(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org)
-	app := newFakeWebApp(t, &fakeModulesApp{
-		provider: provider,
-	})
+	h := newTestWebHandlers(t, withVCSProviders(&otf.VCSProvider{}))
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123&identifier=leg100/terraform-otf-test"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.newModuleConfirm(w, r)
+	h.newModuleConfirm(w, r)
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(w.Body.String())
 	}
 }
 
-func TestNewModule_Create(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org)
-	mod := otf.NewTestModule(org)
-	app := newFakeWebApp(t, &fakeModulesApp{
-		org:      org,
-		provider: provider,
-		mod:      mod,
-	})
+func TestWeb_Publish(t *testing.T) {
+	mod := Module{}
+	h := newTestWebHandlers(t, withMod(&mod))
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123&identifier=leg100/terraform-otf-test"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.createModule(w, r)
+	h.publish(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
@@ -125,70 +109,103 @@ func TestNewModule_Create(t *testing.T) {
 }
 
 func TestNewModule_Delete(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	mod := otf.NewTestModule(org)
-	app := newFakeWebApp(t, &fakeModulesApp{
-		org: org,
-		mod: mod,
-	})
+	mod := Module{Organization: "acme-corp"}
+	h := newTestWebHandlers(t, withMod(&mod))
 
 	q := "/?module_id=mod-123"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.deleteModule(w, r)
+	h.delete(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, paths.Modules(org.Name()), redirect.Path)
+		assert.Equal(t, paths.Modules("acme-corp"), redirect.Path)
 	}
 }
 
-type fakeModulesApp struct {
-	org      *otf.Organization
-	mod      *otf.Module
-	provider *otf.VCSProvider
+func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
+	renderer, err := html.NewViewEngine(false)
+	require.NoError(t, err)
+
+	var svc fakeWebServices
+	for _, fn := range opts {
+		fn(&svc)
+	}
+
+	return &webHandlers{
+		Renderer:           renderer,
+		VCSProviderService: &svc,
+		svc:                &svc,
+	}
+}
+
+type testWebOption func(*fakeWebServices)
+
+func withMod(mod *Module) testWebOption {
+	return func(svc *fakeWebServices) {
+		svc.mod = mod
+	}
+}
+
+func withTarball(tarball []byte) testWebOption {
+	return func(svc *fakeWebServices) {
+		svc.tarball = tarball
+	}
+}
+
+func withVCSProviders(vcsprovs ...*otf.VCSProvider) testWebOption {
+	return func(svc *fakeWebServices) {
+		svc.vcsprovs = vcsprovs
+	}
+}
+
+func withRepos(repos ...string) testWebOption {
+	return func(svc *fakeWebServices) {
+		svc.repos = repos
+	}
+}
+
+type fakeWebServices struct {
+	mod      *Module
 	tarball  []byte
+	vcsprovs []*otf.VCSProvider
 	repos    []string
 
-	otf.Application
+	service
+
+	otf.VCSProviderService
 }
 
-func (f *fakeModulesApp) Hostname() string { return "fake-host.org" }
-
-func (f *fakeModulesApp) PublishModule(context.Context, otf.PublishModuleOptions) (*otf.Module, error) {
+func (f *fakeWebServices) PublishModule(context.Context, PublishModuleOptions) (*Module, error) {
 	return f.mod, nil
 }
 
-func (f *fakeModulesApp) GetOrganization(context.Context, string) (*otf.Organization, error) {
-	return f.org, nil
-}
-
-func (f *fakeModulesApp) GetModuleByID(context.Context, string) (*otf.Module, error) {
+func (f *fakeWebServices) GetModuleByID(context.Context, string) (*Module, error) {
 	return f.mod, nil
 }
 
-func (f *fakeModulesApp) DeleteModule(context.Context, string) (*otf.Module, error) {
+func (f *fakeWebServices) DeleteModule(context.Context, string) (*Module, error) {
 	return f.mod, nil
 }
 
-func (f *fakeModulesApp) ListModules(context.Context, otf.ListModulesOptions) ([]*otf.Module, error) {
-	return []*otf.Module{f.mod}, nil
+func (f *fakeWebServices) ListModules(context.Context, ListModulesOptions) ([]*Module, error) {
+	return []*Module{f.mod}, nil
 }
 
-func (f *fakeModulesApp) DownloadModuleVersion(context.Context, otf.DownloadModuleOptions) ([]byte, error) {
-	return f.tarball, nil
+func (f *fakeWebServices) GetVCSProvider(context.Context, string) (*otf.VCSProvider, error) {
+	return f.vcsprovs[0], nil
 }
 
-func (f *fakeModulesApp) GetVCSProvider(context.Context, string) (*otf.VCSProvider, error) {
-	return f.provider, nil
+func (f *fakeWebServices) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
+	return f.vcsprovs, nil
 }
 
-func (f *fakeModulesApp) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
-	return []*otf.VCSProvider{f.provider}, nil
-}
-
-func (f *fakeModulesApp) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+func (f *fakeWebServices) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
 	return &fakeModulesCloudClient{repos: f.repos}, nil
+}
+
+func (f *fakeWebServices) downloadVersion(context.Context, string) ([]byte, error) {
+	return f.tarball, nil
 }
 
 type fakeModulesCloudClient struct {

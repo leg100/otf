@@ -13,8 +13,8 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-// web provides handlers for the webUI
-type web struct {
+// webHandlers provides handlers for the webUI
+type webHandlers struct {
 	otf.Signer
 	otf.Renderer
 	otf.VCSProviderService
@@ -31,16 +31,16 @@ const (
 	newModuleConfirmStep newModuleStep = "confirm-selection"
 )
 
-func (h *web) addHandlers(r *mux.Router) {
-	r.HandleFunc("/organizations/{organization_name}/modules", h.listModules)
-	r.HandleFunc("/organizations/{organization_name}/modules/new", h.newModule)
-	r.HandleFunc("/modules/{module_id}", h.getModule)
-	r.HandleFunc("/modules/{module_id}/delete", h.deleteModule)
-	r.HandleFunc("/modules/create", h.createModule)
+func (h *webHandlers) addHandlers(r *mux.Router) {
+	r.HandleFunc("/organizations/{organization_name}/modules", h.list)
+	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new)
+	r.HandleFunc("/modules/{module_id}", h.get)
+	r.HandleFunc("/modules/{module_id}/delete", h.delete)
+	r.HandleFunc("/modules/create", h.publish)
 }
 
-func (h *web) listModules(w http.ResponseWriter, r *http.Request) {
-	var opts otf.ListModulesOptions
+func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
+	var opts ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -53,7 +53,7 @@ func (h *web) listModules(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_list.tmpl", w, r, struct {
-		Items        []*otf.Module
+		Items        []*Module
 		Organization string
 	}{
 		Items:        modules,
@@ -61,7 +61,7 @@ func (h *web) listModules(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		ID      string `schema:"module_id,required"`
 		Version string `schema:"version"`
@@ -80,7 +80,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 	var tfmod *TerraformModule
 	var readme template.HTML
 	switch module.Status {
-	case otf.ModuleStatusSetupComplete:
+	case ModuleStatusSetupComplete:
 		tarball, err := h.svc.downloadVersion(r.Context(), module.Latest.ID)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -95,10 +95,10 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_get.tmpl", w, r, struct {
-		*otf.Module
+		*Module
 		TerraformModule *TerraformModule
 		Readme          template.HTML
-		CurrentVersion  *otf.ModuleVersion
+		CurrentVersion  *ModuleVersion
 		Hostname        string
 	}{
 		Module:          module,
@@ -109,7 +109,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) newModule(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Step newModuleStep `schema:"step"`
 	}
@@ -128,7 +128,7 @@ func (h *web) newModule(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *web) newModuleConnect(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -152,7 +152,7 @@ func (h *web) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
@@ -181,7 +181,7 @@ func (h *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	var filtered []string
 	for _, res := range results {
 		_, _, err := repo(res).Split()
-		if err == otf.ErrInvalidModuleRepo {
+		if err == ErrInvalidModuleRepo {
 			continue // skip repo
 		} else if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -203,7 +203,7 @@ func (h *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
@@ -231,8 +231,7 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// TODO: rename to publishModule
-func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID string `schema:"vcs_provider_id,required"`
 		Repo          repo   `schema:"identifier,required"`
@@ -242,14 +241,14 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := h.svc.PublishModule(r.Context(), otf.PublishModuleOptions{
+	module, err := h.svc.PublishModule(r.Context(), PublishModuleOptions{
 		Repo:          params.Repo,
 		VCSProviderID: params.VCSProviderID,
 	})
-	if err != nil && errors.Is(err, otf.ErrInvalidRepo) || errors.Is(err, otf.ErrInvalidModuleRepo) {
+	if err != nil && errors.Is(err, otf.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
-	} else if err != nil && errors.Is(err, otf.ErrInvalidModuleRepo) {
+	} else if err != nil && errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -258,7 +257,7 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Module(module.ID), http.StatusFound)
 }
 
-func (h *web) deleteModule(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("module_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

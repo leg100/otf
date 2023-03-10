@@ -6,7 +6,6 @@ INSERT INTO modules (
     name,
     provider,
     status,
-    latest,
     organization_name
 ) VALUES (
     pggen.arg('id'),
@@ -15,7 +14,6 @@ INSERT INTO modules (
     pggen.arg('name'),
     pggen.arg('provider'),
     pggen.arg('status'),
-    pggen.arg('latest'),
     pggen.arg('organization_name')
 );
 
@@ -45,7 +43,6 @@ SELECT
     m.name,
     m.provider,
     m.status,
-    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -67,7 +64,6 @@ SELECT
     m.name,
     m.provider,
     m.status,
-    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -91,7 +87,6 @@ SELECT
     m.name,
     m.provider,
     m.status,
-    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -113,7 +108,6 @@ SELECT
     m.name,
     m.provider,
     m.status,
-    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -135,7 +129,6 @@ SELECT
     m.name,
     m.provider,
     m.status,
-    m.latest,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
     (h.*)::"webhooks" AS webhook,
@@ -153,13 +146,6 @@ WHERE mv.module_version_id = pggen.arg('module_version_id')
 -- name: UpdateModuleStatusByID :one
 UPDATE modules
 SET status = pggen.arg('status')
-WHERE module_id = pggen.arg('module_id')
-RETURNING module_id
-;
-
--- name: UpdateModuleLatestVersionByID :one
-UPDATE modules
-SET latest = pggen.arg('latest_module_version_id')
 WHERE module_id = pggen.arg('module_id')
 RETURNING module_id
 ;

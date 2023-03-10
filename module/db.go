@@ -2,10 +2,12 @@ package module
 
 import (
 	"context"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/semver"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -24,7 +26,6 @@ type (
 		Name             pgtype.Text            `json:"name"`
 		Provider         pgtype.Text            `json:"provider"`
 		Status           pgtype.Text            `json:"status"`
-		Latest           pgtype.Text            `json:"latest"`
 		OrganizationName pgtype.Text            `json:"organization_name"`
 		ModuleConnection *pggen.RepoConnections `json:"module_connection"`
 		Webhook          *pggen.Webhooks        `json:"webhook"`
@@ -43,7 +44,7 @@ type (
 	}
 )
 
-func (db *pgdb) CreateModule(ctx context.Context, mod *otf.Module) error {
+func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {
 	params := pggen.InsertModuleParams{
 		ID:               sql.String(mod.ID),
 		CreatedAt:        sql.Timestamptz(mod.CreatedAt),
@@ -53,14 +54,11 @@ func (db *pgdb) CreateModule(ctx context.Context, mod *otf.Module) error {
 		Status:           sql.String(string(mod.Status)),
 		OrganizationName: sql.String(mod.Organization),
 	}
-	if mod.Latest != nil {
-		params.Latest = sql.String(mod.Latest.ID)
-	}
 	_, err := db.InsertModule(ctx, params)
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateModuleStatus(ctx context.Context, moduleID string, status otf.ModuleStatus) error {
+func (db *pgdb) UpdateModuleStatus(ctx context.Context, moduleID string, status ModuleStatus) error {
 	_, err := db.UpdateModuleStatusByID(ctx, sql.String(string(status)), sql.String(moduleID))
 	if err != nil {
 		return sql.Error(err)
@@ -68,20 +66,20 @@ func (db *pgdb) UpdateModuleStatus(ctx context.Context, moduleID string, status 
 	return nil
 }
 
-func (db *pgdb) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*otf.Module, error) {
+func (db *pgdb) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
 	rows, err := db.ListModulesByOrganization(ctx, sql.String(opts.Organization))
 	if err != nil {
 		return nil, err
 	}
 
-	var modules []*otf.Module
+	var modules []*Module
 	for _, r := range rows {
-		modules = append(modules, UnmarshalModuleRow(moduleRow(r)))
+		modules = append(modules, moduleRow(r).toModule())
 	}
 	return modules, nil
 }
 
-func (db *pgdb) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
+func (db *pgdb) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
 	row, err := db.FindModuleByName(ctx, pggen.FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
@@ -91,33 +89,33 @@ func (db *pgdb) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.
 		return nil, sql.Error(err)
 	}
 
-	return UnmarshalModuleRow(moduleRow(row)), nil
+	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) GetModuleByID(ctx context.Context, id string) (*otf.Module, error) {
+func (db *pgdb) GetModuleByID(ctx context.Context, id string) (*Module, error) {
 	row, err := db.FindModuleByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 
-	return UnmarshalModuleRow(moduleRow(row)), nil
+	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Module, error) {
+func (db *pgdb) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error) {
 	row, err := db.FindModuleByWebhookID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 
-	return UnmarshalModuleRow(moduleRow(row)), nil
+	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) DeleteModule(ctx context.Context, id string) error {
+func (db *pgdb) delete(ctx context.Context, id string) error {
 	_, err := db.DeleteModuleByID(ctx, sql.String(id))
 	return sql.Error(err)
 }
 
-func (db *pgdb) CreateModuleVersion(ctx context.Context, version *otf.ModuleVersion) error {
+func (db *pgdb) CreateModuleVersion(ctx context.Context, version *ModuleVersion) error {
 	_, err := db.InsertModuleVersion(ctx, pggen.InsertModuleVersionParams{
 		ModuleVersionID: sql.String(version.ID),
 		Version:         sql.String(version.Version),
@@ -132,24 +130,21 @@ func (db *pgdb) CreateModuleVersion(ctx context.Context, version *otf.ModuleVers
 	return nil
 }
 
-func (db *pgdb) UpdateModuleVersionStatus(ctx context.Context, opts otf.UpdateModuleVersionStatusOptions) (*otf.ModuleVersion, error) {
-	row, err := db.UpdateModuleVersionStatusByID(ctx, pggen.UpdateModuleVersionStatusByIDParams{
+func (db *pgdb) UpdateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) error {
+	_, err := db.UpdateModuleVersionStatusByID(ctx, pggen.UpdateModuleVersionStatusByIDParams{
 		ModuleVersionID: sql.String(opts.ID),
 		Status:          sql.String(string(opts.Status)),
 		StatusError:     sql.String(opts.Error),
 	})
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return UnmarshalModuleVersionRow(versionRow(row)), nil
+	return sql.Error(err)
 }
 
-func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID string) (*otf.Module, error) {
+func (db *pgdb) getModuleByVersionID(ctx context.Context, versionID string) (*Module, error) {
 	row, err := db.FindModuleByModuleVersionID(ctx, sql.String(versionID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return UnmarshalModuleRow(moduleRow(row)), nil
+	return moduleRow(row).toModule(), nil
 }
 
 func (db *pgdb) deleteModuleVersion(ctx context.Context, versionID string) error {
@@ -170,18 +165,6 @@ func (db *pgdb) getTarball(ctx context.Context, versionID string) ([]byte, error
 	return tarball, nil
 }
 
-func (db *pgdb) updateLatest(ctx context.Context, moduleID string, modver *otf.ModuleVersion) error {
-	latestID := pgtype.Text{Status: pgtype.Null}
-	if modver != nil {
-		latestID = sql.String(modver.ID)
-	}
-	_, err := db.UpdateModuleLatestVersionByID(ctx, latestID, sql.String(moduleID))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
-}
-
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, txFunc func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
@@ -190,14 +173,14 @@ func (db *pgdb) tx(ctx context.Context, txFunc func(*pgdb) error) error {
 }
 
 // UnmarshalModuleRow unmarshals a database row into a module
-func UnmarshalModuleRow(row moduleRow) *otf.Module {
-	module := &otf.Module{
+func (row moduleRow) toModule() *Module {
+	module := &Module{
 		ID:           row.ModuleID.String,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		UpdatedAt:    row.UpdatedAt.Time.UTC(),
 		Name:         row.Name.String,
 		Provider:     row.Provider.String,
-		Status:       otf.ModuleStatus(row.Status.String),
+		Status:       ModuleStatus(row.Status.String),
 		Organization: row.OrganizationName.String,
 	}
 	if row.ModuleConnection != nil {
@@ -206,21 +189,26 @@ func UnmarshalModuleRow(row moduleRow) *otf.Module {
 			Repo:          row.Webhook.Identifier.String,
 		}
 	}
-	for _, version := range row.Versions {
-		module.Versions[version.Version.String] = UnmarshalModuleVersionRow(versionRow(version))
+	// versions are always maintained in descending order
+	sort.Sort(byVersion(row.Versions))
+	for i := len(row.Versions); i >= 0; i-- {
+		module.Versions = append(module.Versions, ModuleVersion{
+			ID:          row.Versions[i].ModuleVersionID.String,
+			Version:     row.Versions[i].Version.String,
+			CreatedAt:   row.Versions[i].CreatedAt.Time.UTC(),
+			UpdatedAt:   row.Versions[i].UpdatedAt.Time.UTC(),
+			ModuleID:    row.Versions[i].ModuleID.String,
+			Status:      ModuleVersionStatus(row.Versions[i].Status.String),
+			StatusError: row.Versions[i].StatusError.String,
+		})
 	}
 	return module
 }
 
-// UnmarshalModuleVersionRow unmarshals a database row into a module version
-func UnmarshalModuleVersionRow(row versionRow) *otf.ModuleVersion {
-	return &otf.ModuleVersion{
-		ID:          row.ModuleVersionID.String,
-		Version:     row.Version.String,
-		CreatedAt:   row.CreatedAt.Time.UTC(),
-		UpdatedAt:   row.UpdatedAt.Time.UTC(),
-		ModuleID:    row.ModuleID.String,
-		Status:      otf.ModuleVersionStatus(row.Status.String),
-		StatusError: row.StatusError.String,
-	}
+type byVersion []pggen.ModuleVersions
+
+func (v byVersion) Len() int      { return len(v) }
+func (v byVersion) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
+func (v byVersion) Less(i, j int) bool {
+	return semver.Compare(v[i].Version.String, v[j].Version.String) < 0
 }

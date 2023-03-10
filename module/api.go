@@ -57,7 +57,7 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mod, err := h.svc.GetModule(r.Context(), otf.GetModuleOptions{
+	mod, err := h.svc.GetModule(r.Context(), GetModuleOptions{
 		Name:         params.Name,
 		Provider:     params.Provider,
 		Organization: params.Organization,
@@ -98,7 +98,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	mod, err := h.svc.GetModule(r.Context(), otf.GetModuleOptions{
+	mod, err := h.svc.GetModule(r.Context(), GetModuleOptions{
 		Name:         params.Name,
 		Provider:     params.Provider,
 		Organization: params.Organization,
@@ -108,7 +108,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	version := mod.Versions[params.Version]
+	version := mod.Version(params.Version)
 	if version == nil {
 		http.Error(w, "version not found", http.StatusNotFound)
 		return

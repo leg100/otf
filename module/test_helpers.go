@@ -9,44 +9,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestModule(org *otf.Organization, opts ...NewTestModuleOption) *otf.Module {
-	createOpts := otf.CreateModuleOptions{
+func NewTestModule(org *otf.Organization, opts ...NewTestModuleOption) *Module {
+	createOpts := CreateModuleOptions{
 		Organization: org.Name,
 		Provider:     uuid.NewString(),
 		Name:         uuid.NewString(),
 	}
-	mod := otf.NewModule(createOpts)
+	mod := NewModule(createOpts)
 	for _, o := range opts {
 		o(mod)
 	}
 	return mod
 }
 
-type NewTestModuleOption func(*otf.Module)
+type NewTestModuleOption func(*Module)
 
-func WithModuleStatus(status otf.ModuleStatus) NewTestModuleOption {
-	return func(mod *otf.Module) {
+func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
+	return func(mod *Module) {
 		mod.Status = status
 	}
 }
 
 func WithModuleRepo() NewTestModuleOption {
-	return func(mod *otf.Module) {
+	return func(mod *Module) {
 		mod.Connection = &otf.Connection{}
 	}
 }
 
-func NewTestModuleVersion(mod *otf.Module, version string, status otf.ModuleVersionStatus) *otf.ModuleVersion {
-	createOpts := otf.CreateModuleVersionOptions{
+func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
+	createOpts := CreateModuleVersionOptions{
 		ModuleID: mod.ID,
 		Version:  version,
 	}
-	modver := otf.NewModuleVersion(createOpts)
+	modver := NewModuleVersion(createOpts)
 	modver.Status = status
 	return modver
 }
 
-func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *otf.Module {
+func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *Module {
 	ctx := context.Background()
 
 	module := NewTestModule(org)
@@ -54,7 +54,7 @@ func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *otf.Module
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteModule(ctx, module.ID)
+		db.delete(ctx, module.ID)
 	})
 	return module
 }

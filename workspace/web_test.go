@@ -18,7 +18,7 @@ import (
 // TODO: rename tests to TestWorkspace_<handler>
 
 func TestNewWorkspaceHandler(t *testing.T) {
-	app := fakeWeb(t)
+	app := fakeWebHandlers(t)
 
 	q := "/?organization_name=acme-corp"
 	r := httptest.NewRequest("GET", q, nil)
@@ -31,7 +31,7 @@ func TestNewWorkspaceHandler(t *testing.T) {
 
 func TestWorkspace_Create(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"name": {"dev"},
@@ -49,7 +49,7 @@ func TestWorkspace_Create(t *testing.T) {
 
 func TestGetWorkspaceHandler(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -64,7 +64,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 
 func TestWorkspace_GetByName(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?organization_name=acme-corp&workspace_name=fake-ws"
 	r := httptest.NewRequest("GET", q, nil)
@@ -79,7 +79,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 
 func TestEditWorkspaceHandler(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -94,7 +94,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	ws3 := &otf.Workspace{ID: "ws-3"}
 	ws4 := &otf.Workspace{ID: "ws-4"}
 	ws5 := &otf.Workspace{ID: "ws-5"}
-	app := fakeWeb(t, withWorkspaces(ws1, ws2, ws3, ws4, ws5))
+	app := fakeWebHandlers(t, withWorkspaces(ws1, ws2, ws3, ws4, ws5))
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1&page[size]=2", nil)
@@ -126,7 +126,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 func TestDeleteWorkspace(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -141,7 +141,7 @@ func TestDeleteWorkspace(t *testing.T) {
 
 func TestLockWorkspace(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id": {"ws-123"},
@@ -160,7 +160,7 @@ func TestLockWorkspace(t *testing.T) {
 
 func TestUnlockWorkspace(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id": {"ws-123"},
@@ -179,7 +179,7 @@ func TestUnlockWorkspace(t *testing.T) {
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws), withVCSProviders(
+	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(
 		&otf.VCSProvider{},
 		&otf.VCSProvider{},
 		&otf.VCSProvider{},
@@ -194,7 +194,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 
 func TestListWorkspaceReposHandler(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}),
+	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}),
 		withRepos(
 			cloud.NewTestRepo(),
 			cloud.NewTestRepo(),
@@ -214,7 +214,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 
 func TestConnectWorkspaceHandler(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}))
+	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id":    {"ws-123"},
@@ -238,7 +238,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
 	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWeb(t, withWorkspaces(ws))
+	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id": {"ws-123"},
@@ -296,7 +296,7 @@ func withRun(run *otf.Run) fakeWebServiceOption {
 	}
 }
 
-func fakeWeb(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
+func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 

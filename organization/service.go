@@ -20,9 +20,9 @@ type service interface {
 }
 
 type Service struct {
-	*Authorizer // authorize access to org
+	otf.Authorizer // authorize access to org
 	logr.Logger
-	otf.PubSubService
+	otf.Publisher
 
 	api  *api
 	db   *pgdb
@@ -32,9 +32,9 @@ type Service struct {
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Authorizer:    &Authorizer{opts.Logger},
-		Logger:        opts.Logger,
-		PubSubService: opts.PubSubService,
+		Authorizer: &Authorizer{opts.Logger},
+		Logger:     opts.Logger,
+		Publisher:  opts.Publisher,
 	}
 	svc.api = &api{&svc}
 	svc.db = newDB(opts.DB)
@@ -45,7 +45,7 @@ func NewService(opts Options) *Service {
 
 type Options struct {
 	otf.DB
-	otf.PubSubService
+	otf.Publisher
 	otf.Renderer
 	logr.Logger
 }

@@ -221,13 +221,6 @@ type Querier interface {
 	// UpdateModuleStatusByIDScan scans the result of an executed UpdateModuleStatusByIDBatch query.
 	UpdateModuleStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdateModuleLatestVersionByID(ctx context.Context, latestModuleVersionID pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
-	// UpdateModuleLatestVersionByIDBatch enqueues a UpdateModuleLatestVersionByID query into batch to be executed
-	// later by the batch.
-	UpdateModuleLatestVersionByIDBatch(batch genericBatch, latestModuleVersionID pgtype.Text, moduleID pgtype.Text)
-	// UpdateModuleLatestVersionByIDScan scans the result of an executed UpdateModuleLatestVersionByIDBatch query.
-	UpdateModuleLatestVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error)
 	// InsertModuleTarballBatch enqueues a InsertModuleTarball query into batch to be executed
 	// later by the batch.
@@ -1227,9 +1220,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateModuleStatusByIDSQL, updateModuleStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateModuleStatusByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateModuleLatestVersionByIDSQL, updateModuleLatestVersionByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateModuleLatestVersionByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleTarballSQL, insertModuleTarballSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModuleTarball': %w", err)

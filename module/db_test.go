@@ -4,80 +4,76 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestModule_Create(t *testing.T) {
+func TestDB(t *testing.T) {
 	ctx := context.Background()
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	module := otf.NewTestModule(org)
+	db := &pgdb{sql.NewTestDB(t)}
 
-	defer db.DeleteModule(ctx, module.ID)
+	t.Run("create", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		module := NewTestModule(org)
 
-	err := db.CreateModule(ctx, module)
-	require.NoError(t, err)
-}
+		defer db.delete(ctx, module.ID)
 
-func TestModule_Get(t *testing.T) {
-	ctx := context.Background()
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	want := CreateTestModule(t, db, org)
-
-	got, err := db.GetModule(ctx, otf.GetModuleOptions{
-		Organization: org.Name(),
-		Provider:     want.Provider(),
-		Name:         want.Name(),
+		err := db.CreateModule(ctx, module)
+		require.NoError(t, err)
 	})
-	require.NoError(t, err)
 
-	assert.Equal(t, want, got)
-}
+	t.Run("get", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		want := createTestModule(t, db, org)
 
-func TestModule_GetByID(t *testing.T) {
-	ctx := context.Background()
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	want := CreateTestModule(t, db, org)
+		got, err := db.GetModule(ctx, GetModuleOptions{
+			Organization: org.Name,
+			Provider:     want.Provider,
+			Name:         want.Name,
+		})
+		require.NoError(t, err)
 
-	got, err := db.GetModuleByID(ctx, want.ID)
-	require.NoError(t, err)
-
-	assert.Equal(t, want, got)
-}
-
-func TestModule_List(t *testing.T) {
-	ctx := context.Background()
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	module1 := CreateTestModule(t, db, org)
-	module2 := CreateTestModule(t, db, org)
-	module3 := CreateTestModule(t, db, org)
-
-	got, err := db.ListModules(ctx, otf.ListModulesOptions{
-		Organization: org.Name(),
+		assert.Equal(t, want, got)
 	})
-	require.NoError(t, err)
 
-	assert.Contains(t, got, module1)
-	assert.Contains(t, got, module2)
-	assert.Contains(t, got, module3)
-}
+	t.Run("get by id", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		want := createTestModule(t, db, org)
 
-func TestModule_Delete(t *testing.T) {
-	ctx := context.Background()
-	db := NewTestDB(t)
-	org := CreateTestOrganization(t, db)
-	module := CreateTestModule(t, db, org)
+		got, err := db.GetModuleByID(ctx, want.ID)
+		require.NoError(t, err)
 
-	err := db.DeleteModule(ctx, module.ID)
-	require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
 
-	got, err := db.ListModules(ctx, otf.ListModulesOptions{Organization: org.Name()})
-	require.NoError(t, err)
+	t.Run("list", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		module1 := createTestModule(t, db, org)
+		module2 := createTestModule(t, db, org)
+		module3 := createTestModule(t, db, org)
 
-	assert.Len(t, got, 0)
+		got, err := db.ListModules(ctx, ListModulesOptions{
+			Organization: org.Name,
+		})
+		require.NoError(t, err)
+
+		assert.Contains(t, got, module1)
+		assert.Contains(t, got, module2)
+		assert.Contains(t, got, module3)
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		module := createTestModule(t, db, org)
+
+		err := db.delete(ctx, module.ID)
+		require.NoError(t, err)
+
+		got, err := db.ListModules(ctx, ListModulesOptions{Organization: org.Name})
+		require.NoError(t, err)
+
+		assert.Len(t, got, 0)
+	})
 }
