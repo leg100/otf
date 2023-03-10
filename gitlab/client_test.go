@@ -44,7 +44,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("GetRepository", func(t *testing.T) {
-		want := cloud.Repo("acme/terraform")
+		want := "acme/terraform"
 
 		provider := newTestClient(t, WithGitlabRepo(want))
 
@@ -55,7 +55,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("ListRepositories", func(t *testing.T) {
-		want := []cloud.Repo{"acme/terraform"}
+		want := []string{"acme/terraform"}
 
 		provider := newTestClient(t, WithGitlabRepo(want[0]))
 
@@ -69,7 +69,7 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 
 		client := newTestClient(t,
-			WithGitlabRepo(cloud.Repo("acme/terraform")),
+			WithGitlabRepo("acme/terraform"),
 			WithGitlabTarball(want),
 		)
 

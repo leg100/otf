@@ -18,7 +18,7 @@ type (
 	// Connection is a connection between a VCS repo and an OTF resource.
 	Connection struct {
 		VCSProviderID string
-		RepoID        uuid.UUID
+		Repo          string
 	}
 
 	// RepoService manages VCS repositories
@@ -39,8 +39,8 @@ type (
 
 		VCSProviderID string // vcs provider of repo
 		ResourceID    string // ID of OTF resource
-		Identifier    string // Repo path
-		Tx            DB     // Optional tx for performing database ops within.
+		RepoPath      string
+		Tx            DB // Optional tx for performing database ops within.
 	}
 
 	DisconnectOptions struct {

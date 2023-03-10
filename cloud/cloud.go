@@ -31,8 +31,3 @@ type HandleEventOptions struct {
 	Secret string
 	RepoID uuid.UUID
 }
-
-// Repo is a VCS repository
-type Repo string
-
-func (r Repo) String() string { return string(r) }

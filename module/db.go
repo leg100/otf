@@ -68,7 +68,7 @@ func (db *pgdb) UpdateModuleStatus(ctx context.Context, moduleID string, status 
 	return nil
 }
 
-func (db *pgdb) ListModules(ctx context.Context, opts ListModulesOptions) ([]*otf.Module, error) {
+func (db *pgdb) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*otf.Module, error) {
 	rows, err := db.ListModulesByOrganization(ctx, sql.String(opts.Organization))
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (db *pgdb) ListModules(ctx context.Context, opts ListModulesOptions) ([]*ot
 	return modules, nil
 }
 
-func (db *pgdb) GetModule(ctx context.Context, opts GetModuleOptions) (*otf.Module, error) {
+func (db *pgdb) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
 	row, err := db.FindModuleByName(ctx, pggen.FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
@@ -203,8 +203,7 @@ func UnmarshalModuleRow(row moduleRow) *otf.Module {
 	if row.ModuleConnection != nil {
 		module.Connection = &otf.Connection{
 			VCSProviderID: row.ModuleConnection.VCSProviderID.String,
-			RepoID:        row.Webhook.WebhookID.Bytes,
-			Identifier:    row.Webhook.Identifier.String,
+			Repo:          row.Webhook.Identifier.String,
 		}
 	}
 	for _, version := range row.Versions {

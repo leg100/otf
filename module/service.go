@@ -2,6 +2,8 @@ package module
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -9,6 +11,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/semver"
 	"github.com/leg100/surl"
 )
 
@@ -17,6 +20,7 @@ type (
 	service interface {
 		// PublishModule publishes a module from a VCS repository.
 		PublishModule(context.Context, otf.PublishModuleOptions) (*otf.Module, error)
+		PublishVersion(context.Context, PublishModuleVersionOptions) (*otf.ModuleVersion, error)
 		// CreateModule creates a module without a connection to a VCS repository.
 		CreateModule(context.Context, otf.CreateModuleOptions) (*otf.Module, error)
 		UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) (*otf.Module, error)
@@ -37,8 +41,9 @@ type (
 		logr.Logger
 		*Publisher
 
-		db   *pgdb
-		repo otf.RepoService
+		db       *pgdb
+		repo     otf.RepoService
+		hostname string
 
 		organization otf.Authorizer
 
@@ -49,6 +54,7 @@ type (
 	Options struct {
 		OrganizationAuthorizer otf.Authorizer
 		CloudService           cloud.Service
+		Hostname               string
 
 		otf.DB
 		otf.VCSProviderService
@@ -89,6 +95,8 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
+// PublishModule publishes a new module from a VCS repository, enumerating through
+// its git tags and releasing a module version for each tag.
 func (s *Service) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
 	vcsprov, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
@@ -100,13 +108,121 @@ func (s *Service) PublishModule(ctx context.Context, opts otf.PublishModuleOptio
 		return nil, err
 	}
 
+	name, provider, err := opts.Repo.Split()
+	if err != nil {
+		return nil, err
+	}
+
+	mod := otf.NewModule(otf.CreateModuleOptions{
+		Name:         name,
+		Provider:     provider,
+		Organization: vcsprov.Organization,
+	})
+
+	// persist module to db and connect to repository
+	err = s.db.tx(ctx, func(tx *pgdb) error {
+		if err := tx.CreateModule(ctx, mod); err != nil {
+			return err
+		}
+		connection, err := s.repo.Connect(ctx, otf.ConnectOptions{
+			ConnectionType: otf.ModuleConnection,
+			ResourceID:     mod.ID,
+			VCSProviderID:  opts.VCSProviderID,
+			RepoPath:       string(opts.Repo),
+			Tx:             tx,
+		})
+		if err != nil {
+			return err
+		}
+		mod.Connection = connection
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make new version for each tag that looks like a semantic version.
+	tags, err := client.ListTags(ctx, cloud.ListTagsOptions{
+		Repo: string(opts.Repo),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(tags) == 0 {
+		return s.UpdateModuleStatus(ctx, otf.UpdateModuleStatusOptions{
+			ID:     mod.ID,
+			Status: otf.ModuleStatusNoVersionTags,
+		})
+	}
+	for _, tag := range tags {
+		// tags/<version> -> <version>
+		_, version, found := strings.Cut(tag, "/")
+		if !found {
+			return nil, fmt.Errorf("malformed git ref: %s", tag)
+		}
+		// skip tags that are not semantic versions
+		if !semver.IsValid(version) {
+			continue
+		}
+		_, err := s.PublishVersion(ctx, PublishModuleVersionOptions{
+			ModuleID: mod.ID,
+			// strip off v prefix if it has one
+			Version: strings.TrimPrefix(version, "v"),
+			Ref:     tag,
+			Repo:    opts.Repo,
+			Client:  client,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	module, err := s.Publisher.PublishModule(ctx, opts)
 	if err != nil {
-		s.Error(err, "publishing module", "subject", subject, "repo", opts.RepoPath)
+		s.Error(err, "publishing module", "subject", subject, "repo", opts.Repo)
 		return nil, err
 	}
 	s.V(0).Info("published module", "subject", subject, "module", module)
 	return module, nil
+}
+
+type PublishModuleVersionOptions struct {
+	ModuleID string
+	Version  string
+	Ref      string
+	Repo     otf.ModuleRepo
+	Client   cloud.Client
+}
+
+// PublishVersion publishes a module version, retrieving its contents from a repository and
+// uploading it to the module store.
+func (s *Service) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*otf.ModuleVersion, error) {
+	modver, err := s.CreateModuleVersion(ctx, otf.CreateModuleVersionOptions{
+		ModuleID: opts.ModuleID,
+		Version:  opts.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tarball, err := opts.Client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+		Repo: string(opts.Repo),
+		Ref:  &opts.Ref,
+	})
+	if err != nil {
+		return s.db.UpdateModuleVersionStatus(ctx, otf.UpdateModuleVersionStatusOptions{
+			ID:     modver.ID,
+			Status: otf.ModuleVersionStatusCloneFailed,
+			Error:  err.Error(),
+		})
+	}
+
+	return s.uploadVersion(ctx, modver.ID, tarball)
 }
 
 func (a *Service) CreateModule(ctx context.Context, opts otf.CreateModuleOptions) (*otf.Module, error) {
@@ -125,18 +241,7 @@ func (a *Service) CreateModule(ctx context.Context, opts otf.CreateModuleOptions
 	return module, nil
 }
 
-func (a *Service) UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) (*otf.Module, error) {
-	module.UpdateStatus(opts.Status)
-
-	if err := a.db.UpdateModuleStatus(ctx, opts); err != nil {
-		a.Error(err, "updating module status", "subject", subject, "module", module, "status", opts.Status)
-		return nil, err
-	}
-	a.V(0).Info("updated module status", "subject", subject, "module", module, "status", opts.Status)
-	return module, nil
-}
-
-func (a *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*otf.Module, error) {
+func (a *Service) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*otf.Module, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListModulesAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -151,7 +256,7 @@ func (a *Service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*
 	return modules, nil
 }
 
-func (a *Service) GetModule(ctx context.Context, opts GetModuleOptions) (*otf.Module, error) {
+func (a *Service) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.GetModuleAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -245,10 +350,10 @@ func (a *Service) CreateModuleVersion(ctx context.Context, opts otf.CreateModule
 	return modver, nil
 }
 
-func (a *Service) uploadVersion(ctx context.Context, versionID string, tarball []byte) error {
+func (a *Service) uploadVersion(ctx context.Context, versionID string, tarball []byte) (*otf.ModuleVersion, error) {
 	module, err := a.db.getModuleByVersionID(ctx, versionID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// validate tarball
@@ -259,30 +364,31 @@ func (a *Service) uploadVersion(ctx context.Context, versionID string, tarball [
 			Status: otf.ModuleVersionStatusRegIngressFailed,
 			Error:  err.Error(),
 		})
-		return err
+		return nil, err
 	}
 
 	// save tarball, set status, and make it the latest version
+	var modver *otf.ModuleVersion
 	err = a.db.tx(ctx, func(tx *pgdb) error {
 		if err := tx.saveTarball(ctx, versionID, tarball); err != nil {
 			return err
 		}
-		_, err := tx.UpdateModuleVersionStatus(ctx, otf.UpdateModuleVersionStatusOptions{
+		modver, err = tx.UpdateModuleVersionStatus(ctx, otf.UpdateModuleVersionStatusOptions{
 			ID:     versionID,
 			Status: otf.ModuleVersionStatusOK,
 		})
 		if err != nil {
 			return err
 		}
-		return tx.updateLatest(ctx, module.ID, versionID)
+		return tx.updateLatest(ctx, module.ID, modver)
 	})
 	if err != nil {
 		a.Error(err, "uploading module version", "module_version_id", versionID)
-		return err
+		return nil, err
 	}
 
 	a.V(0).Info("uploaded module version", "module_version", versionID)
-	return nil
+	return modver, nil
 }
 
 // downloadVersion should be accessed via signed URL

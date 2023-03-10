@@ -15,7 +15,6 @@ import (
 
 type webHandlers struct {
 	otf.Renderer
-	otf.RunService
 	otf.TeamService
 	otf.VCSProviderService
 
@@ -119,9 +118,9 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var latest *otf.Run
+	var latest run
 	if ws.LatestRunID != nil {
-		latest, err = h.GetRun(r.Context(), *ws.LatestRunID)
+		latest, err = h.svc.getRun(r.Context(), *ws.LatestRunID)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -130,7 +129,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_get.tmpl", w, r, struct {
 		*otf.Workspace
-		LatestRun      *otf.Run
+		LatestRun      run
 		LatestStreamID string
 	}{
 		Workspace:      ws,
@@ -348,7 +347,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 	}
 
 	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
-		Items []cloud.Repo
+		Items []string
 		*otf.Workspace
 		VCSProviderID string
 	}{

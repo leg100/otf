@@ -305,14 +305,17 @@ func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
 func (r *Run) Start(phase PhaseType) error {
 	switch r.Status {
 	case RunPlanQueued:
-		return r.startPlan()
+		r.updateStatus(RunPlanning)
+		r.Plan.UpdateStatus(PhaseRunning)
 	case RunApplyQueued:
-		return r.startApply()
+		r.updateStatus(RunApplying)
+		r.Apply.UpdateStatus(PhaseRunning)
 	case RunPlanning, RunApplying:
 		return ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
 	}
+	return nil
 }
 
 // Finish updates the run to reflect its plan or apply phase having finished.
@@ -329,24 +332,6 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	default:
 		return fmt.Errorf("unknown phase")
 	}
-}
-
-func (r *Run) startPlan() error {
-	if r.Status != RunPlanQueued {
-		return ErrInvalidRunStateTransition
-	}
-	r.updateStatus(RunPlanning)
-	r.Plan.UpdateStatus(PhaseRunning)
-	return nil
-}
-
-func (r *Run) startApply() error {
-	if r.Status != RunApplyQueued {
-		return ErrInvalidRunStateTransition
-	}
-	r.updateStatus(RunApplying)
-	r.Apply.UpdateStatus(PhaseRunning)
-	return nil
 }
 
 func (r *Run) finishPlan(opts PhaseFinishOptions) error {
@@ -448,16 +433,6 @@ type RunListOptions struct {
 	Include *string `schema:"include,omitempty"`
 }
 
-// type (
-//
-//	Plan interface {
-//		ResourceReport() *ResourceReport
-//	}
-//	Apply interface {
-//		ResourceReport() *ResourceReport
-//	}
-//
-// )
 type RunDB interface {
 	GetRun(context.Context, string) (Run, error)
 }

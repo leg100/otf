@@ -37,12 +37,8 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.Co
 		if ws.Branch != "" {
 			ref = &ws.Branch
 		}
-		repo, err := rs.GetRepo(ctx, ws.Connection.RepoID)
-		if err != nil {
-			return nil, err
-		}
 		tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-			Repo: repo,
+			Repo: ws.Connection.Repo,
 			Ref:  ref,
 		})
 		if err != nil {

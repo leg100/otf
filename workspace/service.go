@@ -17,6 +17,7 @@ type (
 		create(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error)
 		get(ctx context.Context, workspaceID string) (*otf.Workspace, error)
 		getByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error)
+		getRun(ctx context.Context, runID string) (run, error)
 		list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
 		update(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error)
 		delete(ctx context.Context, workspaceID string) (*otf.Workspace, error)
@@ -205,7 +206,7 @@ func (a *Service) connect(ctx context.Context, workspaceID string, opts otf.Conn
 		ConnectionType: otf.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.VCSProviderID,
-		Identifier:     opts.RepoPath.String(),
+		RepoPath:       opts.RepoPath,
 	})
 	if err != nil {
 		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)
@@ -298,6 +299,19 @@ func (a *Service) getByName(ctx context.Context, organization, workspace string)
 	a.V(2).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
 
 	return ws, nil
+}
+
+// getRun retrieves a workspace run.
+func (a *Service) getRun(ctx context.Context, runID string) (run, error) {
+	result, err := a.db.getRun(ctx, runID)
+	if err != nil {
+		a.Error(err, "retrieving workspace run", "run", runID)
+		return run{}, err
+	}
+
+	a.V(2).Info("retrieved workspace run", "run", runID)
+
+	return result, nil
 }
 
 func (a *Service) delete(ctx context.Context, workspaceID string) (*otf.Workspace, error) {

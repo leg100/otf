@@ -1,6 +1,7 @@
 package module
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 
@@ -12,13 +13,14 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-// web provides handlers for the webui
+// web provides handlers for the webUI
 type web struct {
 	otf.Signer
 	otf.Renderer
 	otf.VCSProviderService
 
-	svc service
+	hostname string
+	svc      service
 }
 
 type newModuleStep string
@@ -79,9 +81,7 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 	var readme template.HTML
 	switch module.Status {
 	case otf.ModuleStatusSetupComplete:
-		tarball, err := h.svc.downloadVersion(r.Context(), otf.DownloadModuleOptions{
-			ModuleVersionID: module.Version(params.Version).ID,
-		})
+		tarball, err := h.svc.downloadVersion(r.Context(), module.Latest.ID)
 		if err != nil {
 			html.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -104,8 +104,8 @@ func (h *web) getModule(w http.ResponseWriter, r *http.Request) {
 		Module:          module,
 		TerraformModule: tfmod,
 		Readme:          readme,
-		CurrentVersion:  module.Version(params.Version),
-		Hostname:        h.Hostname(),
+		CurrentVersion:  module.Latest,
+		Hostname:        h.hostname,
 	})
 }
 
@@ -169,19 +169,34 @@ func (h *web) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := listTerraformModuleRepos(r.Context(), client)
+	// Retrieve repos and filter according to required naming format
+	// '<something>-<name>-<provider>'
+	results, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
+		PageSize: otf.MaxPageSize,
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	var filtered []string
+	for _, res := range results {
+		_, _, err := repo(res).Split()
+		if err == otf.ErrInvalidModuleRepo {
+			continue // skip repo
+		} else if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		filtered = append(filtered, res)
+	}
 
 	h.Render("module_new.tmpl", w, r, struct {
-		Items         []cloud.Repo
+		Items         []string
 		Organization  string
 		VCSProviderID string
 		Step          newModuleStep
 	}{
-		Items:         repos,
+		Items:         filtered,
 		Organization:  params.Organization,
 		VCSProviderID: params.VCSProviderID,
 		Step:          newModuleRepoStep,
@@ -220,7 +235,7 @@ func (h *web) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Repo          string `schema:"identifier,required"`
+		Repo          repo   `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -228,10 +243,13 @@ func (h *web) createModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	module, err := h.svc.PublishModule(r.Context(), otf.PublishModuleOptions{
-		RepoPath:      params.Repo,
+		Repo:          params.Repo,
 		VCSProviderID: params.VCSProviderID,
 	})
-	if err != nil {
+	if err != nil && errors.Is(err, otf.ErrInvalidRepo) || errors.Is(err, otf.ErrInvalidModuleRepo) {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	} else if err != nil && errors.Is(err, otf.ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

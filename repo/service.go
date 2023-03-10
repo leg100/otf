@@ -57,13 +57,13 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 	if err != nil {
 		return nil, err
 	}
-	_, err = client.GetRepository(ctx, opts.Identifier)
+	_, err = client.GetRepository(ctx, opts.RepoPath)
 	if err != nil {
 		return nil, fmt.Errorf("checking repository exists: %w", err)
 	}
 
 	hook, err := s.newHook(newHookOpts{
-		identifier: opts.Identifier,
+		identifier: opts.RepoPath,
 		cloud:      vcsProvider.CloudConfig.Name,
 	})
 	if err != nil {
@@ -97,7 +97,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 		return tx.createConnection(ctx, hook.id, opts)
 	})
 	return &otf.Connection{
-		RepoID:        hook.id,
+		Repo:        hook.id,
 		VCSProviderID: opts.VCSProviderID,
 	}, nil
 }

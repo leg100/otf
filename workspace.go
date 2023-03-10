@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
@@ -153,8 +152,8 @@ type (
 	}
 
 	ConnectWorkspaceOptions struct {
-		RepoPath      cloud.Repo `schema:"identifier,required"` // repo id: <owner>/<repo>
-		VCSProviderID string     `schema:"vcs_provider_id,required"`
+		RepoPath      string `schema:"identifier,required"` // repo id: <owner>/<repo>
+		VCSProviderID string `schema:"vcs_provider_id,required"`
 	}
 
 	WorkspacePermissionService interface {

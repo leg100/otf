@@ -91,16 +91,12 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	}
 	providerID := workspaces[0].Connection.VCSProviderID
 
-	repo, err := h.GetRepo(ctx, repoID)
-	if err != nil {
-		return err
-	}
 	client, err := h.GetVCSClient(ctx, providerID)
 	if err != nil {
 		return err
 	}
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-		Repo: repo,
+		Repo: workspaces[0].Connection.Repo,
 		Ref:  &sha,
 	})
 	if err != nil {
@@ -145,7 +141,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 				CommitSHA: sha,
 				// CommitURL         string
 				// CompareURL        string
-				Repo:            repo,
+				Repo:            ws.Connection.Repo,
 				IsPullRequest:   isPullRequest,
 				OnDefaultBranch: branch == defaultBranch,
 			},

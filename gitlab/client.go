@@ -95,16 +95,16 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (string, error) {
 	proj, _, err := g.client.Projects.GetProject(identifier, nil)
 	if err != nil {
 		return "", err
 	}
 
-	return cloud.Repo(proj.PathWithNamespace), nil
+	return proj.PathWithNamespace, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositoriesOptions) ([]string, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: lopts.PageSize,
@@ -118,12 +118,11 @@ func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositor
 		return nil, err
 	}
 
-	// convert to common repo type before returning
-	var items []cloud.Repo
+	var repos []string
 	for _, proj := range projects {
-		items = append(items, cloud.Repo(proj.PathWithNamespace))
+		repos = append(repos, proj.PathWithNamespace)
 	}
-	return items, nil
+	return repos, nil
 }
 
 func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
@@ -248,10 +247,10 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	}
 
 	return cloud.Webhook{
-		ID:         strconv.Itoa(id),
-		Repo: opts.Repo,
-		Events:     events,
-		Endpoint:   hook.URL,
+		ID:       strconv.Itoa(id),
+		Repo:     opts.Repo,
+		Events:   events,
+		Endpoint: hook.URL,
 	}, nil
 }
 

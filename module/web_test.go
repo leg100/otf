@@ -72,7 +72,7 @@ func TestNewModule_Repo(t *testing.T) {
 	provider := otf.NewTestVCSProvider(t, org)
 	app := newFakeWebApp(t, &fakeModulesApp{
 		provider: provider,
-		repos: []cloud.Repo{
+		repos: []string{
 			cloud.NewTestModuleRepo("aws", "vpc"),
 			cloud.NewTestModuleRepo("aws", "s3"),
 		},
@@ -148,7 +148,7 @@ type fakeModulesApp struct {
 	mod      *otf.Module
 	provider *otf.VCSProvider
 	tarball  []byte
-	repos    []cloud.Repo
+	repos    []string
 
 	otf.Application
 }
@@ -192,11 +192,11 @@ func (f *fakeModulesApp) GetVCSClient(ctx context.Context, providerID string) (c
 }
 
 type fakeModulesCloudClient struct {
-	repos []cloud.Repo
+	repos []string
 
 	cloud.Client
 }
 
-func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
 	return f.repos, nil
 }

@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *otf.Module {
-	createOpts := CreateModuleOptions{
+func NewTestModule(org *otf.Organization, opts ...NewTestModuleOption) *otf.Module {
+	createOpts := otf.CreateModuleOptions{
 		Organization: org.Name,
 		Provider:     uuid.NewString(),
 		Name:         uuid.NewString(),
 	}
-	mod := newModule(createOpts)
+	mod := otf.NewModule(createOpts)
 	for _, o := range opts {
 		o(mod)
 	}
@@ -24,31 +24,25 @@ func NewTestModule(org otf.Organization, opts ...NewTestModuleOption) *otf.Modul
 
 type NewTestModuleOption func(*otf.Module)
 
-func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
+func WithModuleStatus(status otf.ModuleStatus) NewTestModuleOption {
 	return func(mod *otf.Module) {
 		mod.Status = status
 	}
 }
 
-func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModuleOption {
-	return func(mod *otf.Module) {
-		mod.addNewVersion(NewTestModuleVersion(mod, version, status))
-	}
-}
-
 func WithModuleRepo() NewTestModuleOption {
 	return func(mod *otf.Module) {
-		mod.connection = &connection{}
+		mod.Connection = &otf.Connection{}
 	}
 }
 
-func NewTestModuleVersion(mod *otf.Module, version string, status ModuleVersionStatus) *otf.ModuleVersion {
-	createOpts := CreateModuleVersionOptions{
+func NewTestModuleVersion(mod *otf.Module, version string, status otf.ModuleVersionStatus) *otf.ModuleVersion {
+	createOpts := otf.CreateModuleVersionOptions{
 		ModuleID: mod.ID,
 		Version:  version,
 	}
-	modver := NewModuleVersion(createOpts)
-	modver.status = status
+	modver := otf.NewModuleVersion(createOpts)
+	modver.Status = status
 	return modver
 }
 

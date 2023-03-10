@@ -260,7 +260,7 @@ type (
 		run        *otf.Run
 		workspaces []*otf.Workspace
 		providers  []*otf.VCSProvider
-		repos      []cloud.Repo
+		repos      []string
 
 		service
 
@@ -284,7 +284,7 @@ func withVCSProviders(providers ...*otf.VCSProvider) fakeWebServiceOption {
 	}
 }
 
-func withRepos(repos ...cloud.Repo) fakeWebServiceOption {
+func withRepos(repos ...string) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.repos = repos
 	}
@@ -386,11 +386,11 @@ func (f *fakeWebService) disconnect(context.Context, string) error {
 }
 
 type fakeWebCloudClient struct {
-	repos []cloud.Repo
+	repos []string
 
 	cloud.Client
 }
 
-func (f *fakeWebCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (f *fakeWebCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
 	return f.repos, nil
 }

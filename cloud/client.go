@@ -7,8 +7,8 @@ import (
 type Client interface {
 	GetUser(ctx context.Context) (*User, error)
 	// ListRepositories lists repositories accessible to the current user.
-	ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]Repo, error)
-	GetRepository(ctx context.Context, identifier string) (Repo, error)
+	ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]string, error)
+	GetRepository(ctx context.Context, identifier string) (string, error)
 	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
 	GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
 	// CreateWebhook creates a webhook on the cloud provider, returning the

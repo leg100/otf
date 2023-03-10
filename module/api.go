@@ -131,9 +131,7 @@ func (h *api) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tarball, err := h.svc.DownloadModuleVersion(r.Context(), DownloadModuleOptions{
-		ModuleVersionID: id,
-	})
+	tarball, err := h.svc.downloadVersion(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

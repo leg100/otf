@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
@@ -94,7 +93,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		opts.ConnectWorkspaceOptions = &otf.ConnectWorkspaceOptions{
-			RepoPath:      cloud.Repo(*params.VCSRepo.Identifier),
+			RepoPath:      *params.VCSRepo.Identifier,
 			VCSProviderID: *params.VCSRepo.OAuthTokenID,
 		}
 		if params.VCSRepo.Branch != nil {

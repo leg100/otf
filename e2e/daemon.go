@@ -35,7 +35,7 @@ func (d *daemon) withGithubUser(user *cloud.User) {
 	d.githubOptions = append(d.githubOptions, github.WithUser(user))
 }
 
-func (d *daemon) withGithubRepo(repo cloud.Repo) {
+func (d *daemon) withGithubRepo(repo string) {
 	d.enableGithub = true
 	d.githubOptions = append(d.githubOptions, github.WithRepo(repo))
 }

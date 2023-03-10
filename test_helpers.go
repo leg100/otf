@@ -14,7 +14,7 @@ import (
 func NewTestWorkspaceRepo(provider VCSProvider) *Connection {
 	return &Connection{
 		VCSProviderID: provider.ID,
-		RepoID:        uuid.New(),
+		Repo:          uuid.NewString(),
 	}
 }
 

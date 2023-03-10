@@ -46,7 +46,7 @@ func TestGetRepoTarball(t *testing.T) {
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
-		WithRepo(cloud.Repo("acme/terraform")),
+		WithRepo("acme/terraform"),
 		WithArchive(want),
 	)
 
@@ -65,12 +65,12 @@ func TestCreateWebhook(t *testing.T) {
 	ctx := context.Background()
 
 	client := newTestServerClient(t,
-		WithRepo(cloud.Repo("acme/terraform")),
+		WithRepo("acme/terraform"),
 	)
 
 	_, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
-		Repo: "acme/terraform",
-		Secret:     "me-secret",
+		Repo:   "acme/terraform",
+		Secret: "me-secret",
 	})
 	require.NoError(t, err)
 }

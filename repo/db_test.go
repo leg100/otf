@@ -63,7 +63,7 @@ func TestDB(t *testing.T) {
 			ConnectionType: otf.WorkspaceConnection,
 			VCSProviderID:  provider.ID,
 			ResourceID:     ws.ID,
-			Identifier:     hook.identifier,
+			RepoPath:     hook.identifier,
 		})
 		assert.NoError(t, err)
 	})
@@ -76,7 +76,7 @@ func TestDB(t *testing.T) {
 			ConnectionType: otf.ModuleConnection,
 			VCSProviderID:  provider.ID,
 			ResourceID:     module.ID,
-			Identifier:     hook.identifier,
+			RepoPath:     hook.identifier,
 		})
 		assert.NoError(t, err)
 	})
@@ -155,7 +155,7 @@ func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hoo
 		ConnectionType: connType,
 		VCSProviderID:  provider.ID,
 		ResourceID:     resourceID,
-		Identifier:     hook.identifier,
+		RepoPath:     hook.identifier,
 	})
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hoo
 	})
 	return &otf.Connection{
 		VCSProviderID: provider.ID,
-		RepoID:        hook.id,
+		Repo:        hook.id,
 	}
 }
 

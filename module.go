@@ -59,7 +59,7 @@ type (
 		DeleteModule(ctx context.Context, id string) error
 	}
 	PublishModuleOptions struct {
-		RepoPath      string
+		Repo          ModuleRepo
 		VCSProviderID string
 	}
 	CreateModuleOptions struct {

@@ -110,7 +110,7 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (string, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
 		return "", fmt.Errorf("malformed identifier: %s", identifier)
@@ -120,10 +120,10 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Re
 		return "", err
 	}
 
-	return cloud.Repo(repo.GetFullName()), nil
+	return repo.GetFullName(), nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
 	repos, _, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: opts.PageSize,
@@ -135,13 +135,11 @@ func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositori
 		return nil, err
 	}
 
-	// convert to common repo type before returning
-	var items []cloud.Repo
+	var names []string
 	for _, repo := range repos {
-		items = append(items, cloud.Repo(repo.GetFullName()))
+		names = append(names, repo.GetFullName())
 	}
-
-	return items, nil
+	return names, nil
 }
 
 func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
@@ -308,10 +306,10 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	}
 
 	return cloud.Webhook{
-		ID:         strconv.FormatInt(hook.GetID(), 10),
-		Repo: opts.Repo,
-		Events:     events,
-		Endpoint:   hook.GetURL(),
+		ID:       strconv.FormatInt(hook.GetID(), 10),
+		Repo:     opts.Repo,
+		Events:   events,
+		Endpoint: hook.GetURL(),
 	}, nil
 }
 
