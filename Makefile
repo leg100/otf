@@ -87,7 +87,7 @@ install-pggen:
 # Generate sql code
 .PHONY: sql
 sql: install-pggen
-	../pggen/dist/pggen-linux-amd64 gen go \
+	pggen gen go \
 		--postgres-connection "dbname=otf" \
 		--query-glob 'sql/queries/*.sql' \
 		--output-dir sql/pggen \
