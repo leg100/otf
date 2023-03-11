@@ -21,6 +21,7 @@ func TestMiddleware_AuthenticateToken(t *testing.T) {
 		agentToken:    "agent.token",
 		registryToken: "registry.token",
 		userToken:     "user.token",
+		siteToken:     "site.token",
 	})
 
 	tests := []struct {
@@ -105,6 +106,7 @@ type fakeMiddlewareService struct {
 	registryToken string
 	sessionToken  string
 	userToken     string
+	siteToken     string
 }
 
 func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
@@ -131,6 +133,9 @@ func (f *fakeMiddlewareService) GetSession(ctx context.Context, token string) (*
 func (f *fakeMiddlewareService) getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	if spec.AuthenticationToken != nil {
 		if f.userToken == *spec.AuthenticationToken {
+			return nil, nil
+		}
+		if f.siteToken == *spec.AuthenticationToken {
 			return nil, nil
 		}
 	} else if spec.SessionToken != nil {

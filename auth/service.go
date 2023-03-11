@@ -28,7 +28,7 @@ type Service struct {
 	api          *api
 	db           *pgdb
 	organization otf.Authorizer
-	web          *web
+	web          *webHandlers
 }
 
 func NewService(ctx context.Context, opts Options) (*Service, error) {
@@ -54,7 +54,7 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	svc.api = &api{app: &svc}
 	svc.db = db
 	svc.organization = &organization.Authorizer{opts.Logger}
-	svc.web = &web{
+	svc.web = &webHandlers{
 		Renderer:       opts.Renderer,
 		svc:            &svc,
 		authenticators: authenticators,

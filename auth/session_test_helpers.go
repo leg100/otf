@@ -40,11 +40,11 @@ type fakeSessionService struct {
 	sessionService
 }
 
-func (f *fakeSessionService) ListSessions(context.Context, string) ([]*Session, error) {
+func (f *fakeSessionService) listSessions(context.Context, string) ([]*Session, error) {
 	return f.sessions, nil
 }
 
-func (f *fakeSessionService) DeleteSession(context.Context, string) error {
+func (f *fakeSessionService) deleteSession(context.Context, string) error {
 	return nil
 }
 

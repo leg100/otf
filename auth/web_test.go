@@ -18,10 +18,10 @@ type fakeWeb struct {
 	otf.Renderer
 }
 
-func newFakeWeb(t *testing.T, svc service) *web {
-	renderer, err := html.NewViewEngine(true)
+func newFakeWeb(t *testing.T, svc service) *webHandlers {
+	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
-	return &web{
+	return &webHandlers{
 		svc:      svc,
 		Renderer: renderer,
 	}

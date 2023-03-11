@@ -169,9 +169,9 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *otf.User, wanted []*otf
 	return nil
 }
 
-func inTeamList(teams []*otf.Team, name string) bool {
+func inTeamList(teams []*otf.Team, teamID string) bool {
 	for _, team := range teams {
-		if team.Name == name {
+		if team.ID == teamID {
 			return true
 		}
 	}

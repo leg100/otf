@@ -11,14 +11,14 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-func (h *web) addAgentTokenHandlers(r *mux.Router) {
+func (h *webHandlers) addAgentTokenHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens", h.listAgentTokens).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens/create", h.createAgentToken).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens/new", h.newAgentToken).Methods("GET")
 	r.HandleFunc("/agent-tokens/{agent_token_id}/delete", h.deleteAgentToken).Methods("POST")
 }
 
-func (h *web) newAgentToken(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newAgentToken(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -28,7 +28,7 @@ func (h *web) newAgentToken(w http.ResponseWriter, r *http.Request) {
 	h.Render("agent_token_new.tmpl", w, r, organization)
 }
 
-func (h *web) createAgentToken(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts otf.CreateAgentTokenOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -52,7 +52,7 @@ func (h *web) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
 }
 
-func (app *web) listAgentTokens(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -78,7 +78,7 @@ func (app *web) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *web) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("agent_token_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

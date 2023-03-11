@@ -11,8 +11,8 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-// web provides handlers for the web UI
-type web struct {
+// webHandlers provides handlers for the webHandlers UI
+type webHandlers struct {
 	otf.Renderer
 
 	svc            service
@@ -20,7 +20,7 @@ type web struct {
 	siteToken      string
 }
 
-func (h *web) addHandlers(r *mux.Router) {
+func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = r.PathPrefix("/app").Subrouter()
 
 	r.HandleFunc("/login", h.loginHandler)
@@ -48,7 +48,7 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/admin/login", h.adminLoginHandler).Methods("POST")
 }
 
-func (h *web) listUsers(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -64,7 +64,7 @@ func (h *web) listUsers(w http.ResponseWriter, r *http.Request) {
 	h.Render("users_list.tmpl", w, r, users)
 }
 
-func (app *web) profileHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -73,11 +73,11 @@ func (app *web) profileHandler(w http.ResponseWriter, r *http.Request) {
 	app.Render("profile.tmpl", w, r, user)
 }
 
-func (app *web) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) loginHandler(w http.ResponseWriter, r *http.Request) {
 	app.Render("login.tmpl", w, r, app.authenticators)
 }
 
-func (app *web) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := getSessionCtx(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -91,12 +91,12 @@ func (app *web) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
-func (app *web) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
 	app.Render("site_admin_login.tmpl", w, r, nil)
 }
 
 // adminLoginHandler logs in a site admin
-func (app *web) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

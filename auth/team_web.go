@@ -10,13 +10,13 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-func (h *web) addTeamHandlers(r *mux.Router) {
+func (h *webHandlers) addTeamHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/teams", h.listTeams).Methods("GET")
 	r.HandleFunc("/teams/{team_id}", h.getTeam).Methods("GET")
 	r.HandleFunc("/teams/{team_id}/update", h.updateTeam).Methods("POST")
 }
 
-func (h *web) getTeam(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.Param("team_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -43,7 +43,7 @@ func (h *web) getTeam(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) updateTeam(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID string `schema:"team_id,required"`
 		otf.UpdateTeamOptions
@@ -63,7 +63,7 @@ func (h *web) updateTeam(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Team(team.ID), http.StatusFound)
 }
 
-func (h *web) listTeams(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

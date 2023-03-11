@@ -11,12 +11,12 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-func (h *web) addSessionHandlers(r *mux.Router) {
+func (h *webHandlers) addSessionHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/sessions", h.sessionsHandler).Methods("GET")
 	r.HandleFunc("/profile/sessions/revoke", h.revokeSessionHandler).Methods("POST")
 }
 
-func (app *web) sessionsHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -47,7 +47,7 @@ func (app *web) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *web) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
+func (app *webHandlers) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
