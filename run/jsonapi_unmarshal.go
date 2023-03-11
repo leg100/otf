@@ -7,7 +7,7 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-func UnmarshalJSONAPI(b []byte) (*otf.Run, error) {
+func UnmarshalJSONAPI(b []byte) (*Run, error) {
 	// unmarshal into json:api struct
 	var jrun jsonapi.Run
 	if err := jsonapi.UnmarshalPayload(bytes.NewReader(b), &jrun); err != nil {
@@ -17,8 +17,8 @@ func UnmarshalJSONAPI(b []byte) (*otf.Run, error) {
 	return newFromJSONAPI(&jrun), nil
 }
 
-func newFromJSONAPI(from *jsonapi.Run) *otf.Run {
-	return &otf.Run{
+func newFromJSONAPI(from *jsonapi.Run) *Run {
+	return &Run{
 		ID:                     from.ID,
 		CreatedAt:              from.CreatedAt,
 		ForceCancelAvailableAt: from.ForceCancelAvailableAt,
@@ -39,8 +39,8 @@ func newFromJSONAPI(from *jsonapi.Run) *otf.Run {
 }
 
 // newListFromJSONAPI constructs a run list from a json:api struct
-func newListFromJSONAPI(from *jsonapi.RunList) *otf.RunList {
-	to := otf.RunList{
+func newListFromJSONAPI(from *jsonapi.RunList) *RunList {
+	to := RunList{
 		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
 	}
 	for _, i := range from.Items {

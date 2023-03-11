@@ -17,7 +17,7 @@ type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
 	// GetRun receives spooled runs
-	GetRun() <-chan otf.Run
+	GetRun() <-chan run.Run
 	// GetCancelation receives requests to cancel runs
 	GetCancelation() <-chan Cancelation
 }
@@ -25,7 +25,7 @@ type Spooler interface {
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
-	queue        chan otf.Run     // Queue of queued jobs
+	queue        chan run.Run     // Queue of queued jobs
 	cancelations chan Cancelation // Queue of cancelation requests
 	otf.Client                    // Application for retrieving queued runs
 	logr.Logger
@@ -33,7 +33,7 @@ type SpoolerDaemon struct {
 }
 
 type Cancelation struct {
-	Run      otf.Run
+	Run      run.Run
 	Forceful bool
 }
 
@@ -43,7 +43,7 @@ const SpoolerCapacity = 100
 // NewSpooler populates a Spooler with queued runs
 func NewSpooler(app otf.Client, logger logr.Logger, cfg Config) *SpoolerDaemon {
 	return &SpoolerDaemon{
-		queue:        make(chan otf.Run, SpoolerCapacity),
+		queue:        make(chan run.Run, SpoolerCapacity),
 		cancelations: make(chan Cancelation, SpoolerCapacity),
 		Client:       app,
 		Logger:       logger,
@@ -63,7 +63,7 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 }
 
 // GetRun returns a channel of queued runs
-func (s *SpoolerDaemon) GetRun() <-chan otf.Run {
+func (s *SpoolerDaemon) GetRun() <-chan run.Run {
 	return s.queue
 }
 
@@ -80,13 +80,13 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 		return err
 	}
 
-	listOpts := otf.RunListOptions{
-		Statuses:     []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
+	listOpts := run.RunListOptions{
+		Statuses:     []run.RunStatus{run.RunPlanQueued, run.RunApplyQueued},
 		Organization: s.Organization,
 	}
 
 	// retrieve existing runs, page by page
-	var existing []otf.Run
+	var existing []run.Run
 	for {
 		page, err := s.ListRuns(ctx, listOpts)
 		if err != nil {
@@ -125,7 +125,7 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch payload := ev.Payload.(type) {
-	case otf.Run:
+	case run.Run:
 		s.handleRun(ev.Type, payload)
 	case string:
 		s.Info("stream update", "info", string(payload))
@@ -134,7 +134,7 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	}
 }
 
-func (s *SpoolerDaemon) handleRun(event otf.EventType, run otf.Run) {
+func (s *SpoolerDaemon) handleRun(event otf.EventType, run run.Run) {
 	// (a) external agents handle runs with agent execution mode
 	// (b) internal agents handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run

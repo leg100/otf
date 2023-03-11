@@ -21,7 +21,7 @@ const (
 )
 
 type Job struct {
-	otf.Run
+	run.Run
 	environment.Environment
 
 	workspace otf.Workspace
@@ -32,9 +32,9 @@ func (r *Job) Do() error {
 		return err
 	}
 	switch r.Status {
-	case otf.RunPlanning:
+	case run.RunPlanning:
 		return r.doPlan()
-	case otf.RunApplying:
+	case run.RunApplying:
 		return r.doApply()
 	default:
 		return fmt.Errorf("invalid status: %s", r.Status)
@@ -55,7 +55,7 @@ func (r *Job) setupEnv() error {
 	if err := r.RunFunc(r.downloadState); err != nil {
 		return err
 	}
-	if r.Status == otf.RunApplying {
+	if r.Status == run.RunApplying {
 		// Download lock file from plan phase for the apply phase, to ensure
 		// same providers are used in both phases.
 		if err := r.RunFunc(r.downloadLockFile); err != nil {

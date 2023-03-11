@@ -65,13 +65,13 @@ func TestTailLogs(t *testing.T) {
 }
 
 type fakeTailApp struct {
-	run    *otf.Run
+	run    *run.Run
 	chunks chan otf.Chunk
 
 	otf.Application
 }
 
-func (f *fakeTailApp) GetRun(context.Context, string) (*otf.Run, error) {
+func (f *fakeTailApp) GetRun(context.Context, string) (*run.Run, error) {
 	return f.run, nil
 }
 

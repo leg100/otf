@@ -29,3 +29,17 @@ type run struct {
 	Latest bool    // is latest run for workspace
 	Commit *string // commit sha that triggered this run
 }
+
+func (r run) PlanOnly() bool {
+	return r.Status == otf.RunPlannedAndFinished
+}
+
+// Cancelable determines whether run can be cancelled.
+func (r run) Cancelable() bool {
+	switch r.Status {
+	case otf.RunPending, otf.RunPlanQueued, otf.RunPlanning, otf.RunPlanned, otf.RunApplyQueued, otf.RunApplying:
+		return true
+	default:
+		return false
+	}
+}

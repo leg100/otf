@@ -30,7 +30,7 @@ type fakeRunJSONAPIConverter struct {
 	want []byte
 }
 
-func (f *fakeRunJSONAPIConverter) MarshalJSONAPI(*otf.Run, *http.Request) ([]byte, error) {
+func (f *fakeRunJSONAPIConverter) MarshalJSONAPI(*run.Run, *http.Request) ([]byte, error) {
 	return f.want, nil
 }
 

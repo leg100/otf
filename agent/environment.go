@@ -56,7 +56,7 @@ func NewEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
 	app client.Client,
-	run otf.Run,
+	run run.Run,
 	envs []string,
 	downloader environment.Downloader,
 	cfg Config,

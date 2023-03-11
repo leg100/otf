@@ -15,7 +15,7 @@ type TestRunCreateOptions struct {
 	ID                *string // override ID of run
 	Speculative       bool
 	ExecutionMode     *otf.ExecutionMode
-	Status            otf.RunStatus
+	Status            run.RunStatus
 	AutoApply         *bool
 	Repo              *otf.WorkspaceRepo
 	IngressAttributes *otf.IngressAttributes
@@ -30,7 +30,7 @@ func NewRunService(db otf.DB) *run.Service {
 	})
 }
 
-func CreateRun(t *testing.T, db otf.DB, ws otf.Workspace, cv otf.ConfigurationVersion) otf.Run {
+func CreateRun(t *testing.T, db otf.DB, ws otf.Workspace, cv otf.ConfigurationVersion) run.Run {
 	ctx := context.Background()
 	svc := NewRunService(db)
 	run, err := svc.Create(ctx, ws.ID, run.RunCreateOptions{
@@ -45,7 +45,7 @@ func CreateRun(t *testing.T, db otf.DB, ws otf.Workspace, cv otf.ConfigurationVe
 }
 
 // NewTestRun creates a new run. Expressly for testing purposes.
-func NewRun(t *testing.T, opts TestRunCreateOptions) *otf.Run {
+func NewRun(t *testing.T, opts TestRunCreateOptions) *run.Run {
 	org := NewOrganization(t)
 
 	ws := opts.Workspace

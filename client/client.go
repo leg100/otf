@@ -32,10 +32,10 @@ type Client interface {
 	UploadPlanFile(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error
 	GetLockFile(ctx context.Context, id string) ([]byte, error)
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
-	ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error)
-	GetRun(ctx context.Context, id string) (*otf.Run, error)
-	StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error)
-	FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error)
+	ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error)
+	GetRun(ctx context.Context, id string) (*run.Run, error)
+	StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*run.Run, error)
+	FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*run.Run, error)
 
 	PutChunk(ctx context.Context, chunk otf.Chunk) error
 

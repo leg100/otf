@@ -24,7 +24,7 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, run otf.Run) {
+func (w *Worker) handle(ctx context.Context, run run.Run) {
 	log := w.Logger.WithValues("run", run.ID, "phase", run.Phase)
 
 	// Claim run job

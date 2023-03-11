@@ -7,33 +7,42 @@ import (
 	"github.com/leg100/otf"
 )
 
-type logWriter interface {
-	PutChunk(ctx context.Context, chunk otf.Chunk) error
-}
+type (
+	logWriter interface {
+		PutChunk(ctx context.Context, chunk otf.Chunk) error
+	}
 
-// PhaseWriter writes logs on behalf of a run phase.
-type PhaseWriter struct {
-	logr.Logger
+	// PhaseWriter writes logs on behalf of a run phase.
+	PhaseWriter struct {
+		logr.Logger
 
-	// started is used internally by the writer to determine whether the first
-	// write has been prefixed with the start marker (STX).
-	started   bool
-	id        string          // ID of run to write logs on behalf of.
-	phase     otf.PhaseType   // run phase
-	offset    int             // current position in stream
-	ctx       context.Context // permits canceling mid-flow
-	logWriter                 // for uploading logs to server
-}
+		// started is used internally by the writer to determine whether the first
+		// write has been prefixed with the start marker (STX).
+		started   bool
+		id        string          // ID of run to write logs on behalf of.
+		phase     otf.PhaseType   // run phase
+		offset    int             // current position in stream
+		ctx       context.Context // permits canceling mid-flow
+		logWriter                 // for uploading logs to server
+	}
+
+	PhaseWriterOptions struct {
+		logr.Logger
+		RunID  string
+		Phase  otf.PhaseType
+		Writer logWriter
+	}
+)
 
 // NewPhaseWriter returns a new writer for writing logs on behalf of a run.
 
-func NewPhaseWriter(ctx context.Context, logger logr.Logger, w logWriter, run otf.Run) *PhaseWriter {
+func NewPhaseWriter(ctx context.Context, opts PhaseWriterOptions) *PhaseWriter {
 	return &PhaseWriter{
-		id:        run.ID,
-		phase:     run.Phase(),
-		logWriter: w,
-		Logger:    logger,
 		ctx:       ctx,
+		id:        opts.RunID,
+		phase:     opts.Phase,
+		logWriter: opts.Writer,
+		Logger:    opts.Logger,
 	}
 }
 

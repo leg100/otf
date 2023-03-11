@@ -22,7 +22,7 @@ func TestRunCreate(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		cv := testutil.CreateConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
-		var got *otf.Run
+		var got *run.Run
 		t.Cleanup(func() {
 			svc.Delete(ctx, got.ID)
 		})
@@ -40,9 +40,9 @@ func TestRunCreate(t *testing.T) {
 
 		got, err := svc.EnqueuePlan(ctx, run.ID)
 		require.NoError(t, err)
-		assert.Equal(t, otf.RunPlanQueued, got.Status())
+		assert.Equal(t, run.RunPlanQueued, got.Status())
 
-		timestamp, err := got.StatusTimestamp(otf.RunPlanQueued)
+		timestamp, err := got.StatusTimestamp(run.RunPlanQueued)
 		assert.NoError(t, err)
 		assert.True(t, timestamp.After(got.CreatedAt()))
 	})
@@ -74,13 +74,13 @@ func TestRun_List(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts otf.RunListOptions
-		want func(*testing.T, *otf.RunList)
+		opts run.RunListOptions
+		want func(*testing.T, *run.RunList)
 	}{
 		{
 			name: "unfiltered",
-			opts: otf.RunListOptions{},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{},
+			want: func(t *testing.T, l *run.RunList) {
 				// may match runs in the db belonging to organizations outside
 				// of this test
 				assert.GreaterOrEqual(t, len(l.Items), 4)
@@ -92,8 +92,8 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by organization name",
-			opts: otf.RunListOptions{Organization: otf.String(org1.Name())},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{Organization: otf.String(org1.Name())},
+			want: func(t *testing.T, l *run.RunList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
@@ -101,8 +101,8 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by workspace id",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
+			want: func(t *testing.T, l *run.RunList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
@@ -110,8 +110,8 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by workspace name and organization",
-			opts: otf.RunListOptions{WorkspaceName: otf.String(ws1.Name()), Organization: otf.String(org1.Name())},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{WorkspaceName: otf.String(ws1.Name()), Organization: otf.String(org1.Name())},
+			want: func(t *testing.T, l *run.RunList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
@@ -119,8 +119,8 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by pending status",
-			opts: otf.RunListOptions{Organization: otf.String(org1.Name()), Statuses: []otf.RunStatus{otf.RunPending}},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{Organization: otf.String(org1.Name()), Statuses: []run.RunStatus{run.RunPending}},
+			want: func(t *testing.T, l *run.RunList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
@@ -128,15 +128,15 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by statuses - no match",
-			opts: otf.RunListOptions{Organization: otf.String(org1.Name()), Statuses: []otf.RunStatus{otf.RunPlanned}},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{Organization: otf.String(org1.Name()), Statuses: []run.RunStatus{run.RunPlanned}},
+			want: func(t *testing.T, l *run.RunList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
 		{
 			name: "filter out speculative runs in org1",
-			opts: otf.RunListOptions{Organization: otf.String(org1.Name()), Speculative: otf.Bool(false)},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{Organization: otf.String(org1.Name()), Speculative: otf.Bool(false)},
+			want: func(t *testing.T, l *run.RunList) {
 				// org1 has no speculative runs, so should return both runs
 				assert.Equal(t, 2, len(l.Items))
 				assert.Equal(t, 2, l.TotalCount())
@@ -144,8 +144,8 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "filter out speculative runs in org2",
-			opts: otf.RunListOptions{Organization: otf.String(org2.Name()), Speculative: otf.Bool(false)},
-			want: func(t *testing.T, l *otf.RunList) {
+			opts: run.RunListOptions{Organization: otf.String(org2.Name()), Speculative: otf.Bool(false)},
+			want: func(t *testing.T, l *run.RunList) {
 				// org2 only has speculative runs, so should return zero
 				assert.Equal(t, 0, len(l.Items))
 				assert.Equal(t, 0, l.TotalCount())

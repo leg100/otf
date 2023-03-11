@@ -90,7 +90,7 @@ func (r *reporter) start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case event := <-sub:
-			run, ok := event.Payload.(*otf.Run)
+			run, ok := event.Payload.(*Run)
 			if !ok {
 				// Skip non-run events
 				continue
@@ -102,7 +102,7 @@ func (r *reporter) start(ctx context.Context) error {
 	}
 }
 
-func (r *reporter) handleRun(ctx context.Context, run *otf.Run) error {
+func (r *reporter) handleRun(ctx context.Context, run *Run) error {
 	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
 	if err != nil {
 		return err

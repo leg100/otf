@@ -22,7 +22,7 @@ func TestApp(t *testing.T) {
 
 	// inject input event
 	want := otf.Event{
-		Payload: &otf.Run{},
+		Payload: &run.Run{},
 		Type:    otf.EventRunCreated,
 	}
 	in <- want

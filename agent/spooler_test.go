@@ -13,12 +13,12 @@ func TestSpooler(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// run[1-2] are in the DB; run[3-5] are events
-	run1 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
-	run2 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
-	run3 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
-	run4 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunCanceled})
-	run5 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunForceCanceled})
-	db := []*otf.Run{run1, run2}
+	run1 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunPlanQueued})
+	run2 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunPlanQueued})
+	run3 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunPlanQueued})
+	run4 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunCanceled})
+	run5 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunForceCanceled})
+	db := []*run.Run{run1, run2}
 	events := make(chan otf.Event, 3)
 	events <- otf.Event{Payload: run3}
 	events <- otf.Event{Type: otf.EventRunCancel, Payload: run4}
@@ -57,7 +57,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			name: "handle run",
 			event: otf.Event{
 				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: otf.RunPlanQueued,
+					Status: run.RunPlanQueued,
 				}),
 			},
 			wantRun: true,
@@ -67,7 +67,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: otf.Event{
 				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
 					ExecutionMode: otf.ExecutionModePtr(otf.AgentExecutionMode),
-					Status:        otf.RunPlanQueued,
+					Status:        run.RunPlanQueued,
 				}),
 			},
 			wantRun: false,
@@ -78,7 +78,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: otf.Event{
 				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
 					ExecutionMode: otf.ExecutionModePtr(otf.AgentExecutionMode),
-					Status:        otf.RunPlanQueued,
+					Status:        run.RunPlanQueued,
 				}),
 			},
 			wantRun: true,
@@ -87,7 +87,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			name: "ignore runs not in queued state",
 			event: otf.Event{
 				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: otf.RunPlanned,
+					Status: run.RunPlanned,
 				}),
 			},
 			wantRun: false,
@@ -97,7 +97,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: otf.Event{
 				Type: otf.EventRunCancel,
 				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: otf.RunPlanning,
+					Status: run.RunPlanning,
 				}),
 			},
 			wantCancelation: true,
@@ -107,7 +107,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 			event: otf.Event{
 				Type: otf.EventRunForceCancel,
 				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: otf.RunPlanning,
+					Status: run.RunPlanning,
 				}),
 			},
 			wantForceCancelation: true,

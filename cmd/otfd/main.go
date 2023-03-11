@@ -270,7 +270,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		otf.HostnameService
 		otf.ConfigurationVersionService
 		otf.RegistrySessionService
-		otf.RunService
+		run.RunService
 		otf.EventService
 	}{
 		AgentTokenService:           app,

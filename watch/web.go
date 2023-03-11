@@ -54,7 +54,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				if !ok {
 					return
 				}
-				run, ok := event.Payload.(*otf.Run)
+				run, ok := event.Payload.(*run.Run)
 				if !ok {
 					// skip non-run events
 					continue
@@ -100,7 +100,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				}
 				js, err := json.Marshal(struct {
 					ID              string        `json:"id"`
-					RunStatus       otf.RunStatus `json:"run-status"`
+					RunStatus       run.RunStatus `json:"run-status"`
 					RunItemHTML     string        `json:"run-item-html"`
 					RunStatusHTML   string        `json:"run-status-html"`
 					PlanStatusHTML  string        `json:"plan-status-html"`

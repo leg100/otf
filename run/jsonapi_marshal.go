@@ -28,7 +28,7 @@ func newJSONAPIMarshaler(svc otf.WorkspaceService, signer otf.Signer) *JSONAPIMa
 }
 
 // MarshalJSONAPI marshals a run into json:api encoded data
-func (m *JSONAPIMarshaler) MarshalJSONAPI(run *otf.Run, r *http.Request) ([]byte, error) {
+func (m *JSONAPIMarshaler) MarshalJSONAPI(run *Run, r *http.Request) ([]byte, error) {
 	jrun, err := m.toRun(run, r)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (m *JSONAPIMarshaler) MarshalJSONAPI(run *otf.Run, r *http.Request) ([]byte
 }
 
 // toRun converts a run into its equivalent json:api struct
-func (m *JSONAPIMarshaler) toRun(run *otf.Run, r *http.Request) (*jsonapi.Run, error) {
+func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (m *JSONAPIMarshaler) toRun(run *otf.Run, r *http.Request) (*jsonapi.Run, e
 	}, nil
 }
 
-func (m JSONAPIMarshaler) toList(list *otf.RunList, r *http.Request) (*jsonapi.RunList, error) {
+func (m JSONAPIMarshaler) toList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
 	var items []*jsonapi.Run
 	for _, run := range list.Items {
 		jrun, err := m.toRun(run, r)
@@ -172,7 +172,7 @@ func (m JSONAPIMarshaler) toList(list *otf.RunList, r *http.Request) (*jsonapi.R
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toPhase(from otf.Phase, r *http.Request) (any, error) {
+func (m *JSONAPIMarshaler) toPhase(from Phase, r *http.Request) (any, error) {
 	switch from.PhaseType {
 	case otf.PlanPhase:
 		return m.toPlan(from, r)
@@ -183,7 +183,7 @@ func (m *JSONAPIMarshaler) toPhase(from otf.Phase, r *http.Request) (any, error)
 	}
 }
 
-func (m *JSONAPIMarshaler) toPlan(plan otf.Phase, r *http.Request) (*jsonapi.Plan, error) {
+func (m *JSONAPIMarshaler) toPlan(plan Phase, r *http.Request) (*jsonapi.Plan, error) {
 	logURL, err := m.logURL(r, plan)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (m *JSONAPIMarshaler) toPlan(plan otf.Phase, r *http.Request) (*jsonapi.Pla
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toApply(apply otf.Phase, r *http.Request) (*jsonapi.Apply, error) {
+func (m *JSONAPIMarshaler) toApply(apply Phase, r *http.Request) (*jsonapi.Apply, error) {
 	logURL, err := m.logURL(r, apply)
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (m *JSONAPIMarshaler) toApply(apply otf.Phase, r *http.Request) (*jsonapi.A
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toResourceReport(from *otf.ResourceReport) jsonapi.ResourceReport {
+func (m *JSONAPIMarshaler) toResourceReport(from *ResourceReport) jsonapi.ResourceReport {
 	var to jsonapi.ResourceReport
 	if from != nil {
 		to.Additions = &from.Additions
@@ -224,23 +224,23 @@ func (m *JSONAPIMarshaler) toResourceReport(from *otf.ResourceReport) jsonapi.Re
 	return to
 }
 
-func (m *JSONAPIMarshaler) toPhaseTimestamps(from []otf.PhaseStatusTimestamp) *jsonapi.PhaseStatusTimestamps {
+func (m *JSONAPIMarshaler) toPhaseTimestamps(from []PhaseStatusTimestamp) *jsonapi.PhaseStatusTimestamps {
 	var timestamps jsonapi.PhaseStatusTimestamps
 	for _, ts := range from {
 		switch ts.Status {
-		case otf.PhasePending:
+		case PhasePending:
 			timestamps.PendingAt = &ts.Timestamp
-		case otf.PhaseCanceled:
+		case PhaseCanceled:
 			timestamps.CanceledAt = &ts.Timestamp
-		case otf.PhaseErrored:
+		case PhaseErrored:
 			timestamps.ErroredAt = &ts.Timestamp
-		case otf.PhaseFinished:
+		case PhaseFinished:
 			timestamps.FinishedAt = &ts.Timestamp
-		case otf.PhaseQueued:
+		case PhaseQueued:
 			timestamps.QueuedAt = &ts.Timestamp
-		case otf.PhaseRunning:
+		case PhaseRunning:
 			timestamps.StartedAt = &ts.Timestamp
-		case otf.PhaseUnreachable:
+		case PhaseUnreachable:
 			timestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
@@ -252,7 +252,7 @@ type logURLGenerator struct {
 	otf.Signer
 }
 
-func (s *logURLGenerator) logURL(r *http.Request, phase otf.Phase) (string, error) {
+func (s *logURLGenerator) logURL(r *http.Request, phase Phase) (string, error) {
 	logs := fmt.Sprintf("/runs/%s/logs/%s", phase.RunID, phase.PhaseType)
 	logs, err := s.Sign(logs, time.Hour)
 	if err != nil {

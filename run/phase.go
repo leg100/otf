@@ -1,17 +1,13 @@
-package otf
+package run
 
 import (
 	"errors"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 const (
-	PendingPhase PhaseType = "pending"
-	PlanPhase    PhaseType = "plan"
-	ApplyPhase   PhaseType = "apply"
-	FinalPhase   PhaseType = "final"
-	UnknownPhase PhaseType = "unknown"
-
 	PhasePending     PhaseStatus = "pending"
 	PhaseQueued      PhaseStatus = "queued"
 	PhaseRunning     PhaseStatus = "running"
@@ -28,15 +24,13 @@ type (
 	Phase struct {
 		RunID string
 
-		PhaseType // plan or apply
-
+		otf.PhaseType
 		*ResourceReport // report of planned or applied resource changes
 
 		Status           PhaseStatus // current phase status
 		StatusTimestamps []PhaseStatusTimestamp
 	}
 
-	PhaseType   string
 	PhaseStatus string
 
 	PhaseStartOptions struct {
@@ -56,7 +50,7 @@ type (
 )
 
 // NewPhase constructs a new phase. A new phase always starts in pending status.
-func NewPhase(runID string, t PhaseType) Phase {
+func NewPhase(runID string, t otf.PhaseType) Phase {
 	p := Phase{RunID: runID, PhaseType: t}
 	p.UpdateStatus(PhasePending)
 	return p
@@ -69,14 +63,14 @@ func (p *Phase) StatusTimestamp(status PhaseStatus) (time.Time, error) {
 			return rst.Timestamp, nil
 		}
 	}
-	return time.Time{}, ErrStatusTimestampNotFound
+	return time.Time{}, otf.ErrStatusTimestampNotFound
 }
 
 func (p *Phase) UpdateStatus(status PhaseStatus) {
 	p.Status = status
 	p.StatusTimestamps = append(p.StatusTimestamps, PhaseStatusTimestamp{
 		Status:    status,
-		Timestamp: CurrentTimestamp(),
+		Timestamp: otf.CurrentTimestamp(),
 	})
 }
 

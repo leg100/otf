@@ -22,7 +22,7 @@ func withFakeWorkspaces(workspaces ...*otf.Workspace) fakeOption {
 	}
 }
 
-func withFakeRun(run *otf.Run) fakeOption {
+func withFakeRun(run *run.Run) fakeOption {
 	return func(c *fakeClient) {
 		c.run = run
 	}
@@ -36,7 +36,7 @@ func withFakeTarball(tarball []byte) fakeOption {
 
 type fakeClient struct {
 	workspaces []*otf.Workspace
-	run        *otf.Run
+	run        *run.Run
 	tarball    []byte
 	otf.Client
 }
@@ -77,7 +77,7 @@ func (f *fakeClient) UnlockWorkspace(context.Context, string, otf.WorkspaceUnloc
 	return f.workspaces[0], nil
 }
 
-func (f *fakeClient) GetRun(context.Context, string) (*otf.Run, error) {
+func (f *fakeClient) GetRun(context.Context, string) (*run.Run, error) {
 	return f.run, nil
 }
 

@@ -16,7 +16,7 @@ func TestStartRun(t *testing.T) {
 	t.Run("not connected to repo", func(t *testing.T) {
 		ws := &otf.Workspace{}
 		cv := &otf.ConfigurationVersion{}
-		want := &otf.Run{}
+		want := &Run{}
 		starter := newTestStarter(fakeStarterService{
 			run:       want,
 			workspace: ws,
@@ -32,7 +32,7 @@ func TestStartRun(t *testing.T) {
 		ws := &otf.Workspace{Connection: &otf.Connection{}}
 		cv := &otf.ConfigurationVersion{}
 		provider := &otf.VCSProvider{}
-		want := &otf.Run{}
+		want := &Run{}
 		starter := newTestStarter(fakeStarterService{
 			run:       want,
 			workspace: ws,
@@ -48,7 +48,7 @@ func TestStartRun(t *testing.T) {
 
 type (
 	fakeStarterService struct {
-		run       *otf.Run
+		run       *Run
 		workspace *otf.Workspace
 		cv        *otf.ConfigurationVersion
 		provider  *otf.VCSProvider
@@ -93,7 +93,7 @@ func (f *fakeStarterService) GetVCSClient(context.Context, string) (cloud.Client
 	return &fakeStartRunCloudClient{}, nil
 }
 
-func (f *fakeStarterService) create(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
+func (f *fakeStarterService) create(context.Context, string, RunCreateOptions) (*Run, error) {
 	return f.run, nil
 }
 

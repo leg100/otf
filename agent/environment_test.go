@@ -196,7 +196,7 @@ func newTestEnvironment(t *testing.T, opts ...otf.NewTestWorkspaceOption) *Envir
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org, opts...)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+	run := otf.NewRun(cv, ws, run.RunCreateOptions{})
 	env, err := NewEnvironment(
 		context.Background(),
 		logr.Discard(),

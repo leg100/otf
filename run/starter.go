@@ -20,7 +20,7 @@ type starter struct {
 	service
 }
 
-func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
+func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {
 	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts otf.Co
 		}
 	}
 
-	return rs.create(ctx, workspaceID, otf.RunCreateOptions{
+	return rs.create(ctx, workspaceID, RunCreateOptions{
 		ConfigurationVersionID: otf.String(cv.ID),
 	})
 }

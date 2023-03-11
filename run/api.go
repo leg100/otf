@@ -20,7 +20,7 @@ type api struct {
 
 // planFileOptions are options for the plan file API
 type planFileOptions struct {
-	Format otf.PlanFormat `schema:"format,required"`
+	Format PlanFormat `schema:"format,required"`
 }
 
 func (h *api) addHandlers(r *mux.Router) {
@@ -65,7 +65,7 @@ func (s *api) create(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.svc.create(r.Context(), opts.Workspace.ID, otf.RunCreateOptions{
+	run, err := s.svc.create(r.Context(), opts.Workspace.ID, RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -93,7 +93,7 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.svc.startPhase(r.Context(), params.RunID, params.Phase, otf.PhaseStartOptions{})
+	run, err := s.svc.startPhase(r.Context(), params.RunID, params.Phase, PhaseStartOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -112,7 +112,7 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.svc.finishPhase(r.Context(), params.RunID, params.Phase, otf.PhaseFinishOptions{})
+	run, err := s.svc.finishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -138,16 +138,16 @@ func (s *api) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) list(w http.ResponseWriter, r *http.Request) {
-	s.listRuns(w, r, otf.RunListOptions{})
+	s.listRuns(w, r, RunListOptions{})
 }
 
 func (s *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
-	s.listRuns(w, r, otf.RunListOptions{
+	s.listRuns(w, r, RunListOptions{
 		Statuses: []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
 	})
 }
 
-func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListOptions) {
+func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts RunListOptions) {
 	if err := decode.All(&opts, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -184,7 +184,7 @@ func (s *api) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.svc.discard(r.Context(), id); err == otf.ErrRunDiscardNotAllowed {
+	if err = s.svc.discard(r.Context(), id); err == ErrRunDiscardNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -202,7 +202,7 @@ func (s *api) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.svc.cancel(r.Context(), id); err == otf.ErrRunCancelNotAllowed {
+	if err = s.svc.cancel(r.Context(), id); err == ErrRunCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -221,7 +221,7 @@ func (s *api) forceCancel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.svc.forceCancel(r.Context(), id)
-	if err == otf.ErrRunForceCancelNotAllowed {
+	if err == ErrRunForceCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -360,7 +360,7 @@ func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := s.svc.getPlanFile(r.Context(), otf.ConvertID(id, "run"), otf.PlanFormatJSON)
+	json, err := s.svc.getPlanFile(r.Context(), otf.ConvertID(id, "run"), PlanFormatJSON)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -394,11 +394,11 @@ func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 	var err error
 
 	switch v := v.(type) {
-	case *otf.RunList:
+	case *RunList:
 		payload, err = s.toList(v, r)
-	case *otf.Run:
+	case *Run:
 		payload, err = s.toRun(v, r)
-	case otf.Phase:
+	case Phase:
 		payload, err = s.toPhase(v, r)
 	}
 	if err != nil {

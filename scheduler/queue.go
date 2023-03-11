@@ -16,8 +16,8 @@ type queue struct {
 	logr.Logger
 
 	ws      otf.Workspace
-	current *otf.Run
-	queue   []*otf.Run
+	current *run.Run
+	queue   []*run.Run
 }
 
 type queueMaker struct{}
@@ -41,9 +41,9 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 				}
 			}
 		}
-	case otf.Run:
+	case run.Run:
 		if payload.Speculative() {
-			if payload.Status() == otf.RunPending {
+			if payload.Status() == run.RunPending {
 				// immediately enqueue onto global queue
 				_, err := q.EnqueuePlan(ctx, payload.ID)
 				if err != nil {
@@ -99,7 +99,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 	return nil
 }
 
-func (q *queue) setCurrentRun(ctx context.Context, run *otf.Run) error {
+func (q *queue) setCurrentRun(ctx context.Context, run *run.Run) error {
 	q.current = run
 
 	if q.ws.LatestRunID != nil && *q.ws.LatestRunID == run.ID {
@@ -116,8 +116,8 @@ func (q *queue) setCurrentRun(ctx context.Context, run *otf.Run) error {
 	return nil
 }
 
-func (q *queue) scheduleRun(ctx context.Context, run *otf.Run) error {
-	if run.Status() != otf.RunPending {
+func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
+	if run.Status() != run.RunPending {
 		// run has already been scheduled
 		return nil
 	}

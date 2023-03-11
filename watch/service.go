@@ -101,7 +101,7 @@ func (s *Service) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.
 
 				var organization, workspaceID string
 				switch payload := ev.Payload.(type) {
-				case *otf.Run:
+				case *run.Run:
 					organization = payload.Organization
 					workspaceID = payload.WorkspaceID
 				case *otf.Workspace:

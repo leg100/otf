@@ -22,7 +22,7 @@ func newDB(db otf.DB) *pgdb {
 }
 
 // CreateRun persists a Run to the DB.
-func (db *pgdb) CreateRun(ctx context.Context, run *otf.Run) error {
+func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 	return db.tx(ctx, func(tx *pgdb) error {
 		_, err := tx.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     sql.String(run.ID),
@@ -62,8 +62,8 @@ func (db *pgdb) CreateRun(ctx context.Context, run *otf.Run) error {
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
-func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) error) (*otf.Run, error) {
-	var run *otf.Run
+func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) error) (*Run, error) {
+	var run *Run
 	err := db.tx(ctx, func(tx *pgdb) error {
 		// select ...for update
 		result, err := tx.FindRunByIDForUpdate(ctx, sql.String(runID))
@@ -130,7 +130,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run
 	return run, err
 }
 
-func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report otf.ResourceReport) error {
+func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report ResourceReport) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    report.Additions,
@@ -143,7 +143,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report otf.R
 	return err
 }
 
-func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report otf.ResourceReport) error {
+func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report ResourceReport) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    report.Additions,
@@ -156,7 +156,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report otf.
 	return err
 }
 
-func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	batch := &pgx.Batch{}
 	organizationName := "%"
 	if opts.Organization != nil {
@@ -207,7 +207,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 		return nil, err
 	}
 
-	var items []*otf.Run
+	var items []*Run
 	for _, r := range rows {
 		run, err := UnmarshalRunResult(RunResult(r))
 		if err != nil {
@@ -216,14 +216,14 @@ func (db *pgdb) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 		items = append(items, run)
 	}
 
-	return &otf.RunList{
+	return &RunList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
 // GetRun retrieves a run using the get options
-func (db *pgdb) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
 	result, err := db.FindRunByID(ctx, sql.String(runID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -232,12 +232,12 @@ func (db *pgdb) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 }
 
 // SetPlanFile writes a plan file to the db
-func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, format otf.PlanFormat) error {
+func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, format PlanFormat) error {
 	switch format {
-	case otf.PlanFormatBinary:
+	case PlanFormatBinary:
 		_, err := db.UpdatePlanBinByID(ctx, file, sql.String(runID))
 		return err
-	case otf.PlanFormatJSON:
+	case PlanFormatJSON:
 		_, err := db.UpdatePlanJSONByID(ctx, file, sql.String(runID))
 		return err
 	default:
@@ -246,11 +246,11 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, form
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	switch format {
-	case otf.PlanFormatBinary:
+	case PlanFormatBinary:
 		return db.GetPlanBinByID(ctx, sql.String(runID))
-	case otf.PlanFormatJSON:
+	case PlanFormatJSON:
 		return db.GetPlanJSONByID(ctx, sql.String(runID))
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
@@ -274,7 +274,7 @@ func (db *pgdb) DeleteRun(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error {
+func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
 	ts, err := run.StatusTimestamp(run.Status)
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) erro
 	return err
 }
 
-func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase otf.Phase) error {
+func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) error {
 	ts, err := phase.StatusTimestamp(phase.Status)
 	if err != nil {
 		return err
@@ -344,8 +344,8 @@ type RunResult struct {
 	ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
 }
 
-func UnmarshalRunResult(result RunResult) (*otf.Run, error) {
-	run := otf.Run{
+func UnmarshalRunResult(result RunResult) (*Run, error) {
+	run := Run{
 		ID:                     result.RunID.String,
 		CreatedAt:              result.CreatedAt.Time.UTC(),
 		IsDestroy:              result.IsDestroy,
@@ -363,17 +363,17 @@ func UnmarshalRunResult(result RunResult) (*otf.Run, error) {
 		Organization:           result.OrganizationName.String,
 		WorkspaceID:            result.WorkspaceID.String,
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
-		Plan: otf.Phase{
+		Plan: Phase{
 			RunID:            result.RunID.String,
-			Status:           otf.PhaseStatus(result.PlanStatus.String),
+			Status:           PhaseStatus(result.PlanStatus.String),
 			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
-			ResourceReport:   (*otf.ResourceReport)(result.PlannedChanges),
+			ResourceReport:   (*ResourceReport)(result.PlannedChanges),
 		},
-		Apply: otf.Phase{
+		Apply: Phase{
 			RunID:            result.RunID.String,
-			Status:           otf.PhaseStatus(result.ApplyStatus.String),
+			Status:           PhaseStatus(result.ApplyStatus.String),
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
-			ResourceReport:   (*otf.ResourceReport)(result.AppliedChanges),
+			ResourceReport:   (*ResourceReport)(result.AppliedChanges),
 		},
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
@@ -385,9 +385,9 @@ func UnmarshalRunResult(result RunResult) (*otf.Run, error) {
 	return &run, nil
 }
 
-func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []otf.RunStatusTimestamp) {
+func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, otf.RunStatusTimestamp{
+		timestamps = append(timestamps, RunStatusTimestamp{
 			Status:    otf.RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})
@@ -395,20 +395,20 @@ func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestam
 	return timestamps
 }
 
-func unmarshalPlanStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []otf.PhaseStatusTimestamp) {
+func unmarshalPlanStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, otf.PhaseStatusTimestamp{
-			Status:    otf.PhaseStatus(ty.Status.String),
+		timestamps = append(timestamps, PhaseStatusTimestamp{
+			Status:    PhaseStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}
 	return timestamps
 }
 
-func unmarshalApplyStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []otf.PhaseStatusTimestamp) {
+func unmarshalApplyStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, otf.PhaseStatusTimestamp{
-			Status:    otf.PhaseStatus(ty.Status.String),
+		timestamps = append(timestamps, PhaseStatusTimestamp{
+			Status:    PhaseStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}

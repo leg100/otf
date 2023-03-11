@@ -14,9 +14,9 @@ import (
 
 type (
 	service interface {
-		create(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error)
-		get(ctx context.Context, runID string) (*otf.Run, error)
-		list(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error)
+		create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
+		get(ctx context.Context, runID string) (*Run, error)
+		list(ctx context.Context, opts RunListOptions) (*RunList, error)
 		// apply enqueues an apply for the run.
 		apply(ctx context.Context, runID string) error
 		discard(ctx context.Context, runID string) error
@@ -28,23 +28,23 @@ type (
 		// enqueuePlan enqueues a plan for the run.
 		//
 		// NOTE: this is an internal action, invoked by the scheduler only.
-		enqueuePlan(ctx context.Context, runID string) (*otf.Run, error)
+		enqueuePlan(ctx context.Context, runID string) (*Run, error)
 		// getPlanFile returns the plan file for the run.
-		getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error)
+		getPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
 		// uploadPlanFile persists a run's plan file. The plan format should be either
 		// be binary or json.
-		uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error
+		uploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 		// delete deletes a run.
 		delete(ctx context.Context, runID string) error
 		// startPhase starts a run phase.
-		startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error)
+		startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error)
 		// finishPhase finishes a phase. Creates a report of changes before updating the status of
 		// the run.
-		finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error)
+		finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error)
 		// createReport creates a report of changes for the phase.
-		createReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error)
-		createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error)
-		createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error)
+		createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
+		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
+		createApplyReport(ctx context.Context, runID string) (ResourceReport, error)
 
 		lockFileService
 	}
@@ -119,7 +119,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *Service) Create(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
+func (s *Service) Create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	run, err := s.create(ctx, workspaceID, opts)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (s *Service) Create(ctx context.Context, workspaceID string, opts otf.RunCr
 	return run, nil
 }
 
-func (s *Service) Get(ctx context.Context, runID string) (*otf.Run, error) {
+func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
 	run, err := s.get(ctx, runID)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (s *Service) Get(ctx context.Context, runID string) (*otf.Run, error) {
 	return run, nil
 }
 
-func (s *Service) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
+func (s *Service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	run, err := s.enqueuePlan(ctx, runID)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (s *Service) Delete(ctx context.Context, runID string) error {
 	return s.delete(ctx, runID)
 }
 
-func (a *Service) create(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
+func (a *Service) create(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (a *Service) create(ctx context.Context, workspaceID string, opts otf.RunCr
 }
 
 // GetRun retrieves a run from the db.
-func (a *Service) get(ctx context.Context, runID string) (*otf.Run, error) {
+func (a *Service) get(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetRunAction, runID)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (a *Service) get(ctx context.Context, runID string) (*otf.Run, error) {
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (a *Service) list(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (a *Service) list(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var authErr error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -230,7 +230,7 @@ func (a *Service) apply(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueueApply()
 	})
 	if err != nil {
@@ -252,7 +252,7 @@ func (a *Service) discard(ctx context.Context, runID string) error {
 		return err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -276,7 +276,7 @@ func (a *Service) cancel(ctx context.Context, runID string) error {
 	}
 
 	var enqueue bool
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) (err error) {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 		enqueue, err = run.Cancel()
 		return err
 	})
@@ -299,7 +299,7 @@ func (a *Service) forceCancel(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.ForceCancel()
 	})
 	if err != nil {
@@ -317,13 +317,13 @@ func (a *Service) forceCancel(ctx context.Context, runID string) error {
 // enqueuePlan enqueues a plan for the run.
 //
 // NOTE: this is an internal action, invoked by the scheduler only.
-func (a *Service) enqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
+func (a *Service) enqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	subject, err := a.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
@@ -337,12 +337,12 @@ func (a *Service) enqueuePlan(ctx context.Context, runID string) (*otf.Run, erro
 	return run, nil
 }
 
-func planFileCacheKey(f otf.PlanFormat, id string) string {
+func planFileCacheKey(f PlanFormat, id string) string {
 	return fmt.Sprintf("%s.%s", id, f)
 }
 
 // getPlanFile returns the plan file for the run.
-func (a *Service) getPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+func (a *Service) getPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -366,7 +366,7 @@ func (a *Service) getPlanFile(ctx context.Context, runID string, format otf.Plan
 
 // uploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (a *Service) uploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
+func (a *Service) uploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
 	subject, err := a.CanAccess(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -408,13 +408,13 @@ func (a *Service) delete(ctx context.Context, runID string) error {
 }
 
 // startPhase starts a run phase.
-func (a *Service) startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error) {
+func (a *Service) startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error) {
 	subject, err := a.CanAccess(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Start(phase)
 	})
 	if err != nil {
@@ -428,13 +428,13 @@ func (a *Service) startPhase(ctx context.Context, runID string, phase otf.PhaseT
 
 // finishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (a *Service) finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+func (a *Service) finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	subject, err := a.CanAccess(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	var report otf.ResourceReport
+	var report ResourceReport
 	if !opts.Errored {
 		var err error
 		report, err = a.createReport(ctx, runID, phase)
@@ -443,7 +443,7 @@ func (a *Service) finishPhase(ctx context.Context, runID string, phase otf.Phase
 			opts.Errored = true
 		}
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Finish(phase, opts)
 	})
 	if err != nil {
@@ -456,46 +456,46 @@ func (a *Service) finishPhase(ctx context.Context, runID string, phase otf.Phase
 }
 
 // createReport creates a report of changes for the phase.
-func (a *Service) createReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error) {
+func (a *Service) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
 	switch phase {
 	case otf.PlanPhase:
 		return a.createPlanReport(ctx, runID)
 	case otf.ApplyPhase:
 		return a.createApplyReport(ctx, runID)
 	default:
-		return otf.ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
+		return ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
 	}
 }
 
-func (a *Service) createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error) {
-	plan, err := a.getPlanFile(ctx, runID, otf.PlanFormatJSON)
+func (a *Service) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
+	plan, err := a.getPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	report, err := CompilePlanReport(plan)
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	if err := a.db.CreatePlanReport(ctx, runID, report); err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	return report, nil
 }
 
-func (a *Service) createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error) {
+func (a *Service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
 	logs, err := a.GetChunk(ctx, otf.GetChunkOptions{
 		RunID: runID,
 		Phase: otf.ApplyPhase,
 	})
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	report, err := ParseApplyOutput(string(logs.Data))
 	if err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	if err := a.db.CreateApplyReport(ctx, runID, report); err != nil {
-		return otf.ResourceReport{}, err
+		return ResourceReport{}, err
 	}
 	return report, nil
 }

@@ -85,16 +85,22 @@ func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var opts otf.CreateWorkspaceOptions
-	if err := decode.All(&opts, r); err != nil {
+	var params struct {
+		Name         *string `schema:"name,required"`
+		Organization *string `schema:"organization_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := h.svc.create(r.Context(), opts)
+	ws, err := h.svc.create(r.Context(), otf.CreateWorkspaceOptions{
+		Name:         params.Name,
+		Organization: params.Organization,
+	})
 	if err == otf.ErrResourceAlreadyExists {
-		html.FlashError(w, "workspace already exists: "+*opts.Name)
-		http.Redirect(w, r, paths.NewWorkspace(*opts.Organization), http.StatusFound)
+		html.FlashError(w, "workspace already exists: "+*params.Name)
+		http.Redirect(w, r, paths.NewWorkspace(*params.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -347,11 +353,11 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 	}
 
 	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
-		Items []string
+		Repos []string
 		*otf.Workspace
 		VCSProviderID string
 	}{
-		Items:         repos,
+		Repos:         repos,
 		Workspace:     ws,
 		VCSProviderID: params.VCSProviderID,
 	})

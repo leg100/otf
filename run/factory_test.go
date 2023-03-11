@@ -18,7 +18,7 @@ func TestFactory(t *testing.T) {
 			&otf.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", otf.RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", RunCreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, otf.RunPending, got.Status)
@@ -34,7 +34,7 @@ func TestFactory(t *testing.T) {
 			&otf.ConfigurationVersion{Speculative: true},
 		)
 
-		got, err := f.NewRun(ctx, "", otf.RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", RunCreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.Speculative)
@@ -46,7 +46,7 @@ func TestFactory(t *testing.T) {
 			&otf.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", otf.RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", RunCreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.AutoApply)
@@ -58,7 +58,7 @@ func TestFactory(t *testing.T) {
 			&otf.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", otf.RunCreateOptions{
+		got, err := f.NewRun(ctx, "", RunCreateOptions{
 			AutoApply: otf.Bool(true),
 		})
 		require.NoError(t, err)

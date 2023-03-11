@@ -16,7 +16,7 @@
 
 {{ define "content" }}
   <div>
-    {{ if .Content.Repo }}
+    {{ if .Content.Connection }}
       <form action="{{ disconnectWorkspacePath .Content.ID }}" method="POST">
         <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.Repo.Identifier }}</button>
       </form>

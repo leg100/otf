@@ -16,11 +16,11 @@ func TestListRunsHandler(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withWorkspace(&otf.Workspace{ID: "ws-123"}),
 		withRuns(
-			&otf.Run{ID: "run-1"},
-			&otf.Run{ID: "run-2"},
-			&otf.Run{ID: "run-3"},
-			&otf.Run{ID: "run-4"},
-			&otf.Run{ID: "run-5"},
+			&Run{ID: "run-1"},
+			&Run{ID: "run-2"},
+			&Run{ID: "run-3"},
+			&Run{ID: "run-4"},
+			&Run{ID: "run-5"},
 		),
 	)
 
@@ -53,7 +53,7 @@ func TestListRunsHandler(t *testing.T) {
 }
 
 func TestRuns_CancelHandler(t *testing.T) {
-	h := newTestWebHandlers(t, withRuns(&otf.Run{ID: "run-1", WorkspaceID: "ws-1"}))
+	h := newTestWebHandlers(t, withRuns(&Run{ID: "run-1", WorkspaceID: "ws-1"}))
 
 	r := httptest.NewRequest("POST", "/?run_id=run-123", nil)
 	w := httptest.NewRecorder()
@@ -74,7 +74,7 @@ func TestWebHandlers_StartRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.strategy, func(t *testing.T) {
-			run := &otf.Run{ID: "run-1"}
+			run := &Run{ID: "run-1"}
 			h := newTestWebHandlers(t, withRuns(run))
 
 			q := "/?workspace_id=run-123&strategy=" + tt.strategy
@@ -92,13 +92,13 @@ func TestWebHandlers_StartRun(t *testing.T) {
 
 type (
 	fakeWebServices struct {
-		runs       []*otf.Run
+		runs       []*Run
 		ws         *otf.Workspace
 		gotOptions *otf.ConfigurationVersionCreateOptions
 
 		service
 
-		otf.RunService
+		RunService
 		otf.WorkspaceService
 	}
 
@@ -111,7 +111,7 @@ func withWorkspace(workspace *otf.Workspace) fakeWebServiceOption {
 	}
 }
 
-func withRuns(runs ...*otf.Run) fakeWebServiceOption {
+func withRuns(runs ...*Run) fakeWebServiceOption {
 	return func(svc *fakeWebServices) {
 		svc.runs = runs
 	}
@@ -148,18 +148,18 @@ func (f *fakeWebServices) GetWorkspace(context.Context, string) (*otf.Workspace,
 	return f.ws, nil
 }
 
-func (f *fakeWebServices) list(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
-	return &otf.RunList{
+func (f *fakeWebServices) list(ctx context.Context, opts RunListOptions) (*RunList, error) {
+	return &RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
 	}, nil
 }
 
-func (f *fakeWebServices) get(ctx context.Context, runID string) (*otf.Run, error) {
+func (f *fakeWebServices) get(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
+func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {
 	f.runs[0].Speculative = *opts.Speculative
 	return f.runs[0], nil
 }

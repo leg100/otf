@@ -78,8 +78,8 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 		workspaceListOpts.PageNumber = *page.NextPage()
 	}
 	// retrieve runs incomplete runs, page by page
-	runs := []*otf.Run{}
-	runListOpts := otf.RunListOptions{
+	runs := []*run.Run{}
+	runListOpts := run.RunListOptions{
 		Statuses:    otf.IncompleteRun,
 		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
@@ -136,7 +136,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 				if err := q.handleEvent(ctx, event); err != nil {
 					return err
 				}
-			case *otf.Run:
+			case *run.Run:
 				q, ok := s.queues[payload.WorkspaceID]
 				if !ok {
 					// should never happen

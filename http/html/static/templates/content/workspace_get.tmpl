@@ -37,8 +37,8 @@
         </select>
       </form>
     </div>
-    {{ with .Content.Repo }}
-    <div>Connected to <span class="data">{{ .Identifier }}</span></div>
+    {{ with .Content.Connection }}
+    <div>Connected to <span class="data">{{ .Repo }}</span></div>
     {{ end }}
     {{ with .Content.LatestRun }}
       <div>

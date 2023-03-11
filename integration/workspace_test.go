@@ -246,7 +246,7 @@ func TestWorkspace_Create(t *testing.T) {
 		assert.Equal(t, 0, len(results.Items))
 
 		// Test ON CASCADE DELETE functionality for runs
-		rl, err := runService.ListRuns(ctx, otf.RunListOptions{WorkspaceID: otf.String(ws.ID)})
+		rl, err := runService.ListRuns(ctx, run.RunListOptions{WorkspaceID: otf.String(ws.ID)})
 		require.NoError(t, err)
 
 		assert.Equal(t, 0, len(rl.Items))

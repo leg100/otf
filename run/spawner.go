@@ -152,7 +152,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err := h.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		_, err = h.create(ctx, ws.ID, otf.RunCreateOptions{
+		_, err = h.create(ctx, ws.ID, RunCreateOptions{
 			ConfigurationVersionID: otf.String(cv.ID),
 		})
 		if err != nil {

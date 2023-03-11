@@ -40,7 +40,7 @@ func TestWorkspace_Create(t *testing.T) {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 	app.createWorkspace(w, r)
-	if assert.Equal(t, 302, w.Code) {
+	if assert.Equal(t, 302, w.Code, "output: %s", w.Body.String()) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
 		assert.Equal(t, paths.Workspace(ws.ID), redirect.Path)
@@ -85,7 +85,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.editWorkspace(w, r)
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, 200, w.Code, "output: %s", w.Body.String())
 }
 
 func TestListWorkspacesHandler(t *testing.T) {
@@ -257,14 +257,13 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 
 type (
 	fakeWebService struct {
-		run        *otf.Run
+		run        run
 		workspaces []*otf.Workspace
 		providers  []*otf.VCSProvider
 		repos      []string
 
 		service
 
-		otf.RunService
 		otf.TeamService
 		otf.VCSProviderService
 	}
@@ -290,7 +289,7 @@ func withRepos(repos ...string) fakeWebServiceOption {
 	}
 }
 
-func withRun(run *otf.Run) fakeWebServiceOption {
+func withRun(run run) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.run = run
 	}
@@ -307,7 +306,6 @@ func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 
 	return &webHandlers{
 		Renderer:           renderer,
-		RunService:         &svc,
 		TeamService:        &svc,
 		VCSProviderService: &svc,
 		svc:                &svc,
@@ -328,10 +326,6 @@ func (f *fakeWebService) ListVCSProviders(context.Context, string) ([]*otf.VCSPr
 
 func (f *fakeWebService) UploadConfig(context.Context, string, []byte) error {
 	return nil
-}
-
-func (f *fakeWebService) GetRun(context.Context, string) (*otf.Run, error) {
-	return f.run, nil
 }
 
 func (f *fakeWebService) GetWorkspacePolicy(context.Context, string) ([]*otf.WorkspacePermission, error) {
@@ -363,6 +357,10 @@ func (f *fakeWebService) get(context.Context, string) (*otf.Workspace, error) {
 
 func (f *fakeWebService) getByName(context.Context, string, string) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
+}
+
+func (f *fakeWebService) getRun(context.Context, string) (run, error) {
+	return f.run, nil
 }
 
 func (f *fakeWebService) delete(context.Context, string) (*otf.Workspace, error) {

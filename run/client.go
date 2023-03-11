@@ -15,7 +15,7 @@ type Client struct {
 	otf.JSONAPIClient
 }
 
-func (c *Client) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, &planFileOptions{Format: format})
 	if err != nil {
@@ -31,7 +31,7 @@ func (c *Client) GetPlanFile(ctx context.Context, runID string, format otf.PlanF
 	return buf.Bytes(), nil
 }
 
-func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
+func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
 	req, err := c.NewRequest("PUT", u, plan)
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 	return nil
 }
 
-func (c *Client) ListRuns(ctx context.Context, opts *otf.RunListOptions) (*otf.RunList, error) {
+func (c *Client) ListRuns(ctx context.Context, opts *RunListOptions) (*RunList, error) {
 	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (c *Client) ListRuns(ctx context.Context, opts *otf.RunListOptions) (*otf.R
 	return newListFromJSONAPI(wl), nil
 }
 
-func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
 	u := fmt.Sprintf("runs/%s", url.QueryEscape(runID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -117,7 +117,7 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	return newFromJSONAPI(run), nil
 }
 
-func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
+func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts PhaseStartOptions) (*Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/start/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
@@ -136,7 +136,7 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 	return newFromJSONAPI(run), nil
 }
 
-func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/finish/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),

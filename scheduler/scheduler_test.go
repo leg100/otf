@@ -57,8 +57,8 @@ func TestScheduler(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		ws := otf.NewTestWorkspace(t, org)
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-		scheduler, got := newTestScheduler([]*otf.Workspace{ws}, []*otf.Run{run})
+		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
+		scheduler, got := newTestScheduler([]*otf.Workspace{ws}, []*run.Run{run})
 		go scheduler.reinitialize(ctx)
 
 		assert.Equal(t, otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws}, <-got)
@@ -71,7 +71,7 @@ func TestScheduler(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		ws := otf.NewTestWorkspace(t, org)
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		event := otf.Event{Payload: otf.NewRun(cv, ws, otf.RunCreateOptions{})}
+		event := otf.Event{Payload: otf.NewRun(cv, ws, run.RunCreateOptions{})}
 		scheduler, got := newTestScheduler([]*otf.Workspace{ws}, nil, event)
 		go scheduler.reinitialize(ctx)
 
@@ -85,9 +85,9 @@ func TestScheduler(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		ws := otf.NewTestWorkspace(t, org)
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run1 := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-		run2 := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-		scheduler, got := newTestScheduler([]*otf.Workspace{ws}, []*otf.Run{run1, run2})
+		run1 := otf.NewRun(cv, ws, run.RunCreateOptions{})
+		run2 := otf.NewRun(cv, ws, run.RunCreateOptions{})
+		scheduler, got := newTestScheduler([]*otf.Workspace{ws}, []*run.Run{run1, run2})
 		go scheduler.reinitialize(ctx)
 
 		assert.Equal(t, otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws}, <-got)
@@ -98,7 +98,7 @@ func TestScheduler(t *testing.T) {
 	})
 }
 
-func newTestScheduler(workspaces []*otf.Workspace, runs []*otf.Run, events ...otf.Event) (*scheduler, <-chan otf.Event) {
+func newTestScheduler(workspaces []*otf.Workspace, runs []*run.Run, events ...otf.Event) (*scheduler, <-chan otf.Event) {
 	ch := make(chan otf.Event, len(events))
 	for _, ev := range events {
 		ch <- ev
@@ -117,15 +117,15 @@ func newTestScheduler(workspaces []*otf.Workspace, runs []*otf.Run, events ...ot
 }
 
 type fakeSchedulerApp struct {
-	runs       []*otf.Run
+	runs       []*run.Run
 	workspaces []*otf.Workspace
 	events     chan otf.Event
 
 	otf.Application
 }
 
-func (f *fakeSchedulerApp) ListRuns(context.Context, otf.RunListOptions) (*otf.RunList, error) {
-	return &otf.RunList{
+func (f *fakeSchedulerApp) ListRuns(context.Context, run.RunListOptions) (*run.RunList, error) {
+	return &run.RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.runs)),
 	}, nil

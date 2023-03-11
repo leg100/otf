@@ -107,7 +107,7 @@ func (f *fakeSpawnerServices) UploadConfig(context.Context, string, []byte) erro
 	return nil
 }
 
-func (f *fakeSpawnerServices) create(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
+func (f *fakeSpawnerServices) create(context.Context, string, RunCreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }

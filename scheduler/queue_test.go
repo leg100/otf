@@ -19,9 +19,9 @@ func TestQueue(t *testing.T) {
 	t.Run("handle several runs", func(t *testing.T) {
 		ws := otf.NewTestWorkspace(t, org)
 		cv1 := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run1 := otf.NewRun(cv1, ws, otf.RunCreateOptions{})
-		run2 := otf.NewRun(cv1, ws, otf.RunCreateOptions{})
-		run3 := otf.NewRun(cv1, ws, otf.RunCreateOptions{})
+		run1 := otf.NewRun(cv1, ws, run.RunCreateOptions{})
+		run2 := otf.NewRun(cv1, ws, run.RunCreateOptions{})
+		run3 := otf.NewRun(cv1, ws, run.RunCreateOptions{})
 		app := newFakeQueueApp(ws, run1, run2, run3)
 		q := newTestQueue(app, ws)
 
@@ -79,7 +79,7 @@ func TestQueue(t *testing.T) {
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(true),
 		})
-		run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -93,7 +93,7 @@ func TestQueue(t *testing.T) {
 	t.Run("user locked", func(t *testing.T) {
 		ws := otf.NewTestWorkspace(t, org)
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -120,7 +120,7 @@ func TestQueue(t *testing.T) {
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
 		ws := otf.NewTestWorkspace(t, org)
 		run := otf.NewTestRun(t, otf.TestRunCreateOptions{
-			Status:    otf.RunPlanning,
+			Status:    run.RunPlanning,
 			Workspace: ws,
 		})
 		app := newFakeQueueApp(ws, run)
@@ -135,7 +135,7 @@ func TestQueue(t *testing.T) {
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
 		ws := otf.NewTestWorkspace(t, org)
 		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
 		ws.SetLatestRun(run.ID)
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
@@ -157,22 +157,22 @@ func newTestQueue(app *fakeQueueApp, ws *otf.Workspace) *queue {
 
 type fakeQueueApp struct {
 	ws        *otf.Workspace
-	runs      map[string]*otf.Run // mock run db
+	runs      map[string]*run.Run // mock run db
 	scheduled []string            // list of IDs of scheduled runs
 	current   []string            // list of IDs of runs that have been set as the current run
 
 	otf.Application
 }
 
-func newFakeQueueApp(ws *otf.Workspace, runs ...*otf.Run) *fakeQueueApp {
-	db := make(map[string]*otf.Run, len(runs))
+func newFakeQueueApp(ws *otf.Workspace, runs ...*run.Run) *fakeQueueApp {
+	db := make(map[string]*run.Run, len(runs))
 	for _, r := range runs {
 		db[r.ID] = r
 	}
 	return &fakeQueueApp{ws: ws, runs: db}
 }
 
-func (f *fakeQueueApp) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
+func (f *fakeQueueApp) EnqueuePlan(ctx context.Context, runID string) (*run.Run, error) {
 	f.scheduled = append(f.scheduled, runID)
 	return f.runs[runID], nil
 }

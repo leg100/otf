@@ -15,14 +15,14 @@ func TestReporter_HandleRun(t *testing.T) {
 
 	tests := []struct {
 		name string
-		run  *otf.Run
+		run  *Run
 		ws   *otf.Workspace
 		cv   *otf.ConfigurationVersion
 		want cloud.SetStatusOptions
 	}{
 		{
 			name: "pending run",
-			run:  &otf.Run{ID: "run-123", Status: otf.RunPending},
+			run:  &Run{ID: "run-123", Status: otf.RunPending},
 			ws: &otf.Workspace{
 				Name:       "dev",
 				Connection: &otf.Connection{},

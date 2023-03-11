@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -65,7 +66,7 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Only run events are supported
-				run, ok := event.Payload.(otf.Run)
+				run, ok := event.Payload.(run.Run)
 				if !ok {
 					continue
 				}

@@ -27,10 +27,10 @@ type Application struct {
 
 	opts Options // keep reference for creating child apps
 
-	*otf.RunFactory
+	*run.RunFactory
 	*otf.VCSProviderFactory
 	otf.RepoService
-	*otf.RunStarter
+	*run.RunStarter
 	*module.Publisher
 	*otf.ModuleVersionUploader
 	cloud.Service
@@ -83,7 +83,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		db:   db,
 		opts: opts,
 	}
-	child.RunFactory = &otf.RunFactory{
+	child.RunFactory = &run.RunFactory{
 		WorkspaceService:            child,
 		ConfigurationVersionService: child,
 	}
@@ -95,7 +95,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		VCSProviderService: child,
 	})
 	child.Publisher = module.NewPublisher(child)
-	child.RunStarter = &otf.RunStarter{child}
+	child.RunStarter = &run.RunStarter{child}
 	child.ModuleVersionUploader = &otf.ModuleVersionUploader{child}
 
 	return child

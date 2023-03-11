@@ -23,7 +23,7 @@ func unmarshal(event *sse.Event) (otf.Event, error) {
 		return otf.Event{}, fmt.Errorf("no unmarshaler available for event %s", string(event.Event))
 	}
 
-	var run otf.Run
+	var run run.Run
 	if err := json.Unmarshal(event.Data, &run); err != nil {
 		return otf.Event{}, nil
 	}

@@ -14,7 +14,7 @@ type factory struct {
 
 // NewRun constructs a new run at the beginning of its lifecycle using the
 // provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	ws, err := f.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -30,5 +30,5 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts otf.RunCr
 		return nil, err
 	}
 
-	return otf.NewRun(cv, ws, opts), nil
+	return NewRun(cv, ws, opts), nil
 }

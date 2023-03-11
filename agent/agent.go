@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/environment"
 	"golang.org/x/sync/errgroup"
 )
@@ -33,7 +33,7 @@ var (
 // Agent processes runs.
 type Agent struct {
 	Config
-	otf.Client
+	client.Client
 	logr.Logger
 
 	Spooler                // spools new run events
@@ -44,7 +44,7 @@ type Agent struct {
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, app otf.Client, cfg Config) (*Agent, error) {
+func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*Agent, error) {
 	agent := &Agent{
 		Client:     app,
 		Config:     cfg,

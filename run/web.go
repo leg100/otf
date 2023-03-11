@@ -23,7 +23,7 @@ type (
 	}
 
 	runStarter interface {
-		startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.Run, error)
+		startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error)
 	}
 )
 
@@ -55,7 +55,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.svc.list(r.Context(), otf.RunListOptions{
+	runs, err := h.svc.list(r.Context(), RunListOptions{
 		ListOptions: params.ListOptions,
 		WorkspaceID: &params.WorkspaceID,
 	})
@@ -65,7 +65,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("run_list.tmpl", w, r, struct {
-		*otf.RunList
+		*RunList
 		*otf.Workspace
 		StreamID string
 	}{
@@ -113,7 +113,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("run_get.tmpl", w, r, struct {
-		*otf.Run
+		*Run
 		Workspace *otf.Workspace
 		PlanLogs  otf.Chunk
 		ApplyLogs otf.Chunk
