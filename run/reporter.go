@@ -157,7 +157,7 @@ func (r *reporter) handleRun(ctx context.Context, run *otf.Run) error {
 	return client.SetStatus(ctx, cloud.SetStatusOptions{
 		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes.CommitSHA,
-		Repo:  cv.IngressAttributes.Repo,
+		Repo:        cv.IngressAttributes.Repo,
 		Status:      status,
 		Description: description,
 		TargetURL: (&url.URL{

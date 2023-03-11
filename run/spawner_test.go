@@ -12,85 +12,89 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTriggerer(t *testing.T) {
+func TestSpawner(t *testing.T) {
 	ctx := context.Background()
-	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org)
-	repo := otf.NewTestWorkspaceRepo(provider)
 
 	tests := []struct {
 		name    string
 		ws      *otf.Workspace
-		event   cloud.VCSEvent
-		trigger bool
+		event   cloud.VCSEvent // incoming event
+		spawned bool           // want spawned run
 	}{
 		{
-			name:    "trigger run for push to default branch",
-			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			name:    "spawn run for push to default branch",
+			ws:      &otf.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
-			trigger: true,
+			spawned: true,
 		},
 		{
 			name:    "skip run for push to non-default branch",
-			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			ws:      &otf.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
-			trigger: false,
+			spawned: false,
 		},
 		{
-			name:    "trigger run for push to user-specified branch",
-			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo), otf.WithBranch("dev")),
+			name:    "spawn run for push to user-specified branch",
+			ws:      &otf.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
 			event:   cloud.VCSPushEvent{Branch: "dev"},
-			trigger: true,
+			spawned: true,
 		},
 		{
 			name:    "skip run for push to branch not matching user-specified branch",
-			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo), otf.WithBranch("dev")),
+			ws:      &otf.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
 			event:   cloud.VCSPushEvent{Branch: "staging"},
-			trigger: false,
+			spawned: false,
 		},
 		{
-			name:    "trigger run for opened pr",
-			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			name:    "spawn run for opened pr",
+			ws:      &otf.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
-			trigger: true,
+			spawned: true,
 		},
 		{
-			name:    "trigger run for push to pr",
-			ws:      otf.NewTestWorkspace(t, org, otf.WithRepo(repo)),
+			name:    "spawn run for push to pr",
+			ws:      &otf.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
-			trigger: true,
+			spawned: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &fakeTriggererApp{
+			services := &fakeSpawnerServices{
 				workspaces: []*otf.Workspace{tt.ws},
 			}
-			triggerer := Triggerer{
-				Application: app,
-				Logger:      logr.Discard(),
+			spawner := spawner{
+				ConfigurationVersionService: services,
+				WorkspaceService:            services,
+				VCSProviderService:          services,
+				Logger:                      logr.Discard(),
+				service:                     services,
 			}
-			err := triggerer.handle(ctx, tt.event)
+			err := spawner.handle(ctx, tt.event)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.trigger, app.triggered)
+			assert.Equal(t, tt.spawned, services.spawned)
 		})
 	}
 }
 
-type fakeTriggererApp struct {
+type fakeSpawnerServices struct {
 	workspaces []*otf.Workspace
 	created    []*otf.ConfigurationVersion // created config versions
-	triggered  bool                        // whether a run was triggered
+	spawned    bool                        // whether a run was spawned
 
-	otf.Application
+	otf.ConfigurationVersionService
+	otf.WorkspaceService
+	otf.VCSProviderService
+
+	service
 }
 
-func (f *fakeTriggererApp) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
+func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
 	return f.workspaces, nil
 }
 
-func (f *fakeTriggererApp) CreateConfigurationVersion(ctx context.Context, wid string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+func (f *fakeSpawnerServices) CreateConfigurationVersion(ctx context.Context, wid string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	cv, err := otf.NewConfigurationVersion(wid, opts)
 	if err != nil {
 		return nil, err
@@ -99,23 +103,23 @@ func (f *fakeTriggererApp) CreateConfigurationVersion(ctx context.Context, wid s
 	return cv, nil
 }
 
-func (f *fakeTriggererApp) UploadConfig(context.Context, string, []byte) error {
+func (f *fakeSpawnerServices) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeTriggererApp) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
-	f.triggered = true
+func (f *fakeSpawnerServices) create(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
+	f.spawned = true
 	return nil, nil
 }
 
-func (f *fakeTriggererApp) GetVCSClient(context.Context, string) (cloud.Client, error) {
-	return &fakeTriggererCloudClient{}, nil
+func (f *fakeSpawnerServices) GetVCSClient(context.Context, string) (cloud.Client, error) {
+	return &fakeSpawnerCloudClient{}, nil
 }
 
-type fakeTriggererCloudClient struct {
+type fakeSpawnerCloudClient struct {
 	cloud.Client
 }
 
-func (f *fakeTriggererCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
+func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
 }

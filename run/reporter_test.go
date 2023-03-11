@@ -28,7 +28,10 @@ func TestReporter_HandleRun(t *testing.T) {
 				Connection: &otf.Connection{},
 			},
 			cv: &otf.ConfigurationVersion{
-				IngressAttributes: &otf.IngressAttributes{CommitSHA: "abc123"},
+				IngressAttributes: &otf.IngressAttributes{
+					CommitSHA: "abc123",
+					Repo:      "leg100/otf",
+				},
 			},
 			want: cloud.SetStatusOptions{
 				Workspace: "dev",
