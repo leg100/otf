@@ -6,11 +6,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/json"
+	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWatch(t *testing.T) {
+func TestAPI(t *testing.T) {
 	// input event channel
 	in := make(chan otf.Event, 1)
 	// output event channel
@@ -23,15 +25,14 @@ func TestWatch(t *testing.T) {
 	}
 	// expected output event
 	want := &sse.Event{
-		Data:  []byte("{}"),
+		Data:  json.MustMarshal(&run.Run{}),
 		Event: []byte("run_created"),
 	}
 
 	srv := &api{
-		svc:                 &fakeApp{ch: in},
-		Logger:              logr.Discard(),
-		eventsServer:        &fakeEventsServer{published: out},
-		runJSONAPIConverter: &fakeRunJSONAPIConverter{want: want.Data},
+		svc:          &fakeApp{ch: in},
+		Logger:       logr.Discard(),
+		eventsServer: &fakeEventsServer{published: out},
 	}
 
 	r := httptest.NewRequest("", "/", nil)

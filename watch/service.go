@@ -22,6 +22,7 @@ type (
 		logr.Logger
 		otf.PubSubService
 
+		site         otf.Authorizer
 		organization otf.Authorizer
 		workspace    otf.Authorizer
 
@@ -44,6 +45,7 @@ func NewService(opts Options) *Service {
 		PubSubService: opts.PubSubService,
 	}
 
+	svc.site = &otf.SiteAuthorizer{opts.Logger}
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.workspace = opts.WorkspaceAuthorizer
 
@@ -78,6 +80,9 @@ func (s *Service) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
 		_, err = s.organization.CanAccess(ctx, rbac.WatchAction, *opts.Organization)
+	} else {
+		// caller must have site-level read permissions
+		_, err = s.site.CanAccess(ctx, rbac.WatchAction, "")
 	}
 	if err != nil {
 		return nil, err

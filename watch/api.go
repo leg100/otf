@@ -66,7 +66,7 @@ func (a *api) watch(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Only run events are supported
-				run, ok := event.Payload.(run.Run)
+				run, ok := event.Payload.(*run.Run)
 				if !ok {
 					continue
 				}

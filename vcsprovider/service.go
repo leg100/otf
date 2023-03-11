@@ -34,7 +34,7 @@ type (
 		db           *pgdb
 
 		*factory
-		web *web
+		web *webHandlers
 	}
 
 	Options struct {
@@ -55,9 +55,9 @@ func NewService(opts Options) *Service {
 		},
 	}
 
-	svc.web = &web{
+	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
-		app:      &svc,
+		svc:      &svc,
 	}
 	return &svc
 }

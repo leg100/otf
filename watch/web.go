@@ -68,7 +68,7 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				// run.
 				// - otherwise, if neither of those parameters are specified
 				// then events for all runs are relayed.
-				if params.Latest && !run.Latest() {
+				if params.Latest && !run.Latest {
 					// skip: run is not the latest run for a workspace
 					continue
 				} else if params.RunID != "" && params.RunID != run.ID {
@@ -89,25 +89,25 @@ func (h *web) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 				planStatusHTML := new(bytes.Buffer)
-				if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan()); err != nil {
+				if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan); err != nil {
 					h.Error(err, "rendering plan status template")
 					continue
 				}
 				applyStatusHTML := new(bytes.Buffer)
-				if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply()); err != nil {
+				if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply); err != nil {
 					h.Error(err, "rendering apply status template")
 					continue
 				}
 				js, err := json.Marshal(struct {
 					ID              string        `json:"id"`
-					RunStatus       run.RunStatus `json:"run-status"`
+					RunStatus       otf.RunStatus `json:"run-status"`
 					RunItemHTML     string        `json:"run-item-html"`
 					RunStatusHTML   string        `json:"run-status-html"`
 					PlanStatusHTML  string        `json:"plan-status-html"`
 					ApplyStatusHTML string        `json:"apply-status-html"`
 				}{
 					ID:              run.ID,
-					RunStatus:       run.Status(),
+					RunStatus:       run.Status,
 					RunItemHTML:     itemHTML.String(),
 					RunStatusHTML:   runStatusHTML.String(),
 					PlanStatusHTML:  planStatusHTML.String(),

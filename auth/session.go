@@ -2,12 +2,11 @@ package auth
 
 import (
 	"fmt"
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 )
@@ -32,7 +31,7 @@ type Session struct {
 
 // newSession constructs a new Session
 func newSession(r *http.Request, userID string) (*Session, error) {
-	ip, err := getClientIP(r)
+	ip, err := otfhttp.GetClientIP(r)
 	if err != nil {
 		return nil, err
 	}
@@ -62,21 +61,6 @@ func (s *Session) Expiry() time.Time    { return s.expiry }
 
 func (s *Session) setCookie(w http.ResponseWriter) {
 	html.SetCookie(w, sessionCookie, s.token, otf.Time(s.Expiry()))
-}
-
-// getClientIP gets the client's IP address
-func getClientIP(r *http.Request) (string, error) {
-	// reverse proxy adds client IP to an HTTP header, and each successive proxy
-	// adds a client IP, so we want the leftmost IP.
-	if hdr := r.Header.Get("X-Forwarded-For"); hdr != "" {
-		first, _, _ := strings.Cut(hdr, ",")
-		addr := strings.TrimSpace(first)
-		if isIP := net.ParseIP(addr); isIP != nil {
-			return addr, nil
-		}
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	return host, err
 }
 
 // sendUserToLoginPage sends user to the login prompt page, saving the original

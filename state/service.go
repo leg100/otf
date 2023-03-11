@@ -29,7 +29,7 @@ type (
 	// Service provides access to state and state versions
 	Service struct {
 		logr.Logger
-		workspace.Service
+		WorkspaceService
 
 		db                  // access to state version database
 		cache     otf.Cache // cache state file

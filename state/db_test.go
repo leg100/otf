@@ -25,15 +25,14 @@ func TestStateVersion_Create(t *testing.T) {
 			"out2", `"val2"`,
 		)
 
-		err := stateDB.createVersion(ctx, sv)
+		err := db.createVersion(ctx, sv)
 		require.NoError(t, err)
 	})
 
 	t.Run("get", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name())
-		sv := createTestStateVersion(t, stateDB, ws, "out1", `"val1"`)
-		sv := createTestStateVersion(t, stateDB, ws, "out1", `"val1"`)
+		ws := workspace.CreateTestWorkspace(t, db, org.Name)
+		sv := createTestStateVersion(t, db, ws, "out1", `"val1"`)
 
 		tests := []struct {
 			name string
@@ -76,18 +75,18 @@ func TestStateVersion_Create(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := stateDB.getVersion(ctx, tt.opts)
+				got, err := db.getVersion(ctx, tt.opts)
 				tt.want(t, got, err)
 			})
 		}
 	})
 
 	t.Run("list", func(t *testing.T) {
-		org := sql.CreateTestOrganization(t, db)
-		ws := sql.CreateTestWorkspace(t, db, org)
+		org := organization.CreateTestOrganization(t, db)
+		ws := workspace.CreateTestWorkspace(t, db, org.Name)
 
-		sv1 := createTestStateVersion(t, stateDB, ws)
-		sv2 := createTestStateVersion(t, stateDB, ws)
+		sv1 := createTestStateVersion(t, db, ws)
+		sv2 := createTestStateVersion(t, db, ws)
 
 		tests := []struct {
 			name string
@@ -115,7 +114,7 @@ func TestStateVersion_Create(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := stateDB.listVersions(ctx, tt.opts)
+				results, err := db.listVersions(ctx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results, sv1, sv2)

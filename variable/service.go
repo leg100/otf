@@ -65,109 +65,109 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (a *Service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	return a.list(ctx, workspaceID)
+func (s *Service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
+	return s.list(ctx, workspaceID)
 }
 
-func (a *Service) create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
-	subject, err := a.workspace.CanAccess(ctx, rbac.CreateVariableAction, workspaceID)
+func (s *Service) create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
+	subject, err := s.workspace.CanAccess(ctx, rbac.CreateVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
 	v, err := NewVariable(workspaceID, opts)
 	if err != nil {
-		a.Error(err, "constructing variable", "subject", subject, "workspace", workspaceID, "key", opts.Key)
+		s.Error(err, "constructing variable", "subject", subject, "workspace", workspaceID, "key", opts.Key)
 		return nil, err
 	}
 
-	if err := a.db.create(ctx, v); err != nil {
-		a.Error(err, "creating variable", "subject", subject, "variable", v)
+	if err := s.db.create(ctx, v); err != nil {
+		s.Error(err, "creating variable", "subject", subject, "variable", v)
 		return nil, err
 	}
 
-	a.V(1).Info("created variable", "subject", subject, "variable", v)
+	s.V(1).Info("created variable", "subject", subject, "variable", v)
 
 	return v, nil
 }
 
-func (a *Service) get(ctx context.Context, variableID string) (*Variable, error) {
+func (s *Service) get(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve variable first in order to retrieve workspace ID for authorization
-	variable, err := a.db.get(ctx, variableID)
+	variable, err := s.db.get(ctx, variableID)
 	if err != nil {
-		a.Error(err, "retrieving variable", "workspace_id", variableID)
+		s.Error(err, "retrieving variable", "workspace_id", variableID)
 		return nil, err
 	}
 
-	subject, err := a.workspace.CanAccess(ctx, rbac.GetVariableAction, variable.WorkspaceID)
+	subject, err := s.workspace.CanAccess(ctx, rbac.GetVariableAction, variable.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved variable", "subject", subject, "variable", variable)
+	s.V(2).Info("retrieved variable", "subject", subject, "variable", variable)
 
 	return variable, nil
 }
 
-func (a *Service) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+func (s *Service) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
-	existing, err := a.db.get(ctx, variableID)
+	existing, err := s.db.get(ctx, variableID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving variable")
 	}
 
-	subject, err := a.workspace.CanAccess(ctx, rbac.UpdateVariableAction, existing.WorkspaceID)
+	subject, err := s.workspace.CanAccess(ctx, rbac.UpdateVariableAction, existing.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	updated, err := a.db.update(ctx, variableID, func(v *Variable) error {
+	updated, err := s.db.update(ctx, variableID, func(v *Variable) error {
 		return v.Update(opts)
 	})
 	if err != nil {
-		a.Error(err, "updating variable", "subject", subject, "variable_id", variableID, "workspace_id", existing.WorkspaceID)
+		s.Error(err, "updating variable", "subject", subject, "variable_id", variableID, "workspace_id", existing.WorkspaceID)
 		return nil, err
 	}
-	a.V(1).Info("updated variable", "subject", subject, "before", existing, "after", updated)
+	s.V(1).Info("updated variable", "subject", subject, "before", existing, "after", updated)
 
 	return updated, nil
 }
 
-func (a *Service) delete(ctx context.Context, variableID string) (*Variable, error) {
+func (s *Service) delete(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
-	existing, err := a.db.get(ctx, variableID)
+	existing, err := s.db.get(ctx, variableID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving variable")
 	}
 
-	subject, err := a.workspace.CanAccess(ctx, rbac.DeleteVariableAction, existing.WorkspaceID)
+	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteVariableAction, existing.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	deleted, err := a.db.delete(ctx, variableID)
+	deleted, err := s.db.delete(ctx, variableID)
 	if err != nil {
-		a.Error(err, "deleting variable", "subject", subject, "variable", existing)
+		s.Error(err, "deleting variable", "subject", subject, "variable", existing)
 		return nil, err
 	}
-	a.V(1).Info("deleted variable", "subject", subject, "variable", deleted)
+	s.V(1).Info("deleted variable", "subject", subject, "variable", deleted)
 
 	return deleted, nil
 }
 
-func (a *Service) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	subject, err := a.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
+func (s *Service) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
+	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	variables, err := a.db.list(ctx, workspaceID)
+	variables, err := s.db.list(ctx, workspaceID)
 	if err != nil {
-		a.Error(err, "listing variables", "subject", subject, "workspace_id", workspaceID)
+		s.Error(err, "listing variables", "subject", subject, "workspace_id", workspaceID)
 		return nil, err
 	}
 
-	a.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
+	s.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
 
 	return variables, nil
 }

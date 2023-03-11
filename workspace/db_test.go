@@ -143,8 +143,11 @@ func TestDB(t *testing.T) {
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
-					// first.
-					assert.Equal(t, ws2, l.Items[0])
+					// first...unless - and this happens very occasionally - the
+					// updated_at time is equal down to nearest millisecond.
+					if !ws1.UpdatedAt.Equal(ws2.UpdatedAt) {
+						assert.Equal(t, ws2, l.Items[0])
+					}
 					assert.Equal(t, 2, l.TotalCount())
 				},
 			},
@@ -220,8 +223,11 @@ func TestDB(t *testing.T) {
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
-					// first.
-					assert.Equal(t, ws2, l.Items[0])
+					// first...unless - and this happens very occasionally - the
+					// updated_at time is equal down to nearest millisecond.
+					if !ws1.UpdatedAt.Equal(ws2.UpdatedAt) {
+						assert.Equal(t, ws2, l.Items[0])
+					}
 					assert.Equal(t, 2, l.TotalCount())
 				},
 			},

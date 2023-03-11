@@ -118,7 +118,7 @@ func (h *api) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.
-func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
 	var payload any
 
 	convert := func(from *Variable) *jsonapi.Variable {

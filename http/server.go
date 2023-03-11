@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/json"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	healthzPayload = mustMarshal(struct {
+	healthzPayload = json.MustMarshal(struct {
 		Version string
 		Commit  string
 		Built   string
@@ -34,7 +34,7 @@ var (
 		Commit:  otf.Commit,
 		Built:   otf.Built,
 	})
-	discoveryPayload = mustMarshal(struct {
+	discoveryPayload = json.MustMarshal(struct {
 		ModulesV1  string `json:"modules.v1"`
 		MotdV1     string `json:"motd.v1"`
 		StateV2    string `json:"state.v2"`
@@ -190,13 +190,4 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 			"method", r.Method,
 			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
 	})
-}
-
-// mustMarshal marshals a value into json and panics upon error
-func mustMarshal(v any) []byte {
-	encoded, err := json.Marshal(v)
-	if err != nil {
-		panic(err.Error())
-	}
-	return encoded
 }
