@@ -15,8 +15,8 @@ func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	org1 := organization.CreateTestOrganization(t, db)
 	org2 := organization.CreateTestOrganization(t, db)
-	team1 := CreateTestTeam(t, db, org1.Name)
-	team2 := CreateTestTeam(t, db, org2.Name)
+	team1 := createTestTeam(t, db, org1.Name)
+	team2 := createTestTeam(t, db, org2.Name)
 
 	user := createTestUser(t, db,
 		otf.WithOrganizations(org1.Name, org2.Name),
@@ -116,7 +116,7 @@ func TestUser_AddTeamMembership(t *testing.T) {
 	db := newTestDB(t)
 
 	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name)
+	team := createTestTeam(t, db, org.Name)
 	user := createTestUser(t, db, otf.WithOrganizations(org.Name))
 
 	err := db.addTeamMembership(ctx, user.ID, team.ID)
@@ -133,7 +133,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 	db := newTestDB(t)
 
 	org := organization.CreateTestOrganization(t, db)
-	team := CreateTestTeam(t, db, org.Name)
+	team := createTestTeam(t, db, org.Name)
 	user := createTestUser(t, db, otf.WithOrganizations(org.Name), otf.WithTeams(team))
 
 	err := db.removeTeamMembership(ctx, user.ID, team.ID)

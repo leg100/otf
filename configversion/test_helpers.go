@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
 )
 

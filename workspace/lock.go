@@ -34,8 +34,9 @@ func (l *Lock) Locked() bool {
 
 // Lock transfers a workspace into the given locked state
 func (l *Lock) Lock(state LockedState) error {
-	if l.LockedState == nil {
+	if !l.Locked() {
 		// anything can lock an unlocked lock
+		l.LockedState = state
 		return nil
 	}
 	if err := l.LockedState.CanLock(state); err != nil {

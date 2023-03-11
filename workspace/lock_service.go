@@ -31,8 +31,8 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 		return nil, otf.ErrWorkspaceUnlockDenied
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Lock.Lock(state)
+	ws, err := svc.db.toggleLock(ctx, workspaceID, func(lock *Lock) error {
+		return lock.Lock(state)
 	})
 	if err != nil {
 		svc.Error(err, "locking workspace", "subject", subject, "workspace", workspaceID)
@@ -56,8 +56,8 @@ func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) 
 		return nil, err
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Unlock(subject, force)
+	ws, err := svc.db.toggleLock(ctx, workspaceID, func(lock *Lock) error {
+		return lock.Unlock(subject, force)
 	})
 	if err != nil {
 		svc.Error(err, "unlocking workspace", "subject", subject, "workspace", workspaceID)

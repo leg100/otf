@@ -10,7 +10,7 @@ import (
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Workspace) error) (*Workspace, error) {
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Lock) error) (*Workspace, error) {
 	var ws *Workspace
 	err := db.tx(ctx, func(tx *pgdb) error {
 		// retrieve workspace
@@ -22,7 +22,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		if err != nil {
 			return err
 		}
-		if err := togglefn(ws); err != nil {
+		if err := togglefn(&ws.Lock); err != nil {
 			return err
 		}
 		// persist to db
