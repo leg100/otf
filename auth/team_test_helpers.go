@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,7 @@ func NewTestTeam(t *testing.T, organization string) *otf.Team {
 	return otf.NewTeam(otf.NewTeamOptions{uuid.NewString(), organization})
 }
 
-func CreateTestTeam(t *testing.T, db otf.DB, organization *otf.Organization) *otf.Team {
+func CreateTestTeam(t *testing.T, db otf.DB, organization *organization.Organization) *otf.Team {
 	userDB := newDB(db, logr.Discard())
 	return createTestTeam(t, userDB, organization.Name)
 }

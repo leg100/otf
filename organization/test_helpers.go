@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestService(t *testing.T, db otf.DB) *Service {
+func NewTestService(t *testing.T, db otf.DB) *service {
 	service := NewService(Options{
 		DB:        db,
 		Logger:    logr.Discard(),
@@ -21,18 +21,18 @@ func NewTestService(t *testing.T, db otf.DB) *Service {
 	return service
 }
 
-func NewTestOrganization(t *testing.T) *otf.Organization {
-	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+func NewTestOrganization(t *testing.T) *Organization {
+	org, err := NewOrganization(OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
 	return org
 }
 
-func CreateTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
+func CreateTestOrganization(t *testing.T, db otf.DB) *Organization {
 	ctx := context.Background()
 	svc := NewTestService(t, db)
-	org, err := svc.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+	org, err := svc.CreateOrganization(ctx, OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func CreateTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	return org
 }
 
-func createTestOrganization(t *testing.T, db *pgdb) *otf.Organization {
+func createTestOrganization(t *testing.T, db *pgdb) *Organization {
 	ctx := context.Background()
 	org := NewTestOrganization(t)
 	err := db.create(ctx, org)
@@ -56,17 +56,17 @@ func createTestOrganization(t *testing.T, db *pgdb) *otf.Organization {
 }
 
 type fakeService struct {
-	orgs []*otf.Organization
+	orgs []*Organization
 
-	service
+	Service
 }
 
-func (f *fakeService) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	return otf.NewOrganization(opts)
+func (f *fakeService) create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+	return NewOrganization(opts)
 }
 
-func (f *fakeService) list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	return &otf.OrganizationList{
+func (f *fakeService) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
+	return &OrganizationList{
 		Items:      f.orgs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil

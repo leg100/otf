@@ -63,7 +63,7 @@ func TestDB(t *testing.T) {
 			ConnectionType: otf.WorkspaceConnection,
 			VCSProviderID:  provider.ID,
 			ResourceID:     ws.ID,
-			RepoPath:     hook.identifier,
+			RepoPath:       hook.identifier,
 		})
 		assert.NoError(t, err)
 	})
@@ -76,7 +76,7 @@ func TestDB(t *testing.T) {
 			ConnectionType: otf.ModuleConnection,
 			VCSProviderID:  provider.ID,
 			ResourceID:     module.ID,
-			RepoPath:     hook.identifier,
+			RepoPath:       hook.identifier,
 		})
 		assert.NoError(t, err)
 	})
@@ -155,7 +155,7 @@ func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hoo
 		ConnectionType: connType,
 		VCSProviderID:  provider.ID,
 		ResourceID:     resourceID,
-		RepoPath:     hook.identifier,
+		RepoPath:       hook.identifier,
 	})
 	require.NoError(t, err)
 
@@ -167,24 +167,12 @@ func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hoo
 	})
 	return &otf.Connection{
 		VCSProviderID: provider.ID,
-		Repo:        hook.id,
+		Repo:          hook.id,
 	}
-}
-
-func createTestWorkspace(t *testing.T) *workspace.Workspace {
-	db := sql.NewTestDB(t)
-	org := sql.CreateTestOrganization(t, db)
-	return sql.CreateTestWorkspace(t, db, org)
 }
 
 func createTestModule(t *testing.T) *otf.Module {
 	db := sql.NewTestDB(t)
 	org := sql.CreateTestOrganization(t, db)
 	return sql.CreateTestModule(t, db, org)
-}
-
-func createVCSProvider(t *testing.T) *otf.VCSProvider {
-	db := sql.NewTestDB(t)
-	org := sql.CreateTestOrganization(t, db)
-	return sql.CreateTestVCSProvider(t, db, org)
 }

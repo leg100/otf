@@ -41,7 +41,7 @@ type fakeClient struct {
 	otf.Client
 }
 
-func (f *fakeClient) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error) {
 	return otf.NewOrganization(opts)
 }
 

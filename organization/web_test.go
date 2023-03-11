@@ -47,7 +47,7 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		orgs := []*otf.Organization{
+		orgs := []*Organization{
 			NewTestOrganization(t),
 			NewTestOrganization(t),
 			NewTestOrganization(t),

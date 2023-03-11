@@ -261,7 +261,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	// Setup client app for use by agent
 	client := struct {
-		otf.OrganizationService
+		organization.OrganizationService
 		otf.AgentTokenService
 		otf.VariableService
 		otf.StateVersionApp

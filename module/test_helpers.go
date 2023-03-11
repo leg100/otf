@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestModule(org *otf.Organization, opts ...NewTestModuleOption) *Module {
+func NewTestModule(org *organization.Organization, opts ...NewTestModuleOption) *Module {
 	createOpts := CreateModuleOptions{
 		Organization: org.Name,
 		Provider:     uuid.NewString(),
@@ -46,7 +46,7 @@ func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatu
 	return modver
 }
 
-func createTestModule(t *testing.T, db *pgdb, org *otf.Organization) *Module {
+func createTestModule(t *testing.T, db *pgdb, org *organization.Organization) *Module {
 	ctx := context.Background()
 
 	module := NewTestModule(org)

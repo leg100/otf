@@ -14,7 +14,7 @@ import (
 type web struct {
 	otf.Renderer
 
-	svc service
+	svc Service
 }
 
 func (a *web) addHandlers(r *mux.Router) {
@@ -32,7 +32,7 @@ func (a *web) new(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) create(w http.ResponseWriter, r *http.Request) {
-	var opts otf.OrganizationCreateOptions
+	var opts OrganizationCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -54,7 +54,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
-	var opts otf.OrganizationListOptions
+	var opts OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -67,8 +67,8 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Render("organization_list.tmpl", w, r, struct {
-		*otf.OrganizationList
-		otf.OrganizationListOptions
+		*OrganizationList
+		OrganizationListOptions
 	}{
 		OrganizationList:        organizations,
 		OrganizationListOptions: opts,
@@ -109,7 +109,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Options otf.OrganizationUpdateOptions
+		Options OrganizationUpdateOptions
 		Name    string `schema:"name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {

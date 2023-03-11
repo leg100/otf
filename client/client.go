@@ -16,7 +16,7 @@ import (
 // invocation. Intended for use with the agent (the internal agent is
 // in-process, while the external agent is remote) as well as the CLI.
 type Client interface {
-	CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (otf.Organization, error)
+	CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (organization.Organization, error)
 
 	GetWorkspace(ctx context.Context, workspaceID string) (workspace.Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (workspace.Workspace, error)

@@ -26,13 +26,13 @@ func TestOrganization_Create(t *testing.T) {
 			svc.DeleteOrganization(ctx, name)
 		})
 
-		_, err := svc.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+		_, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 			Name: otf.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := svc.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+			_, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 				Name: otf.String(uuid.NewString()),
 			})
 			require.Equal(t, otf.ErrResourceAlreadyExists, err)

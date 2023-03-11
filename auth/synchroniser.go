@@ -43,7 +43,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*otf.User, er
 	for _, want := range from.Organizations {
 		got, err := s.GetOrganization(ctx, want)
 		if err == otf.ErrResourceNotFound {
-			got, err = s.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+			got, err = s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 				Name: otf.String(want),
 			})
 			if err != nil {
@@ -58,7 +58,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*otf.User, er
 	// A user also gets their own personal organization matching their username
 	personal, err := s.GetOrganization(ctx, user.Username)
 	if err == otf.ErrResourceNotFound {
-		personal, err = s.CreateOrganization(ctx, otf.OrganizationCreateOptions{
+		personal, err = s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 			Name: otf.String(user.Username),
 		})
 		if err != nil {

@@ -19,7 +19,7 @@ func newDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
-func (db *pgdb) create(ctx context.Context, org *otf.Organization) error {
+func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              sql.String(org.ID),
 		CreatedAt:       sql.Timestamptz(org.CreatedAt),
@@ -34,8 +34,8 @@ func (db *pgdb) create(ctx context.Context, org *otf.Organization) error {
 	return nil
 }
 
-func (db *pgdb) update(ctx context.Context, name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
-	var org *otf.Organization
+func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
+	var org *Organization
 	err := db.Tx(ctx, func(tx otf.DB) error {
 		result, err := tx.FindOrganizationByNameForUpdate(ctx, sql.String(name))
 		if err != nil {
@@ -61,7 +61,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*otf.Organizati
 	return org, err
 }
 
-func (db *pgdb) list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
@@ -78,18 +78,18 @@ func (db *pgdb) list(ctx context.Context, opts otf.OrganizationListOptions) (*ot
 		return nil, err
 	}
 
-	var items []*otf.Organization
+	var items []*Organization
 	for _, r := range rows {
 		items = append(items, row(r).toOrganization())
 	}
 
-	return &otf.OrganizationList{
+	return &OrganizationList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) listByUser(ctx context.Context, userID string, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (db *pgdb) listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*OrganizationList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsByUserIDBatch(batch, pggen.FindOrganizationsByUserIDParams{
@@ -110,18 +110,18 @@ func (db *pgdb) listByUser(ctx context.Context, userID string, opts otf.Organiza
 		return nil, err
 	}
 
-	var items []*otf.Organization
+	var items []*Organization
 	for _, r := range rows {
 		items = append(items, row(r).toOrganization())
 	}
 
-	return &otf.OrganizationList{
+	return &OrganizationList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) get(ctx context.Context, name string) (*otf.Organization, error) {
+func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -129,7 +129,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*otf.Organization, error)
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) getByID(ctx context.Context, id string) (*otf.Organization, error) {
+func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
 	r, err := db.FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -156,8 +156,8 @@ type row struct {
 
 // unmarshalRow converts an organization database row into an
 // organization.
-func (r row) toOrganization() *otf.Organization {
-	return &otf.Organization{
+func (r row) toOrganization() *Organization {
+	return &Organization{
 		ID:              r.OrganizationID.String,
 		CreatedAt:       r.CreatedAt.Time.UTC(),
 		UpdatedAt:       r.UpdatedAt.Time.UTC(),

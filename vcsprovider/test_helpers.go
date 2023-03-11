@@ -7,10 +7,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
+func NewTestVCSProvider(t *testing.T, org *organization.Organization) *otf.VCSProvider {
 	var organizationName string
 	if org == nil {
 		organizationName = uuid.NewString()
@@ -30,7 +31,7 @@ func NewTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
 	return provider
 }
 
-func createTestVCSProvider(t *testing.T, db *pgdb, organization *otf.Organization) *otf.VCSProvider {
+func CreateTestVCSProvider(t *testing.T, db *pgdb, organization *organization.Organization) *otf.VCSProvider {
 	provider := NewTestVCSProvider(t, organization)
 	ctx := context.Background()
 

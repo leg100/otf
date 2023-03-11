@@ -173,7 +173,7 @@ func TestBuildSandboxArgs(t *testing.T) {
 
 type fakeEnvironmentApp struct {
 	t   *testing.T
-	org *otf.Organization
+	org *organization.Organization
 	ws  *workspace.Workspace
 	otf.Application
 }

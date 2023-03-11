@@ -4,13 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
 type api struct {
-	svc service
+	svc Service
 }
 
 // Implements TFC state versions API:
@@ -32,7 +31,7 @@ func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.svc.create(r.Context(), otf.OrganizationCreateOptions{
+	org, err := h.svc.create(r.Context(), OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -62,7 +61,7 @@ func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts otf.OrganizationListOptions
+	var opts OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -89,7 +88,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.svc.update(r.Context(), name, otf.OrganizationUpdateOptions{
+	org, err := h.svc.update(r.Context(), name, OrganizationUpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,

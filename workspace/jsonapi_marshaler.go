@@ -12,7 +12,7 @@ import (
 // JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
 type JSONAPIMarshaler struct {
-	otf.OrganizationService
+	organization.OrganizationService
 	WorkspacePermissionService
 }
 

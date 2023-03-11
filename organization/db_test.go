@@ -35,7 +35,7 @@ func TestOrganization_Create(t *testing.T) {
 		org := createTestOrganization(t, db)
 
 		want := uuid.NewString()
-		org, err := db.update(ctx, org.Name, func(org *otf.Organization) error {
+		org, err := db.update(ctx, org.Name, func(org *Organization) error {
 			org.Name = want
 			return nil
 		})
@@ -49,21 +49,21 @@ func TestOrganization_Create(t *testing.T) {
 		_ = createTestOrganization(t, db)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := db.list(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := db.list(ctx, OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := db.list(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := db.list(ctx, OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := db.list(ctx, otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := db.list(ctx, OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))

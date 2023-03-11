@@ -7,31 +7,45 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
-type service interface {
-	create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error)
-	get(ctx context.Context, name string) (*otf.Organization, error)
-	list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error)
-	update(ctx context.Context, name string, opts otf.OrganizationUpdateOptions) (*otf.Organization, error)
-	delete(ctx context.Context, name string) error
-	getEntitlements(ctx context.Context, organization string) (Entitlements, error)
-}
+type (
+	Service interface {
+		CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
+		GetOrganization(ctx context.Context, name string) (*Organization, error)
+		GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
 
-type Service struct {
-	otf.Authorizer // authorize access to org
-	logr.Logger
-	otf.Publisher
+		create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
+		get(ctx context.Context, name string) (*Organization, error)
+		list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
+		update(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
+		delete(ctx context.Context, name string) error
+		getEntitlements(ctx context.Context, organization string) (Entitlements, error)
+	}
 
-	api  *api
-	db   *pgdb
-	site otf.Authorizer // authorize access to site
-	web  *web
-}
+	service struct {
+		otf.Authorizer // authorize access to org
+		logr.Logger
+		otf.Publisher
 
-func NewService(opts Options) *Service {
-	svc := Service{
+		api  *api
+		db   *pgdb
+		site otf.Authorizer // authorize access to site
+		web  *web
+	}
+
+	Options struct {
+		otf.DB
+		otf.Publisher
+		otf.Renderer
+		logr.Logger
+	}
+)
+
+func NewService(opts Options) *service {
+	svc := service{
 		Authorizer: &Authorizer{opts.Logger},
 		Logger:     opts.Logger,
 		Publisher:  opts.Publisher,
@@ -43,45 +57,42 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-type Options struct {
-	otf.DB
-	otf.Publisher
-	otf.Renderer
-	logr.Logger
-}
-
-func (s *Service) AddHandlers(r *mux.Router) {
+func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
-func (a *Service) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (a *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
 	return a.create(ctx, opts)
 }
 
-func (a *Service) UpdateOrganization(ctx context.Context, name string, opts otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (a *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
 	return a.update(ctx, name, opts)
 }
 
-func (a *Service) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (a *service) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
 	return a.list(ctx, opts)
 }
 
-func (a *Service) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
+func (a *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
 	return a.get(ctx, name)
 }
 
-func (a *Service) DeleteOrganization(ctx context.Context, name string) error {
+func (a *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {
+	return nil, nil
+}
+
+func (a *service) DeleteOrganization(ctx context.Context, name string) error {
 	return a.delete(ctx, name)
 }
 
-func (a *Service) create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (a *service) create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.CreateOrganizationAction, "")
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := otf.NewOrganization(opts)
+	org, err := NewOrganization(opts)
 	if err != nil {
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
@@ -98,7 +109,7 @@ func (a *Service) create(ctx context.Context, opts otf.OrganizationCreateOptions
 	return org, nil
 }
 
-func (a *Service) get(ctx context.Context, name string) (*otf.Organization, error) {
+func (a *service) get(ctx context.Context, name string) (*Organization, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
@@ -115,7 +126,7 @@ func (a *Service) get(ctx context.Context, name string) (*otf.Organization, erro
 	return org, nil
 }
 
-func (a *Service) list(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (a *service) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -126,13 +137,13 @@ func (a *Service) list(ctx context.Context, opts otf.OrganizationListOptions) (*
 	return a.db.list(ctx, opts)
 }
 
-func (a *Service) update(ctx context.Context, name string, opts otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (a *service) update(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.db.update(ctx, name, func(org *otf.Organization) error {
+	org, err := a.db.update(ctx, name, func(org *Organization) error {
 		return org.Update(opts)
 	})
 	if err != nil {
@@ -145,7 +156,7 @@ func (a *Service) update(ctx context.Context, name string, opts otf.Organization
 	return org, nil
 }
 
-func (a *Service) delete(ctx context.Context, name string) error {
+func (a *service) delete(ctx context.Context, name string) error {
 	subject, err := a.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
 		return err
@@ -161,7 +172,7 @@ func (a *Service) delete(ctx context.Context, name string) error {
 	return nil
 }
 
-func (a *Service) getEntitlements(ctx context.Context, organization string) (Entitlements, error) {
+func (a *service) getEntitlements(ctx context.Context, organization string) (Entitlements, error) {
 	_, err := a.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err

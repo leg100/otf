@@ -19,7 +19,7 @@ func (a *application) organizationCommand() *cobra.Command {
 }
 
 func (a *application) organizationNewCommand() *cobra.Command {
-	opts := otf.OrganizationCreateOptions{}
+	opts := organization.OrganizationCreateOptions{}
 
 	cmd := &cobra.Command{
 		Use:           "new [name]",
