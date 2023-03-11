@@ -77,7 +77,7 @@ func testFactory(ws *workspace.Workspace, cv *otf.ConfigurationVersion) *factory
 
 type fakeFactoryWorkspaceService struct {
 	ws *workspace.Workspace
-	workspace.WorkspaceService
+	workspace.Service
 }
 
 func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {

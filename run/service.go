@@ -54,7 +54,7 @@ type (
 		logr.Logger
 		*logs.Service
 		otf.PubSubService
-		workspace.WorkspaceService
+		workspace.Service
 
 		site         otf.Authorizer
 		organization otf.Authorizer
@@ -78,7 +78,7 @@ type (
 		otf.Renderer
 		otf.PubSubService
 		otf.HostnameService
-		workspace.WorkspaceService
+		workspace.Service
 		otf.ConfigurationVersionService
 		otf.Signer
 	}

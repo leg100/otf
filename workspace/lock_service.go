@@ -15,7 +15,7 @@ type lockService interface {
 // lock the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
+func (svc *service) lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
 	subject, err := svc.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 	return ws, nil
 }
 
-func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
+func (svc *service) unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
 	action := rbac.UnlockWorkspaceAction
 	if force {
 		action = rbac.ForceUnlockWorkspaceAction

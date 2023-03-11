@@ -8,12 +8,24 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
 
 type (
-	service interface {
+	Service interface {
+		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
+		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error)
+		ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
+		//
+		// TODO: rename to ListConnectedWorkspaces
+		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
+		//UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
+		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+
 		create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
 		get(ctx context.Context, workspaceID string) (*Workspace, error)
 		getByName(ctx context.Context, organization, workspace string) (*Workspace, error)
@@ -29,7 +41,7 @@ type (
 		permissionsService
 	}
 
-	Service struct {
+	service struct {
 		logr.Logger
 		otf.Publisher
 
@@ -55,8 +67,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *Service {
-	svc := Service{
+func NewService(opts Options) *service {
+	svc := service{
 		Logger:    opts.Logger,
 		Publisher: opts.Publisher,
 		repo:      opts.RepoService,
@@ -80,7 +92,7 @@ func NewService(opts Options) *Service {
 }
 
 // serviceWithDB is for wrapping the service's db inside a tx
-func serviceWithDB(parent *Service, db *pgdb) *Service {
+func serviceWithDB(parent *service, db *pgdb) *service {
 	child := *parent
 	child.db = db
 	child.Authorizer = &authorizer{
@@ -92,48 +104,52 @@ func serviceWithDB(parent *Service, db *pgdb) *Service {
 	return &child
 }
 
-func (a *Service) AddHandlers(r *mux.Router) {
+func (a *service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 	a.web.addHandlers(r)
 }
 
-func (s *Service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+func (s *service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
 	return s.create(ctx, opts)
 }
 
-func (s *Service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (s *service) GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error) {
+func (s *service) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+	return nil, nil
+}
+
+func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error) {
 	return s.db.ListWorkspacesByWebhookID(ctx, repoID)
 }
 
-func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
+func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	return nil, nil
 }
 
-func (s *Service) LockWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (s *service) LockWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	return s.lock(ctx, workspaceID, nil)
 }
 
-func (s *Service) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
+func (s *service) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
 	return s.unlock(ctx, workspaceID, force)
 }
 
-func (a *Service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+func (a *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
 	ws, err := NewWorkspace(opts)
 	if err != nil {
 		a.Error(err, "constructing workspace")
@@ -145,7 +161,7 @@ func (a *Service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 		return nil, err
 	}
 
-	err = a.tx(ctx, func(tx *Service) error {
+	err = a.tx(ctx, func(tx *service) error {
 		if err := tx.db.CreateWorkspace(ctx, ws); err != nil {
 			return err
 		}
@@ -171,7 +187,7 @@ func (a *Service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 	return ws, nil
 }
 
-func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
+func (a *service) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -197,7 +213,7 @@ func (a *Service) update(ctx context.Context, workspaceID string, opts UpdateWor
 	return updated, nil
 }
 
-func (a *Service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error) {
+func (a *service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -219,7 +235,7 @@ func (a *Service) connect(ctx context.Context, workspaceID string, opts ConnectW
 	return conn, nil
 }
 
-func (a *Service) disconnect(ctx context.Context, workspaceID string) error {
+func (a *service) disconnect(ctx context.Context, workspaceID string) error {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
@@ -240,7 +256,7 @@ func (a *Service) disconnect(ctx context.Context, workspaceID string) error {
 	return nil
 }
 
-func (a *Service) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (a *service) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := a.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
@@ -268,7 +284,7 @@ func (a *Service) list(ctx context.Context, opts WorkspaceListOptions) (*Workspa
 	return a.db.ListWorkspaces(ctx, opts)
 }
 
-func (a *Service) get(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (a *service) get(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -285,7 +301,7 @@ func (a *Service) get(ctx context.Context, workspaceID string) (*Workspace, erro
 	return ws, nil
 }
 
-func (a *Service) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
+func (a *service) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
 	if err != nil {
 		a.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
@@ -303,7 +319,7 @@ func (a *Service) getByName(ctx context.Context, organization, workspace string)
 }
 
 // getRun retrieves a workspace run.
-func (a *Service) getRun(ctx context.Context, runID string) (run, error) {
+func (a *service) getRun(ctx context.Context, runID string) (run, error) {
 	result, err := a.db.getRun(ctx, runID)
 	if err != nil {
 		a.Error(err, "retrieving workspace run", "run", runID)
@@ -315,7 +331,7 @@ func (a *Service) getRun(ctx context.Context, runID string) (run, error) {
 	return result, nil
 }
 
-func (a *Service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (a *service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
 	subject, err := a.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -348,12 +364,12 @@ func (a *Service) delete(ctx context.Context, workspaceID string) (*Workspace, e
 }
 
 // SetCurrentRun sets the current run for the workspace
-func (a *Service) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+func (a *service) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
 }
 
 // tx returns a service in a callback, with its database calls wrapped within a transaction
-func (a *Service) tx(ctx context.Context, txFunc func(*Service) error) error {
+func (a *service) tx(ctx context.Context, txFunc func(*service) error) error {
 	return a.db.Tx(ctx, func(db otf.DB) error {
 		return txFunc(serviceWithDB(a, newdb(db)))
 	})

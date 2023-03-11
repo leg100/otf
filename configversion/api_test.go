@@ -8,26 +8,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUploadConfigurationVersion(t *testing.T) {
-	// fake server
-	srv := &Server{
-		Application: &fakeConfigurationVersionApp{},
-		Logger:      logr.Discard(),
-		ServerConfig: ServerConfig{
-			// only permit upto 100 byte uploads
-			MaxConfigSize: 100,
-		},
+	api := &api{
+		// only permit upto 100 byte uploads
+		max: 100,
+		svc: &fakeService{},
 	}
 
 	// setup web server
 	router := mux.NewRouter()
-	router.Handle("/upload/{id}", srv.UploadConfigurationVersion())
+	router.Handle("/upload/{id}", api.UploadConfigurationVersion())
 	webSrv := httptest.NewTLSServer(router)
 	t.Cleanup(webSrv.Close)
 	url := webSrv.URL + "/upload/cv-123"

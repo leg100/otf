@@ -13,7 +13,7 @@ import (
 type api struct {
 	*JSONAPIMarshaler
 
-	svc             service
+	svc             Service
 	tokenMiddleware mux.MiddlewareFunc
 }
 

@@ -33,9 +33,10 @@ type (
 
 	Options struct {
 		WorkspaceAuthorizer otf.Authorizer
+		WorkspaceService    workspace.Service
+
 		otf.DB
 		otf.Renderer
-		workspace.WorkspaceService
 		logr.Logger
 	}
 )
@@ -51,9 +52,9 @@ func NewService(opts Options) *Service {
 		svc: &svc,
 	}
 	svc.web = &web{
-		svc:              &svc,
-		Renderer:         opts.Renderer,
-		WorkspaceService: opts.WorkspaceService,
+		svc:      &svc,
+		Renderer: opts.Renderer,
+		Service:  opts.WorkspaceService,
 	}
 
 	return &svc

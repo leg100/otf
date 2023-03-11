@@ -100,7 +100,7 @@ type (
 		service
 
 		RunService
-		workspace.WorkspaceService
+		workspace.Service
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)

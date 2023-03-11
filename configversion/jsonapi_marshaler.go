@@ -14,7 +14,7 @@ type jsonapiMarshaler struct {
 	otf.Signer // for signing upload url
 }
 
-func (m jsonapiMarshaler) toMarshalable(cv *otf.ConfigurationVersion) marshalable {
+func (m jsonapiMarshaler) toMarshalable(cv *ConfigurationVersion) marshalable {
 	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
 	uploadURL, err := m.Sign(uploadURL, time.Hour)
 	if err != nil {
@@ -24,7 +24,7 @@ func (m jsonapiMarshaler) toMarshalable(cv *otf.ConfigurationVersion) marshalabl
 	return marshalable{cv, uploadURL}
 }
 
-func (m jsonapiMarshaler) toMarshableList(list *otf.ConfigurationVersionList) marshalableList {
+func (m jsonapiMarshaler) toMarshableList(list *ConfigurationVersionList) marshalableList {
 	var items []marshalable
 	for _, i := range list.Items {
 		items = append(items, m.toMarshalable(i))
@@ -33,7 +33,7 @@ func (m jsonapiMarshaler) toMarshableList(list *otf.ConfigurationVersionList) ma
 }
 
 type marshalable struct {
-	*otf.ConfigurationVersion
+	*ConfigurationVersion
 	uploadURL string
 }
 
@@ -49,11 +49,11 @@ func (m marshalable) ToJSONAPI() any {
 	}
 	for _, ts := range m.StatusTimestamps {
 		switch ts.Status {
-		case otf.ConfigurationPending:
+		case ConfigurationPending:
 			cv.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case otf.ConfigurationErrored:
+		case ConfigurationErrored:
 			cv.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case otf.ConfigurationUploaded:
+		case ConfigurationUploaded:
 			cv.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}

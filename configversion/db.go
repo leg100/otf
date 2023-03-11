@@ -19,7 +19,7 @@ func newPGDB(otfdb otf.DB) *db {
 	return &db{otfdb}
 }
 
-func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *otf.ConfigurationVersion) error {
+func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
 	return pdb.tx(ctx, func(tx *db) error {
 		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 			ID:            sql.String(cv.ID),
@@ -57,7 +57,7 @@ func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *otf.Configura
 	})
 }
 
-func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
+func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
 	return pdb.tx(ctx, func(tx *db) error {
 		// select ...for update
 		result, err := tx.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
@@ -73,7 +73,7 @@ func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn fun
 	})
 }
 
-func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
@@ -93,18 +93,18 @@ func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string,
 		return nil, err
 	}
 
-	var items []*otf.ConfigurationVersion
+	var items []*ConfigurationVersion
 	for _, r := range rows {
 		items = append(items, pgRow(r).toConfigVersion())
 	}
 
-	return &otf.ConfigurationVersionList{
+	return &ConfigurationVersionList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *db) GetConfigurationVersion(ctx context.Context, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
+func (db *db) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
 	if opts.ID != nil {
 		result, err := db.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
@@ -134,7 +134,7 @@ func (db *db) DeleteConfigurationVersion(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *otf.ConfigurationVersion) error {
+func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVersion) error {
 	sts, err := cv.StatusTimestamp(cv.Status)
 	if err != nil {
 		return err
@@ -168,22 +168,22 @@ type pgRow struct {
 	IngressAttributes                    *pggen.IngressAttributes                     `json:"ingress_attributes"`
 }
 
-func (result pgRow) toConfigVersion() *otf.ConfigurationVersion {
-	cv := otf.ConfigurationVersion{
+func (result pgRow) toConfigVersion() *ConfigurationVersion {
+	cv := ConfigurationVersion{
 		ID:               result.ConfigurationVersionID.String,
 		CreatedAt:        result.CreatedAt.Time.UTC(),
 		AutoQueueRuns:    result.AutoQueueRuns,
 		Speculative:      result.Speculative,
-		Source:           otf.ConfigurationSource(result.Source.String),
-		Status:           otf.ConfigurationStatus(result.Status.String),
+		Source:           ConfigurationSource(result.Source.String),
+		Status:           ConfigurationStatus(result.Status.String),
 		StatusTimestamps: unmarshalStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
 		WorkspaceID:      result.WorkspaceID.String,
 	}
 	if result.IngressAttributes != nil {
-		cv.IngressAttributes = &otf.IngressAttributes{
+		cv.IngressAttributes = &IngressAttributes{
 			Branch:          result.IngressAttributes.Branch.String,
 			CommitSHA:       result.IngressAttributes.CommitSHA.String,
-			Repo:      result.IngressAttributes.Identifier.String,
+			Repo:            result.IngressAttributes.Identifier.String,
 			IsPullRequest:   result.IngressAttributes.IsPullRequest,
 			OnDefaultBranch: result.IngressAttributes.IsPullRequest,
 		}
@@ -191,10 +191,10 @@ func (result pgRow) toConfigVersion() *otf.ConfigurationVersion {
 	return &cv
 }
 
-func unmarshalStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []otf.ConfigurationVersionStatusTimestamp) {
+func unmarshalStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, otf.ConfigurationVersionStatusTimestamp{
-			Status:    otf.ConfigurationStatus(ty.Status.String),
+		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
+			Status:    ConfigurationStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}

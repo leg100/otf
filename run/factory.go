@@ -10,7 +10,7 @@ import (
 // factory constructs runs
 type factory struct {
 	otf.ConfigurationVersionService
-	workspace.WorkspaceService
+	workspace.Service
 }
 
 // NewRun constructs a new run at the beginning of its lifecycle using the

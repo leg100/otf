@@ -18,7 +18,7 @@ type webHandlers struct {
 	otf.TeamService
 	otf.VCSProviderService
 
-	svc               service
+	svc               Service
 	sessionMiddleware mux.MiddlewareFunc
 }
 

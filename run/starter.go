@@ -16,7 +16,7 @@ type starter struct {
 	otf.ConfigurationVersionService
 	otf.RepoService
 	otf.VCSProviderService
-	workspace.WorkspaceService
+	workspace.Service
 
 	service
 }

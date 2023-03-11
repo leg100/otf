@@ -25,7 +25,7 @@ type (
 		hostname string
 		otf.ConfigurationVersionService
 		otf.WatchService
-		workspace.WorkspaceService
+		workspace.Service
 		otf.VCSProviderService
 	}
 
@@ -35,7 +35,7 @@ type (
 		otf.HostnameService
 		otf.ConfigurationVersionService
 		otf.WatchService
-		workspace.WorkspaceService
+		workspace.Service
 		otf.VCSProviderService
 	}
 )

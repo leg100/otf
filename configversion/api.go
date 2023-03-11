@@ -62,7 +62,7 @@ func (s *api) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cv, err := s.svc.create(r.Context(), workspaceID, otf.ConfigurationVersionCreateOptions{
+	cv, err := s.svc.create(r.Context(), workspaceID, ConfigurationVersionCreateOptions{
 		AutoQueueRuns: opts.AutoQueueRuns,
 		Speculative:   opts.Speculative,
 	})
@@ -100,7 +100,7 @@ func (s *api) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cvl, err := s.svc.list(r.Context(), params.WorkspaceID, otf.ConfigurationVersionListOptions{
+	cvl, err := s.svc.list(r.Context(), params.WorkspaceID, ConfigurationVersionListOptions{
 		ListOptions: params.ListOptions,
 	})
 	if err != nil {

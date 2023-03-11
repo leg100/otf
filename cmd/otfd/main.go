@@ -167,10 +167,10 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	var handlers []otf.Handlers
 
 	orgService := organization.NewService(organization.Options{
-		DB:            db,
-		Logger:        logger,
-		PubSubService: hub,
-		Renderer:      renderer,
+		DB:        db,
+		Logger:    logger,
+		Publisher: hub,
+		Renderer:  renderer,
 	})
 	handlers = append(handlers, orgService)
 
@@ -185,7 +185,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		SessionMiddleware: authService.SessionMiddleware,
 		DB:                db,
 		Logger:            logger,
-		PubSubService:     hub,
+		Publisher:         hub,
 		Renderer:          renderer,
 	})
 	handlers = append(handlers, workspaceService)
@@ -193,7 +193,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	configService := configversion.NewService(configversion.Options{
 		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
-		Database:            db,
+		DB:                  db,
 		Signer:              signer,
 		Logger:              logger,
 		MaxUploadSize:       d.maxConfigSize,
@@ -203,7 +203,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	stateService := state.NewService(state.Options{
 		WorkspaceAuthorizer: workspaceService,
 		Logger:              logger,
-		Database:            db,
+		DB:                  db,
 		Cache:               cache,
 	})
 	handlers = append(handlers, stateService)
@@ -211,18 +211,17 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	variableService := variable.NewService(variable.Options{
 		WorkspaceAuthorizer: workspaceService,
 		Logger:              logger,
-		Database:            db,
+		DB:                  db,
 		WorkspaceService:    workspaceService,
 		Renderer:            renderer,
 	})
 	handlers = append(handlers, variableService)
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		OrganizationAuthorizer: orgService,
-		Service:                cloudService,
-		DB:                     db,
-		Renderer:               renderer,
-		Logger:                 logger,
+		Service:  cloudService,
+		DB:       db,
+		Renderer: renderer,
+		Logger:   logger,
 	})
 	handlers = append(handlers, variableService)
 
@@ -264,9 +263,9 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	client := struct {
 		otf.OrganizationService
 		otf.AgentTokenService
-		otf.VariableApp
+		otf.VariableService
 		otf.StateVersionApp
-		workspace.WorkspaceService
+		workspace.Service
 		otf.HostnameService
 		otf.ConfigurationVersionService
 		otf.RegistrySessionService

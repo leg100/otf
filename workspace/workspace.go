@@ -6,9 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
 )
@@ -120,21 +118,6 @@ type (
 	WorkspaceLockService interface {
 		LockWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
 		UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (Workspace, error)
-	}
-
-	WorkspaceService interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error)
-		ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
-		//
-		// TODO: rename to ListConnectedWorkspaces
-		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
-		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
-		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
-
-		WorkspacePermissionService
 	}
 
 	WorkspaceConnectionService interface {

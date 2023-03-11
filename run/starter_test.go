@@ -54,7 +54,7 @@ type (
 		cv        *otf.ConfigurationVersion
 		provider  *otf.VCSProvider
 
-		workspace.WorkspaceService
+		workspace.Service
 		otf.VCSProviderService
 		otf.ConfigurationVersionService
 		service

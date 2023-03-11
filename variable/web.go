@@ -13,7 +13,7 @@ import (
 
 type web struct {
 	otf.Renderer
-	workspace.WorkspaceService
+	workspace.Service
 
 	svc service
 }

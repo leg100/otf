@@ -16,12 +16,12 @@ import (
 
 // JSONAPIMarshaler marshals structs into the json:api encoding
 type JSONAPIMarshaler struct {
-	workspace.WorkspaceService // for retrieving workspace and workspace permissions
+	workspace.Service // for retrieving workspace and workspace permissions
 
 	*logURLGenerator
 }
 
-func newJSONAPIMarshaler(svc workspace.WorkspaceService, signer otf.Signer) *JSONAPIMarshaler {
+func newJSONAPIMarshaler(svc workspace.Service, signer otf.Signer) *JSONAPIMarshaler {
 	return &JSONAPIMarshaler{
 		WorkspaceService: svc,
 		logURLGenerator:  &logURLGenerator{signer},

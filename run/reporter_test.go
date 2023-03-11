@@ -71,7 +71,7 @@ func (f *fakeReporterConfigurationVersionService) GetConfigurationVersion(contex
 }
 
 type fakeReporterWorkspaceService struct {
-	workspace.WorkspaceService
+	workspace.Service
 
 	ws *workspace.Workspace
 }

@@ -85,7 +85,7 @@ type fakeSpawnerServices struct {
 	spawned    bool                        // whether a run was spawned
 
 	otf.ConfigurationVersionService
-	workspace.WorkspaceService
+	workspace.Service
 	otf.VCSProviderService
 
 	service

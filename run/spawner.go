@@ -17,7 +17,7 @@ type spawner struct {
 	otf.Subscriber
 	otf.ConfigurationVersionService
 	otf.RepoService
-	workspace.WorkspaceService
+	workspace.Service
 	otf.VCSProviderService
 
 	service

@@ -262,7 +262,7 @@ type (
 		providers  []*otf.VCSProvider
 		repos      []string
 
-		service
+		Service
 
 		otf.TeamService
 		otf.VCSProviderService

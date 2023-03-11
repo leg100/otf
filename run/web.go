@@ -17,7 +17,7 @@ type (
 	webHandlers struct {
 		otf.LogService
 		otf.Renderer
-		workspace.WorkspaceService
+		workspace.Service
 
 		starter runStarter
 		svc     service
