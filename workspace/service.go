@@ -31,11 +31,11 @@ type (
 
 	Service struct {
 		logr.Logger
-		otf.PubSubService
+		otf.Publisher
 
-		site         otf.Authorizer
-		organization otf.Authorizer
-		*authorizer
+		site           otf.Authorizer
+		organization   otf.Authorizer
+		otf.Authorizer // workspace authorizer
 
 		db   *pgdb
 		repo otf.RepoService
@@ -48,7 +48,7 @@ type (
 		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
 		otf.DB
-		otf.PubSubService
+		otf.Publisher
 		otf.Renderer
 		otf.RepoService
 		logr.Logger
@@ -57,10 +57,10 @@ type (
 
 func NewService(opts Options) *Service {
 	svc := Service{
-		Logger:        opts.Logger,
-		PubSubService: opts.PubSubService,
-		repo:          opts.RepoService,
-		db:            newdb(opts.DB),
+		Logger:    opts.Logger,
+		Publisher: opts.Publisher,
+		repo:      opts.RepoService,
+		db:        newdb(opts.DB),
 	}
 
 	svc.organization = &organization.Authorizer{opts.Logger}
@@ -83,7 +83,7 @@ func NewService(opts Options) *Service {
 func serviceWithDB(parent *Service, db *pgdb) *Service {
 	child := *parent
 	child.db = db
-	child.authorizer = &authorizer{
+	child.Authorizer = &authorizer{
 		Logger: parent.Logger,
 		db:     db,
 	}
@@ -161,6 +161,7 @@ func (a *Service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 	})
 	if err != nil {
 		a.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
+		return nil, err
 	}
 
 	a.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)

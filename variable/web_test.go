@@ -14,21 +14,18 @@ import (
 )
 
 func TestVariable_Update(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-
 	tests := []struct {
 		name     string
-		existing otf.CreateVariableOptions
+		existing CreateVariableOptions
 		form     url.Values
 		want     func(t *testing.T, got *Variable)
 	}{
 		{
 			name: "overwrite everything",
-			existing: otf.CreateVariableOptions{
+			existing: CreateVariableOptions{
 				Key:      otf.String("foo"),
 				Value:    otf.String("bar"),
-				Category: VariableCategoryPtr(otf.CategoryTerraform),
+				Category: VariableCategoryPtr(CategoryTerraform),
 			},
 			form: url.Values{
 				"key":       {"new-key"},
@@ -38,19 +35,19 @@ func TestVariable_Update(t *testing.T) {
 				"hcl":       {"on"},
 			},
 			want: func(t *testing.T, got *Variable) {
-				assert.Equal(t, "new-key", got.Key())
-				assert.Equal(t, "new-value", got.Value())
-				assert.Equal(t, otf.CategoryEnv, got.Category())
-				assert.True(t, got.Sensitive())
-				assert.True(t, got.HCL())
+				assert.Equal(t, "new-key", got.Key)
+				assert.Equal(t, "new-value", got.Value)
+				assert.Equal(t, CategoryEnv, got.Category)
+				assert.True(t, got.Sensitive)
+				assert.True(t, got.HCL)
 			},
 		},
 		{
 			name: "skip sensitive variable empty value",
-			existing: otf.CreateVariableOptions{
+			existing: CreateVariableOptions{
 				Key:      otf.String("foo"),
 				Value:    otf.String("bar"),
-				Category: VariableCategoryPtr(otf.CategoryTerraform),
+				Category: VariableCategoryPtr(CategoryTerraform),
 			},
 			form: url.Values{
 				"key":       {"foo"},
@@ -60,14 +57,14 @@ func TestVariable_Update(t *testing.T) {
 			},
 			want: func(t *testing.T, got *Variable) {
 				// should get original value
-				assert.Equal(t, "bar", got.Value())
+				assert.Equal(t, "bar", got.Value)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create existing variable for test to update
-			v := NewTestVariable(t, ws, tt.existing)
+			v := NewTestVariable(t, "ws-123", tt.existing)
 
 			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.form.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")

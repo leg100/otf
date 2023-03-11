@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
 )
 

@@ -4,12 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestVariable(t *testing.T, ws workspace.Workspace, opts CreateVariableOptions) *Variable {
-	v, err := NewVariable(ws.ID, opts)
+func NewTestVariable(t *testing.T, workspaceID string, opts CreateVariableOptions) *Variable {
+	v, err := NewVariable(workspaceID, opts)
 	require.NoError(t, err)
 	return v
 }

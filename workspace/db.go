@@ -118,6 +118,7 @@ func (db *pgdb) CreateWorkspace(ctx context.Context, ws *Workspace) error {
 		Name:                       sql.String(ws.Name),
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
 		AutoApply:                  ws.AutoApply,
+		Branch:                     sql.String(ws.Branch),
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
 		Environment:                sql.String(ws.Environment),
 		Description:                sql.String(ws.Description),

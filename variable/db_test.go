@@ -19,7 +19,7 @@ func TestDB_Create(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		ws := workspace.CreateTestWorkspace(t, db, org.Name)
-		v := NewTestVariable(t, ws, CreateVariableOptions{
+		v := NewTestVariable(t, ws.ID, CreateVariableOptions{
 			Key:      otf.String("foo"),
 			Value:    otf.String("bar"),
 			Category: VariableCategoryPtr(CategoryTerraform),
@@ -48,7 +48,7 @@ func TestDB_Create(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "luxembourg", got.Value())
+		assert.Equal(t, "luxembourg", got.Value)
 	})
 
 	t.Run("list", func(t *testing.T) {

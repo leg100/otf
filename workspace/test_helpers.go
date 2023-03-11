@@ -4,26 +4,35 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
-func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) Workspace {
+func NewTestService(t *testing.T, db otf.DB) *Service {
+	service := NewService(Options{
+		DB:        db,
+		Logger:    logr.Discard(),
+		Publisher: &otf.FakePublisher{},
+	})
+	service.organization = otf.NewAllowAllAuthorizer()
+	service.site = otf.NewAllowAllAuthorizer()
+	service.Authorizer = otf.NewAllowAllAuthorizer()
+	return service
+}
+
+func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) *Workspace {
 	ctx := context.Background()
-	wsDB := newdb(db)
-	ws, err := NewWorkspace(CreateWorkspaceOptions{
+	svc := NewTestService(t, db)
+	ws, err := svc.CreateWorkspace(ctx, CreateWorkspaceOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &organization,
 	})
-	err = wsDB.CreateWorkspace(ctx, ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		wsDB.DeleteWorkspace(ctx, ws.ID)
+		svc.DeleteWorkspace(ctx, ws.ID)
 	})
-	return Workspace{
-		ID:   ws.ID,
-		Name: ws.Name,
-	}
+	return ws
 }
