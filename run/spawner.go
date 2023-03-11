@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -15,11 +16,11 @@ import (
 type spawner struct {
 	logr.Logger
 	otf.Subscriber
-	otf.ConfigurationVersionService
 	otf.RepoService
-	workspace.Service
 	otf.VCSProviderService
 
+	configversion configversion.Service
+	workspace     workspace.Service
 	service
 }
 
@@ -75,7 +76,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 
 	h.Info("triggering run", "repo_id", repoID)
 
-	workspaces, err := h.ListWorkspacesByRepoID(ctx, repoID)
+	workspaces, err := h.workspace.ListWorkspacesByRepoID(ctx, repoID)
 	if err != nil {
 		return err
 	}
@@ -132,9 +133,9 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 			// Should never happen...
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
-		cv, err := h.CreateConfigurationVersion(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{
+		cv, err := h.configversion.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(isPullRequest),
-			IngressAttributes: &otf.IngressAttributes{
+			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string
 				Branch: branch,
 				// CloneURL          string
@@ -150,7 +151,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err != nil {
 			return err
 		}
-		if err := h.UploadConfig(ctx, cv.ID, tarball); err != nil {
+		if err := h.configversion.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
 		_, err = h.create(ctx, ws.ID, RunCreateOptions{

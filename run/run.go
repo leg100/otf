@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
@@ -147,10 +148,14 @@ type (
 	RunDB interface {
 		GetRun(context.Context, string) (Run, error)
 	}
+
+	// Alias services so they don't conflict when nested together in struct
+	ConfigurationVersionService configversion.Service
+	WorkspaceService            workspace.Service
 )
 
 // NewRun creates a new run with defaults.
-func NewRun(cv *otf.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
+func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		ID:                     otf.NewID("run"),
 		CreatedAt:              otf.CurrentTimestamp(),

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/workspace"
@@ -95,7 +96,7 @@ type (
 	fakeWebServices struct {
 		runs       []*Run
 		ws         *workspace.Workspace
-		gotOptions *otf.ConfigurationVersionCreateOptions
+		gotOptions *configversion.ConfigurationVersionCreateOptions
 
 		service
 
@@ -160,7 +161,7 @@ func (f *fakeWebServices) get(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error) {
+func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error) {
 	f.runs[0].Speculative = *opts.Speculative
 	return f.runs[0], nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
@@ -52,7 +53,7 @@ type (
 
 	Service struct {
 		logr.Logger
-		*logs.Service
+		LogService *logs.Service
 		otf.PubSubService
 		workspace.Service
 
@@ -78,8 +79,8 @@ type (
 		otf.Renderer
 		otf.PubSubService
 		otf.HostnameService
-		workspace.Service
-		otf.ConfigurationVersionService
+		WorkspaceService            workspace.Service
+		ConfigurationVersionService configversion.Service
 		otf.Signer
 	}
 )
@@ -87,9 +88,9 @@ type (
 func NewService(opts Options) *Service {
 	db := newDB(opts.DB)
 	svc := Service{
-		Logger:           opts.Logger,
-		PubSubService:    opts.PubSubService,
-		WorkspaceService: opts.WorkspaceService,
+		Logger:        opts.Logger,
+		PubSubService: opts.PubSubService,
+		Service:       opts.WorkspaceService,
 	}
 
 	svc.site = &otf.SiteAuthorizer{opts.Logger}
@@ -484,7 +485,7 @@ func (a *Service) createPlanReport(ctx context.Context, runID string) (ResourceR
 }
 
 func (a *Service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := a.GetChunk(ctx, otf.GetChunkOptions{
+	logs, err := a.LogService.GetChunk(ctx, otf.GetChunkOptions{
 		RunID: runID,
 		Phase: otf.ApplyPhase,
 	})

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -17,14 +18,14 @@ type (
 	webHandlers struct {
 		otf.LogService
 		otf.Renderer
-		workspace.Service
+		WorkspaceService
 
 		starter runStarter
 		svc     service
 	}
 
 	runStarter interface {
-		startRun(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*Run, error)
+		startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error)
 	}
 )
 
@@ -207,7 +208,7 @@ func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts otf.ConfigurationVersionCreateOptions
+	var opts configversion.ConfigurationVersionCreateOptions
 	switch params.Strategy {
 	case "plan-only":
 		opts.Speculative = otf.Bool(true)

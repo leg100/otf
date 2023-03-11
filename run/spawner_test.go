@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,11 +66,11 @@ func TestSpawner(t *testing.T) {
 				workspaces: []*workspace.Workspace{tt.ws},
 			}
 			spawner := spawner{
-				ConfigurationVersionService: services,
-				WorkspaceService:            services,
-				VCSProviderService:          services,
-				Logger:                      logr.Discard(),
-				service:                     services,
+				configversion:      services,
+				workspace:          services,
+				VCSProviderService: services,
+				Logger:             logr.Discard(),
+				service:            services,
 			}
 			err := spawner.handle(ctx, tt.event)
 			require.NoError(t, err)
@@ -81,11 +82,11 @@ func TestSpawner(t *testing.T) {
 
 type fakeSpawnerServices struct {
 	workspaces []*workspace.Workspace
-	created    []*otf.ConfigurationVersion // created config versions
-	spawned    bool                        // whether a run was spawned
+	created    []*configversion.ConfigurationVersion // created config versions
+	spawned    bool                                  // whether a run was spawned
 
-	otf.ConfigurationVersionService
-	workspace.Service
+	ConfigurationVersionService
+	WorkspaceService
 	otf.VCSProviderService
 
 	service
@@ -95,8 +96,8 @@ func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uui
 	return f.workspaces, nil
 }
 
-func (f *fakeSpawnerServices) CreateConfigurationVersion(ctx context.Context, wid string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	cv, err := otf.NewConfigurationVersion(wid, opts)
+func (f *fakeSpawnerServices) CreateConfigurationVersion(ctx context.Context, wid string, opts configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
+	cv, err := configversion.NewConfigurationVersion(wid, opts)
 	if err != nil {
 		return nil, err
 	}

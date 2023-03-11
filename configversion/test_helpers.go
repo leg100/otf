@@ -30,7 +30,7 @@ func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws *workspace.Works
 }
 
 type fakeService struct {
-	service
+	Service
 }
 
 func (f *fakeService) upload(context.Context, string, []byte) error {

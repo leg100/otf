@@ -15,7 +15,7 @@ func cacheKey(cvID string) string {
 // upload saves a configuration tarball to the db
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (a *Service) upload(ctx context.Context, cvID string, config []byte) error {
+func (a *service) upload(ctx context.Context, cvID string, config []byte) error {
 	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
 		return cv.Upload(ctx, config, uploader)
 	})
@@ -31,7 +31,7 @@ func (a *Service) upload(ctx context.Context, cvID string, config []byte) error 
 }
 
 // download retrieves a tarball from the db
-func (a *Service) download(ctx context.Context, cvID string) ([]byte, error) {
+func (a *service) download(ctx context.Context, cvID string) ([]byte, error) {
 	subject, err := a.canAccess(ctx, rbac.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err

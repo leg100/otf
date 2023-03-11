@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +17,7 @@ func TestFactory(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
 		f := testFactory(
 			&workspace.Workspace{},
-			&otf.ConfigurationVersion{},
+			&configversion.ConfigurationVersion{},
 		)
 
 		got, err := f.NewRun(ctx, "", RunCreateOptions{})
@@ -32,7 +33,7 @@ func TestFactory(t *testing.T) {
 	t.Run("speculative run", func(t *testing.T) {
 		f := testFactory(
 			&workspace.Workspace{},
-			&otf.ConfigurationVersion{Speculative: true},
+			&configversion.ConfigurationVersion{Speculative: true},
 		)
 
 		got, err := f.NewRun(ctx, "", RunCreateOptions{})
@@ -44,7 +45,7 @@ func TestFactory(t *testing.T) {
 	t.Run("workspace auto-apply", func(t *testing.T) {
 		f := testFactory(
 			&workspace.Workspace{AutoApply: true},
-			&otf.ConfigurationVersion{},
+			&configversion.ConfigurationVersion{},
 		)
 
 		got, err := f.NewRun(ctx, "", RunCreateOptions{})
@@ -56,7 +57,7 @@ func TestFactory(t *testing.T) {
 	t.Run("run auto-apply", func(t *testing.T) {
 		f := testFactory(
 			&workspace.Workspace{},
-			&otf.ConfigurationVersion{},
+			&configversion.ConfigurationVersion{},
 		)
 
 		got, err := f.NewRun(ctx, "", RunCreateOptions{
@@ -68,10 +69,10 @@ func TestFactory(t *testing.T) {
 	})
 }
 
-func testFactory(ws *workspace.Workspace, cv *otf.ConfigurationVersion) *factory {
+func testFactory(ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
 	return &factory{
-		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
-		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
+		workspace: &fakeFactoryWorkspaceService{ws: ws},
+		config:    &fakeFactoryConfigurationVersionService{cv: cv},
 	}
 }
 
@@ -85,14 +86,14 @@ func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*wo
 }
 
 type fakeFactoryConfigurationVersionService struct {
-	cv *otf.ConfigurationVersion
-	otf.ConfigurationVersionService
+	cv *configversion.ConfigurationVersion
+	configversion.Service
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*otf.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeFactoryConfigurationVersionService) GetLatestConfigurationVersion(context.Context, string) (*otf.ConfigurationVersion, error) {
+func (f *fakeFactoryConfigurationVersionService) GetLatestConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }

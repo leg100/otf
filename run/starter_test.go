@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +17,7 @@ func TestStartRun(t *testing.T) {
 
 	t.Run("not connected to repo", func(t *testing.T) {
 		ws := &workspace.Workspace{}
-		cv := &otf.ConfigurationVersion{}
+		cv := &configversion.ConfigurationVersion{}
 		want := &Run{}
 		starter := newTestStarter(fakeStarterService{
 			run:       want,
@@ -24,14 +25,14 @@ func TestStartRun(t *testing.T) {
 			cv:        cv,
 		})
 
-		got, err := starter.startRun(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{})
+		got, err := starter.startRun(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("connected to repo", func(t *testing.T) {
 		ws := &workspace.Workspace{Connection: &otf.Connection{}}
-		cv := &otf.ConfigurationVersion{}
+		cv := &configversion.ConfigurationVersion{}
 		provider := &otf.VCSProvider{}
 		want := &Run{}
 		starter := newTestStarter(fakeStarterService{
@@ -41,7 +42,7 @@ func TestStartRun(t *testing.T) {
 			provider:  provider,
 		})
 
-		got, err := starter.startRun(ctx, ws.ID, otf.ConfigurationVersionCreateOptions{})
+		got, err := starter.startRun(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -51,12 +52,12 @@ type (
 	fakeStarterService struct {
 		run       *Run
 		workspace *workspace.Workspace
-		cv        *otf.ConfigurationVersion
+		cv        *configversion.ConfigurationVersion
 		provider  *otf.VCSProvider
 
-		workspace.Service
+		WorkspaceService
 		otf.VCSProviderService
-		otf.ConfigurationVersionService
+		ConfigurationVersionService
 		service
 	}
 )
@@ -74,15 +75,15 @@ func (f *fakeStarterService) GetWorkspace(context.Context, string) (*workspace.W
 	return f.workspace, nil
 }
 
-func (f *fakeStarterService) CreateConfigurationVersion(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+func (f *fakeStarterService) CreateConfigurationVersion(context.Context, string, configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeStarterService) GetLatestConfigurationVersion(context.Context, string) (*otf.ConfigurationVersion, error) {
+func (f *fakeStarterService) GetLatestConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeStarterService) CloneConfigurationVersion(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+func (f *fakeStarterService) CloneConfigurationVersion(context.Context, string, configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 

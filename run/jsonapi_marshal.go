@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
@@ -23,8 +24,8 @@ type JSONAPIMarshaler struct {
 
 func newJSONAPIMarshaler(svc workspace.Service, signer otf.Signer) *JSONAPIMarshaler {
 	return &JSONAPIMarshaler{
-		WorkspaceService: svc,
-		logURLGenerator:  &logURLGenerator{signer},
+		Service:         svc,
+		logURLGenerator: &logURLGenerator{signer},
 	}
 }
 
@@ -139,7 +140,7 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 		Refresh:                run.Refresh,
 		RefreshOnly:            run.RefreshOnly,
 		ReplaceAddrs:           run.ReplaceAddrs,
-		Source:                 otf.DefaultConfigurationSource,
+		Source:                 configversion.DefaultConfigurationSource,
 		Status:                 string(run.Status),
 		StatusTimestamps:       &timestamps,
 		TargetAddrs:            run.TargetAddrs,

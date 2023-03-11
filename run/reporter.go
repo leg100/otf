@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -21,21 +22,22 @@ type (
 	// runs.
 	reporter struct {
 		logr.Logger
+		otf.WatchService
+		otf.VCSProviderService
+		ConfigurationVersionService
+		WorkspaceService
 
 		hostname string
-		otf.ConfigurationVersionService
-		otf.WatchService
-		workspace.Service
-		otf.VCSProviderService
 	}
 
 	ReporterOptions struct {
+		ConfigurationVersionService configversion.Service
+		WorkspaceService            workspace.Service
+
 		logr.Logger
 		otf.DB
 		otf.HostnameService
-		otf.ConfigurationVersionService
 		otf.WatchService
-		workspace.Service
 		otf.VCSProviderService
 	}
 )
@@ -54,10 +56,10 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 
 		s := &reporter{
 			Logger:                      opts.Logger.WithValues("component", "reporter"),
-			ConfigurationVersionService: opts.ConfigurationVersionService,
-			WorkspaceService:            opts.WorkspaceService,
 			WatchService:                opts.WatchService,
 			hostname:                    opts.Hostname(),
+			ConfigurationVersionService: opts.ConfigurationVersionService,
+			WorkspaceService:            opts.WorkspaceService,
 		}
 		s.V(2).Info("started")
 		defer s.V(2).Info("stopped")

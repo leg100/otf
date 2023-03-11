@@ -18,12 +18,12 @@ type (
 
 		jsonapiMarshaler
 
-		svc service
+		svc Service
 		max int64 // Maximum permitted config upload size in bytes
 	}
 
 	apiOptions struct {
-		service
+		Service
 		max int64
 		*surl.Signer
 	}
@@ -33,7 +33,7 @@ func newAPI(opts apiOptions) *api {
 	return &api{
 		Verifier:         opts.Signer,
 		jsonapiMarshaler: jsonapiMarshaler{opts.Signer},
-		svc:              opts.service,
+		svc:              opts.Service,
 		max:              opts.max,
 	}
 }

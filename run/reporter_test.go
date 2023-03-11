@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ func TestReporter_HandleRun(t *testing.T) {
 		name string
 		run  *Run
 		ws   *workspace.Workspace
-		cv   *otf.ConfigurationVersion
+		cv   *configversion.ConfigurationVersion
 		want cloud.SetStatusOptions
 	}{
 		{
@@ -28,8 +29,8 @@ func TestReporter_HandleRun(t *testing.T) {
 				Name:       "dev",
 				Connection: &otf.Connection{},
 			},
-			cv: &otf.ConfigurationVersion{
-				IngressAttributes: &otf.IngressAttributes{
+			cv: &configversion.ConfigurationVersion{
+				IngressAttributes: &configversion.IngressAttributes{
 					CommitSHA: "abc123",
 					Repo:      "leg100/otf",
 				},
@@ -61,12 +62,12 @@ func TestReporter_HandleRun(t *testing.T) {
 }
 
 type fakeReporterConfigurationVersionService struct {
-	otf.ConfigurationVersionService
+	configversion.Service
 
-	cv *otf.ConfigurationVersion
+	cv *configversion.ConfigurationVersion
 }
 
-func (f *fakeReporterConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*otf.ConfigurationVersion, error) {
+func (f *fakeReporterConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*configversion.ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
