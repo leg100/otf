@@ -191,7 +191,7 @@ func (row moduleRow) toModule() *Module {
 	}
 	// versions are always maintained in descending order
 	sort.Sort(byVersion(row.Versions))
-	for i := len(row.Versions); i >= 0; i-- {
+	for i := len(row.Versions) - 1; i >= 0; i-- {
 		module.Versions = append(module.Versions, ModuleVersion{
 			ID:          row.Versions[i].ModuleVersionID.String,
 			Version:     row.Versions[i].Version.String,

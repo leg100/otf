@@ -63,8 +63,8 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		ID      string `schema:"module_id,required"`
-		Version string `schema:"version"`
+		ID      string  `schema:"module_id,required"`
+		Version *string `schema:"version"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -77,21 +77,28 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tfmod *TerraformModule
+	var modver *ModuleVersion
+	if params.Version != nil {
+		modver = module.Version(*params.Version)
+	} else {
+		modver = module.Latest()
+	}
+	if modver == nil {
+		// TODO: set flash and render
+		html.Error(w, "no version found", http.StatusNotFound)
+		return
+	}
+
+	modinfo, err := h.svc.GetModuleInfo(r.Context(), modver.ID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	var readme template.HTML
 	switch module.Status {
 	case ModuleStatusSetupComplete:
-		tarball, err := h.svc.downloadVersion(r.Context(), module.Latest.ID)
-		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		tfmod, err = unmarshalTerraformModule(tarball)
-		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		readme = html.MarkdownToHTML(tfmod.Readme())
+		readme = html.MarkdownToHTML(modinfo.readme)
 	}
 
 	h.Render("module_get.tmpl", w, r, struct {
@@ -102,9 +109,9 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		Hostname        string
 	}{
 		Module:          module,
-		TerraformModule: tfmod,
+		TerraformModule: modinfo,
 		Readme:          readme,
-		CurrentVersion:  module.Latest,
+		CurrentVersion:  modver,
 		Hostname:        h.hostname,
 	})
 }
@@ -191,12 +198,12 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_new.tmpl", w, r, struct {
-		Items         []string
+		Repos         []string
 		Organization  string
 		VCSProviderID string
 		Step          newModuleStep
 	}{
-		Items:         filtered,
+		Repos:         filtered,
 		Organization:  params.Organization,
 		VCSProviderID: params.VCSProviderID,
 		Step:          newModuleRepoStep,
@@ -207,7 +214,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization  string `schema:"organization_name,required"`
 		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Identifier    string `schema:"identifier,required"`
+		Repo          string `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -223,10 +230,12 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	h.Render("module_new.tmpl", w, r, struct {
 		Organization string
 		Step         newModuleStep
+		Repo         string
 		*otf.VCSProvider
 	}{
 		Organization: params.Organization,
 		Step:         newModuleConfirmStep,
+		Repo:         params.Repo,
 		VCSProvider:  vcsprov,
 	})
 }

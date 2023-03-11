@@ -6,44 +6,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetLatest(t *testing.T) {
-	tests := []struct {
-		name        string
-		current     *ModuleVersion   // current latest
-		versions    []*ModuleVersion // module's full list of versions
-		want        *ModuleVersion   // want this to be new latest version
-		wantChanged bool             // want latest version to have changed
-	}{
-		{
-			name: "no versions",
-			want: nil,
-		},
-		{
-			name: "one ok version",
-			versions: []*ModuleVersion{
-				{ID: "want", Status: ModuleVersionStatusOK},
-			},
-			want: &ModuleVersion{ID: "want", Status: ModuleVersionStatusOK},
-		},
-		{
-			name:    "ignore newer pending version",
-			current: &ModuleVersion{ID: "want", Status: ModuleVersionStatusOK},
-			versions: []*ModuleVersion{
-				{Version: "v1", Status: ModuleVersionStatusOK},
-				{Version: "v2", Status: ModuleVersionStatusPending},
-			},
-			want: &ModuleVersion{Version: "v1", Status: ModuleVersionStatusOK},
-		},
-	}
+func TestModule(t *testing.T) {
+	modver1 := ModuleVersion{Version: "v1", Status: ModuleVersionStatusOK}
+	modver2 := ModuleVersion{Version: "v2", Status: ModuleVersionStatusOK}
+	modver3 := ModuleVersion{Version: "v3", Status: ModuleVersionStatusPending}
+	mod := &Module{Versions: []ModuleVersion{modver3, modver2, modver1}}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mod := &Module{Versions: make(map[string]*ModuleVersion)}
-			for _, mv := range tt.versions {
-				mod.Versions[mv.Version] = mv
-			}
-			assert.Equal(t, tt.wantChanged, mod.SetLatest())
-			assert.Equal(t, tt.want, mod.Latest)
-		})
-	}
+	t.Run("latest", func(t *testing.T) {
+		assert.Equal(t, &modver2, mod.Latest())
+	})
+
+	t.Run("available", func(t *testing.T) {
+		assert.Equal(t, []ModuleVersion{modver2, modver1}, mod.AvailableVersions())
+	})
+
+	t.Run("version", func(t *testing.T) {
+		assert.Equal(t, &modver2, mod.Version("v2"))
+	})
 }

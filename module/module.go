@@ -29,8 +29,6 @@ const (
 var ErrInvalidModuleRepo = errors.New("invalid repository name for module")
 
 type (
-	ModuleStatus string
-
 	Module struct {
 		ID           string
 		CreatedAt    time.Time
@@ -43,9 +41,7 @@ type (
 		Connection   *otf.Connection // optional vcs repo connection
 	}
 
-	VersionSummary = ModuleVersion
-
-	ModuleVersionStatus string
+	ModuleStatus string
 
 	ModuleVersion struct {
 		ID          string
@@ -56,12 +52,9 @@ type (
 		Status      ModuleVersionStatus
 		StatusError string
 		// TODO: download counters
-		// TODO: readme
-		// TODO: resources
-		// TODO: inputs
-		// TODO: outputs
-		// TODO: dependencies
 	}
+
+	ModuleVersionStatus string
 
 	ModuleService interface {
 		// PublishModule publishes a module from a VCS repository.
@@ -137,8 +130,10 @@ func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 		CreatedAt: otf.CurrentTimestamp(),
 		UpdatedAt: otf.CurrentTimestamp(),
 		ModuleID:  opts.ModuleID,
-		Version:   opts.Version,
-		Status:    ModuleVersionStatusPending,
+		// TODO: check version is a semver, and decide whether to keep or drop
+		// 'v' prefix
+		Version: opts.Version,
+		Status:  ModuleVersionStatusPending,
 	}
 }
 

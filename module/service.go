@@ -29,6 +29,7 @@ type (
 		GetModuleByID(ctx context.Context, id string) (*Module, error)
 		GetModuleByRepoID(ctx context.Context, repoID uuid.UUID) (*Module, error)
 		DeleteModule(ctx context.Context, id string) (*Module, error)
+		GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error)
 
 		CreateVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
 
@@ -344,6 +345,14 @@ func (a *Service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 	}
 	a.V(0).Info("created module version", "organization", module.Organization, "subject", subject, "module_version", modver)
 	return modver, nil
+}
+
+func (s *Service) GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error) {
+	tarball, err := s.db.getTarball(ctx, versionID)
+	if err != nil {
+		return nil, err
+	}
+	return unmarshalTerraformModule(tarball)
 }
 
 func (a *Service) uploadVersion(ctx context.Context, versionID string, tarball []byte) error {

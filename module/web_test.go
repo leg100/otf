@@ -30,16 +30,13 @@ func TestGetModule(t *testing.T) {
 	mod := Module{
 		Connection: &otf.Connection{},
 		Status:     ModuleStatusSetupComplete,
-		Latest:     &ModuleVersion{},
-		Versions: map[string]*ModuleVersion{
-			"1.0.0": {},
-		},
+		Versions:   []ModuleVersion{{Version: "1.0.0"}},
 	}
 	tarball, err := os.ReadFile("./testdata/module.tar.gz")
 	require.NoError(t, err)
 	h := newTestWebHandlers(t, withMod(&mod), withTarball(tarball))
 
-	q := "/?module_id=mod-123"
+	q := "/?module_id=mod-123&version=1.0.0"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	h.get(w, r)
@@ -204,8 +201,8 @@ func (f *fakeWebServices) GetVCSClient(ctx context.Context, providerID string) (
 	return &fakeModulesCloudClient{repos: f.repos}, nil
 }
 
-func (f *fakeWebServices) downloadVersion(context.Context, string) ([]byte, error) {
-	return f.tarball, nil
+func (f *fakeWebServices) GetModuleInfo(context.Context, string) (*TerraformModule, error) {
+	return unmarshalTerraformModule(f.tarball)
 }
 
 type fakeModulesCloudClient struct {
