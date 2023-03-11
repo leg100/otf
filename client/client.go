@@ -18,10 +18,10 @@ import (
 type Client interface {
 	CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (otf.Organization, error)
 
-	GetWorkspace(ctx context.Context, workspaceID string) (otf.Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (otf.Workspace, error)
-	ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (otf.WorkspaceList, error)
-	UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID string) (workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (workspace.Workspace, error)
+	ListWorkspaces(ctx context.Context, opts workspace.WorkspaceListOptions) (workspace.WorkspaceList, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*workspace.Workspace, error)
 
 	ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error)
 
@@ -46,7 +46,7 @@ type Client interface {
 	// CreateRegistrySession creates a registry session for the given organization.
 	CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error)
 
-	otf.WorkspaceLockService
+	workspace.WorkspaceLockService
 	otf.StateVersionApp
 	otf.HostnameService
 }

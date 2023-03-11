@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/workspace"
 )
 
 // spawner spawns new runs in response to vcs events
@@ -16,7 +17,7 @@ type spawner struct {
 	otf.Subscriber
 	otf.ConfigurationVersionService
 	otf.RepoService
-	otf.WorkspaceService
+	workspace.WorkspaceService
 	otf.VCSProviderService
 
 	service
@@ -109,7 +110,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	// is checked and if it set then it must match the event's branch. If it is
 	// not set then the event's branch must match the repo's default branch. If
 	// neither of these conditions are true then the workspace is skipped.
-	filterFunc := func(unfiltered []*otf.Workspace) (filtered []*otf.Workspace) {
+	filterFunc := func(unfiltered []*workspace.Workspace) (filtered []*workspace.Workspace) {
 		for _, ws := range unfiltered {
 			if ws.Branch != "" && ws.Branch == branch {
 				filtered = append(filtered, ws)

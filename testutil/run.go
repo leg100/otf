@@ -17,9 +17,9 @@ type TestRunCreateOptions struct {
 	ExecutionMode     *otf.ExecutionMode
 	Status            run.RunStatus
 	AutoApply         *bool
-	Repo              *otf.WorkspaceRepo
+	Repo              *workspace.WorkspaceRepo
 	IngressAttributes *otf.IngressAttributes
-	Workspace         otf.Workspace // run's workspace; if nil a workspace is auto created
+	Workspace         workspace.Workspace // run's workspace; if nil a workspace is auto created
 }
 
 func NewRunService(db otf.DB) *run.Service {
@@ -30,7 +30,7 @@ func NewRunService(db otf.DB) *run.Service {
 	})
 }
 
-func CreateRun(t *testing.T, db otf.DB, ws otf.Workspace, cv otf.ConfigurationVersion) run.Run {
+func CreateRun(t *testing.T, db otf.DB, ws workspace.Workspace, cv otf.ConfigurationVersion) run.Run {
 	ctx := context.Background()
 	svc := NewRunService(db)
 	run, err := svc.Create(ctx, ws.ID, run.RunCreateOptions{

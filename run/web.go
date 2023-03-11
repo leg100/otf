@@ -10,13 +10,14 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/workspace"
 )
 
 type (
 	webHandlers struct {
 		otf.LogService
 		otf.Renderer
-		otf.WorkspaceService
+		workspace.WorkspaceService
 
 		starter runStarter
 		svc     service
@@ -66,7 +67,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("run_list.tmpl", w, r, struct {
 		*RunList
-		*otf.Workspace
+		*workspace.Workspace
 		StreamID string
 	}{
 		RunList:   runs,
@@ -114,7 +115,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("run_get.tmpl", w, r, struct {
 		*Run
-		Workspace *otf.Workspace
+		Workspace *workspace.Workspace
 		PlanLogs  otf.Chunk
 		ApplyLogs otf.Chunk
 	}{

@@ -12,7 +12,7 @@ import (
 
 type web struct {
 	otf.Renderer
-	otf.WorkspaceService
+	workspace.WorkspaceService
 
 	svc service
 }
@@ -40,13 +40,13 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_new.tmpl", w, r, struct {
-		Workspace  *otf.Workspace
-		Variable   *otf.Variable
+		Workspace  *workspace.Workspace
+		Variable   *Variable
 		EditMode   bool
 		FormAction string
 	}{
 		Workspace:  ws,
-		Variable:   &otf.Variable{},
+		Variable:   &Variable{},
 		EditMode:   false,
 		FormAction: paths.CreateVariable(workspaceID),
 	})
@@ -57,7 +57,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		Key         *string `schema:"key,required"`
 		Value       *string
 		Description *string
-		Category    *otf.VariableCategory `schema:"category,required"`
+		Category    *VariableCategory `schema:"category,required"`
 		Sensitive   bool
 		HCL         bool
 		WorkspaceID string `schema:"workspace_id,required"`
@@ -68,7 +68,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.create(r.Context(), params.WorkspaceID, otf.CreateVariableOptions{
+	variable, err := h.svc.create(r.Context(), params.WorkspaceID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -104,8 +104,8 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_list.tmpl", w, r, struct {
-		Workspace *otf.Workspace
-		Variables []*otf.Variable
+		Workspace *workspace.Workspace
+		Variables []*Variable
 	}{
 		Workspace: ws,
 		Variables: variables,
@@ -131,8 +131,8 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_edit.tmpl", w, r, struct {
-		Workspace  *otf.Workspace
-		Variable   *otf.Variable
+		Workspace  *workspace.Workspace
+		Variable   *Variable
 		EditMode   bool
 		FormAction string
 	}{
@@ -148,7 +148,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		Key         *string `schema:"key,required"`
 		Value       *string
 		Description *string
-		Category    *otf.VariableCategory `schema:"category,required"`
+		Category    *VariableCategory `schema:"category,required"`
 		Sensitive   bool
 		HCL         bool
 		VariableID  string `schema:"variable_id,required"`
@@ -167,7 +167,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		params.Value = nil
 	}
 
-	variable, err := h.svc.update(r.Context(), params.VariableID, otf.UpdateVariableOptions{
+	variable, err := h.svc.update(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,

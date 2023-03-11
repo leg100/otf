@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/workspace"
 )
 
 func UnmarshalJSONAPI(b []byte) (*Run, error) {
@@ -23,7 +24,7 @@ func newFromJSONAPI(from *jsonapi.Run) *Run {
 		CreatedAt:              from.CreatedAt,
 		ForceCancelAvailableAt: from.ForceCancelAvailableAt,
 		IsDestroy:              from.IsDestroy,
-		ExecutionMode:          otf.ExecutionMode(from.ExecutionMode),
+		ExecutionMode:          workspace.ExecutionMode(from.ExecutionMode),
 		Message:                from.Message,
 		PositionInQueue:        from.PositionInQueue,
 		Refresh:                from.Refresh,

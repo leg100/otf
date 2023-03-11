@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/workspace"
 )
 
 const (
@@ -49,7 +50,7 @@ type (
 		StatusTimestamps       []RunStatusTimestamp
 		WorkspaceID            string
 		ConfigurationVersionID string
-		ExecutionMode          otf.ExecutionMode
+		ExecutionMode          workspace.ExecutionMode
 		Plan                   Phase
 		Apply                  Phase
 
@@ -149,7 +150,7 @@ type (
 )
 
 // NewRun creates a new run with defaults.
-func NewRun(cv *otf.ConfigurationVersion, ws *otf.Workspace, opts RunCreateOptions) *Run {
+func NewRun(cv *otf.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		ID:                     otf.NewID("run"),
 		CreatedAt:              otf.CurrentTimestamp(),
@@ -354,49 +355,41 @@ func (r *Run) Finish(phase otf.PhaseType, opts PhaseFinishOptions) error {
 	}
 	switch phase {
 	case otf.PlanPhase:
-		return r.finishPlan(opts)
+		if r.Status != otf.RunPlanning {
+			return ErrInvalidRunStateTransition
+		}
+		if opts.Errored {
+			r.updateStatus(otf.RunErrored)
+			r.Plan.UpdateStatus(PhaseErrored)
+			r.Apply.UpdateStatus(PhaseUnreachable)
+			return nil
+		}
+
+		r.updateStatus(otf.RunPlanned)
+		r.Plan.UpdateStatus(PhaseFinished)
+
+		if !r.HasChanges() || r.Speculative {
+			r.updateStatus(otf.RunPlannedAndFinished)
+			r.Apply.UpdateStatus(PhaseUnreachable)
+		} else if r.AutoApply {
+			return r.EnqueueApply()
+		}
+		return nil
 	case otf.ApplyPhase:
-		return r.finishApply(opts)
+		if r.Status != otf.RunApplying {
+			return ErrInvalidRunStateTransition
+		}
+		if opts.Errored {
+			r.updateStatus(otf.RunErrored)
+			r.Apply.UpdateStatus(PhaseErrored)
+		} else {
+			r.updateStatus(otf.RunApplied)
+			r.Apply.UpdateStatus(PhaseFinished)
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown phase")
 	}
-}
-
-func (r *Run) finishPlan(opts PhaseFinishOptions) error {
-	if r.Status != otf.RunPlanning {
-		return ErrInvalidRunStateTransition
-	}
-	if opts.Errored {
-		r.updateStatus(otf.RunErrored)
-		r.Plan.UpdateStatus(PhaseErrored)
-		r.Apply.UpdateStatus(PhaseUnreachable)
-		return nil
-	}
-
-	r.updateStatus(otf.RunPlanned)
-	r.Plan.UpdateStatus(PhaseFinished)
-
-	if !r.HasChanges() || r.Speculative {
-		r.updateStatus(otf.RunPlannedAndFinished)
-		r.Apply.UpdateStatus(PhaseUnreachable)
-	} else if r.AutoApply {
-		return r.EnqueueApply()
-	}
-	return nil
-}
-
-func (r *Run) finishApply(opts PhaseFinishOptions) error {
-	if r.Status != otf.RunApplying {
-		return ErrInvalidRunStateTransition
-	}
-	if opts.Errored {
-		r.updateStatus(otf.RunErrored)
-		r.Apply.UpdateStatus(PhaseErrored)
-	} else {
-		r.updateStatus(otf.RunApplied)
-		r.Apply.UpdateStatus(PhaseFinished)
-	}
-	return nil
 }
 
 func (r *Run) updateStatus(status otf.RunStatus) {

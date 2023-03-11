@@ -15,14 +15,14 @@ type queue struct {
 	otf.Application
 	logr.Logger
 
-	ws      otf.Workspace
+	ws      workspace.Workspace
 	current *run.Run
 	queue   []*run.Run
 }
 
 type queueMaker struct{}
 
-func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws otf.Workspace) eventHandler {
+func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws workspace.Workspace) eventHandler {
 	return &queue{
 		Application: app,
 		ws:          ws,
@@ -32,7 +32,7 @@ func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws otf.Works
 
 func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 	switch payload := event.Payload.(type) {
-	case otf.Workspace:
+	case workspace.Workspace:
 		q.ws = payload
 		if event.Type == workspace.EventUnlocked {
 			if q.current != nil {
@@ -68,7 +68,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 					q.current = nil
 					// unlock workspace as run
 					ctx = otf.AddSubjectToContext(ctx, payload)
-					ws, err := q.UnlockWorkspace(ctx, q.ws.ID, otf.WorkspaceUnlockOptions{})
+					ws, err := q.UnlockWorkspace(ctx, q.ws.ID, workspace.WorkspaceUnlockOptions{})
 					if err != nil {
 						return err
 					}
@@ -130,7 +130,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
 	}
 
 	// Lock the workspace as the run
-	ws, err := q.LockWorkspace(otf.AddSubjectToContext(ctx, run), q.ws.ID, otf.WorkspaceLockOptions{})
+	ws, err := q.LockWorkspace(otf.AddSubjectToContext(ctx, run), q.ws.ID, workspace.WorkspaceLockOptions{})
 	if err != nil {
 		if errors.Is(err, otf.ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between

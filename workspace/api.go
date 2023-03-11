@@ -55,11 +55,11 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	opts := otf.CreateWorkspaceOptions{
+	opts := CreateWorkspaceOptions{
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
 		Description:                params.Description,
-		ExecutionMode:              (*otf.ExecutionMode)(params.ExecutionMode),
+		ExecutionMode:              (*ExecutionMode)(params.ExecutionMode),
 		FileTriggersEnabled:        params.FileTriggersEnabled,
 		GlobalRemoteState:          params.GlobalRemoteState,
 		MigrationEnvironment:       params.MigrationEnvironment,
@@ -81,9 +81,9 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if *params.Operations {
-			opts.ExecutionMode = otf.ExecutionModePtr(otf.RemoteExecutionMode)
+			opts.ExecutionMode = ExecutionModePtr(RemoteExecutionMode)
 		} else {
-			opts.ExecutionMode = otf.ExecutionModePtr(otf.LocalExecutionMode)
+			opts.ExecutionMode = ExecutionModePtr(LocalExecutionMode)
 		}
 	}
 	if params.VCSRepo != nil {
@@ -92,7 +92,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 			return
 		}
-		opts.ConnectWorkspaceOptions = &otf.ConnectWorkspaceOptions{
+		opts.ConnectWorkspaceOptions = &ConnectWorkspaceOptions{
 			RepoPath:      *params.VCSRepo.Identifier,
 			VCSProviderID: *params.VCSRepo.OAuthTokenID,
 		}
@@ -167,7 +167,7 @@ func (s *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := s.svc.list(r.Context(), otf.WorkspaceListOptions{
+	wsl, err := s.svc.list(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -315,11 +315,11 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	ws, err := s.svc.update(r.Context(), workspaceID, otf.UpdateWorkspaceOptions{
+	ws, err := s.svc.update(r.Context(), workspaceID, UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
-		ExecutionMode:              (*otf.ExecutionMode)(opts.ExecutionMode),
+		ExecutionMode:              (*ExecutionMode)(opts.ExecutionMode),
 		FileTriggersEnabled:        opts.FileTriggersEnabled,
 		GlobalRemoteState:          opts.GlobalRemoteState,
 		Name:                       opts.Name,

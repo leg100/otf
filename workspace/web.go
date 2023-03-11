@@ -56,7 +56,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.svc.list(r.Context(), otf.WorkspaceListOptions{
+	workspaces, err := h.svc.list(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -66,7 +66,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_list.tmpl", w, r, struct {
-		*otf.WorkspaceList
+		*WorkspaceList
 		Organization string
 	}{
 		WorkspaceList: workspaces,
@@ -94,7 +94,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.create(r.Context(), otf.CreateWorkspaceOptions{
+	ws, err := h.svc.create(r.Context(), CreateWorkspaceOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -134,7 +134,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_get.tmpl", w, r, struct {
-		*otf.Workspace
+		*Workspace
 		LatestRun      run
 		LatestStreamID string
 	}{
@@ -198,7 +198,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_edit.tmpl", w, r, struct {
-		*otf.Workspace
+		*Workspace
 		Permissions []otf.WorkspacePermission
 		Teams       []*otf.Team
 		Roles       []rbac.Role
@@ -220,10 +220,10 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply        bool `schema:"auto_apply"`
 		Name             *string
 		Description      *string
-		ExecutionMode    *otf.ExecutionMode `schema:"execution_mode"`
-		TerraformVersion *string            `schema:"terraform_version"`
-		WorkingDirectory *string            `schema:"working_directory"`
-		WorkspaceID      string             `schema:"workspace_id,required"`
+		ExecutionMode    *ExecutionMode `schema:"execution_mode"`
+		TerraformVersion *string        `schema:"terraform_version"`
+		WorkingDirectory *string        `schema:"working_directory"`
+		WorkspaceID      string         `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -231,7 +231,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.svc.update(r.Context(), params.WorkspaceID, otf.UpdateWorkspaceOptions{
+	ws, err := h.svc.update(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,
@@ -315,7 +315,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
 		Items []*otf.VCSProvider
-		*otf.Workspace
+		*Workspace
 	}{
 		Items:     providers,
 		Workspace: ws,
@@ -354,7 +354,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
 		Repos []string
-		*otf.Workspace
+		*Workspace
 		VCSProviderID string
 	}{
 		Repos:         repos,
@@ -366,7 +366,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		otf.ConnectWorkspaceOptions
+		ConnectWorkspaceOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

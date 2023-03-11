@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestConfigurationVersion(t *testing.T, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
+func NewTestConfigurationVersion(t *testing.T, ws workspace.Workspace, opts otf.ConfigurationVersionCreateOptions) *ConfigurationVersion {
 	cv, err := NewConfigurationVersion(ws.ID, opts)
 	require.NoError(t, err)
 	return cv
 }
 
-func CreateConfigurationVersion(t *testing.T, db otf.DB, ws otf.Workspace, opts otf.ConfigurationVersionCreateOptions) otf.ConfigurationVersion {
+func CreateConfigurationVersion(t *testing.T, db otf.DB, ws workspace.Workspace, opts otf.ConfigurationVersionCreateOptions) otf.ConfigurationVersion {
 	ctx := context.Background()
 	configService := NewConfigVersionService(db)
 

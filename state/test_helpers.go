@@ -9,7 +9,7 @@ import (
 )
 
 // newTestVersion creates a new state.Version for testing purposes
-func newTestVersion(t *testing.T, ws otf.Workspace, outputKVs ...string) *version {
+func newTestVersion(t *testing.T, ws workspace.Workspace, outputKVs ...string) *version {
 	// create empty terraform state file
 	f := file{
 		Version: DefaultStateVersion,

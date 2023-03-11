@@ -266,7 +266,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		otf.AgentTokenService
 		otf.VariableApp
 		otf.StateVersionApp
-		otf.WorkspaceService
+		workspace.WorkspaceService
 		otf.HostnameService
 		otf.ConfigurationVersionService
 		otf.RegistrySessionService

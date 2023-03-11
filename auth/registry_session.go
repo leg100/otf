@@ -62,7 +62,7 @@ func (t *registrySession) CanAccessOrganization(action rbac.Action, name string)
 	}
 }
 
-func (t *registrySession) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
+func (t *registrySession) CanAccessWorkspace(action rbac.Action, policy workspace.WorkspacePolicy) bool {
 	return false
 }
 

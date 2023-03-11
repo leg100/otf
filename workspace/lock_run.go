@@ -9,7 +9,7 @@ type RunLock struct {
 
 func (l RunLock) String() string { return l.id }
 
-func (RunLock) CanLock(lock otf.LockedState) error {
+func (RunLock) CanLock(lock LockedState) error {
 	// a run lock can only be replaced by another run lock
 	if _, ok := lock.(RunLock); ok {
 		return nil

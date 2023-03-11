@@ -10,8 +10,8 @@ import (
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*otf.Workspace) error) (*otf.Workspace, error) {
-	var ws *otf.Workspace
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Workspace) error) (*Workspace, error) {
+	var ws *Workspace
 	err := db.tx(ctx, func(tx *pgdb) error {
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))

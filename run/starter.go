@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/workspace"
 )
 
 // starter starts a run triggered via the UI (whereas the terraform CLI takes
@@ -15,7 +16,7 @@ type starter struct {
 	otf.ConfigurationVersionService
 	otf.RepoService
 	otf.VCSProviderService
-	otf.WorkspaceService
+	workspace.WorkspaceService
 
 	service
 }

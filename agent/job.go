@@ -24,7 +24,7 @@ type Job struct {
 	run.Run
 	environment.Environment
 
-	workspace otf.Workspace
+	workspace workspace.Workspace
 }
 
 func (r *Job) Do() error {

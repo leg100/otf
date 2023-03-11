@@ -8,13 +8,14 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListRunsHandler(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withWorkspace(&otf.Workspace{ID: "ws-123"}),
+		withWorkspace(&workspace.Workspace{ID: "ws-123"}),
 		withRuns(
 			&Run{ID: "run-1"},
 			&Run{ID: "run-2"},
@@ -93,19 +94,19 @@ func TestWebHandlers_StartRun(t *testing.T) {
 type (
 	fakeWebServices struct {
 		runs       []*Run
-		ws         *otf.Workspace
+		ws         *workspace.Workspace
 		gotOptions *otf.ConfigurationVersionCreateOptions
 
 		service
 
 		RunService
-		otf.WorkspaceService
+		workspace.WorkspaceService
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)
 )
 
-func withWorkspace(workspace *otf.Workspace) fakeWebServiceOption {
+func withWorkspace(workspace *workspace.Workspace) fakeWebServiceOption {
 	return func(svc *fakeWebServices) {
 		svc.ws = workspace
 	}
@@ -140,11 +141,11 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	}
 }
 
-func (f *fakeWebServices) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
+func (f *fakeWebServices) GetWorkspaceByName(context.Context, string, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeWebServices) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeWebServices) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

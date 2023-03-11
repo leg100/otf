@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ func TestStartRun(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("not connected to repo", func(t *testing.T) {
-		ws := &otf.Workspace{}
+		ws := &workspace.Workspace{}
 		cv := &otf.ConfigurationVersion{}
 		want := &Run{}
 		starter := newTestStarter(fakeStarterService{
@@ -29,7 +30,7 @@ func TestStartRun(t *testing.T) {
 	})
 
 	t.Run("connected to repo", func(t *testing.T) {
-		ws := &otf.Workspace{Connection: &otf.Connection{}}
+		ws := &workspace.Workspace{Connection: &otf.Connection{}}
 		cv := &otf.ConfigurationVersion{}
 		provider := &otf.VCSProvider{}
 		want := &Run{}
@@ -49,11 +50,11 @@ func TestStartRun(t *testing.T) {
 type (
 	fakeStarterService struct {
 		run       *Run
-		workspace *otf.Workspace
+		workspace *workspace.Workspace
 		cv        *otf.ConfigurationVersion
 		provider  *otf.VCSProvider
 
-		otf.WorkspaceService
+		workspace.WorkspaceService
 		otf.VCSProviderService
 		otf.ConfigurationVersionService
 		service
@@ -69,7 +70,7 @@ func newTestStarter(svc fakeStarterService) *starter {
 	}
 }
 
-func (f *fakeStarterService) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeStarterService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
 	return f.workspace, nil
 }
 

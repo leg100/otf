@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,43 +18,43 @@ func TestSpawner(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		ws      *otf.Workspace
+		ws      *workspace.Workspace
 		event   cloud.VCSEvent // incoming event
 		spawned bool           // want spawned run
 	}{
 		{
 			name:    "spawn run for push to default branch",
-			ws:      &otf.Workspace{Connection: &otf.Connection{}},
+			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
 			spawned: true,
 		},
 		{
 			name:    "skip run for push to non-default branch",
-			ws:      &otf.Workspace{Connection: &otf.Connection{}},
+			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
 			spawned: false,
 		},
 		{
 			name:    "spawn run for push to user-specified branch",
-			ws:      &otf.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
+			ws:      &workspace.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
 			event:   cloud.VCSPushEvent{Branch: "dev"},
 			spawned: true,
 		},
 		{
 			name:    "skip run for push to branch not matching user-specified branch",
-			ws:      &otf.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
+			ws:      &workspace.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
 			event:   cloud.VCSPushEvent{Branch: "staging"},
 			spawned: false,
 		},
 		{
 			name:    "spawn run for opened pr",
-			ws:      &otf.Workspace{Connection: &otf.Connection{}},
+			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
 			spawned: true,
 		},
 		{
 			name:    "spawn run for push to pr",
-			ws:      &otf.Workspace{Connection: &otf.Connection{}},
+			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
 			spawned: true,
 		},
@@ -61,7 +62,7 @@ func TestSpawner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			services := &fakeSpawnerServices{
-				workspaces: []*otf.Workspace{tt.ws},
+				workspaces: []*workspace.Workspace{tt.ws},
 			}
 			spawner := spawner{
 				ConfigurationVersionService: services,
@@ -79,18 +80,18 @@ func TestSpawner(t *testing.T) {
 }
 
 type fakeSpawnerServices struct {
-	workspaces []*otf.Workspace
+	workspaces []*workspace.Workspace
 	created    []*otf.ConfigurationVersion // created config versions
 	spawned    bool                        // whether a run was spawned
 
 	otf.ConfigurationVersionService
-	otf.WorkspaceService
+	workspace.WorkspaceService
 	otf.VCSProviderService
 
 	service
 }
 
-func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
+func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uuid.UUID) ([]*workspace.Workspace, error) {
 	return f.workspaces, nil
 }
 

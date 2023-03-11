@@ -171,7 +171,7 @@ func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hoo
 	}
 }
 
-func createTestWorkspace(t *testing.T) *otf.Workspace {
+func createTestWorkspace(t *testing.T) *workspace.Workspace {
 	db := sql.NewTestDB(t)
 	org := sql.CreateTestOrganization(t, db)
 	return sql.CreateTestWorkspace(t, db, org)

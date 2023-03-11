@@ -13,11 +13,11 @@ import (
 type db interface {
 	otf.DB
 
-	create(ctx context.Context, variable *otf.Variable) error
-	list(ctx context.Context, workspaceID string) ([]*otf.Variable, error)
-	get(ctx context.Context, variableID string) (*otf.Variable, error)
-	update(ctx context.Context, variableID string, updateFn func(*otf.Variable) error) (*otf.Variable, error)
-	delete(ctx context.Context, variableID string) (*otf.Variable, error)
+	create(ctx context.Context, variable *Variable) error
+	list(ctx context.Context, workspaceID string) ([]*Variable, error)
+	get(ctx context.Context, variableID string) (*Variable, error)
+	update(ctx context.Context, variableID string, updateFn func(*Variable) error) (*Variable, error)
+	delete(ctx context.Context, variableID string) (*Variable, error)
 	tx(context.Context, func(db) error) error
 }
 
@@ -30,7 +30,7 @@ func newPGDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
-func (pdb *pgdb) create(ctx context.Context, v *otf.Variable) error {
+func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
 	_, err := pdb.InsertVariable(ctx, pggen.InsertVariableParams{
 		VariableID:  sql.String(v.ID),
 		Key:         sql.String(v.Key),
@@ -47,8 +47,8 @@ func (pdb *pgdb) create(ctx context.Context, v *otf.Variable) error {
 	return nil
 }
 
-func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*otf.Variable) error) (*otf.Variable, error) {
-	var variable *otf.Variable
+func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variable) error) (*Variable, error) {
+	var variable *Variable
 	err := pdb.tx(ctx, func(tx db) error {
 		var err error
 		// retrieve variable
@@ -77,20 +77,20 @@ func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*otf.Var
 	return variable, err
 }
 
-func (pdb *pgdb) list(ctx context.Context, workspaceID string) ([]*otf.Variable, error) {
+func (pdb *pgdb) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
 	rows, err := pdb.FindVariables(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, err
 	}
 
-	var variables []*otf.Variable
+	var variables []*Variable
 	for _, row := range rows {
 		variables = append(variables, pgRow(row).toVariable())
 	}
 	return variables, nil
 }
 
-func (pdb *pgdb) get(ctx context.Context, variableID string) (*otf.Variable, error) {
+func (pdb *pgdb) get(ctx context.Context, variableID string) (*Variable, error) {
 	row, err := pdb.FindVariable(ctx, sql.String(variableID))
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (pdb *pgdb) get(ctx context.Context, variableID string) (*otf.Variable, err
 	return pgRow(row).toVariable(), nil
 }
 
-func (pdb *pgdb) delete(ctx context.Context, variableID string) (*otf.Variable, error) {
+func (pdb *pgdb) delete(ctx context.Context, variableID string) (*Variable, error) {
 	row, err := pdb.DeleteVariableByID(ctx, sql.String(variableID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -125,13 +125,13 @@ type pgRow struct {
 	WorkspaceID pgtype.Text `json:"workspace_id"`
 }
 
-func (row pgRow) toVariable() *otf.Variable {
-	return &otf.Variable{
+func (row pgRow) toVariable() *Variable {
+	return &Variable{
 		ID:          row.VariableID.String,
 		Key:         row.Key.String,
 		Value:       row.Value.String,
 		Description: row.Description.String,
-		Category:    otf.VariableCategory(row.Category.String),
+		Category:    VariableCategory(row.Category.String),
 		Sensitive:   row.Sensitive,
 		HCL:         row.HCL,
 		WorkspaceID: row.WorkspaceID.String,

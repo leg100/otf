@@ -34,7 +34,7 @@ func NewWorkspace(t *testing.T, organization string, opts ...NewTestWorkspaceOpt
 	return ws
 }
 
-func CreateWorkspace(t *testing.T, db otf.DB, organization string, opts ...otf.NewTestWorkspaceOption) otf.Workspace {
+func CreateWorkspace(t *testing.T, db otf.DB, organization string, opts ...otf.NewTestWorkspaceOption) workspace.Workspace {
 	ctx := context.Background()
 	ws := NewWorkspace(t, organization, opts...)
 	err := workspaceService.CreateWorkspace(ctx, ws)

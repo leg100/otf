@@ -9,7 +9,7 @@ type UserLock struct {
 
 func (l UserLock) String() string { return l.username }
 
-func (l UserLock) CanLock(lock otf.LockedState) error {
+func (l UserLock) CanLock(lock LockedState) error {
 	// nothing can replace a user lock; it can only be unlocked
 	return otf.ErrWorkspaceAlreadyLocked
 }

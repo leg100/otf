@@ -12,10 +12,11 @@ import (
 // JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
 type JSONAPIMarshaler struct {
-	otf.Application
+	otf.OrganizationService
+	WorkspacePermissionService
 }
 
-func (m *JSONAPIMarshaler) toJSONAPI(ws *otf.Workspace, r *http.Request) (*jsonapi.Workspace, error) {
+func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *otf.Workspace, r *http.Request) (*jsona
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toJSONAPIList(list *otf.WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
+func (m *JSONAPIMarshaler) toJSONAPIList(list *WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
 	var items []*jsonapi.Workspace
 	for _, ws := range list.Items {
 		item, err := m.toJSONAPI(ws, r)

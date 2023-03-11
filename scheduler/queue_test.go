@@ -147,7 +147,7 @@ func TestQueue(t *testing.T) {
 	})
 }
 
-func newTestQueue(app *fakeQueueApp, ws *otf.Workspace) *queue {
+func newTestQueue(app *fakeQueueApp, ws *workspace.Workspace) *queue {
 	return &queue{
 		ws:          ws,
 		Application: app,
@@ -156,7 +156,7 @@ func newTestQueue(app *fakeQueueApp, ws *otf.Workspace) *queue {
 }
 
 type fakeQueueApp struct {
-	ws        *otf.Workspace
+	ws        *workspace.Workspace
 	runs      map[string]*run.Run // mock run db
 	scheduled []string            // list of IDs of scheduled runs
 	current   []string            // list of IDs of runs that have been set as the current run
@@ -164,7 +164,7 @@ type fakeQueueApp struct {
 	otf.Application
 }
 
-func newFakeQueueApp(ws *otf.Workspace, runs ...*run.Run) *fakeQueueApp {
+func newFakeQueueApp(ws *workspace.Workspace, runs ...*run.Run) *fakeQueueApp {
 	db := make(map[string]*run.Run, len(runs))
 	for _, r := range runs {
 		db[r.ID] = r
@@ -177,7 +177,7 @@ func (f *fakeQueueApp) EnqueuePlan(ctx context.Context, runID string) (*run.Run,
 	return f.runs[runID], nil
 }
 
-func (f *fakeQueueApp) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (f *fakeQueueApp) LockWorkspace(ctx context.Context, workspaceID string, opts workspace.WorkspaceLockOptions) (*workspace.Workspace, error) {
 	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -188,7 +188,7 @@ func (f *fakeQueueApp) LockWorkspace(ctx context.Context, workspaceID string, op
 	return f.ws, nil
 }
 
-func (f *fakeQueueApp) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (f *fakeQueueApp) UnlockWorkspace(ctx context.Context, workspaceID string, opts workspace.WorkspaceUnlockOptions) (*workspace.Workspace, error) {
 	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (f *fakeQueueApp) UnlockWorkspace(ctx context.Context, workspaceID string, 
 	return f.ws, nil
 }
 
-func (f *fakeQueueApp) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
+func (f *fakeQueueApp) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error) {
 	f.ws.SetLatestRun(runID)
 	return f.ws, nil
 }

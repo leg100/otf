@@ -97,13 +97,13 @@ func TestWorkspace_Create(t *testing.T) {
 
 		tests := []struct {
 			name string
-			opts otf.WorkspaceListOptions
-			want func(*testing.T, *otf.WorkspaceList)
+			opts workspace.WorkspaceListOptions
+			want func(*testing.T, *workspace.WorkspaceList)
 		}{
 			{
 				name: "filter by org",
-				opts: otf.WorkspaceListOptions{Organization: otf.String(org.Name())},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				opts: workspace.WorkspaceListOptions{Organization: otf.String(org.Name())},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
@@ -111,30 +111,30 @@ func TestWorkspace_Create(t *testing.T) {
 			},
 			{
 				name: "filter by prefix",
-				opts: otf.WorkspaceListOptions{Organization: otf.String(org.Name()), Prefix: ws1.Name()[:5]},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				opts: workspace.WorkspaceListOptions{Organization: otf.String(org.Name()), Prefix: ws1.Name()[:5]},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
 				},
 			},
 			{
 				name: "filter by non-existent org",
-				opts: otf.WorkspaceListOptions{Organization: otf.String("non-existent")},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				opts: workspace.WorkspaceListOptions{Organization: otf.String("non-existent")},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter by non-existent prefix",
-				opts: otf.WorkspaceListOptions{Organization: otf.String(org.Name()), Prefix: "xyz"},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				opts: workspace.WorkspaceListOptions{Organization: otf.String(org.Name()), Prefix: "xyz"},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "paginated results ordered by updated_at",
-				opts: otf.WorkspaceListOptions{Organization: otf.String(org.Name()), ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				opts: workspace.WorkspaceListOptions{Organization: otf.String(org.Name()), ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
 					// first.
@@ -144,8 +144,8 @@ func TestWorkspace_Create(t *testing.T) {
 			},
 			{
 				name: "stray pagination",
-				opts: otf.WorkspaceListOptions{Organization: otf.String(org.Name()), ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				opts: workspace.WorkspaceListOptions{Organization: otf.String(org.Name()), ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
 					assert.Equal(t, 2, l.TotalCount())
@@ -177,13 +177,13 @@ func TestWorkspace_Create(t *testing.T) {
 			userID       string
 			organization string
 			opts         otf.ListOptions
-			want         func(*testing.T, *otf.WorkspaceList)
+			want         func(*testing.T, *workspace.WorkspaceList)
 		}{
 			{
 				name:         "show both workspaces",
 				userID:       user.ID,
 				organization: org.Name(),
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
@@ -193,7 +193,7 @@ func TestWorkspace_Create(t *testing.T) {
 				name:         "query non-existent org",
 				userID:       user.ID,
 				organization: "acme-corp",
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
@@ -201,7 +201,7 @@ func TestWorkspace_Create(t *testing.T) {
 				name:         "query non-existent user",
 				userID:       "mr-invisible",
 				organization: org.Name(),
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
@@ -210,7 +210,7 @@ func TestWorkspace_Create(t *testing.T) {
 				userID:       user.ID,
 				organization: org.Name(),
 				opts:         otf.ListOptions{PageNumber: 1, PageSize: 1},
-				want: func(t *testing.T, l *otf.WorkspaceList) {
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
 					// first.
@@ -240,7 +240,7 @@ func TestWorkspace_Create(t *testing.T) {
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
-		results, err := svc.ListWorkspaces(ctx, otf.WorkspaceListOptions{Organization: otf.String(org.Name())})
+		results, err := svc.ListWorkspaces(ctx, workspace.WorkspaceListOptions{Organization: otf.String(org.Name())})
 		require.NoError(t, err)
 
 		assert.Equal(t, 0, len(results.Items))

@@ -5,8 +5,8 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-func unmarshalJSONAPI(w *jsonapi.Workspace) *otf.Workspace {
-	domain := otf.Workspace{
+func unmarshalJSONAPI(w *jsonapi.Workspace) *Workspace {
+	domain := Workspace{
 		ID:                         w.ID,
 		AllowDestroyPlan:           w.AllowDestroyPlan,
 		AutoApply:                  w.AutoApply,
@@ -15,7 +15,7 @@ func unmarshalJSONAPI(w *jsonapi.Workspace) *otf.Workspace {
 		UpdatedAt:                  w.UpdatedAt,
 		Description:                w.Description,
 		Environment:                w.Environment,
-		ExecutionMode:              otf.ExecutionMode(w.ExecutionMode),
+		ExecutionMode:              ExecutionMode(w.ExecutionMode),
 		FileTriggersEnabled:        w.FileTriggersEnabled,
 		GlobalRemoteState:          w.GlobalRemoteState,
 		MigrationEnvironment:       w.MigrationEnvironment,
@@ -35,14 +35,14 @@ func unmarshalJSONAPI(w *jsonapi.Workspace) *otf.Workspace {
 	// domain object has three states: unlocked, run locked or user locked.
 	// Therefore we ignore when DTO says lock is locked because we cannot
 	// determine what/who locked it, so we assume it is unlocked.
-	domain.Lock = otf.Lock{}
+	domain.Lock = Lock{}
 
 	return &domain
 }
 
 // unmarshalListJSONAPI converts a DTO into a workspace list
-func unmarshalListJSONAPI(json *jsonapi.WorkspaceList) *otf.WorkspaceList {
-	wl := otf.WorkspaceList{
+func unmarshalListJSONAPI(json *jsonapi.WorkspaceList) *WorkspaceList {
+	wl := WorkspaceList{
 		Pagination: otf.NewPaginationFromJSONAPI(json.Pagination),
 	}
 	for _, i := range json.Items {

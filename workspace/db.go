@@ -53,8 +53,8 @@ type (
 	}
 )
 
-func (r pgresult) toWorkspace() (*otf.Workspace, error) {
-	ws := otf.Workspace{
+func (r pgresult) toWorkspace() (*Workspace, error) {
+	ws := Workspace{
 		ID:                         r.WorkspaceID.String,
 		CreatedAt:                  r.CreatedAt.Time.UTC(),
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
@@ -64,7 +64,7 @@ func (r pgresult) toWorkspace() (*otf.Workspace, error) {
 		CanQueueDestroyPlan:        r.CanQueueDestroyPlan,
 		Description:                r.Description.String,
 		Environment:                r.Environment.String,
-		ExecutionMode:              otf.ExecutionMode(r.ExecutionMode.String),
+		ExecutionMode:              ExecutionMode(r.ExecutionMode.String),
 		FileTriggersEnabled:        r.FileTriggersEnabled,
 		GlobalRemoteState:          r.GlobalRemoteState,
 		MigrationEnvironment:       r.MigrationEnvironment.String,
@@ -110,7 +110,7 @@ func newdb(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
-func (db *pgdb) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
+func (db *pgdb) CreateWorkspace(ctx context.Context, ws *Workspace) error {
 	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 		ID:                         sql.String(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
@@ -138,8 +138,8 @@ func (db *pgdb) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
-	var ws *otf.Workspace
+func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
+	var ws *Workspace
 	err := db.Tx(ctx, func(tx otf.DB) error {
 		var err error
 		// retrieve workspace
@@ -178,7 +178,7 @@ func (db *pgdb) UpdateWorkspace(ctx context.Context, workspaceID string, fn func
 }
 
 // SetCurrentRun sets the ID of the current run for the specified workspace.
-func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*otf.Workspace, error) {
+func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, sql.String(runID), sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -186,7 +186,7 @@ func (db *pgdb) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	return db.GetWorkspace(ctx, workspaceID)
 }
 
-func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (db *pgdb) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -217,7 +217,7 @@ func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOption
 		return nil, err
 	}
 
-	var items []*otf.Workspace
+	var items []*Workspace
 	for _, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
@@ -226,19 +226,19 @@ func (db *pgdb) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOption
 		items = append(items, ws)
 	}
 
-	return &otf.WorkspaceList{
+	return &WorkspaceList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
+func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
 	rows, err := db.FindWorkspacesByWebhookID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*otf.Workspace
+	var items []*Workspace
 	for _, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
@@ -250,7 +250,7 @@ func (db *pgdb) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]
 	return items, nil
 }
 
-func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
+func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
@@ -272,7 +272,7 @@ func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organ
 		return nil, err
 	}
 
-	var items []*otf.Workspace
+	var items []*Workspace
 	for _, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
@@ -281,7 +281,7 @@ func (db *pgdb) ListWorkspacesByUserID(ctx context.Context, userID string, organ
 		items = append(items, ws)
 	}
 
-	return &otf.WorkspaceList{
+	return &WorkspaceList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts, *count),
 	}, nil
@@ -311,7 +311,7 @@ func (db *pgdb) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, 
 	return workspaceID.String, nil
 }
 
-func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	result, err := db.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -319,7 +319,7 @@ func (db *pgdb) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Work
 	return pgresult(result).toWorkspace()
 }
 
-func (db *pgdb) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
+func (db *pgdb) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	result, err := db.FindWorkspaceByName(ctx, sql.String(workspace), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)

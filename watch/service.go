@@ -8,6 +8,8 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -104,7 +106,7 @@ func (s *Service) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.
 				case *run.Run:
 					organization = payload.Organization
 					workspaceID = payload.WorkspaceID
-				case *otf.Workspace:
+				case *workspace.Workspace:
 					organization = payload.Organization
 					workspaceID = payload.ID
 				default:

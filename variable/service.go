@@ -12,11 +12,11 @@ import (
 
 type (
 	service interface {
-		create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*otf.Variable, error)
-		list(ctx context.Context, workspaceID string) ([]*otf.Variable, error)
-		get(ctx context.Context, variableID string) (*otf.Variable, error)
-		update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*otf.Variable, error)
-		delete(ctx context.Context, variableID string) (*otf.Variable, error)
+		create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
+		list(ctx context.Context, workspaceID string) ([]*Variable, error)
+		get(ctx context.Context, variableID string) (*Variable, error)
+		update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
+		delete(ctx context.Context, variableID string) (*Variable, error)
 	}
 
 	Service struct {
@@ -34,7 +34,7 @@ type (
 		WorkspaceAuthorizer otf.Authorizer
 		otf.DB
 		otf.Renderer
-		otf.WorkspaceService
+		workspace.WorkspaceService
 		logr.Logger
 	}
 )
@@ -63,17 +63,17 @@ func (s *Service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (a *Service) ListVariables(ctx context.Context, workspaceID string) ([]*otf.Variable, error) {
+func (a *Service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
 	return a.list(ctx, workspaceID)
 }
 
-func (a *Service) create(ctx context.Context, workspaceID string, opts otf.CreateVariableOptions) (*otf.Variable, error) {
+func (a *Service) create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.CreateVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	v, err := otf.NewVariable(workspaceID, opts)
+	v, err := NewVariable(workspaceID, opts)
 	if err != nil {
 		a.Error(err, "constructing variable", "subject", subject, "workspace", workspaceID, "key", opts.Key)
 		return nil, err
@@ -89,7 +89,7 @@ func (a *Service) create(ctx context.Context, workspaceID string, opts otf.Creat
 	return v, nil
 }
 
-func (a *Service) get(ctx context.Context, variableID string) (*otf.Variable, error) {
+func (a *Service) get(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve variable first in order to retrieve workspace ID for authorization
 	variable, err := a.db.get(ctx, variableID)
 	if err != nil {
@@ -107,7 +107,7 @@ func (a *Service) get(ctx context.Context, variableID string) (*otf.Variable, er
 	return variable, nil
 }
 
-func (a *Service) update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*otf.Variable, error) {
+func (a *Service) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := a.db.get(ctx, variableID)
 	if err != nil {
@@ -119,7 +119,7 @@ func (a *Service) update(ctx context.Context, variableID string, opts otf.Update
 		return nil, err
 	}
 
-	updated, err := a.db.update(ctx, variableID, func(v *otf.Variable) error {
+	updated, err := a.db.update(ctx, variableID, func(v *Variable) error {
 		return v.Update(opts)
 	})
 	if err != nil {
@@ -131,7 +131,7 @@ func (a *Service) update(ctx context.Context, variableID string, opts otf.Update
 	return updated, nil
 }
 
-func (a *Service) delete(ctx context.Context, variableID string) (*otf.Variable, error) {
+func (a *Service) delete(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := a.db.get(ctx, variableID)
 	if err != nil {
@@ -153,7 +153,7 @@ func (a *Service) delete(ctx context.Context, variableID string) (*otf.Variable,
 	return deleted, nil
 }
 
-func (a *Service) list(ctx context.Context, workspaceID string) ([]*otf.Variable, error) {
+func (a *Service) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
 	if err != nil {
 		return nil, err

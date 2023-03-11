@@ -174,11 +174,11 @@ func TestBuildSandboxArgs(t *testing.T) {
 type fakeEnvironmentApp struct {
 	t   *testing.T
 	org *otf.Organization
-	ws  *otf.Workspace
+	ws  *workspace.Workspace
 	otf.Application
 }
 
-func (f *fakeEnvironmentApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeEnvironmentApp) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

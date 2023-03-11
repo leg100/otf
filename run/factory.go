@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 )
 
 // factory constructs runs
 type factory struct {
 	otf.ConfigurationVersionService
-	otf.WorkspaceService
+	workspace.WorkspaceService
 }
 
 // NewRun constructs a new run at the beginning of its lifecycle using the

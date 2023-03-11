@@ -12,7 +12,7 @@ type Client struct {
 	otf.JSONAPIClient
 }
 
-func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*otf.Variable, error) {
+func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
 	u := fmt.Sprintf("workspaces/%s/vars", workspaceID)
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -25,14 +25,14 @@ func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*otf.
 		return nil, err
 	}
 
-	var variables []*otf.Variable
+	var variables []*Variable
 	for _, v := range list.Items {
-		variables = append(variables, &otf.Variable{
+		variables = append(variables, &Variable{
 			ID:          v.ID,
 			Key:         v.Key,
 			Value:       v.Value,
 			Description: v.Description,
-			Category:    otf.VariableCategory(v.Category),
+			Category:    VariableCategory(v.Category),
 			Sensitive:   v.Sensitive,
 			HCL:         v.HCL,
 			WorkspaceID: v.Workspace.ID,

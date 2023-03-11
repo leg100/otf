@@ -16,7 +16,7 @@ type Client struct {
 
 // GetWorkspaceByName retrieves a workspace by organization and
 // name.
-func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
+func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
 	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -37,7 +37,7 @@ func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace
 }
 
 // GetWorkspace retrieves a workspace by its ID
-func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.NewRequest("GET", path, nil)
 	if err != nil {
@@ -57,7 +57,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Wor
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (c *Client) ListWorkspaces(ctx context.Context, options WorkspaceListOptions) (*WorkspaceList, error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
 	req, err := c.NewRequest("GET", u, &options)
 	if err != nil {
@@ -74,9 +74,9 @@ func (c *Client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOp
 }
 
 // UpdateWorkspace updates the settings of an existing workspace.
-func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
+func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options UpdateWorkspaceOptions) (*Workspace, error) {
 	// Pre-emptively validate options
-	if err := (&otf.Workspace{}).Update(options); err != nil {
+	if err := (&Workspace{}).Update(options); err != nil {
 		return nil, err
 	}
 
@@ -97,7 +97,7 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) LockWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (c *Client) LockWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.NewRequest("POST", path, nil)
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string) (*otf.Wo
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*otf.Workspace, error) {
+func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
 	req, err := c.NewRequest("POST", path, &unlockOptions{Force: force})
 	if err != nil {

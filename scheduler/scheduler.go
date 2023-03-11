@@ -62,8 +62,8 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	}
 
 	// retrieve existing workspaces, page by page
-	workspaces := []*otf.Workspace{}
-	workspaceListOpts := otf.WorkspaceListOptions{
+	workspaces := []*workspace.Workspace{}
+	workspaceListOpts := workspace.WorkspaceListOptions{
 		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
 	for {
@@ -122,7 +122,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 			return ctx.Err()
 		case event := <-queue:
 			switch payload := event.Payload.(type) {
-			case *otf.Workspace:
+			case *workspace.Workspace:
 				if event.Type == otf.EventWorkspaceDeleted {
 					delete(s.queues, payload.ID)
 					continue

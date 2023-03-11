@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRun_States(t *testing.T) {
 	t.Run("pending", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 
 		require.Equal(t, otf.RunPending, run.Status)
 		require.Equal(t, PhasePending, run.Plan.Status)
@@ -18,7 +19,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 
 		require.NoError(t, run.EnqueuePlan())
 
@@ -28,7 +29,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start plan", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunPlanQueued
 
 		require.NoError(t, run.Start(otf.PlanPhase))
@@ -39,7 +40,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunPlanning
 
 		require.NoError(t, run.Finish(otf.PlanPhase, PhaseFinishOptions{}))
@@ -50,7 +51,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with errors", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunPlanning
 
 		require.NoError(t, run.Finish(otf.PlanPhase, PhaseFinishOptions{Errored: true}))
@@ -61,7 +62,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunPlanning
 
 		run.Plan.ResourceReport = &ResourceReport{Additions: 1}
@@ -74,7 +75,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes on run with autoapply enabled", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{
 			AutoApply: otf.Bool(true),
 		})
 		run.Status = otf.RunPlanning
@@ -89,7 +90,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue apply", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunPlanned
 
 		require.NoError(t, run.EnqueueApply())
@@ -99,7 +100,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start apply", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunApplyQueued
 
 		require.NoError(t, run.Start(otf.ApplyPhase))
@@ -109,7 +110,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunApplying
 
 		require.NoError(t, run.Finish(otf.ApplyPhase, PhaseFinishOptions{}))
@@ -119,7 +120,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply with errors", func(t *testing.T) {
-		run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+		run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = otf.RunApplying
 
 		require.NoError(t, run.Finish(otf.ApplyPhase, PhaseFinishOptions{Errored: true}))
@@ -130,7 +131,7 @@ func TestRun_States(t *testing.T) {
 }
 
 func TestRun_Cancel_Pending(t *testing.T) {
-	run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+	run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 	enqueue, err := run.Cancel()
 	require.NoError(t, err)
 	assert.False(t, enqueue)
@@ -138,7 +139,7 @@ func TestRun_Cancel_Pending(t *testing.T) {
 }
 
 func TestRun_Cancel_Planning(t *testing.T) {
-	run := NewRun(&otf.ConfigurationVersion{}, &otf.Workspace{}, RunCreateOptions{})
+	run := NewRun(&otf.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 	run.Status = otf.RunPlanning
 	enqueue, err := run.Cancel()
 	require.NoError(t, err)

@@ -124,7 +124,7 @@ func TestStateVersion_Create(t *testing.T) {
 	})
 }
 
-func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *otf.Workspace, outputKVs ...string) *version {
+func createTestStateVersion(t *testing.T, stateDB *pgdb, ws *workspace.Workspace, outputKVs ...string) *version {
 	ctx := context.Background()
 	sv := newTestVersion(t, ws, outputKVs...)
 	err := stateDB.createVersion(ctx, sv)

@@ -105,7 +105,7 @@ func TestPubSub_reassemble(t *testing.T) {
 
 type fakePubSubDB struct {
 	run       *run.Run
-	workspace *otf.Workspace
+	workspace *workspace.Workspace
 
 	otf.DB
 }
@@ -114,6 +114,6 @@ func (f *fakePubSubDB) GetRun(context.Context, string) (*run.Run, error) {
 	return f.run, nil
 }
 
-func (f *fakePubSubDB) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakePubSubDB) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
 	return f.workspace, nil
 }

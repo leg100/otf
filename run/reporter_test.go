@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,14 +17,14 @@ func TestReporter_HandleRun(t *testing.T) {
 	tests := []struct {
 		name string
 		run  *Run
-		ws   *otf.Workspace
+		ws   *workspace.Workspace
 		cv   *otf.ConfigurationVersion
 		want cloud.SetStatusOptions
 	}{
 		{
 			name: "pending run",
 			run:  &Run{ID: "run-123", Status: otf.RunPending},
-			ws: &otf.Workspace{
+			ws: &workspace.Workspace{
 				Name:       "dev",
 				Connection: &otf.Connection{},
 			},
@@ -70,12 +71,12 @@ func (f *fakeReporterConfigurationVersionService) GetConfigurationVersion(contex
 }
 
 type fakeReporterWorkspaceService struct {
-	otf.WorkspaceService
+	workspace.WorkspaceService
 
-	ws *otf.Workspace
+	ws *workspace.Workspace
 }
 
-func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

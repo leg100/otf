@@ -46,7 +46,6 @@ type Application interface {
 	Tx(ctx context.Context, tx func(Application) error) error
 	DB() DB
 	OrganizationService
-	WorkspaceService
 	StateVersionService
 	EventService
 	SessionService

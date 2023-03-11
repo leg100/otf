@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
@@ -36,11 +35,11 @@ func (h *api) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variable, err := h.svc.create(r.Context(), workspaceID, otf.CreateVariableOptions{
+	variable, err := h.svc.create(r.Context(), workspaceID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
-		Category:    (*otf.VariableCategory)(opts.Category),
+		Category:    (*VariableCategory)(opts.Category),
 		Sensitive:   opts.Sensitive,
 		HCL:         opts.HCL,
 	})
@@ -90,11 +89,11 @@ func (h *api) update(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	updated, err := h.svc.update(r.Context(), variableID, otf.UpdateVariableOptions{
+	updated, err := h.svc.update(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
-		Category:    (*otf.VariableCategory)(opts.Category),
+		Category:    (*VariableCategory)(opts.Category),
 		Sensitive:   opts.Sensitive,
 		HCL:         opts.HCL,
 	})
@@ -122,7 +121,7 @@ func (h *api) delete(w http.ResponseWriter, r *http.Request) {
 func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
 	var payload any
 
-	convert := func(from *otf.Variable) *jsonapi.Variable {
+	convert := func(from *Variable) *jsonapi.Variable {
 		to := jsonapi.Variable{
 			ID:          from.ID,
 			Key:         from.Key,
@@ -142,9 +141,9 @@ func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 	}
 
 	switch v := v.(type) {
-	case *otf.Variable:
+	case *Variable:
 		payload = convert(v)
-	case []*otf.Variable:
+	case []*Variable:
 		var to jsonapi.VariableList
 		for _, from := range v {
 			to.Items = append(to.Items, convert(from))

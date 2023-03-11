@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf/workspace"
 )
 
 // pgdb is a database of runs on postgres
@@ -358,7 +359,7 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 		TargetAddrs:            result.TargetAddrs,
 		AutoApply:              result.AutoApply,
 		Speculative:            result.Speculative,
-		ExecutionMode:          otf.ExecutionMode(result.ExecutionMode.String),
+		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest,
 		Organization:           result.OrganizationName.String,
 		WorkspaceID:            result.WorkspaceID.String,

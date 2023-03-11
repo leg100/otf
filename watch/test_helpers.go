@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 

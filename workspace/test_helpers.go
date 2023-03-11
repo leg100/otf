@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) otf.Workspace {
+func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) Workspace {
 	ctx := context.Background()
 	wsDB := newdb(db)
-	ws, err := otf.NewWorkspace(otf.CreateWorkspaceOptions{
+	ws, err := NewWorkspace(CreateWorkspaceOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &organization,
 	})
@@ -22,7 +22,7 @@ func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) otf.Works
 	t.Cleanup(func() {
 		wsDB.DeleteWorkspace(ctx, ws.ID)
 	})
-	return otf.Workspace{
+	return Workspace{
 		ID:   ws.ID,
 		Name: ws.Name,
 	}

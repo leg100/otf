@@ -14,7 +14,7 @@ import (
 
 type web struct {
 	otf.Renderer
-	otf.WorkspaceService
+	workspace.WorkspaceService
 	cloud.Service
 
 	app service

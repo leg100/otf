@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ func TestFactory(t *testing.T) {
 
 	t.Run("defaults", func(t *testing.T) {
 		f := testFactory(
-			&otf.Workspace{},
+			&workspace.Workspace{},
 			&otf.ConfigurationVersion{},
 		)
 
@@ -30,7 +31,7 @@ func TestFactory(t *testing.T) {
 
 	t.Run("speculative run", func(t *testing.T) {
 		f := testFactory(
-			&otf.Workspace{},
+			&workspace.Workspace{},
 			&otf.ConfigurationVersion{Speculative: true},
 		)
 
@@ -42,7 +43,7 @@ func TestFactory(t *testing.T) {
 
 	t.Run("workspace auto-apply", func(t *testing.T) {
 		f := testFactory(
-			&otf.Workspace{AutoApply: true},
+			&workspace.Workspace{AutoApply: true},
 			&otf.ConfigurationVersion{},
 		)
 
@@ -54,7 +55,7 @@ func TestFactory(t *testing.T) {
 
 	t.Run("run auto-apply", func(t *testing.T) {
 		f := testFactory(
-			&otf.Workspace{},
+			&workspace.Workspace{},
 			&otf.ConfigurationVersion{},
 		)
 
@@ -67,7 +68,7 @@ func TestFactory(t *testing.T) {
 	})
 }
 
-func testFactory(ws *otf.Workspace, cv *otf.ConfigurationVersion) *factory {
+func testFactory(ws *workspace.Workspace, cv *otf.ConfigurationVersion) *factory {
 	return &factory{
 		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
 		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
@@ -75,11 +76,11 @@ func testFactory(ws *otf.Workspace, cv *otf.ConfigurationVersion) *factory {
 }
 
 type fakeFactoryWorkspaceService struct {
-	ws *otf.Workspace
-	otf.WorkspaceService
+	ws *workspace.Workspace
+	workspace.WorkspaceService
 }
 
-func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
 	return f.ws, nil
 }
 

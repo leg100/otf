@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/workspace"
 )
 
 type (
@@ -53,7 +54,7 @@ type (
 		logr.Logger
 		*logs.Service
 		otf.PubSubService
-		otf.WorkspaceService
+		workspace.WorkspaceService
 
 		site         otf.Authorizer
 		organization otf.Authorizer
@@ -77,7 +78,7 @@ type (
 		otf.Renderer
 		otf.PubSubService
 		otf.HostnameService
-		otf.WorkspaceService
+		workspace.WorkspaceService
 		otf.ConfigurationVersionService
 		otf.Signer
 	}

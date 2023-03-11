@@ -1,8 +1,10 @@
-package otf
+package workspace
+
+import "github.com/leg100/otf"
 
 var (
-	EventLocked   EventType = "workspace_locked"
-	EventUnlocked EventType = "workspace_unlocked"
+	EventLocked   otf.EventType = "workspace_locked"
+	EventUnlocked otf.EventType = "workspace_unlocked"
 )
 
 type (
@@ -47,7 +49,7 @@ func (l *Lock) Lock(state LockedState) error {
 // whether permission is granted and the operation succeeds.
 func (l *Lock) Unlock(iden any, force bool) error {
 	if l.LockedState == nil {
-		return ErrWorkspaceAlreadyUnlocked
+		return otf.ErrWorkspaceAlreadyUnlocked
 	}
 	if err := l.LockedState.CanUnlock(iden, force); err != nil {
 		return err

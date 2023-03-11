@@ -8,20 +8,20 @@ import (
 )
 
 type lockService interface {
-	lock(ctx context.Context, workspaceID string, runID *string) (*otf.Workspace, error)
-	unlock(ctx context.Context, workspaceID string, force bool) (*otf.Workspace, error)
+	lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
+	unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error)
 }
 
 // lock the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string) (*otf.Workspace, error) {
+func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
 	subject, err := svc.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	var state otf.LockedState
+	var state LockedState
 	if runID != nil {
 		state = RunLock{id: *runID}
 	} else if user, ok := subject.(*otf.User); ok {
@@ -31,7 +31,7 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 		return nil, otf.ErrWorkspaceUnlockDenied
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *otf.Workspace) error {
+	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
 		return ws.Lock.Lock(state)
 	})
 	if err != nil {
@@ -40,12 +40,12 @@ func (svc *Service) lock(ctx context.Context, workspaceID string, runID *string)
 	}
 	svc.V(1).Info("locked workspace", "subject", subject, "workspace", workspaceID)
 
-	svc.Publish(otf.Event{Type: otf.EventLocked, Payload: ws})
+	svc.Publish(otf.Event{Type: EventLocked, Payload: ws})
 
 	return ws, nil
 }
 
-func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) (*otf.Workspace, error) {
+func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
 	action := rbac.UnlockWorkspaceAction
 	if force {
 		action = rbac.ForceUnlockWorkspaceAction
@@ -56,7 +56,7 @@ func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) 
 		return nil, err
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *otf.Workspace) error {
+	ws, err := svc.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
 		return ws.Unlock(subject, force)
 	})
 	if err != nil {
@@ -65,7 +65,7 @@ func (svc *Service) unlock(ctx context.Context, workspaceID string, force bool) 
 	}
 	svc.V(1).Info("unlocked workspace", "subject", subject, "workspace", workspaceID)
 
-	svc.Publish(otf.Event{Type: otf.EventUnlocked, Payload: ws})
+	svc.Publish(otf.Event{Type: EventUnlocked, Payload: ws})
 
 	return ws, nil
 }

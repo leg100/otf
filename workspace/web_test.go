@@ -30,7 +30,7 @@ func TestNewWorkspaceHandler(t *testing.T) {
 }
 
 func TestWorkspace_Create(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123"}
+	ws := &Workspace{ID: "ws-123"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
@@ -48,7 +48,7 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123"}
+	ws := &Workspace{ID: "ws-123"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
@@ -63,7 +63,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 }
 
 func TestWorkspace_GetByName(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123"}
+	ws := &Workspace{ID: "ws-123"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?organization_name=acme-corp&workspace_name=fake-ws"
@@ -78,7 +78,7 @@ func TestWorkspace_GetByName(t *testing.T) {
 }
 
 func TestEditWorkspaceHandler(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123"}
+	ws := &Workspace{ID: "ws-123"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
@@ -89,11 +89,11 @@ func TestEditWorkspaceHandler(t *testing.T) {
 }
 
 func TestListWorkspacesHandler(t *testing.T) {
-	ws1 := &otf.Workspace{ID: "ws-1"}
-	ws2 := &otf.Workspace{ID: "ws-2"}
-	ws3 := &otf.Workspace{ID: "ws-3"}
-	ws4 := &otf.Workspace{ID: "ws-4"}
-	ws5 := &otf.Workspace{ID: "ws-5"}
+	ws1 := &Workspace{ID: "ws-1"}
+	ws2 := &Workspace{ID: "ws-2"}
+	ws3 := &Workspace{ID: "ws-3"}
+	ws4 := &Workspace{ID: "ws-4"}
+	ws5 := &Workspace{ID: "ws-5"}
 	app := fakeWebHandlers(t, withWorkspaces(ws1, ws2, ws3, ws4, ws5))
 
 	t.Run("first page", func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 }
 
 func TestDeleteWorkspace(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	q := "/?workspace_id=ws-123"
@@ -140,7 +140,7 @@ func TestDeleteWorkspace(t *testing.T) {
 }
 
 func TestLockWorkspace(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
@@ -159,7 +159,7 @@ func TestLockWorkspace(t *testing.T) {
 }
 
 func TestUnlockWorkspace(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
@@ -178,7 +178,7 @@ func TestUnlockWorkspace(t *testing.T) {
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(
 		&otf.VCSProvider{},
 		&otf.VCSProvider{},
@@ -193,7 +193,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}),
 		withRepos(
 			cloud.NewTestRepo(),
@@ -213,7 +213,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}))
 
 	form := strings.NewReader(url.Values{
@@ -237,7 +237,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
-	ws := &otf.Workspace{ID: "ws-123", Organization: "acme-corp"}
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws))
 
 	form := strings.NewReader(url.Values{
@@ -258,7 +258,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 type (
 	fakeWebService struct {
 		run        run
-		workspaces []*otf.Workspace
+		workspaces []*Workspace
 		providers  []*otf.VCSProvider
 		repos      []string
 
@@ -271,7 +271,7 @@ type (
 	fakeWebServiceOption func(*fakeWebService)
 )
 
-func withWorkspaces(workspaces ...*otf.Workspace) fakeWebServiceOption {
+func withWorkspaces(workspaces ...*Workspace) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.workspaces = workspaces
 	}
@@ -340,22 +340,22 @@ func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (c
 	return &fakeWebCloudClient{repos: f.repos}, nil
 }
 
-func (f *fakeWebService) create(context.Context, otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
+func (f *fakeWebService) create(context.Context, CreateWorkspaceOptions) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) list(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	return &otf.WorkspaceList{
+func (f *fakeWebService) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+	return &WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),
 	}, nil
 }
 
-func (f *fakeWebService) get(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeWebService) get(context.Context, string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) getByName(context.Context, string, string) (*otf.Workspace, error) {
+func (f *fakeWebService) getByName(context.Context, string, string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
@@ -363,19 +363,19 @@ func (f *fakeWebService) getRun(context.Context, string) (run, error) {
 	return f.run, nil
 }
 
-func (f *fakeWebService) delete(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeWebService) delete(context.Context, string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) lock(context.Context, string, *string) (*otf.Workspace, error) {
+func (f *fakeWebService) lock(context.Context, string, *string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) unlock(context.Context, string, bool) (*otf.Workspace, error) {
+func (f *fakeWebService) unlock(context.Context, string, bool) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) connect(context.Context, string, otf.ConnectWorkspaceOptions) (*otf.Connection, error) {
+func (f *fakeWebService) connect(context.Context, string, ConnectWorkspaceOptions) (*otf.Connection, error) {
 	return nil, nil
 }
 

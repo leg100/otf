@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -24,7 +25,7 @@ type (
 		hostname string
 		otf.ConfigurationVersionService
 		otf.WatchService
-		otf.WorkspaceService
+		workspace.WorkspaceService
 		otf.VCSProviderService
 	}
 
@@ -34,7 +35,7 @@ type (
 		otf.HostnameService
 		otf.ConfigurationVersionService
 		otf.WatchService
-		otf.WorkspaceService
+		workspace.WorkspaceService
 		otf.VCSProviderService
 	}
 )

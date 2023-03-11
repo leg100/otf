@@ -56,6 +56,15 @@ func NewPhase(runID string, t otf.PhaseType) Phase {
 	return p
 }
 
+func (p *Phase) HasChanges() bool {
+	if p.ResourceReport != nil {
+		return p.ResourceReport.HasChanges()
+	}
+	// no report has been published yet, which means there are no proposed
+	// changes yet.
+	return false
+}
+
 // Lookup timestamp for status
 func (p *Phase) StatusTimestamp(status PhaseStatus) (time.Time, error) {
 	for _, rst := range p.StatusTimestamps {

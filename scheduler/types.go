@@ -9,7 +9,7 @@ import (
 
 // interfaces purely for faking purposes
 type queueFactory interface {
-	newQueue(app otf.Application, logger logr.Logger, ws *otf.Workspace) eventHandler
+	newQueue(app otf.Application, logger logr.Logger, ws *workspace.Workspace) eventHandler
 }
 
 type eventHandler interface {

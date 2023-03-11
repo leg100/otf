@@ -24,7 +24,7 @@ func (a *application) workspaceCommand() *cobra.Command {
 }
 
 func (a *application) workspaceListCommand() *cobra.Command {
-	var opts otf.WorkspaceListOptions
+	var opts workspace.WorkspaceListOptions
 
 	cmd := &cobra.Command{
 		Use:           "list",
@@ -150,7 +150,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.LockWorkspace(cmd.Context(), ws.ID, otf.WorkspaceLockOptions{})
+			ws, err = a.LockWorkspace(cmd.Context(), ws.ID, workspace.WorkspaceLockOptions{})
 			if err != nil {
 				return err
 			}
