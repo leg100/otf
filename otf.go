@@ -56,7 +56,6 @@ type Application interface {
 	UserService
 	TeamService
 	AgentTokenService
-	RegistrySessionService
 	PubSubService
 }
 

@@ -4,13 +4,15 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/client"
+	"github.com/leg100/otf/run"
 )
 
 type fakeSpoolerApp struct {
 	runs   []*run.Run
 	events chan otf.Event
 
-	otf.Client
+	client.Client
 }
 
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error) {

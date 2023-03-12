@@ -10,6 +10,8 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/environment"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
 )
 

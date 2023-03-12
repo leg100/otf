@@ -101,10 +101,10 @@ type registrySessionRow struct {
 	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
-func (result registrySessionRow) toRegistrySession() *registrySession {
-	return &registrySession{
-		token:        result.Token.String,
-		expiry:       result.Expiry.Time.UTC(),
-		organization: result.OrganizationName.String,
+func (result registrySessionRow) toRegistrySession() *RegistrySession {
+	return &RegistrySession{
+		Token:        result.Token.String,
+		Expiry:       result.Expiry.Time.UTC(),
+		Organization: result.OrganizationName.String,
 	}
 }

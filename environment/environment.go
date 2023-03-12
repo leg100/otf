@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
 )
@@ -29,14 +29,14 @@ type Environment interface {
 	TerraformPath() string
 
 	Downloader // Downloads TF CLI
-	io.Writer  // Permits job to write to output that'll be shown to the user
+	// io.Writer  // Permits job to write to output that'll be shown to the user
 
 	// make services available to jobs
 	GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 	ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
-	GetAgentToken(ctx context.Context, token string) (*auth.AgentToken, error)
-	GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error)
-	UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error
+	GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error)
+	GetPlanFile(ctx context.Context, runID string, format run.PlanFormat) ([]byte, error)
+	UploadPlanFile(ctx context.Context, runID string, plan []byte, format run.PlanFormat) error
 	GetLockFile(ctx context.Context, runID string) ([]byte, error)
 	UploadLockFile(ctx context.Context, runID string, lockFile []byte) error
 	DownloadConfig(ctx context.Context, cvID string) ([]byte, error)

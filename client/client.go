@@ -7,35 +7,38 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/watch"
+	"github.com/leg100/otf/workspace"
 )
 
 // Client is those service endpoints that support both in-process and remote
 // invocation. Intended for use with the agent (the internal agent is
 // in-process, while the external agent is remote) as well as the CLI.
 type Client interface {
-	CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (organization.Organization, error)
+	CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error)
 
-	GetWorkspace(ctx context.Context, workspaceID string) (workspace.Workspace, error)
-	GetWorkspaceByName(ctx context.Context, organization, workspace string) (workspace.Workspace, error)
-	ListWorkspaces(ctx context.Context, opts workspace.WorkspaceListOptions) (workspace.WorkspaceList, error)
-	UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*workspace.Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
+	ListWorkspaces(ctx context.Context, opts workspace.WorkspaceListOptions) (*workspace.WorkspaceList, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateWorkspaceOptions) (*workspace.Workspace, error)
 
-	ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error)
+	ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
 
 	CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error)
 	GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error)
 
-	GetPlanFile(ctx context.Context, id string, format otf.PlanFormat) ([]byte, error)
-	UploadPlanFile(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error
+	GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
+	UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
 	GetLockFile(ctx context.Context, id string) ([]byte, error)
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 	ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error)
 	GetRun(ctx context.Context, id string) (*run.Run, error)
-	StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*run.Run, error)
-	FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*run.Run, error)
+	StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)
+	FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseFinishOptions) (*run.Run, error)
 
 	PutChunk(ctx context.Context, chunk otf.Chunk) error
 
@@ -44,7 +47,7 @@ type Client interface {
 	Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error)
 
 	// CreateRegistrySession creates a registry session for the given organization.
-	CreateRegistrySession(ctx context.Context, organization string) (otf.RegistrySession, error)
+	CreateRegistrySession(ctx context.Context, organization string) (*auth.RegistrySession, error)
 
 	workspace.WorkspaceLockService
 	otf.StateVersionApp

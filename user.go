@@ -149,3 +149,10 @@ func (u *User) IsOwner(organization string) bool {
 	}
 	return false
 }
+
+func (s UserSpec) MarshalLog() any {
+	if s.AuthenticationToken != nil {
+		s.AuthenticationToken = String("*****")
+	}
+	return s
+}

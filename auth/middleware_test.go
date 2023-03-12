@@ -116,7 +116,7 @@ func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string)
 	return nil, errors.New("invalid")
 }
 
-func (f *fakeMiddlewareService) GetRegistrySession(ctx context.Context, token string) (otf.RegistrySession, error) {
+func (f *fakeMiddlewareService) GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error) {
 	if f.registryToken == token {
 		return nil, nil
 	}

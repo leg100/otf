@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"os"
 	"path"
 	"testing"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/registry"
 	"github.com/leg100/otf/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -169,43 +167,4 @@ func TestBuildSandboxArgs(t *testing.T) {
 		}
 		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
 	})
-}
-
-type fakeEnvironmentApp struct {
-	t   *testing.T
-	org *organization.Organization
-	ws  *workspace.Workspace
-	otf.Application
-}
-
-func (f *fakeEnvironmentApp) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
-	return f.ws, nil
-}
-
-func (f *fakeEnvironmentApp) CreateRegistrySession(context.Context, string) (otf.RegistrySession, error) {
-	return registry.NewTestSession(f.t, f.org), nil
-}
-
-func (f *fakeEnvironmentApp) ListVariables(context.Context, string) ([]otf.Variable, error) {
-	return nil, nil
-}
-
-func (f *fakeEnvironmentApp) Hostname() string { return "fake-host.org" }
-
-func newTestEnvironment(t *testing.T, opts ...otf.NewTestWorkspaceOption) *Environment {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, opts...)
-	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-	run := otf.NewRun(cv, ws, run.RunCreateOptions{})
-	env, err := NewEnvironment(
-		context.Background(),
-		logr.Discard(),
-		&fakeEnvironmentApp{t: t, org: org, ws: ws},
-		run,
-		nil,
-		nil,
-		Config{},
-	)
-	require.NoError(t, err)
-	return env
 }

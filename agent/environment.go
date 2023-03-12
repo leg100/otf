@@ -18,17 +18,19 @@ import (
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/environment"
 	"github.com/leg100/otf/logs"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/variable"
 	"github.com/pkg/errors"
 )
+
+// Environment is an implementation of an execution environment
+var _ environment.Environment = (*Environment)(nil)
 
 type Doer interface {
 	// TODO: environment is excessive; can we pass in something that exposes
 	// fewer methods like an 'executor'?
 	Do() error
 }
-
-// Environment is an implementation of an execution environment
-var _ environment.Environment = (*Environment)(nil)
 
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
@@ -55,13 +57,13 @@ type Environment struct {
 func NewEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
-	app client.Client,
-	run run.Run,
+	svc client.Client,
+	run *run.Run,
 	envs []string,
 	downloader environment.Downloader,
 	cfg Config,
 ) (*Environment, error) {
-	ws, err := app.GetWorkspace(ctx, run.WorkspaceID)
+	ws, err := svc.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}
@@ -86,21 +88,21 @@ func NewEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	session, err := app.CreateRegistrySession(ctx, ws.Organization)
+	session, err := svc.CreateRegistrySession(ctx, ws.Organization)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}
-	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(app.Hostname()), session.Token())
+	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(svc.Hostname()), session.Token)
 	envs = append(envs, tokenEnvVar)
 
 	// retrieve workspace variables and add them to the environment
-	variables, err := app.ListVariables(ctx, run.WorkspaceID)
+	variables, err := svc.ListVariables(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace variables")
 	}
 	for _, v := range variables {
-		if v.Category() == otf.CategoryEnv {
-			ev := fmt.Sprintf("%s=%s", v.Key(), v.Value())
+		if v.Category == variable.CategoryEnv {
+			ev := fmt.Sprintf("%s=%s", v.Key, v.Value)
 			envs = append(envs, ev)
 		}
 	}
@@ -113,11 +115,16 @@ func NewEnvironment(
 
 	return &Environment{
 		Logger:     logger,
-		Client:     app,
+		Client:     svc,
 		Downloader: downloader,
 		Terraform:  &TerraformPathFinder{},
 		version:    ws.TerraformVersion,
-		out:        logs.NewPhaseWriter(ctx, logger, app, run),
+		out: logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
+			Logger: logger,
+			RunID:  run.ID,
+			Phase:  run.Phase(),
+			Writer: svc,
+		}),
 		rootDir:    rootDir,
 		relWorkDir: ws.WorkingDirectory,
 		absWorkDir: absWorkDir,
@@ -305,7 +312,7 @@ func (e *Environment) buildSandboxArgs(args []string) []string {
 // writeTerraformVariables writes workspace variables to a file named
 // terraform.tfvars located in the given path. If the file already exists it'll
 // be appended to.
-func writeTerraformVariables(dir string, vars []otf.Variable) error {
+func writeTerraformVariables(dir string, vars []*variable.Variable) error {
 	path := path.Join(dir, "terraform.tfvars")
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
@@ -318,14 +325,14 @@ func writeTerraformVariables(dir string, vars []otf.Variable) error {
 	// content already
 	b.WriteRune('\n')
 	for _, v := range vars {
-		if v.Category() == otf.CategoryTerraform {
-			b.WriteString(v.Key())
+		if v.Category == variable.CategoryTerraform {
+			b.WriteString(v.Key)
 			b.WriteString(" = ")
-			if v.HCL() {
-				b.WriteString(v.Value())
+			if v.HCL {
+				b.WriteString(v.Value)
 			} else {
 				b.WriteString(`"`)
-				b.WriteString(v.Value())
+				b.WriteString(v.Value)
 				b.WriteString(`"`)
 			}
 			b.WriteRune('\n')

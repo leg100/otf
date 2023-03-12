@@ -7,6 +7,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/client"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -25,9 +28,9 @@ type Spooler interface {
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
-	queue        chan run.Run     // Queue of queued jobs
-	cancelations chan Cancelation // Queue of cancelation requests
-	otf.Client                    // Application for retrieving queued runs
+	queue         chan run.Run     // Queue of queued jobs
+	cancelations  chan Cancelation // Queue of cancelation requests
+	client.Client                  // Application for retrieving queued runs
 	logr.Logger
 	Config
 }
@@ -41,7 +44,7 @@ type Cancelation struct {
 const SpoolerCapacity = 100
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(app otf.Client, logger logr.Logger, cfg Config) *SpoolerDaemon {
+func NewSpooler(app client.Client, logger logr.Logger, cfg Config) *SpoolerDaemon {
 	return &SpoolerDaemon{
 		queue:        make(chan run.Run, SpoolerCapacity),
 		cancelations: make(chan Cancelation, SpoolerCapacity),
@@ -138,8 +141,8 @@ func (s *SpoolerDaemon) handleRun(event otf.EventType, run run.Run) {
 	// (a) external agents handle runs with agent execution mode
 	// (b) internal agents handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run
-	if !(s.External && run.ExecutionMode == otf.AgentExecutionMode) ||
-		!(!s.External && run.ExecutionMode == otf.RemoteExecutionMode) {
+	if !(s.External && run.ExecutionMode == workspace.AgentExecutionMode) ||
+		!(!s.External && run.ExecutionMode == workspace.RemoteExecutionMode) {
 		return
 	}
 

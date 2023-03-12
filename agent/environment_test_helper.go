@@ -1,13 +1,13 @@
 package agent
 
-import "github.com/leg100/otf"
+import "github.com/leg100/otf/environment"
 
 type fakeJob struct {
 	cmd  string
 	args []string
 }
 
-func (j *fakeJob) Do(e otf.Environment) error {
+func (j *fakeJob) Do(e environment.Environment) error {
 	return e.RunCLI(j.cmd, j.args...)
 }
 

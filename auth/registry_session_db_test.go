@@ -17,7 +17,7 @@ func TestRegistrySession(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
-		session, err := newRegistrySession(org.Name)
+		session, err := NewRegistrySession(org.Name)
 		require.NoError(t, err)
 
 		err = db.createRegistrySession(ctx, session)
@@ -28,7 +28,7 @@ func TestRegistrySession(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		want := createTestRegistrySession(t, db, org.Name, nil)
 
-		got, err := db.getRegistrySession(ctx, want.token)
+		got, err := db.getRegistrySession(ctx, want.Token)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -43,10 +43,10 @@ func TestRegistrySession(t *testing.T) {
 		_, err := db.DeleteExpiredRegistrySessions(ctx)
 		require.NoError(t, err)
 
-		_, err = db.getRegistrySession(ctx, session1.Token())
+		_, err = db.getRegistrySession(ctx, session1.Token)
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 
-		_, err = db.getRegistrySession(ctx, session2.Token())
+		_, err = db.getRegistrySession(ctx, session2.Token)
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 	})
 }
