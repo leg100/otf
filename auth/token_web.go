@@ -1,4 +1,4 @@
-package token
+package auth
 
 import (
 	"bytes"
@@ -12,13 +12,7 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-type htmlApp struct {
-	otf.Renderer
-
-	app Application
-}
-
-func (app *htmlApp) AddHandlers(r *mux.Router) {
+func (app *webHandlers) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET")
 	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST")
 	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET")
@@ -28,30 +22,22 @@ func (app *htmlApp) AddHandlers(r *mux.Router) {
 	r.HandleFunc("/app/settings/tokens", app.tokensHandler).Methods("GET")
 }
 
-// tokenList exposes a list of tokens to a template
-type tokenList struct {
-	// list template expects pagination object but we don't paginate token
-	// listing
-	*otf.Pagination
-	Items []*Token
+func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {
+	h.Render("token_new.tmpl", w, r, nil)
 }
 
-func (app *htmlApp) newTokenHandler(w http.ResponseWriter, r *http.Request) {
-	app.Render("token_new.tmpl", w, r, nil)
-}
-
-func (app *htmlApp) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var opts TokenCreateOptions
+	var opts otf.TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := app.CreateToken(r.Context(), user.ID, &opts)
+	token, err := h.svc.CreateToken(r.Context(), user.ID, &opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -59,7 +45,7 @@ func (app *htmlApp) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	if err := app.RenderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
+	if err := h.RenderTemplate("token_created.tmpl", buf, token.Token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -68,13 +54,13 @@ func (app *htmlApp) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 
-func (app *htmlApp) tokensHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tokens, err := app.ListTokens(r.Context(), user.ID)
+	tokens, err := h.svc.ListTokens(r.Context(), user.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,16 +68,21 @@ func (app *htmlApp) tokensHandler(w http.ResponseWriter, r *http.Request) {
 
 	// re-order tokens by creation date, newest first
 	sort.Slice(tokens, func(i, j int) bool {
-		return tokens[i].CreatedAt().After(tokens[j].CreatedAt())
+		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	app.Render("token_list.tmpl", w, r, tokenList{
+	h.Render("token_list.tmpl", w, r, struct {
+		// list template expects pagination object but we don't paginate token
+		// listing
+		*otf.Pagination
+		Items []*otf.Token
+	}{
 		Pagination: &otf.Pagination{},
 		Items:      tokens,
 	})
 }
 
-func (app *htmlApp) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -102,7 +93,7 @@ func (app *htmlApp) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := app.DeleteToken(r.Context(), user.ID, id); err != nil {
+	if err := h.svc.DeleteToken(r.Context(), user.ID, id); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

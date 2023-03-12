@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
@@ -161,12 +160,4 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) er
 		return err
 	}
 	return repoErr
-}
-
-func (s *Service) GetRepo(ctx context.Context, repoID uuid.UUID) (string, error) {
-	hook, err := s.db.getHookByID(ctx, repoID)
-	if err != nil {
-		return "", err
-	}
-	return hook.identifier, nil
 }

@@ -2,8 +2,6 @@ package otf
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -30,8 +28,6 @@ type (
 		// resource. If there are no more connections then its
 		// webhook is removed.
 		Disconnect(ctx context.Context, opts DisconnectOptions) error
-		// GetRepo returns a VCS repo with the given ID
-		GetRepo(ctx context.Context, repoID uuid.UUID) (string, error)
 	}
 
 	ConnectOptions struct {
