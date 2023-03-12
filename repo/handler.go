@@ -18,7 +18,7 @@ type (
 	// a cloud-specific handler.
 	handler struct {
 		logr.Logger
-		otf.PubSubService
+		otf.Publisher
 
 		db handlerDB
 	}

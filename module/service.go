@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
 	"github.com/leg100/surl"
@@ -53,9 +54,8 @@ type (
 	}
 
 	Options struct {
-		OrganizationAuthorizer otf.Authorizer
-		CloudService           cloud.Service
-		Hostname               string
+		CloudService cloud.Service
+		Hostname     string
 
 		otf.DB
 		otf.VCSProviderService
@@ -69,7 +69,7 @@ type (
 func NewService(opts Options) *Service {
 	svc := Service{
 		Logger:       opts.Logger,
-		organization: opts.OrganizationAuthorizer,
+		organization: &organization.Authorizer{opts.Logger},
 		db:           &pgdb{opts.DB},
 		repo:         opts.RepoService,
 	}

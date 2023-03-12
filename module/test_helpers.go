@@ -4,10 +4,23 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
+
+func NewTestService(t *testing.T, db otf.DB) *Service {
+	service := NewService(Options{
+		Logger:       logr.Discard(),
+		DB:           db,
+		CloudService: inmem.NewTestCloudService(),
+	})
+	service.organization = otf.NewAllowAllAuthorizer()
+	return service
+}
 
 func NewTestModule(org *organization.Organization, opts ...NewTestModuleOption) *Module {
 	createOpts := CreateModuleOptions{

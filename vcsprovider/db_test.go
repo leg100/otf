@@ -26,7 +26,7 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		want := CreateTestVCSProvider(t, db, org)
+		want := createTestVCSProvider(t, db, org)
 
 		got, err := db.get(ctx, want.ID)
 		require.NoError(t, err)
@@ -36,9 +36,9 @@ func TestDB(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
-		provider1 := CreateTestVCSProvider(t, db, org)
-		provider2 := CreateTestVCSProvider(t, db, org)
-		provider3 := CreateTestVCSProvider(t, db, org)
+		provider1 := createTestVCSProvider(t, db, org)
+		provider2 := createTestVCSProvider(t, db, org)
+		provider3 := createTestVCSProvider(t, db, org)
 
 		got, err := db.list(ctx, org.Name)
 		require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestDB(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
-		provider := CreateTestVCSProvider(t, db, org)
+		provider := createTestVCSProvider(t, db, org)
 
 		err := db.delete(ctx, provider.ID)
 		require.NoError(t, err)

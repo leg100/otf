@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,6 +31,29 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	)
 }
 
+func newTestDB(t *testing.T) *pgdb {
+	return &pgdb{
+		DB: sql.NewTestDB(t),
+		factory: factory{
+			Service:         fakeCloudService{},
+			HostnameService: fakeHostnameService{},
+		},
+	}
+}
+
+func createTestHook(t *testing.T, db *pgdb, cloudID *string) *hook {
+	ctx := context.Background()
+	hook := newTestHook(t, db.factory, cloudID)
+
+	_, err := db.getOrCreateHook(ctx, hook)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.deleteHook(ctx, hook.id)
+	})
+	return hook
+}
+
 type fakeCloudService struct {
 	event cloud.VCSEvent
 	cloud.Service
@@ -45,7 +69,7 @@ type fakeCloud struct {
 	cloud.Cloud
 }
 
-func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
+func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.HandleEventOptions) cloud.VCSEvent {
 	return f.event
 }
 
@@ -78,12 +102,4 @@ func (f *fakeCloudClient) UpdateWebhook(context.Context, cloud.UpdateWebhookOpti
 	f.gotUpdate = true
 
 	return nil
-}
-
-type fakeHandlerDB struct {
-	hook *hook
-}
-
-func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) {
-	return db.hook, nil
 }

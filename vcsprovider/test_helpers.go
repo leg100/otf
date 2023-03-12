@@ -4,12 +4,23 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
+
+func NewTestService(t *testing.T, db otf.DB) *Service {
+	service := NewService(Options{
+		DB:      db,
+		Logger:  logr.Discard(),
+		Service: inmem.NewTestCloudService(),
+	})
+	service.organization = otf.NewAllowAllAuthorizer()
+	return service
+}
 
 func NewTestVCSProvider(t *testing.T, org *organization.Organization) *otf.VCSProvider {
 	var organizationName string
@@ -31,8 +42,28 @@ func NewTestVCSProvider(t *testing.T, org *organization.Organization) *otf.VCSPr
 	return provider
 }
 
-func CreateTestVCSProvider(t *testing.T, db *pgdb, organization *organization.Organization) *otf.VCSProvider {
-	provider := NewTestVCSProvider(t, organization)
+func CreateTestVCSProvider(t *testing.T, db otf.DB, org *organization.Organization) *otf.VCSProvider {
+	ctx := context.Background()
+	svc := NewTestService(t, db)
+
+	vcsprov, err := svc.create(ctx, createOptions{
+		Organization: org.Name,
+		// unit tests require a legitimate cloud name to avoid invalid foreign
+		// key error upon insert/update
+		Cloud: "github",
+		Name:  uuid.NewString(),
+		Token: uuid.NewString(),
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		svc.delete(ctx, vcsprov.ID)
+	})
+	return vcsprov
+}
+
+func createTestVCSProvider(t *testing.T, db *pgdb, org *organization.Organization) *otf.VCSProvider {
+	provider := NewTestVCSProvider(t, org)
 	ctx := context.Background()
 
 	err := db.create(ctx, provider)

@@ -26,7 +26,7 @@ type (
 		otf.DB
 		logr.Logger
 		otf.HostnameService
-		otf.PubSubService
+		otf.Publisher
 		otf.VCSProviderService
 	}
 )
@@ -34,9 +34,9 @@ type (
 func NewService(opts Options) *Service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
 	handler := &handler{
-		Logger:        opts.Logger,
-		PubSubService: opts.PubSubService,
-		db:            newPGDB(opts.DB, factory),
+		Logger:    opts.Logger,
+		Publisher: opts.Publisher,
+		db:        newPGDB(opts.DB, factory),
 	}
 	return &Service{
 		Logger:             opts.Logger,
@@ -97,7 +97,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 		return tx.createConnection(ctx, hook.id, opts)
 	})
 	return &otf.Connection{
-		Repo:        hook.id,
+		Repo:          opts.RepoPath,
 		VCSProviderID: opts.VCSProviderID,
 	}, nil
 }
