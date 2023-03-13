@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/client"
-	"github.com/leg100/otf/environment"
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/variable"
@@ -27,8 +26,8 @@ import (
 type Environment struct {
 	client.Client
 	logr.Logger
-	environment.Downloader // Downloader for workers to download terraform cli on demand
-	Terraform              // For looking up path to terraform cli
+	Downloader // Downloader for workers to download terraform cli on demand
+	Terraform  // For looking up path to terraform cli
 	Config
 
 	rootDir    string // absolute path of the root directory containing tf config
@@ -55,7 +54,7 @@ func NewEnvironment(
 	svc client.Client,
 	run *run.Run,
 	envs []string,
-	downloader environment.Downloader,
+	downloader Downloader,
 	cfg Config,
 ) (*Environment, error) {
 	ws, err := svc.GetWorkspace(ctx, run.WorkspaceID)

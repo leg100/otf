@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/client"
-	"github.com/leg100/otf/environment"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -36,9 +35,9 @@ type Agent struct {
 	client.Client
 	logr.Logger
 
-	Spooler                // spools new run events
-	*Terminator            // terminates runs
-	environment.Downloader // terraform cli downloader
+	Spooler     // spools new run events
+	*Terminator // terminates runs
+	Downloader  // terraform cli downloader
 
 	envs []string // terraform environment variables
 }

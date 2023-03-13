@@ -13,17 +13,24 @@ import (
 
 const HashicorpReleasesHost = "releases.hashicorp.com"
 
-// TerraformDownloader downloads terraform binaries
-type TerraformDownloader struct {
-	// server hosting binaries
-	host string
-	// used to lookup destination path for saving download
-	Terraform
-	// client for downloading from server via http
-	client *http.Client
-	// mutex channel
-	mu chan struct{}
-}
+type (
+	// TerraformDownloader downloads terraform binaries
+	TerraformDownloader struct {
+		// server hosting binaries
+		host string
+		// used to lookup destination path for saving download
+		Terraform
+		// client for downloading from server via http
+		client *http.Client
+		// mutex channel
+		mu chan struct{}
+	}
+
+	// Downloader downloads a specific version of a binary and returns its path
+	Downloader interface {
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
+	}
+)
 
 func NewTerraformDownloader() *TerraformDownloader {
 	mu := make(chan struct{}, 1)
