@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,11 +15,11 @@ func TestSpooler(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// run[1-2] are in the DB; run[3-5] are events
-	run1 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunPlanQueued})
-	run2 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunPlanQueued})
-	run3 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunPlanQueued})
-	run4 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunCanceled})
-	run5 := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: run.RunForceCanceled})
+	run1 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunPlanQueued}
+	run2 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunPlanQueued}
+	run3 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunPlanQueued}
+	run4 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunCanceled}
+	run5 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunForceCanceled}
 	db := []*run.Run{run1, run2}
 	events := make(chan otf.Event, 3)
 	events <- otf.Event{Payload: run3}
@@ -56,19 +58,20 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name: "handle run",
 			event: otf.Event{
-				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: run.RunPlanQueued,
-				}),
+				Payload: &run.Run{
+					ExecutionMode: workspace.RemoteExecutionMode,
+					Status:        otf.RunPlanQueued,
+				},
 			},
 			wantRun: true,
 		},
 		{
-			name: "internal agents skip agent-mode runs",
+			name:   "internal agents skip agent-mode runs",
+			config: Config{External: false},
 			event: otf.Event{
-				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					ExecutionMode: otf.ExecutionModePtr(otf.AgentExecutionMode),
-					Status:        run.RunPlanQueued,
-				}),
+				Payload: &run.Run{
+					ExecutionMode: workspace.AgentExecutionMode,
+				},
 			},
 			wantRun: false,
 		},
@@ -76,19 +79,20 @@ func TestSpooler_handleEvent(t *testing.T) {
 			name:   "external agents handle agent-mode runs",
 			config: Config{External: true},
 			event: otf.Event{
-				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					ExecutionMode: otf.ExecutionModePtr(otf.AgentExecutionMode),
-					Status:        run.RunPlanQueued,
-				}),
+				Payload: &run.Run{
+					ExecutionMode: workspace.AgentExecutionMode,
+					Status:        otf.RunPlanQueued,
+				},
 			},
 			wantRun: true,
 		},
 		{
 			name: "ignore runs not in queued state",
 			event: otf.Event{
-				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: run.RunPlanned,
-				}),
+				Payload: &run.Run{
+					ExecutionMode: workspace.RemoteExecutionMode,
+					Status:        otf.RunPlanned,
+				},
 			},
 			wantRun: false,
 		},
@@ -96,9 +100,10 @@ func TestSpooler_handleEvent(t *testing.T) {
 			name: "handle cancelation",
 			event: otf.Event{
 				Type: otf.EventRunCancel,
-				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: run.RunPlanning,
-				}),
+				Payload: &run.Run{
+					ExecutionMode: workspace.RemoteExecutionMode,
+					Status:        otf.RunPlanning,
+				},
 			},
 			wantCancelation: true,
 		},
@@ -106,9 +111,10 @@ func TestSpooler_handleEvent(t *testing.T) {
 			name: "handle forceful cancelation",
 			event: otf.Event{
 				Type: otf.EventRunForceCancel,
-				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-					Status: run.RunPlanning,
-				}),
+				Payload: &run.Run{
+					ExecutionMode: workspace.RemoteExecutionMode,
+					Status:        otf.RunPlanning,
+				},
 			},
 			wantForceCancelation: true,
 		},

@@ -3,7 +3,7 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
 )
 
 // Worker sequentially executes runs.
@@ -24,11 +24,11 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, run run.Run) {
-	log := w.Logger.WithValues("run", run.ID, "phase", run.Phase)
+func (w *Worker) handle(ctx context.Context, job *run.Run) {
+	log := w.Logger.WithValues("run", job.ID, "phase", job.Phase)
 
 	// Claim run job
-	run, err := w.StartPhase(ctx, run.ID, run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
+	job, err := w.StartPhase(ctx, job.ID, job.Phase(), run.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "starting phase")
 		return
@@ -38,7 +38,7 @@ func (w *Worker) handle(ctx context.Context, run run.Run) {
 		ctx,
 		log,
 		w.Client,
-		run,
+		job,
 		w.envs,
 		w.Downloader,
 		w.Config,
@@ -51,14 +51,14 @@ func (w *Worker) handle(ctx context.Context, run run.Run) {
 
 	// Check run in with the terminator so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(run.ID, env)
-	defer w.CheckOut(run.ID)
+	w.CheckIn(job.ID, env)
+	defer w.CheckOut(job.ID)
 
-	var finishOptions otf.PhaseFinishOptions
+	var finishOptions run.PhaseFinishOptions
 
 	log.Info("executing phase")
 
-	if err := env.Execute(run); err != nil {
+	if err := env.Execute(); err != nil {
 		log.Error(err, "executing phase")
 		finishOptions.Errored = true
 	}
@@ -66,7 +66,7 @@ func (w *Worker) handle(ctx context.Context, run run.Run) {
 	log.Info("finishing phase")
 
 	// Regardless of job success, mark job as finished
-	_, err = w.FinishPhase(ctx, run.ID, run.Phase, finishOptions)
+	_, err = w.FinishPhase(ctx, job.ID, job.Phase(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing phase")
 		return

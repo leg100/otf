@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
@@ -22,15 +21,6 @@ import (
 	"github.com/leg100/otf/variable"
 	"github.com/pkg/errors"
 )
-
-// Environment is an implementation of an execution environment
-var _ environment.Environment = (*Environment)(nil)
-
-type Doer interface {
-	// TODO: environment is excessive; can we pass in something that exposes
-	// fewer methods like an 'executor'?
-	Do() error
-}
 
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
@@ -45,13 +35,18 @@ type Environment struct {
 	relWorkDir string // path relative to configRoot in which tf ops are invoked
 	absWorkDir string // absolute path in which tf ops are invoked
 
-	canceled bool               // Whether cancelation has been triggered
-	cancel   context.CancelFunc // Cancel context func for currently running func
-	proc     *os.Process        // Current process
-	out      io.WriteCloser     // captures CLI process output
-	version  string             // terraform version
-	envs     []string           // environment variables
-	ctx      context.Context    // contains subject for authenticating to services
+	version string // terraform version
+
+	envs []string // environment variables
+
+	steps []step // sequence of steps to execute
+
+	ctx    context.Context    // contains subject for authenticating to services
+	cancel context.CancelFunc // Cancel context func for currently running func
+	proc   *os.Process        // Current process
+	out    io.WriteCloser     // captures CLI process output
+
+	*runner
 }
 
 func NewEnvironment(
@@ -106,25 +101,27 @@ func NewEnvironment(
 			envs = append(envs, ev)
 		}
 	}
-	if err := writeTerraformVariables(absWorkDir, variables); err != nil {
-		return nil, errors.Wrap(err, "writing terraform variables")
+	if err := variable.WriteTerraformVars(absWorkDir, variables); err != nil {
+		return nil, errors.Wrap(err, "writing terraform.fvars")
 	}
 
 	// Create and store cancel func so func's context can be canceled
 	ctx, cancel := context.WithCancel(ctx)
 
-	return &Environment{
+	writer := logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
+		Logger: logger,
+		RunID:  run.ID,
+		Phase:  run.Phase(),
+		Writer: svc,
+	})
+
+	env := &Environment{
 		Logger:     logger,
 		Client:     svc,
 		Downloader: downloader,
 		Terraform:  &TerraformPathFinder{},
 		version:    ws.TerraformVersion,
-		out: logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
-			Logger: logger,
-			RunID:  run.ID,
-			Phase:  run.Phase(),
-			Writer: svc,
-		}),
+		out:        writer,
 		rootDir:    rootDir,
 		relWorkDir: ws.WorkingDirectory,
 		absWorkDir: absWorkDir,
@@ -132,7 +129,12 @@ func NewEnvironment(
 		cancel:     cancel,
 		ctx:        ctx,
 		Config:     cfg,
-	}, nil
+		runner:     &runner{out: writer},
+	}
+
+	env.steps = buildSteps(env, run)
+
+	return env, nil
 }
 
 func (e *Environment) Path() string       { return e.rootDir }
@@ -145,10 +147,10 @@ func (e *Environment) Close() error {
 
 // Execute executes a phase and regardless of whether it fails, it'll close the
 // environment logs.
-func (e *Environment) Execute(phase Doer) (err error) {
+func (e *Environment) Execute() (err error) {
 	var errors *multierror.Error
 
-	if err := phase.Do(e); err != nil {
+	if err := e.processSteps(e.ctx, e.steps); err != nil {
 		errors = multierror.Append(errors, err)
 	}
 
@@ -167,8 +169,19 @@ func (e *Environment) Execute(phase Doer) (err error) {
 func (e *Environment) Cancel(force bool) {
 	e.canceled = true
 
-	e.cancelCLI(force)
-	e.cancelFunc(force)
+	// cancel proc
+	if e.proc != nil {
+		if force {
+			e.proc.Signal(os.Kill)
+		} else {
+			e.proc.Signal(os.Interrupt)
+		}
+	}
+
+	// cancel func only if forced and there is a context to cancel
+	if force && e.cancel != nil {
+		e.cancel()
+	}
 }
 
 // RunTerraform runs a terraform command in the environment
@@ -200,10 +213,6 @@ func (e *Environment) RunTerraform(cmd string, args ...string) error {
 // RunCLI executes a CLI process in the executor. The path is set to the
 // workspace's working directory.
 func (e *Environment) RunCLI(name string, args ...string) error {
-	if e.canceled {
-		return fmt.Errorf("execution canceled")
-	}
-
 	logger := e.Logger.WithValues("name", name, "args", args, "path", e.WorkingDir())
 
 	cmd := exec.Command(name, args...)
@@ -238,54 +247,6 @@ func (e *Environment) TerraformPath() string {
 	return e.Terraform.TerraformPath(e.version)
 }
 
-// RunFunc invokes a func in the executor.
-func (e *Environment) RunFunc(fn environment.EnvironmentFunc) error {
-	if e.canceled {
-		return fmt.Errorf("execution canceled")
-	}
-
-	if err := fn(e.ctx); err != nil {
-		e.printRedErrorMessage(err)
-		return err
-	}
-	return nil
-}
-
-func (e *Environment) printRedErrorMessage(err error) {
-	fmt.Fprintln(e.out)
-
-	// Print "Error:" in bright red, overriding the behaviour to disable colors
-	// on a non-tty output
-	red := color.New(color.FgHiRed)
-	red.EnableColor()
-	red.Fprint(e.out, "Error: ")
-
-	fmt.Fprint(e.out, err.Error())
-	fmt.Fprintln(e.out)
-}
-
-func (e *Environment) cancelCLI(force bool) {
-	if e.proc == nil {
-		return
-	}
-	if force {
-		e.proc.Signal(os.Kill)
-	} else {
-		e.proc.Signal(os.Interrupt)
-	}
-}
-
-func (e *Environment) cancelFunc(force bool) {
-	// Don't cancel a func's context unless forced
-	if !force {
-		return
-	}
-	if e.cancel == nil {
-		return
-	}
-	e.cancel()
-}
-
 // buildBubblewrapArgs builds the args for running a terraform apply within a
 // bubblewrap sandbox.
 func (e *Environment) buildSandboxArgs(args []string) []string {
@@ -307,40 +268,6 @@ func (e *Environment) buildSandboxArgs(args []string) []string {
 	}
 	bargs = append(bargs, "terraform", "apply")
 	return append(bargs, args...)
-}
-
-// writeTerraformVariables writes workspace variables to a file named
-// terraform.tfvars located in the given path. If the file already exists it'll
-// be appended to.
-func writeTerraformVariables(dir string, vars []*variable.Variable) error {
-	path := path.Join(dir, "terraform.tfvars")
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	var b strings.Builder
-	// lazily start with a new line in case user uploaded terraform.tfvars with
-	// content already
-	b.WriteRune('\n')
-	for _, v := range vars {
-		if v.Category == variable.CategoryTerraform {
-			b.WriteString(v.Key)
-			b.WriteString(" = ")
-			if v.HCL {
-				b.WriteString(v.Value)
-			} else {
-				b.WriteString(`"`)
-				b.WriteString(v.Value)
-				b.WriteString(`"`)
-			}
-			b.WriteRune('\n')
-		}
-	}
-	f.WriteString(b.String())
-
-	return nil
 }
 
 var ascii = regexp.MustCompile("[[:^ascii:]]")

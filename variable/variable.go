@@ -4,6 +4,8 @@ package variable
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/leg100/otf"
@@ -202,5 +204,39 @@ func (v *Variable) setSensitive(sensitive bool) error {
 		return errors.New("cannot change a sensitive variable to a non-sensitive variable")
 	}
 	v.Sensitive = sensitive
+	return nil
+}
+
+// WriteTerraformVars writes workspace variables to a file named
+// terraform.tfvars located in the given path. If the file already exists it'll
+// be appended to.
+func WriteTerraformVars(dir string, vars []*Variable) error {
+	path := path.Join(dir, "terraform.tfvars")
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var b strings.Builder
+	// lazily start with a new line in case user uploaded terraform.tfvars with
+	// content already
+	b.WriteRune('\n')
+	for _, v := range vars {
+		if v.Category == CategoryTerraform {
+			b.WriteString(v.Key)
+			b.WriteString(" = ")
+			if v.HCL {
+				b.WriteString(v.Value)
+			} else {
+				b.WriteString(`"`)
+				b.WriteString(v.Value)
+				b.WriteString(`"`)
+			}
+			b.WriteRune('\n')
+		}
+	}
+	f.WriteString(b.String())
+
 	return nil
 }

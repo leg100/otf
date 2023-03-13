@@ -1,26 +1,12 @@
 package agent
 
 import (
-	"os"
 	"path"
 	"testing"
-	"time"
 
-	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func TestEnvironment(t *testing.T) {
-	env := Environment{
-		Logger: logr.Discard(),
-		out:    discard{},
-	}
-	err := env.Execute(&fakeJob{"sleep", []string{"1"}})
-	require.NoError(t, err)
-}
 
 func TestEnvironment_WorkingDir(t *testing.T) {
 	tests := []struct {
@@ -36,69 +22,13 @@ func TestEnvironment_WorkingDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := newTestEnvironment(t, otf.WorkingDirectory(tt.workdir))
+			env := newTestEnvironment(t, &workspace.Workspace{WorkingDirectory: tt.workdir})
 			assert.Equal(t, tt.workdir, env.relWorkDir)
 			assert.DirExists(t, env.rootDir)
 			assert.DirExists(t, env.absWorkDir)
 			assert.FileExists(t, path.Join(env.absWorkDir, "terraform.tfvars"))
 		})
 	}
-}
-
-func TestEnvironment_Cancel(t *testing.T) {
-	env := Environment{
-		Logger: logr.Discard(),
-		out:    discard{},
-	}
-
-	wait := make(chan error)
-	go func() {
-		wait <- env.Execute(&fakeJob{"sleep", []string{"100"}})
-	}()
-	// give the 'sleep' cmd above time to start
-	time.Sleep(100 * time.Millisecond)
-
-	env.Cancel(false)
-	err := <-wait
-	assert.Error(t, err)
-}
-
-func TestWriteTerraformVariables(t *testing.T) {
-	dir := t.TempDir()
-
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	v1 := variable.NewTestVariable(t, ws, otf.CreateVariableOptions{
-		Key:      otf.String("foo"),
-		Value:    otf.String("bar"),
-		Category: variable.VariableCategoryPtr(otf.CategoryTerraform),
-	})
-	v2 := variable.NewTestVariable(t, ws, otf.CreateVariableOptions{
-		Key: otf.String("images"),
-		Value: otf.String(`{
-    us-east-1 = "image-1234"
-    us-west-2 = "image-4567"
-}
-`),
-		Category: variable.VariableCategoryPtr(otf.CategoryTerraform),
-		HCL:      otf.Bool(true),
-	})
-
-	err := writeTerraformVariables(dir, []otf.Variable{v1, v2})
-	require.NoError(t, err)
-
-	tfvars := path.Join(dir, "terraform.tfvars")
-	got, err := os.ReadFile(tfvars)
-	require.NoError(t, err)
-
-	want := `
-foo = "bar"
-images = {
-    us-east-1 = "image-1234"
-    us-west-2 = "image-4567"
-}
-`
-	assert.Equal(t, want, string(got))
 }
 
 func TestBuildSandboxArgs(t *testing.T) {
