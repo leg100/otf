@@ -138,11 +138,12 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 }
 
 func (s *SpoolerDaemon) handleRun(event otf.EventType, run *run.Run) {
-	// (a) external agents handle runs with agent execution mode
-	// (b) internal agents handle runs with remote execution mode
+	// (a) external agents only handle runs with agent execution mode
+	// (b) internal agents only handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run
-	if !((s.External && run.ExecutionMode == workspace.AgentExecutionMode) ||
-		(!s.External && run.ExecutionMode == workspace.RemoteExecutionMode)) {
+	if s.External && run.ExecutionMode != workspace.AgentExecutionMode {
+		return
+	} else if !s.External && run.ExecutionMode != workspace.RemoteExecutionMode {
 		return
 	}
 
