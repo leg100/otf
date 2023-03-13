@@ -43,6 +43,7 @@ func buildSteps(env *Environment, run *run.Run) (steps []step) {
 	// default setup steps
 	steps = append(steps, bldr.downloadTerraform)
 	steps = append(steps, bldr.downloadConfig)
+	steps = append(steps, bldr.writeTerraformVars)
 	steps = append(steps, bldr.deleteBackendConfig)
 	steps = append(steps, bldr.downloadState)
 
@@ -178,7 +179,7 @@ func (b *stepsBuilder) terraformApply(ctx context.Context) error {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return b.executeTerraform(args)
+	return b.executeTerraform(args, sandboxIfEnabled())
 }
 
 func (b *stepsBuilder) convertPlanToJSON(ctx context.Context) error {

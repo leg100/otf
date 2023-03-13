@@ -1,12 +1,66 @@
 package agent
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"os/exec"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestBuildSandboxArgs(t *testing.T) {
+func TestExecutor_execute(t *testing.T) {
+	t.Run("no options", func(t *testing.T) {
+		var got bytes.Buffer
+		exe := &executor{
+			out:     &got,
+			workdir: &workdir{root: ""},
+		}
+		err := exe.execute([]string{"./testdata/exe"})
+		require.NoError(t, err)
+		assert.Equal(t, "some output\n", got.String())
+	})
+
+	t.Run("redirect stdout", func(t *testing.T) {
+		exe := &executor{
+			out:     io.Discard,
+			workdir: &workdir{root: ""},
+		}
+
+		dst := path.Join(t.TempDir(), "dst")
+		err := exe.execute([]string{"./testdata/exe"}, redirectStdout(dst))
+		require.NoError(t, err)
+
+		got, err := os.ReadFile(dst)
+		require.NoError(t, err)
+		assert.Equal(t, "some output\n", string(got))
+	})
+
+	t.Run("sandbox", func(t *testing.T) {
+		_, err := exec.LookPath("bwrap")
+		if err != nil {
+			t.Skip("Skipping test that requires bwrap")
+		}
+		tf, err := exec.LookPath("terraform")
+		if err != nil {
+			t.Skip("Skipping test that requires terraform")
+		}
+
+		exe := &executor{
+			Config:  Config{Sandbox: true},
+			out:     io.Discard,
+			workdir: &workdir{root: t.TempDir()},
+		}
+
+		err = exe.execute([]string{tf, "-help"}, sandboxIfEnabled())
+		require.NoError(t, err)
+	})
+}
+
+func TestExecutor_addSandboxWrapper(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
 		env := execution{
 			workdir: &workdir{root: "/root"},
@@ -20,7 +74,7 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"--chdir", "/config",
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
-			"terraform", "apply",
+			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
 		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
@@ -43,7 +97,7 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
 			"--ro-bind", PluginCacheDir, PluginCacheDir,
-			"terraform", "apply",
+			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
 		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
@@ -66,7 +120,7 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"--proc", "/proc",
 			"--tmpfs", "/tmp",
 			"--ro-bind", PluginCacheDir, PluginCacheDir,
-			"terraform", "apply",
+			"/bin/terraform", "apply",
 			"-input=false", "-no-color",
 		}
 		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))

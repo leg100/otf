@@ -32,9 +32,11 @@ type (
 	execution struct {
 		Config
 
-		out              io.Writer
-		envs             []string
-		workdir          *workdir
+		out     io.Writer
+		envs    []string
+		workdir *workdir
+
+		// options
 		redirectStdout   *string
 		sandboxIfEnabled bool
 	}
@@ -43,7 +45,7 @@ type (
 )
 
 // sandboxIfEnabled sandboxes the execution process *if* the agent is configured
-// to use a sandbox.
+// with a sandbox.
 func sandboxIfEnabled() executionOption {
 	return func(e *execution) {
 		e.sandboxIfEnabled = true
@@ -59,7 +61,12 @@ func redirectStdout(dst string) executionOption {
 
 // execute executes a process.
 func (e *executor) execute(args []string, opts ...executionOption) error {
-	var exe execution
+	exe := execution{
+		Config:  e.Config,
+		out:     e.out,
+		envs:    e.envs,
+		workdir: e.workdir,
+	}
 	for _, fn := range opts {
 		fn(&exe)
 	}
@@ -144,7 +151,7 @@ func (e *execution) addSandboxWrapper(args []string) []string {
 	if e.PluginCache {
 		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
 	}
-	bargs = append(bargs, path.Base(args[0]))
+	bargs = append(bargs, path.Join("/bin", path.Base(args[0])))
 	return append(bargs, args[1:]...)
 }
 
