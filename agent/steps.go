@@ -204,13 +204,13 @@ func (b *stepsBuilder) uploadLockFile(ctx context.Context) error {
 	return nil
 }
 
-func (r *stepsBuilder) downloadPlanFile(ctx context.Context) error {
-	plan, err := r.GetPlanFile(ctx, r.ID, run.PlanFormatBinary)
+func (b *stepsBuilder) downloadPlanFile(ctx context.Context) error {
+	plan, err := b.GetPlanFile(ctx, b.ID, run.PlanFormatBinary)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(r.WorkingDir(), planFilename), plan, 0o644)
+	return os.WriteFile(filepath.Join(b.WorkingDir(), planFilename), plan, 0o644)
 }
 
 // uploadState reads, parses, and uploads terraform state
