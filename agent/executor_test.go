@@ -1,44 +1,19 @@
 package agent
 
 import (
-	"path"
 	"testing"
 
-	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEnvironment_WorkingDir(t *testing.T) {
-	tests := []struct {
-		name    string
-		workdir string
-	}{
-		{
-			"default working dir", "",
-		},
-		{
-			"custom working dir", "subdir",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env := newTestEnvironment(t, &workspace.Workspace{WorkingDirectory: tt.workdir})
-			assert.Equal(t, tt.workdir, env.relWorkDir)
-			assert.DirExists(t, env.rootDir)
-			assert.DirExists(t, env.absWorkDir)
-			assert.FileExists(t, path.Join(env.absWorkDir, "terraform.tfvars"))
-		})
-	}
-}
-
 func TestBuildSandboxArgs(t *testing.T) {
 	t.Run("without plugin cache", func(t *testing.T) {
-		env := Environment{
-			Terraform: &fakeTerraform{"/bins"},
-			rootDir:   "/root",
+		env := execution{
+			workdir: &workdir{root: "/root"},
 		}
 		want := []string{
-			"--ro-bind", "/bins/terraform", "/bin/terraform",
+			"bwrap",
+			"--ro-bind", "/tmp/tf-bins/1.1.1/terraform", "/bin/terraform",
 			"--bind", "/root", "/config",
 			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
@@ -48,19 +23,19 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"terraform", "apply",
 			"-input=false", "-no-color",
 		}
-		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
+		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 
 	t.Run("with plugin cache", func(t *testing.T) {
-		env := Environment{
-			Terraform: &fakeTerraform{"/bins"},
-			rootDir:   "/root",
+		env := execution{
 			Config: Config{
 				PluginCache: true,
 			},
+			workdir: &workdir{root: "/root"},
 		}
 		want := []string{
-			"--ro-bind", "/bins/terraform", "/bin/terraform",
+			"bwrap",
+			"--ro-bind", "/tmp/tf-bins/1.1.1/terraform", "/bin/terraform",
 			"--bind", "/root", "/config",
 			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
@@ -71,20 +46,19 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"terraform", "apply",
 			"-input=false", "-no-color",
 		}
-		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
+		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 
-	t.Run("with working directory set", func(t *testing.T) {
-		env := Environment{
-			Terraform:  &fakeTerraform{"/bins"},
-			rootDir:    "/root",
-			relWorkDir: "/relative",
+	t.Run("with relative working directory", func(t *testing.T) {
+		env := execution{
 			Config: Config{
 				PluginCache: true,
 			},
+			workdir: &workdir{root: "/root", relative: "/relative"},
 		}
 		want := []string{
-			"--ro-bind", "/bins/terraform", "/bin/terraform",
+			"bwrap",
+			"--ro-bind", "/tmp/tf-bins/1.1.1/terraform", "/bin/terraform",
 			"--bind", "/root", "/config",
 			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
@@ -95,6 +69,6 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"terraform", "apply",
 			"-input=false", "-no-color",
 		}
-		assert.Equal(t, want, env.buildSandboxArgs([]string{"-input=false", "-no-color"}))
+		assert.Equal(t, want, env.addSandboxWrapper([]string{"/tmp/tf-bins/1.1.1/terraform", "apply", "-input=false", "-no-color"}))
 	})
 }

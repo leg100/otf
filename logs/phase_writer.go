@@ -2,8 +2,8 @@ package logs
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -14,8 +14,6 @@ type (
 
 	// PhaseWriter writes logs on behalf of a run phase.
 	PhaseWriter struct {
-		logr.Logger
-
 		// started is used internally by the writer to determine whether the first
 		// write has been prefixed with the start marker (STX).
 		started   bool
@@ -27,7 +25,6 @@ type (
 	}
 
 	PhaseWriterOptions struct {
-		logr.Logger
 		RunID  string
 		Phase  otf.PhaseType
 		Writer logWriter
@@ -42,7 +39,6 @@ func NewPhaseWriter(ctx context.Context, opts PhaseWriterOptions) *PhaseWriter {
 		id:        opts.RunID,
 		phase:     opts.Phase,
 		logWriter: opts.Writer,
-		Logger:    opts.Logger,
 	}
 }
 
@@ -65,8 +61,7 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 	w.offset = chunk.NextOffset()
 
 	if err := w.PutChunk(w.ctx, chunk); err != nil {
-		w.Error(err, "writing log stream")
-		return 0, err
+		return 0, fmt.Errorf("writing log stream: %w", err)
 	}
 
 	return len(p), nil
@@ -86,8 +81,7 @@ func (w *PhaseWriter) Close() error {
 	w.offset += chunk.NextOffset()
 
 	if err := w.PutChunk(w.ctx, chunk); err != nil {
-		w.Error(err, "closing log stream")
-		return err
+		return fmt.Errorf("closing log stream: %w", err)
 	}
 	return nil
 }

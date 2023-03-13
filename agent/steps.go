@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/variable"
 )
 
 const (
@@ -32,8 +31,9 @@ type (
 	}
 
 	runner struct {
-		canceled bool // Whether cancelation has been requested
-		out      io.WriteCloser
+		cancelFunc context.CancelFunc // Cancel context func for currently running func
+		canceled   bool               // Whether cancelation has been requested
+		out        io.WriteCloser     // for writing out error message to user
 	}
 )
 
@@ -67,7 +67,10 @@ func buildSteps(env *Environment, run *run.Run) (steps []step) {
 	return
 }
 
-func (r runner) processSteps(ctx context.Context, steps []step) error {
+func (r *runner) processSteps(ctx context.Context, steps []step) error {
+	ctx, cancel := context.WithCancel(ctx)
+	r.cancelFunc = cancel
+
 	for _, s := range steps {
 		if r.canceled {
 			return fmt.Errorf("execution canceled")
@@ -90,6 +93,15 @@ func (r runner) processSteps(ctx context.Context, steps []step) error {
 	return nil
 }
 
+func (r *runner) cancel(force bool) {
+	r.canceled = true
+
+	// cancel func only if forced and there is a context to cancel
+	if force && r.cancelFunc != nil {
+		r.cancelFunc()
+	}
+}
+
 func (b *stepsBuilder) downloadTerraform(ctx context.Context) error {
 	_, err := b.Download(ctx, b.version, b.out)
 	return err
@@ -100,15 +112,15 @@ func (b *stepsBuilder) downloadConfig(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
-	// Decompress and untar config into environment root
-	if err := otf.Unpack(bytes.NewBuffer(cv), b.Path()); err != nil {
+	// Decompress and untar config into root dir
+	if err := otf.Unpack(bytes.NewBuffer(cv), b.workdir.root); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 	return nil
 }
 
 func (b *stepsBuilder) deleteBackendConfig(ctx context.Context) error {
-	if err := otf.RewriteHCL(b.WorkingDir(), otf.RemoveBackendBlock); err != nil {
+	if err := otf.RewriteHCL(b.workdir.String(), otf.RemoveBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
@@ -123,7 +135,7 @@ func (b *stepsBuilder) downloadState(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(b.WorkingDir(), localStateFilename), statefile, 0o644); err != nil {
+	if err := b.WriteFile(localStateFilename, statefile); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 	return nil
@@ -137,37 +149,45 @@ func (b *stepsBuilder) downloadLockFile(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(b.WorkingDir(), lockFilename), lockFile, 0o644)
+	return b.WriteFile(lockFilename, lockFile)
+}
+
+func (b *stepsBuilder) writeTerraformVars(ctx context.Context) error {
+	if err := variable.WriteTerraformVars(b.workdir.String(), b.variables); err != nil {
+		return fmt.Errorf("writing terraform.fvars: %w", err)
+	}
+	return nil
 }
 
 func (b *stepsBuilder) terraformInit(ctx context.Context) error {
-	return b.RunTerraform("init")
+	return b.executeTerraform([]string{"init"})
 }
 
 func (b *stepsBuilder) terraformPlan(ctx context.Context) error {
-	var args []string
+	args := []string{"plan"}
 	if b.IsDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+planFilename)
-	return b.RunTerraform("plan", args...)
+	return b.executeTerraform(args)
 }
 
 func (b *stepsBuilder) terraformApply(ctx context.Context) error {
-	var args []string
+	args := []string{"apply"}
 	if b.IsDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return b.RunTerraform("apply", args...)
+	return b.executeTerraform(args)
 }
 
 func (b *stepsBuilder) convertPlanToJSON(ctx context.Context) error {
-	return b.RunCLI("sh", "-c", fmt.Sprintf("%s show -json %s > %s", b.TerraformPath(), planFilename, jsonPlanFilename))
+	args := []string{"show", "-json", planFilename}
+	return b.executeTerraform(args, redirectStdout(jsonPlanFilename))
 }
 
 func (b *stepsBuilder) uploadPlan(ctx context.Context) error {
-	file, err := os.ReadFile(filepath.Join(b.WorkingDir(), planFilename))
+	file, err := b.ReadFile(planFilename)
 	if err != nil {
 		return err
 	}
@@ -180,7 +200,7 @@ func (b *stepsBuilder) uploadPlan(ctx context.Context) error {
 }
 
 func (b *stepsBuilder) uploadJSONPlan(ctx context.Context) error {
-	jsonFile, err := os.ReadFile(filepath.Join(b.WorkingDir(), jsonPlanFilename))
+	jsonFile, err := b.ReadFile(jsonPlanFilename)
 	if err != nil {
 		return err
 	}
@@ -191,7 +211,7 @@ func (b *stepsBuilder) uploadJSONPlan(ctx context.Context) error {
 }
 
 func (b *stepsBuilder) uploadLockFile(ctx context.Context) error {
-	lockFile, err := os.ReadFile(filepath.Join(b.WorkingDir(), lockFilename))
+	lockFile, err := b.ReadFile(lockFilename)
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
 		return nil
@@ -210,12 +230,12 @@ func (b *stepsBuilder) downloadPlanFile(ctx context.Context) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(b.WorkingDir(), planFilename), plan, 0o644)
+	return b.WriteFile(planFilename, plan)
 }
 
 // uploadState reads, parses, and uploads terraform state
 func (b *stepsBuilder) uploadState(ctx context.Context) error {
-	state, err := os.ReadFile(filepath.Join(b.WorkingDir(), localStateFilename))
+	state, err := b.ReadFile(localStateFilename)
 	if err != nil {
 		return err
 	}

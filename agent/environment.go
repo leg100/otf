@@ -1,15 +1,10 @@
 package agent
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"path"
-	"regexp"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
@@ -27,25 +22,16 @@ type Environment struct {
 	client.Client
 	logr.Logger
 	Downloader // Downloader for workers to download terraform cli on demand
-	Terraform  // For looking up path to terraform cli
-	Config
-
-	rootDir    string // absolute path of the root directory containing tf config
-	relWorkDir string // path relative to configRoot in which tf ops are invoked
-	absWorkDir string // absolute path in which tf ops are invoked
-
-	version string // terraform version
-
-	envs []string // environment variables
 
 	steps []step // sequence of steps to execute
 
-	ctx    context.Context    // contains subject for authenticating to services
-	cancel context.CancelFunc // Cancel context func for currently running func
-	proc   *os.Process        // Current process
-	out    io.WriteCloser     // captures CLI process output
+	ctx       context.Context      // contains subject for authenticating to services
+	out       io.WriteCloser       // captures CLI process output
+	variables []*variable.Variable // terraform workspace variables
 
-	*runner
+	*executor // executes processes
+	*runner   // execute sequence of steps
+	*workdir  // working directory fs for workspace
 }
 
 func NewEnvironment(
@@ -62,19 +48,9 @@ func NewEnvironment(
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}
 
-	// create dedicated directory for environment
-	rootDir, err := os.MkdirTemp("", "otf-config-")
+	wd, err := newWorkdir(ws.WorkingDirectory)
 	if err != nil {
 		return nil, err
-	}
-	// create working directory in case user has specified a non-existent
-	// working directory
-	absWorkDir := path.Join(rootDir, ws.WorkingDirectory)
-	if absWorkDir != rootDir {
-		err = os.MkdirAll(absWorkDir, 0o755)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Create token for terraform for it to authenticate with the otf registry
@@ -100,15 +76,8 @@ func NewEnvironment(
 			envs = append(envs, ev)
 		}
 	}
-	if err := variable.WriteTerraformVars(absWorkDir, variables); err != nil {
-		return nil, errors.Wrap(err, "writing terraform.fvars")
-	}
-
-	// Create and store cancel func so func's context can be canceled
-	ctx, cancel := context.WithCancel(ctx)
 
 	writer := logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
-		Logger: logger,
 		RunID:  run.ID,
 		Phase:  run.Phase(),
 		Writer: svc,
@@ -118,17 +87,19 @@ func NewEnvironment(
 		Logger:     logger,
 		Client:     svc,
 		Downloader: downloader,
-		Terraform:  &TerraformPathFinder{},
-		version:    ws.TerraformVersion,
 		out:        writer,
-		rootDir:    rootDir,
-		relWorkDir: ws.WorkingDirectory,
-		absWorkDir: absWorkDir,
-		envs:       envs,
-		cancel:     cancel,
+		workdir:    wd,
+		variables:  variables,
 		ctx:        ctx,
-		Config:     cfg,
 		runner:     &runner{out: writer},
+		executor: &executor{
+			Config:    cfg,
+			Terraform: &TerraformPathFinder{},
+			version:   ws.TerraformVersion,
+			out:       writer,
+			envs:      envs,
+			workdir:   wd,
+		},
 	}
 
 	env.steps = buildSteps(env, run)
@@ -136,18 +107,26 @@ func NewEnvironment(
 	return env, nil
 }
 
-func (e *Environment) Path() string       { return e.rootDir }
-func (e *Environment) WorkingDir() string { return e.absWorkDir }
-
-func (e *Environment) Close() error {
-	// return os.RemoveAll(e.configRoot)
-	return nil
-}
-
-// Execute executes a phase and regardless of whether it fails, it'll close the
-// environment logs.
+// Execute executes a phase and regardless of whether it fails, it'll close its
+// logs.
 func (e *Environment) Execute() (err error) {
 	var errors *multierror.Error
+
+	// Dump info if in debug mode
+	if e.Debug {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(e.out)
+		fmt.Fprintln(e.out, "Debug mode enabled")
+		fmt.Fprintln(e.out, "------------------")
+		fmt.Fprintf(e.out, "Hostname: %s\n", hostname)
+		fmt.Fprintf(e.out, "External agent: %t\n", e.External)
+		fmt.Fprintf(e.out, "Sandbox mode: %t\n", e.Sandbox)
+		fmt.Fprintln(e.out, "------------------")
+		fmt.Fprintln(e.out)
+	}
 
 	if err := e.processSteps(e.ctx, e.steps); err != nil {
 		errors = multierror.Append(errors, err)
@@ -166,116 +145,6 @@ func (e *Environment) Execute() (err error) {
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
 func (e *Environment) Cancel(force bool) {
-	e.canceled = true
-
-	// cancel proc
-	if e.proc != nil {
-		if force {
-			e.proc.Signal(os.Kill)
-		} else {
-			e.proc.Signal(os.Interrupt)
-		}
-	}
-
-	// cancel func only if forced and there is a context to cancel
-	if force && e.cancel != nil {
-		e.cancel()
-	}
-}
-
-// RunTerraform runs a terraform command in the environment
-func (e *Environment) RunTerraform(cmd string, args ...string) error {
-	// Dump info if in debug mode
-	if e.Debug && (cmd == "plan" || cmd == "apply") {
-		hostname, err := os.Hostname()
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(e.out)
-		fmt.Fprintln(e.out, "Debug mode enabled")
-		fmt.Fprintln(e.out, "------------------")
-		fmt.Fprintf(e.out, "Hostname: %s\n", hostname)
-		fmt.Fprintf(e.out, "External agent: %t\n", e.External)
-		fmt.Fprintf(e.out, "Sandbox mode: %t\n", e.Sandbox)
-		fmt.Fprintln(e.out, "------------------")
-		fmt.Fprintln(e.out)
-	}
-
-	// optionally sandbox terraform apply using bubblewrap
-	if e.Sandbox && cmd == "apply" {
-		return e.RunCLI("bwrap", e.buildSandboxArgs(args)...)
-	}
-
-	return e.RunCLI(e.TerraformPath(), append([]string{cmd}, args...)...)
-}
-
-// RunCLI executes a CLI process in the executor. The path is set to the
-// workspace's working directory.
-func (e *Environment) RunCLI(name string, args ...string) error {
-	logger := e.Logger.WithValues("name", name, "args", args, "path", e.WorkingDir())
-
-	cmd := exec.Command(name, args...)
-	cmd.Dir = e.WorkingDir()
-	cmd.Stdout = e.out
-	cmd.Env = append(os.Environ(), e.envs...)
-
-	// send stderr to both environment output (for sending to client) and to
-	// local var so we can report on errors below
-	stderr := new(bytes.Buffer)
-	cmd.Stderr = io.MultiWriter(e.out, stderr)
-
-	if err := cmd.Start(); err != nil {
-		logger.Error(err, "starting command", "stderr", cleanStderr(stderr.String()))
-		return err
-	}
-	// store process so that it can be canceled
-	e.proc = cmd.Process
-
-	logger.V(2).Info("running command")
-
-	if err := cmd.Wait(); err != nil {
-		logger.Error(err, "running command", "stderr", cleanStderr(stderr.String()))
-		return err
-	}
-
-	return nil
-}
-
-// TerraformPath provides the path to the terraform bin
-func (e *Environment) TerraformPath() string {
-	return e.Terraform.TerraformPath(e.version)
-}
-
-// buildBubblewrapArgs builds the args for running a terraform apply within a
-// bubblewrap sandbox.
-func (e *Environment) buildSandboxArgs(args []string) []string {
-	bargs := []string{
-		"--ro-bind", e.TerraformPath(), "/bin/terraform",
-		"--bind", e.rootDir, "/config",
-		// for DNS lookups
-		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-		// for verifying SSL connections
-		"--ro-bind", otf.SSLCertsDir(), otf.SSLCertsDir(),
-		"--chdir", path.Join("/config", e.relWorkDir),
-		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
-		"--proc", "/proc",
-		// avoids provider error "failed to read schema..."
-		"--tmpfs", "/tmp",
-	}
-	if e.PluginCache {
-		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)
-	}
-	bargs = append(bargs, "terraform", "apply")
-	return append(bargs, args...)
-}
-
-var ascii = regexp.MustCompile("[[:^ascii:]]")
-
-// cleanStderr cleans up stderr output to make it suitable for logging:
-// newlines, ansi escape sequences, and non-ascii characters are removed
-func cleanStderr(stderr string) string {
-	stderr = stripAnsi(stderr)
-	stderr = ascii.ReplaceAllLiteralString(stderr, "")
-	stderr = strings.Join(strings.Fields(stderr), " ")
-	return stderr
+	e.runner.cancel(force)
+	e.executor.cancel(force)
 }
