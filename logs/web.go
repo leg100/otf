@@ -16,10 +16,10 @@ type webHandlers struct {
 	logr.Logger
 	*sse.Server
 
-	service
+	Service
 }
 
-func newWebHandlers(app service, logger logr.Logger) *webHandlers {
+func newWebHandlers(app Service, logger logr.Logger) *webHandlers {
 	// Create and configure SSE server
 	srv := sse.New()
 	// we don't use last-event-item functionality so turn it off
@@ -31,7 +31,7 @@ func newWebHandlers(app service, logger logr.Logger) *webHandlers {
 	return &webHandlers{
 		Server:  srv,
 		Logger:  logger,
-		service: app,
+		Service: app,
 	}
 }
 
@@ -55,7 +55,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.service.tail(r.Context(), otf.GetChunkOptions{
+	ch, err := h.Service.tail(r.Context(), otf.GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,

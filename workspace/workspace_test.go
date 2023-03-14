@@ -1,8 +1,9 @@
-package otf
+package workspace
 
 import (
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,49 +16,49 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "default",
 			opts: CreateWorkspaceOptions{
-				Name:         String("my-workspace"),
-				Organization: String("my-org"),
+				Name:         otf.String("my-workspace"),
+				Organization: otf.String("my-org"),
 			},
 		},
 		{
 			name: "missing name",
 			opts: CreateWorkspaceOptions{
-				Organization: String("my-org"),
+				Organization: otf.String("my-org"),
 			},
-			want: ErrRequiredName,
+			want: otf.ErrRequiredName,
 		},
 		{
 			name: "missing organization",
 			opts: CreateWorkspaceOptions{
-				Name: String("my-workspace"),
+				Name: otf.String("my-workspace"),
 			},
-			want: ErrRequiredOrg,
+			want: otf.ErrRequiredOrg,
 		},
 		{
 			name: "invalid name",
 			opts: CreateWorkspaceOptions{
-				Name:         String("%*&^"),
-				Organization: String("my-org"),
+				Name:         otf.String("%*&^"),
+				Organization: otf.String("my-org"),
 			},
-			want: ErrInvalidName,
+			want: otf.ErrInvalidName,
 		},
 		{
 			name: "bad terraform version",
 			opts: CreateWorkspaceOptions{
-				Name:             String("my-workspace"),
-				Organization:     String("my-org"),
-				TerraformVersion: String("1,2,0"),
+				Name:             otf.String("my-workspace"),
+				Organization:     otf.String("my-org"),
+				TerraformVersion: otf.String("1,2,0"),
 			},
-			want: ErrInvalidTerraformVersion,
+			want: otf.ErrInvalidTerraformVersion,
 		},
 		{
 			name: "unsupported terraform version",
 			opts: CreateWorkspaceOptions{
-				Name:             String("my-workspace"),
-				Organization:     String("my-org"),
-				TerraformVersion: String("0.14.0"),
+				Name:             otf.String("my-workspace"),
+				Organization:     otf.String("my-org"),
+				TerraformVersion: otf.String("0.14.0"),
 			},
-			want: ErrUnsupportedTerraformVersion,
+			want: otf.ErrUnsupportedTerraformVersion,
 		},
 	}
 	for _, tt := range tests {

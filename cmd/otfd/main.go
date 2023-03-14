@@ -9,7 +9,6 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/app"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
@@ -168,8 +167,8 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	var handlers []otf.Handlers
 
 	orgService := organization.NewService(organization.Options{
-		DB:        db,
 		Logger:    logger,
+		DB:        db,
 		Publisher: hub,
 		Renderer:  renderer,
 	})
@@ -182,36 +181,49 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	handlers = append(handlers, authService)
 
 	workspaceService := workspace.NewService(workspace.Options{
+		Logger:            logger,
 		TokenMiddleware:   authService.TokenMiddleware,
 		SessionMiddleware: authService.SessionMiddleware,
 		DB:                db,
-		Logger:            logger,
 		Publisher:         hub,
 		Renderer:          renderer,
 	})
 	handlers = append(handlers, workspaceService)
 
 	configService := configversion.NewService(configversion.Options{
+		Logger:              logger,
 		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
 		DB:                  db,
 		Signer:              signer,
-		Logger:              logger,
 		MaxUploadSize:       d.maxConfigSize,
 	})
 	handlers = append(handlers, configService)
 
+	runService := run.NewService(run.Options{
+		Logger:                      logger,
+		WorkspaceAuthorizer:         workspaceService,
+		WorkspaceService:            workspaceService,
+		ConfigurationVersionService: configService,
+		Publisher:                   hub,
+		Renderer:                    renderer,
+		Cache:                       cache,
+		DB:                          db,
+		Signer:                      signer,
+	})
+	handlers = append(handlers, runService)
+
 	stateService := state.NewService(state.Options{
-		WorkspaceAuthorizer: workspaceService,
 		Logger:              logger,
+		WorkspaceAuthorizer: workspaceService,
 		DB:                  db,
 		Cache:               cache,
 	})
 	handlers = append(handlers, stateService)
 
 	variableService := variable.NewService(variable.Options{
-		WorkspaceAuthorizer: workspaceService,
 		Logger:              logger,
+		WorkspaceAuthorizer: workspaceService,
 		DB:                  db,
 		WorkspaceService:    workspaceService,
 		Renderer:            renderer,
@@ -219,26 +231,12 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	handlers = append(handlers, variableService)
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+		Logger:   logger,
 		Service:  cloudService,
 		DB:       db,
 		Renderer: renderer,
-		Logger:   logger,
 	})
 	handlers = append(handlers, variableService)
-
-	// Setup application services
-	app, err := app.NewApplication(ctx, app.Options{
-		Logger:              logger,
-		DB:                  db,
-		Cache:               cache,
-		PubSub:              hub,
-		CloudService:        cloudService,
-		Authorizer:          authorizer,
-		StateVersionService: stateService,
-	})
-	if err != nil {
-		return fmt.Errorf("setting up services: %w", err)
-	}
 
 	// Setup and start http server
 	server, err := http.NewServer(logger, *d.ServerConfig, handlers...)
@@ -262,10 +260,10 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 
 	// Setup client app for use by agent
 	client := struct {
-		organization.OrganizationService
+		organization.Service
 		otf.AgentTokenService
 		otf.VariableService
-		otf.StateVersionApp
+		state.Service
 		workspace.Service
 		otf.HostnameService
 		otf.ConfigurationVersionService
@@ -274,14 +272,14 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		otf.EventService
 	}{
 		AgentTokenService:           app,
-		WorkspaceService:            app.WorkspaceService,
+		WorkspaceService:            workspaceService,
 		OrganizationService:         app,
 		VariableApp:                 variableService,
 		StateVersionApp:             stateService,
-		HostnameService:             app,
+		HostnameService:             hostnameService,
 		ConfigurationVersionService: app,
 		RegistrySessionService:      registrySessionService,
-		RunService:                  app,
+		RunService:                  runService,
 		EventService:                app,
 	}
 
@@ -303,10 +301,18 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		return scheduler.ExclusiveScheduler(ctx, logger, app)
 	})
 
-	// Run triggerer
+	// Run run-spawner
 	g.Go(func() error {
-		if err := triggerer.Start(ctx); err != nil {
-			return fmt.Errorf("triggerer terminated: %w", err)
+		err := run.StartSpawner(ctx, run.SpawnerOptions{
+			Logger:                      logger,
+			ConfigurationVersionService: configService,
+			WorkspaceService:            workspaceService,
+			VCSProviderService:          vcsProviderService,
+			RunService:                  runService,
+			Subscriber:                  hub,
+		})
+		if err != nil {
+			return fmt.Errorf("spawner terminated: %w", err)
 		}
 		return nil
 	})
@@ -314,7 +320,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	// Run PR reporter - if there is another reporter running already then
 	// this'll wait until the other reporter exits.
 	g.Go(func() error {
-		return run.StartReporter(ctx, run.ReporterOptions{
+		err := run.StartReporter(ctx, run.ReporterOptions{
 			Logger:                      logger,
 			ConfigurationVersionService: configService,
 			WorkspaceService:            workspaceService,
@@ -323,6 +329,10 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 			DB:       db,
 			Hostname: hostnameService.Hostname(),
 		})
+		if err != nil {
+			return fmt.Errorf("reporter terminated: %w", err)
+		}
+		return nil
 	})
 
 	// Run local agent in background

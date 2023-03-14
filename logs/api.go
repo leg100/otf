@@ -11,7 +11,7 @@ import (
 )
 
 type api struct {
-	service
+	Service
 	otf.Verifier // for verifying upload url
 }
 
@@ -32,7 +32,7 @@ func (s *api) getLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chunk, err := s.service.GetChunk(r.Context(), opts)
+	chunk, err := s.Service.GetChunk(r.Context(), opts)
 	// ignore not found errors because terraform-cli may call this endpoint
 	// before any logs have been written and it'll exit with an error if a not
 	// found error is received.
@@ -60,7 +60,7 @@ func (s *api) putLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chunk.Data = buf.Bytes()
-	if err := s.service.PutChunk(r.Context(), chunk); err != nil {
+	if err := s.Service.PutChunk(r.Context(), chunk); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}

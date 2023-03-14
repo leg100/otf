@@ -24,13 +24,14 @@ type (
 	}
 
 	SpawnerOptions struct {
+		logr.Logger
+
+		otf.Subscriber
+
 		ConfigurationVersionService
 		WorkspaceService
 		VCSProviderService
 		RunService
-
-		logr.Logger
-		otf.Subscriber
 	}
 )
 

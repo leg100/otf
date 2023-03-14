@@ -7,11 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/workspace"
 )
 
 type (
@@ -55,9 +52,10 @@ type (
 
 	service struct {
 		logr.Logger
-		LogService *logs.Service
-		otf.PubSubService
-		workspace.Service
+
+		LogService
+		WorkspaceService
+		otf.Publisher
 
 		site         otf.Authorizer
 		organization otf.Authorizer
@@ -79,10 +77,9 @@ type (
 		otf.Cache
 		otf.DB
 		otf.Renderer
-		otf.PubSubService
-		otf.HostnameService
-		WorkspaceService            workspace.Service
-		ConfigurationVersionService configversion.Service
+		otf.Publisher
+		WorkspaceService
+		ConfigurationVersionService
 		otf.Signer
 	}
 )
@@ -90,9 +87,9 @@ type (
 func NewService(opts Options) *service {
 	db := newDB(opts.DB)
 	svc := service{
-		Logger:        opts.Logger,
-		PubSubService: opts.PubSubService,
-		Service:       opts.WorkspaceService,
+		Logger:           opts.Logger,
+		Publisher:        opts.Publisher,
+		WorkspaceService: opts.WorkspaceService,
 	}
 
 	svc.site = &otf.SiteAuthorizer{opts.Logger}

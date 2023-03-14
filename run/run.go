@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
@@ -111,6 +112,7 @@ type (
 	WorkspaceService            workspace.Service
 	VCSProviderService          vcsprovider.Service
 	RunService                  Service
+	LogService                  logs.Service
 )
 
 // NewRun creates a new run with defaults.

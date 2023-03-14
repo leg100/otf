@@ -12,7 +12,7 @@ import (
 )
 
 type api struct {
-	svc service
+	svc Service
 }
 
 // Implements TFC state versions API:

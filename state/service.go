@@ -13,12 +13,17 @@ import (
 // cacheKey generates a key for caching state files
 func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
 
-var _ otf.StateVersionService = (*Service)(nil)
-
-// service is the application service for state
+// Service is the application Service for state
 type (
-	service interface {
-		createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*version, error)
+	Service interface {
+		// CreateStateVersion creates a state version for the given workspace using
+		// the given state data.
+		CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) error
+		// DownloadCurrentState downloads the current (latest) state for the given
+		// workspace.
+		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
+
+		createVersion(ctx context.Context, opts CreateStateVersionOptions) (*version, error)
 		currentVersion(ctx context.Context, workspaceID string) (*version, error)
 		getVersion(ctx context.Context, versionID string) (*version, error)
 		downloadState(ctx context.Context, versionID string) ([]byte, error)
@@ -26,8 +31,8 @@ type (
 		getOutput(ctx context.Context, outputID string) (*output, error)
 	}
 
-	// Service provides access to state and state versions
-	Service struct {
+	// service provides access to state and state versions
+	service struct {
 		logr.Logger
 		WorkspaceService
 
@@ -40,6 +45,7 @@ type (
 	Options struct {
 		logr.Logger
 
+		WorkspaceService
 		WorkspaceAuthorizer otf.Authorizer
 
 		otf.Cache
@@ -63,8 +69,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *Service {
-	svc := Service{
+func NewService(opts Options) *service {
+	svc := service{
 		Logger: opts.Logger,
 	}
 
@@ -77,12 +83,12 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (a *Service) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) error {
+func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) error {
 	_, err := a.createVersion(ctx, opts)
 	return err
 }
 
-func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
+func (a *service) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
 	v, err := a.currentVersion(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -90,7 +96,7 @@ func (a *Service) DownloadCurrentState(ctx context.Context, workspaceID string) 
 	return a.downloadState(ctx, v.ID)
 }
 
-func (a *Service) createVersion(ctx context.Context, opts otf.CreateStateVersionOptions) (*version, error) {
+func (a *service) createVersion(ctx context.Context, opts CreateStateVersionOptions) (*version, error) {
 	if opts.WorkspaceID == nil {
 		return nil, errors.New("workspace ID is required")
 	}
@@ -117,7 +123,7 @@ func (a *Service) createVersion(ctx context.Context, opts otf.CreateStateVersion
 	return sv, nil
 }
 
-func (a *Service) listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error) {
+func (a *service) listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error) {
 	workspace, err := a.GetWorkspaceByName(ctx, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
@@ -136,7 +142,7 @@ func (a *Service) listVersions(ctx context.Context, opts stateVersionListOptions
 	return svl, nil
 }
 
-func (a *Service) currentVersion(ctx context.Context, workspaceID string) (*version, error) {
+func (a *service) currentVersion(ctx context.Context, workspaceID string) (*version, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -151,7 +157,7 @@ func (a *Service) currentVersion(ctx context.Context, workspaceID string) (*vers
 	return sv, nil
 }
 
-func (a *Service) getVersion(ctx context.Context, versionID string) (*version, error) {
+func (a *service) getVersion(ctx context.Context, versionID string) (*version, error) {
 	subject, err := a.CanAccessStateVersion(ctx, rbac.GetStateVersionAction, versionID)
 	if err != nil {
 		return nil, err
@@ -167,7 +173,7 @@ func (a *Service) getVersion(ctx context.Context, versionID string) (*version, e
 }
 
 // DownloadState retrieves base64-encoded terraform state from the db
-func (a *Service) downloadState(ctx context.Context, svID string) ([]byte, error) {
+func (a *service) downloadState(ctx context.Context, svID string) ([]byte, error) {
 	subject, err := a.CanAccessStateVersion(ctx, rbac.DownloadStateAction, svID)
 	if err != nil {
 		return nil, err
@@ -189,7 +195,7 @@ func (a *Service) downloadState(ctx context.Context, svID string) ([]byte, error
 	return state, nil
 }
 
-func (a *Service) getOutput(ctx context.Context, outputID string) (*output, error) {
+func (a *service) getOutput(ctx context.Context, outputID string) (*output, error) {
 	sv, err := a.db.getOutput(ctx, outputID)
 	if err != nil {
 		a.Error(err, "retrieving state version output", "id", outputID)
@@ -205,7 +211,7 @@ func (a *Service) getOutput(ctx context.Context, outputID string) (*output, erro
 	return sv, nil
 }
 
-func (a *Service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error) {
+func (a *service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error) {
 	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{ID: &svID})
 	if err != nil {
 		return nil, err
