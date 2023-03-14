@@ -19,7 +19,7 @@ type (
 	// executor executes processes.
 	executor struct {
 		Config
-		Terraform
+		terraform
 
 		version string // terraform cli version
 		out     io.Writer
@@ -77,7 +77,7 @@ func (e *executor) execute(args []string, opts ...executionOption) error {
 	e.proc = cmd.Process
 
 	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("process failed with stderr: %s", cleanStderr(stderr.String()))
+		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
 	}
 
 	return nil

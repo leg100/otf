@@ -13,49 +13,51 @@ import (
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
-var _ Spooler = (*SpoolerDaemon)(nil)
+// spoolerCapacity is the max number of queued runs the spooler can store
+const spoolerCapacity = 100
 
-// Spooler is a daemon from which enqueued runs can be retrieved
-type Spooler interface {
-	// Start the daemon
-	Start(context.Context) error
-	// GetRun receives spooled runs
-	GetRun() <-chan *run.Run
-	// GetCancelation receives requests to cancel runs
-	GetCancelation() <-chan Cancelation
-}
+var _ spooler = (*spoolerDaemon)(nil)
 
-// SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
-// apply, and converting them into spooled jobs.
-type SpoolerDaemon struct {
-	queue         chan *run.Run    // Queue of queued jobs
-	cancelations  chan Cancelation // Queue of cancelation requests
-	client.Client                  // Application for retrieving queued runs
-	logr.Logger
-	Config
-}
+type (
+	// spooler is a daemon from which enqueued runs can be retrieved
+	spooler interface {
+		// start the daemon
+		start(context.Context) error
+		// getRun receives spooled runs
+		getRun() <-chan *run.Run
+		// getCancelation receives requests to cancel runs
+		getCancelation() <-chan cancelation
+	}
 
-type Cancelation struct {
-	Run      *run.Run
-	Forceful bool
-}
+	// spoolerDaemon implements Spooler, receiving runs with either a queued plan or
+	// apply, and converting them into spooled jobs.
+	spoolerDaemon struct {
+		queue         chan *run.Run    // Queue of queued jobs
+		cancelations  chan cancelation // Queue of cancelation requests
+		client.Client                  // Application for retrieving queued runs
+		logr.Logger
+		Config
+	}
 
-// SpoolerCapacity is the max number of queued runs the spooler can store
-const SpoolerCapacity = 100
+	cancelation struct {
+		Run      *run.Run
+		Forceful bool
+	}
+)
 
-// NewSpooler populates a Spooler with queued runs
-func NewSpooler(app client.Client, logger logr.Logger, cfg Config) *SpoolerDaemon {
-	return &SpoolerDaemon{
-		queue:        make(chan *run.Run, SpoolerCapacity),
-		cancelations: make(chan Cancelation, SpoolerCapacity),
+// newSpooler populates a Spooler with queued runs
+func newSpooler(app client.Client, logger logr.Logger, cfg Config) *spoolerDaemon {
+	return &spoolerDaemon{
+		queue:        make(chan *run.Run, spoolerCapacity),
+		cancelations: make(chan cancelation, spoolerCapacity),
 		Client:       app,
 		Logger:       logger,
 		Config:       cfg,
 	}
 }
 
-// Start starts the spooler
-func (s *SpoolerDaemon) Start(ctx context.Context) error {
+// start starts the spooler
+func (s *spoolerDaemon) start(ctx context.Context) error {
 	op := func() error {
 		return s.reinitialize(ctx)
 	}
@@ -65,17 +67,17 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 	})
 }
 
-// GetRun returns a channel of queued runs
-func (s *SpoolerDaemon) GetRun() <-chan *run.Run {
+// getRun returns a channel of queued runs
+func (s *spoolerDaemon) getRun() <-chan *run.Run {
 	return s.queue
 }
 
-// GetCancelation returns a channel of cancelation requests
-func (s *SpoolerDaemon) GetCancelation() <-chan Cancelation {
+// getCancelation returns a channel of cancelation requests
+func (s *spoolerDaemon) getCancelation() <-chan cancelation {
 	return s.cancelations
 }
 
-func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
+func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	sub, err := s.Watch(ctx, otf.WatchOptions{
 		Organization: s.Organization,
 	})
@@ -126,7 +128,7 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 	}
 }
 
-func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
+func (s *spoolerDaemon) handleEvent(ev otf.Event) {
 	switch payload := ev.Payload.(type) {
 	case *run.Run:
 		s.handleRun(ev.Type, payload)
@@ -137,7 +139,7 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	}
 }
 
-func (s *SpoolerDaemon) handleRun(event otf.EventType, run *run.Run) {
+func (s *spoolerDaemon) handleRun(event otf.EventType, run *run.Run) {
 	// (a) external agents only handle runs with agent execution mode
 	// (b) internal agents only handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run
@@ -150,8 +152,8 @@ func (s *SpoolerDaemon) handleRun(event otf.EventType, run *run.Run) {
 	if run.Queued() {
 		s.queue <- run
 	} else if event == otf.EventRunCancel {
-		s.cancelations <- Cancelation{Run: run}
+		s.cancelations <- cancelation{Run: run}
 	} else if event == otf.EventRunForceCancel {
-		s.cancelations <- Cancelation{Run: run, Forceful: true}
+		s.cancelations <- cancelation{Run: run, Forceful: true}
 	}
 }

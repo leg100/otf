@@ -44,19 +44,27 @@ func TestExecutor_execute(t *testing.T) {
 		if err != nil {
 			t.Skip("Skipping test that requires bwrap")
 		}
-		tf, err := exec.LookPath("terraform")
-		if err != nil {
-			t.Skip("Skipping test that requires terraform")
-		}
 
 		exe := &executor{
 			Config:  Config{Sandbox: true},
 			out:     io.Discard,
-			workdir: &workdir{root: t.TempDir()},
+			workdir: &workdir{root: "."},
 		}
 
-		err = exe.execute([]string{tf, "-help"}, sandboxIfEnabled())
+		err = exe.execute([]string{"./testdata/staticbin"}, sandboxIfEnabled())
 		require.NoError(t, err)
+	})
+
+	t.Run("stderr", func(t *testing.T) {
+		var got bytes.Buffer
+		exe := &executor{
+			out:     &got,
+			workdir: &workdir{root: ""},
+		}
+		err := exe.execute([]string{"./testdata/badexe"})
+		if assert.Error(t, err) {
+			assert.Equal(t, "exit status 1: an error", err.Error())
+		}
 	})
 }
 

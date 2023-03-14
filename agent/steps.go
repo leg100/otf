@@ -27,7 +27,7 @@ type (
 
 	stepsBuilder struct {
 		*run.Run
-		*Environment
+		*environment
 	}
 
 	runner struct {
@@ -37,8 +37,8 @@ type (
 	}
 )
 
-func buildSteps(env *Environment, run *run.Run) (steps []step) {
-	bldr := &stepsBuilder{Environment: env, Run: run}
+func buildSteps(env *environment, run *run.Run) (steps []step) {
+	bldr := &stepsBuilder{environment: env, Run: run}
 
 	// default setup steps
 	steps = append(steps, bldr.downloadTerraform)
@@ -104,7 +104,7 @@ func (r *runner) cancel(force bool) {
 }
 
 func (b *stepsBuilder) downloadTerraform(ctx context.Context) error {
-	_, err := b.Download(ctx, b.version, b.out)
+	_, err := b.download(ctx, b.version, b.out)
 	return err
 }
 
@@ -136,7 +136,7 @@ func (b *stepsBuilder) downloadState(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-	if err := b.WriteFile(localStateFilename, statefile); err != nil {
+	if err := b.writeFile(localStateFilename, statefile); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 	return nil
@@ -150,7 +150,7 @@ func (b *stepsBuilder) downloadLockFile(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return b.WriteFile(lockFilename, lockFile)
+	return b.writeFile(lockFilename, lockFile)
 }
 
 func (b *stepsBuilder) writeTerraformVars(ctx context.Context) error {
@@ -179,7 +179,7 @@ func (b *stepsBuilder) terraformApply(ctx context.Context) error {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return b.executeTerraform(args, sandboxIfEnabled())
+	return b.executeTerraform(args)
 }
 
 func (b *stepsBuilder) convertPlanToJSON(ctx context.Context) error {
@@ -188,7 +188,7 @@ func (b *stepsBuilder) convertPlanToJSON(ctx context.Context) error {
 }
 
 func (b *stepsBuilder) uploadPlan(ctx context.Context) error {
-	file, err := b.ReadFile(planFilename)
+	file, err := b.readFile(planFilename)
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func (b *stepsBuilder) uploadPlan(ctx context.Context) error {
 }
 
 func (b *stepsBuilder) uploadJSONPlan(ctx context.Context) error {
-	jsonFile, err := b.ReadFile(jsonPlanFilename)
+	jsonFile, err := b.readFile(jsonPlanFilename)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (b *stepsBuilder) uploadJSONPlan(ctx context.Context) error {
 }
 
 func (b *stepsBuilder) uploadLockFile(ctx context.Context) error {
-	lockFile, err := b.ReadFile(lockFilename)
+	lockFile, err := b.readFile(lockFilename)
 	if errors.Is(err, fs.ErrNotExist) {
 		// there is no lock file to upload, which is ok
 		return nil
@@ -231,12 +231,12 @@ func (b *stepsBuilder) downloadPlanFile(ctx context.Context) error {
 		return err
 	}
 
-	return b.WriteFile(planFilename, plan)
+	return b.writeFile(planFilename, plan)
 }
 
 // uploadState reads, parses, and uploads terraform state
 func (b *stepsBuilder) uploadState(ctx context.Context) error {
-	state, err := b.ReadFile(localStateFilename)
+	state, err := b.readFile(localStateFilename)
 	if err != nil {
 		return err
 	}

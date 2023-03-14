@@ -26,7 +26,7 @@ func TestSpooler(t *testing.T) {
 	events <- otf.Event{Type: otf.EventRunCancel, Payload: run4}
 	events <- otf.Event{Type: otf.EventRunForceCancel, Payload: run5}
 
-	spooler := NewSpooler(
+	spooler := newSpooler(
 		&fakeSpoolerApp{runs: db, events: events},
 		logr.Discard(),
 		Config{},
@@ -35,13 +35,13 @@ func TestSpooler(t *testing.T) {
 	go func() { errch <- spooler.reinitialize(ctx) }()
 
 	// expect to receive runs from DB in reverse order
-	assert.Equal(t, run2, <-spooler.GetRun())
-	assert.Equal(t, run1, <-spooler.GetRun())
+	assert.Equal(t, run2, <-spooler.getRun())
+	assert.Equal(t, run1, <-spooler.getRun())
 
 	// expect afterwards to receive runs from events
-	assert.Equal(t, run3, <-spooler.GetRun())
-	assert.Equal(t, Cancelation{Run: run4, Forceful: false}, <-spooler.GetCancelation())
-	assert.Equal(t, Cancelation{Run: run5, Forceful: true}, <-spooler.GetCancelation())
+	assert.Equal(t, run3, <-spooler.getRun())
+	assert.Equal(t, cancelation{Run: run4, Forceful: false}, <-spooler.getCancelation())
+	assert.Equal(t, cancelation{Run: run5, Forceful: true}, <-spooler.getCancelation())
 	cancel()
 	assert.NoError(t, <-errch)
 }
@@ -121,16 +121,16 @@ func TestSpooler_handleEvent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spooler := NewSpooler(nil, logr.Discard(), tt.config)
+			spooler := newSpooler(nil, logr.Discard(), tt.config)
 			spooler.handleEvent(tt.event)
 
 			if tt.wantRun {
-				assert.NotNil(t, <-spooler.GetRun())
+				assert.NotNil(t, <-spooler.getRun())
 			} else if tt.wantCancelation {
-				assert.NotNil(t, <-spooler.GetCancelation())
+				assert.NotNil(t, <-spooler.getCancelation())
 			} else if tt.wantForceCancelation {
 				if assert.Equal(t, 1, len(spooler.cancelations)) {
-					got := <-spooler.GetCancelation()
+					got := <-spooler.getCancelation()
 					assert.True(t, got.Forceful)
 				}
 			} else {

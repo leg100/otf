@@ -25,9 +25,9 @@ func TestDownloader(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	dl := NewTerraformDownloader()
+	dl := newTerraformDownloader()
 	dl.host = u.Host
-	dl.Terraform = &fakeTerraform{t.TempDir()}
+	dl.terraform = &fakeTerraform{t.TempDir()}
 	dl.client = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -35,7 +35,7 @@ func TestDownloader(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	tfpath, err := dl.Download(context.Background(), "1.2.3", buf)
+	tfpath, err := dl.download(context.Background(), "1.2.3", buf)
 	require.NoError(t, err)
 	require.FileExists(t, tfpath)
 	tfbin, err := os.ReadFile(tfpath)

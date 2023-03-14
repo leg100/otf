@@ -16,9 +16,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Environment provides an execution environment for a run, providing a working
+// environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
-type Environment struct {
+type environment struct {
 	client.Client
 	logr.Logger
 	Downloader // Downloader for workers to download terraform cli on demand
@@ -34,7 +34,7 @@ type Environment struct {
 	*workdir  // working directory fs for workspace
 }
 
-func NewEnvironment(
+func newEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
 	svc client.Client,
@@ -42,7 +42,7 @@ func NewEnvironment(
 	envs []string,
 	downloader Downloader,
 	cfg Config,
-) (*Environment, error) {
+) (*environment, error) {
 	ws, err := svc.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
@@ -83,7 +83,7 @@ func NewEnvironment(
 		Writer: svc,
 	})
 
-	env := &Environment{
+	env := &environment{
 		Logger:     logger,
 		Client:     svc,
 		Downloader: downloader,
@@ -94,7 +94,7 @@ func NewEnvironment(
 		runner:     &runner{out: writer},
 		executor: &executor{
 			Config:    cfg,
-			Terraform: &TerraformPathFinder{},
+			terraform: &terraformPathFinder{},
 			version:   ws.TerraformVersion,
 			out:       writer,
 			envs:      envs,
@@ -107,9 +107,9 @@ func NewEnvironment(
 	return env, nil
 }
 
-// Execute executes a phase and regardless of whether it fails, it'll close its
+// execute executes a phase and regardless of whether it fails, it'll close its
 // logs.
-func (e *Environment) Execute() (err error) {
+func (e *environment) execute() (err error) {
 	var errors *multierror.Error
 
 	// Dump info if in debug mode
@@ -140,11 +140,11 @@ func (e *Environment) Execute() (err error) {
 	return errors.ErrorOrNil()
 }
 
-// Cancel terminates execution. Force controls whether termination is graceful
+// cancel terminates execution. Force controls whether termination is graceful
 // or not. Performed on a best-effort basis - the func or process may have
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
-func (e *Environment) Cancel(force bool) {
+func (e *environment) cancel(force bool) {
 	e.runner.cancel(force)
 	e.executor.cancel(force)
 }

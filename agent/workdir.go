@@ -24,22 +24,22 @@ func newWorkdir(workingDirectory string) (*workdir, error) {
 	}, nil
 }
 
-// WriteFile writes a file to the working directory.
-func (w *workdir) WriteFile(path string, b []byte) error {
-	return os.WriteFile(filepath.Join(w.String(), path), b, 0o644)
-}
-
-// ReadFile reads a file from the working directory.
-func (w *workdir) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(w.String(), path))
-}
-
-// Close removes working directory
-func (w *workdir) Close() error {
-	return os.RemoveAll(w.root)
-}
-
 // String returns the absolute path to the working directory.
 func (w *workdir) String() string {
 	return path.Join(w.root, w.relative)
+}
+
+// writeFile writes a file to the working directory.
+func (w *workdir) writeFile(path string, b []byte) error {
+	return os.WriteFile(filepath.Join(w.String(), path), b, 0o644)
+}
+
+// readFile reads a file from the working directory.
+func (w *workdir) readFile(path string) ([]byte, error) {
+	return os.ReadFile(filepath.Join(w.String(), path))
+}
+
+// close removes working directory
+func (w *workdir) close() error {
+	return os.RemoveAll(w.root)
 }

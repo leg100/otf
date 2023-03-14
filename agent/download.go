@@ -13,8 +13,8 @@ import (
 	"github.com/natefinch/atomic"
 )
 
-// Download represents a current download of a version of terraform
-type Download struct {
+// download represents a current download of a version of terraform
+type download struct {
 	// for outputting progress updates
 	io.Writer
 	version   string
@@ -22,12 +22,12 @@ type Download struct {
 	client    *http.Client
 }
 
-func (d *Download) Download() error {
+func (d *download) download() error {
 	if otf.Exists(d.dest) {
 		return nil
 	}
 
-	zipfile, err := d.download()
+	zipfile, err := d.getZipfile()
 	if err != nil {
 		return fmt.Errorf("downloading zipfile: %w", err)
 	}
@@ -44,7 +44,7 @@ func (d *Download) Download() error {
 	return nil
 }
 
-func (d *Download) download() (string, error) {
+func (d *download) getZipfile() (string, error) {
 	// TODO: why no context?
 	req, err := http.NewRequestWithContext(context.Background(), "GET", d.src, nil)
 	if err != nil {
@@ -77,7 +77,7 @@ func (d *Download) download() (string, error) {
 	return tmp.Name(), nil
 }
 
-func (d *Download) unzip(zipfile string) error {
+func (d *download) unzip(zipfile string) error {
 	zr, err := zip.OpenReader(zipfile)
 	if err != nil {
 		return fmt.Errorf("opening archive: %s: %w", zipfile, err)
