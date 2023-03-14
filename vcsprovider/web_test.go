@@ -98,7 +98,7 @@ func fakeWebServices(t *testing.T, provider *otf.VCSProvider) *webHandlers {
 type fakeApp struct {
 	provider *otf.VCSProvider
 
-	service
+	Service
 }
 
 func (f *fakeApp) create(ctx context.Context, opts createOptions) (*otf.VCSProvider, error) {

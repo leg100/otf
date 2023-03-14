@@ -18,7 +18,7 @@ type webHandlers struct {
 	CloudService
 	ConfigurationVersionService
 
-	svc service
+	svc Service
 }
 
 func (h *webHandlers) AddHandlers(r *mux.Router) {

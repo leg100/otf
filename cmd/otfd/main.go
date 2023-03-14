@@ -19,6 +19,7 @@ import (
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
+	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
@@ -44,13 +45,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdutil.CatchCtrlC(cancel)
 
-	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
+	if err := runDaemon(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, args []string, out io.Writer) error {
+func runDaemon(ctx context.Context, args []string, out io.Writer) error {
 	cmd := &cobra.Command{
 		Use:           "otfd",
 		Short:         "otf daemon",
@@ -69,7 +70,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		Config:             agent.NewConfigFromFlags(cmd.Flags()),
 		OAuthConfigs:       cloudFlags(cmd.Flags()),
 	}
-	cmd.RunE = d.run
+	cmd.RunE = d.start
 
 	// TODO: rename --address to --listen
 	cmd.Flags().StringVar(&d.address, "address", DefaultAddress, "Listening address")
@@ -98,7 +99,7 @@ type daemon struct {
 	cloud.OAuthConfigs
 }
 
-func (d *daemon) run(cmd *cobra.Command, _ []string) error {
+func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
 	// Setup logger
@@ -313,7 +314,15 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	// Run PR reporter - if there is another reporter running already then
 	// this'll wait until the other reporter exits.
 	g.Go(func() error {
-		return otf.ExclusiveReporter(ctx, logger, d.hostname, app)
+		return run.StartReporter(ctx, run.ReporterOptions{
+			Logger:                      logger,
+			ConfigurationVersionService: configService,
+			WorkspaceService:            workspaceService,
+			VCSProviderService:          vcsProviderService,
+			//WatchService: watcher
+			DB:       db,
+			Hostname: hostnameService.Hostname(),
+		})
 	})
 
 	// Run local agent in background

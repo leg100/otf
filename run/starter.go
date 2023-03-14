@@ -15,10 +15,10 @@ import (
 type starter struct {
 	ConfigurationVersionService
 	WorkspaceService
-	otf.RepoService
-	otf.VCSProviderService
+	VCSProviderService
+	RunService
 
-	service
+	otf.RepoService
 }
 
 func (rs *starter) startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error) {
@@ -66,7 +66,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts config
 		}
 	}
 
-	return rs.create(ctx, workspaceID, RunCreateOptions{
+	return rs.CreateRun(ctx, workspaceID, RunCreateOptions{
 		ConfigurationVersionID: otf.String(cv.ID),
 	})
 }

@@ -21,7 +21,7 @@ type (
 		WorkspaceService
 
 		starter runStarter
-		svc     service
+		svc     Service
 	}
 
 	runStarter interface {

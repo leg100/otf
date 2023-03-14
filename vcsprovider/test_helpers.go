@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestService(t *testing.T, db otf.DB) *Service {
+func NewTestService(t *testing.T, db otf.DB) *service {
 	service := NewService(Options{
 		DB:      db,
 		Logger:  logr.Discard(),

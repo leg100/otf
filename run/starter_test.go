@@ -56,9 +56,9 @@ type (
 		provider  *otf.VCSProvider
 
 		WorkspaceService
-		otf.VCSProviderService
+		VCSProviderService
 		ConfigurationVersionService
-		service
+		RunService
 	}
 )
 
@@ -67,7 +67,7 @@ func newTestStarter(svc fakeStarterService) *starter {
 		ConfigurationVersionService: &svc,
 		VCSProviderService:          &svc,
 		WorkspaceService:            &svc,
-		service:                     &svc,
+		RunService:                  &svc,
 	}
 }
 
@@ -95,7 +95,7 @@ func (f *fakeStarterService) GetVCSClient(context.Context, string) (cloud.Client
 	return &fakeStartRunCloudClient{}, nil
 }
 
-func (f *fakeStarterService) create(context.Context, string, RunCreateOptions) (*Run, error) {
+func (f *fakeStarterService) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
 	return f.run, nil
 }
 

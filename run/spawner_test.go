@@ -24,37 +24,37 @@ func TestSpawner(t *testing.T) {
 		spawned bool           // want spawned run
 	}{
 		{
-			name:    "spawn run for push to default branch",
+			name:    "spawn run upon push to default branch",
 			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
 			spawned: true,
 		},
 		{
-			name:    "skip run for push to non-default branch",
+			name:    "skip run upon push to non-default branch",
 			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
 			spawned: false,
 		},
 		{
-			name:    "spawn run for push to user-specified branch",
+			name:    "spawn run upon push to user-specified branch",
 			ws:      &workspace.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
 			event:   cloud.VCSPushEvent{Branch: "dev"},
 			spawned: true,
 		},
 		{
-			name:    "skip run for push to branch not matching user-specified branch",
+			name:    "skip run upon push to branch not matching user-specified branch",
 			ws:      &workspace.Workspace{Connection: &otf.Connection{}, Branch: "dev"},
 			event:   cloud.VCSPushEvent{Branch: "staging"},
 			spawned: false,
 		},
 		{
-			name:    "spawn run for opened pr",
+			name:    "spawn run upon opened pr",
 			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
 			spawned: true,
 		},
 		{
-			name:    "spawn run for push to pr",
+			name:    "spawn run upon push to pr",
 			ws:      &workspace.Workspace{Connection: &otf.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
 			spawned: true,
@@ -66,11 +66,11 @@ func TestSpawner(t *testing.T) {
 				workspaces: []*workspace.Workspace{tt.ws},
 			}
 			spawner := spawner{
-				configversion:      services,
-				workspace:          services,
-				VCSProviderService: services,
-				Logger:             logr.Discard(),
-				service:            services,
+				ConfigurationVersionService: services,
+				WorkspaceService:            services,
+				VCSProviderService:          services,
+				RunService:                  services,
+				Logger:                      logr.Discard(),
 			}
 			err := spawner.handle(ctx, tt.event)
 			require.NoError(t, err)
@@ -87,9 +87,8 @@ type fakeSpawnerServices struct {
 
 	ConfigurationVersionService
 	WorkspaceService
-	otf.VCSProviderService
-
-	service
+	VCSProviderService
+	RunService
 }
 
 func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uuid.UUID) ([]*workspace.Workspace, error) {
@@ -109,7 +108,7 @@ func (f *fakeSpawnerServices) UploadConfig(context.Context, string, []byte) erro
 	return nil
 }
 
-func (f *fakeSpawnerServices) create(context.Context, string, RunCreateOptions) (*Run, error) {
+func (f *fakeSpawnerServices) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }

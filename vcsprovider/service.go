@@ -11,7 +11,7 @@ import (
 )
 
 type (
-	service interface {
+	Service interface {
 		create(ctx context.Context, opts createOptions) (*otf.VCSProvider, error)
 		get(ctx context.Context, id string) (*otf.VCSProvider, error)
 		list(ctx context.Context, organization string) ([]*otf.VCSProvider, error)
@@ -27,7 +27,7 @@ type (
 		GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error)
 	}
 
-	Service struct {
+	service struct {
 		logr.Logger
 
 		organization otf.Authorizer
@@ -45,8 +45,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *Service {
-	svc := Service{
+func NewService(opts Options) *service {
+	svc := service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{opts.Logger},
 		db:           newDB(opts.DB, opts.Service),
@@ -62,15 +62,15 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (a *Service) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
+func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
 	return a.list(ctx, organization)
 }
 
-func (a *Service) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error) {
+func (a *service) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error) {
 	return a.get(ctx, id)
 }
 
-func (a *Service) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+func (a *service) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
 	provider, err := a.get(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (a *Service) GetVCSClient(ctx context.Context, providerID string) (cloud.Cl
 	return provider.NewClient(ctx)
 }
 
-func (a *Service) create(ctx context.Context, opts createOptions) (*otf.VCSProvider, error) {
+func (a *service) create(ctx context.Context, opts createOptions) (*otf.VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (a *Service) create(ctx context.Context, opts createOptions) (*otf.VCSProvi
 	return provider, nil
 }
 
-func (a *Service) get(ctx context.Context, id string) (*otf.VCSProvider, error) {
+func (a *service) get(ctx context.Context, id string) (*otf.VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
 
@@ -116,7 +116,7 @@ func (a *Service) get(ctx context.Context, id string) (*otf.VCSProvider, error) 
 	return provider, nil
 }
 
-func (a *Service) list(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
+func (a *service) list(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (a *Service) list(ctx context.Context, organization string) ([]*otf.VCSProv
 	return providers, nil
 }
 
-func (a *Service) delete(ctx context.Context, id string) (*otf.VCSProvider, error) {
+func (a *service) delete(ctx context.Context, id string) (*otf.VCSProvider, error) {
 	// retrieve vcs provider first in order to get organization for authorization
 	provider, err := a.db.get(ctx, id)
 	if err != nil {

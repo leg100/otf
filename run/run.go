@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -65,50 +66,6 @@ type (
 		Items []*Run
 	}
 
-	// RunService implementations allow interactions with runs
-	RunService interface {
-		// Create a new run with the given options.
-		// CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
-		// Get retrieves a run with the given ID.
-		GetRun(ctx context.Context, id string) (*Run, error)
-		// List lists runs according to the given options.
-		//ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
-		// Delete deletes a run with the given ID.
-		//DeleteRun(ctx context.Context, id string) error
-		// EnqueuePlan enqueues a plan
-		//EnqueuePlan(ctx context.Context, id string) (*Run, error)
-		// Apply a run with the given ID.
-		//
-		// TODO: return run
-		//ApplyRun(ctx context.Context, id string, opts RunApplyOptions) error
-		// Discard discards a run with the given ID.
-		//
-		// TODO: return run
-		//DiscardRun(ctx context.Context, id string, opts RunDiscardOptions) error
-		// Cancel run.
-		//
-		// TODO: return run
-		//CancelRun(ctx context.Context, id string, opts RunCancelOptions) error
-		// Forcefully cancel a run.
-		//
-		// TODO: return run
-		//ForceCancelRun(ctx context.Context, id string, opts RunForceCancelOptions) error
-		// Start a run phase.
-		//StartPhase(ctx context.Context, id string, phase PhaseType, opts PhaseStartOptions) (*Run, error)
-		// Finish a run phase.
-		//FinishPhase(ctx context.Context, id string, phase PhaseType, opts PhaseFinishOptions) (*Run, error)
-		// GetPlanFile retrieves a run's plan file with the requested format.
-		//GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
-		// UploadPlanFile saves a run's plan file with the requested format.
-		//UploadPlanFile(ctx context.Context, id string, plan []byte, format PlanFormat) error
-		// GetLockFile retrieves a run's lock file (.terraform.lock.hcl)
-		//GetLockFile(ctx context.Context, id string) ([]byte, error)
-		// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
-		//UploadLockFile(ctx context.Context, id string, lockFile []byte) error
-		// StartRun creates and starts a run.
-		//StartRun(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*Run, error)
-	}
-
 	RunStatusTimestamp struct {
 		Status    otf.RunStatus
 		Timestamp time.Time
@@ -152,6 +109,8 @@ type (
 	// Alias services so they don't conflict when nested together in struct
 	ConfigurationVersionService configversion.Service
 	WorkspaceService            workspace.Service
+	VCSProviderService          vcsprovider.Service
+	RunService                  Service
 )
 
 // NewRun creates a new run with defaults.

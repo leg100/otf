@@ -33,12 +33,12 @@ type (
 	ReporterOptions struct {
 		ConfigurationVersionService configversion.Service
 		WorkspaceService            workspace.Service
+		VCSProviderService          otf.VCSProviderService
+		Hostname                    string
 
 		logr.Logger
 		otf.DB
-		otf.HostnameService
 		otf.WatchService
-		otf.VCSProviderService
 	}
 )
 
@@ -57,7 +57,7 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 		s := &reporter{
 			Logger:                      opts.Logger.WithValues("component", "reporter"),
 			WatchService:                opts.WatchService,
-			hostname:                    opts.Hostname(),
+			hostname:                    opts.Hostname,
 			ConfigurationVersionService: opts.ConfigurationVersionService,
 			WorkspaceService:            opts.WorkspaceService,
 		}

@@ -98,10 +98,8 @@ type (
 		ws         *workspace.Workspace
 		gotOptions *configversion.ConfigurationVersionCreateOptions
 
-		service
-
 		RunService
-		workspace.Service
+		WorkspaceService
 	}
 
 	fakeWebServiceOption func(*fakeWebServices)

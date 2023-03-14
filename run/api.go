@@ -13,7 +13,7 @@ import (
 )
 
 type api struct {
-	svc service
+	svc Service
 
 	*JSONAPIMarshaler
 }
@@ -65,7 +65,7 @@ func (s *api) create(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.svc.create(r.Context(), opts.Workspace.ID, RunCreateOptions{
+	run, err := s.svc.CreateRun(r.Context(), opts.Workspace.ID, RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,

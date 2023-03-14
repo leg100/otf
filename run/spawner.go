@@ -12,21 +12,39 @@ import (
 	"github.com/leg100/otf/workspace"
 )
 
-// spawner spawns new runs in response to vcs events
-type spawner struct {
-	logr.Logger
-	otf.Subscriber
-	otf.RepoService
-	otf.VCSProviderService
+type (
+	// spawner spawns new runs in response to vcs events
+	spawner struct {
+		logr.Logger
 
-	configversion configversion.Service
-	workspace     workspace.Service
-	service
-}
+		ConfigurationVersionService
+		WorkspaceService
+		VCSProviderService
+		RunService
+	}
 
-// Start handling VCS events and triggering jobs
-func (h *spawner) Start(ctx context.Context) error {
-	sub, err := h.Subscribe(ctx, "run-spawner")
+	SpawnerOptions struct {
+		ConfigurationVersionService
+		WorkspaceService
+		VCSProviderService
+		RunService
+
+		logr.Logger
+		otf.Subscriber
+	}
+)
+
+// StartSpawner starts the run spawner.
+func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
+	s := &spawner{
+		Logger:                      opts.Logger.WithValues("component", "spawner"),
+		ConfigurationVersionService: opts.ConfigurationVersionService,
+		WorkspaceService:            opts.WorkspaceService,
+		VCSProviderService:          opts.VCSProviderService,
+		RunService:                  opts.RunService,
+	}
+
+	sub, err := opts.Subscriber.Subscribe(ctx, "run-spawner")
 	if err != nil {
 		return err
 	}
@@ -39,8 +57,8 @@ func (h *spawner) Start(ctx context.Context) error {
 				continue
 			}
 
-			if err := h.handle(ctx, event.Payload); err != nil {
-				h.Error(err, "handling vcs event")
+			if err := s.handle(ctx, event.Payload); err != nil {
+				s.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -61,7 +79,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		branch = event.Branch
 		defaultBranch = event.DefaultBranch
 	case cloud.VCSPullEvent:
-		// only trigger runs when opening a PR and pushing to a PR
+		// only spawn runs when opening a PR and pushing to a PR
 		switch event.Action {
 		case cloud.VCSPullEventOpened, cloud.VCSPullEventUpdated:
 		default:
@@ -74,9 +92,9 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		isPullRequest = true
 	}
 
-	h.Info("triggering run", "repo_id", repoID)
+	h.Info("spawning run", "repo_id", repoID)
 
-	workspaces, err := h.workspace.ListWorkspacesByRepoID(ctx, repoID)
+	workspaces, err := h.ListWorkspacesByRepoID(ctx, repoID)
 	if err != nil {
 		return err
 	}
@@ -105,9 +123,9 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		return fmt.Errorf("retrieving repository tarball: %w", err)
 	}
 
-	// Determine which workspaces to trigger runs for. If its a PR then a
+	// Determine which workspaces to spawn runs for. If its a PR then a
 	// (speculative) run is
-	// triggered for all workspaces. Otherwise each workspace's branch setting
+	// spawned for all workspaces. Otherwise each workspace's branch setting
 	// is checked and if it set then it must match the event's branch. If it is
 	// not set then the event's branch must match the repo's default branch. If
 	// neither of these conditions are true then the workspace is skipped.
@@ -127,13 +145,13 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		workspaces = filterFunc(workspaces)
 	}
 
-	// create a config version for each workspace and trigger run.
+	// create a config version for each workspace and spawn run.
 	for _, ws := range workspaces {
 		if ws.Connection == nil {
 			// Should never happen...
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
-		cv, err := h.configversion.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+		cv, err := h.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(isPullRequest),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string
@@ -151,10 +169,10 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err != nil {
 			return err
 		}
-		if err := h.configversion.UploadConfig(ctx, cv.ID, tarball); err != nil {
+		if err := h.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		_, err = h.create(ctx, ws.ID, RunCreateOptions{
+		_, err = h.CreateRun(ctx, ws.ID, RunCreateOptions{
 			ConfigurationVersionID: otf.String(cv.ID),
 		})
 		if err != nil {
