@@ -43,9 +43,9 @@ func TestTail(t *testing.T) {
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app := fakeService(want)
+		svc := fakeService(want)
 
-		stream, err := app.tail(ctx, otf.GetChunkOptions{
+		stream, err := svc.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -55,24 +55,25 @@ func TestTail(t *testing.T) {
 	})
 
 	t.Run("receive existing chunk and overlapping published chunk", func(t *testing.T) {
+		// send first chunk
 		want := otf.Chunk{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app := fakeService(want)
+		svc := fakeService(want)
 
-		stream, err := app.tail(ctx, otf.GetChunkOptions{
+		stream, err := svc.tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
 		require.NoError(t, err)
 
-		// receive existing chunk
+		// receive first chunk
 		require.Equal(t, want, <-stream)
 
-		// receive overlapping chunk
-		app.Publish(otf.Event{
+		// send second, overlapping, chunk
+		svc.Publish(otf.Event{
 			Payload: otf.PersistedChunk{
 				Chunk: otf.Chunk{
 					RunID:  "run-123",
@@ -83,11 +84,11 @@ func TestTail(t *testing.T) {
 			},
 		})
 
-		// receive existing chunk
+		// receive non-overlapping part of second chunk.
 		want = otf.Chunk{
 			RunID:  "run-123",
 			Phase:  otf.PlanPhase,
-			Data:   []byte("world\x03"),
+			Data:   []byte(" world\x03"),
 			Offset: 6,
 		}
 		assert.Equal(t, want, <-stream)
@@ -123,9 +124,10 @@ func TestTail(t *testing.T) {
 
 		// publish non-duplicate chunk
 		want = otf.Chunk{
-			RunID: "run-123",
-			Phase: otf.PlanPhase,
-			Data:  []byte(" world\x03"),
+			RunID:  "run-123",
+			Phase:  otf.PlanPhase,
+			Data:   []byte(" world\x03"),
+			Offset: 6,
 		}
 		app.Publish(otf.Event{
 			Payload: otf.PersistedChunk{
