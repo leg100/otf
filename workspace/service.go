@@ -36,7 +36,7 @@ type (
 		getByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		getRun(ctx context.Context, runID string) (run, error)
 		list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-		update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
+		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 		delete(ctx context.Context, workspaceID string) (*Workspace, error)
 
 		connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error)
@@ -139,7 +139,29 @@ func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) 
 }
 
 func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
-	return nil, nil
+	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// retain ref to existing name so a name change can be detected
+	var name string
+	updated, err := s.db.UpdateWorkspace(ctx, workspaceID, func(ws *Workspace) error {
+		name = ws.Name
+		return ws.Update(opts)
+	})
+	if err != nil {
+		s.Error(err, "updating workspace", "workspace", workspaceID, "subject", subject)
+		return nil, err
+	}
+
+	if updated.Name != name {
+		s.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: updated})
+	}
+
+	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
+
+	return updated, nil
 }
 
 func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
@@ -182,32 +204,6 @@ func (a *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
 	return ws, nil
-}
-
-func (a *service) update(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
-	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	// retain ref to existing name so a name change can be detected
-	var name string
-	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *Workspace) error {
-		name = ws.Name
-		return ws.Update(opts)
-	})
-	if err != nil {
-		a.Error(err, "updating workspace", "workspace", workspaceID, "subject", subject)
-		return nil, err
-	}
-
-	if updated.Name != name {
-		a.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: updated})
-	}
-
-	a.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
-
-	return updated, nil
 }
 
 func (a *service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error) {

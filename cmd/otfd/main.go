@@ -10,12 +10,14 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/run"
@@ -176,6 +178,9 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		Configs:   d.OAuthConfigs,
 		SiteToken: d.siteToken,
 	})
+	if err != nil {
+		return fmt.Errorf("setting up auth service: %w", err)
+	}
 	handlers = append(handlers, authService)
 
 	workspaceService := workspace.NewService(workspace.Options{
@@ -198,10 +203,22 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	})
 	handlers = append(handlers, configService)
 
-	runService := run.NewService(run.Options{
+	var runService run.Service
+
+	logsService := logs.NewService(logs.Options{
+		Logger:        logger,
+		RunAuthorizer: runService,
+		Cache:         cache,
+		DB:            db,
+		Verifier:      signer,
+	})
+	handlers = append(handlers, logsService)
+
+	runService = run.NewService(run.Options{
 		Logger:                      logger,
 		WorkspaceAuthorizer:         workspaceService,
 		WorkspaceService:            workspaceService,
+		LogsService:                 logsService,
 		ConfigurationVersionService: configService,
 		Publisher:                   hub,
 		Renderer:                    renderer,
@@ -260,19 +277,8 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Construct local client for internal agent.
-	localClient := struct {
-		organization.OrganizationService
-		auth.AgentTokenService
-		variable.VariableService
-		state.StateService
-		workspace.WorkspaceService
-		otf.HostnameService
-		configversion.ConfigurationVersionService
-		auth.RegistrySessionService
-		run.RunService
-		watch.WatchService
-	}{
+	// Setup internal agent for processing runs
+	agentClient := client.LocalClient{
 		AgentTokenService:           authService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
@@ -283,12 +289,11 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		RegistrySessionService:      authService,
 		RunService:                  runService,
 		WatchService:                watchService,
+		LogsService:                 logsService,
 	}
-
-	// Setup agent
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
-		localClient,
+		agentClient,
 		*d.Config)
 	if err != nil {
 		return fmt.Errorf("initializing agent: %w", err)

@@ -8,9 +8,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -106,12 +104,6 @@ type (
 	RunDB interface {
 		GetRun(context.Context, string) (Run, error)
 	}
-
-	// Alias services so they don't conflict when nested together in struct
-	ConfigurationVersionService configversion.Service
-	WorkspaceService            workspace.Service
-	VCSProviderService          vcsprovider.Service
-	LogService                  logs.Service
 )
 
 // NewRun creates a new run with defaults.

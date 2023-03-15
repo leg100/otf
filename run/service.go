@@ -7,13 +7,21 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/vcsprovider"
+	"github.com/leg100/otf/workspace"
 )
 
 type (
-	// namespaced for disambiguation from other services
-	RunService = Service
+	// Alias services so they don't conflict when nested together in struct
+	RunService                  = Service
+	ConfigurationVersionService configversion.Service
+	WorkspaceService            workspace.Service
+	VCSProviderService          vcsprovider.Service
+	LogsService                 logs.Service
 
 	Service interface {
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
@@ -28,6 +36,12 @@ type (
 		// the run.
 		FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error)
 
+		// GetPlanFile returns the plan file for the run.
+		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
+		// UploadPlanFile persists a run's plan file. The plan format should be either
+		// be binary or json.
+		UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
+
 		get(ctx context.Context, runID string) (*Run, error)
 		// apply enqueues an apply for the run.
 		apply(ctx context.Context, runID string) error
@@ -37,11 +51,7 @@ type (
 		cancel(ctx context.Context, runID string) error
 		// forceCancel forcefully cancels a run.
 		forceCancel(ctx context.Context, runID string) error
-		// GetPlanFile returns the plan file for the run.
-		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
-		// uploadPlanFile persists a run's plan file. The plan format should be either
-		// be binary or json.
-		uploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
+
 		// delete deletes a run.
 		delete(ctx context.Context, runID string) error
 		// createReport creates a report of changes for the phase.
@@ -50,12 +60,15 @@ type (
 		createApplyReport(ctx context.Context, runID string) (ResourceReport, error)
 
 		lockFileService
+
+		otf.Authorizer // run authorizer
+		otf.Handlers   // http handlers
 	}
 
 	service struct {
 		logr.Logger
 
-		LogService
+		LogsService
 		WorkspaceService
 		otf.Publisher
 
@@ -75,13 +88,15 @@ type (
 	Options struct {
 		WorkspaceAuthorizer otf.Authorizer
 
+		WorkspaceService
+		ConfigurationVersionService
+		LogsService
+
 		logr.Logger
 		otf.Cache
 		otf.DB
 		otf.Renderer
 		otf.Publisher
-		WorkspaceService
-		ConfigurationVersionService
 		otf.Signer
 	}
 )
@@ -396,9 +411,9 @@ func (a *service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 	return file, nil
 }
 
-// uploadPlanFile persists a run's plan file. The plan format should be either
+// UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (a *service) uploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
+func (a *service) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
 	subject, err := a.CanAccess(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
@@ -467,7 +482,7 @@ func (a *service) createPlanReport(ctx context.Context, runID string) (ResourceR
 }
 
 func (a *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := a.LogService.GetChunk(ctx, otf.GetChunkOptions{
+	logs, err := a.GetChunk(ctx, otf.GetChunkOptions{
 		RunID: runID,
 		Phase: otf.ApplyPhase,
 	})

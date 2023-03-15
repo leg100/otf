@@ -90,6 +90,25 @@ func TestEditWorkspaceHandler(t *testing.T) {
 	assert.Equal(t, 200, w.Code, "output: %s", w.Body.String())
 }
 
+func TestUpdateWorkspaceHandler(t *testing.T) {
+	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
+	app := fakeWebHandlers(t, withWorkspaces(ws))
+
+	form := strings.NewReader(url.Values{
+		"workspace_id": {"ws-123"},
+	}.Encode())
+	r := httptest.NewRequest("POST", "/", form)
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	app.updateWorkspace(w, r)
+
+	if assert.Equal(t, 302, w.Code) {
+		redirect, err := w.Result().Location()
+		require.NoError(t, err)
+		assert.Equal(t, "/workspaces/ws-123/edit", redirect.Path)
+	}
+}
+
 func TestListWorkspacesHandler(t *testing.T) {
 	ws1 := &Workspace{ID: "ws-1"}
 	ws2 := &Workspace{ID: "ws-2"}
@@ -343,6 +362,10 @@ func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (c
 }
 
 func (f *fakeWebService) create(context.Context, CreateWorkspaceOptions) (*Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateWorkspaceOptions) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 

@@ -315,7 +315,7 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	ws, err := s.svc.update(r.Context(), workspaceID, UpdateWorkspaceOptions{
+	ws, err := s.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,

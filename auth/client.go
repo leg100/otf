@@ -13,20 +13,23 @@ type Client struct {
 }
 
 // CreateRegistrySession creates a registry session via HTTP/JSONAPI
-func (c *Client) CreateRegistrySession(ctx context.Context, organization string) (string, error) {
+func (c *Client) CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error) {
 	path := path.Join("organizations", organization, "registry/sessions/create")
 	req, err := c.NewRequest("POST", path, &jsonapi.RegistrySessionCreateOptions{
 		OrganizationName: organization,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	session := &jsonapi.RegistrySession{}
 	err = c.Do(ctx, req, session)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return session.Token, nil
+	return &RegistrySession{
+		Organization: session.OrganizationName,
+		Token:        session.Token,
+	}, nil
 }
 
 func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error) {

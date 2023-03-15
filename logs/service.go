@@ -12,6 +12,8 @@ import (
 )
 
 type (
+	LogsService = Service
+
 	Service interface {
 		GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
 		PutChunk(ctx context.Context, chunk otf.Chunk) error
@@ -31,12 +33,12 @@ type (
 	}
 
 	Options struct {
-		otf.Authorizer
+		logr.Logger
 		otf.Cache
 		otf.DB
 		*pubsub.Hub
 		otf.Verifier
-		logr.Logger
+
 		RunAuthorizer otf.Authorizer
 	}
 )

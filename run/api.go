@@ -274,7 +274,7 @@ func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.svc.uploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
+	err = s.svc.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

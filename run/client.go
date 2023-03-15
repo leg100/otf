@@ -86,7 +86,7 @@ func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 	return nil
 }
 
-func (c *Client) ListRuns(ctx context.Context, opts *RunListOptions) (*RunList, error) {
+func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err

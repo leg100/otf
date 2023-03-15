@@ -233,7 +233,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.svc.update(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
+	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,

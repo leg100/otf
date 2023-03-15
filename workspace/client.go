@@ -97,7 +97,7 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) LockWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
+func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.NewRequest("POST", path, nil)
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string) (*Worksp
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
+func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
 	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
 	req, err := c.NewRequest("POST", path, &unlockOptions{Force: force})
 	if err != nil {
