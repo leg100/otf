@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/organization"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +36,7 @@ func (a *application) organizationNewCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created organization %s\n", org.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created organization %s\n", org.Name)
 
 			return nil
 		},

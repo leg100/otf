@@ -4,6 +4,12 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/client"
+	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/workspace"
 )
 
 func fakeApp(opts ...fakeOption) *application {
@@ -16,33 +22,47 @@ func fakeApp(opts ...fakeOption) *application {
 
 type fakeOption func(*fakeClient)
 
-func withFakeWorkspaces(workspaces ...*workspace.Workspace) fakeOption {
+func withOrganization(org *organization.Organization) fakeOption {
+	return func(c *fakeClient) {
+		c.organization = org
+	}
+}
+
+func withWorkspaces(workspaces ...*workspace.Workspace) fakeOption {
 	return func(c *fakeClient) {
 		c.workspaces = workspaces
 	}
 }
 
-func withFakeRun(run *run.Run) fakeOption {
+func withRun(run *run.Run) fakeOption {
 	return func(c *fakeClient) {
 		c.run = run
 	}
 }
 
-func withFakeTarball(tarball []byte) fakeOption {
+func withAgentToken(at *auth.AgentToken) fakeOption {
+	return func(c *fakeClient) {
+		c.agentToken = at
+	}
+}
+
+func withTarball(tarball []byte) fakeOption {
 	return func(c *fakeClient) {
 		c.tarball = tarball
 	}
 }
 
 type fakeClient struct {
-	workspaces []*workspace.Workspace
-	run        *run.Run
-	tarball    []byte
-	otf.Client
+	organization *organization.Organization
+	workspaces   []*workspace.Workspace
+	run          *run.Run
+	agentToken   *auth.AgentToken
+	tarball      []byte
+	client.Client
 }
 
 func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error) {
-	return otf.NewOrganization(opts)
+	return f.organization, nil
 }
 
 func (f *fakeClient) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
@@ -60,20 +80,20 @@ func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.Workspac
 	}, nil
 }
 
-func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]otf.Variable, error) {
+func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error) {
 	return nil, nil
 }
 
-func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*workspace.Workspace, error) {
+func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateWorkspaceOptions) (*workspace.Workspace, error) {
 	f.workspaces[0].Update(opts)
 	return f.workspaces[0], nil
 }
 
-func (f *fakeClient) LockWorkspace(context.Context, string, workspace.WorkspaceLockOptions) (*workspace.Workspace, error) {
+func (f *fakeClient) LockWorkspace(context.Context, string, *string) (*workspace.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeClient) UnlockWorkspace(context.Context, string, workspace.WorkspaceUnlockOptions) (*workspace.Workspace, error) {
+func (f *fakeClient) UnlockWorkspace(context.Context, string, *string, bool) (*workspace.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
@@ -85,6 +105,6 @@ func (f *fakeClient) DownloadConfig(context.Context, string) ([]byte, error) {
 	return f.tarball, nil
 }
 
-func (f *fakeClient) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
-	return otf.NewAgentToken(opts)
+func (f *fakeClient) CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) (*auth.AgentToken, error) {
+	return f.agentToken, nil
 }

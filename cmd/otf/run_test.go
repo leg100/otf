@@ -5,16 +5,16 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRunDownload(t *testing.T) {
-	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
+	run := &run.Run{}
 	tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
 	require.NoError(t, err)
-	app := fakeApp(withFakeRun(run), withFakeTarball(tarball))
+	app := fakeApp(withRun(run), withTarball(tarball))
 
 	cmd := app.runDownloadCommand()
 	cmd.SetArgs([]string{"run-123"})

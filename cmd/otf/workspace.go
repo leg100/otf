@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -92,7 +92,7 @@ func (a *application) workspaceShowCommand() *cobra.Command {
 func (a *application) workspaceEditCommand() *cobra.Command {
 	var (
 		organization string
-		opts         otf.UpdateWorkspaceOptions
+		opts         workspace.UpdateWorkspaceOptions
 		mode         *string
 	)
 
@@ -103,13 +103,13 @@ func (a *application) workspaceEditCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			workspace := args[0]
+			name := args[0]
 
 			if mode != nil && *mode != "" {
-				opts.ExecutionMode = (*otf.ExecutionMode)(mode)
+				opts.ExecutionMode = (*workspace.ExecutionMode)(mode)
 			}
 
-			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func (a *application) workspaceEditCommand() *cobra.Command {
 			}
 
 			if opts.ExecutionMode != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode())
+				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode)
 			}
 
 			return nil
@@ -150,7 +150,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.LockWorkspace(cmd.Context(), ws.ID, workspace.WorkspaceLockOptions{})
+			ws, err = a.LockWorkspace(cmd.Context(), ws.ID, nil)
 			if err != nil {
 				return err
 			}
@@ -183,7 +183,7 @@ func (a *application) workspaceUnlockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID, force)
+			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID, nil, force)
 			if err != nil {
 				return err
 			}

@@ -5,25 +5,24 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspaceEdit(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := fakeApp(withFakeWorkspaces(ws))
+	ws := &workspace.Workspace{}
+	app := fakeApp(withWorkspaces(ws))
 
 	t.Run("help", func(t *testing.T) {
 		cmd := app.workspaceEditCommand()
-		cmd.SetArgs([]string{"dev", "--organization", org.Name()})
+		cmd.SetArgs([]string{"dev", "--organization", "acme-corp"})
 		require.NoError(t, cmd.Execute())
 	})
 
 	t.Run("update execution mode", func(t *testing.T) {
 		cmd := app.workspaceEditCommand()
-		cmd.SetArgs([]string{"dev", "--organization", org.Name(), "--execution-mode", "local"})
+		cmd.SetArgs([]string{"dev", "--organization", "acme-corp", "--execution-mode", "local"})
 		buf := bytes.Buffer{}
 		cmd.SetOut(&buf)
 		require.NoError(t, cmd.Execute())
@@ -40,9 +39,8 @@ func TestWorkspaceEdit(t *testing.T) {
 }
 
 func TestWorkspaceShow(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := fakeApp(withFakeWorkspaces(ws))
+	ws := &workspace.Workspace{ID: "ws-123"}
+	app := fakeApp(withWorkspaces(ws))
 
 	cmd := app.workspaceShowCommand()
 	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
@@ -57,17 +55,16 @@ func TestWorkspaceShow(t *testing.T) {
 }
 
 func TestWorkspaceList(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws1 := otf.NewTestWorkspace(t, org)
-	ws2 := otf.NewTestWorkspace(t, org)
-	app := fakeApp(withFakeWorkspaces(ws1, ws2))
+	ws1 := &workspace.Workspace{ID: "ws-123"}
+	ws2 := &workspace.Workspace{ID: "ws-123"}
+	app := fakeApp(withWorkspaces(ws1, ws2))
 
 	cmd := app.workspaceListCommand()
-	cmd.SetArgs([]string{"--organization", org.Name()})
+	cmd.SetArgs([]string{"--organization", "acme-corp"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
-	want := fmt.Sprintf("%s\n%s\n", ws1.Name(), ws2.Name())
+	want := fmt.Sprintf("%s\n%s\n", ws1.Name, ws2.Name)
 	assert.Equal(t, want, got.String())
 
 	t.Run("missing organization", func(t *testing.T) {
@@ -79,9 +76,8 @@ func TestWorkspaceList(t *testing.T) {
 }
 
 func TestWorkspaceLock(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := fakeApp(withFakeWorkspaces(ws))
+	ws := &workspace.Workspace{ID: "ws-123"}
+	app := fakeApp(withWorkspaces(ws))
 
 	cmd := app.workspaceLockCommand()
 	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
@@ -107,12 +103,11 @@ func TestWorkspaceLock(t *testing.T) {
 }
 
 func TestWorkspaceUnlock(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org)
-	app := fakeApp(withFakeWorkspaces(ws))
+	ws := &workspace.Workspace{ID: "ws-123"}
+	app := fakeApp(withWorkspaces(ws))
 
 	cmd := app.workspaceUnlockCommand()
-	cmd.SetArgs([]string{"dev", "--organization", org.Name()})
+	cmd.SetArgs([]string{"dev", "--organization", "acme-corp"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
