@@ -13,8 +13,8 @@ func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestSessionOption {
 }
 
 type fakeService struct {
-	agentTokenService
-	registrySessionService
+	AgentTokenService
+	RegistrySessionService
 	sessionService
 	tokenService
 	teamService

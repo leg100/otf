@@ -9,13 +9,11 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-type fakePubSubService struct {
+type fakeSubscriber struct {
 	ch chan otf.Event
-
-	otf.PubSubService
 }
 
-func (f *fakePubSubService) Subscribe(context.Context, string) (<-chan otf.Event, error) {
+func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan otf.Event, error) {
 	return f.ch, nil
 }
 

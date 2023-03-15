@@ -19,10 +19,10 @@ func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 type fakeAgentTokenService struct {
 	token *AgentToken
 
-	agentTokenService
+	AgentTokenService
 }
 
-func (f *fakeAgentTokenService) createAgentToken(context.Context, CreateAgentTokenOptions) (*AgentToken, error) {
+func (f *fakeAgentTokenService) CreateAgentToken(context.Context, CreateAgentTokenOptions) (*AgentToken, error) {
 	return f.token, nil
 }
 

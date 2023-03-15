@@ -29,15 +29,18 @@ type (
 
 		ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
 
-		CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error)
-		GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error)
+		CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) (*auth.AgentToken, error)
+		GetAgentToken(ctx context.Context, token string) (*auth.AgentToken, error)
 
 		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
 		UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
+
 		GetLockFile(ctx context.Context, id string) ([]byte, error)
 		UploadLockFile(ctx context.Context, id string, lockFile []byte) error
+
 		ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error)
 		GetRun(ctx context.Context, id string) (*run.Run, error)
+
 		StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)
 		FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseFinishOptions) (*run.Run, error)
 
@@ -50,7 +53,7 @@ type (
 		// CreateRegistrySession creates a registry session for the given organization.
 		CreateRegistrySession(ctx context.Context, organization string) (*auth.RegistrySession, error)
 
-		workspace.WorkspaceLockService
+		workspace.LockService
 		state.Service
 		otf.HostnameService
 	}

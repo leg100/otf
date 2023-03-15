@@ -15,7 +15,7 @@ type web struct {
 	otf.Renderer
 	workspace.Service
 
-	svc service
+	svc Service
 }
 
 func (h *web) addHandlers(r *mux.Router) {
@@ -93,7 +93,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := h.svc.list(r.Context(), workspaceID)
+	variables, err := h.svc.ListVariables(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

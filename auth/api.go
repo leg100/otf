@@ -66,7 +66,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	at, err := h.app.createAgentToken(r.Context(), CreateAgentTokenOptions{
+	at, err := h.app.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	})

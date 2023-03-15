@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type lockService interface {
+type LockService interface {
 	LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
 	UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error)
 }

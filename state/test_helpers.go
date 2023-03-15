@@ -28,7 +28,7 @@ func newTestVersion(t *testing.T, ws *workspace.Workspace, outputKVs ...string) 
 	require.NoError(t, err)
 
 	// wrap it in a version and return
-	version, err := newVersion(otf.CreateStateVersionOptions{
+	version, err := newVersion(CreateStateVersionOptions{
 		State:       encoded,
 		WorkspaceID: otf.String(ws.ID),
 	})

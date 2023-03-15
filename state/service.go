@@ -13,8 +13,10 @@ import (
 // cacheKey generates a key for caching state files
 func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
 
-// Service is the application Service for state
 type (
+	StateService = Service
+
+	// Service is the application Service for state
 	Service interface {
 		// CreateStateVersion creates a state version for the given workspace using
 		// the given state data.

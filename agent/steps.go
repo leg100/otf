@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
 )
 
@@ -236,12 +237,12 @@ func (b *stepsBuilder) downloadPlanFile(ctx context.Context) error {
 
 // uploadState reads, parses, and uploads terraform state
 func (b *stepsBuilder) uploadState(ctx context.Context) error {
-	state, err := b.readFile(localStateFilename)
+	statefile, err := b.readFile(localStateFilename)
 	if err != nil {
 		return err
 	}
-	return b.CreateStateVersion(ctx, otf.CreateStateVersionOptions{
+	return b.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: &b.WorkspaceID,
-		State:       state,
+		State:       statefile,
 	})
 }

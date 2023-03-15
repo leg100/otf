@@ -66,7 +66,7 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	// send different values for each and expect the serial in the create
 	// options to take precedence, without error. We've opted to support that
 	// behaviour.
-	sv, err := h.svc.createVersion(r.Context(), otf.CreateStateVersionOptions{
+	sv, err := h.svc.createVersion(r.Context(), CreateStateVersionOptions{
 		WorkspaceID: otf.String(workspaceID),
 		State:       decoded,
 		Serial:      opts.Serial,

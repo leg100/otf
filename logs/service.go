@@ -18,7 +18,7 @@ type (
 		tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
 	}
 
-	Service2 struct {
+	service struct {
 		logr.Logger
 		otf.PubSubService // subscribe to tail log updates
 
@@ -41,8 +41,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *Service2 {
-	svc := Service2{
+func NewService(opts Options) *service {
+	svc := service{
 		Logger:        opts.Logger,
 		PubSubService: opts.Hub,
 		proxy: &proxy{
@@ -66,13 +66,13 @@ func NewService(opts Options) *Service2 {
 	return &svc
 }
 
-func (s *Service2) AddHandlers(r *mux.Router) {
+func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
 // GetByID implements pubsub.Getter
-func (s *Service2) GetByID(ctx context.Context, chunkID string) (any, error) {
+func (s *service) GetByID(ctx context.Context, chunkID string) (any, error) {
 	id, err := strconv.Atoi(chunkID)
 	if err != nil {
 		return otf.PersistedChunk{}, err
@@ -83,7 +83,7 @@ func (s *Service2) GetByID(ctx context.Context, chunkID string) (any, error) {
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (s *Service2) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (s *service) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.proxy.get(ctx, opts)
 	if err == otf.ErrResourceNotFound {
 		// ignore resource not found because no log chunks may not have been
@@ -98,7 +98,7 @@ func (s *Service2) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.
 }
 
 // PutChunk writes a chunk of logs for a phase.
-func (s *Service2) PutChunk(ctx context.Context, chunk otf.Chunk) error {
+func (s *service) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, chunk.RunID)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (s *Service2) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 
 // tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *Service2) tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
+func (s *service) tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
 	subject, err := s.run.CanAccess(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err

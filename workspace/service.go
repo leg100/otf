@@ -15,6 +15,8 @@ import (
 )
 
 type (
+	WorkspaceService = Service
+
 	Service interface {
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
@@ -40,7 +42,7 @@ type (
 		connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error)
 		disconnect(ctx context.Context, workspaceID string) error
 
-		lockService
+		LockService
 		permissionsService
 	}
 

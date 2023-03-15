@@ -12,15 +12,18 @@ import (
 )
 
 type (
-	service interface {
+	VariableService = Service
+
+	Service interface {
+		ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
+
 		create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
-		list(ctx context.Context, workspaceID string) ([]*Variable, error)
 		get(ctx context.Context, variableID string) (*Variable, error)
 		update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
 		delete(ctx context.Context, variableID string) (*Variable, error)
 	}
 
-	Service struct {
+	service struct {
 		logr.Logger
 
 		db
@@ -41,8 +44,8 @@ type (
 	}
 )
 
-func NewService(opts Options) *Service {
-	svc := Service{
+func NewService(opts Options) *service {
+	svc := service{
 		Logger:    opts.Logger,
 		workspace: opts.WorkspaceAuthorizer,
 		db:        newPGDB(opts.DB),
@@ -60,16 +63,29 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (s *Service) AddHandlers(r *mux.Router) {
+func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
-func (s *Service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	return s.list(ctx, workspaceID)
+func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
+	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	variables, err := s.db.list(ctx, workspaceID)
+	if err != nil {
+		s.Error(err, "listing variables", "subject", subject, "workspace_id", workspaceID)
+		return nil, err
+	}
+
+	s.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
+
+	return variables, nil
 }
 
-func (s *Service) create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
+func (s *service) create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.CreateVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -91,7 +107,7 @@ func (s *Service) create(ctx context.Context, workspaceID string, opts CreateVar
 	return v, nil
 }
 
-func (s *Service) get(ctx context.Context, variableID string) (*Variable, error) {
+func (s *service) get(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve variable first in order to retrieve workspace ID for authorization
 	variable, err := s.db.get(ctx, variableID)
 	if err != nil {
@@ -109,7 +125,7 @@ func (s *Service) get(ctx context.Context, variableID string) (*Variable, error)
 	return variable, nil
 }
 
-func (s *Service) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+func (s *service) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := s.db.get(ctx, variableID)
 	if err != nil {
@@ -133,7 +149,7 @@ func (s *Service) update(ctx context.Context, variableID string, opts UpdateVari
 	return updated, nil
 }
 
-func (s *Service) delete(ctx context.Context, variableID string) (*Variable, error) {
+func (s *service) delete(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := s.db.get(ctx, variableID)
 	if err != nil {
@@ -153,21 +169,4 @@ func (s *Service) delete(ctx context.Context, variableID string) (*Variable, err
 	s.V(1).Info("deleted variable", "subject", subject, "variable", deleted)
 
 	return deleted, nil
-}
-
-func (s *Service) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	variables, err := s.db.list(ctx, workspaceID)
-	if err != nil {
-		s.Error(err, "listing variables", "subject", subject, "workspace_id", workspaceID)
-		return nil, err
-	}
-
-	s.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
-
-	return variables, nil
 }

@@ -23,7 +23,7 @@ type version struct {
 }
 
 // newVersion constructs a new state version.
-func newVersion(opts otf.CreateStateVersionOptions) (*version, error) {
+func newVersion(opts CreateStateVersionOptions) (*version, error) {
 	if opts.State == nil {
 		return nil, errors.New("state file required")
 	}

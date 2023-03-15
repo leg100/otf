@@ -19,7 +19,7 @@ type web struct {
 	otf.Renderer
 	*sse.Server
 
-	svc service
+	svc Service
 }
 
 func (h *web) addHandlers(r *mux.Router) {

@@ -116,11 +116,6 @@ type (
 		UserID *string
 	}
 
-	WorkspaceLockService interface {
-		LockWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
-		UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (Workspace, error)
-	}
-
 	WorkspaceConnectionService interface {
 		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error)
 		DisconnectWorkspace(ctx context.Context, workspaceID string) error

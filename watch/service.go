@@ -14,13 +14,15 @@ import (
 )
 
 type (
-	service interface {
+	WatchService = Service
+
+	Service interface {
 		Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error)
 	}
 
-	Service struct {
+	service struct {
 		logr.Logger
-		otf.PubSubService
+		otf.Subscriber
 
 		site         otf.Authorizer
 		organization otf.Authorizer
@@ -31,18 +33,19 @@ type (
 	}
 
 	Options struct {
+		logr.Logger
+
 		WorkspaceAuthorizer otf.Authorizer
 
-		otf.PubSubService
+		otf.Subscriber
 		otf.Renderer
-		logr.Logger
 	}
 )
 
-func NewService(opts Options) *Service {
-	svc := Service{
-		Logger:        opts.Logger,
-		PubSubService: opts.PubSubService,
+func NewService(opts Options) *service {
+	svc := service{
+		Logger:     opts.Logger,
+		Subscriber: opts.Subscriber,
 	}
 
 	svc.site = &otf.SiteAuthorizer{opts.Logger}
@@ -64,7 +67,7 @@ func NewService(opts Options) *Service {
 	return &svc
 }
 
-func (s *Service) AddHandlers(r *mux.Router) {
+func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
@@ -72,7 +75,7 @@ func (s *Service) AddHandlers(r *mux.Router) {
 // Watch provides authenticated access to a stream of events.
 //
 // NOTE: only events for runs and workspaces are currently watched.
-func (s *Service) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
+func (s *service) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions

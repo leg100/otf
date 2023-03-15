@@ -35,7 +35,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.createAgentToken(r.Context(), opts)
+	token, err := h.svc.CreateAgentToken(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

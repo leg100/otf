@@ -12,6 +12,8 @@ import (
 )
 
 type (
+	OrganizationService = Service
+
 	Service interface {
 		CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)

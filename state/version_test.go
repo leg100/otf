@@ -14,7 +14,7 @@ import (
 func TestVersion_new(t *testing.T) {
 	state, err := os.ReadFile("testdata/terraform.tfstate")
 	require.NoError(t, err)
-	opts := otf.CreateStateVersionOptions{
+	opts := CreateStateVersionOptions{
 		Serial:      otf.Int64(999),
 		State:       state,
 		WorkspaceID: otf.String("ws-123"),

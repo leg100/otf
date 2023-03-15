@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -12,14 +13,20 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-type webHandlers struct {
-	logr.Logger
-	*sse.Server
+type (
+	tailService interface {
+		tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
+	}
 
-	Service
-}
+	webHandlers struct {
+		logr.Logger
+		*sse.Server
 
-func newWebHandlers(app Service, logger logr.Logger) *webHandlers {
+		svc tailService
+	}
+)
+
+func newWebHandlers(svc tailService, logger logr.Logger) *webHandlers {
 	// Create and configure SSE server
 	srv := sse.New()
 	// we don't use last-event-item functionality so turn it off
@@ -29,9 +36,9 @@ func newWebHandlers(app Service, logger logr.Logger) *webHandlers {
 	srv.EncodeBase64 = true
 
 	return &webHandlers{
-		Server:  srv,
-		Logger:  logger,
-		Service: app,
+		Server: srv,
+		Logger: logger,
+		svc:    svc,
 	}
 }
 
@@ -41,21 +48,21 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
+		// ID of run to tail
+		RunID string `schema:"run_id,required"`
 		// Phase to tail. Must be either plan or apply.
 		Phase otf.PhaseType `schema:"phase,required"`
 		// Offset is number of bytes into logs to start tailing from
 		Offset int `schema:"offset,required"`
 		// StreamID is the ID of the SSE stream
 		StreamID string `schema:"stream,required"`
-		// ID of run to tail
-		RunID string `schema:"run_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ch, err := h.Service.tail(r.Context(), otf.GetChunkOptions{
+	ch, err := h.svc.tail(r.Context(), otf.GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,

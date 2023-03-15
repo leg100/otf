@@ -172,8 +172,8 @@ func TestTail(t *testing.T) {
 	})
 }
 
-func fakeService(existing otf.Chunk) *Service2 {
-	return &Service2{
+func fakeService(existing otf.Chunk) *service {
+	return &service{
 		proxy:         &fakeTailProxy{chunk: existing},
 		PubSubService: newFakePubSubService(),
 		Logger:        logr.Discard(),

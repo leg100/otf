@@ -18,8 +18,15 @@ type (
 	Service interface {
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 		GetRun(ctx context.Context, id string) (*Run, error)
-		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
 		ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
+
+		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
+
+		// StartPhase starts a run phase.
+		StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error)
+		// FinishPhase finishes a phase. Creates a report of changes before updating the status of
+		// the run.
+		FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error)
 
 		get(ctx context.Context, runID string) (*Run, error)
 		// apply enqueues an apply for the run.
@@ -30,18 +37,13 @@ type (
 		cancel(ctx context.Context, runID string) error
 		// forceCancel forcefully cancels a run.
 		forceCancel(ctx context.Context, runID string) error
-		// getPlanFile returns the plan file for the run.
-		getPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
+		// GetPlanFile returns the plan file for the run.
+		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
 		// uploadPlanFile persists a run's plan file. The plan format should be either
 		// be binary or json.
 		uploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 		// delete deletes a run.
 		delete(ctx context.Context, runID string) error
-		// startPhase starts a run phase.
-		startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error)
-		// finishPhase finishes a phase. Creates a report of changes before updating the status of
-		// the run.
-		finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error)
 		// createReport creates a report of changes for the phase.
 		createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
 		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
@@ -212,6 +214,54 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 	return s.delete(ctx, runID)
 }
 
+// StartPhase starts a run phase.
+func (a *service) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error) {
+	subject, err := a.CanAccess(ctx, rbac.StartPhaseAction, runID)
+	if err != nil {
+		return nil, err
+	}
+
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+		return run.Start(phase)
+	})
+	if err != nil {
+		a.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
+	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	return run, nil
+}
+
+// FinishPhase finishes a phase. Creates a report of changes before updating the status of
+// the run.
+func (a *service) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+	subject, err := a.CanAccess(ctx, rbac.FinishPhaseAction, runID)
+	if err != nil {
+		return nil, err
+	}
+
+	var report ResourceReport
+	if !opts.Errored {
+		var err error
+		report, err = a.createReport(ctx, runID, phase)
+		if err != nil {
+			a.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
+			opts.Errored = true
+		}
+	}
+	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+		return run.Finish(phase, opts)
+	})
+	if err != nil {
+		a.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
+	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	return run, nil
+}
+
 // GetRun retrieves a run from the db.
 func (s *service) get(ctx context.Context, runID string) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
@@ -323,8 +373,8 @@ func planFileCacheKey(f PlanFormat, id string) string {
 	return fmt.Sprintf("%s.%s", id, f)
 }
 
-// getPlanFile returns the plan file for the run.
-func (a *service) getPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+// GetPlanFile returns the plan file for the run.
+func (a *service) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	subject, err := a.CanAccess(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
@@ -389,54 +439,6 @@ func (a *service) delete(ctx context.Context, runID string) error {
 	return nil
 }
 
-// startPhase starts a run phase.
-func (a *service) startPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error) {
-	subject, err := a.CanAccess(ctx, rbac.StartPhaseAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.Start(phase)
-	})
-	if err != nil {
-		a.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
-		return nil, err
-	}
-	a.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
-	return run, nil
-}
-
-// finishPhase finishes a phase. Creates a report of changes before updating the status of
-// the run.
-func (a *service) finishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
-	subject, err := a.CanAccess(ctx, rbac.FinishPhaseAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	var report ResourceReport
-	if !opts.Errored {
-		var err error
-		report, err = a.createReport(ctx, runID, phase)
-		if err != nil {
-			a.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
-			opts.Errored = true
-		}
-	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.Finish(phase, opts)
-	})
-	if err != nil {
-		a.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
-		return nil, err
-	}
-	a.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
-	return run, nil
-}
-
 // createReport creates a report of changes for the phase.
 func (a *service) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
 	switch phase {
@@ -450,7 +452,7 @@ func (a *service) createReport(ctx context.Context, runID string, phase otf.Phas
 }
 
 func (a *service) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
-	plan, err := a.getPlanFile(ctx, runID, PlanFormatJSON)
+	plan, err := a.GetPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return ResourceReport{}, err
 	}

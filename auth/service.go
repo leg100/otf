@@ -12,8 +12,8 @@ import (
 
 type (
 	AuthService interface {
-		agentTokenService
-		registrySessionService
+		AgentTokenService
+		RegistrySessionService
 		sessionService
 		teamService
 		tokenService

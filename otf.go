@@ -45,7 +45,6 @@ type Application interface {
 	// Tx provides a transaction within which to operate on the store.
 	Tx(ctx context.Context, tx func(Application) error) error
 	DB() DB
-	EventService
 	SessionService
 	// TokenService
 	cloud.Service

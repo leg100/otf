@@ -15,10 +15,10 @@ func TestService(t *testing.T) {
 	// input event channel
 	in := make(chan otf.Event, 1)
 
-	svc := &Service{
-		site:          otf.NewAllowAllAuthorizer(),
-		Logger:        logr.Discard(),
-		PubSubService: &fakePubSubService{ch: in},
+	svc := &service{
+		site:       otf.NewAllowAllAuthorizer(),
+		Logger:     logr.Discard(),
+		Subscriber: &fakeSubscriber{ch: in},
 	}
 
 	// inject input event

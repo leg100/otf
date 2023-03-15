@@ -48,17 +48,3 @@ type Subscriber interface {
 	// caller.
 	Subscribe(ctx context.Context, name string) (<-chan Event, error)
 }
-
-// EventService allows interacting with events. Access is authenticated.
-type EventService interface {
-	// WatchLogs provides access to a stream of phase logs. The WatchLogsOptions filters
-	// events. Context must be cancelled to close stream.
-	//
-	// TODO(@leg100): it would be clearer to the caller if the stream is closed by
-	// returning a stream object with a Close() method. The calling code would
-	// call WatchLogs(), and then defer a Close(), which is more readable IMO.
-	WatchLogs(context.Context, WatchLogsOptions) (<-chan Chunk, error)
-}
-
-// WatchLogsOptions filters logs returned by the WatchLogs endpoint.
-type WatchLogsOptions WatchOptions

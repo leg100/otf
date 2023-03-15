@@ -23,7 +23,7 @@ type eventsServer interface {
 type api struct {
 	logr.Logger
 
-	svc          service
+	svc          Service
 	eventsServer eventsServer
 }
 

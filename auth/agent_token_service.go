@@ -6,14 +6,16 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type agentTokenService interface {
-	// GetAgentToken retrieves an agent token using the given token.
-	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
+type (
+	AgentTokenService interface {
+		// GetAgentToken retrieves an agent token using the given token.
+		GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
+		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error)
 
-	createAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error)
-	listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
-	deleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
-}
+		listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+		deleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	}
+)
 
 func (a *service2) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	at, err := a.db.GetAgentTokenByToken(ctx, token)

@@ -24,6 +24,7 @@ import (
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
+	"github.com/leg100/otf/watch"
 	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -210,6 +211,14 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	})
 	handlers = append(handlers, runService)
 
+	watchService := watch.NewService(watch.Options{
+		Logger:              logger,
+		WorkspaceAuthorizer: workspaceService,
+		Subscriber:          hub,
+		Renderer:            renderer,
+	})
+	handlers = append(handlers, watchService)
+
 	stateService := state.NewService(state.Options{
 		Logger:              logger,
 		WorkspaceAuthorizer: workspaceService,
@@ -253,27 +262,27 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 
 	// Construct local client for internal agent.
 	localClient := struct {
-		organization.Service
-		otf.AgentTokenService
-		otf.VariableService
-		state.Service
-		workspace.Service
+		organization.OrganizationService
+		auth.AgentTokenService
+		variable.VariableService
+		state.StateService
+		workspace.WorkspaceService
 		otf.HostnameService
-		otf.ConfigurationVersionService
-		otf.RegistrySessionService
+		configversion.ConfigurationVersionService
+		auth.RegistrySessionService
 		run.RunService
-		otf.EventService
+		watch.WatchService
 	}{
-		AgentTokenService:           app,
+		AgentTokenService:           authService,
 		WorkspaceService:            workspaceService,
-		OrganizationService:         app,
-		VariableApp:                 variableService,
-		StateVersionApp:             stateService,
+		OrganizationService:         orgService,
+		VariableService:             variableService,
+		StateService:                stateService,
 		HostnameService:             hostnameService,
-		ConfigurationVersionService: app,
-		RegistrySessionService:      registrySessionService,
+		ConfigurationVersionService: configService,
+		RegistrySessionService:      authService,
 		RunService:                  runService,
-		EventService:                app,
+		WatchService:                watchService,
 	}
 
 	// Setup agent
@@ -291,7 +300,13 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	// Run scheduler - if there is another scheduler running already then
 	// this'll wait until the other scheduler exits.
 	g.Go(func() error {
-		return scheduler.ExclusiveScheduler(ctx, logger, app)
+		return scheduler.Start(ctx, scheduler.Options{
+			Logger:           logger,
+			WorkspaceService: workspaceService,
+			RunService:       runService,
+			DB:               db,
+			WatchService:     watchService,
+		})
 	})
 
 	// Run run-spawner

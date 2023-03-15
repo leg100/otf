@@ -6,14 +6,16 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type registrySessionService interface {
-	CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error)
-	// GetRegistrySession retrieves a registry session using a token. Intended
-	// as means of checking whether a given token is valid.
-	GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error)
+type (
+	RegistrySessionService interface {
+		CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error)
+		// GetRegistrySession retrieves a registry session using a token. Intended
+		// as means of checking whether a given token is valid.
+		GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error)
 
-	createRegistrySession(ctx context.Context, organization string) (*RegistrySession, error)
-}
+		createRegistrySession(ctx context.Context, organization string) (*RegistrySession, error)
+	}
+)
 
 // Registry session services
 

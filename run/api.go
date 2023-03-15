@@ -93,7 +93,7 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.svc.startPhase(r.Context(), params.RunID, params.Phase, PhaseStartOptions{})
+	run, err := s.svc.StartPhase(r.Context(), params.RunID, params.Phase, PhaseStartOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -112,7 +112,7 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := s.svc.finishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
+	run, err := s.svc.FinishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -244,7 +244,7 @@ func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := s.svc.getPlanFile(r.Context(), id, opts.Format)
+	file, err := s.svc.GetPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -290,7 +290,7 @@ func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := s.svc.getLockFile(r.Context(), id)
+	file, err := s.svc.GetLockFile(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -315,7 +315,7 @@ func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.svc.uploadLockFile(r.Context(), id, buf.Bytes())
+	err = s.svc.UploadLockFile(r.Context(), id, buf.Bytes())
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -360,7 +360,7 @@ func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := s.svc.getPlanFile(r.Context(), otf.ConvertID(id, "run"), PlanFormatJSON)
+	json, err := s.svc.GetPlanFile(r.Context(), otf.ConvertID(id, "run"), PlanFormatJSON)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

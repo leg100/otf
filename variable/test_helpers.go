@@ -16,7 +16,7 @@ func NewTestVariable(t *testing.T, workspaceID string, opts CreateVariableOption
 type fakeService struct {
 	variable *Variable
 
-	service
+	Service
 }
 
 func (f *fakeService) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {

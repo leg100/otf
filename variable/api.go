@@ -10,7 +10,7 @@ import (
 )
 
 type api struct {
-	svc service
+	svc Service
 }
 
 // Implements TFC workspace variables API:
@@ -70,7 +70,7 @@ func (h *api) list(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variables, err := h.svc.list(r.Context(), workspaceID)
+	variables, err := h.svc.ListVariables(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
