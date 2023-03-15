@@ -81,7 +81,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 				} else {
 					// no current run & queue is empty; unlock workspace
 					q.current = nil
-					ws, err := q.UnlockWorkspace(ctx, q.ws.ID, nil, false)
+					ws, err := q.UnlockWorkspace(ctx, q.ws.ID, &payload.ID, false)
 					if err != nil {
 						return err
 					}

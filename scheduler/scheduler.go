@@ -49,13 +49,13 @@ type (
 func Start(ctx context.Context, opts Options) error {
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
 
-	scldr := &scheduler{
+	sched := &scheduler{
 		Logger:       opts.Logger.WithValues("component", "scheduler"),
 		WatchService: opts.WatchService,
 		queues:       make(map[string]eventHandler),
 		queueFactory: queueMaker{},
 	}
-	scldr.V(2).Info("started")
+	sched.V(2).Info("started")
 
 	op := func() error {
 		// block on getting an exclusive lock
@@ -65,7 +65,7 @@ func Start(ctx context.Context, opts Options) error {
 		}
 		defer lock.Release()
 
-		err = scldr.reinitialize(ctx)
+		err = sched.reinitialize(ctx)
 		select {
 		case <-ctx.Done():
 			return nil // exit
@@ -75,7 +75,7 @@ func Start(ctx context.Context, opts Options) error {
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-		scldr.Error(err, "restarting scheduler")
+		sched.Error(err, "restarting scheduler")
 	})
 }
 

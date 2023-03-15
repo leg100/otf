@@ -241,10 +241,6 @@ func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
 
 func (ws *Workspace) String() string { return ws.Organization + "/" + ws.Name }
 
-func (ws *Workspace) SetLatestRun(runID string) {
-	ws.LatestRunID = otf.String(runID)
-}
-
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
 	return []string{"local", "remote", "agent"}
