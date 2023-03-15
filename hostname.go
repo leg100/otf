@@ -8,15 +8,18 @@ import (
 	"github.com/go-logr/logr"
 )
 
-type HostnameService interface {
-	Hostname() string
-}
+type (
+	// HostnameService provides the OTF user-facing hostname.
+	HostnameService interface {
+		Hostname() string
+	}
 
-type hostnameService struct {
-	logr.Logger
+	hostnameService struct {
+		logr.Logger
 
-	hostname string
-}
+		hostname string
+	}
+)
 
 func NewHostnameService(logger logr.Logger) *hostnameService {
 	return &hostnameService{

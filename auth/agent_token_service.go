@@ -17,7 +17,7 @@ type (
 	}
 )
 
-func (a *service2) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
+func (a *service) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	at, err := a.db.GetAgentTokenByToken(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
@@ -27,7 +27,7 @@ func (a *service2) GetAgentToken(ctx context.Context, token string) (*AgentToken
 	return at, nil
 }
 
-func (a *service2) createAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error) {
+func (a *service) createAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (a *service2) createAgentToken(ctx context.Context, opts CreateAgentTokenOp
 	return token, nil
 }
 
-func (a *service2) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+func (a *service) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (a *service2) listAgentTokens(ctx context.Context, organization string) ([]
 	return tokens, nil
 }
 
-func (a *service2) deleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
+func (a *service) deleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
 	// retrieve agent token first in order to get organization for authorization
 	at, err := a.db.GetAgentTokenByID(ctx, id)
 	if err != nil {

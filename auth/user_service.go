@@ -28,11 +28,11 @@ type UserService interface {
 	sync(ctx context.Context, from cloud.User) (*User, error)
 }
 
-func (a *service2) CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
+func (a *service) CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
 	return a.createUser(ctx, username, opts...)
 }
 
-func (a *service2) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
+func (a *service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	user, err := a.db.getUser(ctx, spec)
 	if err != nil {
 		a.V(2).Info("retrieving user", "spec", spec)
@@ -44,19 +44,19 @@ func (a *service2) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	return user, nil
 }
 
-func (a *service2) AddOrganizationMembership(ctx context.Context, userID, organization string) error {
+func (a *service) AddOrganizationMembership(ctx context.Context, userID, organization string) error {
 	return a.addOrganizationMembership(ctx, userID, organization)
 }
 
-func (a *service2) RemoveOrganizationMembership(ctx context.Context, userID, organization string) error {
+func (a *service) RemoveOrganizationMembership(ctx context.Context, userID, organization string) error {
 	return a.removeOrganizationMembership(ctx, userID, organization)
 }
 
-func (a *service2) DeleteUser(ctx context.Context, userID string) error {
+func (a *service) DeleteUser(ctx context.Context, userID string) error {
 	return a.deleteUser(ctx, userID)
 }
 
-func (a *service2) createUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
+func (a *service) createUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
 	user := NewUser(username, opts...)
 
 	if err := a.db.CreateUser(ctx, user); err != nil {
@@ -69,7 +69,7 @@ func (a *service2) createUser(ctx context.Context, username string, opts ...NewU
 	return user, nil
 }
 
-func (a *service2) getUser(ctx context.Context, spec UserSpec) (*User, error) {
+func (a *service) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	user, err := a.db.getUser(ctx, spec)
 	if err != nil {
 		a.V(2).Info("retrieving user", "spec", spec)
@@ -82,7 +82,7 @@ func (a *service2) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 }
 
 // listUsers lists an organization's users
-func (a *service2) listUsers(ctx context.Context, organization string) ([]*User, error) {
+func (a *service) listUsers(ctx context.Context, organization string) ([]*User, error) {
 	_, err := a.organization.CanAccess(ctx, rbac.ListUsersAction, organization)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (a *service2) listUsers(ctx context.Context, organization string) ([]*User,
 	return a.db.listUsers(ctx, organization)
 }
 
-func (a *service2) addOrganizationMembership(ctx context.Context, userID, organization string) error {
+func (a *service) addOrganizationMembership(ctx context.Context, userID, organization string) error {
 	if err := a.db.addOrganizationMembership(ctx, userID, organization); err != nil {
 		a.Error(err, "adding organization membership", "user", userID, "org", organization)
 		return err
@@ -101,7 +101,7 @@ func (a *service2) addOrganizationMembership(ctx context.Context, userID, organi
 	return nil
 }
 
-func (a *service2) removeOrganizationMembership(ctx context.Context, userID, organization string) error {
+func (a *service) removeOrganizationMembership(ctx context.Context, userID, organization string) error {
 	if err := a.db.removeOrganizationMembership(ctx, userID, organization); err != nil {
 		a.Error(err, "removing organization membership", "user", userID, "org", organization)
 		return err
@@ -111,7 +111,7 @@ func (a *service2) removeOrganizationMembership(ctx context.Context, userID, org
 	return nil
 }
 
-func (a *service2) addTeamMembership(ctx context.Context, userID, teamID string) error {
+func (a *service) addTeamMembership(ctx context.Context, userID, teamID string) error {
 	if err := a.db.addTeamMembership(ctx, userID, teamID); err != nil {
 		a.Error(err, "adding team membership", "user", userID, "team", teamID)
 		return err
@@ -121,7 +121,7 @@ func (a *service2) addTeamMembership(ctx context.Context, userID, teamID string)
 	return nil
 }
 
-func (a *service2) removeTeamMembership(ctx context.Context, userID, teamID string) error {
+func (a *service) removeTeamMembership(ctx context.Context, userID, teamID string) error {
 	if err := a.db.removeTeamMembership(ctx, userID, teamID); err != nil {
 		a.Error(err, "removing team membership", "user", userID, "team", teamID)
 		return err
@@ -131,7 +131,7 @@ func (a *service2) removeTeamMembership(ctx context.Context, userID, teamID stri
 	return nil
 }
 
-func (a *service2) deleteUser(ctx context.Context, userID string) error {
+func (a *service) deleteUser(ctx context.Context, userID string) error {
 	err := a.db.DeleteUser(ctx, UserSpec{UserID: otf.String(userID)})
 	if err != nil {
 		a.V(2).Info("deleting user", "id", userID)

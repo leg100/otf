@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/organization"
@@ -61,6 +62,10 @@ func NewService(opts Options) *service {
 		svc:      &svc,
 	}
 	return &svc
+}
+
+func (s *service) AddHandlers(r *mux.Router) {
+	s.web.addHandlers(r)
 }
 
 func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {

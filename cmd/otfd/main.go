@@ -20,6 +20,7 @@ import (
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
@@ -175,13 +176,31 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	handlers = append(handlers, orgService)
 
 	authService, err := auth.NewService(ctx, auth.Options{
-		Configs:   d.OAuthConfigs,
-		SiteToken: d.siteToken,
+		Configs:         d.OAuthConfigs,
+		SiteToken:       d.siteToken,
+		HostnameService: hostnameService,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up auth service: %w", err)
 	}
 	handlers = append(handlers, authService)
+
+	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+		Logger:   logger,
+		Service:  cloudService,
+		DB:       db,
+		Renderer: renderer,
+	})
+	handlers = append(handlers, vcsProviderService)
+
+	repoService := repo.NewService(repo.Options{
+		Logger:             logger,
+		DB:                 db,
+		CloudService:       cloudService,
+		HostnameService:    hostnameService,
+		Publisher:          hub,
+		VCSProviderService: vcsProviderService,
+	})
 
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:            logger,
@@ -190,6 +209,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		DB:                db,
 		Publisher:         hub,
 		Renderer:          renderer,
+		RepoService:       repoService,
 	})
 	handlers = append(handlers, workspaceService)
 
@@ -250,14 +270,6 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		DB:                  db,
 		WorkspaceService:    workspaceService,
 		Renderer:            renderer,
-	})
-	handlers = append(handlers, variableService)
-
-	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		Logger:   logger,
-		Service:  cloudService,
-		DB:       db,
-		Renderer: renderer,
 	})
 	handlers = append(handlers, variableService)
 

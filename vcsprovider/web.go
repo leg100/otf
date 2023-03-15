@@ -19,7 +19,7 @@ type webHandlers struct {
 	svc Service
 }
 
-func (h *webHandlers) AddHandlers(r *mux.Router) {
+func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list)
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new)
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create)

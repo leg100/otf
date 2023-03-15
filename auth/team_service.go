@@ -16,35 +16,35 @@ type teamService interface {
 	deleteTeam(ctx context.Context, teamID string) error
 }
 
-func (a *service2) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
+func (a *service) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
 	return a.createTeam(ctx, opts)
 }
 
-func (a *service2) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+func (a *service) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
 	return a.updateTeam(ctx, teamID, opts)
 }
 
-func (a *service2) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
+func (a *service) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
 	return a.listTeams(ctx, organization)
 }
 
-func (a *service2) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+func (a *service) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
 	return a.listTeamMembers(ctx, teamID)
 }
 
-func (a *service2) GetTeam(ctx context.Context, organization, name string) (*Team, error) {
+func (a *service) GetTeam(ctx context.Context, organization, name string) (*Team, error) {
 	return a.getTeam(ctx, organization, name)
 }
 
-func (a *service2) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
+func (a *service) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
 	return a.getTeamByID(ctx, teamID)
 }
 
-func (a *service2) DeleteTeam(ctx context.Context, teamID string) error {
+func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 	return a.deleteTeam(ctx, teamID)
 }
 
-func (a *service2) createTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
+func (a *service) createTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (a *service2) createTeam(ctx context.Context, opts NewTeamOptions) (*Team, 
 	return team, nil
 }
 
-func (a *service2) updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
+func (a *service) updateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -85,7 +85,7 @@ func (a *service2) updateTeam(ctx context.Context, teamID string, opts UpdateTea
 	return team, nil
 }
 
-func (a *service2) getTeam(ctx context.Context, organization, name string) (*Team, error) {
+func (a *service) getTeam(ctx context.Context, organization, name string) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, organization)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (a *service2) getTeam(ctx context.Context, organization, name string) (*Tea
 	return team, nil
 }
 
-func (a *service2) getTeamByID(ctx context.Context, teamID string) (*Team, error) {
+func (a *service) getTeamByID(ctx context.Context, teamID string) (*Team, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -120,7 +120,7 @@ func (a *service2) getTeamByID(ctx context.Context, teamID string) (*Team, error
 }
 
 // listTeams lists teams in the organization.
-func (a *service2) listTeams(ctx context.Context, organization string) ([]*Team, error) {
+func (a *service) listTeams(ctx context.Context, organization string) ([]*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListTeamsAction, organization)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (a *service2) listTeams(ctx context.Context, organization string) ([]*Team,
 // listTeamMembers lists users that are members of the given team. The caller
 // needs either organization-wide authority to call this endpoint, or they need
 // to be a member of the team.
-func (a *service2) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
+func (a *service) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)
@@ -162,7 +162,7 @@ func (a *service2) listTeamMembers(ctx context.Context, teamID string) ([]*User,
 	return members, nil
 }
 
-func (a *service2) deleteTeam(ctx context.Context, teamID string) error {
+func (a *service) deleteTeam(ctx context.Context, teamID string) error {
 	team, err := a.db.getTeamByID(ctx, teamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", teamID)

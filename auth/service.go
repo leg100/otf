@@ -20,7 +20,7 @@ type (
 		UserService
 	}
 
-	service2 struct {
+	service struct {
 		logr.Logger
 		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
@@ -46,8 +46,8 @@ type (
 	OrganizationService organization.Service
 )
 
-func NewService(ctx context.Context, opts Options) (*service2, error) {
-	svc := service2{Logger: opts.Logger}
+func NewService(ctx context.Context, opts Options) (*service, error) {
+	svc := service{Logger: opts.Logger}
 	svc.TokenMiddleware = AuthenticateToken(&svc)
 	svc.SessionMiddleware = AuthenticateSession(&svc)
 
@@ -79,7 +79,7 @@ func NewService(ctx context.Context, opts Options) (*service2, error) {
 	return &svc, nil
 }
 
-func (a *service2) AddHandlers(r *mux.Router) {
+func (a *service) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 	a.web.addHandlers(r)
 }

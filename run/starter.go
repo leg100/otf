@@ -17,8 +17,6 @@ type starter struct {
 	WorkspaceService
 	VCSProviderService
 	RunService
-
-	otf.RepoService
 }
 
 func (rs *starter) startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error) {

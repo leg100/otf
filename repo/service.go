@@ -21,10 +21,11 @@ type (
 	}
 
 	Options struct {
+		logr.Logger
+
 		CloudService cloud.Service
 
 		otf.DB
-		logr.Logger
 		otf.HostnameService
 		otf.Publisher
 		VCSProviderService vcsprovider.Service
