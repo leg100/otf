@@ -28,7 +28,7 @@ type Application struct {
 	opts Options // keep reference for creating child apps
 
 	*run.RunFactory
-	*otf.VCSProviderFactory
+	*vcsprovider.VCSProviderFactory
 	otf.RepoService
 	*run.RunStarter
 	*module.Publisher
@@ -38,7 +38,7 @@ type Application struct {
 	logr.Logger
 	otf.Authorizer
 	otf.StateVersionService
-	otf.VCSProviderService
+	vcsprovider.VCSProviderService
 }
 
 // NewApplication constructs an application, initialising various services and
@@ -77,7 +77,7 @@ func newChildApp(parent *Application, opts Options, db otf.DB) *Application {
 		VCSProviderService:  opts.VCSProviderService,
 		RunFactory:          parent.RunFactory,
 		proxy:               parent.proxy,
-		VCSProviderFactory: &otf.VCSProviderFactory{
+		VCSProviderFactory: &vcsprovider.VCSProviderFactory{
 			Service: opts.CloudService,
 		},
 		db:   db,
@@ -109,7 +109,7 @@ type Options struct {
 	CloudService        cloud.Service
 	Authorizer          otf.Authorizer
 	StateVersionService otf.StateVersionService
-	VCSProviderService  otf.VCSProviderService
+	VCSProviderService  vcsprovider.VCSProviderService
 }
 
 func (a *Application) DB() otf.DB { return a.db }

@@ -10,7 +10,7 @@ import (
 )
 
 // CreateUser persists a User to the DB.
-func (db *pgdb) CreateUser(ctx context.Context, user *otf.User) error {
+func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := tx.InsertUser(ctx, pggen.InsertUserParams{
 			ID:        sql.String(user.ID),
@@ -37,26 +37,26 @@ func (db *pgdb) CreateUser(ctx context.Context, user *otf.User) error {
 	})
 }
 
-func (db *pgdb) listUsers(ctx context.Context, organization string) ([]*otf.User, error) {
+func (db *pgdb) listUsers(ctx context.Context, organization string) ([]*User, error) {
 	result, err := db.FindUsersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
 
-	var users []*otf.User
+	var users []*User
 	for _, r := range result {
 		users = append(users, userRow(r).toUser())
 	}
 	return users, nil
 }
 
-func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*otf.User, error) {
+func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
 	result, err := db.FindUsersByTeamID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*otf.User
+	var items []*User
 	for _, r := range result {
 		items = append(items, userRow(r).toUser())
 	}
@@ -64,7 +64,7 @@ func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*otf.User
 }
 
 // getUser retrieves a user from the DB, along with its sessions.
-func (db *pgdb) getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
+func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
 		result, err := db.FindUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {
@@ -127,7 +127,7 @@ func (db *pgdb) removeTeamMembership(ctx context.Context, userID, teamID string)
 }
 
 // DeleteUser deletes a user from the DB.
-func (db *pgdb) DeleteUser(ctx context.Context, spec otf.UserSpec) error {
+func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	if spec.UserID != nil {
 		_, err := db.DeleteUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {

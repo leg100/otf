@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,14 +16,11 @@ func TestQueue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	org := otf.NewTestOrganization(t)
-
 	t.Run("handle several runs", func(t *testing.T) {
-		ws := otf.NewTestWorkspace(t, org)
-		cv1 := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run1 := otf.NewRun(cv1, ws, run.RunCreateOptions{})
-		run2 := otf.NewRun(cv1, ws, run.RunCreateOptions{})
-		run3 := otf.NewRun(cv1, ws, run.RunCreateOptions{})
+		ws := &workspace.Workspace{ID: "ws-123"}
+		run1 := &run.Run{Workspace: "ws-123"}
+		run2 := &run.Run{Workspace: "ws-123"}
+		run3 := &run.Run{Workspace: "ws-123"}
 		app := newFakeQueueApp(ws, run1, run2, run3)
 		q := newTestQueue(app, ws)
 
@@ -75,11 +74,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
-		ws := otf.NewTestWorkspace(t, org)
-		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{
-			Speculative: otf.Bool(true),
-		})
-		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
+		ws := &workspace.Workspace{ID: "ws-123"}
+		run := &run.Run{Workspace: "ws-123", Speculative: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -91,38 +87,34 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("user locked", func(t *testing.T) {
-		ws := otf.NewTestWorkspace(t, org)
-		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
+		ws := &workspace.Workspace{ID: "ws-123"}
+		run := &run.Run{ID: "run-123", Workspace: "ws-123"}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
 		// user locks workspace; new run should be made the current run but should not
 		// be scheduled nor replace the workspace lock
-		bob := otf.NewUser("bob")
+		bob := workspace.UserLock{}
 		err := ws.Lock(bob)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, otf.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, bob, q.ws.GetLock())
+		assert.Equal(t, bob, q.ws.Lock)
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
 		err = ws.Unlock(bob, false)
 		require.NoError(t, err)
-		err = q.handleEvent(ctx, otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
+		err = q.handleEvent(ctx, otf.Event{Type: workspace.EventUnlocked, Payload: ws})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, run.ID, q.ws.GetLock().ID)
+		assert.Equal(t, workspace.RunLock{ID: "run-123"}, q.ws.Lock)
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
-		ws := otf.NewTestWorkspace(t, org)
-		run := otf.NewTestRun(t, otf.TestRunCreateOptions{
-			Status:    run.RunPlanning,
-			Workspace: ws,
-		})
+		ws := &workspace.Workspace{ID: "ws-123"}
+		run := &run.Run{Workspace: "ws-123", Status: otf.RunPlanning}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -133,9 +125,8 @@ func TestQueue(t *testing.T) {
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		ws := otf.NewTestWorkspace(t, org)
-		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		run := otf.NewRun(cv, ws, run.RunCreateOptions{})
+		ws := &workspace.Workspace{ID: "ws-123"}
+		run := &run.Run{Workspace: "ws-123"}
 		ws.SetLatestRun(run.ID)
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
@@ -177,23 +168,31 @@ func (f *fakeQueueApp) EnqueuePlan(ctx context.Context, runID string) (*run.Run,
 	return f.runs[runID], nil
 }
 
-func (f *fakeQueueApp) LockWorkspace(ctx context.Context, workspaceID string, opts workspace.WorkspaceLockOptions) (*workspace.Workspace, error) {
-	subj, err := otf.LockFromContext(ctx)
+func (f *fakeQueueApp) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
+	subject, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := f.ws.Lock(subj); err != nil {
+	state, err := workspace.GetLockedState(subject, runID)
+	if err != nil {
+		return nil, err
+	}
+	if err := f.ws.Lock.Lock(state); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
-func (f *fakeQueueApp) UnlockWorkspace(ctx context.Context, workspaceID string, opts workspace.WorkspaceUnlockOptions) (*workspace.Workspace, error) {
-	subj, err := otf.LockFromContext(ctx)
+func (f *fakeQueueApp) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
+	subject, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := f.ws.Unlock(subj, false); err != nil {
+	state, err := workspace.GetLockedState(subject, runID)
+	if err != nil {
+		return nil, err
+	}
+	if err := f.ws.Lock.Unlock(state, false); err != nil {
 		return nil, err
 	}
 	return f.ws, nil

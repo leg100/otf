@@ -23,7 +23,7 @@ type (
 		CanLock(lock LockedState) error
 		// CanUnlock checks whether subject is permitted to transfer it into the,
 		// unlocked state, forceably or not.
-		CanUnlock(subject any, force bool) error
+		CanUnlock(lock LockedState, force bool) error
 	}
 )
 
@@ -46,13 +46,12 @@ func (l *Lock) Lock(state LockedState) error {
 	return nil
 }
 
-// Unlock the lock. The given identity and toggling force determines
-// whether permission is granted and the operation succeeds.
-func (l *Lock) Unlock(iden any, force bool) error {
-	if l.LockedState == nil {
+// Unlock the lock.
+func (l *Lock) Unlock(state LockedState, force bool) error {
+	if !l.Locked() {
 		return otf.ErrWorkspaceAlreadyUnlocked
 	}
-	if err := l.LockedState.CanUnlock(iden, force); err != nil {
+	if err := l.LockedState.CanUnlock(state, force); err != nil {
 		return err
 	}
 	l.LockedState = nil

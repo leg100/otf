@@ -1,9 +1,11 @@
-package otf
+package auth
 
 import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 type (
@@ -42,13 +44,13 @@ type (
 )
 
 func NewToken(uid, description string) (*Token, error) {
-	t, err := GenerateAuthToken("user")
+	t, err := otf.GenerateAuthToken("user")
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
 	token := Token{
-		ID:          NewID("ut"),
-		CreatedAt:   CurrentTimestamp(),
+		ID:          otf.NewID("ut"),
+		CreatedAt:   otf.CurrentTimestamp(),
 		Token:       t,
 		Description: description,
 		UserID:      uid,

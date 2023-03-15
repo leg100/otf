@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
@@ -25,6 +26,8 @@ type (
 		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
 		//UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+
+		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
 		create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
 		get(ctx context.Context, workspaceID string) (*Workspace, error)
@@ -139,14 +142,6 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 
 func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
 	return nil, nil
-}
-
-func (s *service) LockWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
-	return s.lock(ctx, workspaceID, nil)
-}
-
-func (s *service) UnlockWorkspace(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
-	return s.unlock(ctx, workspaceID, force)
 }
 
 func (a *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
@@ -273,7 +268,7 @@ func (a *service) list(ctx context.Context, opts WorkspaceListOptions) (*Workspa
 			if err != nil {
 				return nil, err
 			}
-			if user, ok := subject.(*otf.User); ok {
+			if user, ok := subject.(*auth.User); ok {
 				return a.db.ListWorkspacesByUserID(ctx, user.ID, *opts.Organization, opts.ListOptions)
 			}
 		} else if err != nil {
@@ -364,7 +359,7 @@ func (a *service) delete(ctx context.Context, workspaceID string) (*Workspace, e
 }
 
 // SetCurrentRun sets the current run for the workspace
-func (a *service) setCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+func (a *service) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
 	return a.db.SetCurrentRun(ctx, workspaceID, runID)
 }
 

@@ -4,68 +4,85 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/rbac"
 )
 
 type lockService interface {
-	lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
-	unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error)
+	LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error)
+	UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error)
 }
 
 // lock the workspace. A workspace can only be locked on behalf of a run or a
 // user. If the former then runID must be populated. Otherwise a user is
 // extracted from the context.
-func (svc *service) lock(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
-	subject, err := svc.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
+func (s *service) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
+	subject, err := s.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	var state LockedState
-	if runID != nil {
-		state = RunLock{id: *runID}
-	} else if user, ok := subject.(*otf.User); ok {
-		state = UserLock{id: user.ID, username: user.Username}
-	} else {
-		svc.Error(otf.ErrWorkspaceUnlockDenied, "subject", subject, "workspace", workspaceID)
-		return nil, otf.ErrWorkspaceUnlockDenied
+	state, err := GetLockedState(subject, runID)
+	if err != nil {
+		s.Error(err, "unlocking workspace", "subject", subject, "workspace", workspaceID)
+		return nil, err
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(lock *Lock) error {
+	ws, err := s.db.toggleLock(ctx, workspaceID, func(lock *Lock) error {
 		return lock.Lock(state)
 	})
 	if err != nil {
-		svc.Error(err, "locking workspace", "subject", subject, "workspace", workspaceID)
+		s.Error(err, "locking workspace", "subject", subject, "workspace", workspaceID)
 		return nil, err
 	}
-	svc.V(1).Info("locked workspace", "subject", subject, "workspace", workspaceID)
+	s.V(1).Info("locked workspace", "subject", subject, "workspace", workspaceID)
 
-	svc.Publish(otf.Event{Type: EventLocked, Payload: ws})
+	s.Publish(otf.Event{Type: EventLocked, Payload: ws})
 
 	return ws, nil
 }
 
-func (svc *service) unlock(ctx context.Context, workspaceID string, force bool) (*Workspace, error) {
+// Unlock the workspace. A workspace can only be unlocked on behalf of a run or
+// a user. If the former then runID must be non-nil; otherwise a user is
+// extracted from the context.
+func (s *service) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
 	action := rbac.UnlockWorkspaceAction
 	if force {
 		action = rbac.ForceUnlockWorkspaceAction
 	}
-
-	subject, err := svc.CanAccess(ctx, action, workspaceID)
+	subject, err := s.CanAccess(ctx, action, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	ws, err := svc.db.toggleLock(ctx, workspaceID, func(lock *Lock) error {
-		return lock.Unlock(subject, force)
+	state, err := GetLockedState(subject, runID)
+	if err != nil {
+		s.Error(err, "unlocking workspace", "subject", subject, "workspace", workspaceID)
+		return nil, err
+	}
+
+	ws, err := s.db.toggleLock(ctx, workspaceID, func(lock *Lock) error {
+		return lock.Unlock(state, force)
 	})
 	if err != nil {
-		svc.Error(err, "unlocking workspace", "subject", subject, "workspace", workspaceID)
+		s.Error(err, "unlocking workspace", "subject", subject, "workspace", workspaceID)
 		return nil, err
 	}
-	svc.V(1).Info("unlocked workspace", "subject", subject, "workspace", workspaceID)
+	s.V(1).Info("unlocked workspace", "subject", subject, "workspace", workspaceID)
 
-	svc.Publish(otf.Event{Type: EventUnlocked, Payload: ws})
+	s.Publish(otf.Event{Type: EventUnlocked, Payload: ws})
 
 	return ws, nil
+}
+
+func GetLockedState(subject otf.Subject, runID *string) (LockedState, error) {
+	var state LockedState
+	if runID != nil {
+		state = RunLock{ID: *runID}
+	} else if user, ok := subject.(*auth.User); ok {
+		state = UserLock{ID: user.ID, Username: user.Username}
+	} else {
+		return nil, otf.ErrWorkspaceInvalidLock
+	}
+	return state, nil
 }

@@ -16,9 +16,9 @@ const (
 )
 
 type AuthenticateTokenService interface {
-	GetAgentToken(context.Context, string) (*otf.AgentToken, error)
+	GetAgentToken(context.Context, string) (*AgentToken, error)
 	GetRegistrySession(context.Context, string) (*RegistrySession, error)
-	getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
+	getUser(ctx context.Context, spec UserSpec) (*User, error)
 }
 
 // AuthenticateToken checks the request has a valid API token
@@ -31,7 +31,7 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 			return svc.GetRegistrySession(ctx, token)
 		default:
 			// otherwise assume user or site admin token
-			return svc.getUser(ctx, otf.UserSpec{AuthenticationToken: &token})
+			return svc.getUser(ctx, UserSpec{AuthenticationToken: &token})
 		}
 	}
 
@@ -64,7 +64,7 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 
 type AuthenticateSessionService interface {
 	GetSession(ctx context.Context, token string) (*Session, error)
-	getUser(context.Context, otf.UserSpec) (*otf.User, error)
+	getUser(context.Context, UserSpec) (*User, error)
 }
 
 // AuthenticateSession middleware checks incoming request possesses a valid session cookie,
@@ -77,7 +77,7 @@ func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 				sendUserToLoginPage(w, r)
 				return
 			}
-			user, err := svc.getUser(r.Context(), otf.UserSpec{
+			user, err := svc.getUser(r.Context(), UserSpec{
 				SessionToken: &cookie.Value,
 			})
 			if err != nil {

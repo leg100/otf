@@ -12,9 +12,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-// client is an implementation of the state app that allows remote interaction.
-var _ otf.StateVersionApp = (*Client)(nil)
-
 // Client uses json-api according to the documented terraform cloud state
 // version API [1] that OTF implements (we could use something different,
 // something simpler but since the terraform CLI talks to OTF via json-api we
@@ -25,7 +22,7 @@ type Client struct {
 	otf.JSONAPIClient
 }
 
-func (c *Client) CreateStateVersion(ctx context.Context, opts otf.CreateStateVersionOptions) error {
+func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) error {
 	var state file
 	if err := json.Unmarshal(opts.State, &state); err != nil {
 		return err

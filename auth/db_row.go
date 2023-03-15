@@ -2,7 +2,6 @@ package auth
 
 import (
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -16,8 +15,8 @@ type userRow struct {
 	Teams         []pggen.Teams      `json:"teams"`
 }
 
-func (row userRow) toUser() *otf.User {
-	user := otf.User{
+func (row userRow) toUser() *User {
+	user := User{
 		ID:        row.UserID.String,
 		CreatedAt: row.CreatedAt.Time.UTC(),
 		UpdatedAt: row.UpdatedAt.Time.UTC(),
@@ -45,13 +44,13 @@ type teamRow struct {
 	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
-func (row teamRow) toTeam() *otf.Team {
-	return &otf.Team{
+func (row teamRow) toTeam() *Team {
+	return &Team{
 		ID:           row.TeamID.String,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Name:         row.Name.String,
 		Organization: row.OrganizationName.String,
-		Access: otf.OrganizationAccess{
+		Access: OrganizationAccess{
 			ManageWorkspaces: row.PermissionManageWorkspaces,
 			ManageVCS:        row.PermissionManageVCS,
 			ManageRegistry:   row.PermissionManageRegistry,
@@ -67,8 +66,8 @@ type agentTokenRow struct {
 	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
-func (row agentTokenRow) toAgentToken() *otf.AgentToken {
-	return &otf.AgentToken{
+func (row agentTokenRow) toAgentToken() *AgentToken {
+	return &AgentToken{
 		ID:           row.TokenID.String,
 		CreatedAt:    row.CreatedAt.Time,
 		Token:        row.Token.String,

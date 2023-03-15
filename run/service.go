@@ -12,12 +12,16 @@ import (
 )
 
 type (
+	// namespaced for disambiguation from other services
+	RunService = Service
+
 	Service interface {
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 		GetRun(ctx context.Context, id string) (*Run, error)
+		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
+		ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
 
 		get(ctx context.Context, runID string) (*Run, error)
-		list(ctx context.Context, opts RunListOptions) (*RunList, error)
 		// apply enqueues an apply for the run.
 		apply(ctx context.Context, runID string) error
 		discard(ctx context.Context, runID string) error
@@ -26,10 +30,6 @@ type (
 		cancel(ctx context.Context, runID string) error
 		// forceCancel forcefully cancels a run.
 		forceCancel(ctx context.Context, runID string) error
-		// enqueuePlan enqueues a plan for the run.
-		//
-		// NOTE: this is an internal action, invoked by the scheduler only.
-		enqueuePlan(ctx context.Context, runID string) (*Run, error)
 		// getPlanFile returns the plan file for the run.
 		getPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
 		// uploadPlanFile persists a run's plan file. The plan format should be either
@@ -147,34 +147,9 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return s.get(ctx, runID)
 }
 
-func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
-	return s.enqueuePlan(ctx, runID)
-}
-
-func (s *service) Delete(ctx context.Context, runID string) error {
-	return s.delete(ctx, runID)
-}
-
-// GetRun retrieves a run from the db.
-func (a *service) get(ctx context.Context, runID string) (*Run, error) {
-	subject, err := a.CanAccess(ctx, rbac.GetRunAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := a.db.GetRun(ctx, runID)
-	if err != nil {
-		a.Error(err, "retrieving run", "id", runID, "subject", subject)
-		return nil, err
-	}
-	a.V(2).Info("retrieved run", "id", runID, "subject", subject)
-
-	return run, nil
-}
-
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (a *service) list(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (a *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var authErr error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -207,6 +182,51 @@ func (a *service) list(ctx context.Context, opts RunListOptions) (*RunList, erro
 	a.V(2).Info("listed runs", "count", len(rl.Items), "subject", subject)
 
 	return rl, nil
+}
+
+// enqueuePlan enqueues a plan for the run.
+//
+// NOTE: this is an internal action, invoked by the scheduler only.
+func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
+	subject, err := s.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
+	if err != nil {
+		return nil, err
+	}
+
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+		return run.EnqueuePlan()
+	})
+	if err != nil {
+		s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
+		return nil, err
+	}
+	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
+
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+
+	return run, nil
+
+}
+
+func (s *service) Delete(ctx context.Context, runID string) error {
+	return s.delete(ctx, runID)
+}
+
+// GetRun retrieves a run from the db.
+func (s *service) get(ctx context.Context, runID string) (*Run, error) {
+	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
+	if err != nil {
+		return nil, err
+	}
+
+	run, err := s.db.GetRun(ctx, runID)
+	if err != nil {
+		s.Error(err, "retrieving run", "id", runID, "subject", subject)
+		return nil, err
+	}
+	s.V(2).Info("retrieved run", "id", runID, "subject", subject)
+
+	return run, nil
 }
 
 // apply enqueues an apply for the run.
@@ -297,29 +317,6 @@ func (a *service) forceCancel(ctx context.Context, runID string) error {
 	a.Publish(otf.Event{Type: otf.EventRunForceCancel, Payload: run})
 
 	return err
-}
-
-// enqueuePlan enqueues a plan for the run.
-//
-// NOTE: this is an internal action, invoked by the scheduler only.
-func (a *service) enqueuePlan(ctx context.Context, runID string) (*Run, error) {
-	subject, err := a.CanAccess(ctx, rbac.EnqueuePlanAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
-		return run.EnqueuePlan()
-	})
-	if err != nil {
-		a.Error(err, "enqueuing plan", "id", runID, "subject", subject)
-		return nil, err
-	}
-	a.V(0).Info("enqueued plan", "id", runID, "subject", subject)
-
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
-
-	return run, nil
 }
 
 func planFileCacheKey(f PlanFormat, id string) string {

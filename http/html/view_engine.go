@@ -51,12 +51,12 @@ type view struct {
 	Flashes []flash       // flash messages to render in template
 }
 
-func (v *view) CurrentUser() *otf.User {
-	user, err := otf.UserFromContext(v.request.Context())
+func (v *view) CurrentUser() otf.Subject {
+	subject, err := otf.SubjectFromContext(v.request.Context())
 	if err != nil {
 		return nil
 	}
-	return user
+	return subject
 }
 
 // CurrentOrganization retrieves the user's current organization

@@ -10,36 +10,51 @@ import (
 	"github.com/leg100/otf/organization"
 )
 
-type service interface {
-	agentTokenService
-	registrySessionService
-	sessionService
-	teamService
-	tokenService
-	userService
-}
+type (
+	AuthService interface {
+		agentTokenService
+		registrySessionService
+		sessionService
+		teamService
+		tokenService
+		UserService
+	}
 
-type Service struct {
-	logr.Logger
-	TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
+	service2 struct {
+		logr.Logger
+		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
-	*synchroniser
+		*synchroniser
 
-	api          *api
-	db           *pgdb
-	organization otf.Authorizer
-	web          *webHandlers
-}
+		api          *api
+		db           *pgdb
+		organization otf.Authorizer
+		web          *webHandlers
+	}
 
-func NewService(ctx context.Context, opts Options) (*Service, error) {
-	svc := Service{Logger: opts.Logger}
+	Options struct {
+		Configs   []*cloud.CloudOAuthConfig
+		SiteToken string
+
+		organization.Service
+		otf.DB
+		otf.Renderer
+		otf.HostnameService
+		logr.Logger
+	}
+
+	OrganizationService organization.Service
+)
+
+func NewService(ctx context.Context, opts Options) (*service2, error) {
+	svc := service2{Logger: opts.Logger}
 	svc.TokenMiddleware = AuthenticateToken(&svc)
 	svc.SessionMiddleware = AuthenticateSession(&svc)
 
 	authenticators, err := newAuthenticators(authenticatorOptions{
 		Logger:          opts.Logger,
 		HostnameService: opts.HostnameService,
-		service:         &svc,
+		AuthService:     &svc,
 		configs:         opts.Configs,
 	})
 	if err != nil {
@@ -64,18 +79,7 @@ func NewService(ctx context.Context, opts Options) (*Service, error) {
 	return &svc, nil
 }
 
-type Options struct {
-	Configs   []*cloud.CloudOAuthConfig
-	SiteToken string
-
-	organization.Service
-	otf.DB
-	otf.Renderer
-	otf.HostnameService
-	logr.Logger
-}
-
-func (a *Service) AddHandlers(r *mux.Router) {
+func (a *service2) AddHandlers(r *mux.Router) {
 	a.api.addHandlers(r)
 	a.web.addHandlers(r)
 }

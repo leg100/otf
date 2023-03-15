@@ -1,13 +1,13 @@
-package otf
+package auth
 
 import (
-	"context"
 	"time"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-var SiteAdmin = User{ID: SiteAdminID, Username: "site-admin"}
+var SiteAdmin = User{ID: otf.SiteAdminID, Username: "site-admin"}
 
 type (
 	// User represents an otf user account.
@@ -28,13 +28,6 @@ type (
 
 	NewUserOption func(*User)
 
-	// UserService provides methods to interact with user accounts and their
-	// sessions.
-	UserService interface {
-		// Get retrieves a user according to the spec.
-		GetUser(ctx context.Context, spec UserSpec) (User, error)
-	}
-
 	UserSpec struct {
 		UserID              *string
 		Username            *string
@@ -45,10 +38,10 @@ type (
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        NewID("user"),
+		ID:        otf.NewID("user"),
 		Username:  username,
-		CreatedAt: CurrentTimestamp(),
-		UpdatedAt: CurrentTimestamp(),
+		CreatedAt: otf.CurrentTimestamp(),
+		UpdatedAt: otf.CurrentTimestamp(),
 	}
 	for _, fn := range opts {
 		fn(user)
@@ -80,7 +73,7 @@ func (u *User) IsTeamMember(teamID string) bool {
 	return false
 }
 
-func (u *User) IsSiteAdmin() bool { return u.ID == SiteAdminID }
+func (u *User) IsSiteAdmin() bool { return u.ID == otf.SiteAdminID }
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	// Only site admin can perform actions on the site
@@ -122,7 +115,7 @@ func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
 	// coarser-grained organization perms take precedence.
 	if u.CanAccessOrganization(action, policy.Organization) {
 		return true
@@ -152,7 +145,7 @@ func (u *User) IsOwner(organization string) bool {
 
 func (s UserSpec) MarshalLog() any {
 	if s.AuthenticationToken != nil {
-		s.AuthenticationToken = String("*****")
+		s.AuthenticationToken = otf.String("*****")
 	}
 	return s
 }

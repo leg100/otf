@@ -23,7 +23,7 @@ type (
 	reporter struct {
 		logr.Logger
 		otf.WatchService
-		otf.VCSProviderService
+		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
 
@@ -33,7 +33,7 @@ type (
 	ReporterOptions struct {
 		ConfigurationVersionService configversion.Service
 		WorkspaceService            workspace.Service
-		VCSProviderService          otf.VCSProviderService
+		VCSProviderService          VCSProviderService
 		Hostname                    string
 
 		logr.Logger
@@ -46,6 +46,14 @@ type (
 func StartReporter(ctx context.Context, opts ReporterOptions) error {
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"reporter"})
 
+	rptr := &reporter{
+		Logger:                      opts.Logger.WithValues("component", "reporter"),
+		WatchService:                opts.WatchService,
+		hostname:                    opts.Hostname,
+		ConfigurationVersionService: opts.ConfigurationVersionService,
+		WorkspaceService:            opts.WorkspaceService,
+	}
+
 	op := func() error {
 		// block on getting an exclusive lock
 		lock, err := opts.WaitAndLock(ctx, reporterLockID)
@@ -54,17 +62,10 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 		}
 		defer lock.Release()
 
-		s := &reporter{
-			Logger:                      opts.Logger.WithValues("component", "reporter"),
-			WatchService:                opts.WatchService,
-			hostname:                    opts.Hostname,
-			ConfigurationVersionService: opts.ConfigurationVersionService,
-			WorkspaceService:            opts.WorkspaceService,
-		}
-		s.V(2).Info("started")
-		defer s.V(2).Info("stopped")
+		rptr.V(2).Info("started")
+		defer rptr.V(2).Info("stopped")
 
-		err = s.start(ctx)
+		err = rptr.start(ctx)
 		select {
 		case <-ctx.Done():
 			return nil // exit

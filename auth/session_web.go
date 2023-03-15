@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -17,7 +16,7 @@ func (h *webHandlers) addSessionHandlers(r *mux.Router) {
 }
 
 func (app *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.UserFromContext(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

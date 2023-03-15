@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +39,7 @@ func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) *Workspac
 	return ws
 }
 
-func CreateTestWorkspacePermission(t *testing.T, db otf.DB, ws *Workspace, team *otf.Team, role rbac.Role) *Workspace {
+func CreateTestWorkspacePermission(t *testing.T, db otf.DB, ws *Workspace, team *auth.Team, role rbac.Role) *Workspace {
 	ctx := context.Background()
 	workspaceDB := &pgdb{db}
 	err := workspaceDB.SetWorkspacePermission(ctx, ws.ID, team.Name, role)

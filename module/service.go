@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/surl"
 )
 
@@ -39,7 +40,7 @@ type (
 	}
 
 	Service struct {
-		otf.VCSProviderService
+		vcsprovider.VCSProviderService
 		logr.Logger
 		*Publisher
 
@@ -58,7 +59,7 @@ type (
 		Hostname     string
 
 		otf.DB
-		otf.VCSProviderService
+		vcsprovider.VCSProviderService
 		*surl.Signer
 		otf.Renderer
 		otf.RepoService

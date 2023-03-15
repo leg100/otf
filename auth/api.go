@@ -10,7 +10,7 @@ import (
 
 // api provides handlers for json:api endpoints
 type api struct {
-	app service
+	app AuthService
 }
 
 func (h *api) addHandlers(r *mux.Router) {
@@ -32,7 +32,7 @@ func (h *api) addHandlers(r *mux.Router) {
 // User routes
 
 func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.UserFromContext(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -66,7 +66,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	at, err := h.app.createAgentToken(r.Context(), otf.CreateAgentTokenOptions{
+	at, err := h.app.createAgentToken(r.Context(), CreateAgentTokenOptions{
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	})

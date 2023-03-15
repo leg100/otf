@@ -49,12 +49,8 @@ type Application interface {
 	SessionService
 	// TokenService
 	cloud.Service
-	ModuleService
 	HostnameService
 	RepoService
-	UserService
-	TeamService
-	AgentTokenService
 	PubSubService
 }
 

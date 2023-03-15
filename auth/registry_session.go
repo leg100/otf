@@ -45,7 +45,10 @@ func (t *RegistrySession) ToJSONAPI() any {
 	}
 }
 
-func (*RegistrySession) CanAccessSite(action rbac.Action) bool {
+func (t *RegistrySession) IsSiteAdmin() bool   { return true }
+func (t *RegistrySession) IsOwner(string) bool { return true }
+
+func (t *RegistrySession) CanAccessSite(action rbac.Action) bool {
 	return false
 }
 

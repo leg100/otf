@@ -1,13 +1,15 @@
 package workspace
 
-import "github.com/leg100/otf"
+import (
+	"github.com/leg100/otf"
+)
 
 // RunLock is a workspace lock held by a run
 type RunLock struct {
-	id string
+	ID string
 }
 
-func (l RunLock) String() string { return l.id }
+func (l RunLock) String() string { return l.ID }
 
 func (RunLock) CanLock(lock LockedState) error {
 	// a run lock can only be replaced by another run lock
@@ -17,9 +19,9 @@ func (RunLock) CanLock(lock LockedState) error {
 	return otf.ErrWorkspaceAlreadyLocked
 }
 
-func (RunLock) CanUnlock(subject any, force bool) error {
-	// users are only allowed to unlock a run lock forceably
-	if _, ok := subject.(*otf.User); ok {
+func (RunLock) CanUnlock(lock LockedState, force bool) error {
+	// a user lock is only allowed to unlock a run lock by force
+	if _, ok := lock.(UserLock); ok {
 		if force {
 			return nil
 		}

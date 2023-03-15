@@ -57,7 +57,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.svc.list(r.Context(), RunListOptions{
+	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
 		ListOptions: params.ListOptions,
 		WorkspaceID: &params.WorkspaceID,
 	})

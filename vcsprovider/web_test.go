@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/organization"
@@ -85,7 +84,7 @@ func TestDeleteVCSProvidersHandler(t *testing.T) {
 	assert.Equal(t, 302, w.Code)
 }
 
-func fakeWebServices(t *testing.T, provider *otf.VCSProvider) *webHandlers {
+func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 	return &webHandlers{
@@ -96,19 +95,19 @@ func fakeWebServices(t *testing.T, provider *otf.VCSProvider) *webHandlers {
 }
 
 type fakeApp struct {
-	provider *otf.VCSProvider
+	provider *VCSProvider
 
 	Service
 }
 
-func (f *fakeApp) create(ctx context.Context, opts createOptions) (*otf.VCSProvider, error) {
+func (f *fakeApp) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
 	return f.provider, nil
 }
 
-func (f *fakeApp) list(context.Context, string) ([]*otf.VCSProvider, error) {
-	return []*otf.VCSProvider{f.provider}, nil
+func (f *fakeApp) list(context.Context, string) ([]*VCSProvider, error) {
+	return []*VCSProvider{f.provider}, nil
 }
 
-func (f *fakeApp) delete(context.Context, string) (*otf.VCSProvider, error) {
+func (f *fakeApp) delete(context.Context, string) (*VCSProvider, error) {
 	return f.provider, nil
 }

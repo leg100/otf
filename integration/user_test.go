@@ -41,23 +41,23 @@ func TestUser(t *testing.T) {
 
 		tests := []struct {
 			name string
-			spec otf.UserSpec
+			spec auth.UserSpec
 		}{
 			{
 				name: "id",
-				spec: otf.UserSpec{UserID: otf.String(user.ID)},
+				spec: auth.UserSpec{UserID: otf.String(user.ID)},
 			},
 			{
 				name: "username",
-				spec: otf.UserSpec{Username: otf.String(user.Username())},
+				spec: auth.UserSpec{Username: otf.String(user.Username())},
 			},
 			{
 				name: "session token",
-				spec: otf.UserSpec{SessionToken: otf.String(session.Token())},
+				spec: auth.UserSpec{SessionToken: otf.String(session.Token())},
 			},
 			{
 				name: "auth token",
-				spec: otf.UserSpec{AuthenticationToken: otf.String(token1.Token())},
+				spec: auth.UserSpec{AuthenticationToken: otf.String(token1.Token())},
 			},
 		}
 		for _, tt := range tests {

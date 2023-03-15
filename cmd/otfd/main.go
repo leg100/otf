@@ -29,8 +29,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
-
-	_ "github.com/leg100/otf/sql/migrations"
 )
 
 const (
@@ -62,12 +60,11 @@ func runDaemon(ctx context.Context, args []string, out io.Writer) error {
 	cmd.SetOut(out)
 
 	d := &daemon{
-		ServerConfig:       newServerConfigFromFlags(cmd.Flags()),
-		CacheConfig:        newCacheConfigFromFlags(cmd.Flags()),
-		LoggerConfig:       cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
-		ApplicationOptions: newHTMLConfigFromFlags(cmd.Flags()),
-		Config:             agent.NewConfigFromFlags(cmd.Flags()),
-		OAuthConfigs:       cloudFlags(cmd.Flags()),
+		ServerConfig: newServerConfigFromFlags(cmd.Flags()),
+		CacheConfig:  newCacheConfigFromFlags(cmd.Flags()),
+		LoggerConfig: cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
+		Config:       agent.NewConfigFromFlags(cmd.Flags()),
+		OAuthConfigs: cloudFlags(cmd.Flags()),
 	}
 	cmd.RunE = d.start
 
@@ -254,12 +251,8 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	d.ApplicationOptions.ServerConfig = d.ServerConfig
-	d.ApplicationOptions.CloudConfigs = d.OAuthConfigs
-	d.ApplicationOptions.VariableService = variableService
-
-	// Setup client app for use by agent
-	client := struct {
+	// Construct local client for internal agent.
+	localClient := struct {
 		organization.Service
 		otf.AgentTokenService
 		otf.VariableService
@@ -286,7 +279,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	// Setup agent
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
-		client,
+		localClient,
 		*d.Config)
 	if err != nil {
 		return fmt.Errorf("initializing agent: %w", err)
@@ -373,13 +366,7 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
-
-	return &cfg
-}
-
-// newCloudConfigFromFlags binds flags to web app config
-func newHTMLConfigFromFlags(flags *pflag.FlagSet) *html.ApplicationOptions {
-	cfg := html.ApplicationOptions{}
 	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
+
 	return &cfg
 }

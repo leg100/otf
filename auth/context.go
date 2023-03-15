@@ -15,12 +15,12 @@ const (
 )
 
 // agentFromContext retrieves an agent(-token) from a context
-func agentFromContext(ctx context.Context) (*otf.AgentToken, error) {
+func agentFromContext(ctx context.Context) (*AgentToken, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	agent, ok := subj.(*otf.AgentToken)
+	agent, ok := subj.(*AgentToken)
 	if !ok {
 		return nil, fmt.Errorf("subject found in context but it is not an agent")
 	}
@@ -37,4 +37,17 @@ func getSessionCtx(ctx context.Context) (*Session, error) {
 		return nil, fmt.Errorf("no session in context")
 	}
 	return session, nil
+}
+
+// SubjectFromContext retrieves a subject from a context
+func userFromContext(ctx context.Context) (*User, error) {
+	subj, err := otf.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user, ok := subj.(*User)
+	if !ok {
+		return nil, fmt.Errorf("no user in context")
+	}
+	return user, nil
 }

@@ -8,42 +8,74 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
-// scheduler performs two principle tasks :
-// (a) manages lifecycle of workspace queues, creating/destroying them
-// (b) relays run and workspace events onto queues.
-type scheduler struct {
-	otf.Application
-	logr.Logger
-	queues map[string]eventHandler
-	queueFactory
-}
+// schedulerLockID guarantees only one scheduler on a cluster is running at any
+// time.
+const schedulerLockID int64 = 5577006791947779410
 
-// newScheduler constructs and initialises the scheduler.
-func newScheduler(logger logr.Logger, app otf.Application) *scheduler {
-	s := &scheduler{
-		Application:  app,
-		Logger:       logger.WithValues("component", "scheduler"),
+type (
+	// scheduler performs two principle tasks :
+	// (a) manages lifecycle of workspace queues, creating/destroying them
+	// (b) relays run and workspace events onto queues.
+	scheduler struct {
+		logr.Logger
+
+		otf.WatchService
+		WorkspaceService
+		RunService
+
+		queues map[string]eventHandler
+		queueFactory
+	}
+
+	Options struct {
+		logr.Logger
+		WorkspaceService
+		RunService
+		otf.DB
+		otf.WatchService
+	}
+
+	WorkspaceService workspace.Service
+	RunService       run.Service
+)
+
+// Start constructs and initialises the scheduler.
+// start starts the scheduler daemon. Should be invoked in a go routine.
+func Start(ctx context.Context, opts Options) error {
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
+
+	scldr := &scheduler{
+		Logger:       opts.Logger.WithValues("component", "scheduler"),
+		WatchService: opts.WatchService,
 		queues:       make(map[string]eventHandler),
 		queueFactory: queueMaker{},
 	}
-	s.V(2).Info("started")
-
-	return s
-}
-
-// start starts the scheduler daemon. Should be invoked in a go routine.
-func (s *scheduler) start(ctx context.Context) error {
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
+	scldr.V(2).Info("started")
 
 	op := func() error {
-		return s.reinitialize(ctx)
+		// block on getting an exclusive lock
+		lock, err := opts.WaitAndLock(ctx, schedulerLockID)
+		if err != nil {
+			return err
+		}
+		defer lock.Release()
+
+		err = scldr.reinitialize(ctx)
+		select {
+		case <-ctx.Done():
+			return nil // exit
+		default:
+			return err // retry
+		}
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-		s.Error(err, "restarting scheduler")
+		scldr.Error(err, "restarting scheduler")
 	})
 }
 
@@ -130,7 +162,12 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 				// create workspace queue if it doesn't exist
 				q, ok := s.queues[payload.ID]
 				if !ok {
-					q = s.newQueue(s.Application, s.Logger, payload)
+					q = s.newQueue(queueOptions{
+						Logger:           s.Logger,
+						RunService:       s.RunService,
+						WorkspaceService: s.WorkspaceService,
+						Workspace:        payload,
+					})
 					s.queues[payload.ID] = q
 				}
 				if err := q.handleEvent(ctx, event); err != nil {

@@ -9,13 +9,14 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 // Publisher publishes new versions of terraform modules from VCS tags
 type Publisher struct {
 	logr.Logger
 	otf.Subscriber
-	otf.VCSProviderService
+	vcsprovider.VCSProviderService
 
 	db *pgdb
 

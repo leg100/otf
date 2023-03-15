@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ func TestNewAuthenticators(t *testing.T) {
 	opts := authenticatorOptions{
 		Logger:          logr.Discard(),
 		HostnameService: fakeHostnameService{"fake-host.org"},
-		service:         &fakeAuthenticatorService{},
+		AuthService:     &fakeAuthenticatorService{},
 		configs: []*cloud.CloudOAuthConfig{
 			{
 				OAuthConfig: &oauth2.Config{
@@ -57,7 +56,7 @@ func TestAuthenticator(t *testing.T) {
 
 	t.Run("response_handler", func(t *testing.T) {
 		authenticator := &authenticator{
-			service:     &fakeAuthenticatorService{},
+			AuthService: &fakeAuthenticatorService{},
 			oauthClient: &fakeOAuthClient{user: &cuser},
 		}
 
@@ -80,11 +79,11 @@ func TestAuthenticator(t *testing.T) {
 }
 
 type fakeAuthenticatorService struct {
-	service
+	AuthService
 }
 
-func (f *fakeAuthenticatorService) sync(context.Context, cloud.User) (*otf.User, error) {
-	return otf.NewUser("fake-user"), nil
+func (f *fakeAuthenticatorService) sync(context.Context, cloud.User) (*User, error) {
+	return NewUser("fake-user"), nil
 }
 
 func (f *fakeAuthenticatorService) createSession(*http.Request, string) (*Session, error) {

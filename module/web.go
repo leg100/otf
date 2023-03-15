@@ -11,13 +11,14 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 // webHandlers provides handlers for the webUI
 type webHandlers struct {
 	otf.Signer
 	otf.Renderer
-	otf.VCSProviderService
+	vcsprovider.VCSProviderService
 
 	hostname string
 	svc      service
@@ -149,7 +150,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_new.tmpl", w, r, struct {
-		Items        []*otf.VCSProvider
+		Items        []*vcsprovider.VCSProvider
 		Organization string
 		Step         newModuleStep
 	}{
@@ -231,7 +232,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		Organization string
 		Step         newModuleStep
 		Repo         string
-		*otf.VCSProvider
+		*vcsprovider.VCSProvider
 	}{
 		Organization: params.Organization,
 		Step:         newModuleConfirmStep,

@@ -22,7 +22,7 @@ func NewTestService(t *testing.T, db otf.DB) *service {
 	return service
 }
 
-func NewTestVCSProvider(t *testing.T, org *organization.Organization) *otf.VCSProvider {
+func NewTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvider {
 	var organizationName string
 	if org == nil {
 		organizationName = uuid.NewString()
@@ -42,7 +42,7 @@ func NewTestVCSProvider(t *testing.T, org *organization.Organization) *otf.VCSPr
 	return provider
 }
 
-func CreateTestVCSProvider(t *testing.T, db otf.DB, org *organization.Organization) *otf.VCSProvider {
+func CreateTestVCSProvider(t *testing.T, db otf.DB, org *organization.Organization) *VCSProvider {
 	ctx := context.Background()
 	svc := NewTestService(t, db)
 
@@ -62,7 +62,7 @@ func CreateTestVCSProvider(t *testing.T, db otf.DB, org *organization.Organizati
 	return vcsprov
 }
 
-func createTestVCSProvider(t *testing.T, db *pgdb, org *organization.Organization) *otf.VCSProvider {
+func createTestVCSProvider(t *testing.T, db *pgdb, org *organization.Organization) *VCSProvider {
 	provider := NewTestVCSProvider(t, org)
 	ctx := context.Background()
 

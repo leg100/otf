@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestTokenDB(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 
 		user := createTestUser(t, db)
-		token, err := otf.NewToken(user.ID, "testing")
+		token, err := NewToken(user.ID, "testing")
 		require.NoError(t, err)
 
 		defer db.DeleteToken(ctx, token.ID)
@@ -33,10 +32,10 @@ func TestTokenDB(t *testing.T) {
 	})
 }
 
-func createTestToken(t *testing.T, db *pgdb, userID, description string) *otf.Token {
+func createTestToken(t *testing.T, db *pgdb, userID, description string) *Token {
 	ctx := context.Background()
 
-	token, err := otf.NewToken(userID, description)
+	token, err := NewToken(userID, description)
 	require.NoError(t, err)
 
 	err = db.CreateToken(ctx, token)

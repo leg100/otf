@@ -27,12 +27,12 @@ func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.UserFromContext(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var opts otf.TokenCreateOptions
+	var opts TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -55,7 +55,7 @@ func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.UserFromContext(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -75,7 +75,7 @@ func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items []*otf.Token
+		Items []*Token
 	}{
 		Pagination: &otf.Pagination{},
 		Items:      tokens,
@@ -83,7 +83,7 @@ func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.UserFromContext(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

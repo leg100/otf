@@ -11,13 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestWorkspaceRepo(provider VCSProvider) *Connection {
-	return &Connection{
-		VCSProviderID: provider.ID,
-		Repo:          uuid.NewString(),
-	}
-}
-
 func NewTestCloudConfig(c cloud.Cloud) cloud.Config {
 	return cloud.Config{
 		Name:     "fake-cloud",

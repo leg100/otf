@@ -6,17 +6,19 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 type webHandlers struct {
 	otf.Renderer
-	otf.TeamService
-	otf.VCSProviderService
+	auth.TeamService
+	VCSProviderService
 
 	svc               Service
 	sessionMiddleware mux.MiddlewareFunc
@@ -200,7 +202,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_edit.tmpl", w, r, struct {
 		*Workspace
 		Permissions []otf.WorkspacePermission
-		Teams       []*otf.Team
+		Teams       []*auth.Team
 		Roles       []rbac.Role
 	}{
 		Workspace:   workspace,
@@ -272,7 +274,7 @@ func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.lock(r.Context(), id, nil)
+	ws, err := h.svc.LockWorkspace(r.Context(), id, nil)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -287,7 +289,7 @@ func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.unlock(r.Context(), id, false)
+	ws, err := h.svc.UnlockWorkspace(r.Context(), id, nil, false)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -314,7 +316,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 	}
 
 	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
-		Items []*otf.VCSProvider
+		Items []*vcsprovider.VCSProvider
 		*Workspace
 	}{
 		Items:     providers,

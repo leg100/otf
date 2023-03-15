@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,7 +83,7 @@ func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*w
 }
 
 type fakeReporterVCSProviderService struct {
-	otf.VCSProviderService
+	vcsprovider.VCSProviderService
 
 	got chan cloud.SetStatusOptions
 }

@@ -29,7 +29,7 @@ func (c *Client) CreateRegistrySession(ctx context.Context, organization string)
 	return session.Token, nil
 }
 
-func (c *Client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
+func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error) {
 	req, err := c.NewRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
 		Description:  options.Description,
 		Organization: options.Organization,
@@ -42,10 +42,10 @@ func (c *Client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTo
 	if err != nil {
 		return nil, err
 	}
-	return &otf.AgentToken{ID: at.ID, Token: *at.Token, Organization: at.Organization}, nil
+	return &AgentToken{ID: at.ID, Token: *at.Token, Organization: at.Organization}, nil
 }
 
-func (c *Client) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
+func (c *Client) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	req, err := c.NewRequest("GET", "agent/details", nil)
 	if err != nil {
 		return nil, err
@@ -57,5 +57,5 @@ func (c *Client) GetAgentToken(ctx context.Context, token string) (*otf.AgentTok
 		return nil, err
 	}
 
-	return &otf.AgentToken{ID: at.ID, Organization: at.Organization}, nil
+	return &AgentToken{ID: at.ID, Organization: at.Organization}, nil
 }

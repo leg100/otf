@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,8 +48,8 @@ func TestGetModule(t *testing.T) {
 
 func TestNewModule_Connect(t *testing.T) {
 	h := newTestWebHandlers(t, withVCSProviders(
-		&otf.VCSProvider{},
-		&otf.VCSProvider{},
+		&vcsprovider.VCSProvider{},
+		&vcsprovider.VCSProvider{},
 	))
 
 	q := "/?organization_name=acme-corp"
@@ -62,7 +63,7 @@ func TestNewModule_Connect(t *testing.T) {
 
 func TestNewModule_Repo(t *testing.T) {
 	h := newTestWebHandlers(t,
-		withVCSProviders(&otf.VCSProvider{}),
+		withVCSProviders(&vcsprovider.VCSProvider{}),
 		withRepos(
 			cloud.NewTestModuleRepo("aws", "vpc"),
 			cloud.NewTestModuleRepo("aws", "s3"),
@@ -79,7 +80,7 @@ func TestNewModule_Repo(t *testing.T) {
 }
 
 func TestNewModule_Confirm(t *testing.T) {
-	h := newTestWebHandlers(t, withVCSProviders(&otf.VCSProvider{}))
+	h := newTestWebHandlers(t, withVCSProviders(&vcsprovider.VCSProvider{}))
 
 	q := "/?organization_name=acme-corp&vcs_provider_id=vcs-123&identifier=leg100/terraform-otf-test"
 	r := httptest.NewRequest("GET", q, nil)
@@ -150,7 +151,7 @@ func withTarball(tarball []byte) testWebOption {
 	}
 }
 
-func withVCSProviders(vcsprovs ...*otf.VCSProvider) testWebOption {
+func withVCSProviders(vcsprovs ...*vcsprovider.VCSProvider) testWebOption {
 	return func(svc *fakeWebServices) {
 		svc.vcsprovs = vcsprovs
 	}
@@ -165,12 +166,12 @@ func withRepos(repos ...string) testWebOption {
 type fakeWebServices struct {
 	mod      *Module
 	tarball  []byte
-	vcsprovs []*otf.VCSProvider
+	vcsprovs []*vcsprovider.VCSProvider
 	repos    []string
 
 	service
 
-	otf.VCSProviderService
+	vcsprovider.VCSProviderService
 }
 
 func (f *fakeWebServices) PublishModule(context.Context, PublishModuleOptions) (*Module, error) {
@@ -189,11 +190,11 @@ func (f *fakeWebServices) ListModules(context.Context, ListModulesOptions) ([]*M
 	return []*Module{f.mod}, nil
 }
 
-func (f *fakeWebServices) GetVCSProvider(context.Context, string) (*otf.VCSProvider, error) {
+func (f *fakeWebServices) GetVCSProvider(context.Context, string) (*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs[0], nil
 }
 
-func (f *fakeWebServices) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
+func (f *fakeWebServices) ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
 	return f.vcsprovs, nil
 }
 

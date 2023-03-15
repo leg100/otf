@@ -18,6 +18,9 @@ type Subject interface {
 	CanAccessOrganization(action rbac.Action, name string) bool
 	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
+	IsOwner(organization string) bool
+	IsSiteAdmin() bool
+
 	String() string
 }
 
@@ -48,19 +51,6 @@ func SubjectFromContext(ctx context.Context) (Subject, error) {
 	return subj, nil
 }
 
-// UserFromContext retrieves a user from a context
-func UserFromContext(ctx context.Context) (*User, error) {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	user, ok := subj.(*User)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not a user")
-	}
-	return user, nil
-}
-
 // Superuser is a subject with unlimited privileges.
 type Superuser struct {
 	Username string
@@ -71,3 +61,5 @@ func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return
 func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
 func (s *Superuser) String() string                                     { return s.Username }
 func (s *Superuser) ID() string                                         { return s.Username }
+func (s *Superuser) IsSiteAdmin() bool                                  { return true }
+func (s *Superuser) IsOwner(string) bool                                { return true }

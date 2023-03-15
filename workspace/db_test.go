@@ -80,15 +80,16 @@ func TestDB(t *testing.T) {
 
 		t.Run("lock", func(t *testing.T) {
 			ws := CreateTestWorkspace(t, db, org.Name)
+			lockholder := UserLock{ID: user.ID, Username: user.Username}
 			got, err := db.toggleLock(ctx, ws.ID, func(lock *Lock) error {
-				return lock.Lock(UserLock{id: user.ID, username: user.Username})
+				return lock.Lock(lockholder)
 			})
 			require.NoError(t, err)
 			assert.True(t, got.Locked())
 
 			t.Run("unlock", func(t *testing.T) {
 				got, err := db.toggleLock(ctx, ws.ID, func(lock *Lock) error {
-					return lock.Unlock(user, false)
+					return lock.Unlock(lockholder, false)
 				})
 				require.NoError(t, err)
 				assert.False(t, got.Locked())
@@ -180,7 +181,7 @@ func TestDB(t *testing.T) {
 		team2 := auth.CreateTestTeam(t, db, org)
 		_ = CreateTestWorkspacePermission(t, db, ws1, team1, rbac.WorkspaceAdminRole)
 		_ = CreateTestWorkspacePermission(t, db, ws2, team2, rbac.WorkspacePlanRole)
-		user := auth.CreateTestUser(t, db, otf.WithTeams(team1, team2))
+		user := auth.CreateTestUser(t, db, auth.WithTeams(team1, team2))
 
 		tests := []struct {
 			name         string

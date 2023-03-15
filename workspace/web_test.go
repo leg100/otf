@@ -8,9 +8,11 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -180,9 +182,9 @@ func TestUnlockWorkspace(t *testing.T) {
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(
-		&otf.VCSProvider{},
-		&otf.VCSProvider{},
-		&otf.VCSProvider{},
+		&vcsprovider.VCSProvider{},
+		&vcsprovider.VCSProvider{},
+		&vcsprovider.VCSProvider{},
 	))
 
 	q := "/?workspace_id=ws-123"
@@ -194,7 +196,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 
 func TestListWorkspaceReposHandler(t *testing.T) {
 	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}),
+	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&vcsprovider.VCSProvider{}),
 		withRepos(
 			cloud.NewTestRepo(),
 			cloud.NewTestRepo(),
@@ -214,7 +216,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 
 func TestConnectWorkspaceHandler(t *testing.T) {
 	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
-	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&otf.VCSProvider{}))
+	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&vcsprovider.VCSProvider{}))
 
 	form := strings.NewReader(url.Values{
 		"workspace_id":    {"ws-123"},
@@ -259,13 +261,13 @@ type (
 	fakeWebService struct {
 		run        run
 		workspaces []*Workspace
-		providers  []*otf.VCSProvider
+		providers  []*vcsprovider.VCSProvider
 		repos      []string
 
 		Service
 
-		otf.TeamService
-		otf.VCSProviderService
+		auth.TeamService
+		VCSProviderService
 	}
 
 	fakeWebServiceOption func(*fakeWebService)
@@ -277,7 +279,7 @@ func withWorkspaces(workspaces ...*Workspace) fakeWebServiceOption {
 	}
 }
 
-func withVCSProviders(providers ...*otf.VCSProvider) fakeWebServiceOption {
+func withVCSProviders(providers ...*vcsprovider.VCSProvider) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.providers = providers
 	}
@@ -316,11 +318,11 @@ func (f *fakeWebService) GetPolicy(ctx context.Context, workspaceID string) (otf
 	return otf.WorkspacePolicy{}, nil
 }
 
-func (f *fakeWebService) GetVCSProvider(ctx context.Context, providerID string) (*otf.VCSProvider, error) {
+func (f *fakeWebService) GetVCSProvider(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
 	return f.providers[0], nil
 }
 
-func (f *fakeWebService) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
+func (f *fakeWebService) ListVCSProviders(context.Context, string) ([]*vcsprovider.VCSProvider, error) {
 	return f.providers, nil
 }
 
@@ -332,7 +334,7 @@ func (f *fakeWebService) GetWorkspacePolicy(context.Context, string) ([]*otf.Wor
 	return nil, nil
 }
 
-func (f *fakeWebService) ListTeams(context.Context, string) ([]*otf.Team, error) {
+func (f *fakeWebService) ListTeams(context.Context, string) ([]*auth.Team, error) {
 	return nil, nil
 }
 
@@ -367,11 +369,11 @@ func (f *fakeWebService) delete(context.Context, string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) lock(context.Context, string, *string) (*Workspace, error) {
+func (f *fakeWebService) LockWorkspace(context.Context, string, *string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) unlock(context.Context, string, bool) (*Workspace, error) {
+func (f *fakeWebService) UnlockWorkspace(context.Context, string, *string, bool) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 

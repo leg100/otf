@@ -18,7 +18,7 @@ type fakeService struct {
 	sessionService
 	tokenService
 	teamService
-	userService
+	UserService
 }
 
 type fakeHostnameService struct {

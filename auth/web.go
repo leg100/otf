@@ -15,7 +15,7 @@ import (
 type webHandlers struct {
 	otf.Renderer
 
-	svc            service
+	svc            AuthService
 	authenticators []*authenticator
 	siteToken      string
 }

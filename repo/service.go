@@ -7,12 +7,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 type (
 	Service struct {
 		logr.Logger
-		otf.VCSProviderService
+		vcsprovider.Service
 		otf.DB
 
 		factory // produce new hooks
@@ -26,7 +27,7 @@ type (
 		logr.Logger
 		otf.HostnameService
 		otf.Publisher
-		otf.VCSProviderService
+		VCSProviderService vcsprovider.Service
 	}
 )
 
@@ -38,11 +39,11 @@ func NewService(opts Options) *Service {
 		db:        newPGDB(opts.DB, factory),
 	}
 	return &Service{
-		Logger:             opts.Logger,
-		VCSProviderService: opts.VCSProviderService,
-		DB:                 opts.DB,
-		factory:            factory,
-		handler:            handler,
+		Logger:  opts.Logger,
+		Service: opts.VCSProviderService,
+		DB:      opts.DB,
+		factory: factory,
+		handler: handler,
 	}
 }
 

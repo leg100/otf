@@ -21,7 +21,7 @@ func newDB(db otf.DB, cloudService cloud.Service) *pgdb {
 }
 
 // CreateVCSProvider inserts an agent token, associating it with an organization
-func (db *pgdb) create(ctx context.Context, provider *otf.VCSProvider) error {
+func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	_, err := db.InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
 		Token:            sql.String(provider.Token),
@@ -33,7 +33,7 @@ func (db *pgdb) create(ctx context.Context, provider *otf.VCSProvider) error {
 	return err
 }
 
-func (db *pgdb) get(ctx context.Context, id string) (*otf.VCSProvider, error) {
+func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 	row, err := db.FindVCSProvider(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -41,12 +41,12 @@ func (db *pgdb) get(ctx context.Context, id string) (*otf.VCSProvider, error) {
 	return db.unmarshal(pgRow(row))
 }
 
-func (db *pgdb) list(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
+func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
 	rows, err := db.FindVCSProviders(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	var providers []*otf.VCSProvider
+	var providers []*VCSProvider
 	for _, r := range rows {
 		provider, err := db.unmarshal(pgRow(r))
 		if err != nil {
@@ -77,7 +77,7 @@ type pgRow struct {
 }
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
-func (db *pgdb) unmarshal(row pgRow) (*otf.VCSProvider, error) {
+func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
 	return db.new(createOptions{
 		ID:           &row.VCSProviderID.String,
 		CreatedAt:    otf.Time(row.CreatedAt.Time.UTC()),

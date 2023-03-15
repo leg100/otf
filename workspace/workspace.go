@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/semver"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 const (
@@ -155,6 +156,8 @@ type (
 		Organization string
 		Name         string
 	}
+
+	VCSProviderService vcsprovider.Service
 )
 
 func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {

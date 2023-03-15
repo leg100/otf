@@ -3,20 +3,19 @@ package auth
 import (
 	"context"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
 type agentTokenService interface {
 	// GetAgentToken retrieves an agent token using the given token.
-	GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error)
+	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 
-	createAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error)
-	listAgentTokens(ctx context.Context, organization string) ([]*otf.AgentToken, error)
-	deleteAgentToken(ctx context.Context, id string) (*otf.AgentToken, error)
+	createAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error)
+	listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+	deleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 }
 
-func (a *Service) getAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
+func (a *service2) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	at, err := a.db.GetAgentTokenByToken(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
@@ -26,13 +25,13 @@ func (a *Service) getAgentToken(ctx context.Context, token string) (*otf.AgentTo
 	return at, nil
 }
 
-func (a *Service) createAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
+func (a *service2) createAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := otf.NewAgentToken(opts)
+	token, err := NewAgentToken(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func (a *Service) createAgentToken(ctx context.Context, opts otf.CreateAgentToke
 	return token, nil
 }
 
-func (a *Service) listAgentTokens(ctx context.Context, organization string) ([]*otf.AgentToken, error) {
+func (a *service2) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -59,7 +58,7 @@ func (a *Service) listAgentTokens(ctx context.Context, organization string) ([]*
 	return tokens, nil
 }
 
-func (a *Service) deleteAgentToken(ctx context.Context, id string) (*otf.AgentToken, error) {
+func (a *service2) deleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
 	// retrieve agent token first in order to get organization for authorization
 	at, err := a.db.GetAgentTokenByID(ctx, id)
 	if err != nil {

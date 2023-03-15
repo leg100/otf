@@ -126,15 +126,21 @@ func (a *service) get(ctx context.Context, name string) (*Organization, error) {
 	return org, nil
 }
 
+// list lists organizations across site.
 func (a *service) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
-	subj, err := otf.SubjectFromContext(ctx)
+	_, err := a.site.CanAccess(ctx, rbac.ListOrganizationsAction, "")
 	if err != nil {
 		return nil, err
 	}
-	if user, ok := subj.(*otf.User); ok && !user.IsSiteAdmin() {
-		return a.db.listByUser(ctx, user.ID, opts)
-	}
 	return a.db.list(ctx, opts)
+}
+
+func (a *service) listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*OrganizationList, error) {
+	if userID == otf.SiteAdminID {
+		// site admin gets all orgs across site.
+		return a.db.list(ctx, opts)
+	}
+	return a.db.listByUser(ctx, userID, opts)
 }
 
 func (a *service) update(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {

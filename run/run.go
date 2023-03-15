@@ -111,7 +111,6 @@ type (
 	ConfigurationVersionService configversion.Service
 	WorkspaceService            workspace.Service
 	VCSProviderService          vcsprovider.Service
-	RunService                  Service
 	LogService                  logs.Service
 )
 

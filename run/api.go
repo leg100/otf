@@ -153,7 +153,7 @@ func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts RunListOptio
 		return
 	}
 
-	list, err := s.svc.list(r.Context(), opts)
+	list, err := s.svc.ListRuns(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

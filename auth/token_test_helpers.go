@@ -5,28 +5,27 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestToken(t *testing.T, org string) *otf.Token {
-	token, err := otf.NewToken(uuid.NewString(), "lorem ipsum...")
+func NewTestToken(t *testing.T, org string) *Token {
+	token, err := NewToken(uuid.NewString(), "lorem ipsum...")
 	require.NoError(t, err)
 	return token
 }
 
 type fakeTokenService struct {
-	token *otf.Token
+	token *Token
 
 	tokenService
 }
 
-func (f *fakeTokenService) CreateToken(context.Context, string, *otf.TokenCreateOptions) (*otf.Token, error) {
+func (f *fakeTokenService) CreateToken(context.Context, string, *TokenCreateOptions) (*Token, error) {
 	return f.token, nil
 }
 
-func (f *fakeTokenService) ListTokens(context.Context, string) ([]*otf.Token, error) {
-	return []*otf.Token{f.token}, nil
+func (f *fakeTokenService) ListTokens(context.Context, string) ([]*Token, error) {
+	return []*Token{f.token}, nil
 }
 
 func (f *fakeTokenService) DeleteToken(context.Context, string, string) error {

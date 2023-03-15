@@ -13,7 +13,7 @@ import (
 )
 
 func TestSessionHandlers(t *testing.T) {
-	user := otf.NewUser(uuid.NewString())
+	user := NewUser(uuid.NewString())
 	active := newTestSession(t, user.ID, nil)
 	other := newTestSession(t, user.ID, nil)
 

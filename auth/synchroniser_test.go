@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,10 +13,10 @@ func TestUserSyncOrganizations(t *testing.T) {
 	ctx := context.Background()
 	svc := &fakeSynchroniserService{}
 
-	user := otf.NewUser(uuid.NewString(), otf.WithOrganizations("org-1", "org-2"))
+	user := NewUser(uuid.NewString(), WithOrganizations("org-1", "org-2"))
 
 	s := &synchroniser{
-		service: svc,
+		AuthService: svc,
 	}
 	want := []string{"org-2", "org-3"}
 	err := s.syncOrganizations(ctx, user, want)
@@ -41,12 +40,12 @@ func TestUserSyncTeams(t *testing.T) {
 	team2 := NewTestTeam(t, "org-1")
 	team3 := NewTestTeam(t, "org-1")
 
-	user := otf.NewUser(uuid.NewString(), otf.WithTeams(team1, team2))
+	user := NewUser(uuid.NewString(), WithTeams(team1, team2))
 
 	s := &synchroniser{
-		service: svc,
+		AuthService: svc,
 	}
-	want := []*otf.Team{team2, team3}
+	want := []*Team{team2, team3}
 	err := s.syncTeams(ctx, user, want)
 	require.NoError(t, err)
 
@@ -63,7 +62,7 @@ func TestUserSyncTeams(t *testing.T) {
 type fakeSynchroniserService struct {
 	addedOrgs, removedOrgs, addedTeams, removedTeams []string
 
-	service
+	AuthService
 }
 
 func (f *fakeSynchroniserService) addOrganizationMembership(ctx context.Context, userID, orgID string) error {

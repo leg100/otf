@@ -14,9 +14,7 @@ import (
 
 type webHandlers struct {
 	otf.Renderer
-	WorkspaceService
 	CloudService
-	ConfigurationVersionService
 
 	svc Service
 }
@@ -84,7 +82,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("vcs_provider_list.tmpl", w, r, struct {
-		Items        []*otf.VCSProvider
+		Items        []*VCSProvider
 		CloudConfigs []cloud.Config
 		Organization string
 	}{

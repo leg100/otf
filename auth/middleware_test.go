@@ -109,7 +109,7 @@ type fakeMiddlewareService struct {
 	siteToken     string
 }
 
-func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
+func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	if f.agentToken == token {
 		return nil, nil
 	}
@@ -130,7 +130,7 @@ func (f *fakeMiddlewareService) GetSession(ctx context.Context, token string) (*
 	return nil, errors.New("invalid")
 }
 
-func (f *fakeMiddlewareService) getUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
+func (f *fakeMiddlewareService) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.AuthenticationToken != nil {
 		if f.userToken == *spec.AuthenticationToken {
 			return nil, nil

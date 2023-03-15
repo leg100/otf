@@ -1,8 +1,10 @@
-package otf
+package auth
 
 import (
 	"context"
 	"time"
+
+	"github.com/leg100/otf"
 )
 
 type (
@@ -62,9 +64,9 @@ type (
 
 func NewTeam(opts NewTeamOptions) *Team {
 	team := Team{
-		ID:           NewID("team"),
+		ID:           otf.NewID("team"),
 		Name:         opts.Name,
-		CreatedAt:    CurrentTimestamp(),
+		CreatedAt:    otf.CurrentTimestamp(),
 		Organization: opts.Organization,
 	}
 	return &team

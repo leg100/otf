@@ -81,7 +81,7 @@ func TestRepo(t *testing.T) {
 	})
 }
 
-func createTestConnection(t *testing.T, db *pgdb, provider *otf.VCSProvider, hook *hook, connType otf.ConnectionType, resourceID string) *otf.Connection {
+func createTestConnection(t *testing.T, db *pgdb, provider *vcsprovider.VCSProvider, hook *hook, connType otf.ConnectionType, resourceID string) *otf.Connection {
 	ctx := context.Background()
 
 	err := db.createConnection(ctx, hook.id, otf.ConnectOptions{

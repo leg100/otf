@@ -10,6 +10,9 @@ import (
 )
 
 type (
+	// namespaced for disambiguation from other services
+	ConfigurationVersionService = Service
+
 	Service interface {
 		CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 		// CloneConfigurationVersion creates a new configuration version using the
@@ -42,6 +45,7 @@ type (
 		// Download retrieves the config tarball for the given config version ID.
 		download(ctx context.Context, id string) ([]byte, error)
 	}
+
 	service struct {
 		logr.Logger
 
@@ -52,6 +56,7 @@ type (
 
 		*api
 	}
+
 	Options struct {
 		logr.Logger
 

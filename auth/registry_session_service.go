@@ -17,11 +17,11 @@ type registrySessionService interface {
 
 // Registry session services
 
-func (a *Service) CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error) {
+func (a *service2) CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error) {
 	return a.createRegistrySession(ctx, organization)
 }
 
-func (a *Service) GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error) {
+func (a *service2) GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error) {
 	session, err := a.db.getRegistrySession(ctx, token)
 	if err != nil {
 		a.Error(err, "retrieving registry session", "token", "*****")
@@ -33,7 +33,7 @@ func (a *Service) GetRegistrySession(ctx context.Context, token string) (*Regist
 	return session, nil
 }
 
-func (a *Service) createRegistrySession(ctx context.Context, organization string) (*RegistrySession, error) {
+func (a *service2) createRegistrySession(ctx context.Context, organization string) (*RegistrySession, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateRegistrySessionAction, organization)
 	if err != nil {
 		return nil, err

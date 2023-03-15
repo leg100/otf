@@ -223,7 +223,7 @@ func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.svc.lock(r.Context(), id, nil)
+	ws, err := s.svc.LockWorkspace(r.Context(), id, nil)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
@@ -252,7 +252,7 @@ func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.svc.unlock(r.Context(), id, opts.Force)
+	ws, err := s.svc.UnlockWorkspace(r.Context(), id, nil, opts.Force)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return

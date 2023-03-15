@@ -18,7 +18,7 @@ type fakeWeb struct {
 	otf.Renderer
 }
 
-func newFakeWeb(t *testing.T, svc service) *webHandlers {
+func newFakeWeb(t *testing.T, svc AuthService) *webHandlers {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 	return &webHandlers{

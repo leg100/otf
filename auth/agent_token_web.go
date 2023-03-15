@@ -29,7 +29,7 @@ func (h *webHandlers) newAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	var opts otf.CreateAgentTokenOptions
+	var opts CreateAgentTokenOptions
 	if err := decode.All(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -69,7 +69,7 @@ func (app *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) 
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items        []*otf.AgentToken
+		Items        []*AgentToken
 		Organization string
 	}{
 		Pagination:   &otf.Pagination{},

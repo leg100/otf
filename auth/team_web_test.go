@@ -15,11 +15,11 @@ import (
 // up first.
 func TestTeam_GetHandler(t *testing.T) {
 	owners := newTestOwners(t, "acme-org")
-	owner := otf.NewUser(uuid.NewString(), otf.WithTeams(owners))
+	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	app := newFakeWeb(t, &fakeService{
 		teamService: &fakeTeamApp{
 			team:    owners,
-			members: []*otf.User{owner},
+			members: []*User{owner},
 		},
 	})
 

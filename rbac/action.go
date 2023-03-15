@@ -9,6 +9,7 @@ const (
 	CreateOrganizationAction
 	UpdateOrganizationAction
 	GetOrganizationAction
+	ListOrganizationsAction
 	GetEntitlementsAction
 	DeleteOrganizationAction
 

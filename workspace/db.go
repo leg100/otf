@@ -95,10 +95,10 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.LockedState = nil
 	} else if r.UserLock != nil {
 		ws.LockedState = UserLock{
-			id: r.UserLock.UserID.String, username: r.UserLock.Username.String,
+			ID: r.UserLock.UserID.String, Username: r.UserLock.Username.String,
 		}
 	} else if r.RunLock != nil {
-		ws.LockedState = RunLock{id: r.RunLock.RunID.String}
+		ws.LockedState = RunLock{ID: r.RunLock.RunID.String}
 	} else {
 		return nil, fmt.Errorf("workspace cannot be locked by both a run and a user")
 	}

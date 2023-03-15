@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -35,8 +34,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("team_get.tmpl", w, r, struct {
-		*otf.Team
-		Members []*otf.User
+		*Team
+		Members []*User
 	}{
 		Team:    team,
 		Members: members,
@@ -46,7 +45,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		TeamID string `schema:"team_id,required"`
-		otf.UpdateTeamOptions
+		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

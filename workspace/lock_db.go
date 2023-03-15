@@ -31,10 +31,10 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		}
 		switch state := ws.LockedState.(type) {
 		case RunLock:
-			params.RunID = pgtype.Text{String: state.id, Status: pgtype.Present}
+			params.RunID = pgtype.Text{String: state.ID, Status: pgtype.Present}
 			params.UserID = pgtype.Text{Status: pgtype.Null}
 		case UserLock:
-			params.UserID = pgtype.Text{String: state.id, Status: pgtype.Present}
+			params.UserID = pgtype.Text{String: state.ID, Status: pgtype.Present}
 			params.RunID = pgtype.Text{Status: pgtype.Null}
 		case nil:
 			params.RunID = pgtype.Text{Status: pgtype.Null}

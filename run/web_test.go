@@ -148,7 +148,7 @@ func (f *fakeWebServices) GetWorkspace(context.Context, string) (*workspace.Work
 	return f.ws, nil
 }
 
-func (f *fakeWebServices) list(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	return &RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
