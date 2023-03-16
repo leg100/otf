@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -12,15 +13,19 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/repo"
+	"github.com/leg100/otf/vcsprovider"
 )
 
 type (
-	WorkspaceService = Service
+	WorkspaceService   = Service
+	VCSProviderService vcsprovider.Service
 
 	Service interface {
+		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error)
+		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string, r *http.Request) (*jsonapi.Workspace, error)
 		ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 		//
@@ -32,14 +37,10 @@ type (
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
 		create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
-		get(ctx context.Context, workspaceID string) (*Workspace, error)
-		getByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		getRun(ctx context.Context, runID string) (run, error)
-		list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 		delete(ctx context.Context, workspaceID string) (*Workspace, error)
 
-		connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error)
+		connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*repo.Connection, error)
 		disconnect(ctx context.Context, workspaceID string) error
 
 		LockService
@@ -55,7 +56,9 @@ type (
 		otf.Authorizer // workspace authorizer
 
 		db   *pgdb
-		repo otf.RepoService
+		repo repo.RepoService
+
+		*jsonapiMarshaler
 
 		api *api
 		web *webHandlers
@@ -67,7 +70,8 @@ type (
 		otf.DB
 		otf.Publisher
 		otf.Renderer
-		otf.RepoService
+		organization.OrganizationService
+		repo.RepoService
 		logr.Logger
 	}
 )
@@ -83,9 +87,15 @@ func NewService(opts Options) *service {
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.site = &otf.SiteAuthorizer{opts.Logger}
 
+	svc.jsonapiMarshaler = &jsonapiMarshaler{
+		Service:            opts.OrganizationService,
+		permissionsService: &svc,
+	}
+
 	svc.api = &api{
-		svc:             &svc,
-		tokenMiddleware: opts.TokenMiddleware,
+		jsonapiMarshaler: svc.jsonapiMarshaler,
+		svc:              &svc,
+		tokenMiddleware:  opts.TokenMiddleware,
 	}
 	svc.web = &webHandlers{
 		Renderer:          opts.Renderer,
@@ -109,9 +119,9 @@ func serviceWithDB(parent *service, db *pgdb) *service {
 	return &child
 }
 
-func (a *service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
-	a.web.addHandlers(r)
+func (s *service) AddHandlers(r *mux.Router) {
+	s.api.addHandlers(r)
+	s.web.addHandlers(r)
 }
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
@@ -119,19 +129,73 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptio
 }
 
 func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
-	return nil, nil
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err := s.db.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		s.Error(err, "retrieving workspace", "subject", subject, "workspace", workspaceID)
+		return nil, err
+	}
+
+	s.V(2).Info("retrieved workspace", "subject", subject, "workspace", workspaceID)
+
+	return ws, nil
 }
 
 func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
-	return nil, nil
+	ws, err := s.db.GetWorkspaceByName(ctx, organization, workspace)
+	if err != nil {
+		s.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
+		return nil, err
+	}
+
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.V(2).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
+
+	return ws, nil
 }
 
-func (s *service) GetWorkspaceJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.Workspace, error) {
-	return nil, nil
+func (s *service) GetWorkspaceJSONAPI(ctx context.Context, workspaceID string, r *http.Request) (*jsonapi.Workspace, error) {
+	ws, err := s.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return s.jsonapiMarshaler.toWorkspace(ws, r)
 }
 
 func (s *service) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
-	return nil, nil
+	if opts.Organization == nil {
+		// subject needs perms on site to list workspaces across site
+		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// check if subject has perms to list workspaces in organization
+		_, err := s.organization.CanAccess(ctx, rbac.ListWorkspacesAction, *opts.Organization)
+		if err == otf.ErrAccessNotPermitted {
+			// user does not have org-wide perms; fallback to listing workspaces
+			// for which they have workspace-level perms.
+			subject, err := otf.SubjectFromContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if user, ok := subject.(*auth.User); ok {
+				return s.db.ListWorkspacesByUserID(ctx, user.ID, *opts.Organization, opts.ListOptions)
+			}
+		} else if err != nil {
+			return nil, err
+		}
+	}
+
+	return s.db.ListWorkspaces(ctx, opts)
 }
 
 func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error) {
@@ -206,14 +270,14 @@ func (a *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 	return ws, nil
 }
 
-func (a *service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error) {
+func (a *service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*repo.Connection, error) {
 	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := a.repo.Connect(ctx, otf.ConnectOptions{
-		ConnectionType: otf.WorkspaceConnection,
+	conn, err := a.repo.Connect(ctx, repo.ConnectOptions{
+		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.VCSProviderID,
 		RepoPath:       opts.RepoPath,
@@ -234,8 +298,8 @@ func (a *service) disconnect(ctx context.Context, workspaceID string) error {
 		return err
 	}
 
-	err = a.repo.Disconnect(ctx, otf.DisconnectOptions{
-		ConnectionType: otf.WorkspaceConnection,
+	err = a.repo.Disconnect(ctx, repo.DisconnectOptions{
+		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
 	// ignore warnings; the repo is still disconnected successfully
@@ -247,68 +311,6 @@ func (a *service) disconnect(ctx context.Context, workspaceID string) error {
 	a.V(0).Info("disconnected workspace", "workspace", workspaceID, "subject", subject)
 
 	return nil
-}
-
-func (a *service) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
-	if opts.Organization == nil {
-		// subject needs perms on site to list workspaces across site
-		_, err := a.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// check if subject has perms to list workspaces in organization
-		_, err := a.organization.CanAccess(ctx, rbac.ListWorkspacesAction, *opts.Organization)
-		if err == otf.ErrAccessNotPermitted {
-			// user does not have org-wide perms; fallback to listing workspaces
-			// for which they have workspace-level perms.
-			subject, err := otf.SubjectFromContext(ctx)
-			if err != nil {
-				return nil, err
-			}
-			if user, ok := subject.(*auth.User); ok {
-				return a.db.ListWorkspacesByUserID(ctx, user.ID, *opts.Organization, opts.ListOptions)
-			}
-		} else if err != nil {
-			return nil, err
-		}
-	}
-
-	return a.db.ListWorkspaces(ctx, opts)
-}
-
-func (a *service) get(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := a.db.GetWorkspace(ctx, workspaceID)
-	if err != nil {
-		a.Error(err, "retrieving workspace", "subject", subject, "workspace", workspaceID)
-		return nil, err
-	}
-
-	a.V(2).Info("retrieved workspace", "subject", subject, "workspace", workspaceID)
-
-	return ws, nil
-}
-
-func (a *service) getByName(ctx context.Context, organization, workspace string) (*Workspace, error) {
-	ws, err := a.db.GetWorkspaceByName(ctx, organization, workspace)
-	if err != nil {
-		a.Error(err, "retrieving workspace", "organization", organization, "workspace", workspace)
-		return nil, err
-	}
-
-	subject, err := a.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	a.V(2).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
-
-	return ws, nil
 }
 
 // getRun retrieves a workspace run.

@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/logs"
+	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/repo"
@@ -229,10 +230,23 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		Logger:        logger,
 		RunAuthorizer: runService,
 		Cache:         cache,
+		Hub:           hub,
 		DB:            db,
 		Verifier:      signer,
 	})
 	handlers = append(handlers, logsService)
+
+	moduleService := module.NewService(module.Options{
+		Logger:             logger,
+		CloudService:       cloudService,
+		DB:                 db,
+		HostnameService:    hostnameService,
+		VCSProviderService: vcsProviderService,
+		Signer:             signer,
+		Renderer:           renderer,
+		RepoService:        repoService,
+	})
+	handlers = append(handlers, moduleService)
 
 	runService = run.NewService(run.Options{
 		Logger:                      logger,
@@ -350,9 +364,9 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 			ConfigurationVersionService: configService,
 			WorkspaceService:            workspaceService,
 			VCSProviderService:          vcsProviderService,
-			//WatchService: watcher
-			DB:       db,
-			Hostname: hostnameService.Hostname(),
+			HostnameService:             hostnameService,
+			WatchService:                watchService,
+			DB:                          db,
 		})
 		if err != nil {
 			return fmt.Errorf("reporter terminated: %w", err)

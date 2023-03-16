@@ -12,16 +12,18 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type api struct {
-	svc Service
+type (
+	api struct {
+		svc Service
 
-	*JSONAPIMarshaler
-}
+		*JSONAPIMarshaler
+	}
 
-// planFileOptions are options for the plan file API
-type planFileOptions struct {
-	Format PlanFormat `schema:"format,required"`
-}
+	// planFileOptions are options for the plan file API
+	planFileOptions struct {
+		Format PlanFormat `schema:"format,required"`
+	}
+)
 
 func (h *api) addHandlers(r *mux.Router) {
 	// Run routes

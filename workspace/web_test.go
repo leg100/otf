@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -369,18 +370,18 @@ func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateWorkspac
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) list(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
 	return &WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),
 	}, nil
 }
 
-func (f *fakeWebService) get(context.Context, string) (*Workspace, error) {
+func (f *fakeWebService) GetWorkspace(context.Context, string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) getByName(context.Context, string, string) (*Workspace, error) {
+func (f *fakeWebService) GetWorkspaceByName(context.Context, string, string) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
@@ -400,7 +401,7 @@ func (f *fakeWebService) UnlockWorkspace(context.Context, string, *string, bool)
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) connect(context.Context, string, ConnectWorkspaceOptions) (*otf.Connection, error) {
+func (f *fakeWebService) connect(context.Context, string, ConnectWorkspaceOptions) (*repo.Connection, error) {
 	return nil, nil
 }
 

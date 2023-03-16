@@ -49,7 +49,6 @@ type Application interface {
 	// TokenService
 	cloud.Service
 	HostnameService
-	RepoService
 	PubSubService
 }
 

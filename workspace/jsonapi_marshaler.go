@@ -10,14 +10,14 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
+// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
-type JSONAPIMarshaler struct {
+type jsonapiMarshaler struct {
 	organization.Service
-	WorkspacePermissionService
+	permissionsService
 }
 
-func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
+func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -92,10 +92,10 @@ func (m *JSONAPIMarshaler) toJSONAPI(ws *Workspace, r *http.Request) (*jsonapi.W
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toJSONAPIList(list *WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
+func (m *jsonapiMarshaler) toList(list *WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
 	var items []*jsonapi.Workspace
 	for _, ws := range list.Items {
-		item, err := m.toJSONAPI(ws, r)
+		item, err := m.toWorkspace(ws, r)
 		if err != nil {
 			return nil, err
 		}

@@ -49,7 +49,7 @@ func NewService(opts Options) *Service {
 }
 
 // Connect an OTF resource to a VCS repo.
-func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Connection, error) {
+func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 
 		return tx.createConnection(ctx, hook.id, opts)
 	})
-	return &otf.Connection{
+	return &Connection{
 		Repo:          opts.RepoPath,
 		VCSProviderID: opts.VCSProviderID,
 	}, nil
@@ -107,7 +107,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 //
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
 // fatal and the hook is still deleted from the database.
-func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) error {
+func (s *Service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
 	// separately capture any error resulting from attempting to delete the
 	// webhook from the VCS repo
 	var repoErr error

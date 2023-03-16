@@ -68,17 +68,17 @@ func (db *pgdb) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID str
 	return nil
 }
 
-func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf.ConnectOptions) error {
+func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts ConnectOptions) error {
 	params := pggen.InsertRepoConnectionParams{
 		WebhookID:     sql.UUID(hookID),
 		VCSProviderID: sql.String(opts.VCSProviderID),
 	}
 
 	switch opts.ConnectionType {
-	case otf.WorkspaceConnection:
+	case WorkspaceConnection:
 		params.WorkspaceID = sql.String(opts.ResourceID)
 		params.ModuleID = pgtype.Text{Status: pgtype.Null}
-	case otf.ModuleConnection:
+	case ModuleConnection:
 		params.ModuleID = sql.String(opts.ResourceID)
 		params.WorkspaceID = pgtype.Text{Status: pgtype.Null}
 	default:
@@ -91,15 +91,15 @@ func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf
 	return nil
 }
 
-func (db *pgdb) deleteConnection(ctx context.Context, opts otf.DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
+func (db *pgdb) deleteConnection(ctx context.Context, opts DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
 	switch opts.ConnectionType {
-	case otf.WorkspaceConnection:
+	case WorkspaceConnection:
 		result, err := db.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
 		if err != nil {
 			return uuid.UUID{}, "", sql.Error(err)
 		}
 		return result.WebhookID.Bytes, result.VCSProviderID.String, nil
-	case otf.ModuleConnection:
+	case ModuleConnection:
 		result, err := db.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
 		if err != nil {
 			return uuid.UUID{}, "", sql.Error(err)

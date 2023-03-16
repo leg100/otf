@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/repo"
 )
 
 const (
@@ -37,8 +38,8 @@ type (
 		Provider     string
 		Organization string // Module belongs to an organization
 		Status       ModuleStatus
-		Versions     []ModuleVersion // versions sorted in descending order
-		Connection   *otf.Connection // optional vcs repo connection
+		Versions     []ModuleVersion  // versions sorted in descending order
+		Connection   *repo.Connection // optional vcs repo connection
 	}
 
 	ModuleStatus string
@@ -70,14 +71,14 @@ type (
 	}
 
 	PublishModuleOptions struct {
-		Repo          repo
+		Repo          moduleRepo
 		VCSProviderID string
 	}
 	PublishModuleVersionOptions struct {
 		ModuleID string
 		Version  string
 		Ref      string
-		Repo     repo
+		Repo     moduleRepo
 		Client   cloud.Client
 	}
 	CreateModuleOptions struct {

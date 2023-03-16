@@ -26,19 +26,18 @@ type (
 		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
-
-		hostname string
+		otf.HostnameService
 	}
 
 	ReporterOptions struct {
 		ConfigurationVersionService configversion.Service
 		WorkspaceService            workspace.Service
 		VCSProviderService          VCSProviderService
-		Hostname                    string
 
 		logr.Logger
 		otf.DB
 		otf.WatchService
+		otf.HostnameService
 	}
 )
 
@@ -49,7 +48,7 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 	rptr := &reporter{
 		Logger:                      opts.Logger.WithValues("component", "reporter"),
 		WatchService:                opts.WatchService,
-		hostname:                    opts.Hostname,
+		HostnameService:             opts.HostnameService,
 		ConfigurationVersionService: opts.ConfigurationVersionService,
 		WorkspaceService:            opts.WorkspaceService,
 	}
@@ -166,7 +165,7 @@ func (r *reporter) handleRun(ctx context.Context, run *Run) error {
 		Description: description,
 		TargetURL: (&url.URL{
 			Scheme: "https",
-			Host:   r.hostname,
+			Host:   r.Hostname(),
 			Path:   paths.Run(run.ID),
 		}).String(),
 	})

@@ -77,7 +77,7 @@ func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error
 		// strip off v prefix if it has one
 		Version: strings.TrimPrefix(tagEvent.Tag, "v"),
 		Ref:     tagEvent.CommitSHA,
-		Repo:    repo(module.Connection.Repo),
+		Repo:    moduleRepo(module.Connection.Repo),
 		Client:  client,
 	})
 }

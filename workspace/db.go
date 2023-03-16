@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -81,7 +82,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	}
 
 	if r.WorkspaceConnection != nil {
-		ws.Connection = &otf.Connection{
+		ws.Connection = &repo.Connection{
 			VCSProviderID: r.WorkspaceConnection.VCSProviderID.String,
 			Repo:          r.Webhook.Identifier.String,
 		}

@@ -50,10 +50,12 @@ func Start(ctx context.Context, opts Options) error {
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
 
 	sched := &scheduler{
-		Logger:       opts.Logger.WithValues("component", "scheduler"),
-		WatchService: opts.WatchService,
-		queues:       make(map[string]eventHandler),
-		queueFactory: queueMaker{},
+		Logger:           opts.Logger.WithValues("component", "scheduler"),
+		WorkspaceService: opts.WorkspaceService,
+		RunService:       opts.RunService,
+		WatchService:     opts.WatchService,
+		queues:           make(map[string]eventHandler),
+		queueFactory:     queueMaker{},
 	}
 	sched.V(2).Info("started")
 

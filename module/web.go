@@ -188,7 +188,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	var filtered []string
 	for _, res := range results {
-		_, _, err := repo(res).Split()
+		_, _, err := moduleRepo(res).Split()
 		if err == ErrInvalidModuleRepo {
 			continue // skip repo
 		} else if err != nil {
@@ -244,7 +244,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Repo          repo   `schema:"identifier,required"`
+		Repo          moduleRepo   `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -10,24 +10,26 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-type api struct {
-	*JSONAPIMarshaler
+type (
+	api struct {
+		svc             Service
+		tokenMiddleware mux.MiddlewareFunc
 
-	svc             Service
-	tokenMiddleware mux.MiddlewareFunc
-}
+		*jsonapiMarshaler
+	}
 
-// byName are parameters used when looking up a workspace by
-// name
-type byName struct {
-	Name         string `schema:"workspace_name,required"`
-	Organization string `schema:"organization_name,required"`
-}
+	// byName are parameters used when looking up a workspace by
+	// name
+	byName struct {
+		Name         string `schema:"workspace_name,required"`
+		Organization string `schema:"organization_name,required"`
+	}
 
-// unlockOptions are POST options for unlocking a workspace via the API
-type unlockOptions struct {
-	Force bool `json:"force"`
-}
+	// unlockOptions are POST options for unlocking a workspace via the API
+	unlockOptions struct {
+		Force bool `json:"force"`
+	}
+)
 
 func (a *api) addHandlers(r *mux.Router) {
 	r.Use(a.tokenMiddleware) // require bearer token
@@ -107,12 +109,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jworkspace, err := a.toJSONAPI(ws, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jworkspace, jsonapi.WithCode(http.StatusCreated))
+	a.writeResponse(w, r, ws, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (a *api) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -122,18 +119,13 @@ func (a *api) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.svc.get(r.Context(), id)
+	ws, err := a.svc.GetWorkspace(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	jworkspace, err := a.toJSONAPI(ws, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jworkspace)
+	a.writeResponse(w, r, ws)
 }
 
 func (a *api) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
@@ -143,21 +135,16 @@ func (a *api) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := a.svc.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	jworkspace, err := a.toJSONAPI(ws, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jworkspace)
+	a.writeResponse(w, r, ws)
 }
 
-func (s *api) list(w http.ResponseWriter, r *http.Request) {
+func (a *api) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization    string `schema:"organization_name,required"`
 		otf.ListOptions        // Pagination
@@ -167,7 +154,7 @@ func (s *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := s.svc.list(r.Context(), WorkspaceListOptions{
+	wsl, err := a.svc.ListWorkspaces(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -176,12 +163,7 @@ func (s *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jlist, err := s.toJSONAPIList(wsl, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jlist)
+	a.writeResponse(w, r, wsl)
 }
 
 // UpdateWorkspace updates a workspace using its ID.
@@ -207,7 +189,7 @@ func (s *api) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.svc.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := s.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -232,12 +214,7 @@ func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jworkspace, err := s.toJSONAPI(ws, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jworkspace)
+	s.writeResponse(w, r, ws)
 }
 
 func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -261,12 +238,7 @@ func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jworkspace, err := s.toJSONAPI(ws, r)
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-	jsonapi.WriteResponse(w, r, jworkspace)
+	s.writeResponse(w, r, ws)
 }
 
 func (s *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -291,7 +263,7 @@ func (s *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.svc.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := s.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -335,10 +307,23 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	jworkspace, err := s.toJSONAPI(ws, r)
+	s.writeResponse(w, r, ws)
+}
+
+// writeResponse encodes v as json:api and writes it to the body of the http response.
+func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+	var payload any
+	var err error
+
+	switch v := v.(type) {
+	case *WorkspaceList:
+		payload, err = s.toList(v, r)
+	case *Workspace:
+		payload, err = s.toWorkspace(v, r)
+	}
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, jworkspace)
+	jsonapi.WriteResponse(w, r, payload, opts...)
 }

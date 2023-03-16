@@ -8,8 +8,8 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
-	"github.com/leg100/otf/vcsprovider"
 )
 
 const (
@@ -48,7 +48,7 @@ type (
 		WorkingDirectory           string
 		Organization               string
 		LatestRunID                *string
-		Connection                 *otf.Connection
+		Connection                 *repo.Connection
 		Permissions                []otf.WorkspacePermission
 
 		Lock
@@ -117,7 +117,7 @@ type (
 	}
 
 	WorkspaceConnectionService interface {
-		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*otf.Connection, error)
+		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*repo.Connection, error)
 		DisconnectWorkspace(ctx context.Context, workspaceID string) error
 	}
 
@@ -133,26 +133,12 @@ type (
 		UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 	}
 
-	// WorkspaceDB is a persistence store for workspaces.
-	WorkspaceDB interface {
-		GetWorkspace(ctx context.Context, workspaceID string) (Workspace, error)
-		GetWorkspaceByName(ctx context.Context, organization, workspace string) (Workspace, error)
-		GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
-		GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
-		GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
-		GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
-
-		GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error)
-	}
-
 	// WorkspaceQualifiedName is the workspace's fully qualified name including the
 	// name of its organization
 	WorkspaceQualifiedName struct {
 		Organization string
 		Name         string
 	}
-
-	VCSProviderService vcsprovider.Service
 )
 
 func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {

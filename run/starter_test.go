@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +32,7 @@ func TestStartRun(t *testing.T) {
 	})
 
 	t.Run("connected to repo", func(t *testing.T) {
-		ws := &workspace.Workspace{Connection: &otf.Connection{}}
+		ws := &workspace.Workspace{Connection: &repo.Connection{}}
 		cv := &configversion.ConfigurationVersion{}
 		provider := &vcsprovider.VCSProvider{}
 		want := &Run{}

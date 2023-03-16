@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ func TestListModules(t *testing.T) {
 
 func TestGetModule(t *testing.T) {
 	mod := Module{
-		Connection: &otf.Connection{},
+		Connection: &repo.Connection{},
 		Status:     ModuleStatusSetupComplete,
 		Versions:   []ModuleVersion{{Version: "1.0.0"}},
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/surl"
@@ -45,7 +46,7 @@ type (
 		*Publisher
 
 		db       *pgdb
-		repo     otf.RepoService
+		repo     repo.RepoService
 		hostname string
 
 		organization otf.Authorizer
@@ -55,15 +56,16 @@ type (
 	}
 
 	Options struct {
+		logr.Logger
+
 		CloudService cloud.Service
-		Hostname     string
 
 		otf.DB
+		otf.HostnameService
 		vcsprovider.VCSProviderService
 		*surl.Signer
 		otf.Renderer
-		otf.RepoService
-		logr.Logger
+		repo.RepoService
 	}
 )
 
@@ -138,8 +140,8 @@ func (s *Service) publishModule(ctx context.Context, organization string, opts P
 		if err := tx.CreateModule(ctx, mod); err != nil {
 			return err
 		}
-		connection, err := s.repo.Connect(ctx, otf.ConnectOptions{
-			ConnectionType: otf.ModuleConnection,
+		connection, err := s.repo.Connect(ctx, repo.ConnectOptions{
+			ConnectionType: repo.ModuleConnection,
 			ResourceID:     mod.ID,
 			VCSProviderID:  opts.VCSProviderID,
 			RepoPath:       string(opts.Repo),
@@ -308,8 +310,8 @@ func (a *Service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 	err = a.db.tx(ctx, func(tx *pgdb) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
-			err := a.repo.Disconnect(ctx, otf.DisconnectOptions{
-				ConnectionType: otf.ModuleConnection,
+			err := a.repo.Disconnect(ctx, repo.DisconnectOptions{
+				ConnectionType: repo.ModuleConnection,
 				ResourceID:     module.ID,
 				Tx:             tx,
 			})

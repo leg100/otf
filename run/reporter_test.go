@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ func TestReporter_HandleRun(t *testing.T) {
 			run:  &Run{ID: "run-123", Status: otf.RunPending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
-				Connection: &otf.Connection{},
+				Connection: &repo.Connection{},
 			},
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: &configversion.IngressAttributes{
@@ -52,7 +53,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCSProviderService:          &fakeReporterVCSProviderService{got: got},
-				hostname:                    "otf-host.org",
+				HostnameService:             fakeHostnameService{hostname: "otf-host.org"},
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -102,3 +103,9 @@ func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts cloud.SetS
 	f.got <- opts
 	return nil
 }
+
+type fakeHostnameService struct {
+	hostname string
+}
+
+func (f fakeHostnameService) Hostname() string { return f.hostname }

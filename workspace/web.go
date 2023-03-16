@@ -58,7 +58,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.svc.list(r.Context(), WorkspaceListOptions{
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), WorkspaceListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -120,7 +120,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.get(r.Context(), id)
+	ws, err := h.svc.GetWorkspace(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -156,7 +156,7 @@ func (h *webHandlers) getWorkspaceByName(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	ws, err := h.svc.getByName(r.Context(), params.Organization, params.Name)
+	ws, err := h.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -172,7 +172,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := h.svc.get(r.Context(), workspaceID)
+	workspace, err := h.svc.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -304,7 +304,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	ws, err := h.svc.get(r.Context(), workspaceID)
+	ws, err := h.svc.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -336,7 +336,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ws, err := h.svc.get(r.Context(), params.WorkspaceID)
+	ws, err := h.svc.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

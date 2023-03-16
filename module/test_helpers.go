@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/repo"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,7 +46,7 @@ func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
 
 func WithModuleRepo() NewTestModuleOption {
 	return func(mod *Module) {
-		mod.Connection = &otf.Connection{}
+		mod.Connection = &repo.Connection{}
 	}
 }
 

@@ -74,7 +74,7 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "workspace":
-				workspace, err = m.GetWorkspaceJSONAPI(r.Context(), run.WorkspaceID)
+				workspace, err = m.GetWorkspaceJSONAPI(r.Context(), run.WorkspaceID, r)
 				if err != nil {
 					return nil, err
 				}
