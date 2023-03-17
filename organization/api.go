@@ -11,7 +11,6 @@ import (
 
 type api struct {
 	svc             Service
-	tokenMiddleware mux.MiddlewareFunc
 }
 
 // Implements TFC state versions API:
@@ -19,7 +18,6 @@ type api struct {
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(h.tokenMiddleware) // require bearer token
 
 	r.HandleFunc("/organizations", h.ListOrganizations)
 	r.HandleFunc("/organizations", h.CreateOrganization)

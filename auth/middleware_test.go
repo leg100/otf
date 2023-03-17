@@ -63,7 +63,7 @@ func TestMiddleware_AuthenticateToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest("GET", "/", nil)
+			r := httptest.NewRequest("GET", "/api/v2/runs/run-123", nil)
 			if tt.token != nil {
 				r.Header.Add("Authorization", "Bearer "+*tt.token)
 			}
@@ -73,7 +73,7 @@ func TestMiddleware_AuthenticateToken(t *testing.T) {
 	}
 }
 
-func Test_AuthenticateUser(t *testing.T) {
+func Test_AuthenticateSession(t *testing.T) {
 	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// implicitly respond with 200 OK
 	})
@@ -83,7 +83,7 @@ func Test_AuthenticateUser(t *testing.T) {
 
 	t.Run("with session", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest("GET", "/", nil)
+		r := httptest.NewRequest("GET", "/app/organizations", nil)
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "session.token"})
 		mw(upstream).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -91,7 +91,7 @@ func Test_AuthenticateUser(t *testing.T) {
 
 	t.Run("without session", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest("GET", "/", nil)
+		r := httptest.NewRequest("GET", "/app/organizations", nil)
 		// deliberately omit session cookie
 		mw(upstream).ServeHTTP(w, r)
 		assert.Equal(t, 302, w.Code)

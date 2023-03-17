@@ -13,7 +13,6 @@ import (
 
 type api struct {
 	svc             Service
-	tokenMiddleware mux.MiddlewareFunc
 }
 
 // Implements TFC workspace variables API:
@@ -21,7 +20,6 @@ type api struct {
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables#update-variables
 func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(h.tokenMiddleware) // require bearer token
 
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.create).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.list).Methods("GET")

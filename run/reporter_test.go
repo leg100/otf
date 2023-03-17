@@ -42,7 +42,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				Ref:       "abc123",
 				Repo:      "leg100/otf",
 				Status:    cloud.VCSPendingStatus,
-				TargetURL: "https://otf-host.org/runs/run-123",
+				TargetURL: "https://otf-host.org/app/runs/run-123",
 			},
 		},
 	}

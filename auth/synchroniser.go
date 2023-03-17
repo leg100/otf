@@ -70,9 +70,9 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	// Create team for each cloud team
 	var teams []*Team
 	for _, want := range from.Teams {
-		got, err := s.getTeam(ctx, want.Organization, want.Name)
+		got, err := s.GetTeam(ctx, want.Organization, want.Name)
 		if err == otf.ErrResourceNotFound {
-			got, err = s.createTeam(ctx, NewTeamOptions{
+			got, err = s.CreateTeam(ctx, NewTeamOptions{
 				Name:         want.Name,
 				Organization: want.Organization,
 			})
@@ -86,9 +86,9 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	}
 
 	// And make them an owner of their personal org
-	owners, err := s.getTeam(ctx, personal.Name, "owners")
+	owners, err := s.GetTeam(ctx, personal.Name, "owners")
 	if err == otf.ErrResourceNotFound {
-		owners, err = s.createTeam(ctx, NewTeamOptions{
+		owners, err = s.CreateTeam(ctx, NewTeamOptions{
 			Name:         "owners",
 			Organization: personal.Name,
 		})

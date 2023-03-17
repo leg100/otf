@@ -58,7 +58,6 @@ func NewService(opts Options) *service {
 	svc.api = &api{
 		Verifier:        opts.Verifier,
 		svc:             &svc,
-		tokenMiddleware: opts.TokenMiddleware,
 	}
 	svc.web = &webHandlers{
 		Logger: opts.Logger,

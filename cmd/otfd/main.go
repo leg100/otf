@@ -171,26 +171,34 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	orgService := organization.NewService(organization.Options{
 		Logger:    logger,
 		DB:        db,
-		Publisher: hub,
 		Renderer:  renderer,
+		Publisher: hub,
 	})
 	handlers = append(handlers, orgService)
 
 	authService, err := auth.NewService(ctx, auth.Options{
-		Configs:         d.OAuthConfigs,
-		SiteToken:       d.siteToken,
-		HostnameService: hostnameService,
+		Logger:              logger,
+		DB:                  db,
+		Renderer:            renderer,
+		Configs:             d.OAuthConfigs,
+		SiteToken:           d.siteToken,
+		HostnameService:     hostnameService,
+		OrganizationService: orgService,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up auth service: %w", err)
 	}
 	handlers = append(handlers, authService)
 
+	// configure http server to use authentication middleware
+	d.Middleware = append(d.Middleware, authService.TokenMiddleware)
+	d.Middleware = append(d.Middleware, authService.SessionMiddleware)
+
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:   logger,
-		Service:  cloudService,
 		DB:       db,
 		Renderer: renderer,
+		Service:  cloudService,
 	})
 	handlers = append(handlers, vcsProviderService)
 
@@ -204,86 +212,81 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
-		Logger:            logger,
-		TokenMiddleware:   authService.TokenMiddleware,
-		SessionMiddleware: authService.SessionMiddleware,
-		DB:                db,
-		Publisher:         hub,
-		Renderer:          renderer,
-		RepoService:       repoService,
+		Logger:      logger,
+		DB:          db,
+		Publisher:   hub,
+		Renderer:    renderer,
+		RepoService: repoService,
 	})
 	handlers = append(handlers, workspaceService)
 
 	configService := configversion.NewService(configversion.Options{
 		Logger:              logger,
+		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
-		DB:                  db,
 		Signer:              signer,
 		MaxUploadSize:       d.maxConfigSize,
 	})
 	handlers = append(handlers, configService)
 
-	var runService run.Service
+	runService := run.NewService(run.Options{
+		Logger:                      logger,
+		DB:                          db,
+		Renderer:                    renderer,
+		WorkspaceAuthorizer:         workspaceService,
+		WorkspaceService:            workspaceService,
+		ConfigurationVersionService: configService,
+		Publisher:                   hub,
+		Cache:                       cache,
+		Signer:                      signer,
+	})
+	handlers = append(handlers, runService)
 
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
+		DB:            db,
 		RunAuthorizer: runService,
 		Cache:         cache,
 		Hub:           hub,
-		DB:            db,
 		Verifier:      signer,
 	})
 	handlers = append(handlers, logsService)
 
 	moduleService := module.NewService(module.Options{
 		Logger:             logger,
-		CloudService:       cloudService,
 		DB:                 db,
+		Renderer:           renderer,
+		CloudService:       cloudService,
 		HostnameService:    hostnameService,
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
-		Renderer:           renderer,
 		RepoService:        repoService,
 	})
 	handlers = append(handlers, moduleService)
 
-	runService = run.NewService(run.Options{
-		Logger:                      logger,
-		WorkspaceAuthorizer:         workspaceService,
-		WorkspaceService:            workspaceService,
-		LogsService:                 logsService,
-		ConfigurationVersionService: configService,
-		Publisher:                   hub,
-		Renderer:                    renderer,
-		Cache:                       cache,
-		DB:                          db,
-		Signer:                      signer,
-	})
-	handlers = append(handlers, runService)
-
 	watchService := watch.NewService(watch.Options{
 		Logger:              logger,
+		Renderer:            renderer,
 		WorkspaceAuthorizer: workspaceService,
 		Subscriber:          hub,
-		Renderer:            renderer,
 	})
 	handlers = append(handlers, watchService)
 
 	stateService := state.NewService(state.Options{
 		Logger:              logger,
-		WorkspaceAuthorizer: workspaceService,
 		DB:                  db,
+		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
 	})
 	handlers = append(handlers, stateService)
 
 	variableService := variable.NewService(variable.Options{
 		Logger:              logger,
-		WorkspaceAuthorizer: workspaceService,
 		DB:                  db,
-		WorkspaceService:    workspaceService,
 		Renderer:            renderer,
+		WorkspaceAuthorizer: workspaceService,
+		WorkspaceService:    workspaceService,
 	})
 	handlers = append(handlers, variableService)
 

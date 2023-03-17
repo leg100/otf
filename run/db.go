@@ -302,6 +302,14 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	return err
 }
 
+func (db *pgdb) getLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error) {
+	data, err := db.FindLogChunks(ctx, pggen.FindLogChunksParams{
+		RunID: sql.String(runID),
+		Phase: sql.String(string(phase)),
+	})
+	return data, sql.Error(err)
+}
+
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {

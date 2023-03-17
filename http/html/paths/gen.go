@@ -25,9 +25,8 @@ const (
 	// merely adds a prefix to all nested controllers but doesn't have any paths
 	// of its own
 	noPath
-
-	// site-wide prefix added to all routes
-	prefix = "/app"
+	// site-wide Prefix added to all routes
+	Prefix = "/app"
 )
 
 // action is a controller action
@@ -256,7 +255,7 @@ func (r controller) LowerCamel() string {
 func (r controller) FormatString(action action) string {
 	var b strings.Builder
 	if !r.noprefix {
-		b.WriteString(prefix)
+		b.WriteString(Prefix)
 	}
 	if r.controllerType == singlePath {
 		// single path controllers are just the paths themselves without

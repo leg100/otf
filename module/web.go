@@ -27,9 +27,8 @@ type (
 		otf.Renderer
 		vcsprovider.VCSProviderService
 
-		hostname          string
-		svc               service
-		sessionMiddleware mux.MiddlewareFunc
+		hostname string
+		svc      service
 	}
 
 	newModuleStep string
@@ -37,7 +36,6 @@ type (
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(h.sessionMiddleware) // require session
 
 	r.HandleFunc("/organizations/{organization_name}/modules", h.list)
 	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new)

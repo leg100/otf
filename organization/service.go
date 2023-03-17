@@ -44,8 +44,6 @@ type (
 		otf.Publisher
 		otf.Renderer
 		logr.Logger
-
-		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 	}
 )
 
@@ -55,7 +53,7 @@ func NewService(opts Options) *service {
 		Logger:     opts.Logger,
 		Publisher:  opts.Publisher,
 	}
-	svc.api = &api{&svc}
+	svc.api = &api{svc: &svc}
 	svc.db = newDB(opts.DB)
 	svc.site = &otf.SiteAuthorizer{opts.Logger}
 	svc.web = &web{opts.Renderer, &svc}

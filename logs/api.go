@@ -14,13 +14,11 @@ import (
 type api struct {
 	otf.Verifier // for verifying upload url
 
-	svc             Service
-	tokenMiddleware mux.MiddlewareFunc
+	svc Service
 }
 
 func (a *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(a.tokenMiddleware) // require bearer token
 
 	// client is typically an external agent
 	r.HandleFunc("/runs/{run_id}/logs/{phase}", a.putLogs).Methods("PUT")

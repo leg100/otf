@@ -7,7 +7,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 const (
@@ -21,7 +23,8 @@ type AuthenticateTokenService interface {
 	getUser(ctx context.Context, spec UserSpec) (*User, error)
 }
 
-// AuthenticateToken checks the request has a valid API token
+// AuthenticateToken verifies that all requests to /api/v2 endpoints possess
+// a valid bearer token.
 func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 	isValid := func(ctx context.Context, token string) (otf.Subject, error) {
 		switch {
@@ -37,6 +40,10 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !strings.HasPrefix(r.URL.Path, otfhttp.APIPrefixV2) {
+				next.ServeHTTP(w, r)
+				return
+			}
 			authHdr := r.Header.Get("Authorization")
 			if authHdr == "" {
 				http.Error(w, "missing token", http.StatusUnauthorized)
@@ -67,11 +74,16 @@ type AuthenticateSessionService interface {
 	getUser(context.Context, UserSpec) (*User, error)
 }
 
-// AuthenticateSession middleware checks incoming request possesses a valid session cookie,
-// attaching its user and the session to the context.
+// AuthenticateSession verifies that all requests to /app endpoints possess
+// a valid session cookie before attaching the corresponding user and session to
+// the context.
 func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
+				next.ServeHTTP(w, r)
+				return
+			}
 			cookie, err := r.Cookie(sessionCookie)
 			if err == http.ErrNoCookie {
 				sendUserToLoginPage(w, r)

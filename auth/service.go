@@ -36,7 +36,7 @@ type (
 		Configs   []*cloud.CloudOAuthConfig
 		SiteToken string
 
-		organization.Service
+		OrganizationService
 		otf.DB
 		otf.Renderer
 		otf.HostnameService

@@ -21,7 +21,7 @@ import (
 
 const (
 	ModuleV1Prefix = "/v1/modules"
-	apiPrefixV2    = "/api/v2"
+	APIPrefixV2    = "/api/v2"
 
 	// shutdownTimeout is the time given for outstanding requests to finish
 	// before shutdown.
@@ -49,10 +49,10 @@ var (
 	}{
 		ModulesV1:  ModuleV1Prefix,
 		MotdV1:     "/api/terraform/motd",
-		StateV2:    apiPrefixV2,
-		TfeV2:      apiPrefixV2,
-		TfeV21:     apiPrefixV2,
-		TfeV22:     apiPrefixV2,
+		StateV2:    APIPrefixV2,
+		TfeV2:      APIPrefixV2,
+		TfeV21:     APIPrefixV2,
+		TfeV22:     APIPrefixV2,
 		VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
 	})
 )
@@ -63,6 +63,8 @@ type ServerConfig struct {
 	CertFile, KeyFile    string
 	EnableRequestLogging bool
 	DevMode              bool
+
+	Middleware []mux.MiddlewareFunc
 }
 
 // Server is the http server for OTF
@@ -115,13 +117,20 @@ func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (
 		w.Write(discoveryPayload)
 	})
 
-	r.HandleFunc(path.Join(apiPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc(path.Join(APIPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
+	// Subrouter for service routes
+	svcRouter := r.NewRoute().Subrouter()
+
+	// Subject service routes to provided middleware, verifying tokens,
+	// sessions.
+	svcRouter.Use(s.Middleware...)
+
 	// Add handlers for each service
 	for _, h := range handlers {
-		h.AddHandlers(r)
+		h.AddHandlers(svcRouter)
 	}
 
 	// Toggle logging HTTP requests
@@ -136,7 +145,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (
 
 // APIRouter wraps the given router with a router suitable for API routes.
 func APIRouter(r *mux.Router) *mux.Router {
-	r = r.PathPrefix(apiPrefixV2).Subrouter()
+	r = r.PathPrefix(APIPrefixV2).Subrouter()
 	// Add tfp api version header to every response
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -15,13 +15,11 @@ type web struct {
 	otf.Renderer
 	workspace.Service
 
-	sessionMiddleware mux.MiddlewareFunc
 	svc               Service
 }
 
 func (h *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(h.sessionMiddleware) // require session
 
 	r.HandleFunc("/workspaces/{workspace_id}/variables", h.list)
 	r.HandleFunc("/workspaces/{workspace_id}/variables/new", h.new)

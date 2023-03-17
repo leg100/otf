@@ -75,15 +75,15 @@ type DatabaseLock interface {
 	Release()
 }
 
-// GetID retrieves the value corresponding to the ID field of a struct contained
-// in s. If s is not a struct, or there is no ID field, then false is returned.
+// GetID retrieves the ID field of a struct contained in s. If s is not a struct,
+// or there is no ID field, then false is returned.
 func GetID(s any) (string, bool) {
 	v := reflect.ValueOf(s)
 	if v.Kind() != reflect.Struct {
 		return "", false
 	}
 	f := v.FieldByName("ID")
-	if f.IsZero() {
+	if !f.IsValid() {
 		return "", false
 	}
 	return f.String(), true

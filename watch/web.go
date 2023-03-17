@@ -19,13 +19,11 @@ type web struct {
 	otf.Renderer
 	*sse.Server
 
-	svc               Service
-	sessionMiddleware mux.MiddlewareFunc
+	svc Service
 }
 
 func (h *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(h.sessionMiddleware) // require session
 
 	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watchWorkspace).Methods("GET")
 }

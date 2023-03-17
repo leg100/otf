@@ -14,7 +14,6 @@ import (
 type (
 	api struct {
 		svc             Service
-		tokenMiddleware mux.MiddlewareFunc
 
 		*jsonapiMarshaler
 	}
@@ -34,7 +33,6 @@ type (
 
 func (a *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(a.tokenMiddleware) // require bearer token
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list)
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create)

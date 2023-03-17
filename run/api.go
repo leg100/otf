@@ -15,10 +15,9 @@ import (
 
 type (
 	api struct {
-		svc             Service
-		tokenMiddleware mux.MiddlewareFunc
-
 		*JSONAPIMarshaler
+
+		svc             Service
 	}
 
 	// planFileOptions are options for the plan file API
@@ -29,7 +28,6 @@ type (
 
 func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(h.tokenMiddleware) // require bearer token
 
 	// Run routes
 	r.HandleFunc("/runs", h.create).Methods("POST")

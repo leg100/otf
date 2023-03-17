@@ -20,13 +20,11 @@ type webHandlers struct {
 	auth.TeamService
 	VCSProviderService
 
-	svc               Service
-	sessionMiddleware mux.MiddlewareFunc
+	svc Service
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(h.sessionMiddleware) // require session
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/new", h.newWorkspace).Methods("GET")

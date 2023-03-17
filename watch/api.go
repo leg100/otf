@@ -24,14 +24,12 @@ type eventsServer interface {
 type api struct {
 	logr.Logger
 
-	eventsServer    eventsServer
-	svc             Service
-	tokenMiddleware mux.MiddlewareFunc
+	eventsServer eventsServer
+	svc          Service
 }
 
 func (a *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(a.tokenMiddleware) // require bearer token
 
 	r.HandleFunc(otf.DefaultWatchPath, a.watch).Methods("GET")
 }

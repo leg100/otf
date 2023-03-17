@@ -65,8 +65,6 @@ type (
 	}
 
 	Options struct {
-		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
-
 		otf.DB
 		otf.Publisher
 		otf.Renderer
@@ -95,12 +93,10 @@ func NewService(opts Options) *service {
 	svc.api = &api{
 		jsonapiMarshaler: svc.jsonapiMarshaler,
 		svc:              &svc,
-		tokenMiddleware:  opts.TokenMiddleware,
 	}
 	svc.web = &webHandlers{
 		Renderer:          opts.Renderer,
 		svc:               &svc,
-		sessionMiddleware: opts.SessionMiddleware,
 	}
 
 	return serviceWithDB(&svc, newdb(opts.DB))

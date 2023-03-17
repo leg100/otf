@@ -11,13 +11,11 @@ import (
 
 // api provides handlers for json:api endpoints
 type api struct {
-	svc             AuthService
-	tokenMiddleware mux.MiddlewareFunc
+	svc AuthService
 }
 
 func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
-	r.Use(h.tokenMiddleware) // require bearer token
 
 	// Agent token routes
 	r.HandleFunc("/agent/details", h.getCurrentAgent).Methods("GET")

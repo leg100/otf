@@ -68,7 +68,6 @@ type (
 	service struct {
 		logr.Logger
 
-		LogsService
 		WorkspaceService
 		otf.Publisher
 
@@ -90,9 +89,6 @@ type (
 
 		WorkspaceService
 		ConfigurationVersionService
-		LogsService
-
-		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
 		logr.Logger
 		otf.Cache
@@ -125,13 +121,11 @@ func NewService(opts Options) *service {
 
 	svc.api = &api{
 		svc:              &svc,
-		tokenMiddleware:  opts.TokenMiddleware,
 		JSONAPIMarshaler: newJSONAPIMarshaler(opts.WorkspaceService, opts.Signer),
 	}
 	svc.web = &webHandlers{
-		Renderer:          opts.Renderer,
-		svc:               &svc,
-		sessionMiddleware: opts.SessionMiddleware,
+		Renderer: opts.Renderer,
+		svc:      &svc,
 	}
 	return &svc
 }
@@ -486,14 +480,11 @@ func (a *service) createPlanReport(ctx context.Context, runID string) (ResourceR
 }
 
 func (a *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := a.GetChunk(ctx, otf.GetChunkOptions{
-		RunID: runID,
-		Phase: otf.ApplyPhase,
-	})
+	logs, err := a.db.getLogs(ctx, runID, otf.ApplyPhase)
 	if err != nil {
 		return ResourceReport{}, err
 	}
-	report, err := ParseApplyOutput(string(logs.Data))
+	report, err := ParseApplyOutput(string(logs))
 	if err != nil {
 		return ResourceReport{}, err
 	}

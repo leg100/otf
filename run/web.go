@@ -20,9 +20,8 @@ type (
 		otf.Renderer
 		WorkspaceService
 
-		starter           runStarter
-		svc               Service
-		sessionMiddleware mux.MiddlewareFunc
+		starter runStarter
+		svc     Service
 	}
 
 	runStarter interface {
@@ -32,7 +31,6 @@ type (
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(h.sessionMiddleware) // require session
 
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list)
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
@@ -43,7 +41,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/discard", h.discard)
 
 	// this handles the link the terraform CLI shows during a plan/apply.
-	r.HandleFunc("/app/{organization_name}/{workspace_id}/runs/{run_id}", h.get)
+	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get)
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {

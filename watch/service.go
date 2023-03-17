@@ -35,8 +35,7 @@ type (
 	Options struct {
 		logr.Logger
 
-		WorkspaceAuthorizer                otf.Authorizer
-		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
+		WorkspaceAuthorizer otf.Authorizer
 
 		otf.Subscriber
 		otf.Renderer
@@ -57,15 +56,13 @@ func NewService(opts Options) *service {
 	srv := newSSEServer()
 
 	svc.api = &api{
-		svc:             &svc,
-		tokenMiddleware: opts.TokenMiddleware,
-		eventsServer:    srv,
+		svc:          &svc,
+		eventsServer: srv,
 	}
 	svc.web = &web{
-		Renderer:          opts.Renderer,
-		sessionMiddleware: opts.SessionMiddleware,
-		svc:               &svc,
-		Server:            srv,
+		Renderer: opts.Renderer,
+		svc:      &svc,
+		Server:   srv,
 	}
 	return &svc
 }

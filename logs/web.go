@@ -22,13 +22,11 @@ type (
 		logr.Logger
 
 		svc               tailService
-		sessionMiddleware mux.MiddlewareFunc
 	}
 )
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(h.sessionMiddleware) // require session
 
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 }

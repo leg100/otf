@@ -143,7 +143,7 @@ func (b *Hub) Publish(event otf.Event) {
 
 	msg, err := b.marshal(event)
 	if err != nil {
-		b.Error(err, "marshaling event into postgres notification payload")
+		b.Error(err, "marshaling event into postgres notification", "event", event.Type)
 		return
 	}
 	sql := fmt.Sprintf("select pg_notify('%s', $1)", b.channel)
@@ -184,11 +184,10 @@ func (b *Hub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
 func (b *Hub) marshal(event otf.Event) ([]byte, error) {
 	id, hasID := otf.GetID(event.Payload)
 	if !hasID {
-		return nil, fmt.Errorf("cannot marshal event without an identifiable payload")
+		return nil, fmt.Errorf("event payload does not have an ID field")
 	}
 	parts := strings.SplitN(string(event.Type), "_", 2)
 	if len(parts) < 2 {
-		// log message
 		return nil, fmt.Errorf("event has an invalid type format: %s", event.Type)
 	}
 	return json.Marshal(&message{

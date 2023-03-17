@@ -15,12 +15,10 @@ type web struct {
 	otf.Renderer
 
 	svc               Service
-	sessionMiddleware mux.MiddlewareFunc
 }
 
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-	r.Use(a.sessionMiddleware) // require session cookie
 
 	r.HandleFunc("/organizations", a.list)
 	r.HandleFunc("/organizations/new", a.new)
