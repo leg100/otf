@@ -25,9 +25,8 @@ type webHandlers struct {
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
+	r = html.UIRouter(r)
 	r.Use(h.sessionMiddleware) // require session
-
-	r = r.PathPrefix("/app").Subrouter()
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", h.listWorkspaces).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/workspaces/new", h.newWorkspace).Methods("GET")

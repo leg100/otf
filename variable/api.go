@@ -4,19 +4,25 @@ import (
 	"fmt"
 	"net/http"
 
+	otfhttp "github.com/leg100/otf/http"
+
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
 type api struct {
-	svc Service
+	svc             Service
+	tokenMiddleware mux.MiddlewareFunc
 }
 
 // Implements TFC workspace variables API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables#update-variables
 func (h *api) addHandlers(r *mux.Router) {
+	r = otfhttp.APIRouter(r)
+	r.Use(h.tokenMiddleware) // require bearer token
+
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.create).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", h.get).Methods("GET")

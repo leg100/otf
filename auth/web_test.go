@@ -41,7 +41,7 @@ func TestAdminLoginHandler(t *testing.T) {
 		{
 			name:         "valid token",
 			token:        "secrettoken",
-			wantRedirect: "/profile",
+			wantRedirect: "/app/profile",
 		},
 		{
 			name:         "invalid token",

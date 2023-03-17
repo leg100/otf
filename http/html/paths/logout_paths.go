@@ -3,5 +3,5 @@
 package paths
 
 func Logout() string {
-	return "/logout"
+	return "/app/logout"
 }

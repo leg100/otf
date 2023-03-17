@@ -54,7 +54,7 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client, err := NewOAuthClient(NewOAuthClientConfig{
+	client, err := NewOAuthClient(OAuthClientConfig{
 		CloudOAuthConfig: &cloud.CloudOAuthConfig{
 			OAuthConfig: &oauth2.Config{
 				Endpoint: oauth2.Endpoint{
@@ -68,7 +68,7 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 				Name:                "fake-cloud",
 			},
 		},
-		hostname: "otf-server.com",
+		otfHostname: fakeHostnameService{hostname: "otf-server.com"},
 	})
 	require.NoError(t, err)
 	return client

@@ -25,6 +25,9 @@ const (
 	// merely adds a prefix to all nested controllers but doesn't have any paths
 	// of its own
 	noPath
+
+	// site-wide prefix added to all routes
+	prefix = "/app"
 )
 
 // action is a controller action
@@ -65,12 +68,12 @@ var defaultActions = []action{
 // controllerSpec is a specification for a controller
 type controllerSpec struct {
 	Name       string // controller name, used in path names unless path is specified
-	prefix     string // prefix path
 	nested     []controllerSpec
 	path       string
 	actions    []action // additional actions
 	camel      string
 	lowerCamel string
+	noprefix   bool // disable site-wide prefix
 
 	controllerType
 }
@@ -78,11 +81,11 @@ type controllerSpec struct {
 type controller struct {
 	Name       string
 	path       string
-	Prefix     string
 	Parent     *controller
 	Actions    []action // additional paths applying to individual members of collection
 	camel      string
 	lowerCamel string
+	noprefix   bool // disable site-wide prefix
 
 	controllerType
 }
@@ -91,6 +94,7 @@ var specs = []controllerSpec{
 	{
 		Name:           "login",
 		controllerType: singlePath,
+		noprefix:       true,
 	},
 	{
 		Name:           "logout",
@@ -100,6 +104,7 @@ var specs = []controllerSpec{
 		Name:           "admin_login",
 		controllerType: singlePath,
 		path:           "/admin/login",
+		noprefix:       true,
 	},
 	{
 		Name:           "profile",
@@ -249,12 +254,16 @@ func (r controller) LowerCamel() string {
 // FormatString returns a format string for use with fmt.Sprintf within a
 // template for a path helper.
 func (r controller) FormatString(action action) string {
+	var b strings.Builder
+	if !r.noprefix {
+		b.WriteString(prefix)
+	}
 	if r.controllerType == singlePath {
 		// single path controllers are just the paths themselves without
 		// parameters
-		return r.Path()
+		b.WriteString(r.Path())
+		return b.String()
 	}
-	var b strings.Builder
 	if action.collection {
 		if r.Parent != nil {
 			b.WriteString(r.Parent.Path())
@@ -417,6 +426,7 @@ func buildControllers(parent *controller, specs []controllerSpec) []controller {
 			path:           spec.path,
 			Parent:         parent,
 			controllerType: spec.controllerType,
+			noprefix:       spec.noprefix,
 		}
 		switch spec.controllerType {
 		case resourcePath:

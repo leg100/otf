@@ -55,3 +55,10 @@ func SetOrganization(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// UIRouter wraps the given router with a router suitable for web UI routes.
+func UIRouter(r *mux.Router) *mux.Router {
+	r = r.PathPrefix("/app").Subrouter()
+	r.Use(SetOrganization)
+	return r
+}

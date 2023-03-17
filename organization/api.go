@@ -4,18 +4,23 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
 type api struct {
-	svc Service
+	svc             Service
+	tokenMiddleware mux.MiddlewareFunc
 }
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/organizations
 func (h *api) addHandlers(r *mux.Router) {
+	r = otfhttp.APIRouter(r)
+	r.Use(h.tokenMiddleware) // require bearer token
+
 	r.HandleFunc("/organizations", h.ListOrganizations)
 	r.HandleFunc("/organizations", h.CreateOrganization)
 	r.HandleFunc("/organizations/{name}", h.GetOrganization)
@@ -51,7 +56,7 @@ func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.svc.get(r.Context(), name)
+	org, err := h.svc.GetOrganization(r.Context(), name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

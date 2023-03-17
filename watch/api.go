@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
@@ -23,11 +24,15 @@ type eventsServer interface {
 type api struct {
 	logr.Logger
 
-	svc          Service
-	eventsServer eventsServer
+	eventsServer    eventsServer
+	svc             Service
+	tokenMiddleware mux.MiddlewareFunc
 }
 
 func (a *api) addHandlers(r *mux.Router) {
+	r = otfhttp.APIRouter(r)
+	r.Use(a.tokenMiddleware) // require bearer token
+
 	r.HandleFunc(otf.DefaultWatchPath, a.watch).Methods("GET")
 }
 

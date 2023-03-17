@@ -56,10 +56,14 @@ func NewService(opts Options) *service {
 		run: opts.RunAuthorizer,
 	}
 	svc.api = &api{
-		Service:  &svc,
-		Verifier: opts.Verifier,
+		Verifier:        opts.Verifier,
+		svc:             &svc,
+		tokenMiddleware: opts.TokenMiddleware,
 	}
-	svc.web = newWebHandlers(&svc, opts.Logger)
+	svc.web = &webHandlers{
+		Logger: opts.Logger,
+		svc:    &svc,
+	}
 
 	// Must register table name and service with pubsub broker so that it knows
 	// how to lookup chunks in the DB and send them to us via a subscription

@@ -92,6 +92,8 @@ type (
 		ConfigurationVersionService
 		LogsService
 
+		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
+
 		logr.Logger
 		otf.Cache
 		otf.DB
@@ -123,11 +125,13 @@ func NewService(opts Options) *service {
 
 	svc.api = &api{
 		svc:              &svc,
+		tokenMiddleware:  opts.TokenMiddleware,
 		JSONAPIMarshaler: newJSONAPIMarshaler(opts.WorkspaceService, opts.Signer),
 	}
 	svc.web = &webHandlers{
-		Renderer: opts.Renderer,
-		svc:      &svc,
+		Renderer:          opts.Renderer,
+		svc:               &svc,
+		sessionMiddleware: opts.SessionMiddleware,
 	}
 	return &svc
 }

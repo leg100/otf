@@ -20,8 +20,9 @@ type (
 		otf.Renderer
 		WorkspaceService
 
-		starter runStarter
-		svc     Service
+		starter           runStarter
+		svc               Service
+		sessionMiddleware mux.MiddlewareFunc
 	}
 
 	runStarter interface {
@@ -30,6 +31,9 @@ type (
 )
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
+	r = html.UIRouter(r)
+	r.Use(h.sessionMiddleware) // require session
+
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list)
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get)

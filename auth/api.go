@@ -5,18 +5,19 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
 // api provides handlers for json:api endpoints
 type api struct {
-	app AuthService
+	svc             AuthService
+	tokenMiddleware mux.MiddlewareFunc
 }
 
 func (h *api) addHandlers(r *mux.Router) {
-	r = r.PathPrefix("/api/v2").Subrouter()
-
-	r.Use(AuthenticateToken(h.app))
+	r = otfhttp.APIRouter(r)
+	r.Use(h.tokenMiddleware) // require bearer token
 
 	// Agent token routes
 	r.HandleFunc("/agent/details", h.getCurrentAgent).Methods("GET")
@@ -49,7 +50,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.app.CreateRegistrySession(r.Context(), opts.OrganizationName)
+	session, err := h.svc.CreateRegistrySession(r.Context(), opts.OrganizationName)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -66,7 +67,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	at, err := h.app.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
+	at, err := h.svc.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	})

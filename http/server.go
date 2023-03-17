@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -19,6 +20,9 @@ import (
 )
 
 const (
+	ModuleV1Prefix = "/v1/modules"
+	apiPrefixV2    = "/api/v2"
+
 	// shutdownTimeout is the time given for outstanding requests to finish
 	// before shutdown.
 	shutdownTimeout = 1 * time.Second
@@ -43,12 +47,12 @@ var (
 		TfeV22     string `json:"tfe.v2.2"`
 		VersionsV1 string `json:"versions.v1"`
 	}{
-		ModulesV1:  "/api/v2/",
+		ModulesV1:  ModuleV1Prefix,
 		MotdV1:     "/api/terraform/motd",
-		StateV2:    "/api/v2/",
-		TfeV2:      "/api/v2/",
-		TfeV21:     "/api/v2/",
-		TfeV22:     "/api/v2/",
+		StateV2:    apiPrefixV2,
+		TfeV2:      apiPrefixV2,
+		TfeV21:     apiPrefixV2,
+		TfeV22:     apiPrefixV2,
 		VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
 	})
 )
@@ -92,7 +96,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (
 	// /runs. Uses an HTTP301.
 	r.StrictSlash(true)
 
-	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
+	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
 	html.AddStaticHandler(r, cfg.DevMode)
@@ -111,23 +115,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (
 		w.Write(discoveryPayload)
 	})
 
-	// Add tfp api version header to every response
-	r.PathPrefix("/api/v2").Subrouter().Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Version 2.5 is the minimum version terraform requires for the
-			// newer 'cloud' configuration block:
-			// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
-			w.Header().Set("TFP-API-Version", "2.5")
-			next.ServeHTTP(w, r)
-		})
-	})
-
-	r.HandleFunc("/api/v2/ping", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc(path.Join(apiPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-
-	// Get/set session organization for web app
-	r.PathPrefix("/app").Subrouter().Use(html.SetOrganization)
 
 	// Add handlers for each service
 	for _, h := range handlers {
@@ -142,6 +132,22 @@ func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (
 	}
 
 	return s, nil
+}
+
+// APIRouter wraps the given router with a router suitable for API routes.
+func APIRouter(r *mux.Router) *mux.Router {
+	r = r.PathPrefix(apiPrefixV2).Subrouter()
+	// Add tfp api version header to every response
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Version 2.5 is the minimum version terraform requires for the
+			// newer 'cloud' configuration block:
+			// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
+			w.Header().Set("TFP-API-Version", "2.5")
+			next.ServeHTTP(w, r)
+		})
+	})
+	return r
 }
 
 // Start starts serving http traffic on the given listener and waits until the server exits due to

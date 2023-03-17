@@ -14,10 +14,14 @@ import (
 type web struct {
 	otf.Renderer
 
-	svc Service
+	svc               Service
+	sessionMiddleware mux.MiddlewareFunc
 }
 
 func (a *web) addHandlers(r *mux.Router) {
+	r = html.UIRouter(r)
+	r.Use(a.sessionMiddleware) // require session cookie
+
 	r.HandleFunc("/organizations", a.list)
 	r.HandleFunc("/organizations/new", a.new)
 	r.HandleFunc("/organizations/create", a.create)
@@ -82,7 +86,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.get(r.Context(), name)
+	org, err := a.svc.GetOrganization(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -98,7 +102,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organization, err := a.svc.get(r.Context(), name)
+	organization, err := a.svc.GetOrganization(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

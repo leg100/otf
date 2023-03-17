@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-// webHandlers provides handlers for the webHandlers UI
+// webHandlers provides handlers for the web UI
 type webHandlers struct {
 	otf.Renderer
 
@@ -21,19 +21,20 @@ type webHandlers struct {
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
-	r = r.PathPrefix("/app").Subrouter()
-
+	// Unauthenticated routes
 	r.HandleFunc("/login", h.loginHandler)
+	r.HandleFunc("/admin/login", h.adminLoginPromptHandler).Methods("GET")
+	r.HandleFunc("/admin/login", h.adminLoginHandler).Methods("POST")
+
 	for _, auth := range h.authenticators {
 		r.HandleFunc(auth.RequestPath(), auth.RequestHandler)
 		r.HandleFunc(auth.CallbackPath(), auth.responseHandler)
 	}
 
-	//
 	// Authenticated routes
-	//
+	r = html.UIRouter(r)
 	r = r.NewRoute().Subrouter()
-	r.Use(AuthenticateSession(h.svc))
+	r.Use(AuthenticateSession(h.svc)) // require session cookie
 
 	h.addAgentTokenHandlers(r)
 	h.addSessionHandlers(r)
@@ -43,9 +44,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	r.HandleFunc("/logout", h.logoutHandler).Methods("POST")
 	r.HandleFunc("/profile", h.profileHandler).Methods("POST")
-
-	r.HandleFunc("/admin/login", h.adminLoginPromptHandler).Methods("GET")
-	r.HandleFunc("/admin/login", h.adminLoginHandler).Methods("POST")
 }
 
 func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
@@ -64,26 +62,26 @@ func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
 	h.Render("users_list.tmpl", w, r, users)
 }
 
-func (app *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.Render("profile.tmpl", w, r, user)
+	h.Render("profile.tmpl", w, r, user)
 }
 
-func (app *webHandlers) loginHandler(w http.ResponseWriter, r *http.Request) {
-	app.Render("login.tmpl", w, r, app.authenticators)
+func (h *webHandlers) loginHandler(w http.ResponseWriter, r *http.Request) {
+	h.Render("login.tmpl", w, r, h.authenticators)
 }
 
-func (app *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := getSessionCtx(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := app.svc.deleteSession(r.Context(), session.token); err != nil {
+	if err := h.svc.deleteSession(r.Context(), session.token); err != nil {
 		return
 	}
 	html.SetCookie(w, sessionCookie, session.token, &time.Time{})
@@ -91,25 +89,25 @@ func (app *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
-func (app *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	app.Render("site_admin_login.tmpl", w, r, nil)
+func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
+	h.Render("site_admin_login.tmpl", w, r, nil)
 }
 
 // adminLoginHandler logs in a site admin
-func (app *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if token != app.siteToken {
+	if token != h.siteToken {
 		html.FlashError(w, "incorrect token")
 		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
 		return
 	}
 
-	session, err := app.svc.createSession(r, otf.SiteAdminID)
+	session, err := h.svc.createSession(r, otf.SiteAdminID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

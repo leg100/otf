@@ -3,5 +3,5 @@
 package paths
 
 func Profile() string {
-	return "/profile"
+	return "/app/profile"
 }

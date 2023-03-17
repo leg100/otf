@@ -18,30 +18,34 @@ const oauthCookieName = "oauth-state"
 
 var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and client secret")
 
-type oauthClient interface {
-	RequestHandler(w http.ResponseWriter, r *http.Request)
-	CallbackHandler(*http.Request) (*oauth2.Token, error)
-	NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error)
-	RequestPath() string
-	CallbackPath() string
-	String() string
-}
+type (
+	oauthClient interface {
+		RequestHandler(w http.ResponseWriter, r *http.Request)
+		CallbackHandler(*http.Request) (*oauth2.Token, error)
+		NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error)
+		RequestPath() string
+		CallbackPath() string
+		String() string
+	}
 
-// OAuthClient performs the client role in an oauth handshake, requesting
-// authorization from the user to access their account details on a particular
-// cloud.
-type OAuthClient struct {
-	cloudConfig cloud.Config
-	*oauth2.Config
-}
+	// OAuthClient performs the client role in an oauth handshake, requesting
+	// authorization from the user to access their account details on a particular
+	// cloud.
+	OAuthClient struct {
+		otf.HostnameService // for retrieving otf system hostname for use in redirects back to otf
 
-// NewOAuthClientConfig is configuration for constructing an OAuth client
-type NewOAuthClientConfig struct {
-	*cloud.CloudOAuthConfig
-	hostname string // otf system hostname
-}
+		cloudConfig cloud.Config
+		*oauth2.Config
+	}
 
-func NewOAuthClient(cfg NewOAuthClientConfig) (*OAuthClient, error) {
+	// OAuthClientConfig is configuration for constructing an OAuth client
+	OAuthClientConfig struct {
+		*cloud.CloudOAuthConfig
+		otfHostname otf.HostnameService
+	}
+)
+
+func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
 	if cfg.OAuthConfig.ClientID == "" && cfg.OAuthConfig.ClientSecret != "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
@@ -60,10 +64,11 @@ func NewOAuthClient(cfg NewOAuthClientConfig) (*OAuthClient, error) {
 	cfg.OAuthConfig.Endpoint.AuthURL = authURL
 	cfg.OAuthConfig.Endpoint.TokenURL = tokenURL
 
-	client := &OAuthClient{cloudConfig: cfg.Config, Config: cfg.OAuthConfig}
-	cfg.OAuthConfig.RedirectURL = (&url.URL{Scheme: "https", Host: cfg.hostname, Path: client.CallbackPath()}).String()
-
-	return client, nil
+	return &OAuthClient{
+		HostnameService: cfg.otfHostname,
+		cloudConfig:     cfg.Config,
+		Config:          cfg.OAuthConfig,
+	}, nil
 }
 
 // String provides a human-readable identifier for the oauth client, using the
@@ -82,7 +87,6 @@ func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: replace with setCookie helper
 	http.SetCookie(w, &http.Cookie{
 		Name:     oauthCookieName,
 		Value:    state,
@@ -92,7 +96,7 @@ func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true, // HTTPS only
 	})
 
-	http.Redirect(w, r, a.AuthCodeURL(state), http.StatusFound)
+	http.Redirect(w, r, a.config().AuthCodeURL(state), http.StatusFound)
 }
 
 func (a *OAuthClient) CallbackPath() string {
@@ -101,14 +105,13 @@ func (a *OAuthClient) CallbackPath() string {
 
 func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
 	// Parse query string
-	type response struct {
+	var resp struct {
 		AuthCode         string `schema:"code"`
 		State            string
 		Error            string
 		ErrorDescription string `schema:"error_description"`
 		ErrorURI         string `schema:"error_uri"`
 	}
-	var resp response
 	if err := decode.Query(&resp, r.URL.Query()); err != nil {
 		return nil, err
 	}
@@ -128,7 +131,7 @@ func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
 	ctx := context.WithValue(r.Context(), oauth2.HTTPClient, a.cloudConfig.HTTPClient())
 
 	// Exchange code for an access token
-	return a.Exchange(ctx, resp.AuthCode)
+	return a.config().Exchange(ctx, resp.AuthCode)
 }
 
 // NewClient constructs a cloud client configured with the given oauth token for authentication.
@@ -138,14 +141,20 @@ func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (cloud
 	})
 }
 
+// config generates an oauth2 config for the client - note this is done at
+// run-time because the otf hostname may only be determined at run-time.
+func (a *OAuthClient) config() *oauth2.Config {
+	cfg := a.Config
+	cfg.RedirectURL = (&url.URL{Scheme: "https", Host: a.Hostname(), Path: a.CallbackPath()}).String()
+	return cfg
+}
+
 // updateHost updates the hostname in a URL
 func updateHost(u, host string) (string, error) {
 	parsed, err := url.Parse(u)
 	if err != nil {
 		return "", err
 	}
-
 	parsed.Host = host
-
 	return parsed.String(), nil
 }

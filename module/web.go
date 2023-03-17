@@ -14,25 +14,31 @@ import (
 	"github.com/leg100/otf/vcsprovider"
 )
 
-// webHandlers provides handlers for the webUI
-type webHandlers struct {
-	otf.Signer
-	otf.Renderer
-	vcsprovider.VCSProviderService
-
-	hostname string
-	svc      service
-}
-
-type newModuleStep string
-
 const (
 	newModuleConnectStep newModuleStep = "connect-vcs"
 	newModuleRepoStep    newModuleStep = "select-repo"
 	newModuleConfirmStep newModuleStep = "confirm-selection"
 )
 
+type (
+	// webHandlers provides handlers for the webUI
+	webHandlers struct {
+		otf.Signer
+		otf.Renderer
+		vcsprovider.VCSProviderService
+
+		hostname          string
+		svc               service
+		sessionMiddleware mux.MiddlewareFunc
+	}
+
+	newModuleStep string
+)
+
 func (h *webHandlers) addHandlers(r *mux.Router) {
+	r = html.UIRouter(r)
+	r.Use(h.sessionMiddleware) // require session
+
 	r.HandleFunc("/organizations/{organization_name}/modules", h.list)
 	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new)
 	r.HandleFunc("/modules/{module_id}", h.get)
@@ -243,8 +249,8 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Repo          moduleRepo   `schema:"identifier,required"`
+		VCSProviderID string     `schema:"vcs_provider_id,required"`
+		Repo          moduleRepo `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

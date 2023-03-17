@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/surl"
 )
@@ -15,19 +16,26 @@ import (
 type api struct {
 	*surl.Signer
 
-	svc service
+	svc             service
+	tokenMiddleware mux.MiddlewareFunc
 }
 
-// Implements the Module Registry Protocol:
-//
-// https://developer.hashicorp.com/terraform/internals/module-registry-protocol
 func (h *api) addHandlers(r *mux.Router) {
-	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions)
-	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink)
-
+	// signed routes
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
 	signed.Use(otf.VerifySignedURL(h.Signer))
 	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
+
+	// authenticated module api routes
+	//
+	// Implements the Module Registry Protocol:
+	//
+	// https://developer.hashicorp.com/terraform/internals/module-registry-protocol
+	r = r.PathPrefix(otfhttp.ModuleV1Prefix).Subrouter()
+	r.Use(h.tokenMiddleware) // require bearer token
+
+	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions)
+	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink)
 }
 
 type (

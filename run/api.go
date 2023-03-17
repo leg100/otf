@@ -8,13 +8,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
 type (
 	api struct {
-		svc Service
+		svc             Service
+		tokenMiddleware mux.MiddlewareFunc
 
 		*JSONAPIMarshaler
 	}
@@ -26,6 +28,9 @@ type (
 )
 
 func (h *api) addHandlers(r *mux.Router) {
+	r = otfhttp.APIRouter(r)
+	r.Use(h.tokenMiddleware) // require bearer token
+
 	// Run routes
 	r.HandleFunc("/runs", h.create).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/apply", h.applyRun).Methods("POST")

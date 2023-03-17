@@ -42,7 +42,7 @@ func TestWeb(t *testing.T) {
 		if assert.Equal(t, 302, w.Code) {
 			redirect, err := w.Result().Location()
 			require.NoError(t, err)
-			assert.Equal(t, "/organizations/my-new-org", redirect.Path)
+			assert.Equal(t, "/app/organizations/my-new-org", redirect.Path)
 		}
 	})
 

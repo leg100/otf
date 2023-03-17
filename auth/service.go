@@ -65,8 +65,8 @@ func NewService(ctx context.Context, opts Options) (*service, error) {
 	// purge expired sessions
 	go db.startExpirer(ctx, defaultExpiry)
 
-	svc.synchroniser = &synchroniser{opts.Logger, opts.Service, &svc}
-	svc.api = &api{app: &svc}
+	svc.synchroniser = &synchroniser{opts.Logger, opts.OrganizationService, &svc}
+	svc.api = &api{svc: &svc}
 	svc.db = db
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.web = &webHandlers{

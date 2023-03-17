@@ -55,9 +55,10 @@ func NewService(opts Options) *service {
 		svc: &svc,
 	}
 	svc.web = &web{
-		svc:      &svc,
-		Renderer: opts.Renderer,
-		Service:  opts.WorkspaceService,
+		Renderer:          opts.Renderer,
+		Service:           opts.WorkspaceService,
+		sessionMiddleware: opts.SessionMiddleware,
+		svc:               &svc,
 	}
 
 	return &svc

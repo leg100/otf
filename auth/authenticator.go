@@ -35,9 +35,9 @@ func newAuthenticators(opts authenticatorOptions) ([]*authenticator, error) {
 			// skip creating oauth client when creds are unspecified
 			continue
 		}
-		client, err := NewOAuthClient(NewOAuthClientConfig{
+		client, err := NewOAuthClient(OAuthClientConfig{
 			CloudOAuthConfig: cfg,
-			hostname:         opts.Hostname(),
+			otfHostname:      opts.HostnameService,
 		})
 		if err != nil {
 			return nil, err

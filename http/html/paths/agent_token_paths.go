@@ -5,29 +5,29 @@ package paths
 import "fmt"
 
 func AgentTokens(organization string) string {
-	return fmt.Sprintf("/organizations/%s/agent-tokens", organization)
+	return fmt.Sprintf("/app/organizations/%s/agent-tokens", organization)
 }
 
 func CreateAgentToken(organization string) string {
-	return fmt.Sprintf("/organizations/%s/agent-tokens/create", organization)
+	return fmt.Sprintf("/app/organizations/%s/agent-tokens/create", organization)
 }
 
 func NewAgentToken(organization string) string {
-	return fmt.Sprintf("/organizations/%s/agent-tokens/new", organization)
+	return fmt.Sprintf("/app/organizations/%s/agent-tokens/new", organization)
 }
 
 func AgentToken(agentToken string) string {
-	return fmt.Sprintf("/agent-tokens/%s", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%s", agentToken)
 }
 
 func EditAgentToken(agentToken string) string {
-	return fmt.Sprintf("/agent-tokens/%s/edit", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%s/edit", agentToken)
 }
 
 func UpdateAgentToken(agentToken string) string {
-	return fmt.Sprintf("/agent-tokens/%s/update", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%s/update", agentToken)
 }
 
 func DeleteAgentToken(agentToken string) string {
-	return fmt.Sprintf("/agent-tokens/%s/delete", agentToken)
+	return fmt.Sprintf("/app/agent-tokens/%s/delete", agentToken)
 }

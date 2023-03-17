@@ -21,18 +21,15 @@ type (
 	webHandlers struct {
 		logr.Logger
 
-		svc tailService
+		svc               tailService
+		sessionMiddleware mux.MiddlewareFunc
 	}
 )
 
-func newWebHandlers(svc tailService, logger logr.Logger) *webHandlers {
-	return &webHandlers{
-		Logger: logger,
-		svc:    svc,
-	}
-}
-
 func (h *webHandlers) addHandlers(r *mux.Router) {
+	r = html.UIRouter(r)
+	r.Use(h.sessionMiddleware) // require session
+
 	r.HandleFunc("/runs/{run_id}/tail", h.tailRun)
 }
 

@@ -12,8 +12,10 @@ import (
 
 func TestTailLogs(t *testing.T) {
 	chunks := make(chan otf.Chunk, 1)
-	svc := &fakeTailService{chunks: chunks}
-	handlers := newWebHandlers(svc, logr.Discard())
+	handlers := &webHandlers{
+		Logger: logr.Discard(),
+		svc:    &fakeTailService{chunks: chunks},
+	}
 
 	r := httptest.NewRequest("", "/?offset=0&stream=tail-123&phase=plan&run_id=run-123", nil)
 	w := httptest.NewRecorder()

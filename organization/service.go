@@ -20,11 +20,12 @@ type (
 		GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
 
 		create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
-		get(ctx context.Context, name string) (*Organization, error)
 		list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
 		update(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
 		delete(ctx context.Context, name string) error
 		getEntitlements(ctx context.Context, organization string) (Entitlements, error)
+
+		otf.Handlers
 	}
 
 	service struct {
@@ -43,6 +44,8 @@ type (
 		otf.Publisher
 		otf.Renderer
 		logr.Logger
+
+		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 	}
 )
 
@@ -77,7 +80,20 @@ func (a *service) ListOrganizations(ctx context.Context, opts OrganizationListOp
 }
 
 func (a *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
-	return a.get(ctx, name)
+	subject, err := a.CanAccess(ctx, rbac.GetOrganizationAction, name)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := a.db.get(ctx, name)
+	if err != nil {
+		a.Error(err, "retrieving organization", "name", name, "subject", subject)
+		return nil, err
+	}
+
+	a.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
+
+	return org, nil
 }
 
 func (a *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {
@@ -107,23 +123,6 @@ func (a *service) create(ctx context.Context, opts OrganizationCreateOptions) (*
 	a.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
 	a.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
-
-	return org, nil
-}
-
-func (a *service) get(ctx context.Context, name string) (*Organization, error) {
-	subject, err := a.CanAccess(ctx, rbac.GetOrganizationAction, name)
-	if err != nil {
-		return nil, err
-	}
-
-	org, err := a.db.get(ctx, name)
-	if err != nil {
-		a.Error(err, "retrieving organization", "name", name, "subject", subject)
-		return nil, err
-	}
-
-	a.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
 }
@@ -186,7 +185,7 @@ func (a *service) getEntitlements(ctx context.Context, organization string) (Ent
 		return Entitlements{}, err
 	}
 
-	org, err := a.get(ctx, organization)
+	org, err := a.GetOrganization(ctx, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}

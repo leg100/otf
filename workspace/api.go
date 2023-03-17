@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
@@ -32,6 +33,7 @@ type (
 )
 
 func (a *api) addHandlers(r *mux.Router) {
+	r = otfhttp.APIRouter(r)
 	r.Use(a.tokenMiddleware) // require bearer token
 
 	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list)
