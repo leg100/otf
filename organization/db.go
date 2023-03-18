@@ -62,10 +62,19 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 }
 
 func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
+	names := []string{"%"}
+	if len(opts.Names) > 0 {
+		names = opts.Names
+	}
+
 	batch := &pgx.Batch{}
 
-	db.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
-	db.CountOrganizationsBatch(batch)
+	db.FindOrganizationsBatch(batch, pggen.FindOrganizationsParams{
+		Names:  names,
+		Limit:  opts.GetLimit(),
+		Offset: opts.GetOffset(),
+	})
+	db.CountOrganizationsBatch(batch, names)
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 

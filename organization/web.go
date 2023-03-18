@@ -14,7 +14,7 @@ import (
 type web struct {
 	otf.Renderer
 
-	svc               Service
+	svc Service
 }
 
 func (a *web) addHandlers(r *mux.Router) {
@@ -40,7 +40,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.create(r.Context(), opts)
+	org, err := a.svc.CreateOrganization(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		html.FlashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)
@@ -62,7 +62,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organizations, err := a.svc.list(r.Context(), opts)
+	organizations, err := a.svc.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -119,7 +119,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.update(r.Context(), params.Name, params.Options)
+	org, err := a.svc.UpdateOrganization(r.Context(), params.Name, params.Options)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -136,7 +136,7 @@ func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.svc.delete(r.Context(), organization)
+	err = a.svc.DeleteOrganization(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

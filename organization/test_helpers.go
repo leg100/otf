@@ -61,11 +61,11 @@ type fakeService struct {
 	Service
 }
 
-func (f *fakeService) create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+func (f *fakeService) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
 	return NewOrganization(opts)
 }
 
-func (f *fakeService) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
+func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
 	return &OrganizationList{
 		Items:      f.orgs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),

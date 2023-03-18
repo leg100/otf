@@ -49,6 +49,8 @@ func (t *AgentToken) String() string      { return t.ID }
 func (t *AgentToken) IsSiteAdmin() bool   { return true }
 func (t *AgentToken) IsOwner(string) bool { return true }
 
+func (t *AgentToken) ListOrganizations() []string { return []string{t.Organization} }
+
 func (*AgentToken) CanAccessSite(action rbac.Action) bool {
 	// agent cannot carry out site-level actions
 	return false

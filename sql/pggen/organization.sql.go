@@ -159,8 +159,16 @@ func (q *DBQuerier) FindOrganizationByNameForUpdateScan(results pgx.BatchResults
 
 const findOrganizationsSQL = `SELECT *
 FROM organizations
+WHERE name LIKE ANY($1)
 ORDER BY updated_at DESC
-LIMIT $1 OFFSET $2;`
+LIMIT $2 OFFSET $3
+;`
+
+type FindOrganizationsParams struct {
+	Names  []string
+	Limit  int
+	Offset int
+}
 
 type FindOrganizationsRow struct {
 	OrganizationID  pgtype.Text        `json:"organization_id"`
@@ -172,9 +180,9 @@ type FindOrganizationsRow struct {
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
-func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error) {
+func (q *DBQuerier) FindOrganizations(ctx context.Context, params FindOrganizationsParams) ([]FindOrganizationsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizations")
-	rows, err := q.conn.Query(ctx, findOrganizationsSQL, limit, offset)
+	rows, err := q.conn.Query(ctx, findOrganizationsSQL, params.Names, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query FindOrganizations: %w", err)
 	}
@@ -194,8 +202,8 @@ func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int
 }
 
 // FindOrganizationsBatch implements Querier.FindOrganizationsBatch.
-func (q *DBQuerier) FindOrganizationsBatch(batch genericBatch, limit int, offset int) {
-	batch.Queue(findOrganizationsSQL, limit, offset)
+func (q *DBQuerier) FindOrganizationsBatch(batch genericBatch, params FindOrganizationsParams) {
+	batch.Queue(findOrganizationsSQL, params.Names, params.Limit, params.Offset)
 }
 
 // FindOrganizationsScan implements Querier.FindOrganizationsScan.
@@ -220,12 +228,14 @@ func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrgan
 }
 
 const countOrganizationsSQL = `SELECT count(*)
-FROM organizations;`
+FROM organizations
+WHERE name = ANY($1)
+;`
 
 // CountOrganizations implements Querier.CountOrganizations.
-func (q *DBQuerier) CountOrganizations(ctx context.Context) (*int, error) {
+func (q *DBQuerier) CountOrganizations(ctx context.Context, names []string) (*int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountOrganizations")
-	row := q.conn.QueryRow(ctx, countOrganizationsSQL)
+	row := q.conn.QueryRow(ctx, countOrganizationsSQL, names)
 	var item int
 	if err := row.Scan(&item); err != nil {
 		return &item, fmt.Errorf("query CountOrganizations: %w", err)
@@ -234,8 +244,8 @@ func (q *DBQuerier) CountOrganizations(ctx context.Context) (*int, error) {
 }
 
 // CountOrganizationsBatch implements Querier.CountOrganizationsBatch.
-func (q *DBQuerier) CountOrganizationsBatch(batch genericBatch) {
-	batch.Queue(countOrganizationsSQL)
+func (q *DBQuerier) CountOrganizationsBatch(batch genericBatch, names []string) {
+	batch.Queue(countOrganizationsSQL, names)
 }
 
 // CountOrganizationsScan implements Querier.CountOrganizationsScan.

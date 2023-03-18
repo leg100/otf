@@ -7,7 +7,10 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-var SiteAdmin = User{ID: otf.SiteAdminID, Username: "site-admin"}
+var (
+	SiteAdmin             = User{ID: otf.SiteAdminID, Username: "site-admin"}
+	_         otf.Subject = (*User)(nil)
+)
 
 type (
 	// User represents an otf user account.
@@ -72,6 +75,8 @@ func (u *User) IsTeamMember(teamID string) bool {
 	}
 	return false
 }
+
+func (u *User) ListOrganizations() []string { return u.Organizations }
 
 func (u *User) IsSiteAdmin() bool { return u.ID == otf.SiteAdminID }
 

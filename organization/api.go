@@ -10,7 +10,7 @@ import (
 )
 
 type api struct {
-	svc             Service
+	svc Service
 }
 
 // Implements TFC state versions API:
@@ -34,7 +34,7 @@ func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.svc.create(r.Context(), OrganizationCreateOptions{
+	org, err := h.svc.CreateOrganization(r.Context(), OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -70,7 +70,7 @@ func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := h.svc.list(r.Context(), opts)
+	list, err := h.svc.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -91,7 +91,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := h.svc.update(r.Context(), name, OrganizationUpdateOptions{
+	org, err := h.svc.UpdateOrganization(r.Context(), name, OrganizationUpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -111,7 +111,7 @@ func (h *api) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.delete(r.Context(), name); err != nil {
+	if err := h.svc.DeleteOrganization(r.Context(), name); err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}

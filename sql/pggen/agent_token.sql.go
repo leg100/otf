@@ -284,17 +284,17 @@ type Querier interface {
 	// FindOrganizationByNameForUpdateScan scans the result of an executed FindOrganizationByNameForUpdateBatch query.
 	FindOrganizationByNameForUpdateScan(results pgx.BatchResults) (FindOrganizationByNameForUpdateRow, error)
 
-	FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error)
+	FindOrganizations(ctx context.Context, params FindOrganizationsParams) ([]FindOrganizationsRow, error)
 	// FindOrganizationsBatch enqueues a FindOrganizations query into batch to be executed
 	// later by the batch.
-	FindOrganizationsBatch(batch genericBatch, limit int, offset int)
+	FindOrganizationsBatch(batch genericBatch, params FindOrganizationsParams)
 	// FindOrganizationsScan scans the result of an executed FindOrganizationsBatch query.
 	FindOrganizationsScan(results pgx.BatchResults) ([]FindOrganizationsRow, error)
 
-	CountOrganizations(ctx context.Context) (*int, error)
+	CountOrganizations(ctx context.Context, names []string) (*int, error)
 	// CountOrganizationsBatch enqueues a CountOrganizations query into batch to be executed
 	// later by the batch.
-	CountOrganizationsBatch(batch genericBatch)
+	CountOrganizationsBatch(batch genericBatch, names []string)
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 

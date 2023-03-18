@@ -70,6 +70,20 @@ func TestOrganization_Create(t *testing.T) {
 		})
 	})
 
+	t.Run("filter list by names", func(t *testing.T) {
+		want1 := createTestOrganization(t, db)
+		want2 := createTestOrganization(t, db)
+		_ = createTestOrganization(t, db)
+
+		got, err := db.list(ctx, OrganizationListOptions{Names: []string{want1.Name, want2.Name}})
+		require.NoError(t, err)
+
+		assert.Equal(t, 2, len(got.Items))
+		assert.Contains(t, got.Items, want1)
+		assert.Contains(t, got.Items, want2)
+
+	})
+
 	t.Run("get", func(t *testing.T) {
 		want := createTestOrganization(t, db)
 

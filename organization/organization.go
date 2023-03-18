@@ -40,6 +40,7 @@ type (
 
 	// ListOptions represents the options for listing organizations.
 	OrganizationListOptions struct {
+		Names []string // filter organizations by name
 		otf.ListOptions
 	}
 
