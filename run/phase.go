@@ -65,7 +65,7 @@ func (p *Phase) HasChanges() bool {
 	return false
 }
 
-// Lookup timestamp for status
+// StatusTimestamp looks up the timestamp for a status
 func (p *Phase) StatusTimestamp(status PhaseStatus) (time.Time, error) {
 	for _, rst := range p.StatusTimestamps {
 		if rst.Status == status {

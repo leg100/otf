@@ -64,8 +64,8 @@ func NewService(opts Options) *service {
 	return &svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
-	s.web.addHandlers(r)
+func (a *service) AddHandlers(r *mux.Router) {
+	a.web.addHandlers(r)
 }
 
 func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {

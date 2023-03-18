@@ -1,3 +1,5 @@
+// Package run is responsible for OTF runs, the primary mechanism for executing
+// terraform
 package run
 
 import (

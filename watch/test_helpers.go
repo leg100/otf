@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -25,17 +24,8 @@ func (f *fakeApp) Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, er
 	return f.ch, nil
 }
 
-type fakeRunJSONAPIConverter struct {
-	want []byte
-}
-
-func (f *fakeRunJSONAPIConverter) MarshalJSONAPI(*run.Run, *http.Request) ([]byte, error) {
-	return f.want, nil
-}
-
 type fakeEventsServer struct {
 	published chan *sse.Event
-	eventsServer
 }
 
 func (f *fakeEventsServer) CreateStream(string) *sse.Stream              { return nil }

@@ -17,7 +17,7 @@ type (
 	api struct {
 		*JSONAPIMarshaler
 
-		svc             Service
+		svc Service
 	}
 
 	// planFileOptions are options for the plan file API
@@ -26,34 +26,34 @@ type (
 	}
 )
 
-func (h *api) addHandlers(r *mux.Router) {
+func (s *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
 	// Run routes
-	r.HandleFunc("/runs", h.create).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/apply", h.applyRun).Methods("POST")
-	r.HandleFunc("/runs", h.list).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
-	r.HandleFunc("/runs/{id}", h.get).Methods("GET")
-	r.HandleFunc("/runs/{id}/actions/discard", h.discard).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/cancel", h.cancel).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/force-cancel", h.forceCancel).Methods("POST")
-	r.HandleFunc("/organizations/{organization_name}/runs/queue", h.getRunQueue).Methods("GET")
+	r.HandleFunc("/runs", s.create).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/apply", s.applyRun).Methods("POST")
+	r.HandleFunc("/runs", s.list).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/runs", s.list).Methods("GET")
+	r.HandleFunc("/runs/{id}", s.get).Methods("GET")
+	r.HandleFunc("/runs/{id}/actions/discard", s.discard).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/cancel", s.cancel).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/force-cancel", s.forceCancel).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/runs/queue", s.getRunQueue).Methods("GET")
 
 	// Run routes for exclusive use by remote agents
-	r.HandleFunc("/runs/{id}/actions/start/{phase}", h.startPhase).Methods("POST")
-	r.HandleFunc("/runs/{id}/actions/finish/{phase}", h.finishPhase).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/planfile", h.getPlanFile).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/planfile", h.uploadPlanFile).Methods("PUT")
-	r.HandleFunc("/runs/{run_id}/lockfile", h.getLockFile).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/lockfile", h.uploadLockFile).Methods("PUT")
+	r.HandleFunc("/runs/{id}/actions/start/{phase}", s.startPhase).Methods("POST")
+	r.HandleFunc("/runs/{id}/actions/finish/{phase}", s.finishPhase).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/planfile", s.getPlanFile).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/planfile", s.uploadPlanFile).Methods("PUT")
+	r.HandleFunc("/runs/{run_id}/lockfile", s.getLockFile).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/lockfile", s.uploadLockFile).Methods("PUT")
 
 	// Plan routes
-	r.HandleFunc("/plans/{plan_id}", h.getPlan).Methods("GET")
-	r.HandleFunc("/plans/{plan_id}/json-output", h.getPlanJSON).Methods("GET")
+	r.HandleFunc("/plans/{plan_id}", s.getPlan).Methods("GET")
+	r.HandleFunc("/plans/{plan_id}/json-output", s.getPlanJSON).Methods("GET")
 
 	// Apply routes
-	r.HandleFunc("/applies/{apply_id}", h.getApply).Methods("GET")
+	r.HandleFunc("/applies/{apply_id}", s.getApply).Methods("GET")
 }
 
 func (s *api) create(w http.ResponseWriter, r *http.Request) {

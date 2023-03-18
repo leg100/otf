@@ -164,37 +164,37 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (a *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	var subject otf.Subject
 	var authErr error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
-		workspace, err := a.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
+		workspace, err := s.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
 		if err != nil {
 			return nil, err
 		}
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = a.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, workspace.ID)
+		subject, authErr = s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, workspace.ID)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, authErr = a.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, *opts.WorkspaceID)
+		subject, authErr = s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, authErr = a.organization.CanAccess(ctx, rbac.ListRunsAction, *opts.Organization)
+		subject, authErr = s.organization.CanAccess(ctx, rbac.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
-		subject, authErr = a.site.CanAccess(ctx, rbac.ListRunsAction, "")
+		subject, authErr = s.site.CanAccess(ctx, rbac.ListRunsAction, "")
 	}
 	if authErr != nil {
 		return nil, authErr
 	}
 
-	rl, err := a.db.ListRuns(ctx, opts)
+	rl, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
-		a.Error(err, "listing runs", "subject", subject)
+		s.Error(err, "listing runs", "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("listed runs", "count", len(rl.Items), "subject", subject)
+	s.V(2).Info("listed runs", "count", len(rl.Items), "subject", subject)
 
 	return rl, nil
 }
@@ -228,28 +228,28 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 }
 
 // StartPhase starts a run phase.
-func (a *service) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error) {
-	subject, err := a.CanAccess(ctx, rbac.StartPhaseAction, runID)
+func (s *service) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error) {
+	subject, err := s.CanAccess(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Start(phase)
 	})
 	if err != nil {
-		a.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
+		s.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (a *service) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
-	subject, err := a.CanAccess(ctx, rbac.FinishPhaseAction, runID)
+func (s *service) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+	subject, err := s.CanAccess(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -257,21 +257,21 @@ func (a *service) FinishPhase(ctx context.Context, runID string, phase otf.Phase
 	var report ResourceReport
 	if !opts.Errored {
 		var err error
-		report, err = a.createReport(ctx, runID, phase)
+		report, err = s.createReport(ctx, runID, phase)
 		if err != nil {
-			a.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
+			s.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
 			opts.Errored = true
 		}
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Finish(phase, opts)
 	})
 	if err != nil {
-		a.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
+		s.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
@@ -293,91 +293,91 @@ func (s *service) get(ctx context.Context, runID string) (*Run, error) {
 }
 
 // apply enqueues an apply for the run.
-func (a *service) apply(ctx context.Context, runID string) error {
-	subject, err := a.CanAccess(ctx, rbac.ApplyRunAction, runID)
+func (s *service) apply(ctx context.Context, runID string) error {
+	subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueueApply()
 	})
 	if err != nil {
-		a.Error(err, "enqueuing apply", "id", runID, "subject", subject)
+		s.Error(err, "enqueuing apply", "id", runID, "subject", subject)
 		return err
 	}
 
-	a.V(0).Info("enqueued apply", "id", runID, "subject", subject)
+	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
 
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
 
 // discard discards the run.
-func (a *service) discard(ctx context.Context, runID string) error {
-	subject, err := a.CanAccess(ctx, rbac.DiscardRunAction, runID)
+func (s *service) discard(ctx context.Context, runID string) error {
+	subject, err := s.CanAccess(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
 	}
 
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Discard()
 	})
 	if err != nil {
-		a.Error(err, "discarding run", "id", runID, "subject", subject)
+		s.Error(err, "discarding run", "id", runID, "subject", subject)
 		return err
 	}
 
-	a.V(0).Info("discarded run", "id", runID, "subject", subject)
+	s.V(0).Info("discarded run", "id", runID, "subject", subject)
 
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
 
 // cancel a run. If a run is in progress then a cancelation signal will be
 // sent out.
-func (a *service) cancel(ctx context.Context, runID string) error {
-	subject, err := a.CanAccess(ctx, rbac.CancelRunAction, runID)
+func (s *service) cancel(ctx context.Context, runID string) error {
+	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
 
 	var enqueue bool
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
 		enqueue, err = run.Cancel()
 		return err
 	})
 	if err != nil {
-		a.Error(err, "canceling run", "id", runID, "subject", subject)
+		s.Error(err, "canceling run", "id", runID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("canceled run", "id", runID, "subject", subject)
+	s.V(0).Info("canceled run", "id", runID, "subject", subject)
 	if enqueue {
 		// notify agent which'll send a SIGINT to terraform
-		a.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
+		s.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
 	}
-	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return nil
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (a *service) forceCancel(ctx context.Context, runID string) error {
-	subject, err := a.CanAccess(ctx, rbac.CancelRunAction, runID)
+func (s *service) forceCancel(ctx context.Context, runID string) error {
+	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err
 	}
-	run, err := a.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.ForceCancel()
 	})
 	if err != nil {
-		a.Error(err, "force canceling run", "id", runID, "subject", subject)
+		s.Error(err, "force canceling run", "id", runID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("force canceled run", "id", runID, "subject", subject)
+	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
 
 	// notify agent which'll send a SIGKILL to terraform
-	a.Publish(otf.Event{Type: otf.EventRunForceCancel, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunForceCancel, Payload: run})
 
 	return err
 }
@@ -387,23 +387,23 @@ func planFileCacheKey(f PlanFormat, id string) string {
 }
 
 // GetPlanFile returns the plan file for the run.
-func (a *service) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
-	subject, err := a.CanAccess(ctx, rbac.GetPlanFileAction, runID)
+func (s *service) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+	subject, err := s.CanAccess(ctx, rbac.GetPlanFileAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	if plan, err := a.cache.Get(planFileCacheKey(format, runID)); err == nil {
+	if plan, err := s.cache.Get(planFileCacheKey(format, runID)); err == nil {
 		return plan, nil
 	}
 	// Cache is empty; retrieve from DB
-	file, err := a.db.GetPlanFile(ctx, runID, format)
+	file, err := s.db.GetPlanFile(ctx, runID, format)
 	if err != nil {
-		a.Error(err, "retrieving plan file", "id", runID, "format", format, "subject", subject)
+		s.Error(err, "retrieving plan file", "id", runID, "format", format, "subject", subject)
 		return nil, err
 	}
 	// Cache plan before returning
-	if err := a.cache.Set(planFileCacheKey(format, runID), file); err != nil {
+	if err := s.cache.Set(planFileCacheKey(format, runID), file); err != nil {
 		return nil, fmt.Errorf("caching plan: %w", err)
 	}
 	return file, nil
@@ -411,20 +411,20 @@ func (a *service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 
 // UploadPlanFile persists a run's plan file. The plan format should be either
 // be binary or json.
-func (a *service) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
-	subject, err := a.CanAccess(ctx, rbac.UploadPlanFileAction, runID)
+func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error {
+	subject, err := s.CanAccess(ctx, rbac.UploadPlanFileAction, runID)
 	if err != nil {
 		return err
 	}
 
-	if err := a.db.SetPlanFile(ctx, runID, plan, format); err != nil {
-		a.Error(err, "uploading plan file", "id", runID, "format", format, "subject", subject)
+	if err := s.db.SetPlanFile(ctx, runID, plan, format); err != nil {
+		s.Error(err, "uploading plan file", "id", runID, "format", format, "subject", subject)
 		return err
 	}
 
-	a.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
+	s.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
 
-	if err := a.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
+	if err := s.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
 
@@ -432,40 +432,40 @@ func (a *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 }
 
 // delete a run.
-func (a *service) delete(ctx context.Context, runID string) error {
-	run, err := a.db.GetRun(ctx, runID)
+func (s *service) delete(ctx context.Context, runID string) error {
+	run, err := s.db.GetRun(ctx, runID)
 	if err != nil {
 		return err
 	}
 
-	subject, err := a.workspace.CanAccess(ctx, rbac.DeleteRunAction, run.WorkspaceID)
+	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteRunAction, run.WorkspaceID)
 	if err != nil {
 		return err
 	}
 
-	if err := a.db.DeleteRun(ctx, runID); err != nil {
-		a.Error(err, "deleting run", "id", runID, "subject", subject)
+	if err := s.db.DeleteRun(ctx, runID); err != nil {
+		s.Error(err, "deleting run", "id", runID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("deleted run", "id", runID, "subject", subject)
-	a.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
+	s.V(0).Info("deleted run", "id", runID, "subject", subject)
+	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 	return nil
 }
 
 // createReport creates a report of changes for the phase.
-func (a *service) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
+func (s *service) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
 	switch phase {
 	case otf.PlanPhase:
-		return a.createPlanReport(ctx, runID)
+		return s.createPlanReport(ctx, runID)
 	case otf.ApplyPhase:
-		return a.createApplyReport(ctx, runID)
+		return s.createApplyReport(ctx, runID)
 	default:
 		return ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
 	}
 }
 
-func (a *service) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
-	plan, err := a.GetPlanFile(ctx, runID, PlanFormatJSON)
+func (s *service) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
+	plan, err := s.GetPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
 		return ResourceReport{}, err
 	}
@@ -473,14 +473,14 @@ func (a *service) createPlanReport(ctx context.Context, runID string) (ResourceR
 	if err != nil {
 		return ResourceReport{}, err
 	}
-	if err := a.db.CreatePlanReport(ctx, runID, report); err != nil {
+	if err := s.db.CreatePlanReport(ctx, runID, report); err != nil {
 		return ResourceReport{}, err
 	}
 	return report, nil
 }
 
-func (a *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := a.db.getLogs(ctx, runID, otf.ApplyPhase)
+func (s *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
+	logs, err := s.db.getLogs(ctx, runID, otf.ApplyPhase)
 	if err != nil {
 		return ResourceReport{}, err
 	}
@@ -488,7 +488,7 @@ func (a *service) createApplyReport(ctx context.Context, runID string) (Resource
 	if err != nil {
 		return ResourceReport{}, err
 	}
-	if err := a.db.CreateApplyReport(ctx, runID, report); err != nil {
+	if err := s.db.CreateApplyReport(ctx, runID, report); err != nil {
 		return ResourceReport{}, err
 	}
 	return report, nil

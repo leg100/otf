@@ -94,9 +94,8 @@ func TestWebHandlers_StartRun(t *testing.T) {
 
 type (
 	fakeWebServices struct {
-		runs       []*Run
-		ws         *workspace.Workspace
-		gotOptions *configversion.ConfigurationVersionCreateOptions
+		runs []*Run
+		ws   *workspace.Workspace
 
 		RunService
 		WorkspaceService
@@ -114,12 +113,6 @@ func withWorkspace(workspace *workspace.Workspace) fakeWebServiceOption {
 func withRuns(runs ...*Run) fakeWebServiceOption {
 	return func(svc *fakeWebServices) {
 		svc.runs = runs
-	}
-}
-
-func withServices(with *fakeWebServices) fakeWebServiceOption {
-	return func(svc *fakeWebServices) {
-		*svc = *with
 	}
 }
 
