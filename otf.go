@@ -18,7 +18,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -39,18 +38,6 @@ var (
 	// A regular expression used to validate semantic versions (major.minor.patch).
 	ReSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 )
-
-// Application provides access to the otf application services
-type Application interface {
-	// Tx provides a transaction within which to operate on the store.
-	Tx(ctx context.Context, tx func(Application) error) error
-	DB() DB
-	SessionService
-	// TokenService
-	cloud.Service
-	HostnameService
-	PubSubService
-}
 
 // DB provides access to generated SQL queries as well as wrappers for
 // performing queries within a transaction or a lock.
