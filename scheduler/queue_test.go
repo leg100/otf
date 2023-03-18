@@ -150,10 +150,9 @@ func newTestQueue(services *fakeQueueServices, ws *workspace.Workspace) *queue {
 }
 
 type fakeQueueServices struct {
-	ws        *workspace.Workspace
-	runs      map[string]*run.Run // mock run db
-	scheduled []string            // list of IDs of scheduled runs
-	current   []string            // list of IDs of runs that have been set as the current run
+	ws      *workspace.Workspace
+	runs    map[string]*run.Run // mock run db
+	current []string            // list of IDs of runs that have been set as the current run
 
 	WorkspaceService
 	RunService

@@ -2,13 +2,11 @@
 package workspace
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
 )
@@ -129,21 +127,9 @@ type (
 		UserID *string
 	}
 
-	WorkspaceConnectionService interface {
-		ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*repo.Connection, error)
-		DisconnectWorkspace(ctx context.Context, workspaceID string) error
-	}
-
 	ConnectWorkspaceOptions struct {
 		RepoPath      string `schema:"identifier,required"` // repo id: <owner>/<repo>
 		VCSProviderID string `schema:"vcs_provider_id,required"`
-	}
-
-	WorkspacePermissionService interface {
-		GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error)
-
-		SetWorkspacePermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-		UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 	}
 
 	// WorkspaceQualifiedName is the workspace's fully qualified name including the
@@ -358,13 +344,4 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	}
 	ws.TerraformVersion = v
 	return nil
-}
-
-// CurrentRunService provides interaction with the current run for a workspace,
-// i.e. the current, or most recently current, non-speculative, run.
-type CurrentRunService interface {
-	// SetCurrentRun sets the ID of the latest run for a workspace.
-	//
-	// Take full run obj as param
-	SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 }
