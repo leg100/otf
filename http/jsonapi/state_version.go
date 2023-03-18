@@ -1,13 +1,11 @@
-package state
+package jsonapi
 
 import (
 	"time"
-
-	"github.com/leg100/otf/http/jsonapi"
 )
 
-// jsonapiVersion is a state version suitable for marshaling into JSONAPI
-type jsonapiVersion struct {
+// StateVersion is a state version suitable for marshaling into JSONAPI
+type StateVersion struct {
 	ID           string    `jsonapi:"primary,state-versions"`
 	CreatedAt    time.Time `jsonapi:"attr,created-at,iso8601"`
 	DownloadURL  string    `jsonapi:"attr,hosted-state-download-url"`
@@ -16,17 +14,17 @@ type jsonapiVersion struct {
 	VCSCommitURL string    `jsonapi:"attr,vcs-commit-url"`
 
 	// Relations
-	Outputs []*jsonapiVersionOutput `jsonapi:"relation,outputs"`
+	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
 }
 
-// jsonapiVersionList is a list of state versions suitable for marshaling into
+// StateVersionList is a list of state versions suitable for marshaling into
 // JSONAPI
-type jsonapiVersionList struct {
-	*jsonapi.Pagination
-	Items []*jsonapiVersion
+type StateVersionList struct {
+	*Pagination
+	Items []*StateVersion
 }
 
-type jsonapiVersionOutput struct {
+type StateVersionOutput struct {
 	ID        string `jsonapi:"primary,state-version-outputs"`
 	Name      string `jsonapi:"attr,name"`
 	Sensitive bool   `jsonapi:"attr,sensitive"`
@@ -34,15 +32,15 @@ type jsonapiVersionOutput struct {
 	Value     any    `jsonapi:"attr,value"`
 }
 
-// jsonapiVersionOutputList is a list of state version outputs suitable for marshaling into
+// StateVersionOutputList is a list of state version outputs suitable for marshaling into
 // JSONAPI
-type jsonapiVersionOutputList struct {
-	Items []*jsonapiVersionOutput
+type StateVersionOutputList struct {
+	Items []*StateVersionOutput
 }
 
-// jsonapiCreateVersionOptions are options for creating a state version via
+// StateVersionCreateVersionOptions are options for creating a state version via
 // JSONAPI
-type jsonapiCreateVersionOptions struct {
+type StateVersionCreateVersionOptions struct {
 	// Type is a public field utilized by JSON:API to
 	// set the resource type via the field tag.
 	// It is not a user-defined value and does not need to be set.

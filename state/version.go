@@ -3,24 +3,42 @@ package state
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
 )
 
-// version is a specific version of terraform state. It includes important
-// metadata as well as the state file itself.
-//
-// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
-type version struct {
-	ID          string
-	CreatedAt   time.Time
-	Serial      int64
-	State       []byte     // state file
-	Outputs     outputList // state version has many outputs
-	WorkspaceID string     // state version belongs to a workspace
-}
+type (
+	// version is a specific version of terraform state. It includes important
+	// metadata as well as the state file itself.
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
+	version struct {
+		ID          string
+		CreatedAt   time.Time
+		Serial      int64
+		State       []byte     // state file
+		Outputs     outputList // state version has many outputs
+		WorkspaceID string     // state version belongs to a workspace
+	}
+
+	// versionList represents a list of state versions.
+	versionList struct {
+		*otf.Pagination
+		Items []*version
+	}
+
+	output struct {
+		id             string
+		name           string
+		typ            string
+		value          string
+		sensitive      bool
+		stateVersionID string
+	}
+
+	outputList map[string]*output
+)
 
 // newVersion constructs a new state version.
 func newVersion(opts CreateStateVersionOptions) (*version, error) {
@@ -69,17 +87,3 @@ func newVersion(opts CreateStateVersionOptions) (*version, error) {
 }
 
 func (v *version) String() string { return v.ID }
-
-// ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (v *version) ToJSONAPI() any {
-	j := &jsonapiVersion{
-		ID:          v.ID,
-		CreatedAt:   v.CreatedAt,
-		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", v.ID),
-		Serial:      v.Serial,
-	}
-	for _, out := range v.Outputs {
-		j.Outputs = append(j.Outputs, out.ToJSONAPI().(*jsonapiVersionOutput))
-	}
-	return j
-}

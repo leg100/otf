@@ -10,6 +10,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 // Client uses json-api according to the documented terraform cloud state
@@ -29,7 +30,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 	}
 
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(*opts.WorkspaceID))
-	req, err := c.NewRequest("POST", u, &jsonapiCreateVersionOptions{
+	req, err := c.NewRequest("POST", u, &jsonapi.StateVersionCreateVersionOptions{
 		Lineage: &state.Lineage,
 		MD5:     otf.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
 		Serial:  otf.Int64(state.Serial),
@@ -56,7 +57,7 @@ func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) (
 	if err != nil {
 		return nil, err
 	}
-	v := &jsonapiVersion{}
+	v := &jsonapi.StateVersion{}
 	err = c.Do(ctx, req, v)
 	if err != nil {
 		return nil, err

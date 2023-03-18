@@ -8,13 +8,17 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/workspace"
 )
 
 // cacheKey generates a key for caching state files
 func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
 
 type (
-	StateService = Service
+
+	// Alias services so they don't conflict when nested together in struct
+	WorkspaceService = workspace.Service
+	StateService     = Service
 
 	// Service is the application Service for state
 	Service interface {
@@ -44,6 +48,7 @@ type (
 
 		*api
 	}
+
 	Options struct {
 		logr.Logger
 
@@ -73,15 +78,12 @@ type (
 
 func NewService(opts Options) *service {
 	svc := service{
-		Logger: opts.Logger,
+		Logger:    opts.Logger,
+		db:        newPGDB(opts.DB),
+		cache:     opts.Cache,
+		workspace: opts.WorkspaceAuthorizer,
 	}
-
-	svc.db = newPGDB(opts.DB)
-	svc.cache = opts.Cache
-	svc.workspace = opts.WorkspaceAuthorizer
-
-	svc.api = &api{&svc}
-
+	svc.api = &api{&svc, &jsonapiMarshaler{}}
 	return &svc
 }
 

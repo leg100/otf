@@ -42,7 +42,7 @@ type Publisher interface {
 	Publish(Event)
 }
 
-// Subscriber creates a subscription to OTF events.
+// Subscriber is capable of creating a subscription to events.
 type Subscriber interface {
 	// Subscribe subscribes the caller to OTF events. Name uniquely identifies the
 	// caller.

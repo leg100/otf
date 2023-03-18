@@ -7,18 +7,23 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
 type api struct {
 	svc Service
+
+	*jsonapiMarshaler
 }
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 func (h *api) AddHandlers(r *mux.Router) {
+	r = otfhttp.APIRouter(r)
+
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion).Methods("GET")
 	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
@@ -36,7 +41,7 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := jsonapiCreateVersionOptions{}
+	opts := jsonapi.StateVersionCreateVersionOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -75,7 +80,7 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, sv)
+	h.writeResponse(w, r, sv, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (h *api) listVersions(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +94,7 @@ func (h *api) listVersions(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, svl)
+	h.writeResponse(w, r, svl)
 }
 
 func (h *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +109,7 @@ func (h *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, sv)
+	h.writeResponse(w, r, sv)
 }
 
 func (h *api) getVersion(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +123,7 @@ func (h *api) getVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, sv)
+	h.writeResponse(w, r, sv)
 }
 
 func (h *api) downloadState(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +151,7 @@ func (h *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, sv.Outputs)
+	h.writeResponse(w, r, sv.Outputs)
 }
 
 func (h *api) getOutput(w http.ResponseWriter, r *http.Request) {
@@ -160,5 +165,22 @@ func (h *api) getOutput(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, out)
+	h.writeResponse(w, r, out)
+}
+
+// writeResponse encodes v as json:api and writes it to the body of the http response.
+func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+	var payload any
+
+	switch v := v.(type) {
+	case *versionList:
+		payload = h.toList(v)
+	case *version:
+		payload = h.toVersion(v)
+	case outputList:
+		payload = h.toOutputList(v)
+	case *output:
+		payload = h.toOutput(v)
+	}
+	jsonapi.WriteResponse(w, r, payload, opts...)
 }
