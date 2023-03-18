@@ -1,9 +1,5 @@
 package workspace
 
-import (
-	"github.com/leg100/otf"
-)
-
 // UserLock is a lock held by a user
 type UserLock struct {
 	ID, Username string
@@ -13,14 +9,14 @@ func (l UserLock) String() string { return l.Username }
 
 func (l UserLock) CanLock(lock LockedState) error {
 	// nothing can replace a user lock; it can only be unlocked
-	return otf.ErrWorkspaceAlreadyLocked
+	return ErrWorkspaceAlreadyLocked
 }
 
 func (l UserLock) CanUnlock(state LockedState, force bool) error {
 	// only a user lock can unlock a user lock
 	user, ok := state.(UserLock)
 	if !ok {
-		return otf.ErrWorkspaceUnlockDenied
+		return ErrWorkspaceUnlockDenied
 	}
 
 	// any user lock can forceably unlock a user lock
@@ -32,5 +28,5 @@ func (l UserLock) CanUnlock(state LockedState, force bool) error {
 	if l == user {
 		return nil
 	}
-	return otf.ErrWorkspaceLockedByDifferentUser
+	return ErrWorkspaceLockedByDifferentUser
 }

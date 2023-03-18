@@ -102,6 +102,7 @@ func (m *jsonapiMarshaler) toList(list *WorkspaceList, r *http.Request) (*jsonap
 		items = append(items, item)
 	}
 	return &jsonapi.WorkspaceList{
+		Items:      items,
 		Pagination: list.Pagination.ToJSONAPI(),
 	}, nil
 }

@@ -82,7 +82,7 @@ func GetLockedState(subject otf.Subject, runID *string) (LockedState, error) {
 	} else if user, ok := subject.(*auth.User); ok {
 		state = UserLock{ID: user.ID, Username: user.Username}
 	} else {
-		return nil, otf.ErrWorkspaceInvalidLock
+		return nil, ErrWorkspaceInvalidLock
 	}
 	return state, nil
 }

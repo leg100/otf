@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -40,7 +39,7 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 			params.RunID = pgtype.Text{Status: pgtype.Null}
 			params.UserID = pgtype.Text{Status: pgtype.Null}
 		default:
-			return otf.ErrWorkspaceInvalidLock
+			return ErrWorkspaceInvalidLock
 		}
 		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
 		if err != nil {

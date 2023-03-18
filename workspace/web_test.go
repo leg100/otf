@@ -106,7 +106,7 @@ func TestUpdateWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, "/workspaces/ws-123/edit", redirect.Path)
+		assert.Equal(t, "/app/workspaces/ws-123/edit", redirect.Path)
 	}
 }
 
@@ -176,7 +176,7 @@ func TestLockWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
+		assert.Equal(t, "/app/workspaces/ws-123", redirect.Path)
 	}
 }
 
@@ -195,7 +195,7 @@ func TestUnlockWorkspace(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
+		assert.Equal(t, "/app/workspaces/ws-123", redirect.Path)
 	}
 }
 
@@ -254,7 +254,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
+		assert.Equal(t, "/app/workspaces/ws-123", redirect.Path)
 	}
 }
 
@@ -273,7 +273,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, "/workspaces/ws-123", redirect.Path)
+		assert.Equal(t, "/app/workspaces/ws-123", redirect.Path)
 	}
 }
 
@@ -308,12 +308,6 @@ func withVCSProviders(providers ...*vcsprovider.VCSProvider) fakeWebServiceOptio
 func withRepos(repos ...string) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.repos = repos
-	}
-}
-
-func withRun(run run) fakeWebServiceOption {
-	return func(svc *fakeWebService) {
-		svc.run = run
 	}
 }
 

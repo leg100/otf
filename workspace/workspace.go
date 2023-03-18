@@ -4,6 +4,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
@@ -19,6 +20,18 @@ const (
 
 	DefaultAllowDestroyPlan    = true
 	DefaultFileTriggersEnabled = true
+
+	MinTerraformVersion     = "1.2.0"
+	DefaultTerraformVersion = "1.3.7"
+)
+
+var (
+	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
+	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
+	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
+	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
+	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
+	ErrUnsupportedTerraformVersion    = fmt.Errorf("only terraform versions >= %s are supported", MinTerraformVersion)
 )
 
 type (
@@ -158,7 +171,7 @@ func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
 		ExecutionMode:       RemoteExecutionMode,
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
-		TerraformVersion:    otf.DefaultTerraformVersion,
+		TerraformVersion:    DefaultTerraformVersion,
 		SpeculativeEnabled:  true,
 		Organization:        *opts.Organization,
 	}
@@ -340,8 +353,8 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	if !otf.ValidSemanticVersion(v) {
 		return otf.ErrInvalidTerraformVersion
 	}
-	if result := semver.Compare(v, otf.MinTerraformVersion); result < 0 {
-		return otf.ErrUnsupportedTerraformVersion
+	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
+		return ErrUnsupportedTerraformVersion
 	}
 	ws.TerraformVersion = v
 	return nil

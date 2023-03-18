@@ -13,7 +13,7 @@ import (
 
 type (
 	api struct {
-		svc             Service
+		svc Service
 
 		*jsonapiMarshaler
 	}
@@ -169,44 +169,44 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 // UpdateWorkspace updates a workspace using its ID.
 //
 // TODO: support updating workspace's vcs repo.
-func (s *api) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *api) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	s.updateWorkspace(w, r, workspaceID)
+	a.updateWorkspace(w, r, workspaceID)
 }
 
 // UpdateWorkspaceByName updates a workspace using its name and organization.
 //
 // TODO: support updating workspace's vcs repo.
-func (s *api) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (a *api) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byName
 	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
 
-	s.updateWorkspace(w, r, ws.ID)
+	a.updateWorkspace(w, r, ws.ID)
 }
 
-func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.svc.LockWorkspace(r.Context(), id, nil)
-	if err == otf.ErrWorkspaceAlreadyLocked {
+	ws, err := a.svc.LockWorkspace(r.Context(), id, nil)
+	if err == ErrWorkspaceAlreadyLocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -214,10 +214,10 @@ func (s *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeResponse(w, r, ws)
+	a.writeResponse(w, r, ws)
 }
 
-func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -229,8 +229,8 @@ func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.svc.UnlockWorkspace(r.Context(), id, nil, opts.Force)
-	if err == otf.ErrWorkspaceAlreadyUnlocked {
+	ws, err := a.svc.UnlockWorkspace(r.Context(), id, nil, opts.Force)
+	if err == ErrWorkspaceAlreadyUnlocked {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -238,17 +238,17 @@ func (s *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeResponse(w, r, ws)
+	a.writeResponse(w, r, ws)
 }
 
-func (s *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
+func (a *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	_, err = s.svc.delete(r.Context(), workspaceID)
+	_, err = a.svc.delete(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -256,19 +256,19 @@ func (s *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+func (a *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byName
 	if err := decode.All(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := s.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	ws, err := a.svc.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	_, err = s.svc.delete(r.Context(), ws.ID)
+	_, err = a.svc.delete(r.Context(), ws.ID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -276,7 +276,7 @@ func (s *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
+func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
 	opts := jsonapi.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
@@ -287,7 +287,7 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	ws, err := s.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateWorkspaceOptions{
+	ws, err := a.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -307,19 +307,19 @@ func (s *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	s.writeResponse(w, r, ws)
+	a.writeResponse(w, r, ws)
 }
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.
-func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+func (a *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
 	var payload any
 	var err error
 
 	switch v := v.(type) {
 	case *WorkspaceList:
-		payload, err = s.toList(v, r)
+		payload, err = a.toList(v, r)
 	case *Workspace:
-		payload, err = s.toWorkspace(v, r)
+		payload, err = a.toWorkspace(v, r)
 	}
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)

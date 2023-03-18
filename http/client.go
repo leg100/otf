@@ -463,15 +463,6 @@ func checkResponseCode(r *http.Response) error {
 		return otf.ErrUnauthorized
 	case 404:
 		return otf.ErrResourceNotFound
-	case 409:
-		switch {
-		case strings.HasSuffix(r.Request.URL.Path, "actions/lock"):
-			return otf.ErrWorkspaceAlreadyLocked
-		case strings.HasSuffix(r.Request.URL.Path, "actions/unlock"):
-			return otf.ErrWorkspaceAlreadyUnlocked
-		case strings.HasSuffix(r.Request.URL.Path, "actions/force-unlock"):
-			return otf.ErrWorkspaceAlreadyUnlocked
-		}
 	}
 	// Decode the error payload.
 	errPayload := &jsonapi.ErrorsPayload{}

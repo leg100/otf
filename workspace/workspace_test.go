@@ -58,7 +58,7 @@ func TestNewWorkspace(t *testing.T) {
 				Organization:     otf.String("my-org"),
 				TerraformVersion: otf.String("0.14.0"),
 			},
-			want: otf.ErrUnsupportedTerraformVersion,
+			want: ErrUnsupportedTerraformVersion,
 		},
 	}
 	for _, tt := range tests {

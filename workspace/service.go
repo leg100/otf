@@ -95,8 +95,8 @@ func NewService(opts Options) *service {
 		svc:              &svc,
 	}
 	svc.web = &webHandlers{
-		Renderer:          opts.Renderer,
-		svc:               &svc,
+		Renderer: opts.Renderer,
+		svc:      &svc,
 	}
 
 	return serviceWithDB(&svc, newdb(opts.DB))
@@ -228,19 +228,19 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 	return nil, nil
 }
 
-func (a *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+func (s *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
 	ws, err := NewWorkspace(opts)
 	if err != nil {
-		a.Error(err, "constructing workspace")
+		s.Error(err, "constructing workspace")
 		return nil, err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization)
+	subject, err := s.organization.CanAccess(ctx, rbac.CreateWorkspaceAction, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	err = a.tx(ctx, func(tx *service) error {
+	err = s.tx(ctx, func(tx *service) error {
 		if err := tx.db.CreateWorkspace(ctx, ws); err != nil {
 			return err
 		}
@@ -255,113 +255,113 @@ func (a *service) create(ctx context.Context, opts CreateWorkspaceOptions) (*Wor
 		return nil
 	})
 	if err != nil {
-		a.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
+		s.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 		return nil, err
 	}
 
-	a.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
+	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
+	s.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
 	return ws, nil
 }
 
-func (a *service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*repo.Connection, error) {
-	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+func (s *service) connect(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*repo.Connection, error) {
+	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := a.repo.Connect(ctx, repo.ConnectOptions{
+	conn, err := s.repo.Connect(ctx, repo.ConnectOptions{
 		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.VCSProviderID,
 		RepoPath:       opts.RepoPath,
 	})
 	if err != nil {
-		a.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)
+		s.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)
 		return nil, err
 	}
 
-	a.V(0).Info("connected workspace repo", "workspace", workspaceID, "subject", subject, "repo", opts)
+	s.V(0).Info("connected workspace repo", "workspace", workspaceID, "subject", subject, "repo", opts)
 
 	return conn, nil
 }
 
-func (a *service) disconnect(ctx context.Context, workspaceID string) error {
-	subject, err := a.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+func (s *service) disconnect(ctx context.Context, workspaceID string) error {
+	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
 	}
 
-	err = a.repo.Disconnect(ctx, repo.DisconnectOptions{
+	err = s.repo.Disconnect(ctx, repo.DisconnectOptions{
 		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
 	// ignore warnings; the repo is still disconnected successfully
 	if err != nil && !errors.Is(err, otf.ErrWarning) {
-		a.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
+		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return err
 	}
 
-	a.V(0).Info("disconnected workspace", "workspace", workspaceID, "subject", subject)
+	s.V(0).Info("disconnected workspace", "workspace", workspaceID, "subject", subject)
 
 	return nil
 }
 
 // getRun retrieves a workspace run.
-func (a *service) getRun(ctx context.Context, runID string) (run, error) {
-	result, err := a.db.getRun(ctx, runID)
+func (s *service) getRun(ctx context.Context, runID string) (run, error) {
+	result, err := s.db.getRun(ctx, runID)
 	if err != nil {
-		a.Error(err, "retrieving workspace run", "run", runID)
+		s.Error(err, "retrieving workspace run", "run", runID)
 		return run{}, err
 	}
 
-	a.V(2).Info("retrieved workspace run", "run", runID)
+	s.V(2).Info("retrieved workspace run", "run", runID)
 
 	return result, nil
 }
 
-func (a *service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := a.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
+func (s *service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
+	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	ws, err := a.db.GetWorkspace(ctx, workspaceID)
+	ws, err := s.db.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
 	// disconnect repo before deleting
 	if ws.Connection != nil {
-		err = a.disconnect(ctx, ws.ID)
+		err = s.disconnect(ctx, ws.ID)
 		// ignore warnings; the repo is still disconnected successfully
 		if err != nil && !errors.Is(err, otf.ErrWarning) {
 			return nil, err
 		}
 	}
 
-	if err := a.db.DeleteWorkspace(ctx, ws.ID); err != nil {
-		a.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
+	if err := s.db.DeleteWorkspace(ctx, ws.ID); err != nil {
+		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 		return nil, err
 	}
 
-	a.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
+	s.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
-	a.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
+	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 
 	return ws, nil
 }
 
 // SetCurrentRun sets the current run for the workspace
-func (a *service) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
-	return a.db.SetCurrentRun(ctx, workspaceID, runID)
+func (s *service) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error) {
+	return s.db.SetCurrentRun(ctx, workspaceID, runID)
 }
 
 // tx returns a service in a callback, with its database calls wrapped within a transaction
-func (a *service) tx(ctx context.Context, txFunc func(*service) error) error {
-	return a.db.Tx(ctx, func(db otf.DB) error {
-		return txFunc(serviceWithDB(a, newdb(db)))
+func (s *service) tx(ctx context.Context, txFunc func(*service) error) error {
+	return s.db.Tx(ctx, func(db otf.DB) error {
+		return txFunc(serviceWithDB(s, newdb(db)))
 	})
 }
