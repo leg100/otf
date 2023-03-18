@@ -11,6 +11,8 @@ import (
 
 type api struct {
 	svc Service
+
+	*jsonapiMarshaler
 }
 
 // Implements TFC state versions API:
@@ -44,7 +46,7 @@ func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, org, jsonapi.WithCode(http.StatusCreated))
+	h.writeResponse(w, r, org, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +62,7 @@ func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, org)
+	h.writeResponse(w, r, org)
 }
 
 func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +78,7 @@ func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, list)
+	h.writeResponse(w, r, list)
 }
 
 func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +103,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, org)
+	h.writeResponse(w, r, org)
 }
 
 func (h *api) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +134,20 @@ func (h *api) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := jsonapi.Entitlements(entitlements)
-	jsonapi.WriteResponse(w, r, &response)
+	h.writeResponse(w, r, entitlements)
+}
+
+// writeResponse encodes v as json:api and writes it to the body of the http response.
+func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+	var payload any
+
+	switch v := v.(type) {
+	case *OrganizationList:
+		payload = h.toList(v)
+	case *Organization:
+		payload = h.toOrganization(v)
+	case Entitlements:
+		payload = jsonapi.Entitlements(v)
+	}
+	jsonapi.WriteResponse(w, r, payload, opts...)
 }

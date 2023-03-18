@@ -1,3 +1,4 @@
+// Package organization is responsible for OTF organizations
 package organization
 
 import (

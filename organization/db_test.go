@@ -13,7 +13,7 @@ import (
 
 func TestOrganization_Create(t *testing.T) {
 	ctx := context.Background()
-	db := newDB(sql.NewTestDB(t))
+	db := &pgdb{sql.NewTestDB(t)}
 
 	t.Run("create", func(t *testing.T) {
 		org := NewTestOrganization(t)

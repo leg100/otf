@@ -36,6 +36,8 @@ type (
 		db   *pgdb
 		site otf.Authorizer // authorize access to site
 		web  *web
+
+		*jsonapiMarshaler
 	}
 
 	Options struct {
@@ -48,13 +50,17 @@ type (
 
 func NewService(opts Options) *service {
 	svc := service{
-		Authorizer: &Authorizer{opts.Logger},
-		Logger:     opts.Logger,
-		Publisher:  opts.Publisher,
+		Authorizer:       &Authorizer{opts.Logger},
+		Logger:           opts.Logger,
+		Publisher:        opts.Publisher,
+		db:               &pgdb{opts.DB},
+		site:             &otf.SiteAuthorizer{opts.Logger},
+		jsonapiMarshaler: &jsonapiMarshaler{},
 	}
-	svc.api = &api{svc: &svc}
-	svc.db = newDB(opts.DB)
-	svc.site = &otf.SiteAuthorizer{opts.Logger}
+	svc.api = &api{
+		svc:              &svc,
+		jsonapiMarshaler: &jsonapiMarshaler{},
+	}
 	svc.web = &web{opts.Renderer, &svc}
 	return &svc
 }
@@ -140,7 +146,11 @@ func (a *service) GetOrganization(ctx context.Context, name string) (*Organizati
 }
 
 func (a *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {
-	return nil, nil
+	org, err := a.GetOrganization(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	return a.toOrganization(org), nil
 }
 
 func (a *service) DeleteOrganization(ctx context.Context, name string) error {

@@ -10,14 +10,21 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// pgdb is a database of organizations on postgres
-type pgdb struct {
-	otf.DB // provides access to generated SQL queries
-}
+type (
+	// pgdb is a database of organizations on postgres
+	pgdb struct {
+		otf.DB // provides access to generated SQL queries
+	}
 
-func newDB(db otf.DB) *pgdb {
-	return &pgdb{db}
-}
+	row struct {
+		OrganizationID  pgtype.Text        `json:"organization_id"`
+		CreatedAt       pgtype.Timestamptz `json:"created_at"`
+		UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+		Name            pgtype.Text        `json:"name"`
+		SessionRemember int                `json:"session_remember"`
+		SessionTimeout  int                `json:"session_timeout"`
+	}
+)
 
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
@@ -154,16 +161,7 @@ func (db *pgdb) delete(ctx context.Context, name string) error {
 	return nil
 }
 
-type row struct {
-	OrganizationID  pgtype.Text        `json:"organization_id"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	Name            pgtype.Text        `json:"name"`
-	SessionRemember int                `json:"session_remember"`
-	SessionTimeout  int                `json:"session_timeout"`
-}
-
-// unmarshalRow converts an organization database row into an
+// row converts an organization database row into an
 // organization.
 func (r row) toOrganization() *Organization {
 	return &Organization{
