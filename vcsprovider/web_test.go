@@ -50,7 +50,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/vcs-providers", org.Name), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/app/organizations/%s/vcs-providers", org.Name), redirect.Path)
 	} else {
 		t.Log(w.Body.String())
 	}

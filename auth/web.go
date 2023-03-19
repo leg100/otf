@@ -33,17 +33,17 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	// Authenticated routes
 	r = html.UIRouter(r)
-	r = r.NewRoute().Subrouter()
 	r.Use(AuthenticateSession(h.svc)) // require session cookie
 
 	h.addAgentTokenHandlers(r)
 	h.addSessionHandlers(r)
 	h.addTeamHandlers(r)
+	h.addTokenHandlers(r)
 
 	r.HandleFunc("/organizations/{name}/users", h.listUsers).Methods("GET")
 
 	r.HandleFunc("/logout", h.logoutHandler).Methods("POST")
-	r.HandleFunc("/profile", h.profileHandler).Methods("POST")
+	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
 }
 
 func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {

@@ -80,9 +80,10 @@ func NewService(opts Options) *service {
 		Signer: opts.Signer,
 	}
 	svc.web = &webHandlers{
-		HostnameService: opts.HostnameService,
-		Renderer:        opts.Renderer,
-		svc:             &svc,
+		HostnameService:    opts.HostnameService,
+		Renderer:           opts.Renderer,
+		VCSProviderService: opts.VCSProviderService,
+		svc:                &svc,
 	}
 	return &svc
 }

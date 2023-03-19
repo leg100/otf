@@ -58,8 +58,9 @@ func NewService(opts Options) *service {
 	}
 
 	svc.web = &webHandlers{
-		Renderer: opts.Renderer,
-		svc:      &svc,
+		CloudService: opts.Service,
+		Renderer:     opts.Renderer,
+		svc:          &svc,
 	}
 	return &svc
 }

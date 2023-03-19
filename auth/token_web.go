@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-func (app *webHandlers) AddHandlers(r *mux.Router) {
+func (app *webHandlers) addTokenHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET")
 	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST")
 	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET")
