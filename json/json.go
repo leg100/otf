@@ -1,3 +1,4 @@
+// Package json provides helpers for the JSON encoding.
 package json
 
 import "encoding/json"

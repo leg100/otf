@@ -124,8 +124,8 @@ func (c Chunk) IsEnd() bool {
 	return len(c.Data) > 0 && c.Data[len(c.Data)-1] == 0x03
 }
 
-func (l Chunk) ToHTML() template.HTML {
-	chunk := l.RemoveStartMarker()
+func (c Chunk) ToHTML() template.HTML {
+	chunk := c.RemoveStartMarker()
 	chunk = chunk.RemoveEndMarker()
 
 	// convert ANSI escape sequences to HTML

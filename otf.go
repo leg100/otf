@@ -129,7 +129,7 @@ func ValidStringID(v *string) bool {
 	return v != nil && ReStringID.MatchString(*v)
 }
 
-// validStringID checks if the given string pointer is non-nil and contains a
+// ValidSemanticVersion checks if v is a
 // valid semantic version (major.minor.patch).
 func ValidSemanticVersion(v string) bool {
 	return ReSemanticVersion.MatchString(v)

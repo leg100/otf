@@ -6,17 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type fakeWeb struct {
-	app *fakeService
-	otf.Renderer
-}
 
 func newFakeWeb(t *testing.T, svc AuthService) *webHandlers {
 	renderer, err := html.NewViewEngine(false)

@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/schema"
 )
 
-// Query schema Encoder, caches structs, and safe for sharing
+// Encoder for encoding structs into queries: caches structs, and safe for sharing
 var Encoder = schema.NewEncoder()
 
 // Absolute returns an absolute URL for the given path. It uses the http request

@@ -1,3 +1,4 @@
+// Package pubsub implements cluster-wide publishing and subscribing of events
 package pubsub
 
 import (
