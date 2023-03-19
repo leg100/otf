@@ -15,7 +15,7 @@ type (
 		AgentTokenService
 		RegistrySessionService
 		sessionService
-		teamService
+		TeamService
 		tokenService
 		UserService
 	}

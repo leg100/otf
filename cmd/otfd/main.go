@@ -214,9 +214,10 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:      logger,
 		DB:          db,
-		Publisher:   hub,
+		Hub:         hub,
 		Renderer:    renderer,
 		RepoService: repoService,
+		TeamService: authService,
 	})
 	handlers = append(handlers, workspaceService)
 
@@ -237,7 +238,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		WorkspaceAuthorizer:         workspaceService,
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
-		Publisher:                   hub,
+		Hub:                         hub,
 		Cache:                       cache,
 		Signer:                      signer,
 	})

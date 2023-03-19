@@ -18,7 +18,7 @@ func NewTestConfigurationVersion(t *testing.T, ws *workspace.Workspace, opts Con
 func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws *workspace.Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
 	ctx := context.Background()
 	cv := NewTestConfigurationVersion(t, ws, opts)
-	cvDB := newPGDB(db)
+	cvDB := &pgdb{db}
 
 	err := cvDB.CreateConfigurationVersion(ctx, cv)
 	require.NoError(t, err)

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"time"
 
 	"github.com/leg100/otf"
@@ -21,33 +20,6 @@ type (
 	NewTeamOptions struct {
 		Name         string `schema:"team_name,required"`
 		Organization string `schema:"organization_name,required"`
-	}
-
-	// TeamService provides methods to interact with team accounts and their
-	// sessions.
-	TeamService interface {
-		// CreateTeam creates a team with the given name belong to the named
-		// organization.
-		CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error)
-		UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
-		// Get retrieves a team with the given ID
-		GetTeam(ctx context.Context, teamID string) (*Team, error)
-		// ListTeams lists teams in an organization.
-		ListTeams(ctx context.Context, organization string) ([]*Team, error)
-		// ListTeamMembers lists users that are members of the given team
-		ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
-	}
-
-	// TeamStore is a persistence store for team accounts.
-	TeamStore interface {
-		CreateTeam(ctx context.Context, team *Team) error
-		UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error)
-		GetTeam(ctx context.Context, name, organization string) (*Team, error)
-		GetTeamByID(ctx context.Context, teamID string) (*Team, error)
-		DeleteTeam(ctx context.Context, teamID string) error
-		ListTeams(ctx context.Context, organization string) ([]*Team, error)
-		// ListTeamMembers lists users that are members of the given team
-		ListTeamMembers(ctx context.Context, teamID string) ([]User, error)
 	}
 
 	// OrganizationAccess defines a team's organization access.

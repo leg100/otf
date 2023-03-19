@@ -14,7 +14,7 @@ import (
 
 func TestConfigurationVersion_Create(t *testing.T) {
 	ctx := context.Background()
-	db := &db{sql.NewTestDB(t)}
+	db := &pgdb{sql.NewTestDB(t)}
 
 	t.Run("create", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)

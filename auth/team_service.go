@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type teamService interface {
+type TeamService interface {
 	CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error)
 	GetTeam(ctx context.Context, organization, team string) (*Team, error)
 	GetTeamByID(ctx context.Context, teamID string) (*Team, error)

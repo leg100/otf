@@ -169,7 +169,7 @@ type fakeWebServices struct {
 	vcsprovs []*vcsprovider.VCSProvider
 	repos    []string
 
-	service
+	Service
 
 	vcsprovider.VCSProviderService
 }

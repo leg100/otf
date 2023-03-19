@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/surl"
@@ -39,15 +40,15 @@ func newAPI(opts apiOptions) *api {
 }
 
 func (s *api) AddHandlers(r *mux.Router) {
-	// ConfigurationVersion routes
+	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
+	signed.Use(otf.VerifySignedURL(s.Verifier))
+	signed.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion()).Methods("PUT")
+
+	r = otfhttp.APIRouter(r)
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)
 	r.HandleFunc("/configuration-versions/{id}", s.GetConfigurationVersion)
 	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
 	r.HandleFunc("/configuration-versions/{id}/download", s.DownloadConfigurationVersion)
-
-	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(otf.VerifySignedURL(s.Verifier))
-	signed.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion()).Methods("PUT")
 }
 
 func (s *api) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +63,7 @@ func (s *api) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cv, err := s.svc.create(r.Context(), workspaceID, ConfigurationVersionCreateOptions{
+	cv, err := s.svc.CreateConfigurationVersion(r.Context(), workspaceID, ConfigurationVersionCreateOptions{
 		AutoQueueRuns: opts.AutoQueueRuns,
 		Speculative:   opts.Speculative,
 	})
@@ -81,7 +82,7 @@ func (s *api) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cv, err := s.svc.get(r.Context(), id)
+	cv, err := s.svc.GetConfigurationVersion(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -100,7 +101,7 @@ func (s *api) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cvl, err := s.svc.list(r.Context(), params.WorkspaceID, ConfigurationVersionListOptions{
+	cvl, err := s.svc.ListConfigurationVersions(r.Context(), params.WorkspaceID, ConfigurationVersionListOptions{
 		ListOptions: params.ListOptions,
 	})
 	if err != nil {

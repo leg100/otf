@@ -120,8 +120,11 @@ func (a *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 // Subject is an organization token: return its organization
 // Subject is an team token: return its organization
 func (a *service) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.ListOrganizationsAction, "")
-	if err == nil {
+	subject, err := otf.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
 		return a.db.list(ctx, opts)
 	}
 	opts.Names = subject.ListOrganizations()

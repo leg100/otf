@@ -15,38 +15,38 @@ func cacheKey(cvID string) string {
 // upload saves a configuration tarball to the db
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (a *service) upload(ctx context.Context, cvID string, config []byte) error {
-	err := a.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
+func (s *service) upload(ctx context.Context, cvID string, config []byte) error {
+	err := s.db.UploadConfigurationVersion(ctx, cvID, func(cv *ConfigurationVersion, uploader ConfigUploader) error {
 		return cv.Upload(ctx, config, uploader)
 	})
 	if err != nil {
-		a.Error(err, "uploading configuration")
+		s.Error(err, "uploading configuration")
 		return err
 	}
-	if err := a.cache.Set(cacheKey(cvID), config); err != nil {
+	if err := s.cache.Set(cacheKey(cvID), config); err != nil {
 		return fmt.Errorf("caching configuration version tarball: %w", err)
 	}
-	a.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
+	s.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
 	return nil
 }
 
 // download retrieves a tarball from the db
-func (a *service) download(ctx context.Context, cvID string) ([]byte, error) {
-	subject, err := a.canAccess(ctx, rbac.DownloadConfigurationVersionAction, cvID)
+func (s *service) download(ctx context.Context, cvID string) ([]byte, error) {
+	subject, err := s.canAccess(ctx, rbac.DownloadConfigurationVersionAction, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	if config, err := a.cache.Get(cacheKey(cvID)); err == nil {
+	if config, err := s.cache.Get(cacheKey(cvID)); err == nil {
 		return config, nil
 	}
-	config, err := a.db.GetConfig(ctx, cvID)
+	config, err := s.db.GetConfig(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
-	if err := a.cache.Set(cacheKey(cvID), config); err != nil {
+	if err := s.cache.Set(cacheKey(cvID), config); err != nil {
 		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
 	}
-	a.V(2).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)
+	s.V(2).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)
 	return config, nil
 }

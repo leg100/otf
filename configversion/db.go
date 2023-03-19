@@ -11,16 +11,12 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-type db struct {
+type pgdb struct {
 	otf.DB // provides access to generated SQL queries
 }
 
-func newPGDB(otfdb otf.DB) *db {
-	return &db{otfdb}
-}
-
-func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
-	return pdb.tx(ctx, func(tx *db) error {
+func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
+	return db.tx(ctx, func(tx *pgdb) error {
 		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 			ID:            sql.String(cv.ID),
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
@@ -57,8 +53,8 @@ func (pdb *db) CreateConfigurationVersion(ctx context.Context, cv *Configuration
 	})
 }
 
-func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
-	return pdb.tx(ctx, func(tx *db) error {
+func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
+	return db.tx(ctx, func(tx *pgdb) error {
 		// select ...for update
 		result, err := tx.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
 		if err != nil {
@@ -73,7 +69,7 @@ func (pdb *db) UploadConfigurationVersion(ctx context.Context, id string, fn fun
 	})
 }
 
-func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
@@ -104,7 +100,7 @@ func (db *db) ListConfigurationVersions(ctx context.Context, workspaceID string,
 	}, nil
 }
 
-func (db *db) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
+func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
 	if opts.ID != nil {
 		result, err := db.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
@@ -122,11 +118,11 @@ func (db *db) GetConfigurationVersion(ctx context.Context, opts ConfigurationVer
 	}
 }
 
-func (db *db) GetConfig(ctx context.Context, id string) ([]byte, error) {
+func (db *pgdb) GetConfig(ctx context.Context, id string) ([]byte, error) {
 	return db.DownloadConfigurationVersion(ctx, sql.String(id))
 }
 
-func (db *db) DeleteConfigurationVersion(ctx context.Context, id string) error {
+func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteConfigurationVersionByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
@@ -134,7 +130,7 @@ func (db *db) DeleteConfigurationVersion(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVersion) error {
+func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVersion) error {
 	sts, err := cv.StatusTimestamp(cv.Status)
 	if err != nil {
 		return err
@@ -148,9 +144,9 @@ func (db *db) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVers
 }
 
 // tx constructs a new pgdb within a transaction.
-func (db *db) tx(ctx context.Context, callback func(*db) error) error {
+func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
-		return callback(newPGDB(tx))
+		return callback(&pgdb{tx})
 	})
 }
 

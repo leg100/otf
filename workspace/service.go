@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
@@ -66,10 +67,11 @@ type (
 
 	Options struct {
 		otf.DB
-		otf.Publisher
+		*pubsub.Hub
 		otf.Renderer
 		organization.OrganizationService
 		repo.RepoService
+		auth.TeamService
 		logr.Logger
 	}
 )
@@ -77,9 +79,8 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:    opts.Logger,
-		Publisher: opts.Publisher,
+		Publisher: opts.Hub,
 		repo:      opts.RepoService,
-		db:        newdb(opts.DB),
 	}
 
 	svc.organization = &organization.Authorizer{opts.Logger}
@@ -95,24 +96,28 @@ func NewService(opts Options) *service {
 		svc:              &svc,
 	}
 	svc.web = &webHandlers{
-		Renderer: opts.Renderer,
-		svc:      &svc,
+		Renderer:    opts.Renderer,
+		TeamService: opts.TeamService,
+		svc:         &svc,
 	}
+
+	// Must register table name and service with pubsub broker so that it knows
+	// how to lookup workspaces in the DB.
+	opts.Register("workspaces", &svc)
 
 	return serviceWithDB(&svc, newdb(opts.DB))
 }
 
 // serviceWithDB is for wrapping the service's db inside a tx
-func serviceWithDB(parent *service, db *pgdb) *service {
-	child := *parent
-	child.db = db
-	child.Authorizer = &authorizer{
-		Logger: parent.Logger,
+func serviceWithDB(svc *service, db *pgdb) *service {
+	svc.db = db
+	svc.Authorizer = &authorizer{
+		Logger: svc.Logger,
 		db:     db,
 	}
 	// TODO: construct connector
 
-	return &child
+	return svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
@@ -122,6 +127,11 @@ func (s *service) AddHandlers(r *mux.Router) {
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
 	return s.create(ctx, opts)
+}
+
+// GetByID implements pubsub.Getter
+func (s *service) GetByID(ctx context.Context, workspaceID string) (any, error) {
+	return s.db.GetWorkspace(ctx, workspaceID)
 }
 
 func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {

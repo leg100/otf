@@ -32,17 +32,6 @@ type (
 		Webhook          *pggen.Webhooks        `json:"webhook"`
 		Versions         []pggen.ModuleVersions `json:"versions"`
 	}
-
-	// versionRow is a row from a database query for module versions.
-	versionRow struct {
-		ModuleVersionID pgtype.Text        `json:"module_version_id"`
-		Version         pgtype.Text        `json:"version"`
-		CreatedAt       pgtype.Timestamptz `json:"created_at"`
-		UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-		Status          pgtype.Text        `json:"status"`
-		StatusError     pgtype.Text        `json:"status_error"`
-		ModuleID        pgtype.Text        `json:"module_id"`
-	}
 )
 
 func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {

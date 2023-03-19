@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
@@ -94,7 +95,7 @@ type (
 		otf.Cache
 		otf.DB
 		otf.Renderer
-		otf.Publisher
+		*pubsub.Hub
 		otf.Signer
 	}
 )
@@ -103,7 +104,7 @@ func NewService(opts Options) *service {
 	db := newDB(opts.DB)
 	svc := service{
 		Logger:           opts.Logger,
-		Publisher:        opts.Publisher,
+		Publisher:        opts.Hub,
 		WorkspaceService: opts.WorkspaceService,
 	}
 
@@ -127,6 +128,11 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
+
+	// Must register table name and service with pubsub broker so that it knows
+	// how to lookup workspaces in the DB.
+	opts.Register("runs", &svc)
+
 	return &svc
 }
 
@@ -160,6 +166,11 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 
 func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return s.get(ctx, runID)
+}
+
+// GetByID implements pubsub.Getter
+func (s *service) GetByID(ctx context.Context, runID string) (any, error) {
+	return s.db.GetRun(ctx, runID)
 }
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the

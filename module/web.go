@@ -26,9 +26,9 @@ type (
 		otf.Signer
 		otf.Renderer
 		vcsprovider.VCSProviderService
+		otf.HostnameService
 
-		hostname string
-		svc      service
+		svc Service
 	}
 
 	newModuleStep string
@@ -117,7 +117,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		TerraformModule: modinfo,
 		Readme:          readme,
 		CurrentVersion:  modver,
-		Hostname:        h.hostname,
+		Hostname:        h.Hostname(),
 	})
 }
 

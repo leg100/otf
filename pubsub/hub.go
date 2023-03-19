@@ -20,28 +20,30 @@ const defaultChannel = "events"
 // processes
 var pid = uuid.New().String()
 
-// Getter retrieves a resource using its ID.
-type Getter interface {
-	GetByID(context.Context, string) (any, error)
-}
+type (
+	// Hub is a pubsub Hub implemented using postgres' listen/notify
+	Hub struct {
+		logr.Logger
 
-// Hub is a pubsub Hub implemented using postgres' listen/notify
-type Hub struct {
-	logr.Logger
+		channel string            // postgres notification channel name
+		pool    *pgxpool.Pool     // pool from which to acquire a dedicated connection to postgres
+		local   otf.PubSubService // local pub sub service to forward messages to
+		pid     string            // each pubsub maintains a unique identifier to distriguish messages it
+		// sends from messages other pubsub have sent
+		tables map[string]Getter // registered means of reassembling back into events
+	}
 
-	channel string            // postgres notification channel name
-	pool    *pgxpool.Pool     // pool from which to acquire a dedicated connection to postgres
-	local   otf.PubSubService // local pub sub service to forward messages to
-	pid     string            // each pubsub maintains a unique identifier to distriguish messages it
-	// sends from messages other pubsub have sent
-	tables map[string]Getter // registered means of reassembling back into events
-}
+	HubConfig struct {
+		ChannelName *string
+		PID         *string
+		PoolDB      otf.DB
+	}
 
-type HubConfig struct {
-	ChannelName *string
-	PID         *string
-	PoolDB      otf.DB
-}
+	// Getter retrieves an OTF resource using its ID.
+	Getter interface {
+		GetByID(context.Context, string) (any, error)
+	}
+)
 
 func NewHub(logger logr.Logger, cfg HubConfig) (*Hub, error) {
 	// required config
@@ -130,13 +132,11 @@ func (b *Hub) Start(ctx context.Context) error {
 func (b *Hub) Publish(event otf.Event) {
 	b.local.Publish(event)
 
-	// Don't publish vcs events to the rest of the cluster: the triggerer
-	// subscribes to vcs events and runs on each node in the cluster, but we
-	// only want each event to trigger one triggerer, so we restrict publishing
-	// the event to the local node.
-	//
-	// TODO: this is naff, but we'll remove this once we refactor out the
-	// triggerer with something better.
+	// Don't publish VCS events to the rest of the cluster: both the module
+	// publisher and the run spawner subscribe to VCS events and they are
+	// present on every node on a cluster, but we only want an event to be sent
+	// to one, so we send forward only to the local node on which it is
+	// received.
 	if event.Type == otf.EventVCS {
 		return
 	}

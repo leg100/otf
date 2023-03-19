@@ -18,16 +18,14 @@ type Publisher struct {
 	otf.Subscriber
 	vcsprovider.VCSProviderService
 
-	db *pgdb
-
-	service
+	Service
 }
 
 // Start handling VCS events and create module versions for new VCS tags
-func (h *Publisher) Start(ctx context.Context) error {
-	h.V(2).Info("started")
+func (p *Publisher) Start(ctx context.Context) error {
+	p.V(2).Info("started")
 
-	sub, err := h.Subscribe(ctx, "module-publisher")
+	sub, err := p.Subscribe(ctx, "module-publisher")
 	if err != nil {
 		return err
 	}
@@ -38,8 +36,8 @@ func (h *Publisher) Start(ctx context.Context) error {
 			if event.Type != otf.EventVCS {
 				continue
 			}
-			if err := h.handleEvent(ctx, event.Payload); err != nil {
-				h.Error(err, "handling vcs event")
+			if err := p.handleEvent(ctx, event.Payload); err != nil {
+				p.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
 			return ctx.Err()

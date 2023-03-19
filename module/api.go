@@ -16,7 +16,7 @@ import (
 type api struct {
 	*surl.Signer
 
-	svc             service
+	svc Service
 }
 
 func (h *api) addHandlers(r *mux.Router) {

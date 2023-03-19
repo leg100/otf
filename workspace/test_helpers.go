@@ -13,15 +13,15 @@ import (
 )
 
 func NewTestService(t *testing.T, db otf.DB) *service {
-	service := NewService(Options{
-		DB:        db,
-		Logger:    logr.Discard(),
-		Publisher: &otf.FakePublisher{},
-	})
-	service.organization = otf.NewAllowAllAuthorizer()
-	service.site = otf.NewAllowAllAuthorizer()
-	service.Authorizer = otf.NewAllowAllAuthorizer()
-	return service
+	svc := &service{
+		Logger: logr.Discard(),
+		db:     &pgdb{db},
+	}
+	svc.Publisher = &otf.FakePublisher{}
+	svc.organization = otf.NewAllowAllAuthorizer()
+	svc.site = otf.NewAllowAllAuthorizer()
+	svc.Authorizer = otf.NewAllowAllAuthorizer()
+	return svc
 }
 
 func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) *Workspace {

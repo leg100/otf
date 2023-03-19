@@ -1,3 +1,4 @@
+// Package configversion handles terraform configurations.
 package configversion
 
 import (
@@ -16,14 +17,14 @@ const (
 	ConfigurationErrored  ConfigurationStatus = "errored"
 	ConfigurationPending  ConfigurationStatus = "pending"
 	ConfigurationUploaded ConfigurationStatus = "uploaded"
+
 	// Default maximum config size is 10mb.
 	DefaultConfigMaxSize int64 = 1024 * 1024 * 10
 )
 
 type (
 	// ConfigurationVersion is a representation of an uploaded or ingressed
-	// Terraform configuration in  A workspace must have at least one configuration
-	// version before any runs may be queued on it.
+	// Terraform configuration.
 	ConfigurationVersion struct {
 		ID                string
 		CreatedAt         time.Time

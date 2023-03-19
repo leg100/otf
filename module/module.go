@@ -2,11 +2,9 @@
 package module
 
 import (
-	"context"
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/repo"
@@ -56,19 +54,6 @@ type (
 	}
 
 	ModuleVersionStatus string
-
-	ModuleService interface {
-		// PublishModule publishes a module from a VCS repository.
-		PublishModule(context.Context, PublishModuleOptions) (*Module, error)
-		// CreateModule creates a module without a connection to a VCS repository.
-		CreateModule(context.Context, CreateModuleOptions) (*Module, error)
-		UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatusOptions) (*Module, error)
-		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
-		GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
-		GetModuleByID(ctx context.Context, id string) (*Module, error)
-		GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
-		DeleteModule(ctx context.Context, id string) (*Module, error)
-	}
 
 	PublishModuleOptions struct {
 		Repo          moduleRepo

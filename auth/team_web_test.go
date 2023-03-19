@@ -17,7 +17,7 @@ func TestTeam_GetHandler(t *testing.T) {
 	owners := newTestOwners(t, "acme-org")
 	owner := NewUser(uuid.NewString(), WithTeams(owners))
 	app := newFakeWeb(t, &fakeService{
-		teamService: &fakeTeamApp{
+		TeamService: &fakeTeamApp{
 			team:    owners,
 			members: []*User{owner},
 		},
@@ -36,7 +36,7 @@ func TestTeam_GetHandler(t *testing.T) {
 func TestTeam_UpdateHandler(t *testing.T) {
 	team := NewTestTeam(t, "acme-org")
 	app := newFakeWeb(t, &fakeService{
-		teamService: &fakeTeamApp{
+		TeamService: &fakeTeamApp{
 			team: team,
 		},
 	})
@@ -54,7 +54,7 @@ func TestTeam_UpdateHandler(t *testing.T) {
 func TestTeam_ListHandler(t *testing.T) {
 	team := NewTestTeam(t, "acme-org")
 	app := newFakeWeb(t, &fakeService{
-		teamService: &fakeTeamApp{
+		TeamService: &fakeTeamApp{
 			team: team,
 		},
 	})

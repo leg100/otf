@@ -27,7 +27,7 @@ func (a *service) GetAgentToken(ctx context.Context, token string) (*AgentToken,
 	return at, nil
 }
 
-func (a *service) createAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error) {
+func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
