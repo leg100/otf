@@ -16,8 +16,6 @@ func NewTestToken(t *testing.T, org string) *Token {
 
 type fakeTokenService struct {
 	token *Token
-
-	tokenService
 }
 
 func (f *fakeTokenService) CreateToken(context.Context, string, *TokenCreateOptions) (*Token, error) {
