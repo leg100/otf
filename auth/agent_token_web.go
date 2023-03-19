@@ -52,20 +52,20 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
 }
 
-func (app *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	tokens, err := app.svc.listAgentTokens(r.Context(), organization)
+	tokens, err := h.svc.listAgentTokens(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.Render("agent_token_list.tmpl", w, r, struct {
+	h.Render("agent_token_list.tmpl", w, r, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
@@ -78,14 +78,14 @@ func (app *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (app *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("agent_token_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	at, err := app.svc.deleteAgentToken(r.Context(), id)
+	at, err := h.svc.deleteAgentToken(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

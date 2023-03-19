@@ -7,8 +7,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func (pdb *pgdb) createTeam(ctx context.Context, team *Team) error {
-	_, err := pdb.InsertTeam(ctx, pggen.InsertTeamParams{
+func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
+	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
 		ID:               sql.String(team.ID),
 		Name:             sql.String(team.Name),
 		CreatedAt:        sql.Timestamptz(team.CreatedAt),
@@ -17,9 +17,9 @@ func (pdb *pgdb) createTeam(ctx context.Context, team *Team) error {
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
+func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
 	var team *Team
-	err := pdb.tx(ctx, func(tx *pgdb) error {
+	err := db.tx(ctx, func(tx *pgdb) error {
 		var err error
 
 		// retrieve team

@@ -12,14 +12,14 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-func (app *webHandlers) addTokenHandlers(r *mux.Router) {
-	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET")
-	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST")
-	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET")
-	r.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST")
+func (h *webHandlers) addTokenHandlers(r *mux.Router) {
+	r.HandleFunc("/profile/tokens", h.tokensHandler).Methods("GET")
+	r.HandleFunc("/profile/tokens/delete", h.deleteTokenHandler).Methods("POST")
+	r.HandleFunc("/profile/tokens/new", h.newTokenHandler).Methods("GET")
+	r.HandleFunc("/profile/tokens/create", h.createTokenHandler).Methods("POST")
 
 	// terraform login opens a browser to this hardcoded URL
-	r.HandleFunc("/app/settings/tokens", app.tokensHandler).Methods("GET")
+	r.HandleFunc("/app/settings/tokens", h.tokensHandler).Methods("GET")
 }
 
 func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {

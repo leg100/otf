@@ -13,12 +13,12 @@ import (
 func TestFlash(t *testing.T) {
 	// write flashes
 	var stack FlashStack
-	stack.push(FlashSuccessType, "yes!")
-	stack.push(FlashWarningType, "uh-oh")
-	stack.push(FlashErrorType, "noooo")
+	stack.Push(FlashSuccessType, "yes!")
+	stack.Push(FlashWarningType, "uh-oh")
+	stack.Push(FlashErrorType, "noooo")
 	assert.Equal(t, 3, len(stack))
 	w := httptest.NewRecorder()
-	stack.write(w)
+	stack.Write(w)
 
 	// check content of cookie
 	cookies := w.Result().Cookies()

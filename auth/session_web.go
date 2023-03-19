@@ -15,7 +15,7 @@ func (h *webHandlers) addSessionHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/sessions/revoke", h.revokeSessionHandler).Methods("POST")
 }
 
-func (app *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := userFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -26,7 +26,7 @@ func (app *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessions, err := app.svc.listSessions(r.Context(), user.ID)
+	sessions, err := h.svc.listSessions(r.Context(), user.ID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -37,7 +37,7 @@ func (app *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		return sessions[i].CreatedAt().After(sessions[j].CreatedAt())
 	})
 
-	app.Render("session_list.tmpl", w, r, struct {
+	h.Render("session_list.tmpl", w, r, struct {
 		Items  []*Session
 		Active *Session
 	}{
@@ -46,14 +46,14 @@ func (app *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (app *webHandlers) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := app.svc.deleteSession(r.Context(), token); err != nil {
+	if err := h.svc.deleteSession(r.Context(), token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
