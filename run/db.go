@@ -13,14 +13,41 @@ import (
 	"github.com/leg100/otf/workspace"
 )
 
-// pgdb is a database of runs on postgres
-type pgdb struct {
-	otf.DB // provides access to generated SQL queries
-}
+type (
+	// pgdb is a database of runs on postgres
+	pgdb struct {
+		otf.DB // provides access to generated SQL queries
+	}
 
-func newDB(db otf.DB) *pgdb {
-	return &pgdb{db}
-}
+	// pgresult is the result of a database query for a run.
+	pgresult struct {
+		RunID                  pgtype.Text                   `json:"run_id"`
+		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
+		ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
+		IsDestroy              bool                          `json:"is_destroy"`
+		PositionInQueue        int                           `json:"position_in_queue"`
+		Refresh                bool                          `json:"refresh"`
+		RefreshOnly            bool                          `json:"refresh_only"`
+		Status                 pgtype.Text                   `json:"status"`
+		PlanStatus             pgtype.Text                   `json:"plan_status"`
+		ApplyStatus            pgtype.Text                   `json:"apply_status"`
+		ReplaceAddrs           []string                      `json:"replace_addrs"`
+		TargetAddrs            []string                      `json:"target_addrs"`
+		AutoApply              bool                          `json:"auto_apply"`
+		PlannedChanges         *pggen.Report                 `json:"planned_changes"`
+		AppliedChanges         *pggen.Report                 `json:"applied_changes"`
+		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
+		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
+		Speculative            bool                          `json:"speculative"`
+		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
+		Latest                 bool                          `json:"latest"`
+		OrganizationName       pgtype.Text                   `json:"organization_name"`
+		IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
+		RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
+		PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
+		ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
+	}
+)
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
@@ -71,10 +98,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 		if err != nil {
 			return sql.Error(err)
 		}
-		run, err = UnmarshalRunResult(RunResult(result))
-		if err != nil {
-			return err
-		}
+		run = pgresult(result).toRun()
 
 		// Make copies of run attributes before update
 		runStatus := run.Status
@@ -210,11 +234,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 
 	var items []*Run
 	for _, r := range rows {
-		run, err := UnmarshalRunResult(RunResult(r))
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, run)
+		items = append(items, pgresult(r).toRun())
 	}
 
 	return &RunList{
@@ -229,7 +249,7 @@ func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return UnmarshalRunResult(RunResult(result))
+	return pgresult(result).toRun(), nil
 }
 
 // SetPlanFile writes a plan file to the db
@@ -313,7 +333,7 @@ func (db *pgdb) getLogs(ctx context.Context, runID string, phase otf.PhaseType) 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
-		return callback(newDB(tx))
+		return callback(&pgdb{tx})
 	})
 }
 
@@ -324,36 +344,7 @@ func convertStatusSliceToStringSlice(statuses []otf.RunStatus) (s []string) {
 	return
 }
 
-// RunResult represents the result of a database query for a run.
-type RunResult struct {
-	RunID                  pgtype.Text                   `json:"run_id"`
-	CreatedAt              pgtype.Timestamptz            `json:"created_at"`
-	ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
-	IsDestroy              bool                          `json:"is_destroy"`
-	PositionInQueue        int                           `json:"position_in_queue"`
-	Refresh                bool                          `json:"refresh"`
-	RefreshOnly            bool                          `json:"refresh_only"`
-	Status                 pgtype.Text                   `json:"status"`
-	PlanStatus             pgtype.Text                   `json:"plan_status"`
-	ApplyStatus            pgtype.Text                   `json:"apply_status"`
-	ReplaceAddrs           []string                      `json:"replace_addrs"`
-	TargetAddrs            []string                      `json:"target_addrs"`
-	AutoApply              bool                          `json:"auto_apply"`
-	PlannedChanges         *pggen.Report                 `json:"planned_changes"`
-	AppliedChanges         *pggen.Report                 `json:"applied_changes"`
-	ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
-	WorkspaceID            pgtype.Text                   `json:"workspace_id"`
-	Speculative            bool                          `json:"speculative"`
-	ExecutionMode          pgtype.Text                   `json:"execution_mode"`
-	Latest                 bool                          `json:"latest"`
-	OrganizationName       pgtype.Text                   `json:"organization_name"`
-	IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
-	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
-	PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
-}
-
-func UnmarshalRunResult(result RunResult) (*Run, error) {
+func (result pgresult) toRun() *Run {
 	run := Run{
 		ID:                     result.RunID.String,
 		CreatedAt:              result.CreatedAt.Time.UTC(),
@@ -374,12 +365,14 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
 		Plan: Phase{
 			RunID:            result.RunID.String,
+			PhaseType:        otf.PlanPhase,
 			Status:           PhaseStatus(result.PlanStatus.String),
 			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
 			ResourceReport:   (*ResourceReport)(result.PlannedChanges),
 		},
 		Apply: Phase{
 			RunID:            result.RunID.String,
+			PhaseType:        otf.ApplyPhase,
 			Status:           PhaseStatus(result.ApplyStatus.String),
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
 			ResourceReport:   (*ResourceReport)(result.AppliedChanges),
@@ -391,7 +384,7 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 	if result.IngressAttributes != nil {
 		run.Commit = &result.IngressAttributes.CommitSHA.String
 	}
-	return &run, nil
+	return &run
 }
 
 func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

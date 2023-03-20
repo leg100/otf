@@ -109,7 +109,7 @@ type (
 )
 
 func NewService(opts Options) *service {
-	db := newDB(opts.DB)
+	db := &pgdb{opts.DB}
 	svc := service{
 		Logger:           opts.Logger,
 		PubSubService:    opts.Broker,
