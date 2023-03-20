@@ -41,19 +41,6 @@ func newTestDB(t *testing.T) *pgdb {
 	}
 }
 
-func createTestHook(t *testing.T, db *pgdb, cloudID *string) *hook {
-	ctx := context.Background()
-	hook := newTestHook(t, db.factory, cloudID)
-
-	_, err := db.getOrCreateHook(ctx, hook)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		db.deleteHook(ctx, hook.id)
-	})
-	return hook
-}
-
 type fakeCloudService struct {
 	event cloud.VCSEvent
 	cloud.Service

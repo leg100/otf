@@ -95,7 +95,7 @@ type (
 		otf.Cache
 		otf.DB
 		otf.Renderer
-		*pubsub.Hub
+		*pubsub.Broker
 		otf.Signer
 	}
 )
@@ -104,7 +104,7 @@ func NewService(opts Options) *service {
 	db := newDB(opts.DB)
 	svc := service{
 		Logger:           opts.Logger,
-		Publisher:        opts.Hub,
+		Publisher:        opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
 	}
 

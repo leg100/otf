@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -83,11 +82,6 @@ func TestWeb(t *testing.T) {
 			assert.NotContains(t, w.Body.String(), "Next Page")
 		})
 	})
-}
-
-type fakeWeb struct {
-	svc *fakeService
-	otf.Renderer
 }
 
 func newFakeWeb(t *testing.T, svc *fakeService) *web {

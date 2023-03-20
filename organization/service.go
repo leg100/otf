@@ -70,8 +70,8 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (a *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
-	subject, err := a.site.CanAccess(ctx, rbac.CreateOrganizationAction, "")
+func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+	subject, err := s.site.CanAccess(ctx, rbac.CreateOrganizationAction, "")
 	if err != nil {
 		return nil, err
 	}
@@ -81,33 +81,33 @@ func (a *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	if err := a.db.create(ctx, org); err != nil {
-		a.Error(err, "creating organization", "id", org.ID, "subject", subject)
+	if err := s.db.create(ctx, org); err != nil {
+		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
 		return nil, err
 	}
 
-	a.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
+	s.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	a.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
+	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
 
 	return org, nil
 }
 
-func (a *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
-	subject, err := a.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
+func (s *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
+	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.db.update(ctx, name, func(org *Organization) error {
+	org, err := s.db.update(ctx, name, func(org *Organization) error {
 		return org.Update(opts)
 	})
 	if err != nil {
-		a.Error(err, "updating organization", "name", name, "subject", subject)
+		s.Error(err, "updating organization", "name", name, "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
+	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
 }
@@ -119,74 +119,66 @@ func (a *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 // Subject is an agent: return its organization
 // Subject is an organization token: return its organization
 // Subject is an team token: return its organization
-func (a *service) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
+func (s *service) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
 	subject, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
-		return a.db.list(ctx, opts)
+		return s.db.list(ctx, opts)
 	}
 	opts.Names = subject.ListOrganizations()
-	return a.db.list(ctx, opts)
+	return s.db.list(ctx, opts)
 }
 
-func (a *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
-	subject, err := a.CanAccess(ctx, rbac.GetOrganizationAction, name)
+func (s *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {
+	subject, err := s.CanAccess(ctx, rbac.GetOrganizationAction, name)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.db.get(ctx, name)
+	org, err := s.db.get(ctx, name)
 	if err != nil {
-		a.Error(err, "retrieving organization", "name", name, "subject", subject)
+		s.Error(err, "retrieving organization", "name", name, "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
+	s.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
 }
 
-func (a *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {
-	org, err := a.GetOrganization(ctx, name)
+func (s *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {
+	org, err := s.GetOrganization(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	return a.toOrganization(org), nil
+	return s.toOrganization(org), nil
 }
 
-func (a *service) DeleteOrganization(ctx context.Context, name string) error {
-	subject, err := a.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
+func (s *service) DeleteOrganization(ctx context.Context, name string) error {
+	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
 		return err
 	}
 
-	err = a.db.delete(ctx, name)
+	err = s.db.delete(ctx, name)
 	if err != nil {
-		a.Error(err, "deleting organization", "name", name, "subject", subject)
+		s.Error(err, "deleting organization", "name", name, "subject", subject)
 		return err
 	}
-	a.V(0).Info("deleted organization", "name", name, "subject", subject)
+	s.V(0).Info("deleted organization", "name", name, "subject", subject)
 
 	return nil
 }
 
-func (a *service) listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*OrganizationList, error) {
-	if userID == otf.SiteAdminID {
-		// site admin gets all orgs across site.
-		return a.db.list(ctx, opts)
-	}
-	return a.db.listByUser(ctx, userID, opts)
-}
-
-func (a *service) getEntitlements(ctx context.Context, organization string) (Entitlements, error) {
-	_, err := a.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
+func (s *service) getEntitlements(ctx context.Context, organization string) (Entitlements, error) {
+	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}
 
-	org, err := a.GetOrganization(ctx, organization)
+	org, err := s.GetOrganization(ctx, organization)
 	if err != nil {
 		return Entitlements{}, err
 	}

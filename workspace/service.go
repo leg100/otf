@@ -67,7 +67,7 @@ type (
 
 	Options struct {
 		otf.DB
-		*pubsub.Hub
+		*pubsub.Broker
 		otf.Renderer
 		organization.OrganizationService
 		repo.RepoService
@@ -79,7 +79,7 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:    opts.Logger,
-		Publisher: opts.Hub,
+		Publisher: opts.Broker,
 		repo:      opts.RepoService,
 	}
 

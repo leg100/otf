@@ -18,7 +18,7 @@ var (
 	localDisk = os.DirFS("http/html")
 )
 
-// AddStaticHandlers adds a handler to router serving static assets
+// AddStaticHandler adds a handler to router serving static assets
 // (JS, CSS, etc) from within go binary. Dev mode sources files from
 // local disk instead.
 func AddStaticHandler(r *mux.Router, devMode bool) {

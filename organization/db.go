@@ -105,48 +105,8 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*Organi
 	}, nil
 }
 
-func (db *pgdb) listByUser(ctx context.Context, userID string, opts OrganizationListOptions) (*OrganizationList, error) {
-	batch := &pgx.Batch{}
-
-	db.FindOrganizationsByUserIDBatch(batch, pggen.FindOrganizationsByUserIDParams{
-		UserID: sql.String(userID),
-		Limit:  opts.GetLimit(),
-		Offset: opts.GetOffset(),
-	})
-	db.CountOrganizationsByUserIDBatch(batch, sql.String(userID))
-	results := db.SendBatch(ctx, batch)
-	defer results.Close()
-
-	rows, err := db.FindOrganizationsByUserIDScan(results)
-	if err != nil {
-		return nil, err
-	}
-	count, err := db.CountOrganizationsByUserIDScan(results)
-	if err != nil {
-		return nil, err
-	}
-
-	var items []*Organization
-	for _, r := range rows {
-		items = append(items, row(r).toOrganization())
-	}
-
-	return &OrganizationList{
-		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
-	}, nil
-}
-
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, sql.String(name))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return row(r).toOrganization(), nil
-}
-
-func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
-	r, err := db.FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

@@ -1,4 +1,4 @@
-package pubsub
+package integration
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/sql"
@@ -63,57 +62,4 @@ func TestPubSub_E2E(t *testing.T) {
 	// subs
 	assert.Equal(t, 1, len(senderGot))
 	assert.Equal(t, want, <-senderGot)
-}
-
-func TestPubSub_marshal(t *testing.T) {
-	ps := &spoke{pid: "process-1"}
-	event := otf.Event{
-		Type: otf.EventRunStatusUpdate,
-		Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
-			ID: otf.String("run-123"),
-		}),
-	}
-
-	got, err := ps.marshal(event)
-	require.NoError(t, err)
-	want := "{\"relation\":\"run\",\"action\":\"status_update\",\"id\":\"run-123\",\"pid\":\"process-1\"}"
-	assert.Equal(t, want, string(got))
-}
-
-func TestPubSub_reassemble(t *testing.T) {
-	run := otf.NewTestRun(t, otf.TestRunCreateOptions{
-		ID: otf.String("run-123"),
-	})
-	ps := spoke{
-		db: &fakePubSubDB{
-			run: run,
-		},
-	}
-
-	got, err := ps.reassemble(context.Background(), message{
-		Table:  "run",
-		Action: "status_update",
-		ID:     "run-123",
-	})
-	require.NoError(t, err)
-	want := otf.Event{
-		Type:    otf.EventRunStatusUpdate,
-		Payload: run,
-	}
-	assert.Equal(t, want, got)
-}
-
-type fakePubSubDB struct {
-	run       *run.Run
-	workspace *workspace.Workspace
-
-	otf.DB
-}
-
-func (f *fakePubSubDB) GetRun(context.Context, string) (*run.Run, error) {
-	return f.run, nil
-}
-
-func (f *fakePubSubDB) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
-	return f.workspace, nil
 }

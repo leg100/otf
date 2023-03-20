@@ -149,7 +149,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	defer db.Close()
 
 	// Setup pub sub broker
-	hub, err := pubsub.NewHub(logger, pubsub.HubConfig{
+	broker, err := pubsub.NewBroker(logger, pubsub.BrokerConfig{
 		PoolDB: db,
 	})
 	if err != nil {
@@ -172,7 +172,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		Logger:    logger,
 		DB:        db,
 		Renderer:  renderer,
-		Publisher: hub,
+		Publisher: broker,
 	})
 	handlers = append(handlers, orgService)
 
@@ -207,14 +207,14 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		DB:                 db,
 		CloudService:       cloudService,
 		HostnameService:    hostnameService,
-		Publisher:          hub,
+		Publisher:          broker,
 		VCSProviderService: vcsProviderService,
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:      logger,
 		DB:          db,
-		Hub:         hub,
+		Broker:      broker,
 		Renderer:    renderer,
 		RepoService: repoService,
 		TeamService: authService,
@@ -238,7 +238,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		WorkspaceAuthorizer:         workspaceService,
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
-		Hub:                         hub,
+		Broker:                      broker,
 		Cache:                       cache,
 		Signer:                      signer,
 	})
@@ -249,7 +249,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		DB:            db,
 		RunAuthorizer: runService,
 		Cache:         cache,
-		Hub:           hub,
+		Broker:        broker,
 		Verifier:      signer,
 	})
 	handlers = append(handlers, logsService)
@@ -270,7 +270,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		Logger:              logger,
 		Renderer:            renderer,
 		WorkspaceAuthorizer: workspaceService,
-		Subscriber:          hub,
+		Subscriber:          broker,
 	})
 	handlers = append(handlers, watchService)
 
@@ -330,7 +330,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Run pubsub broker
-	g.Go(func() error { return hub.Start(ctx) })
+	g.Go(func() error { return broker.Start(ctx) })
 
 	// Run scheduler - if there is another scheduler running already then
 	// this'll wait until the other scheduler exits.
@@ -352,7 +352,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 			WorkspaceService:            workspaceService,
 			VCSProviderService:          vcsProviderService,
 			RunService:                  runService,
-			Subscriber:                  hub,
+			Subscriber:                  broker,
 		})
 		if err != nil {
 			return fmt.Errorf("spawner terminated: %w", err)

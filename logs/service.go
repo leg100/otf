@@ -36,7 +36,7 @@ type (
 		logr.Logger
 		otf.Cache
 		otf.DB
-		*pubsub.Hub
+		*pubsub.Broker
 		otf.Verifier
 
 		RunAuthorizer otf.Authorizer
@@ -46,18 +46,18 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:        opts.Logger,
-		PubSubService: opts.Hub,
+		PubSubService: opts.Broker,
 		proxy: &proxy{
 			Logger:        opts.Logger,
-			PubSubService: opts.Hub,
+			PubSubService: opts.Broker,
 			cache:         opts.Cache,
 			db:            newPGDB(opts.DB),
 		},
 		run: opts.RunAuthorizer,
 	}
 	svc.api = &api{
-		Verifier:        opts.Verifier,
-		svc:             &svc,
+		Verifier: opts.Verifier,
+		svc:      &svc,
 	}
 	svc.web = &webHandlers{
 		Logger: opts.Logger,

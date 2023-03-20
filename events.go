@@ -28,6 +28,7 @@ type EventType string
 type Event struct {
 	Type    EventType
 	Payload interface{}
+	Local   bool // for local node only and not to be published to rest of cluster
 }
 
 // PubSubService provides low-level access to pub-sub behaviours. Access is
