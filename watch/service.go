@@ -52,17 +52,12 @@ func NewService(opts Options) *service {
 	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.workspace = opts.WorkspaceAuthorizer
 
-	// Create and configure SSE server
-	srv := newSSEServer()
-
 	svc.api = &api{
-		svc:          &svc,
-		eventsServer: srv,
+		svc: &svc,
 	}
 	svc.web = &web{
 		Renderer: opts.Renderer,
 		svc:      &svc,
-		Server:   srv,
 	}
 	return &svc
 }

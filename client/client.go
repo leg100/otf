@@ -125,5 +125,6 @@ func New(config http.Config) (*remoteClient, error) {
 		workspaceClient:    &workspaceClient{httpClient},
 		runClient:          &runClient{httpClient},
 		watchClient:        &watchClient{config},
+		logsClient:         &logsClient{httpClient},
 	}, nil
 }

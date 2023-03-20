@@ -2,6 +2,7 @@ package watch
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -10,82 +11,62 @@ import (
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/run"
-	"github.com/r3labs/sse/v2"
 )
-
-// eventsServer is a server capable of streaming SSE events
-type eventsServer interface {
-	CreateStream(string) *sse.Stream
-	RemoveStream(string)
-	ServeHTTP(w http.ResponseWriter, r *http.Request)
-	Publish(string, *sse.Event)
-}
 
 type api struct {
 	logr.Logger
 
-	eventsServer eventsServer
-	svc          Service
+	svc Service
 }
 
 func (a *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
-	r.HandleFunc(otf.DefaultWatchPath, a.watch).Methods("GET")
+	r.HandleFunc("/watch", a.watch).Methods("GET")
 }
 
-// Watch handler responds with a stream of events, using the json:api encoding.
+// Watch handler responds with a stream of events, using json encoding.
 //
 // NOTE: Only run events are currently supported.
 func (a *api) watch(w http.ResponseWriter, r *http.Request) {
-	// r3lab's sse server expects a query parameter with the stream ID
-	// but we don't want to bother the client with having to do that so we
-	// handle it here
-	streamID := otf.GenerateRandomString(6)
-	q := r.URL.Query()
-	q.Add("stream", streamID)
-	r.URL.RawQuery = q.Encode()
-
-	a.eventsServer.CreateStream(streamID)
-
 	// TODO: populate watch options
 	events, err := a.svc.Watch(r.Context(), otf.WatchOptions{})
 	if err != nil {
 		jsonapi.Error(w, http.StatusInternalServerError, err)
 		return
 	}
-	go func() {
-		for {
-			select {
-			case <-r.Context().Done():
-				// client closed connection
-				a.eventsServer.RemoveStream(streamID)
+
+	rc := http.NewResponseController(w)
+	w.Header().Set("Content-Type", "text/event-stream")
+
+	for {
+		select {
+		case event, ok := <-events:
+			if !ok {
+				// server closed connection
 				return
-			case event, ok := <-events:
-				if !ok {
-					// server closes connection
-					a.eventsServer.RemoveStream(streamID)
-					return
-				}
-
-				// Only run events are supported
-				run, ok := event.Payload.(*run.Run)
-				if !ok {
-					continue
-				}
-
-				data, err := json.Marshal(run)
-				if err != nil {
-					a.Error(err, "marshalling event", "event", event.Type)
-					continue
-				}
-
-				a.eventsServer.Publish(streamID, &sse.Event{
-					Data:  data,
-					Event: []byte(event.Type),
-				})
 			}
+
+			// Only run events are supported
+			run, ok := event.Payload.(*run.Run)
+			if !ok {
+				continue
+			}
+
+			data, err := json.Marshal(run)
+			if err != nil {
+				a.Error(err, "marshalling event", "event", event.Type)
+				continue
+			}
+
+			fmt.Fprintf(w, "data: %s\n", string(data))
+			fmt.Fprintf(w, "event: %s\n", event.Type)
+			fmt.Fprintln(w)
+
+			rc.Flush()
+		case <-r.Context().Done():
+			// client closed connection
+			return
 		}
-	}()
-	a.eventsServer.ServeHTTP(w, r)
+	}
 }

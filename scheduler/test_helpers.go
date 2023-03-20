@@ -26,7 +26,7 @@ func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events
 		Logger:           logr.Discard(),
 		WorkspaceService: services,
 		RunService:       services,
-		WatchService:     services,
+		Subscriber:       services,
 		queues:           make(map[string]eventHandler),
 	}
 	// handled chan receives events relayed to handlers
@@ -58,7 +58,7 @@ func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.Worksp
 	}, nil
 }
 
-func (f *fakeSchedulerServices) Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error) {
+func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan otf.Event, error) {
 	return f.events, nil
 }
 

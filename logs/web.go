@@ -21,7 +21,7 @@ type (
 	webHandlers struct {
 		logr.Logger
 
-		svc               tailService
+		svc tailService
 	}
 )
 
@@ -88,9 +88,8 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "data: %s\n", string(js))
 			fmt.Fprintln(w, "event: new-log-chunk")
 			fmt.Fprintln(w)
-			if err := rc.Flush(); err != nil {
-				return
-			}
+
+			rc.Flush()
 		case <-r.Context().Done():
 			return
 		}

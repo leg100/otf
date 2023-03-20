@@ -17,7 +17,7 @@ func TestTailLogs(t *testing.T) {
 		svc:    &fakeTailService{chunks: chunks},
 	}
 
-	r := httptest.NewRequest("", "/?offset=0&stream=tail-123&phase=plan&run_id=run-123", nil)
+	r := httptest.NewRequest("", "/?offset=0&phase=plan&run_id=run-123", nil)
 	w := httptest.NewRecorder()
 
 	// send one event and then close.

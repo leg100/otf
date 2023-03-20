@@ -24,7 +24,7 @@ type (
 	scheduler struct {
 		logr.Logger
 
-		otf.WatchService
+		otf.Subscriber
 		WorkspaceService
 		RunService
 
@@ -37,7 +37,7 @@ type (
 		WorkspaceService
 		RunService
 		otf.DB
-		otf.WatchService
+		otf.Subscriber
 	}
 
 	WorkspaceService workspace.Service
@@ -53,7 +53,7 @@ func Start(ctx context.Context, opts Options) error {
 		Logger:           opts.Logger.WithValues("component", "scheduler"),
 		WorkspaceService: opts.WorkspaceService,
 		RunService:       opts.RunService,
-		WatchService:     opts.WatchService,
+		Subscriber:       opts.Subscriber,
 		queues:           make(map[string]eventHandler),
 		queueFactory:     queueMaker{},
 	}
@@ -85,12 +85,12 @@ func Start(ctx context.Context, opts Options) error {
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
 func (s *scheduler) reinitialize(ctx context.Context) error {
-	// Unsubscribe Watch() whenever exiting this routine.
+	// Unsubscribe Subscribe() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// subscribe to run events and workspace unlock events
-	sub, err := s.Watch(ctx, otf.WatchOptions{Name: otf.String("scheduler")})
+	sub, err := s.Subscribe(ctx, "scheduler")
 	if err != nil {
 		return err
 	}

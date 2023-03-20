@@ -3,13 +3,16 @@ package watch
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	gohttp "net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/run"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -56,7 +59,7 @@ func newSSEClient(config http.Config, notifications chan otf.Event) (*sse.Client
 	if err != nil {
 		return nil, fmt.Errorf("invalid address: %v", err)
 	}
-	u.Path = path.Join(config.BasePath, config.WatchPath)
+	u.Path = path.Join(config.BasePath, "/watch")
 
 	client := sse.NewClient(u.String())
 	client.EncodingBase64 = true
@@ -77,4 +80,18 @@ func newSSEClient(config http.Config, notifications chan otf.Event) (*sse.Client
 		}
 	}
 	return client, nil
+}
+
+// unmarshal parses an SSE event and returns the equivalent OTF event
+func unmarshal(event *sse.Event) (otf.Event, error) {
+	if !strings.HasPrefix(string(event.Event), "run_") {
+		return otf.Event{}, fmt.Errorf("no unmarshaler available for event %s", string(event.Event))
+	}
+
+	var run *run.Run
+	if err := json.Unmarshal(event.Data, &run); err != nil {
+		return otf.Event{}, err
+	}
+
+	return otf.Event{Type: otf.EventType(event.Event), Payload: run}, nil
 }

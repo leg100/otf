@@ -22,7 +22,7 @@ type (
 	// runs.
 	reporter struct {
 		logr.Logger
-		otf.WatchService
+		otf.Subscriber
 		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
@@ -36,7 +36,7 @@ type (
 
 		logr.Logger
 		otf.DB
-		otf.WatchService
+		otf.Subscriber
 		otf.HostnameService
 	}
 )
@@ -47,7 +47,7 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 
 	rptr := &reporter{
 		Logger:                      opts.Logger.WithValues("component", "reporter"),
-		WatchService:                opts.WatchService,
+		Subscriber:                  opts.Subscriber,
 		HostnameService:             opts.HostnameService,
 		ConfigurationVersionService: opts.ConfigurationVersionService,
 		WorkspaceService:            opts.WorkspaceService,
@@ -83,7 +83,7 @@ func (r *reporter) start(ctx context.Context) error {
 	defer cancel()
 
 	// subscribe to run events
-	sub, err := r.Watch(ctx, otf.WatchOptions{Name: otf.String("reporter")})
+	sub, err := r.Subscribe(ctx, "reporter")
 	if err != nil {
 		return err
 	}

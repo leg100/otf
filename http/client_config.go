@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/hashicorp/go-cleanhttp"
-	"github.com/leg100/otf"
 )
 
 const (
@@ -37,8 +36,6 @@ type Config struct {
 	HTTPClient *http.Client
 	// RetryLogHook is invoked each time a request is retried.
 	RetryLogHook RetryLogHook
-	// Path to the watch endpoint for SSE
-	WatchPath string
 	// insecure skips verification of upstream TLS certs. Should only be used
 	// for testing purposes. NOTE: Only takes effect on SSE connections.
 	Insecure bool
@@ -62,9 +59,6 @@ func NewConfig(opts ...ConfigOption) (*Config, error) {
 	// Set the default address if none is given.
 	if config.Address == "" {
 		config.Address = DefaultAddress
-	}
-	if config.WatchPath == "" {
-		config.WatchPath = otf.DefaultWatchPath
 	}
 	// Set the default user agent.
 	config.Headers.Set("User-Agent", userAgent)
