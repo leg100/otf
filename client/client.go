@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
-	"github.com/leg100/otf/watch"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -55,7 +54,7 @@ type (
 
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
 
-		Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error)
+		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
 
 		// CreateRegistrySession creates a registry session for the given organization.
 		CreateRegistrySession(ctx context.Context, organization string) (*auth.RegistrySession, error)
@@ -77,7 +76,6 @@ type (
 		configversion.ConfigurationVersionService
 		auth.RegistrySessionService
 		run.RunService
-		watch.WatchService
 		logs.LogsService
 	}
 
@@ -89,7 +87,6 @@ type (
 		*configClient
 		*variableClient
 		*authClient
-		*watchClient
 		*organizationClient
 		*workspaceClient
 		*runClient
@@ -103,7 +100,6 @@ type (
 	organizationClient = organization.Client
 	workspaceClient    = workspace.Client
 	runClient          = run.Client
-	watchClient        = watch.Client
 	logsClient         = logs.Client
 )
 
@@ -123,8 +119,7 @@ func New(config http.Config) (*remoteClient, error) {
 		authClient:         &authClient{httpClient},
 		organizationClient: &organizationClient{httpClient},
 		workspaceClient:    &workspaceClient{httpClient},
-		runClient:          &runClient{httpClient},
-		watchClient:        &watchClient{config},
+		runClient:          &runClient{httpClient, config},
 		logsClient:         &logsClient{httpClient},
 	}, nil
 }

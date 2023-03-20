@@ -18,6 +18,7 @@ const (
 	EventError               EventType = "error"
 	EventInfo                EventType = "info"
 	EventLogChunk            EventType = "log_update"
+	EventLogFinished         EventType = "log_finished"
 	EventVCS                 EventType = "vcs_event"
 )
 

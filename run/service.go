@@ -43,6 +43,14 @@ type (
 		// be binary or json.
 		UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 
+		// Watch provides access to a stream of run events. The WatchOptions filters
+		// events. Context must be cancelled to close stream.
+		//
+		// TODO(@leg100): it would be clearer to the caller if the stream is closed by
+		// returning a stream object with a Close() method. The calling code would
+		// call Watch(), and then defer a Close(), which is more readable IMO.
+		Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error)
+
 		get(ctx context.Context, runID string) (*Run, error)
 		// apply enqueues an apply for the run.
 		apply(ctx context.Context, runID string) error
@@ -70,7 +78,7 @@ type (
 		logr.Logger
 
 		WorkspaceService
-		otf.Publisher
+		otf.PubSubService
 
 		site         otf.Authorizer
 		organization otf.Authorizer
@@ -104,7 +112,7 @@ func NewService(opts Options) *service {
 	db := newDB(opts.DB)
 	svc := service{
 		Logger:           opts.Logger,
-		Publisher:        opts.Broker,
+		PubSubService:    opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
 	}
 
@@ -121,10 +129,12 @@ func NewService(opts Options) *service {
 	}
 
 	svc.api = &api{
+		Logger:           opts.Logger,
+		jsonapiMarshaler: newJSONAPIMarshaler(opts.WorkspaceService, opts.Signer),
 		svc:              &svc,
-		JSONAPIMarshaler: newJSONAPIMarshaler(opts.WorkspaceService, opts.Signer),
 	}
 	svc.web = &webHandlers{
+		Logger:   opts.Logger,
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
@@ -284,6 +294,69 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase otf.Phase
 	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
+}
+
+// Watch provides authenticated access to a stream of run events.
+func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error) {
+	var err error
+	if opts.WorkspaceID != nil {
+		// caller must have workspace-level read permissions
+		_, err = s.workspace.CanAccess(ctx, rbac.WatchAction, *opts.WorkspaceID)
+	} else if opts.Organization != nil {
+		// caller must have organization-level read permissions
+		_, err = s.organization.CanAccess(ctx, rbac.WatchAction, *opts.Organization)
+	} else {
+		// caller must have site-level read permissions
+		_, err = s.site.CanAccess(ctx, rbac.WatchAction, "")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.Name == nil {
+		opts.Name = otf.String("watch-" + otf.GenerateRandomString(6))
+	}
+	sub, err := s.Subscribe(ctx, *opts.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan otf.Event)
+	go func() {
+		for {
+			select {
+			case ev, ok := <-sub:
+				if !ok {
+					close(ch)
+					return
+				}
+
+				run, ok := ev.Payload.(*Run)
+				if !ok {
+					continue // skip anything other than a run or a workspace
+				}
+
+				// apply workspace filter
+				if opts.WorkspaceID != nil {
+					if run.WorkspaceID != *opts.WorkspaceID {
+						continue
+					}
+				}
+				// apply organization filter
+				if opts.Organization != nil {
+					if run.Organization != *opts.Organization {
+						continue
+					}
+				}
+
+				ch <- ev
+			case <-ctx.Done():
+				close(ch)
+				return
+			}
+		}
+	}()
+	return ch, nil
 }
 
 // GetRun retrieves a run from the db.

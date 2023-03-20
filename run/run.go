@@ -106,6 +106,15 @@ type (
 	RunDB interface {
 		GetRun(context.Context, string) (Run, error)
 	}
+
+	// WatchOptions filters events returned by the Watch endpoint.
+	WatchOptions struct {
+		// Name to uniquely describe the watcher. If not provided then a
+		// name will be auto generated.
+		Name         *string
+		Organization *string `schema:"organization_name"` // filter by organization name
+		WorkspaceID  *string `schema:"workspace_id"`      // filter by workspace ID; mutually exclusive with organization filter
+	}
 )
 
 // NewRun creates a new run with defaults.

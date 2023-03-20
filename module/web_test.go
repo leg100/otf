@@ -35,7 +35,7 @@ func TestGetModule(t *testing.T) {
 	}
 	tarball, err := os.ReadFile("./testdata/module.tar.gz")
 	require.NoError(t, err)
-	h := newTestWebHandlers(t, withMod(&mod), withTarball(tarball))
+	h := newTestWebHandlers(t, withMod(&mod), withTarball(tarball), withHostname("fake-host.org"))
 
 	q := "/?module_id=mod-123&version=1.0.0"
 	r := httptest.NewRequest("GET", q, nil)
@@ -133,6 +133,7 @@ func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
 	return &webHandlers{
 		Renderer:           renderer,
 		VCSProviderService: &svc,
+		HostnameService:    &svc,
 		svc:                &svc,
 	}
 }
@@ -163,11 +164,18 @@ func withRepos(repos ...string) testWebOption {
 	}
 }
 
+func withHostname(hostname string) testWebOption {
+	return func(svc *fakeWebServices) {
+		svc.hostname = hostname
+	}
+}
+
 type fakeWebServices struct {
 	mod      *Module
 	tarball  []byte
 	vcsprovs []*vcsprovider.VCSProvider
 	repos    []string
+	hostname string
 
 	Service
 
@@ -204,6 +212,10 @@ func (f *fakeWebServices) GetVCSClient(ctx context.Context, providerID string) (
 
 func (f *fakeWebServices) GetModuleInfo(context.Context, string) (*TerraformModule, error) {
 	return unmarshalTerraformModule(f.tarball)
+}
+
+func (f *fakeWebServices) Hostname() string {
+	return f.hostname
 }
 
 type fakeModulesCloudClient struct {

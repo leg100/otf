@@ -28,7 +28,6 @@ import (
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
-	"github.com/leg100/otf/watch"
 	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -266,14 +265,6 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	})
 	handlers = append(handlers, moduleService)
 
-	watchService := watch.NewService(watch.Options{
-		Logger:              logger,
-		Renderer:            renderer,
-		WorkspaceAuthorizer: workspaceService,
-		Subscriber:          broker,
-	})
-	handlers = append(handlers, watchService)
-
 	stateService := state.NewService(state.Options{
 		Logger:              logger,
 		DB:                  db,
@@ -318,7 +309,6 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		ConfigurationVersionService: configService,
 		RegistrySessionService:      authService,
 		RunService:                  runService,
-		WatchService:                watchService,
 		LogsService:                 logsService,
 	}
 	agent, err := agent.NewAgent(
@@ -340,7 +330,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 			WorkspaceService: workspaceService,
 			RunService:       runService,
 			DB:               db,
-			WatchService:     watchService,
+			Subscriber:       broker,
 		})
 	})
 
@@ -369,7 +359,7 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 			WorkspaceService:            workspaceService,
 			VCSProviderService:          vcsProviderService,
 			HostnameService:             hostnameService,
-			WatchService:                watchService,
+			Subscriber:                  broker,
 			DB:                          db,
 		})
 		if err != nil {

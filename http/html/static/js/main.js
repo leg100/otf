@@ -73,7 +73,7 @@ function setupTail(path, phase, offset, stream) {
         reconnectFunc(path, phase, offset, stream);
     };
 
-    source.addEventListener("new-log-chunk", (e) => {
+    source.addEventListener("log_update", (e) => {
         const obj = JSON.parse(e.data);
 
         // keep running tally of offset in case we need to reconnect
@@ -91,7 +91,7 @@ function setupTail(path, phase, offset, stream) {
         }
     });
 
-    source.addEventListener("finished", (e) => {
+    source.addEventListener("log_finished", (e) => {
         // no more logs to tail
         source.close();
     });

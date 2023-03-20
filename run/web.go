@@ -1,10 +1,13 @@
 package run
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
@@ -16,6 +19,7 @@ import (
 
 type (
 	webHandlers struct {
+		logr.Logger
 		otf.LogService
 		otf.Renderer
 		WorkspaceService
@@ -39,6 +43,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel)
 	r.HandleFunc("/runs/{run_id}/apply", h.apply)
 	r.HandleFunc("/runs/{run_id}/discard", h.discard)
+	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watchWorkspace).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get)
@@ -229,4 +234,108 @@ func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+}
+
+func (h *webHandlers) watchWorkspace(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		StreamID    string `schema:"stream,required"`
+		Latest      bool   `schema:"latest"`
+		RunID       string `schema:"run_id"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	events, err := h.svc.Watch(r.Context(), WatchOptions{
+		WorkspaceID: otf.String(params.WorkspaceID),
+	})
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	rc := http.NewResponseController(w)
+	rc.Flush()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case event, ok := <-events:
+			if !ok {
+				return
+			}
+			run, ok := event.Payload.(*Run)
+			if !ok {
+				// skip non-run events
+				continue
+			}
+
+			// Handle query parameters which filter run events:
+			// - 'latest' specifies that the client is only interest in events
+			// relating to the latest run for the workspace
+			// - 'run-id' (mutually exclusive with 'latest') - specifies
+			// that the client is only interested in events relating to that
+			// run.
+			// - otherwise, if neither of those parameters are specified
+			// then events for all runs are relayed.
+			if params.Latest && !run.Latest {
+				// skip: run is not the latest run for a workspace
+				continue
+			} else if params.RunID != "" && params.RunID != run.ID {
+				// skip: event is for a run which does not match the
+				// filter
+				continue
+			}
+
+			// render HTML snippets and send as payload in SSE event
+			itemHTML := new(bytes.Buffer)
+			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
+				h.Error(err, "rendering template for run item")
+				continue
+			}
+			runStatusHTML := new(bytes.Buffer)
+			if err := h.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
+				h.Error(err, "rendering run status template")
+				continue
+			}
+			planStatusHTML := new(bytes.Buffer)
+			if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan); err != nil {
+				h.Error(err, "rendering plan status template")
+				continue
+			}
+			applyStatusHTML := new(bytes.Buffer)
+			if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply); err != nil {
+				h.Error(err, "rendering apply status template")
+				continue
+			}
+			js, err := json.Marshal(struct {
+				ID              string        `json:"id"`
+				RunStatus       otf.RunStatus `json:"run-status"`
+				RunItemHTML     string        `json:"run-item-html"`
+				RunStatusHTML   string        `json:"run-status-html"`
+				PlanStatusHTML  string        `json:"plan-status-html"`
+				ApplyStatusHTML string        `json:"apply-status-html"`
+			}{
+				ID:              run.ID,
+				RunStatus:       run.Status,
+				RunItemHTML:     itemHTML.String(),
+				RunStatusHTML:   runStatusHTML.String(),
+				PlanStatusHTML:  planStatusHTML.String(),
+				ApplyStatusHTML: applyStatusHTML.String(),
+			})
+			if err != nil {
+				h.Error(err, "marshalling watched run", "run", run.ID)
+				continue
+			}
+			otf.WriteSSEEvent(w, js, event.Type)
+			rc.Flush()
+		}
+	}
 }

@@ -28,14 +28,8 @@ func TestTailLogs(t *testing.T) {
 	go func() {
 		handlers.tailRun(w, r)
 
-		// test chunk received
-		want := `data: {"html":"some logs\u003cbr\u003e","offset":9}
-event: new-log-chunk
-
-event: finished
-data: no more logs
-
-`
+		// should receive base64 encoded event
+		want := "data: eyJodG1sIjoic29tZSBsb2dzXHUwMDNjYnJcdTAwM2UiLCJvZmZzZXQiOjl9\nevent: log_update\n\ndata: bm8gbW9yZSBsb2dz\nevent: log_finished\n\n"
 		assert.Equal(t, want, w.Body.String())
 
 		done <- struct{}{}

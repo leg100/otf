@@ -3,7 +3,6 @@ package logs
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -45,8 +44,6 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rc := http.NewResponseController(w)
-
 	ch, err := h.svc.tail(r.Context(), otf.GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
@@ -58,15 +55,18 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	rc := http.NewResponseController(w)
+	rc.Flush()
 
 	for {
 		select {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				fmt.Fprintln(w, "event: finished")
-				fmt.Fprintln(w, "data: no more logs")
-				fmt.Fprintln(w)
+				otf.WriteSSEEvent(w, []byte("no more logs"), otf.EventLogFinished)
 				return
 			}
 			html := chunk.ToHTML()
@@ -85,10 +85,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling data")
 				continue
 			}
-			fmt.Fprintf(w, "data: %s\n", string(js))
-			fmt.Fprintln(w, "event: new-log-chunk")
-			fmt.Fprintln(w)
-
+			otf.WriteSSEEvent(w, js, otf.EventLogChunk)
 			rc.Flush()
 		case <-r.Context().Done():
 			return

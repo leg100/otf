@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
@@ -15,9 +16,17 @@ import (
 
 type (
 	api struct {
-		*JSONAPIMarshaler
+		logr.Logger
+		jsonapiMarshaler
 
 		svc Service
+	}
+
+	jsonapiMarshaler interface {
+		MarshalJSONAPI(run *Run, r *http.Request) ([]byte, error)
+		toRun(run *Run, r *http.Request) (*jsonapi.Run, error)
+		toList(list *RunList, r *http.Request) (*jsonapi.RunList, error)
+		toPhase(from Phase, r *http.Request) (any, error)
 	}
 
 	// planFileOptions are options for the plan file API
@@ -39,6 +48,7 @@ func (s *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{id}/actions/cancel", s.cancel).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/force-cancel", s.forceCancel).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/runs/queue", s.getRunQueue).Methods("GET")
+	r.HandleFunc("/watch", s.watch).Methods("GET")
 
 	// Run routes for exclusive use by remote agents
 	r.HandleFunc("/runs/{id}/actions/start/{phase}", s.startPhase).Methods("POST")
@@ -391,6 +401,47 @@ func (s *api) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.writeResponse(w, r, run.Apply)
+}
+
+// Watch handler responds with a stream of events, using json encoding.
+//
+// NOTE: Only run events are currently supported.
+func (s *api) watch(w http.ResponseWriter, r *http.Request) {
+	// TODO: populate watch options
+	events, err := s.svc.Watch(r.Context(), WatchOptions{})
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	rc := http.NewResponseController(w)
+	rc.Flush()
+
+	for {
+		select {
+		case event, ok := <-events:
+			if !ok {
+				// server closed connection
+				return
+			}
+
+			run := event.Payload.(*Run)
+			data, err := s.MarshalJSONAPI(run, r)
+			if err != nil {
+				s.Error(err, "marshalling run event", "event", event.Type)
+				continue
+			}
+			otf.WriteSSEEvent(w, data, event.Type)
+			rc.Flush()
+		case <-r.Context().Done():
+			// client closed connection
+			return
+		}
+	}
 }
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.
