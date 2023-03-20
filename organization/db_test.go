@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOrganization_Create(t *testing.T) {
+func TestDB(t *testing.T) {
 	ctx := context.Background()
 	db := &pgdb{sql.NewTestDB(t)}
 

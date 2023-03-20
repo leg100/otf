@@ -96,6 +96,32 @@ func TestUserDB(t *testing.T) {
 		assert.Equal(t, err, otf.ErrResourceNotFound)
 	})
 
+	t.Run("add organization membership", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		user := createTestUser(t, db, WithOrganizations(org.Name))
+
+		err := db.addOrganizationMembership(ctx, user.ID, org.Name)
+		require.NoError(t, err)
+
+		got, err := db.getUser(ctx, UserSpec{Username: otf.String(user.Username)})
+		require.NoError(t, err)
+
+		assert.Contains(t, got.Organizations, org.Name)
+	})
+
+	t.Run("remove organization membership", func(t *testing.T) {
+		org := organization.CreateTestOrganization(t, db)
+		user := createTestUser(t, db, WithOrganizations(org.Name))
+
+		err := db.removeOrganizationMembership(ctx, user.ID, org.Name)
+		require.NoError(t, err)
+
+		got, err := db.getUser(ctx, UserSpec{Username: otf.String(user.Username)})
+		require.NoError(t, err)
+
+		assert.NotContains(t, got.Organizations, org.Name)
+	})
+
 	t.Run("add team membership", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		team := createTestTeam(t, db, org.Name)
@@ -109,6 +135,7 @@ func TestUserDB(t *testing.T) {
 
 		assert.Contains(t, got.Teams, team)
 	})
+
 	t.Run("remove team membership", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		team := createTestTeam(t, db, org.Name)
