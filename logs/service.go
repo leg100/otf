@@ -36,7 +36,7 @@ type (
 		logr.Logger
 		otf.Cache
 		otf.DB
-		*pubsub.Broker
+		pubsub.Broker
 		otf.Verifier
 
 		RunAuthorizer otf.Authorizer
@@ -66,7 +66,7 @@ func NewService(opts Options) *service {
 
 	// Must register table name and service with pubsub broker so that it knows
 	// how to lookup chunks in the DB and send them to us via a subscription
-	opts.Register("logs", &svc)
+	opts.Register("log", &svc)
 
 	return &svc
 }

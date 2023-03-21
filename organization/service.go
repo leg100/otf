@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -30,7 +31,7 @@ type (
 	service struct {
 		otf.Authorizer // authorize access to org
 		logr.Logger
-		otf.Publisher
+		pubsub.Broker
 
 		api  *api
 		db   *pgdb
@@ -42,7 +43,7 @@ type (
 
 	Options struct {
 		otf.DB
-		otf.Publisher
+		pubsub.Broker
 		otf.Renderer
 		logr.Logger
 	}
@@ -52,7 +53,7 @@ func NewService(opts Options) *service {
 	svc := service{
 		Authorizer:       &Authorizer{opts.Logger},
 		Logger:           opts.Logger,
-		Publisher:        opts.Publisher,
+		Broker:           opts.Broker,
 		db:               &pgdb{opts.DB},
 		site:             &otf.SiteAuthorizer{opts.Logger},
 		jsonapiMarshaler: &jsonapiMarshaler{},
@@ -62,6 +63,11 @@ func NewService(opts Options) *service {
 		jsonapiMarshaler: &jsonapiMarshaler{},
 	}
 	svc.web = &web{opts.Renderer, &svc}
+
+	// Must register table name and service with pubsub broker so that it knows
+	// how to lookup organizations in the DB.
+	opts.Register("organization", &svc)
+
 	return &svc
 }
 
@@ -146,6 +152,11 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 	s.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
+}
+
+// GetByID implements pubsub.Getter
+func (s *service) GetByID(ctx context.Context, id string) (any, error) {
+	return s.db.getByID(ctx, id)
 }
 
 func (s *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {

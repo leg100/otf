@@ -65,7 +65,7 @@ type DatabaseLock interface {
 // GetID retrieves the ID field of a struct contained in s. If s is not a struct,
 // or there is no ID field, then false is returned.
 func GetID(s any) (string, bool) {
-	v := reflect.ValueOf(s)
+	v := reflect.Indirect(reflect.ValueOf(s))
 	if v.Kind() != reflect.Struct {
 		return "", false
 	}

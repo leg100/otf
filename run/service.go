@@ -101,7 +101,7 @@ type (
 		otf.Cache
 		otf.DB
 		otf.Renderer
-		*pubsub.Broker
+		pubsub.Broker
 		otf.Signer
 	}
 )
@@ -138,8 +138,8 @@ func NewService(opts Options) *service {
 	}
 
 	// Must register table name and service with pubsub broker so that it knows
-	// how to lookup workspaces in the DB.
-	opts.Register("runs", &svc)
+	// how to lookup runs in the DB.
+	opts.Register("run", &svc)
 
 	return &svc
 }

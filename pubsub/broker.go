@@ -27,17 +27,22 @@ const (
 
 // a unique identity string for distinguishing this process from other otfd
 // processes
-var pid = uuid.New().String()
+var pid = uuid.NewString()
 
 type (
-	// Broker is a pubsub broker implemented using postgres' listen/notify
-	Broker struct {
+	Broker interface {
+		otf.PubSubService
+		Register(table string, getter Getter)
+	}
+
+	// broker is a pubsub broker implemented using postgres' listen/notify
+	broker struct {
 		logr.Logger
 
 		channel string                      // postgres notification channel name
 		pool    pool                        // pool from which to acquire a dedicated connection to postgres
 		pid     string                      // each pubsub maintains a unique identifier to distriguish messages it
-		tables  map[string]Getter           // map of postgres table names to getters
+		tables  map[string]Getter           // map of postgres table names to getters.
 		subs    map[string]chan otf.Event   // subscriptions
 		metrics map[string]prometheus.Gauge // metric for each subscription
 
@@ -73,7 +78,7 @@ type (
 	}
 )
 
-func NewBroker(logger logr.Logger, cfg BrokerConfig) (*Broker, error) {
+func NewBroker(logger logr.Logger, cfg BrokerConfig) (*broker, error) {
 	// required config
 	if cfg.PoolDB == nil {
 		return nil, errors.New("missing database connection pool")
@@ -83,7 +88,7 @@ func NewBroker(logger logr.Logger, cfg BrokerConfig) (*Broker, error) {
 		return nil, err
 	}
 
-	broker := &Broker{
+	broker := &broker{
 		Logger:  logger.WithValues("component", "pubsub"),
 		pid:     pid,
 		pool:    pool,
@@ -106,7 +111,7 @@ func NewBroker(logger logr.Logger, cfg BrokerConfig) (*Broker, error) {
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
 // local pubsub broker.
-func (b *Broker) Start(ctx context.Context) error {
+func (b *broker) Start(ctx context.Context) error {
 	conn, err := b.pool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -143,7 +148,7 @@ func (b *Broker) Start(ctx context.Context) error {
 // Publish sends an event to subscribers, via postgres to subscribers on
 // other machines, and via the local broker to subscribers within the same
 // process.
-func (b *Broker) Publish(event otf.Event) {
+func (b *broker) Publish(event otf.Event) {
 	b.localPublish(event)
 
 	if event.Local {
@@ -156,7 +161,7 @@ func (b *Broker) Publish(event otf.Event) {
 }
 
 // Subscribe subscribes the caller to a stream of events.
-func (b *Broker) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
+func (b *broker) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -199,7 +204,7 @@ func (b *Broker) Subscribe(ctx context.Context, name string) (<-chan otf.Event, 
 }
 
 // Register a means of reassembling a postgres message back into an otf event
-func (b *Broker) Register(table string, getter Getter) {
+func (b *broker) Register(table string, getter Getter) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -207,7 +212,7 @@ func (b *Broker) Register(table string, getter Getter) {
 }
 
 // localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event otf.Event) {
+func (b *broker) localPublish(event otf.Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -224,7 +229,7 @@ func (b *Broker) localPublish(event otf.Event) {
 
 // remotePublish publishes an event to postgres for relaying onto to remote
 // subscribers
-func (b *Broker) remotePublish(event otf.Event) error {
+func (b *broker) remotePublish(event otf.Event) error {
 	// marshal an otf event into a JSON-encoded postgres message
 	id, hasID := otf.GetID(event.Payload)
 	if !hasID {
@@ -252,7 +257,7 @@ func (b *Broker) remotePublish(event otf.Event) error {
 }
 
 // receive handles notifications from postgres
-func (b *Broker) receive(ctx context.Context, notification *pgconn.Notification) error {
+func (b *broker) receive(ctx context.Context, notification *pgconn.Notification) error {
 	var msg message
 	if err := json.Unmarshal([]byte(notification.Payload), &msg); err != nil {
 		return err

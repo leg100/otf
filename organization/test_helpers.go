@@ -7,17 +7,31 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/pubsub"
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestService(t *testing.T, db otf.DB) *service {
+type testServiceOption func(*service)
+
+func WithBroker(broker pubsub.Broker) testServiceOption {
+	return func(svc *service) {
+		svc.Broker = broker
+	}
+}
+
+func NewTestService(t *testing.T, db otf.DB, opts ...testServiceOption) *service {
 	service := NewService(Options{
-		DB:        db,
-		Logger:    logr.Discard(),
-		Publisher: &otf.FakePublisher{},
+		DB:     db,
+		Logger: logr.Discard(),
+		Broker: &fakeBroker{},
 	})
 	service.Authorizer = otf.NewAllowAllAuthorizer()
 	service.site = otf.NewAllowAllAuthorizer()
+
+	for _, fn := range opts {
+		fn(service)
+	}
+
 	return service
 }
 
@@ -29,9 +43,9 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func CreateTestOrganization(t *testing.T, db otf.DB) *Organization {
+func CreateTestOrganization(t *testing.T, db otf.DB, opts ...testServiceOption) *Organization {
 	ctx := context.Background()
-	svc := NewTestService(t, db)
+	svc := NewTestService(t, db, opts...)
 	org, err := svc.CreateOrganization(ctx, OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
@@ -71,3 +85,10 @@ func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationLi
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil
 }
+
+type fakeBroker struct {
+	pubsub.Broker
+}
+
+func (f *fakeBroker) Publish(otf.Event)                           {}
+func (f *fakeBroker) Register(table string, getter pubsub.Getter) {}

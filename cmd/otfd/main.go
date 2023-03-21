@@ -168,10 +168,10 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	var handlers []otf.Handlers
 
 	orgService := organization.NewService(organization.Options{
-		Logger:    logger,
-		DB:        db,
-		Renderer:  renderer,
-		Publisher: broker,
+		Logger:   logger,
+		DB:       db,
+		Renderer: renderer,
+		Broker:   broker,
 	})
 	handlers = append(handlers, orgService)
 

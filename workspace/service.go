@@ -67,7 +67,7 @@ type (
 
 	Options struct {
 		otf.DB
-		*pubsub.Broker
+		pubsub.Broker
 		otf.Renderer
 		organization.OrganizationService
 		repo.RepoService
@@ -103,7 +103,7 @@ func NewService(opts Options) *service {
 
 	// Must register table name and service with pubsub broker so that it knows
 	// how to lookup workspaces in the DB.
-	opts.Register("workspaces", &svc)
+	opts.Register("workspace", &svc)
 
 	return serviceWithDB(&svc, newdb(opts.DB))
 }
