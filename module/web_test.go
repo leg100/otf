@@ -182,7 +182,7 @@ type fakeWebServices struct {
 	vcsprovider.VCSProviderService
 }
 
-func (f *fakeWebServices) PublishModule(context.Context, PublishModuleOptions) (*Module, error) {
+func (f *fakeWebServices) PublishModule(context.Context, PublishOptions) (*Module, error) {
 	return f.mod, nil
 }
 

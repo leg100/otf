@@ -56,7 +56,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.svc.create(r.Context(), createOptions{
+	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
 		Organization: params.OrganizationName,
 		Token:        params.Token,
 		Name:         params.Name,

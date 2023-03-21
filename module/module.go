@@ -55,25 +55,21 @@ type (
 
 	ModuleVersionStatus string
 
-	PublishModuleOptions struct {
-		Repo          moduleRepo
+	PublishOptions struct {
+		Repo          Repo
 		VCSProviderID string
 	}
-	PublishModuleVersionOptions struct {
+	PublishVersionOptions struct {
 		ModuleID string
 		Version  string
 		Ref      string
-		Repo     moduleRepo
+		Repo     Repo
 		Client   cloud.Client
 	}
-	CreateModuleOptions struct {
+	CreateOptions struct {
 		Name         string
 		Provider     string
 		Organization string
-	}
-	UpdateModuleStatusOptions struct {
-		ID     string
-		Status ModuleStatus
 	}
 	CreateModuleVersionOptions struct {
 		ModuleID string
@@ -98,7 +94,7 @@ type (
 	}
 )
 
-func NewModule(opts CreateModuleOptions) *Module {
+func NewModule(opts CreateOptions) *Module {
 	return &Module{
 		ID:           otf.NewID("mod"),
 		CreatedAt:    otf.CurrentTimestamp(),

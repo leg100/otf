@@ -17,7 +17,7 @@ func TestDB(t *testing.T) {
 	org := organization.CreateTestOrganization(t, db)
 
 	t.Run("create", func(t *testing.T) {
-		provider := NewTestVCSProvider(t, org)
+		provider := newTestVCSProvider(t, org)
 
 		defer db.delete(ctx, provider.Token)
 

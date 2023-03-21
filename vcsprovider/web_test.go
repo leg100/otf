@@ -1,7 +1,6 @@
 package vcsprovider
 
 import (
-	"context"
 	"fmt"
 	"net/http/httptest"
 	"net/url"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestHTML_New(t *testing.T) {
-	svc := fakeWebServices(t, NewTestVCSProvider(t, nil))
+	svc := fakeWebServices(t, newTestVCSProvider(t, nil))
 
 	for _, cloud := range []string{"github", "gitlab"} {
 		t.Run(cloud, func(t *testing.T) {
@@ -32,7 +31,7 @@ func TestHTML_New(t *testing.T) {
 
 func TestCreateVCSProviderHandler(t *testing.T) {
 	org := organization.NewTestOrganization(t)
-	svc := fakeWebServices(t, NewTestVCSProvider(t, org))
+	svc := fakeWebServices(t, newTestVCSProvider(t, org))
 
 	form := strings.NewReader(url.Values{
 		"organization_name": {"acme-corp"},
@@ -58,7 +57,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 
 func TestListVCSProvidersHandler(t *testing.T) {
 	org := organization.NewTestOrganization(t)
-	app := fakeWebServices(t, NewTestVCSProvider(t, org))
+	app := fakeWebServices(t, newTestVCSProvider(t, org))
 
 	r := httptest.NewRequest("GET", "/?organization_name=acme-corp", nil)
 	w := httptest.NewRecorder()
@@ -69,7 +68,7 @@ func TestListVCSProvidersHandler(t *testing.T) {
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
 	org := organization.NewTestOrganization(t)
-	app := fakeWebServices(t, NewTestVCSProvider(t, org))
+	app := fakeWebServices(t, newTestVCSProvider(t, org))
 
 	form := strings.NewReader(url.Values{
 		"vcs_provider_id": {"fake-id"},
@@ -89,25 +88,7 @@ func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
 	require.NoError(t, err)
 	return &webHandlers{
 		Renderer:     renderer,
-		svc:          &fakeApp{provider: provider},
+		svc:          &fakeService{provider: provider},
 		CloudService: inmem.NewTestCloudService(),
 	}
-}
-
-type fakeApp struct {
-	provider *VCSProvider
-
-	Service
-}
-
-func (f *fakeApp) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
-	return f.provider, nil
-}
-
-func (f *fakeApp) list(context.Context, string) ([]*VCSProvider, error) {
-	return []*VCSProvider{f.provider}, nil
-}
-
-func (f *fakeApp) delete(context.Context, string) (*VCSProvider, error) {
-	return f.provider, nil
 }

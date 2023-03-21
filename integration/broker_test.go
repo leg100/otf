@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
@@ -17,12 +18,9 @@ import (
 func TestBroker(t *testing.T) {
 	db := sql.NewTestDB(t)
 	// local broker to which events are published
-	local, err := pubsub.NewBroker(logr.Discard(), pubsub.BrokerConfig{PoolDB: db, PID: otf.String("123")})
-	require.NoError(t, err)
-
+	local := testBroker(t, db)
 	// remote broker from which events should be received
-	remote, err := pubsub.NewBroker(logr.Discard(), pubsub.BrokerConfig{PoolDB: db, PID: otf.String("456")})
-	require.NoError(t, err)
+	remote := testBroker(t, db)
 	// register org service with remote broker so that it knows how to
 	// 'reassemble' org events
 	remote.Register("organization", organization.NewTestService(t, db))
@@ -57,4 +55,13 @@ func TestBroker(t *testing.T) {
 	cancel()
 	assert.NoError(t, <-done)
 	assert.NoError(t, <-done)
+}
+
+func testBroker(t *testing.T, db otf.DB) pubsub.Broker {
+	broker, err := pubsub.NewBroker(logr.Discard(), pubsub.BrokerConfig{
+		PoolDB: db,
+		PID:    otf.String(uuid.NewString()),
+	})
+	require.NoError(t, err)
+	return broker
 }

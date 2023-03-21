@@ -257,7 +257,6 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		Logger:             logger,
 		DB:                 db,
 		Renderer:           renderer,
-		CloudService:       cloudService,
 		HostnameService:    hostnameService,
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
@@ -346,6 +345,19 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 		})
 		if err != nil {
 			return fmt.Errorf("spawner terminated: %w", err)
+		}
+		return nil
+	})
+
+	// Run module publisher
+	g.Go(func() error {
+		err := module.StartPublisher(ctx, module.PublisherOptions{
+			Logger:             logger,
+			VCSProviderService: vcsProviderService,
+			Subscriber:         broker,
+		})
+		if err != nil {
+			return fmt.Errorf("module publisher terminated: %w", err)
 		}
 		return nil
 	})

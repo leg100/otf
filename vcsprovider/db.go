@@ -78,7 +78,7 @@ type pgRow struct {
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
-	return db.new(createOptions{
+	return db.new(CreateOptions{
 		ID:           &row.VCSProviderID.String,
 		CreatedAt:    otf.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,

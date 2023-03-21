@@ -94,7 +94,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 			return
 		}
-		opts.ConnectWorkspaceOptions = &ConnectWorkspaceOptions{
+		opts.ConnectOptions = &ConnectOptions{
 			RepoPath:      *params.VCSRepo.Identifier,
 			VCSProviderID: *params.VCSRepo.OAuthTokenID,
 		}
@@ -103,7 +103,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ws, err := a.svc.create(r.Context(), opts)
+	ws, err := a.svc.CreateWorkspace(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

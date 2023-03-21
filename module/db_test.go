@@ -20,7 +20,7 @@ func TestDB(t *testing.T) {
 
 		defer db.delete(ctx, module.ID)
 
-		err := db.CreateModule(ctx, module)
+		err := db.createModule(ctx, module)
 		require.NoError(t, err)
 	})
 
@@ -28,7 +28,7 @@ func TestDB(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		want := createTestModule(t, db, org)
 
-		got, err := db.GetModule(ctx, GetModuleOptions{
+		got, err := db.getModule(ctx, GetModuleOptions{
 			Organization: org.Name,
 			Provider:     want.Provider,
 			Name:         want.Name,
@@ -42,7 +42,7 @@ func TestDB(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		want := createTestModule(t, db, org)
 
-		got, err := db.GetModuleByID(ctx, want.ID)
+		got, err := db.getModuleByID(ctx, want.ID)
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -54,7 +54,7 @@ func TestDB(t *testing.T) {
 		module2 := createTestModule(t, db, org)
 		module3 := createTestModule(t, db, org)
 
-		got, err := db.ListModules(ctx, ListModulesOptions{
+		got, err := db.listModules(ctx, ListModulesOptions{
 			Organization: org.Name,
 		})
 		require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestDB(t *testing.T) {
 		err := db.delete(ctx, module.ID)
 		require.NoError(t, err)
 
-		got, err := db.ListModules(ctx, ListModulesOptions{Organization: org.Name})
+		got, err := db.listModules(ctx, ListModulesOptions{Organization: org.Name})
 		require.NoError(t, err)
 
 		assert.Len(t, got, 0)

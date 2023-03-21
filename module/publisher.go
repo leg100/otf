@@ -12,23 +12,35 @@ import (
 	"github.com/leg100/otf/vcsprovider"
 )
 
-// Publisher publishes new versions of terraform modules from VCS tags
-type Publisher struct {
-	logr.Logger
-	otf.Subscriber
-	vcsprovider.VCSProviderService
+type (
+	// publisher publishes new versions of terraform modules from VCS tags
+	publisher struct {
+		vcsprovider.VCSProviderService
+		ModuleService
+	}
 
-	Service
-}
+	PublisherOptions struct {
+		logr.Logger
+		otf.Subscriber
+		vcsprovider.VCSProviderService
+		ModuleService
+	}
+)
 
-// Start handling VCS events and create module versions for new VCS tags
-func (p *Publisher) Start(ctx context.Context) error {
-	p.V(2).Info("started")
+// StartPublisher starts handling VCS events and publishing modules accordingly
+func StartPublisher(ctx context.Context, opts PublisherOptions) error {
+	opts.V(2).Info("started module publisher")
 
-	sub, err := p.Subscribe(ctx, "module-publisher")
+	sub, err := opts.Subscribe(ctx, "module-publisher")
 	if err != nil {
 		return err
 	}
+
+	p := &publisher{
+		VCSProviderService: opts.VCSProviderService,
+		ModuleService:      opts.ModuleService,
+	}
+
 	for {
 		select {
 		case event := <-sub:
@@ -37,7 +49,7 @@ func (p *Publisher) Start(ctx context.Context) error {
 				continue
 			}
 			if err := p.handleEvent(ctx, event.Payload); err != nil {
-				p.Error(err, "handling vcs event")
+				opts.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -46,7 +58,7 @@ func (p *Publisher) Start(ctx context.Context) error {
 }
 
 // PublishFromEvent publishes a module version in response to a vcs event.
-func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error {
+func (p *publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error {
 	// only publish when new tagEvent is created
 	tagEvent, ok := event.(cloud.VCSTagEvent)
 	if !ok {
@@ -70,12 +82,12 @@ func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error
 	if err != nil {
 		return err
 	}
-	return p.PublishVersion(ctx, PublishModuleVersionOptions{
+	return p.PublishVersion(ctx, PublishVersionOptions{
 		ModuleID: module.ID,
 		// strip off v prefix if it has one
 		Version: strings.TrimPrefix(tagEvent.Tag, "v"),
 		Ref:     tagEvent.CommitSHA,
-		Repo:    moduleRepo(module.Connection.Repo),
+		Repo:    Repo(module.Connection.Repo),
 		Client:  client,
 	})
 }

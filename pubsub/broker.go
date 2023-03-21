@@ -33,6 +33,7 @@ type (
 	Broker interface {
 		otf.PubSubService
 		Register(table string, getter Getter)
+		Start(context.Context) error
 	}
 
 	// broker is a pubsub broker implemented using postgres' listen/notify

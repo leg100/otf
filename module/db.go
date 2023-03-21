@@ -34,7 +34,7 @@ type (
 	}
 )
 
-func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {
+func (db *pgdb) createModule(ctx context.Context, mod *Module) error {
 	params := pggen.InsertModuleParams{
 		ID:               sql.String(mod.ID),
 		CreatedAt:        sql.Timestamptz(mod.CreatedAt),
@@ -48,7 +48,7 @@ func (db *pgdb) CreateModule(ctx context.Context, mod *Module) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) UpdateModuleStatus(ctx context.Context, moduleID string, status ModuleStatus) error {
+func (db *pgdb) updateModuleStatus(ctx context.Context, moduleID string, status ModuleStatus) error {
 	_, err := db.UpdateModuleStatusByID(ctx, sql.String(string(status)), sql.String(moduleID))
 	if err != nil {
 		return sql.Error(err)
@@ -56,7 +56,7 @@ func (db *pgdb) UpdateModuleStatus(ctx context.Context, moduleID string, status 
 	return nil
 }
 
-func (db *pgdb) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
+func (db *pgdb) listModules(ctx context.Context, opts ListModulesOptions) ([]*Module, error) {
 	rows, err := db.ListModulesByOrganization(ctx, sql.String(opts.Organization))
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (db *pgdb) ListModules(ctx context.Context, opts ListModulesOptions) ([]*Mo
 	return modules, nil
 }
 
-func (db *pgdb) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
+func (db *pgdb) getModule(ctx context.Context, opts GetModuleOptions) (*Module, error) {
 	row, err := db.FindModuleByName(ctx, pggen.FindModuleByNameParams{
 		Name:             sql.String(opts.Name),
 		Provider:         sql.String(opts.Provider),
@@ -82,7 +82,7 @@ func (db *pgdb) GetModule(ctx context.Context, opts GetModuleOptions) (*Module, 
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) GetModuleByID(ctx context.Context, id string) (*Module, error) {
+func (db *pgdb) getModuleByID(ctx context.Context, id string) (*Module, error) {
 	row, err := db.FindModuleByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -91,7 +91,7 @@ func (db *pgdb) GetModuleByID(ctx context.Context, id string) (*Module, error) {
 	return moduleRow(row).toModule(), nil
 }
 
-func (db *pgdb) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error) {
+func (db *pgdb) getModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error) {
 	row, err := db.FindModuleByWebhookID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -105,7 +105,7 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 	return sql.Error(err)
 }
 
-func (db *pgdb) CreateModuleVersion(ctx context.Context, version *ModuleVersion) error {
+func (db *pgdb) createModuleVersion(ctx context.Context, version *ModuleVersion) error {
 	_, err := db.InsertModuleVersion(ctx, pggen.InsertModuleVersionParams{
 		ModuleVersionID: sql.String(version.ID),
 		Version:         sql.String(version.Version),
@@ -120,7 +120,7 @@ func (db *pgdb) CreateModuleVersion(ctx context.Context, version *ModuleVersion)
 	return nil
 }
 
-func (db *pgdb) UpdateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) error {
+func (db *pgdb) updateModuleVersionStatus(ctx context.Context, opts UpdateModuleVersionStatusOptions) error {
 	_, err := db.UpdateModuleVersionStatusByID(ctx, pggen.UpdateModuleVersionStatusByIDParams{
 		ModuleVersionID: sql.String(opts.ID),
 		Status:          sql.String(string(opts.Status)),

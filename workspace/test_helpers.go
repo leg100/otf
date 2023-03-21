@@ -27,10 +27,13 @@ func NewTestService(t *testing.T, db otf.DB) *service {
 func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) *Workspace {
 	ctx := context.Background()
 	svc := NewTestService(t, db)
-	ws, err := svc.CreateWorkspace(ctx, CreateWorkspaceOptions{
+
+	createOptions := CreateWorkspaceOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &organization,
-	})
+	}
+
+	ws, err := svc.CreateWorkspace(ctx, createOptions)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/module"
-	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/repo"
-	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
@@ -21,15 +20,15 @@ import (
 )
 
 func TestRepo(t *testing.T) {
-	ctx := context.Background()
-	db := sql.NewTestDB(t)
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
-	t.Run("create workspace connection", func(t *testing.T) {
-		cloudService, _ := testCloudService(t, "test/dummy")
-		svc := testRepoService(t, db, cloudService)
-		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name)
-		vcsprov := vcsprovider.CreateTestVCSProvider(t, db, org, vcsprovider.WithCloudService(cloudService))
+	t.Run("connect workspace", func(t *testing.T) {
+		svc := setup(t, "test/dummy")
+
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org, nil)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
 
 		got, err := svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.WorkspaceConnection,
@@ -50,39 +49,67 @@ func TestRepo(t *testing.T) {
 		})
 	})
 
-	t.Run("create module connection", func(t *testing.T) {
-		cloudService, _ := testCloudService(t, "test/dummy")
-		svc := testRepoService(t, db, cloudService)
-		org := organization.CreateTestOrganization(t, db)
-		mod := module.CreateTestModule(t, db, org)
-		vcsprov := vcsprovider.CreateTestVCSProvider(t, db, org, vcsprovider.WithCloudService(cloudService))
+	t.Run("create workspace with connection", func(t *testing.T) {
+		svc := setup(t, "test/dummy")
 
-		got, err := svc.Connect(ctx, repo.ConnectOptions{
-			ConnectionType: repo.ModuleConnection,
-			VCSProviderID:  vcsprov.ID,
-			ResourceID:     mod.ID,
-			RepoPath:       "test/dummy",
+		org := svc.createOrganization(t, ctx)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+		ws := svc.createWorkspace(t, ctx, nil, &workspace.CreateWorkspaceOptions{
+			Name:         otf.String(uuid.NewString()),
+			Organization: &org.Name,
+			ConnectOptions: &workspace.ConnectOptions{
+				RepoPath:      "test/dummy",
+				VCSProviderID: vcsprov.ID,
+			},
 		})
-		require.NoError(t, err)
-		want := &repo.Connection{VCSProviderID: vcsprov.ID, Repo: "test/dummy"}
-		assert.Equal(t, want, got)
 
-		t.Run("delete module connection", func(t *testing.T) {
+		// webhook should be registered with github
+		require.True(t, svc.hasWebhook())
+
+		t.Run("delete workspace connection", func(t *testing.T) {
 			err := svc.Disconnect(ctx, repo.DisconnectOptions{
-				ConnectionType: repo.ModuleConnection,
-				ResourceID:     mod.ID,
+				ConnectionType: repo.WorkspaceConnection,
+				ResourceID:     ws.ID,
 			})
 			require.NoError(t, err)
 		})
+
+		// webhook should now have been deleted from github
+		require.False(t, svc.hasWebhook())
+	})
+
+	t.Run("create module with connection", func(t *testing.T) {
+		svc := setup(t, "leg100/terraform-aws-stuff")
+
+		org := svc.createOrganization(t, ctx)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+		mod := svc.createModule(t, ctx, org)
+
+		mod, err := svc.PublishModule(ctx, module.PublishOptions{
+			VCSProviderID: vcsprov.ID,
+			Repo:          module.Repo("leg100/terraform-aws-stuff"),
+		})
+		require.NoError(t, err)
+
+		// webhook should be registered with github
+		require.True(t, svc.hasWebhook())
+
+		t.Run("delete module", func(t *testing.T) {
+			_, err := svc.DeleteModule(ctx, mod.ID)
+			require.NoError(t, err)
+		})
+
+		// webhook should now have been deleted from github
+		require.False(t, svc.hasWebhook())
 	})
 
 	t.Run("create multiple connections", func(t *testing.T) {
-		org := organization.CreateTestOrganization(t, db)
-		cloudService, githubServer := testCloudService(t, "test/dummy")
-		vcsprov := vcsprovider.CreateTestVCSProvider(t, db, org, vcsprovider.WithCloudService(cloudService))
-		svc := testRepoService(t, db, cloudService)
+		svc := setup(t, "test/dummy")
 
-		mod1 := module.CreateTestModule(t, db, org)
+		org := svc.createOrganization(t, ctx)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+
+		mod1 := svc.createModule(t, ctx, org)
 		_, err := svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.ModuleConnection,
 			VCSProviderID:  vcsprov.ID,
@@ -91,7 +118,7 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		mod2 := module.CreateTestModule(t, db, org)
+		mod2 := svc.createModule(t, ctx, org)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.ModuleConnection,
 			VCSProviderID:  vcsprov.ID,
@@ -100,7 +127,7 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		ws1 := workspace.CreateTestWorkspace(t, db, org.Name)
+		ws1 := svc.createWorkspace(t, ctx, org, nil)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.WorkspaceConnection,
 			VCSProviderID:  vcsprov.ID,
@@ -109,7 +136,7 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		ws2 := workspace.CreateTestWorkspace(t, db, org.Name)
+		ws2 := svc.createWorkspace(t, ctx, org, nil)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.WorkspaceConnection,
 			VCSProviderID:  vcsprov.ID,
@@ -119,8 +146,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.NotNil(t, githubServer.HookEndpoint)
-		require.NotNil(t, githubServer.HookSecret)
+		require.True(t, svc.hasWebhook())
 
 		t.Run("delete multiple connections", func(t *testing.T) {
 			err = svc.Disconnect(ctx, repo.DisconnectOptions{
@@ -148,40 +174,22 @@ func TestRepo(t *testing.T) {
 			require.NoError(t, err)
 
 			// webhook should now have been deleted from github
-			require.Nil(t, githubServer.HookEndpoint)
-			require.Nil(t, githubServer.HookSecret)
+			require.False(t, svc.hasWebhook())
 		})
 	})
 }
 
-func createTestConnection(t *testing.T, db otf.DB, repoPath string) *repo.Connection {
-	cloudService, _ := testCloudService(t, repoPath)
-	svc := testRepoService(t, db, cloudService)
-	org := organization.CreateTestOrganization(t, db)
-	mod := module.CreateTestModule(t, db, org)
-	vcsprov := vcsprovider.CreateTestVCSProvider(t, db, org, vcsprovider.WithCloudService(cloudService))
-
-	connection, err := svc.Connect(context.Background(), repo.ConnectOptions{
-		ConnectionType: repo.ModuleConnection,
-		VCSProviderID:  vcsprov.ID,
-		ResourceID:     mod.ID,
-		RepoPath:       repoPath,
-	})
-	require.NoError(t, err)
-	return connection
-}
-
-func testRepoService(t *testing.T, db otf.DB, cloudService cloud.Service) *repo.Service {
+func newRepoService(t *testing.T, db otf.DB, cloudService cloud.Service, vcsService vcsprovider.Service) repo.Service {
 	return repo.NewService(repo.Options{
 		Logger:             logr.Discard(),
 		DB:                 db,
 		CloudService:       cloudService,
 		HostnameService:    hostnameService{"fake-host.org"},
-		VCSProviderService: vcsprovider.NewTestService(t, db, vcsprovider.WithCloudService(cloudService)),
+		VCSProviderService: vcsService,
 	})
 }
 
-func testCloudService(t *testing.T, repoPath string) (cloud.Service, *github.TestServer) {
+func newCloudService(t *testing.T, repoPath string) (cloud.Service, *github.TestServer) {
 	srv := github.NewTestServer(t, github.WithRepo(repoPath))
 	githubURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)

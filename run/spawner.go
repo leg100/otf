@@ -37,17 +37,17 @@ type (
 
 // StartSpawner starts the run spawner.
 func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
+	sub, err := opts.Subscriber.Subscribe(ctx, "run-spawner")
+	if err != nil {
+		return err
+	}
+
 	s := &spawner{
 		Logger:                      opts.Logger.WithValues("component", "spawner"),
 		ConfigurationVersionService: opts.ConfigurationVersionService,
 		WorkspaceService:            opts.WorkspaceService,
 		VCSProviderService:          opts.VCSProviderService,
 		RunService:                  opts.RunService,
-	}
-
-	sub, err := opts.Subscriber.Subscribe(ctx, "run-spawner")
-	if err != nil {
-		return err
 	}
 
 	for {

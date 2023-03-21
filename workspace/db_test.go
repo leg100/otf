@@ -20,18 +20,18 @@ func TestDB(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		ws := newTestWorkspace(t, org.Name)
-		err := db.CreateWorkspace(ctx, ws)
+		err := db.create(ctx, ws)
 		require.NoError(t, err)
 
 		t.Run("duplicate", func(t *testing.T) {
-			err := db.CreateWorkspace(ctx, ws)
+			err := db.create(ctx, ws)
 			require.Equal(t, otf.ErrResourceAlreadyExists, err)
 		})
 
 		t.Run("duplicate name", func(t *testing.T) {
 			dup := newTestWorkspace(t, org.Name)
 			dup.Name = ws.Name
-			err := db.CreateWorkspace(ctx, dup)
+			err := db.create(ctx, dup)
 			require.Equal(t, otf.ErrResourceAlreadyExists, err)
 		})
 	})
@@ -40,7 +40,7 @@ func TestDB(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		ws := CreateTestWorkspace(t, db, org.Name)
 
-		got, err := db.UpdateWorkspace(ctx, ws.ID, func(ws *Workspace) error {
+		got, err := db.update(ctx, ws.ID, func(ws *Workspace) error {
 			return ws.Update(UpdateWorkspaceOptions{
 				Description: otf.String("updated description"),
 			})
@@ -50,7 +50,7 @@ func TestDB(t *testing.T) {
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
-		want, err := db.GetWorkspace(ctx, ws.ID)
+		want, err := db.get(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -59,7 +59,7 @@ func TestDB(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		want := CreateTestWorkspace(t, db, org.Name)
 
-		got, err := db.GetWorkspace(context.Background(), want.ID)
+		got, err := db.get(ctx, want.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -68,7 +68,7 @@ func TestDB(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		want := CreateTestWorkspace(t, db, org.Name)
 
-		got, err := db.GetWorkspaceByName(context.Background(), org.Name, want.Name)
+		got, err := db.getByName(ctx, org.Name, want.Name)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -76,7 +76,7 @@ func TestDB(t *testing.T) {
 	t.Run("lock", func(t *testing.T) {
 		org := organization.CreateTestOrganization(t, db)
 		user := auth.CreateTestUser(t, db)
-		ctx := otf.AddSubjectToContext(context.Background(), user)
+		ctx := otf.AddSubjectToContext(ctx, user)
 
 		t.Run("lock", func(t *testing.T) {
 			ws := CreateTestWorkspace(t, db, org.Name)
@@ -165,7 +165,7 @@ func TestDB(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := db.ListWorkspaces(context.Background(), tt.opts)
+				results, err := db.list(ctx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -236,7 +236,7 @@ func TestDB(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				results, err := db.ListWorkspacesByUserID(context.Background(), tt.userID, tt.organization, tt.opts)
+				results, err := db.listByUserID(ctx, tt.userID, tt.organization, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, results)
@@ -245,14 +245,13 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		ctx := context.Background()
 		org := organization.CreateTestOrganization(t, db)
 		ws := CreateTestWorkspace(t, db, org.Name)
 
-		err := db.DeleteWorkspace(ctx, ws.ID)
+		err := db.delete(ctx, ws.ID)
 		require.NoError(t, err)
 
-		results, err := db.ListWorkspaces(ctx, WorkspaceListOptions{Organization: otf.String(org.Name)})
+		results, err := db.list(ctx, WorkspaceListOptions{Organization: otf.String(org.Name)})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 

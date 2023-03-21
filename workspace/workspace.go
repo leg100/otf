@@ -94,7 +94,7 @@ type (
 		WorkingDirectory           *string
 		Organization               *string `schema:"organization_name,required"`
 
-		*ConnectWorkspaceOptions
+		*ConnectOptions
 	}
 
 	UpdateWorkspaceOptions struct {
@@ -127,9 +127,10 @@ type (
 		UserID *string
 	}
 
-	ConnectWorkspaceOptions struct {
+	ConnectOptions struct {
 		RepoPath      string `schema:"identifier,required"` // repo id: <owner>/<repo>
 		VCSProviderID string `schema:"vcs_provider_id,required"`
+		tx            otf.DB // Connect repo within database transaction. Optional.
 	}
 
 	// WorkspaceQualifiedName is the workspace's fully qualified name including the

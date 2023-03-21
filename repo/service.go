@@ -11,7 +11,20 @@ import (
 )
 
 type (
-	Service struct {
+	RepoService = Service
+
+	// Service manages VCS repositories
+	Service interface {
+		// Connect adds a connection between a VCS repo and an OTF resource. A
+		// webhook is created if one doesn't exist already.
+		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
+		// Disconnect removes a connection between a VCS repo and an OTF
+		// resource. If there are no more connections then its
+		// webhook is removed.
+		Disconnect(ctx context.Context, opts DisconnectOptions) error
+	}
+
+	service struct {
 		logr.Logger
 		vcsprovider.Service
 		otf.DB
@@ -32,14 +45,14 @@ type (
 	}
 )
 
-func NewService(opts Options) *Service {
+func NewService(opts Options) *service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
 	handler := &handler{
 		Logger:    opts.Logger,
 		Publisher: opts.Publisher,
 		db:        newPGDB(opts.DB, factory),
 	}
-	return &Service{
+	return &service{
 		Logger:  opts.Logger,
 		Service: opts.VCSProviderService,
 		DB:      opts.DB,
@@ -49,7 +62,7 @@ func NewService(opts Options) *Service {
 }
 
 // Connect an OTF resource to a VCS repo.
-func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
+func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
@@ -97,6 +110,9 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 
 		return tx.createConnection(ctx, hook.id, opts)
 	})
+	if err != nil {
+		return nil, err
+	}
 	return &Connection{
 		Repo:          opts.RepoPath,
 		VCSProviderID: opts.VCSProviderID,
@@ -107,7 +123,7 @@ func (s *Service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 //
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
 // fatal and the hook is still deleted from the database.
-func (s *Service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
+func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
 	// separately capture any error resulting from attempting to delete the
 	// webhook from the VCS repo
 	var repoErr error

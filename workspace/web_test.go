@@ -356,7 +356,7 @@ func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (c
 	return &fakeWebCloudClient{repos: f.repos}, nil
 }
 
-func (f *fakeWebService) create(context.Context, CreateWorkspaceOptions) (*Workspace, error) {
+func (f *fakeWebService) CreateWorkspace(context.Context, CreateWorkspaceOptions) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
@@ -395,7 +395,7 @@ func (f *fakeWebService) UnlockWorkspace(context.Context, string, *string, bool)
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) connect(context.Context, string, ConnectWorkspaceOptions) (*repo.Connection, error) {
+func (f *fakeWebService) connect(context.Context, string, ConnectOptions) (*repo.Connection, error) {
 	return nil, nil
 }
 

@@ -17,16 +17,17 @@ type (
 	CloudService       cloud.Service
 
 	Service interface {
+		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
+		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
+		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
+
 		// GetVCSClient combines retrieving a vcs provider and construct a cloud
 		// client from that provider.
 		//
 		// TODO: rename vcs provider to cloud client; the central purpose of the vcs
 		// provider is, after all, to construct a cloud client.
 		GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
-		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
-		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
-		create(ctx context.Context, opts createOptions) (*VCSProvider, error)
-		get(ctx context.Context, id string) (*VCSProvider, error)
+
 		list(ctx context.Context, organization string) ([]*VCSProvider, error)
 		delete(ctx context.Context, id string) (*VCSProvider, error)
 	}
@@ -71,23 +72,7 @@ func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 }
 
-func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	return a.list(ctx, organization)
-}
-
-func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
-	return a.get(ctx, id)
-}
-
-func (a *service) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
-	provider, err := a.get(ctx, providerID)
-	if err != nil {
-		return nil, err
-	}
-	return provider.NewClient(ctx)
-}
-
-func (a *service) create(ctx context.Context, opts createOptions) (*VCSProvider, error) {
+func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -106,10 +91,13 @@ func (a *service) create(ctx context.Context, opts createOptions) (*VCSProvider,
 	return provider, nil
 }
 
-func (a *service) get(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {
+	return a.list(ctx, organization)
+}
+
+func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
 	// Parameters only include VCS Provider ID, so we can only determine
 	// authorization _after_ retrieving the provider
-
 	provider, err := a.db.get(ctx, id)
 	if err != nil {
 		a.Error(err, "retrieving vcs provider", "id", id)
@@ -123,6 +111,14 @@ func (a *service) get(ctx context.Context, id string) (*VCSProvider, error) {
 	a.V(2).Info("retrieved vcs provider", "provider", provider, "subject", subject)
 
 	return provider, nil
+}
+
+func (a *service) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+	provider, err := a.GetVCSProvider(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	return provider.NewClient(ctx)
 }
 
 func (a *service) list(ctx context.Context, organization string) ([]*VCSProvider, error) {

@@ -2,8 +2,6 @@
 package repo
 
 import (
-	"context"
-
 	"github.com/leg100/otf"
 )
 
@@ -20,17 +18,6 @@ type (
 	Connection struct {
 		VCSProviderID string
 		Repo          string
-	}
-
-	// RepoService manages VCS repositories
-	RepoService interface {
-		// Connect adds a connection between a VCS repo and an OTF resource. A
-		// webhook is created if one doesn't exist already.
-		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
-		// Disconnect removes a connection between a VCS repo and an OTF
-		// resource. If there are no more connections then its
-		// webhook is removed.
-		Disconnect(ctx context.Context, opts DisconnectOptions) error
 	}
 
 	ConnectOptions struct {

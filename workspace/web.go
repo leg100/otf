@@ -93,7 +93,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.create(r.Context(), CreateWorkspaceOptions{
+	ws, err := h.svc.CreateWorkspace(r.Context(), CreateWorkspaceOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -365,14 +365,14 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		ConnectWorkspaceOptions
+		ConnectOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	_, err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
+	_, err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectOptions)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

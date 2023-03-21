@@ -963,34 +963,6 @@ type Querier interface {
 	// CountWorkspacesByUserIDScan scans the result of an executed CountWorkspacesByUserIDBatch query.
 	CountWorkspacesByUserIDScan(results pgx.BatchResults) (*int, error)
 
-	FindWorkspaceIDByRunID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByRunIDBatch enqueues a FindWorkspaceIDByRunID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByRunIDBatch(batch genericBatch, runID pgtype.Text)
-	// FindWorkspaceIDByRunIDScan scans the result of an executed FindWorkspaceIDByRunIDBatch query.
-	FindWorkspaceIDByRunIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	FindWorkspaceIDByStateVersionID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByStateVersionIDBatch enqueues a FindWorkspaceIDByStateVersionID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByStateVersionIDBatch(batch genericBatch, stateVersionID pgtype.Text)
-	// FindWorkspaceIDByStateVersionIDScan scans the result of an executed FindWorkspaceIDByStateVersionIDBatch query.
-	FindWorkspaceIDByStateVersionIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	FindWorkspaceIDByCVID(ctx context.Context, configurationVersionID pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByCVIDBatch enqueues a FindWorkspaceIDByCVID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByCVIDBatch(batch genericBatch, configurationVersionID pgtype.Text)
-	// FindWorkspaceIDByCVIDScan scans the result of an executed FindWorkspaceIDByCVIDBatch query.
-	FindWorkspaceIDByCVIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	FindWorkspaceIDByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByNameBatch enqueues a FindWorkspaceIDByName query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// FindWorkspaceIDByNameScan scans the result of an executed FindWorkspaceIDByNameBatch query.
-	FindWorkspaceIDByNameScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	FindWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
 	// later by the batch.
@@ -1538,18 +1510,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, countWorkspacesByUserIDSQL, countWorkspacesByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountWorkspacesByUserID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByRunIDSQL, findWorkspaceIDByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByRunID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByStateVersionIDSQL, findWorkspaceIDByStateVersionIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByStateVersionID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByCVIDSQL, findWorkspaceIDByCVIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByCVID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByNameSQL, findWorkspaceIDByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)

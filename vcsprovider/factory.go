@@ -11,7 +11,7 @@ type factory struct {
 	CloudService
 }
 
-func (f *factory) new(opts createOptions) (*VCSProvider, error) {
+func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 	cloudConfig, err := f.GetCloudConfig(opts.Cloud)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (f *factory) new(opts createOptions) (*VCSProvider, error) {
 	return provider, nil
 }
 
-type createOptions struct {
+type CreateOptions struct {
 	Organization string
 	Token        string
 	Name         string
