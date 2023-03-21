@@ -12,13 +12,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestService(t *testing.T, db otf.DB) *service {
+type testServiceOption func(*service)
+
+func WithCloudService(cloudService CloudService) testServiceOption {
+	return func(svc *service) {
+		svc.factory.CloudService = cloudService
+		svc.web.CloudService = cloudService
+		svc.db.factory.CloudService = cloudService
+	}
+}
+
+func NewTestService(t *testing.T, db otf.DB, opts ...testServiceOption) *service {
 	service := NewService(Options{
-		DB:      db,
-		Logger:  logr.Discard(),
-		Service: inmem.NewTestCloudService(),
+		DB:           db,
+		Logger:       logr.Discard(),
+		CloudService: inmem.NewTestCloudService(),
 	})
 	service.organization = otf.NewAllowAllAuthorizer()
+	for _, fn := range opts {
+		fn(service)
+	}
 	return service
 }
 
@@ -42,9 +55,9 @@ func NewTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvid
 	return provider
 }
 
-func CreateTestVCSProvider(t *testing.T, db otf.DB, org *organization.Organization) *VCSProvider {
+func CreateTestVCSProvider(t *testing.T, db otf.DB, org *organization.Organization, opts ...testServiceOption) *VCSProvider {
 	ctx := context.Background()
-	svc := NewTestService(t, db)
+	svc := NewTestService(t, db, opts...)
 
 	vcsprov, err := svc.create(ctx, createOptions{
 		Organization: org.Name,

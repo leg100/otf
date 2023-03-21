@@ -36,6 +36,10 @@ func NewTestModule(org *organization.Organization, opts ...NewTestModuleOption) 
 	return mod
 }
 
+func CreateTestModule(t *testing.T, db otf.DB, org *organization.Organization) *Module {
+	return createTestModule(t, &pgdb{db}, org)
+}
+
 type NewTestModuleOption func(*Module)
 
 func WithModuleStatus(status ModuleStatus) NewTestModuleOption {

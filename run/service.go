@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
@@ -22,7 +21,6 @@ type (
 	ConfigurationVersionService configversion.Service
 	WorkspaceService            workspace.Service
 	VCSProviderService          vcsprovider.Service
-	LogsService                 logs.Service
 
 	Service interface {
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)

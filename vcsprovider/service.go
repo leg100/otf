@@ -12,7 +12,9 @@ import (
 )
 
 type (
+	// Alias services so they don't conflict when nested together in struct
 	VCSProviderService Service
+	CloudService       cloud.Service
 
 	Service interface {
 		// GetVCSClient combines retrieving a vcs provider and construct a cloud
@@ -40,7 +42,7 @@ type (
 	}
 
 	Options struct {
-		cloud.Service
+		CloudService
 		otf.DB
 		otf.Renderer
 		logr.Logger
@@ -51,14 +53,14 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{opts.Logger},
-		db:           newDB(opts.DB, opts.Service),
+		db:           newDB(opts.DB, opts.CloudService),
 		factory: &factory{
-			Service: opts.Service,
+			CloudService: opts.CloudService,
 		},
 	}
 
 	svc.web = &webHandlers{
-		CloudService: opts.Service,
+		CloudService: opts.CloudService,
 		Renderer:     opts.Renderer,
 		svc:          &svc,
 	}

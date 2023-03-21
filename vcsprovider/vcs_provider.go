@@ -19,9 +19,6 @@ type (
 		Token        string       // credential for creating client
 		Organization string       // vcs provider belongs to an organization
 	}
-
-	// Alias services so they don't conflict when nested together in struct
-	CloudService cloud.Service
 )
 
 func (t *VCSProvider) String() string { return t.Name }

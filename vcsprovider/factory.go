@@ -4,12 +4,11 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 )
 
 // factory makes vcs providers
 type factory struct {
-	cloud.Service
+	CloudService
 }
 
 func (f *factory) new(opts createOptions) (*VCSProvider, error) {

@@ -194,10 +194,10 @@ func (d *daemon) start(cmd *cobra.Command, _ []string) error {
 	d.Middleware = append(d.Middleware, authService.SessionMiddleware)
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		Logger:   logger,
-		DB:       db,
-		Renderer: renderer,
-		Service:  cloudService,
+		Logger:       logger,
+		DB:           db,
+		Renderer:     renderer,
+		CloudService: cloudService,
 	})
 	handlers = append(handlers, vcsProviderService)
 
