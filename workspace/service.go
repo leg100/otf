@@ -137,8 +137,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		// workspace and fails, because it does not exist yet because the transaction
 		// has not yet completed.
 		if opts.ConnectOptions != nil {
-			opts.ConnectOptions.tx = tx
-			conn, err := s.connectWithoutAuthz(ctx, ws.ID, *opts.ConnectOptions)
+			conn, err := s.connectWithoutAuthz(ctx, ws.ID, tx, *opts.ConnectOptions)
 			if err != nil {
 				return err
 			}
@@ -274,12 +273,12 @@ func (s *service) connect(ctx context.Context, workspaceID string, opts ConnectO
 		return nil, err
 	}
 
-	return s.connectWithoutAuthz(ctx, workspaceID, opts)
+	return s.connectWithoutAuthz(ctx, workspaceID, nil, opts)
 }
 
 // connectWithoutAuthz connects the workspace to a repo without checking whether
 // subject has authorization.
-func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error) {
+func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, tx otf.DB, opts ConnectOptions) (*repo.Connection, error) {
 	subject, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -289,7 +288,7 @@ func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, o
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.VCSProviderID,
 		RepoPath:       opts.RepoPath,
-		Tx:             opts.tx,
+		Tx:             tx,
 	})
 	if err != nil {
 		s.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)

@@ -130,7 +130,6 @@ type (
 	ConnectOptions struct {
 		RepoPath      string `schema:"identifier,required"` // repo id: <owner>/<repo>
 		VCSProviderID string `schema:"vcs_provider_id,required"`
-		tx            otf.DB // Connect repo within database transaction. Optional.
 	}
 
 	// QualifiedName is the workspace's fully qualified name including the

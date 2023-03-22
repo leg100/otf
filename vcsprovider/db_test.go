@@ -13,7 +13,7 @@ import (
 
 func TestDB(t *testing.T) {
 	ctx := context.Background()
-	db := newDB(sql.NewTestDB(t), inmem.NewTestCloudService())
+	db := newDB(sql.NewTestDB(t), inmem.NewCloudServiceWithDefaults())
 	org := organization.CreateTestOrganization(t, db)
 
 	t.Run("create", func(t *testing.T) {

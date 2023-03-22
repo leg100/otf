@@ -35,7 +35,7 @@ func setup(t *testing.T, repo string) *service {
 	repoService := newRepoService(t, db, cloudService, vcsproviderService)
 
 	return &service{
-		OrganizationService: newOrganizationService(t, db),
+		OrganizationService: organization.NewTestService(t, db, nil),
 		Service:             cloudService,
 		WorkspaceService:    newWorkspaceService(t, db, repoService),
 		VCSProviderService:  vcsproviderService,
@@ -89,8 +89,4 @@ func (s *service) createModule(t *testing.T, ctx context.Context, org *organizat
 	})
 	require.NoError(t, err)
 	return module
-}
-
-func (s *service) hasWebhook() bool {
-	return s.githubServer.HookEndpoint != nil && s.githubServer.HookSecret != nil
 }

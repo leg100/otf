@@ -11,28 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testServiceOption func(*service)
-
-func WithBroker(broker pubsub.Broker) testServiceOption {
-	return func(svc *service) {
-		svc.Broker = broker
+func NewTestService(t *testing.T, db otf.DB, opts *Options) *service {
+	if opts != nil {
+		return NewService(*opts)
 	}
-}
-
-func NewTestService(t *testing.T, db otf.DB, opts ...testServiceOption) *service {
-	service := NewService(Options{
-		DB:     db,
+	return NewService(Options{
 		Logger: logr.Discard(),
-		Broker: &fakeBroker{},
+		DB:     db,
+		Broker: pubsub.NewTestBroker(t, db),
 	})
-	service.Authorizer = otf.NewAllowAllAuthorizer()
-	service.site = otf.NewAllowAllAuthorizer()
-
-	for _, fn := range opts {
-		fn(service)
-	}
-
-	return service
 }
 
 func NewTestOrganization(t *testing.T) *Organization {
@@ -43,16 +30,22 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func CreateTestOrganization(t *testing.T, db otf.DB, opts ...testServiceOption) *Organization {
+// CreateTestOrganization creates an organization in the database for testing
+// purposes.
+func CreateTestOrganization(t *testing.T, db otf.DB) *Organization {
 	ctx := context.Background()
-	svc := NewTestService(t, db, opts...)
-	org, err := svc.CreateOrganization(ctx, OrganizationCreateOptions{
+	orgdb := &pgdb{db}
+
+	org, err := NewOrganization(OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
 
+	err = orgdb.create(ctx, org)
+	require.NoError(t, err)
+
 	t.Cleanup(func() {
-		svc.DeleteOrganization(ctx, org.Name)
+		orgdb.delete(ctx, org.Name)
 	})
 	return org
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHostnameService(t *testing.T) {
+func TestSetHostname(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostname string

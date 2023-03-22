@@ -2,9 +2,23 @@ package pubsub
 
 import (
 	"context"
+	"testing"
 
+	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
+	"github.com/leg100/otf"
+	"github.com/stretchr/testify/require"
 )
+
+func NewTestBroker(t *testing.T, db otf.DB) Broker {
+	broker, err := NewBroker(logr.Discard(), BrokerConfig{
+		PoolDB: db,
+		PID:    otf.String(uuid.NewString()),
+	})
+	require.NoError(t, err)
+	return broker
+}
 
 type fakePool struct {
 	gotExecArgs []any

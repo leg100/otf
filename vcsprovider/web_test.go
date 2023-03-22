@@ -15,7 +15,8 @@ import (
 )
 
 func TestHTML_New(t *testing.T) {
-	svc := fakeWebServices(t, newTestVCSProvider(t, nil))
+	org := organization.NewTestOrganization(t)
+	svc := fakeWebServices(t, newTestVCSProvider(t, org))
 
 	for _, cloud := range []string{"github", "gitlab"} {
 		t.Run(cloud, func(t *testing.T) {
@@ -89,6 +90,6 @@ func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
 	return &webHandlers{
 		Renderer:     renderer,
 		svc:          &fakeService{provider: provider},
-		CloudService: inmem.NewTestCloudService(),
+		CloudService: inmem.NewCloudServiceWithDefaults(),
 	}
 }

@@ -16,17 +16,25 @@ import (
 
 // TestBroker demonstrates publishing and subscribing of events via postgres.
 func TestBroker(t *testing.T) {
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(func() { cancel() })
+
 	db := sql.NewTestDB(t)
 	// local broker to which events are published
-	local := testBroker(t, db)
+	local := pubsub.NewTestBroker(t, db)
 	// remote broker from which events should be received
-	remote := testBroker(t, db)
-	// register org service with remote broker so that it knows how to
-	// 'reassemble' org events
-	remote.Register("organization", organization.NewTestService(t, db))
+	remote := pubsub.NewTestBroker(t, db)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(func() { cancel() })
+	// setup organization service to use local broker
+	svc := organization.NewTestService(t, db, &organization.Options{
+		Logger: logr.Discard(),
+		DB:     db,
+		Broker: local,
+	})
+	// register table with remote broker
+	remote.Register("organization", svc)
 
 	done := make(chan error)
 	go func() {
@@ -36,32 +44,24 @@ func TestBroker(t *testing.T) {
 		done <- remote.Start(ctx)
 	}()
 
-	t.Run("create organization event", func(t *testing.T) {
-		localsub, err := local.Subscribe(ctx, "local-sub")
-		require.NoError(t, err)
-		remotesub, err := remote.Subscribe(ctx, "remote-sub")
-		require.NoError(t, err)
+	localsub, err := local.Subscribe(ctx, "local-sub")
+	require.NoError(t, err)
+	remotesub, err := remote.Subscribe(ctx, "remote-sub")
+	require.NoError(t, err)
 
-		// sends event via local broker
-		org := organization.CreateTestOrganization(t, db, organization.WithBroker(local))
-
-		want := otf.Event{Type: otf.EventOrganizationCreated, Payload: org}
-		// receive event on local broker
-		assert.Equal(t, want, <-localsub)
-		// receive event on remote broker (via postgres)
-		assert.Equal(t, want, <-remotesub)
+	// sends event via local broker
+	org, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+		Name: otf.String(uuid.NewString()),
 	})
+	require.NoError(t, err)
+
+	want := otf.Event{Type: otf.EventOrganizationCreated, Payload: org}
+	// receive event on local broker
+	assert.Equal(t, want, <-localsub)
+	// receive event on remote broker (via postgres)
+	assert.Equal(t, want, <-remotesub)
 
 	cancel()
 	assert.NoError(t, <-done)
 	assert.NoError(t, <-done)
-}
-
-func testBroker(t *testing.T, db otf.DB) pubsub.Broker {
-	broker, err := pubsub.NewBroker(logr.Discard(), pubsub.BrokerConfig{
-		PoolDB: db,
-		PID:    otf.String(uuid.NewString()),
-	})
-	require.NoError(t, err)
-	return broker
 }

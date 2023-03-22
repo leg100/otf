@@ -14,29 +14,33 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type TestServer struct {
-	HookEndpoint *string  // populated upon creation
-	HookSecret   *string  // populated upon creation
-	HookEvents   []string // populated upon creation
+type (
+	TestServer struct {
+		HookEndpoint *string  // populated upon creation
+		HookSecret   *string  // populated upon creation
+		HookEvents   []string // populated upon creation
 
-	statusCallback // callback invoked whenever a commit status is received
+		statusCallback // callback invoked whenever a commit status is received
 
-	*httptest.Server
-	*testServerDB
-}
+		*httptest.Server
+		*testdb
+	}
 
-type testServerDB struct {
-	user    *cloud.User
-	repo    *string
-	tarball []byte
-	refs    []string
-}
+	TestServerOption func(*TestServer)
 
-type statusCallback func(*github.StatusEvent)
+	testdb struct {
+		user    *cloud.User
+		repo    *string
+		tarball []byte
+		refs    []string
+	}
 
-func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
+	statusCallback func(*github.StatusEvent)
+)
+
+func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.Config) {
 	srv := TestServer{
-		testServerDB: &testServerDB{},
+		testdb: &testdb{},
 	}
 	for _, o := range opts {
 		o(&srv)
@@ -221,10 +225,18 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 
 	srv.Server = httptest.NewTLSServer(mux)
 	t.Cleanup(srv.Close)
-	return &srv
-}
 
-type TestServerOption func(*TestServer)
+	u, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	cfg := cloud.Config{
+		Name:                "github",
+		Hostname:            u.Host,
+		Cloud:               &Cloud{},
+		SkipTLSVerification: true,
+	}
+	return &srv, cfg
+}
 
 func WithUser(user *cloud.User) TestServerOption {
 	return func(srv *TestServer) {
@@ -254,4 +266,8 @@ func WithStatusCallback(callback statusCallback) TestServerOption {
 	return func(srv *TestServer) {
 		srv.statusCallback = callback
 	}
+}
+
+func (s *TestServer) HasWebhook() bool {
+	return s.HookEndpoint != nil && s.HookSecret != nil
 }

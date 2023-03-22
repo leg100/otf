@@ -8,19 +8,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
 )
 
 func NewTestService(t *testing.T, db otf.DB) *service {
-	svc := &service{
+	svc := NewService(Options{
 		Logger: logr.Discard(),
-		db:     &pgdb{db},
-	}
-	svc.Publisher = &otf.FakePublisher{}
-	svc.organization = otf.NewAllowAllAuthorizer()
-	svc.site = otf.NewAllowAllAuthorizer()
-	svc.Authorizer = otf.NewAllowAllAuthorizer()
+		DB:     db,
+		Broker: pubsub.NewTestBroker(t, db),
+	})
 	return svc
 }
 

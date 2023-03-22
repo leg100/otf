@@ -4,22 +4,41 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
 
-func newTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvider {
-	var organizationName string
-	if org == nil {
-		organizationName = uuid.NewString()
-	} else {
-		organizationName = org.Name
+func NewTestService(t *testing.T, db otf.DB, opts *Options) *service {
+	if opts != nil {
+		return NewService(*opts)
 	}
-	factory := &factory{inmem.NewTestCloudService()}
+	return NewService(Options{
+		DB:           db,
+		Logger:       logr.Discard(),
+		CloudService: inmem.NewCloudServiceWithDefaults(),
+	})
+}
+
+func CreateVCSProvider(t *testing.T, db otf.DB, ctx context.Context, org *organization.Organization, cloud string, opts *Options) *VCSProvider {
+	svc := NewTestService(t, db, opts)
+	provider, err := svc.CreateVCSProvider(ctx, CreateOptions{
+		Organization: org.Name,
+		Cloud:        cloud,
+		Name:         uuid.NewString(),
+		Token:        uuid.NewString(),
+	})
+	require.NoError(t, err)
+	return provider
+}
+
+func newTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvider {
+	factory := &factory{inmem.NewCloudServiceWithDefaults()}
 	provider, err := factory.new(CreateOptions{
-		Organization: organizationName,
+		Organization: org.Name,
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
 		Cloud: "github",
