@@ -51,7 +51,7 @@ func (f *fakeSchedulerServices) ListRuns(context.Context, run.RunListOptions) (*
 	}, nil
 }
 
-func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.WorkspaceListOptions) (*workspace.WorkspaceList, error) {
+func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.ListOptions) (*workspace.WorkspaceList, error) {
 	return &workspace.WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.workspaces)),

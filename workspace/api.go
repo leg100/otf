@@ -57,7 +57,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	opts := CreateWorkspaceOptions{
+	opts := CreateOptions{
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
 		Description:                params.Description,
@@ -154,7 +154,7 @@ func (a *api) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := a.svc.ListWorkspaces(r.Context(), WorkspaceListOptions{
+	wsl, err := a.svc.ListWorkspaces(r.Context(), ListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -287,7 +287,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		return
 	}
 
-	ws, err := a.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateWorkspaceOptions{
+	ws, err := a.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,

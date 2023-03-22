@@ -40,8 +40,6 @@ type (
 
 // New constructs a new DB
 func New(ctx context.Context, opts Options) (*DB, error) {
-	logger := opts.Logger.WithValues("component", "database")
-
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
 	// connections for session-level advisory locks and can easily exhaust this.
@@ -54,9 +52,9 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("successfully connected", "connection", connString)
+	opts.Logger.Info("connected to database", "connstring", connString)
 
-	if err := migrate(logger, opts.ConnString); err != nil {
+	if err := migrate(opts.Logger, opts.ConnString); err != nil {
 		return nil, err
 	}
 
@@ -138,5 +136,5 @@ func setDefaultMaxConnections(connString string) (string, error) {
 	q := u.Query()
 	q.Add("pool_max_conns", defaultMaxConnections)
 	u.RawQuery = q.Encode()
-	return u.String(), nil
+	return url.PathUnescape(u.String())
 }

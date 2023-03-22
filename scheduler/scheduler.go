@@ -97,7 +97,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 
 	// retrieve existing workspaces, page by page
 	workspaces := []*workspace.Workspace{}
-	workspaceListOpts := workspace.WorkspaceListOptions{
+	workspaceListOpts := workspace.ListOptions{
 		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
 	for {

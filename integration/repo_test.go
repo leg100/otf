@@ -54,7 +54,7 @@ func TestRepo(t *testing.T) {
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
-		ws := svc.createWorkspace(t, ctx, nil, &workspace.CreateWorkspaceOptions{
+		ws := svc.createWorkspace(t, ctx, nil, &workspace.CreateOptions{
 			Name:         otf.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{

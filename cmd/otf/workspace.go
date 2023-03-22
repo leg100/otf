@@ -24,7 +24,7 @@ func (a *application) workspaceCommand() *cobra.Command {
 }
 
 func (a *application) workspaceListCommand() *cobra.Command {
-	var opts workspace.WorkspaceListOptions
+	var opts workspace.ListOptions
 
 	cmd := &cobra.Command{
 		Use:           "list",
@@ -92,7 +92,7 @@ func (a *application) workspaceShowCommand() *cobra.Command {
 func (a *application) workspaceEditCommand() *cobra.Command {
 	var (
 		organization string
-		opts         workspace.UpdateWorkspaceOptions
+		opts         workspace.UpdateOptions
 		mode         *string
 	)
 

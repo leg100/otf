@@ -73,7 +73,7 @@ func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*works
 	return f.workspaces[0], nil
 }
 
-func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.WorkspaceListOptions) (*workspace.WorkspaceList, error) {
+func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error) {
 	return &workspace.WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.workspaces)),
@@ -84,7 +84,7 @@ func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]*
 	return nil, nil
 }
 
-func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateWorkspaceOptions) (*workspace.Workspace, error) {
+func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateOptions) (*workspace.Workspace, error) {
 	f.workspaces[0].Update(opts)
 	return f.workspaces[0], nil
 }

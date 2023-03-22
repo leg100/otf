@@ -33,7 +33,7 @@ func NewTestDB(t *testing.T) *DB {
 	db, err := New(context.Background(), opts)
 	require.NoError(t, err)
 
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(db.Close)
 
 	return db
 }

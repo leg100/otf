@@ -30,8 +30,8 @@ type (
 
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
-		ListWorkspaces(ctx context.Context, opts workspace.WorkspaceListOptions) (*workspace.WorkspaceList, error)
-		UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateWorkspaceOptions) (*workspace.Workspace, error)
+		ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error)
+		UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateOptions) (*workspace.Workspace, error)
 
 		ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
 

@@ -73,8 +73,8 @@ type (
 		Items []*Workspace
 	}
 
-	// CreateWorkspaceOptions represents the options for creating a new workspace.
-	CreateWorkspaceOptions struct {
+	// CreateOptions represents the options for creating a new workspace.
+	CreateOptions struct {
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Branch                     *string
@@ -97,7 +97,7 @@ type (
 		*ConnectOptions
 	}
 
-	UpdateWorkspaceOptions struct {
+	UpdateOptions struct {
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
 		Name                       *string
@@ -114,9 +114,9 @@ type (
 		WorkingDirectory           *string
 	}
 
-	// WorkspaceListOptions are options for paginating and filtering a list of
+	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
-	WorkspaceListOptions struct {
+	ListOptions struct {
 		// Pagination
 		otf.ListOptions
 		// Filter workspaces with name matching prefix.
@@ -133,15 +133,15 @@ type (
 		tx            otf.DB // Connect repo within database transaction. Optional.
 	}
 
-	// WorkspaceQualifiedName is the workspace's fully qualified name including the
+	// QualifiedName is the workspace's fully qualified name including the
 	// name of its organization
-	WorkspaceQualifiedName struct {
+	QualifiedName struct {
 		Organization string
 		Name         string
 	}
 )
 
-func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
+func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	// required options
 	if opts.Name == nil {
 		return nil, otf.ErrRequiredName
@@ -229,8 +229,8 @@ func (ws *Workspace) ExecutionModes() []string {
 
 // QualifiedName returns the workspace's qualified name including the name of
 // its organization
-func (ws *Workspace) QualifiedName() WorkspaceQualifiedName {
-	return WorkspaceQualifiedName{
+func (ws *Workspace) QualifiedName() QualifiedName {
+	return QualifiedName{
 		Organization: ws.Organization,
 		Name:         ws.Name,
 	}
@@ -248,7 +248,7 @@ func (ws *Workspace) MarshalLog() any {
 }
 
 // Update updates the workspace with the given options.
-func (ws *Workspace) Update(opts UpdateWorkspaceOptions) error {
+func (ws *Workspace) Update(opts UpdateOptions) error {
 	var updated bool
 
 	if opts.Name != nil {

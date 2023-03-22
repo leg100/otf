@@ -55,7 +55,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), WorkspaceListOptions{
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
 		Organization: &params.Organization,
 		ListOptions:  params.ListOptions,
 	})
@@ -93,7 +93,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.CreateWorkspace(r.Context(), CreateWorkspaceOptions{
+	ws, err := h.svc.CreateWorkspace(r.Context(), CreateOptions{
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
@@ -230,7 +230,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateWorkspaceOptions{
+	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,

@@ -28,7 +28,7 @@ func CreateTestWorkspace(t *testing.T, db otf.DB, organization string) *Workspac
 	ctx := context.Background()
 	svc := NewTestService(t, db)
 
-	createOptions := CreateWorkspaceOptions{
+	createOptions := CreateOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &organization,
 	}
@@ -55,7 +55,7 @@ func CreateTestWorkspacePermission(t *testing.T, db otf.DB, ws *Workspace, team 
 }
 
 func newTestWorkspace(t *testing.T, organization string) *Workspace {
-	ws, err := NewWorkspace(CreateWorkspaceOptions{
+	ws, err := NewWorkspace(CreateOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &organization,
 	})

@@ -41,7 +41,7 @@ func TestDB(t *testing.T) {
 		ws := CreateTestWorkspace(t, db, org.Name)
 
 		got, err := db.update(ctx, ws.ID, func(ws *Workspace) error {
-			return ws.Update(UpdateWorkspaceOptions{
+			return ws.Update(UpdateOptions{
 				Description: otf.String("updated description"),
 			})
 		})
@@ -104,12 +104,12 @@ func TestDB(t *testing.T) {
 
 		tests := []struct {
 			name string
-			opts WorkspaceListOptions
+			opts ListOptions
 			want func(*testing.T, *WorkspaceList)
 		}{
 			{
 				name: "filter by org",
-				opts: WorkspaceListOptions{Organization: otf.String(org.Name)},
+				opts: ListOptions{Organization: otf.String(org.Name)},
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
@@ -118,7 +118,7 @@ func TestDB(t *testing.T) {
 			},
 			{
 				name: "filter by prefix",
-				opts: WorkspaceListOptions{Organization: otf.String(org.Name), Prefix: ws1.Name[:5]},
+				opts: ListOptions{Organization: otf.String(org.Name), Prefix: ws1.Name[:5]},
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
@@ -126,21 +126,21 @@ func TestDB(t *testing.T) {
 			},
 			{
 				name: "filter by non-existent org",
-				opts: WorkspaceListOptions{Organization: otf.String("non-existent")},
+				opts: ListOptions{Organization: otf.String("non-existent")},
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter by non-existent prefix",
-				opts: WorkspaceListOptions{Organization: otf.String(org.Name), Prefix: "xyz"},
+				opts: ListOptions{Organization: otf.String(org.Name), Prefix: "xyz"},
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "paginated results ordered by updated_at",
-				opts: WorkspaceListOptions{Organization: otf.String(org.Name), ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+				opts: ListOptions{Organization: otf.String(org.Name), ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, l *WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
@@ -154,7 +154,7 @@ func TestDB(t *testing.T) {
 			},
 			{
 				name: "stray pagination",
-				opts: WorkspaceListOptions{Organization: otf.String(org.Name), ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+				opts: ListOptions{Organization: otf.String(org.Name), ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, l *WorkspaceList) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
@@ -251,7 +251,7 @@ func TestDB(t *testing.T) {
 		err := db.delete(ctx, ws.ID)
 		require.NoError(t, err)
 
-		results, err := db.list(ctx, WorkspaceListOptions{Organization: otf.String(org.Name)})
+		results, err := db.list(ctx, ListOptions{Organization: otf.String(org.Name)})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 

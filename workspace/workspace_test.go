@@ -10,33 +10,33 @@ import (
 func TestNewWorkspace(t *testing.T) {
 	tests := []struct {
 		name string
-		opts CreateWorkspaceOptions
+		opts CreateOptions
 		want error
 	}{
 		{
 			name: "default",
-			opts: CreateWorkspaceOptions{
+			opts: CreateOptions{
 				Name:         otf.String("my-workspace"),
 				Organization: otf.String("my-org"),
 			},
 		},
 		{
 			name: "missing name",
-			opts: CreateWorkspaceOptions{
+			opts: CreateOptions{
 				Organization: otf.String("my-org"),
 			},
 			want: otf.ErrRequiredName,
 		},
 		{
 			name: "missing organization",
-			opts: CreateWorkspaceOptions{
+			opts: CreateOptions{
 				Name: otf.String("my-workspace"),
 			},
 			want: otf.ErrRequiredOrg,
 		},
 		{
 			name: "invalid name",
-			opts: CreateWorkspaceOptions{
+			opts: CreateOptions{
 				Name:         otf.String("%*&^"),
 				Organization: otf.String("my-org"),
 			},
@@ -44,7 +44,7 @@ func TestNewWorkspace(t *testing.T) {
 		},
 		{
 			name: "bad terraform version",
-			opts: CreateWorkspaceOptions{
+			opts: CreateOptions{
 				Name:             otf.String("my-workspace"),
 				Organization:     otf.String("my-org"),
 				TerraformVersion: otf.String("1,2,0"),
@@ -53,7 +53,7 @@ func TestNewWorkspace(t *testing.T) {
 		},
 		{
 			name: "unsupported terraform version",
-			opts: CreateWorkspaceOptions{
+			opts: CreateOptions{
 				Name:             otf.String("my-workspace"),
 				Organization:     otf.String("my-org"),
 				TerraformVersion: otf.String("0.14.0"),

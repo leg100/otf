@@ -23,17 +23,16 @@ type (
 	VCSProviderService vcsprovider.Service
 
 	Service interface {
-		CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
-		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
+		CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
+		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string, r *http.Request) (*jsonapi.Workspace, error)
-		ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+		ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error)
 		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 		//
 		// TODO: rename to ListConnectedWorkspaces
 		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
-		//UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
@@ -86,18 +85,15 @@ func NewService(opts Options) *service {
 			Logger: opts.Logger,
 			db:     db,
 		},
-		db:   db,
-		repo: opts.RepoService,
+		db:           db,
+		repo:         opts.RepoService,
+		organization: &organization.Authorizer{opts.Logger},
+		site:         &otf.SiteAuthorizer{opts.Logger},
 	}
-
-	svc.organization = &organization.Authorizer{opts.Logger}
-	svc.site = &otf.SiteAuthorizer{opts.Logger}
-
 	svc.jsonapiMarshaler = &jsonapiMarshaler{
 		Service:            opts.OrganizationService,
 		permissionsService: &svc,
 	}
-
 	svc.api = &api{
 		jsonapiMarshaler: svc.jsonapiMarshaler,
 		svc:              &svc,
@@ -108,11 +104,9 @@ func NewService(opts Options) *service {
 		VCSProviderService: opts.VCSProviderService,
 		svc:                &svc,
 	}
-
 	// Must register table name and service with pubsub broker so that it knows
 	// how to lookup workspaces in the DB.
 	opts.Register("workspace", &svc)
-
 	return &svc
 }
 
@@ -121,7 +115,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error) {
+func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
 	ws, err := NewWorkspace(opts)
 	if err != nil {
 		s.Error(err, "constructing workspace")
@@ -211,7 +205,7 @@ func (s *service) GetWorkspaceJSONAPI(ctx context.Context, workspaceID string, r
 	return s.jsonapiMarshaler.toWorkspace(ws, r)
 }
 
-func (s *service) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
@@ -243,7 +237,7 @@ func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) 
 	return s.db.listByWebhookID(ctx, repoID)
 }
 
-func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error) {
+func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err

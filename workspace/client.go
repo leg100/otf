@@ -57,7 +57,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspa
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) ListWorkspaces(ctx context.Context, options WorkspaceListOptions) (*WorkspaceList, error) {
+func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*WorkspaceList, error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
 	req, err := c.NewRequest("GET", u, &options)
 	if err != nil {
@@ -74,7 +74,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, options WorkspaceListOption
 }
 
 // UpdateWorkspace updates the settings of an existing workspace.
-func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options UpdateWorkspaceOptions) (*Workspace, error) {
+func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options UpdateOptions) (*Workspace, error) {
 	// Pre-emptively validate options
 	if err := (&Workspace{}).Update(options); err != nil {
 		return nil, err

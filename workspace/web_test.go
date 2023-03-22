@@ -356,15 +356,15 @@ func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (c
 	return &fakeWebCloudClient{repos: f.repos}, nil
 }
 
-func (f *fakeWebService) CreateWorkspace(context.Context, CreateWorkspaceOptions) (*Workspace, error) {
+func (f *fakeWebService) CreateWorkspace(context.Context, CreateOptions) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateWorkspaceOptions) (*Workspace, error) {
+func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions) (*Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
+func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
 	return &WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),

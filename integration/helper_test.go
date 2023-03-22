@@ -53,9 +53,9 @@ func (s *service) createOrganization(t *testing.T, ctx context.Context) *organiz
 	return org
 }
 
-func (s *service) createWorkspace(t *testing.T, ctx context.Context, org *organization.Organization, opts *workspace.CreateWorkspaceOptions) *workspace.Workspace {
+func (s *service) createWorkspace(t *testing.T, ctx context.Context, org *organization.Organization, opts *workspace.CreateOptions) *workspace.Workspace {
 	if org != nil {
-		ws, err := s.CreateWorkspace(ctx, workspace.CreateWorkspaceOptions{
+		ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         otf.String(uuid.NewString()),
 			Organization: &org.Name,
 		})
