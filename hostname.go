@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-
-	"github.com/go-logr/logr"
 )
 
 type (
@@ -15,48 +13,27 @@ type (
 	}
 
 	hostnameService struct {
-		logr.Logger
-
 		hostname string
 	}
 )
 
-func NewHostnameService(logger logr.Logger) *hostnameService {
-	return &hostnameService{
-		Logger: logger,
-	}
+func NewHostnameService(hostname string) *hostnameService {
+	return &hostnameService{hostname}
 }
 
-func (a *hostnameService) Hostname() string { return a.hostname }
+func (s *hostnameService) Hostname() string            { return s.hostname }
+func (s *hostnameService) SetHostname(hostname string) { s.hostname = hostname }
 
-func (a *hostnameService) SetHostname(hostname string, listen *net.TCPAddr) error {
-	hostname, err := setHostname(hostname, listen)
-	if err != nil {
-		return err
+// NormalizeAddress takes a host:port and converts it into a host:port
+// appropriate for setting as the addressable hostname of otfd, e.g. converting
+// 0.0.0.0 to 127.0.0.1.
+func NormalizeAddress(addr *net.TCPAddr) string {
+	// If ip is unspecified assume 127.0.0.1 - an IP is used instead of
+	// 'localhost' because terraform insists on a dot in the registry hostname.
+	if addr.IP.IsUnspecified() {
+		return fmt.Sprintf("127.0.0.1:%d", addr.Port)
 	}
-	a.hostname = hostname
-
-	a.V(0).Info("set system hostname", "hostname", a.hostname)
-	return nil
-}
-
-// setHostname sets the system hostname. If hostname is provided it'll use
-// that; otherwise the listen address is used (which should be that used by the
-// otfd daemon).
-func setHostname(hostname string, listen *net.TCPAddr) (string, error) {
-	if hostname != "" {
-		return hostname, nil
-	} else if listen != nil {
-		// If ip is unspecified assume 127.0.0.1 - an IP is used instead of
-		// 'localhost' because terraform insists on a dot in the registry hostname.
-		if listen.IP.IsUnspecified() {
-			return fmt.Sprintf("127.0.0.1:%d", listen.Port), nil
-		} else {
-			return fmt.Sprintf("%s:%d", listen.IP.String(), listen.Port), nil
-		}
-	} else {
-		return "", fmt.Errorf("neither hostname nor listen adddress specified")
-	}
+	return fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
 }
 
 // HostnameCredentialEnv returns the environment variable key for an API

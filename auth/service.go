@@ -46,7 +46,7 @@ type (
 	OrganizationService organization.Service
 )
 
-func NewService(ctx context.Context, opts Options) (*service, error) {
+func NewService(opts Options) (*service, error) {
 	svc := service{Logger: opts.Logger}
 	svc.TokenMiddleware = AuthenticateToken(&svc)
 	svc.SessionMiddleware = AuthenticateSession(&svc)
@@ -62,8 +62,6 @@ func NewService(ctx context.Context, opts Options) (*service, error) {
 	}
 
 	db := newDB(opts.DB, opts.Logger)
-	// purge expired sessions
-	go db.startExpirer(ctx, defaultExpiry)
 
 	svc.synchroniser = &synchroniser{opts.Logger, opts.OrganizationService, &svc}
 	svc.api = &api{svc: &svc}
@@ -77,6 +75,11 @@ func NewService(ctx context.Context, opts Options) (*service, error) {
 	}
 
 	return &svc, nil
+}
+
+func (a *service) StartExpirer(ctx context.Context) {
+	// purge expired sessions on regular interval
+	go a.db.startExpirer(ctx, defaultExpiry)
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
