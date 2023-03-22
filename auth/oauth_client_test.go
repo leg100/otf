@@ -55,7 +55,7 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 	require.NoError(t, err)
 
 	client, err := NewOAuthClient(OAuthClientConfig{
-		CloudOAuthConfig: &cloud.CloudOAuthConfig{
+		CloudOAuthConfig: cloud.CloudOAuthConfig{
 			OAuthConfig: &oauth2.Config{
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  srv.URL,

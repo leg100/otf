@@ -62,6 +62,8 @@ func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.Handle
 
 type fakeHostnameService struct {
 	hostname string
+
+	otf.HostnameService
 }
 
 func (f fakeHostnameService) Hostname() string { return f.hostname }

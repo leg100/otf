@@ -18,7 +18,7 @@ func TestNewAuthenticators(t *testing.T) {
 		Logger:          logr.Discard(),
 		HostnameService: fakeHostnameService{"fake-host.org"},
 		AuthService:     &fakeAuthenticatorService{},
-		configs: []*cloud.CloudOAuthConfig{
+		configs: []cloud.CloudOAuthConfig{
 			{
 				OAuthConfig: &oauth2.Config{
 					ClientID:     "id-1",

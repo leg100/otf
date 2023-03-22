@@ -21,7 +21,7 @@ type api struct {
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
-func (h *api) AddHandlers(r *mux.Router) {
+func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")

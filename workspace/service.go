@@ -45,6 +45,7 @@ type (
 
 		LockService
 		permissionsService
+		otf.Handlers
 	}
 
 	service struct {

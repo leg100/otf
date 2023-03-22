@@ -40,7 +40,7 @@ type (
 
 	// OAuthClientConfig is configuration for constructing an OAuth client
 	OAuthClientConfig struct {
-		*cloud.CloudOAuthConfig
+		cloud.CloudOAuthConfig
 		otfHostname otf.HostnameService
 	}
 )

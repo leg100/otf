@@ -37,6 +37,8 @@ type (
 
 		// Download retrieves the config tarball for the given config version ID.
 		download(ctx context.Context, id string) ([]byte, error)
+
+		otf.Handlers
 	}
 
 	service struct {

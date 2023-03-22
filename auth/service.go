@@ -18,11 +18,13 @@ type (
 		TeamService
 		tokenService
 		UserService
+
+		StartExpirer(context.Context)
+		otf.Handlers
 	}
 
 	service struct {
 		logr.Logger
-		TokenMiddleware, SessionMiddleware mux.MiddlewareFunc
 
 		*synchroniser
 
@@ -33,7 +35,7 @@ type (
 	}
 
 	Options struct {
-		Configs   []*cloud.CloudOAuthConfig
+		Configs   []cloud.CloudOAuthConfig
 		SiteToken string
 
 		OrganizationService
@@ -48,8 +50,6 @@ type (
 
 func NewService(opts Options) (*service, error) {
 	svc := service{Logger: opts.Logger}
-	svc.TokenMiddleware = AuthenticateToken(&svc)
-	svc.SessionMiddleware = AuthenticateSession(&svc)
 
 	authenticators, err := newAuthenticators(authenticatorOptions{
 		Logger:          opts.Logger,

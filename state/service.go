@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
@@ -35,6 +36,8 @@ type (
 		downloadState(ctx context.Context, versionID string) ([]byte, error)
 		listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
 		getOutput(ctx context.Context, outputID string) (*output, error)
+
+		otf.Handlers
 	}
 
 	// service provides access to state and state versions
@@ -46,7 +49,7 @@ type (
 		cache     otf.Cache // cache state file
 		workspace otf.Authorizer
 
-		*api
+		api *api
 	}
 
 	Options struct {
@@ -85,6 +88,10 @@ func NewService(opts Options) *service {
 	}
 	svc.api = &api{&svc, &jsonapiMarshaler{}}
 	return &svc
+}
+
+func (a *service) AddHandlers(r *mux.Router) {
+	a.api.addHandlers(r)
 }
 
 func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) error {

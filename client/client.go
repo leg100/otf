@@ -1,4 +1,5 @@
-// Package client allows remote interaction with the otf application
+// Package client provides an abstraction for interacting with otf services
+// either remotely or locally.
 package client
 
 import (
@@ -62,8 +63,9 @@ type (
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) error
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 
+		Hostname() string
+
 		workspace.LockService
-		otf.HostnameService
 	}
 
 	LocalClient struct {

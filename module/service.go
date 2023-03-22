@@ -40,6 +40,8 @@ type (
 		downloadVersion(ctx context.Context, versionID string) ([]byte, error)
 
 		updateModuleStatus(ctx context.Context, module *Module, status ModuleStatus) (*Module, error)
+
+		otf.Handlers
 	}
 
 	service struct {

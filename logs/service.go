@@ -18,6 +18,8 @@ type (
 		GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
 		PutChunk(ctx context.Context, chunk otf.Chunk) error
 		tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
+
+		otf.Handlers
 	}
 
 	service struct {

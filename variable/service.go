@@ -21,6 +21,8 @@ type (
 		get(ctx context.Context, variableID string) (*Variable, error)
 		update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
 		delete(ctx context.Context, variableID string) (*Variable, error)
+
+		otf.Handlers
 	}
 
 	service struct {
@@ -55,9 +57,9 @@ func NewService(opts Options) *service {
 		svc: &svc,
 	}
 	svc.web = &web{
-		Renderer:          opts.Renderer,
-		Service:           opts.WorkspaceService,
-		svc:               &svc,
+		Renderer: opts.Renderer,
+		Service:  opts.WorkspaceService,
+		svc:      &svc,
 	}
 
 	return &svc

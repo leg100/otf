@@ -30,6 +30,8 @@ type (
 
 		list(ctx context.Context, organization string) ([]*VCSProvider, error)
 		delete(ctx context.Context, id string) (*VCSProvider, error)
+
+		otf.Handlers
 	}
 
 	service struct {

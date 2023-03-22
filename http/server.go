@@ -57,26 +57,29 @@ var (
 	})
 )
 
-// ServerConfig is the http server config
-type ServerConfig struct {
-	SSL                  bool
-	CertFile, KeyFile    string
-	EnableRequestLogging bool
-	DevMode              bool
+type (
+	// ServerConfig is the http server config
+	ServerConfig struct {
+		SSL                  bool
+		CertFile, KeyFile    string
+		EnableRequestLogging bool
+		DevMode              bool
 
-	Middleware []mux.MiddlewareFunc
-}
+		Handlers   []otf.Handlers
+		Middleware []mux.MiddlewareFunc
+	}
 
-// Server is the http server for OTF
-type Server struct {
-	logr.Logger
-	ServerConfig
+	// Server is the http server for OTF
+	Server struct {
+		logr.Logger
+		ServerConfig
 
-	server *http.Server
-}
+		server *http.Server
+	}
+)
 
 // NewServer constructs the http server for OTF
-func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (*Server, error) {
+func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	s := &Server{
 		server:       &http.Server{},
 		Logger:       logger,
@@ -129,7 +132,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, handlers ...otf.Handlers) (
 	svcRouter.Use(s.Middleware...)
 
 	// Add handlers for each service
-	for _, h := range handlers {
+	for _, h := range s.Handlers {
 		h.AddHandlers(svcRouter)
 	}
 

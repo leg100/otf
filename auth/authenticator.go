@@ -24,7 +24,7 @@ type authenticatorOptions struct {
 	logr.Logger
 	otf.HostnameService
 	AuthService
-	configs []*cloud.CloudOAuthConfig
+	configs []cloud.CloudOAuthConfig
 }
 
 func newAuthenticators(opts authenticatorOptions) ([]*authenticator, error) {

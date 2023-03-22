@@ -10,6 +10,7 @@ type (
 	// HostnameService provides the OTF user-facing hostname.
 	HostnameService interface {
 		Hostname() string
+		SetHostname(string)
 	}
 
 	hostnameService struct {

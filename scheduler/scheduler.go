@@ -34,10 +34,11 @@ type (
 
 	Options struct {
 		logr.Logger
-		WorkspaceService
-		RunService
 		otf.DB
 		otf.Subscriber
+
+		WorkspaceService
+		RunService
 	}
 
 	WorkspaceService workspace.Service
