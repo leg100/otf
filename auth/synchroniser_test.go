@@ -65,22 +65,22 @@ type fakeSynchroniserService struct {
 	AuthService
 }
 
-func (f *fakeSynchroniserService) addOrganizationMembership(ctx context.Context, userID, orgID string) error {
+func (f *fakeSynchroniserService) AddOrganizationMembership(ctx context.Context, userID, orgID string) error {
 	f.addedOrgs = append(f.addedOrgs, orgID)
 	return nil
 }
 
-func (f *fakeSynchroniserService) removeOrganizationMembership(ctx context.Context, userID, orgID string) error {
+func (f *fakeSynchroniserService) RemoveOrganizationMembership(ctx context.Context, userID, orgID string) error {
 	f.removedOrgs = append(f.removedOrgs, orgID)
 	return nil
 }
 
-func (f *fakeSynchroniserService) addTeamMembership(ctx context.Context, userID, team string) error {
+func (f *fakeSynchroniserService) AddTeamMembership(ctx context.Context, userID, team string) error {
 	f.addedTeams = append(f.addedTeams, team)
 	return nil
 }
 
-func (f *fakeSynchroniserService) removeTeamMembership(ctx context.Context, userID, team string) error {
+func (f *fakeSynchroniserService) RemoveTeamMembership(ctx context.Context, userID, team string) error {
 	f.removedTeams = append(f.removedTeams, team)
 	return nil
 }

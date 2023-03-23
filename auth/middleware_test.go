@@ -130,7 +130,7 @@ func (f *fakeMiddlewareService) GetSession(ctx context.Context, token string) (*
 	return nil, errors.New("invalid")
 }
 
-func (f *fakeMiddlewareService) getUser(ctx context.Context, spec UserSpec) (*User, error) {
+func (f *fakeMiddlewareService) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.AuthenticationToken != nil {
 		if f.userToken == *spec.AuthenticationToken {
 			return nil, nil

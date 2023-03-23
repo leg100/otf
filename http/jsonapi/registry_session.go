@@ -12,7 +12,7 @@ type RegistrySessionCreateOptions struct {
 	// set.  https://jsonapi.org/format/#crud-creating
 	Type string `jsonapi:"primary,registry_sessions"`
 
-	// OrganizationName is the name of the organization in which to create the
+	// Organization is the name of the organization in which to create the
 	// session.
-	OrganizationName string `jsonapi:"attr,organization_name"`
+	Organization *string `jsonapi:"attr,organization_name"`
 }

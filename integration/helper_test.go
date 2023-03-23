@@ -2,8 +2,10 @@ package integration
 
 import (
 	"context"
+	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -75,6 +77,10 @@ func (s *testServices) createWorkspace(t *testing.T, ctx context.Context, org *o
 func (s *testServices) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
 	t.Helper()
 
+	if org == nil {
+		org = s.createOrganization(t, ctx)
+	}
+
 	provider, err := s.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
@@ -89,6 +95,10 @@ func (s *testServices) createVCSProvider(t *testing.T, ctx context.Context, org 
 
 func (s *testServices) createModule(t *testing.T, ctx context.Context, org *organization.Organization) *module.Module {
 	t.Helper()
+
+	if org == nil {
+		org = s.createOrganization(t, ctx)
+	}
 
 	module, err := s.CreateModule(ctx, module.CreateOptions{
 		Name:         uuid.NewString(),
@@ -183,4 +193,51 @@ func (s *testServices) createStateVersion(t *testing.T, ctx context.Context, ws 
 	})
 	require.NoError(t, err)
 	return sv
+}
+
+func (s *testServices) createRegistrySession(t *testing.T, ctx context.Context, org *organization.Organization, expiry *time.Time) *auth.RegistrySession {
+	t.Helper()
+
+	if org == nil {
+		org = s.createOrganization(t, ctx)
+	}
+
+	rs, err := s.CreateRegistrySession(ctx, auth.CreateRegistrySessionOptions{
+		Organization: &org.Name,
+		Expiry:       expiry,
+	})
+	require.NoError(t, err)
+	return rs
+}
+
+func (s *testServices) createSession(t *testing.T, ctx context.Context, user *auth.User, expiry *time.Time) *auth.Session {
+	t.Helper()
+
+	if user == nil {
+		user = s.createUser(t, ctx)
+	}
+
+	rs, err := s.CreateSession(ctx, auth.CreateSessionOptions{
+		Request: httptest.NewRequest("", "/", nil),
+		UserID:  &user.ID,
+		Expiry:  expiry,
+	})
+	require.NoError(t, err)
+	return rs
+}
+
+func (s *testServices) createToken(t *testing.T, ctx context.Context, user *auth.User, expiry *time.Time) *auth.Token {
+	t.Helper()
+
+	// If user is provided then add it to context. Otherwise the context is
+	// expected to contain a user if authz is to succeed.
+	if user != nil {
+		ctx = otf.AddSubjectToContext(ctx, user)
+	}
+
+	token, err := s.CreateToken(ctx, &auth.TokenCreateOptions{
+		Description: "lorem ipsum...",
+	})
+	require.NoError(t, err)
+	return token
 }

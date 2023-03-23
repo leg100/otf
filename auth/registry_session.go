@@ -13,24 +13,38 @@ const (
 	defaultRegistrySessionExpiry = 10 * time.Minute
 )
 
-// Session provides access to the module registry for a short period.
-// Intended for use with the terraform binary, which needs authenticated access
-// to the registry in order to retrieve modules.
-type RegistrySession struct {
-	Token        string
-	Expiry       time.Time
-	Organization string
-}
+type (
+	// RegistrySession provides access to the module registry for a short period.
+	// Intended for use with the terraform binary, which needs authenticated access
+	// to the registry in order to retrieve modules.
+	RegistrySession struct {
+		Token        string
+		Expiry       time.Time
+		Organization string
+	}
 
-func NewRegistrySession(organization string) (*RegistrySession, error) {
+	CreateRegistrySessionOptions struct {
+		Organization *string    // required organization
+		Expiry       *time.Time // optionally override expiry
+	}
+)
+
+func NewRegistrySession(opts CreateRegistrySessionOptions) (*RegistrySession, error) {
+	if opts.Organization == nil {
+		return nil, fmt.Errorf("missing organization")
+	}
 	token, err := otf.GenerateAuthToken("registry")
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
+	expiry := otf.CurrentTimestamp().Add(defaultRegistrySessionExpiry)
+	if opts.Expiry != nil {
+		expiry = *opts.Expiry // override expiry
+	}
 	return &RegistrySession{
 		Token:        token,
-		Expiry:       otf.CurrentTimestamp().Add(defaultRegistrySessionExpiry),
-		Organization: organization,
+		Expiry:       expiry,
+		Organization: *opts.Organization,
 	}, nil
 }
 

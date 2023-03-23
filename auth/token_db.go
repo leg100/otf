@@ -37,6 +37,20 @@ func (db *pgdb) ListTokens(ctx context.Context, userID string) ([]*Token, error)
 	return tokens, nil
 }
 
+func (db *pgdb) GetToken(ctx context.Context, id string) (*Token, error) {
+	row, err := db.FindTokenByID(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return &Token{
+		ID:          row.TokenID.String,
+		CreatedAt:   row.CreatedAt.Time,
+		Token:       row.Token.String,
+		Description: row.Description.String,
+		UserID:      row.UserID.String,
+	}, nil
+}
+
 // DeleteToken deletes a user's token from the DB.
 func (db *pgdb) DeleteToken(ctx context.Context, id string) error {
 	_, err := db.DeleteTokenByID(ctx, sql.String(id))

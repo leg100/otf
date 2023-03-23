@@ -53,7 +53,7 @@ func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.svc.listUsers(r.Context(), name)
+	users, err := h.svc.ListUsers(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -81,7 +81,7 @@ func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := h.svc.deleteSession(r.Context(), session.token); err != nil {
+	if err := h.svc.DeleteSession(r.Context(), session.token); err != nil {
 		return
 	}
 	html.SetCookie(w, sessionCookie, session.token, &time.Time{})
@@ -107,7 +107,10 @@ func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := h.svc.createSession(r, otf.SiteAdminID)
+	session, err := h.svc.CreateSession(r.Context(), CreateSessionOptions{
+		Request: r,
+		UserID:  otf.String(otf.SiteAdminID),
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

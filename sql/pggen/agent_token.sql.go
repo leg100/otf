@@ -732,6 +732,13 @@ type Querier interface {
 	// FindTokensByUserIDScan scans the result of an executed FindTokensByUserIDBatch query.
 	FindTokensByUserIDScan(results pgx.BatchResults) ([]FindTokensByUserIDRow, error)
 
+	FindTokenByID(ctx context.Context, tokenID pgtype.Text) (FindTokenByIDRow, error)
+	// FindTokenByIDBatch enqueues a FindTokenByID query into batch to be executed
+	// later by the batch.
+	FindTokenByIDBatch(batch genericBatch, tokenID pgtype.Text)
+	// FindTokenByIDScan scans the result of an executed FindTokenByIDBatch query.
+	FindTokenByIDScan(results pgx.BatchResults) (FindTokenByIDRow, error)
+
 	DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error)
 	// DeleteTokenByIDBatch enqueues a DeleteTokenByID query into batch to be executed
 	// later by the batch.
@@ -1411,6 +1418,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findTokensByUserIDSQL, findTokensByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTokensByUserID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTokenByIDSQL, findTokenByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTokenByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteTokenByIDSQL, deleteTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTokenByID': %w", err)

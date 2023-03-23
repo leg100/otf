@@ -85,7 +85,10 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := a.createSession(r, user.ID)
+	session, err := a.CreateSession(ctx, CreateSessionOptions{
+		Request: r,
+		UserID:  &user.ID,
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -18,35 +18,54 @@ const (
 	pathCookie = "path"
 )
 
-// Session is a user session for the web UI
-type Session struct {
-	token     string
-	expiry    time.Time
-	address   string
-	createdAt time.Time
+type (
+	// Session is a user session for the web UI
+	Session struct {
+		token     string
+		expiry    time.Time
+		address   string
+		createdAt time.Time
 
-	// Session belongs to a user
-	userID string
-}
+		// Session belongs to a user
+		userID string
+	}
+
+	CreateSessionOptions struct {
+		Request *http.Request
+		UserID  *string
+		Expiry  *time.Time
+	}
+)
 
 // newSession constructs a new Session
-func newSession(r *http.Request, userID string) (*Session, error) {
-	ip, err := otfhttp.GetClientIP(r)
+func newSession(opts CreateSessionOptions) (*Session, error) {
+	// required options
+	if opts.Request == nil {
+		return nil, fmt.Errorf("missing HTTP request")
+	}
+	if opts.UserID == nil {
+		return nil, fmt.Errorf("missing user ID")
+	}
+
+	ip, err := otfhttp.GetClientIP(opts.Request)
 	if err != nil {
 		return nil, err
 	}
-
 	token, err := otf.GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
+	}
+	expiry := otf.CurrentTimestamp().Add(defaultExpiry)
+	if opts.Expiry != nil {
+		expiry = *opts.Expiry
 	}
 
 	session := Session{
 		createdAt: otf.CurrentTimestamp(),
 		token:     token,
 		address:   ip,
-		expiry:    otf.CurrentTimestamp().Add(defaultExpiry),
-		userID:    userID,
+		expiry:    expiry,
+		userID:    *opts.UserID,
 	}
 
 	return &session, nil

@@ -87,7 +87,7 @@ func (f *fakeAuthenticatorService) sync(context.Context, cloud.User) (*User, err
 	return NewUser("fake-user"), nil
 }
 
-func (f *fakeAuthenticatorService) createSession(*http.Request, string) (*Session, error) {
+func (f *fakeAuthenticatorService) CreateSession(context.Context, CreateSessionOptions) (*Session, error) {
 	return &Session{}, nil
 }
 

@@ -59,7 +59,7 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := h.svc.listAgentTokens(r.Context(), organization)
+	tokens, err := h.svc.ListAgentTokens(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, err := h.svc.deleteAgentToken(r.Context(), id)
+	at, err := h.svc.DeleteAgentToken(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

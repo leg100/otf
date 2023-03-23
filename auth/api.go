@@ -22,7 +22,7 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agent/create", h.createAgentToken).Methods("POST")
 
 	// Registry session routes
-	r.HandleFunc("/organizations/{organization_name}/registry/sessions/create", h.createRegistrySession).Methods("POST")
+	r.HandleFunc("/registry/sessions/create", h.createRegistrySession).Methods("POST")
 
 	// User routes
 	r.HandleFunc("/account/details", h.getCurrentUser).Methods("GET")
@@ -48,7 +48,9 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.svc.CreateRegistrySession(r.Context(), opts.OrganizationName)
+	session, err := h.svc.CreateRegistrySession(r.Context(), CreateRegistrySessionOptions{
+		Organization: opts.Organization,
+	})
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

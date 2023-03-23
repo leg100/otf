@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/run"
@@ -18,6 +19,9 @@ import (
 
 // environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
+//
+// TODO: this is a pointless abstraction; refactor it out into worker's
+// handle() func.
 type environment struct {
 	client.Client
 	logr.Logger
@@ -58,7 +62,9 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	session, err := svc.CreateRegistrySession(ctx, ws.Organization)
+	session, err := svc.CreateRegistrySession(ctx, auth.CreateRegistrySessionOptions{
+		Organization: &ws.Organization,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}

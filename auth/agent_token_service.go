@@ -8,12 +8,11 @@ import (
 
 type (
 	AgentTokenService interface {
+		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error)
 		// GetAgentToken retrieves an agent token using the given token.
 		GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
-		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error)
-
-		listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
-		deleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
+		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 	}
 )
 
@@ -45,7 +44,7 @@ func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOpt
 	return token, nil
 }
 
-func (a *service) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
@@ -60,7 +59,7 @@ func (a *service) listAgentTokens(ctx context.Context, organization string) ([]*
 	return tokens, nil
 }
 
-func (a *service) deleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
+func (a *service) DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
 	// retrieve agent token first in order to get organization for authorization
 	at, err := a.db.GetAgentTokenByID(ctx, id)
 	if err != nil {

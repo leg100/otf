@@ -58,7 +58,7 @@ type (
 		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
 
 		// CreateRegistrySession creates a registry session for the given organization.
-		CreateRegistrySession(ctx context.Context, organization string) (*auth.RegistrySession, error)
+		CreateRegistrySession(ctx context.Context, opts auth.CreateRegistrySessionOptions) (*auth.RegistrySession, error)
 
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)

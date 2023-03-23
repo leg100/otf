@@ -27,17 +27,12 @@ func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	var opts TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := h.svc.CreateToken(r.Context(), user.ID, &opts)
+	token, err := h.svc.CreateToken(r.Context(), &opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,12 +50,7 @@ func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	tokens, err := h.svc.ListTokens(r.Context(), user.ID)
+	tokens, err := h.svc.ListTokens(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -83,17 +73,12 @@ func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	id := r.FormValue("id")
 	if id == "" {
 		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := h.svc.DeleteToken(r.Context(), user.ID, id); err != nil {
+	if err := h.svc.DeleteToken(r.Context(), id); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

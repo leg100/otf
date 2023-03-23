@@ -20,7 +20,7 @@ const (
 type AuthenticateTokenService interface {
 	GetAgentToken(context.Context, string) (*AgentToken, error)
 	GetRegistrySession(context.Context, string) (*RegistrySession, error)
-	getUser(ctx context.Context, spec UserSpec) (*User, error)
+	GetUser(ctx context.Context, spec UserSpec) (*User, error)
 }
 
 // AuthenticateToken verifies that all requests to /api/v2 endpoints possess
@@ -34,7 +34,7 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 			return svc.GetRegistrySession(ctx, token)
 		default:
 			// otherwise assume user or site admin token
-			return svc.getUser(ctx, UserSpec{AuthenticationToken: &token})
+			return svc.GetUser(ctx, UserSpec{AuthenticationToken: &token})
 		}
 	}
 
@@ -71,7 +71,7 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 
 type AuthenticateSessionService interface {
 	GetSession(ctx context.Context, token string) (*Session, error)
-	getUser(context.Context, UserSpec) (*User, error)
+	GetUser(context.Context, UserSpec) (*User, error)
 }
 
 // AuthenticateSession verifies that all requests to /app endpoints possess
@@ -89,7 +89,7 @@ func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 				sendUserToLoginPage(w, r)
 				return
 			}
-			user, err := svc.getUser(r.Context(), UserSpec{
+			user, err := svc.GetUser(r.Context(), UserSpec{
 				SessionToken: &cookie.Value,
 			})
 			if err != nil {

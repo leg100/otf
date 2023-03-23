@@ -77,7 +77,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providers, err := h.svc.list(r.Context(), organization)
+	providers, err := h.svc.ListVCSProviders(r.Context(), organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,7 +101,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.svc.delete(r.Context(), id)
+	provider, err := h.svc.DeleteVCSProvider(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

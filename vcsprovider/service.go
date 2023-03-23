@@ -20,6 +20,7 @@ type (
 		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
 		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
+		DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
 		// GetVCSClient combines retrieving a vcs provider and construct a cloud
 		// client from that provider.
@@ -27,9 +28,6 @@ type (
 		// TODO: rename vcs provider to cloud client; the central purpose of the vcs
 		// provider is, after all, to construct a cloud client.
 		GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
-
-		list(ctx context.Context, organization string) ([]*VCSProvider, error)
-		delete(ctx context.Context, id string) (*VCSProvider, error)
 	}
 
 	service struct {
@@ -92,7 +90,18 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 }
 
 func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	return a.list(ctx, organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
+	if err != nil {
+		return nil, err
+	}
+
+	providers, err := a.db.list(ctx, organization)
+	if err != nil {
+		a.Error(err, "listing vcs providers", "organization", organization, "subject", subject)
+		return nil, err
+	}
+	a.V(2).Info("listed vcs providers", "organization", organization, "subject", subject)
+	return providers, nil
 }
 
 func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
@@ -121,22 +130,7 @@ func (a *service) GetVCSClient(ctx context.Context, providerID string) (cloud.Cl
 	return provider.NewClient(ctx)
 }
 
-func (a *service) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.ListVCSProvidersAction, organization)
-	if err != nil {
-		return nil, err
-	}
-
-	providers, err := a.db.list(ctx, organization)
-	if err != nil {
-		a.Error(err, "listing vcs providers", "organization", organization, "subject", subject)
-		return nil, err
-	}
-	a.V(2).Info("listed vcs providers", "organization", organization, "subject", subject)
-	return providers, nil
-}
-
-func (a *service) delete(ctx context.Context, id string) (*VCSProvider, error) {
+func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {
 	// retrieve vcs provider first in order to get organization for authorization
 	provider, err := a.db.get(ctx, id)
 	if err != nil {

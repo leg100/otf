@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"path"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
@@ -13,10 +12,9 @@ type Client struct {
 }
 
 // CreateRegistrySession creates a registry session via HTTP/JSONAPI
-func (c *Client) CreateRegistrySession(ctx context.Context, organization string) (*RegistrySession, error) {
-	path := path.Join("organizations", organization, "registry/sessions/create")
-	req, err := c.NewRequest("POST", path, &jsonapi.RegistrySessionCreateOptions{
-		OrganizationName: organization,
+func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) (*RegistrySession, error) {
+	req, err := c.NewRequest("POST", "registry/sessions/create", &jsonapi.RegistrySessionCreateOptions{
+		Organization: opts.Organization,
 	})
 	if err != nil {
 		return nil, err
