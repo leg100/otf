@@ -36,27 +36,3 @@ func createTestTeam(t *testing.T, db *pgdb, organization string) *Team {
 func newTestOwners(t *testing.T, organization string) *Team {
 	return NewTeam(NewTeamOptions{"owners", organization})
 }
-
-type fakeTeamApp struct {
-	team    *Team
-	members []*User
-
-	TeamService
-}
-
-func (f *fakeTeamApp) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
-	return f.team, nil
-}
-
-func (f *fakeTeamApp) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
-	return []*Team{f.team}, nil
-}
-
-func (f *fakeTeamApp) UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error) {
-	f.team.Update(opts)
-	return f.team, nil
-}
-
-func (f *fakeTeamApp) ListTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
-	return f.members, nil
-}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -178,6 +179,7 @@ type fakeWebServices struct {
 	hostname string
 
 	Service
+	otf.HostnameService
 
 	vcsprovider.VCSProviderService
 }

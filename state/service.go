@@ -37,7 +37,6 @@ type (
 		listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
 		getOutput(ctx context.Context, outputID string) (*output, error)
 
-		otf.Handlers
 	}
 
 	// service provides access to state and state versions

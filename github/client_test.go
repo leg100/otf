@@ -3,7 +3,6 @@ package github
 import (
 	"bytes"
 	"context"
-	"net/url"
 	"os"
 	"path"
 	"testing"
@@ -78,13 +77,10 @@ func TestCreateWebhook(t *testing.T) {
 // newTestServerClient creates a github server for testing purposes and
 // returns a client configured to access the server.
 func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
-	srv := NewTestServer(t, opts...)
-
-	u, err := url.Parse(srv.URL)
-	require.NoError(t, err)
+	_, cfg := NewTestServer(t, opts...)
 
 	client, err := NewClient(context.Background(), cloud.ClientOptions{
-		Hostname:            u.Host,
+		Hostname:            cfg.Hostname,
 		SkipTLSVerification: true,
 		Credentials: cloud.Credentials{
 			OAuthToken: &oauth2.Token{AccessToken: "fake-token"},

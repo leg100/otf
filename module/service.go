@@ -41,7 +41,6 @@ type (
 
 		updateModuleStatus(ctx context.Context, module *Module, status ModuleStatus) (*Module, error)
 
-		otf.Handlers
 	}
 
 	service struct {

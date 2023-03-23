@@ -2,18 +2,12 @@ package integration
 
 import (
 	"context"
-	"net/url"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/github"
-	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/repo"
-	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +21,7 @@ func TestRepo(t *testing.T) {
 		svc := setup(t, "test/dummy")
 
 		org := svc.createOrganization(t, ctx)
-		ws := svc.createWorkspace(t, ctx, org, nil)
+		ws := svc.createWorkspace(t, ctx, org)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
 		got, err := svc.Connect(ctx, repo.ConnectOptions{
@@ -54,7 +48,7 @@ func TestRepo(t *testing.T) {
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
-		ws := svc.createWorkspace(t, ctx, nil, &workspace.CreateOptions{
+		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         otf.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
@@ -62,9 +56,10 @@ func TestRepo(t *testing.T) {
 				VCSProviderID: vcsprov.ID,
 			},
 		})
+		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.hasWebhook())
+		require.True(t, svc.githubServer.HasWebhook())
 
 		t.Run("delete workspace connection", func(t *testing.T) {
 			err := svc.Disconnect(ctx, repo.DisconnectOptions{
@@ -75,7 +70,7 @@ func TestRepo(t *testing.T) {
 		})
 
 		// webhook should now have been deleted from github
-		require.False(t, svc.hasWebhook())
+		require.False(t, svc.githubServer.HasWebhook())
 	})
 
 	t.Run("create module with connection", func(t *testing.T) {
@@ -92,7 +87,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.hasWebhook())
+		require.True(t, svc.githubServer.HasWebhook())
 
 		t.Run("delete module", func(t *testing.T) {
 			_, err := svc.DeleteModule(ctx, mod.ID)
@@ -100,7 +95,7 @@ func TestRepo(t *testing.T) {
 		})
 
 		// webhook should now have been deleted from github
-		require.False(t, svc.hasWebhook())
+		require.False(t, svc.githubServer.HasWebhook())
 	})
 
 	t.Run("create multiple connections", func(t *testing.T) {
@@ -127,7 +122,7 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		ws1 := svc.createWorkspace(t, ctx, org, nil)
+		ws1 := svc.createWorkspace(t, ctx, org)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.WorkspaceConnection,
 			VCSProviderID:  vcsprov.ID,
@@ -136,7 +131,7 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		ws2 := svc.createWorkspace(t, ctx, org, nil)
+		ws2 := svc.createWorkspace(t, ctx, org)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.WorkspaceConnection,
 			VCSProviderID:  vcsprov.ID,
@@ -146,7 +141,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.hasWebhook())
+		require.True(t, svc.githubServer.HasWebhook())
 
 		t.Run("delete multiple connections", func(t *testing.T) {
 			err = svc.Disconnect(ctx, repo.DisconnectOptions{
@@ -174,33 +169,7 @@ func TestRepo(t *testing.T) {
 			require.NoError(t, err)
 
 			// webhook should now have been deleted from github
-			require.False(t, svc.hasWebhook())
+			require.False(t, svc.githubServer.HasWebhook())
 		})
 	})
-}
-
-func newRepoService(t *testing.T, db otf.DB, cloudService cloud.Service, vcsService vcsprovider.Service) repo.Service {
-	return repo.NewService(repo.Options{
-		Logger:             logr.Discard(),
-		DB:                 db,
-		CloudService:       cloudService,
-		HostnameService:    hostnameService{"fake-host.org"},
-		VCSProviderService: vcsService,
-	})
-}
-
-func newCloudService(t *testing.T, repoPath string) (cloud.Service, *github.TestServer) {
-	srv := github.NewTestServer(t, github.WithRepo(repoPath))
-	githubURL, err := url.Parse(srv.URL)
-	require.NoError(t, err)
-	githubCloudConfig := cloud.Config{
-		Name:                "github",
-		Hostname:            githubURL.Host,
-		Cloud:               &github.Cloud{},
-		SkipTLSVerification: true,
-	}
-	svc, err := inmem.NewCloudService(githubCloudConfig)
-	require.NoError(t, err)
-	return svc, srv
-
 }

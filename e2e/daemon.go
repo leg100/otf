@@ -72,7 +72,7 @@ func (d *daemon) start(t *testing.T) string {
 	)
 
 	if d.enableGithub {
-		d.githubServer = github.NewTestServer(t, d.githubOptions...)
+		d.githubServer, _ = github.NewTestServer(t, d.githubOptions...)
 		githubURL, err := url.Parse(d.githubServer.URL)
 		require.NoError(t, err)
 

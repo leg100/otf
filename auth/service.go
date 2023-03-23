@@ -20,7 +20,6 @@ type (
 		UserService
 
 		StartExpirer(context.Context)
-		otf.Handlers
 	}
 
 	service struct {

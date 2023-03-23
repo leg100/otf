@@ -25,7 +25,6 @@ type (
 
 		getEntitlements(ctx context.Context, organization string) (Entitlements, error)
 
-		otf.Handlers
 	}
 
 	service struct {

@@ -77,8 +77,7 @@ func TestConnectRepo(t *testing.T) {
 	// should trigger a run on the workspace.
 
 	// otfd should have registered a webhook with the github server
-	require.NotNil(t, daemon.githubServer.HookEndpoint)
-	require.NotNil(t, daemon.githubServer.HookSecret)
+	require.True(t, daemon.githubServer.HasWebhook())
 
 	// generate push event using template
 	pushTpl, err := os.ReadFile("fixtures/github_push.json")

@@ -22,9 +22,7 @@ func newFakeWeb(t *testing.T, svc AuthService) *webHandlers {
 }
 
 func TestAdminLoginHandler(t *testing.T) {
-	app := newFakeWeb(t, &fakeService{
-		sessionService: &fakeSessionService{},
-	})
+	app := newFakeWeb(t, &fakeService{})
 	app.siteToken = "secrettoken"
 
 	tests := []struct {

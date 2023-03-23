@@ -53,7 +53,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCSProviderService:          &fakeReporterVCSProviderService{got: got},
-				HostnameService:             fakeHostnameService{hostname: "otf-host.org"},
+				HostnameService:             otf.FakeHostnameService{Host: "otf-host.org"},
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
@@ -103,9 +103,3 @@ func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts cloud.SetS
 	f.got <- opts
 	return nil
 }
-
-type fakeHostnameService struct {
-	hostname string
-}
-
-func (f fakeHostnameService) Hostname() string { return f.hostname }

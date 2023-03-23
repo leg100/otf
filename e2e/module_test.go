@@ -98,8 +98,7 @@ func TestModule(t *testing.T) {
 	// should trigger a module version to be published.
 
 	// otfd should have registered a webhook with the github server
-	require.NotNil(t, daemon.githubServer.HookEndpoint)
-	require.NotNil(t, daemon.githubServer.HookSecret)
+	require.True(t, daemon.githubServer.HasWebhook())
 
 	// generate and send push tag event for v1.0.0
 	pushTpl, err := os.ReadFile("fixtures/github_push_tag.json")

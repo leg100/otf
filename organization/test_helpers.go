@@ -4,23 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/pubsub"
 	"github.com/stretchr/testify/require"
 )
-
-func NewTestService(t *testing.T, db otf.DB, opts *Options) *service {
-	if opts != nil {
-		return NewService(*opts)
-	}
-	return NewService(Options{
-		Logger: logr.Discard(),
-		DB:     db,
-		Broker: pubsub.NewTestBroker(t, db),
-	})
-}
 
 func NewTestOrganization(t *testing.T) *Organization {
 	org, err := NewOrganization(OrganizationCreateOptions{
@@ -78,10 +65,3 @@ func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationLi
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil
 }
-
-type fakeBroker struct {
-	pubsub.Broker
-}
-
-func (f *fakeBroker) Publish(otf.Event)                           {}
-func (f *fakeBroker) Register(table string, getter pubsub.Getter) {}

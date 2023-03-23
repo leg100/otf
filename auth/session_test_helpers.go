@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -32,22 +31,4 @@ func newTestSession(t *testing.T, userID string, expiry *time.Time) *Session {
 	}
 
 	return session
-}
-
-type fakeSessionService struct {
-	sessions []*Session
-
-	sessionService
-}
-
-func (f *fakeSessionService) listSessions(context.Context, string) ([]*Session, error) {
-	return f.sessions, nil
-}
-
-func (f *fakeSessionService) deleteSession(context.Context, string) error {
-	return nil
-}
-
-func (f *fakeSessionService) createSession(*http.Request, string) (*Session, error) {
-	return &Session{}, nil
 }

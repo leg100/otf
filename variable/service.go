@@ -22,7 +22,6 @@ type (
 		update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
 		delete(ctx context.Context, variableID string) (*Variable, error)
 
-		otf.Handlers
 	}
 
 	service struct {

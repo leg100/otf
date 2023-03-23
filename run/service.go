@@ -69,7 +69,6 @@ type (
 		lockFileService
 
 		otf.Authorizer // run authorizer
-		otf.Handlers   // http handlers
 	}
 
 	service struct {
@@ -135,6 +134,8 @@ func NewService(opts Options) *service {
 		Logger:   opts.Logger,
 		Renderer: opts.Renderer,
 		svc:      &svc,
+		starter: &starter{
+		},
 	}
 
 	// Must register table name and service with pubsub broker so that it knows

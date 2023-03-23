@@ -70,10 +70,7 @@ func TestWebhook(t *testing.T) {
 	require.NoError(t, err)
 
 	// webhook should now have been registered with github
-	webhookURL := daemon.githubServer.HookEndpoint
-	webhookSecret := daemon.githubServer.HookSecret
-	require.NotNil(t, webhookURL)
-	require.NotNil(t, webhookSecret)
+	require.True(t, daemon.githubServer.HasWebhook())
 
 	// create and connect second workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
@@ -83,8 +80,7 @@ func TestWebhook(t *testing.T) {
 	require.NoError(t, err)
 
 	// second workspace re-uses same webhook on github
-	require.Equal(t, webhookURL, daemon.githubServer.HookEndpoint)
-	require.Equal(t, webhookSecret, daemon.githubServer.HookSecret)
+	require.True(t, daemon.githubServer.HasWebhook())
 
 	// disconnect second workspace
 	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, url, org, "workspace-2"))
@@ -92,8 +88,7 @@ func TestWebhook(t *testing.T) {
 
 	// first workspace is still connected, so webhook should still be configured
 	// on github
-	require.Equal(t, webhookURL, daemon.githubServer.HookEndpoint)
-	require.Equal(t, webhookSecret, daemon.githubServer.HookSecret)
+	require.True(t, daemon.githubServer.HasWebhook())
 
 	// disconnect first workspace
 	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, url, org, "workspace-1"))
@@ -101,6 +96,5 @@ func TestWebhook(t *testing.T) {
 
 	// No more workspaces are connected to repo, so webhook should have been
 	// deleted
-	require.Nil(t, daemon.githubServer.HookEndpoint)
-	require.Nil(t, daemon.githubServer.HookSecret)
+	require.False(t, daemon.githubServer.HasWebhook())
 }

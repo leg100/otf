@@ -18,9 +18,7 @@ func TestSessionHandlers(t *testing.T) {
 	other := newTestSession(t, user.ID, nil)
 
 	h := newFakeWeb(t, &fakeService{
-		sessionService: &fakeSessionService{
-			sessions: []*Session{active, other},
-		},
+		sessions: []*Session{active, other},
 	})
 
 	t.Run("list sessions", func(t *testing.T) {

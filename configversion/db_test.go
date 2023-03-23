@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigurationVersion_Create(t *testing.T) {
+func TestDB(t *testing.T) {
 	ctx := context.Background()
 	db := &pgdb{sql.NewTestDB(t)}
 

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -68,7 +69,7 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 				Name:                "fake-cloud",
 			},
 		},
-		otfHostname: fakeHostnameService{hostname: "otf-server.com"},
+		otfHostname: otf.FakeHostnameService{Host: "otf-server.com"},
 	})
 	require.NoError(t, err)
 	return client

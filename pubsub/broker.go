@@ -25,10 +25,6 @@ const (
 	subBufferSize = 16
 )
 
-// a unique identity string for distinguishing this process from other otfd
-// processes
-var pid = uuid.NewString()
-
 type (
 	Broker interface {
 		otf.PubSubService
@@ -51,9 +47,7 @@ type (
 	}
 
 	BrokerConfig struct {
-		ChannelName *string
-		PID         *string
-		PoolDB      otf.DB
+		PoolDB otf.DB
 	}
 
 	// Getter retrieves an OTF resource using its ID.
@@ -91,20 +85,12 @@ func NewBroker(logger logr.Logger, cfg BrokerConfig) (*broker, error) {
 
 	broker := &broker{
 		Logger:  logger.WithValues("component", "pubsub"),
-		pid:     pid,
+		pid:     uuid.NewString(),
 		pool:    pool,
 		channel: defaultChannel,
 		tables:  make(map[string]Getter),
 		subs:    make(map[string]chan otf.Event),
 		metrics: make(map[string]prometheus.Gauge),
-	}
-
-	// optional config
-	if cfg.ChannelName != nil {
-		broker.channel = *cfg.ChannelName
-	}
-	if cfg.PID != nil {
-		broker.pid = *cfg.PID
 	}
 
 	return broker, nil
