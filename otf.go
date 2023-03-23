@@ -42,21 +42,19 @@ var (
 // DB provides access to generated SQL queries as well as wrappers for
 // performing queries within a transaction or a lock.
 type DB interface {
-	Acquire(ctx context.Context) (*pgxpool.Conn, error)
-
 	// Tx provides a transaction within which to operate on the store.
 	Tx(ctx context.Context, tx func(DB) error) error
-	Close()
-
-	// Send batches of SQL queries over the wire.
-	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+	// Acquire dedicated connection from pool.
+	Acquire(ctx context.Context) (*pgxpool.Conn, error)
 	// Execute arbitrary SQL
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-
-	pggen.Querier // generated SQL queries
-
+	// Send batches of SQL queries over the wire.
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64) (DatabaseLock, error)
+
+	pggen.Querier // generated SQL queries
+	Close()       // Close all connections in pool
 }
 
 type DatabaseLock interface {

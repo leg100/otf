@@ -1,5 +1,5 @@
 /*
-Package sql implements persistent storage using the sql database.
+Package sql implements persistent storage using the postgres database.
 */
 package sql
 
