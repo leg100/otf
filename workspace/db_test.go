@@ -78,22 +78,20 @@ func TestDB(t *testing.T) {
 		user := auth.CreateTestUser(t, db)
 		ctx := otf.AddSubjectToContext(ctx, user)
 
-		t.Run("lock", func(t *testing.T) {
-			ws := CreateTestWorkspace(t, db, org.Name)
-			lockholder := UserLock{ID: user.ID, Username: user.Username}
+		ws := CreateTestWorkspace(t, db, org.Name)
+		lockholder := UserLock{ID: user.ID, Username: user.Username}
+		got, err := db.toggleLock(ctx, ws.ID, func(lock *Lock) error {
+			return lock.Lock(lockholder)
+		})
+		require.NoError(t, err)
+		assert.True(t, got.Locked())
+
+		t.Run("unlock", func(t *testing.T) {
 			got, err := db.toggleLock(ctx, ws.ID, func(lock *Lock) error {
-				return lock.Lock(lockholder)
+				return lock.Unlock(lockholder, false)
 			})
 			require.NoError(t, err)
-			assert.True(t, got.Locked())
-
-			t.Run("unlock", func(t *testing.T) {
-				got, err := db.toggleLock(ctx, ws.ID, func(lock *Lock) error {
-					return lock.Unlock(lockholder, false)
-				})
-				require.NoError(t, err)
-				assert.False(t, got.Locked())
-			})
+			assert.False(t, got.Locked())
 		})
 	})
 
