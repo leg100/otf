@@ -9,7 +9,7 @@ import (
 type jsonapiMarshaler struct{}
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toVersion(form *version) *jsonapi.StateVersion {
+func (m *jsonapiMarshaler) toVersion(form *Version) *jsonapi.StateVersion {
 	to := &jsonapi.StateVersion{
 		ID:          form.ID,
 		CreatedAt:   form.CreatedAt,
@@ -23,7 +23,7 @@ func (m *jsonapiMarshaler) toVersion(form *version) *jsonapi.StateVersion {
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toList(from *versionList) *jsonapi.StateVersionList {
+func (m *jsonapiMarshaler) toList(from *VersionList) *jsonapi.StateVersionList {
 	jl := &jsonapi.StateVersionList{
 		Pagination: from.Pagination.ToJSONAPI(),
 	}
@@ -34,13 +34,13 @@ func (m *jsonapiMarshaler) toList(from *versionList) *jsonapi.StateVersionList {
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (*jsonapiMarshaler) toOutput(from *output) *jsonapi.StateVersionOutput {
+func (*jsonapiMarshaler) toOutput(from *Output) *jsonapi.StateVersionOutput {
 	return &jsonapi.StateVersionOutput{
-		ID:        from.id,
-		Name:      from.name,
-		Sensitive: from.sensitive,
-		Type:      from.typ,
-		Value:     from.value,
+		ID:        from.ID,
+		Name:      from.Name,
+		Sensitive: from.Sensitive,
+		Type:      from.Type,
+		Value:     from.Value,
 	}
 }
 

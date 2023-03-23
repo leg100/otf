@@ -16,7 +16,7 @@ type outputRow struct {
 	StateVersionID       pgtype.Text `json:"state_version_id"`
 }
 
-func (db *pgdb) getOutput(ctx context.Context, outputID string) (*output, error) {
+func (db *pgdb) getOutput(ctx context.Context, outputID string) (*Output, error) {
 	result, err := db.FindStateVersionOutputByID(ctx, sql.String(outputID))
 	if err != nil {
 		return nil, sql.Error(err)
@@ -26,13 +26,13 @@ func (db *pgdb) getOutput(ctx context.Context, outputID string) (*output, error)
 
 // unmarshalVersionOutputRow unmarshals a database row into a state version
 // output.
-func (row outputRow) toOutput() *output {
-	return &output{
-		id:             row.StateVersionOutputID.String,
-		sensitive:      row.Sensitive,
-		typ:            row.Type.String,
-		value:          row.Value.String,
-		name:           row.Name.String,
-		stateVersionID: row.StateVersionID.String,
+func (row outputRow) toOutput() *Output {
+	return &Output{
+		ID:             row.StateVersionOutputID.String,
+		Sensitive:      row.Sensitive,
+		Type:            row.Type.String,
+		Value:          row.Value.String,
+		Name:           row.Name.String,
+		StateVersionID: row.StateVersionID.String,
 	}
 }

@@ -23,10 +23,10 @@ type Client struct {
 	otf.JSONAPIClient
 }
 
-func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) error {
+func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	var state file
 	if err := json.Unmarshal(opts.State, &state); err != nil {
-		return err
+		return nil, err
 	}
 
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(*opts.WorkspaceID))
@@ -37,15 +37,15 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 		State:   otf.String(base64.StdEncoding.EncodeToString(opts.State)),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = c.Do(ctx, req, nil)
-	if err != nil {
-		return err
+	sv := jsonapi.StateVersion{}
+	if err = c.Do(ctx, req, &sv); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &Version{ID: sv.ID, Serial: sv.Serial}, nil
 }
 
 func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {

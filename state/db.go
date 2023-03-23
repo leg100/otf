@@ -15,12 +15,12 @@ import (
 type db interface {
 	otf.DB
 
-	createVersion(context.Context, *version) error
-	listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
-	getVersion(ctx context.Context, opts stateVersionGetOptions) (*version, error)
+	createVersion(context.Context, *Version) error
+	listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+	getVersion(ctx context.Context, opts stateVersionGetOptions) (*Version, error)
 	getState(ctx context.Context, versionID string) ([]byte, error)
 	deleteVersion(ctx context.Context, versionID string) error
-	getOutput(ctx context.Context, outputID string) (*output, error)
+	getOutput(ctx context.Context, outputID string) (*Output, error)
 }
 
 // pgdb is a state/state-version database on postgres
@@ -32,7 +32,7 @@ func newPGDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
-func (db *pgdb) createVersion(ctx context.Context, v *version) error {
+func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	return db.Tx(ctx, func(db otf.DB) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 			ID:          sql.String(v.ID),
@@ -47,11 +47,11 @@ func (db *pgdb) createVersion(ctx context.Context, v *version) error {
 
 		for _, svo := range v.Outputs {
 			_, err := db.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
-				ID:             sql.String(svo.id),
-				Name:           sql.String(svo.name),
-				Sensitive:      svo.sensitive,
-				Type:           sql.String(svo.typ),
-				Value:          sql.String(svo.value),
+				ID:             sql.String(svo.ID),
+				Name:           sql.String(svo.Name),
+				Sensitive:      svo.Sensitive,
+				Type:           sql.String(svo.Type),
+				Value:          sql.String(svo.Value),
 				StateVersionID: sql.String(v.ID),
 			})
 			if err != nil {
@@ -62,7 +62,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
@@ -85,18 +85,18 @@ func (db *pgdb) listVersions(ctx context.Context, opts stateVersionListOptions) 
 		return nil, err
 	}
 
-	var items []*version
+	var items []*Version
 	for _, r := range rows {
 		items = append(items, pgRow(r).toVersion())
 	}
 
-	return &versionList{
+	return &VersionList{
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (db *pgdb) getVersion(ctx context.Context, opts stateVersionGetOptions) (*version, error) {
+func (db *pgdb) getVersion(ctx context.Context, opts stateVersionGetOptions) (*Version, error) {
 	if opts.ID != nil {
 		result, err := db.FindStateVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
@@ -137,8 +137,8 @@ type pgRow struct {
 	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 }
 
-func (row pgRow) toVersion() *version {
-	sv := version{
+func (row pgRow) toVersion() *Version {
+	sv := Version{
 		ID:          row.StateVersionID.String,
 		CreatedAt:   row.CreatedAt.Time.UTC(),
 		Serial:      int64(row.Serial),

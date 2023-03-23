@@ -241,8 +241,9 @@ func (b *stepsBuilder) uploadState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return b.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+	_, err = b.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		WorkspaceID: &b.WorkspaceID,
 		State:       statefile,
 	})
+	return err
 }

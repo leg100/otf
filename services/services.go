@@ -181,6 +181,7 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, []otf.Handlers, 
 		Logger:              logger,
 		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
+		WorkspaceService:    workspaceService,
 		Cache:               cache,
 	})
 	variableService := variable.NewService(variable.Options{

@@ -9,11 +9,11 @@ import (
 )
 
 type (
-	// version is a specific version of terraform state. It includes important
+	// Version is a specific Version of terraform state. It includes important
 	// metadata as well as the state file itself.
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions
-	version struct {
+	Version struct {
 		ID          string
 		CreatedAt   time.Time
 		Serial      int64
@@ -22,26 +22,32 @@ type (
 		WorkspaceID string     // state version belongs to a workspace
 	}
 
-	// versionList represents a list of state versions.
-	versionList struct {
+	// VersionList represents a list of state versions.
+	VersionList struct {
 		*otf.Pagination
-		Items []*version
+		Items []*Version
 	}
 
-	output struct {
-		id             string
-		name           string
-		typ            string
-		value          string
-		sensitive      bool
-		stateVersionID string
+	Output struct {
+		ID             string
+		Name           string
+		Type           string
+		Value          string
+		Sensitive      bool
+		StateVersionID string
 	}
 
-	outputList map[string]*output
+	outputList map[string]*Output
+
+	CreateStateVersionOptions struct {
+		State       []byte  // Terraform state file. Required.
+		WorkspaceID *string // ID of state version's workspace. Required.
+		Serial      *int64  // State serial number. If not provided then it is extracted from the state.
+	}
 )
 
 // newVersion constructs a new state version.
-func newVersion(opts CreateStateVersionOptions) (*version, error) {
+func newVersion(opts CreateStateVersionOptions) (*Version, error) {
 	if opts.State == nil {
 		return nil, errors.New("state file required")
 	}
@@ -54,7 +60,7 @@ func newVersion(opts CreateStateVersionOptions) (*version, error) {
 		return nil, err
 	}
 
-	sv := version{
+	sv := Version{
 		ID:          otf.NewID("sv"),
 		CreatedAt:   otf.CurrentTimestamp(),
 		Serial:      f.Serial,
@@ -74,16 +80,16 @@ func newVersion(opts CreateStateVersionOptions) (*version, error) {
 			return nil, err
 		}
 
-		sv.Outputs[k] = &output{
-			id:             otf.NewID("wsout"),
-			name:           k,
-			typ:            hclType,
-			value:          string(v.Value),
-			sensitive:      v.Sensitive,
-			stateVersionID: sv.ID,
+		sv.Outputs[k] = &Output{
+			ID:             otf.NewID("wsout"),
+			Name:           k,
+			Type:           hclType,
+			Value:          string(v.Value),
+			Sensitive:      v.Sensitive,
+			StateVersionID: sv.ID,
 		}
 	}
 	return &sv, nil
 }
 
-func (v *version) String() string { return v.ID }
+func (v *Version) String() string { return v.ID }

@@ -58,7 +58,8 @@ func (c *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, e
 
 	// Try the cache first
 	if data, err := c.cache.Get(key); err == nil {
-		return otf.Chunk{Data: data}.Cut(opts), nil
+		chunk := otf.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
+		return chunk.Cut(opts), nil
 	}
 	// Fall back to getting chunk from backend
 	chunk, err := c.db.get(ctx, opts)

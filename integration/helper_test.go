@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -15,6 +16,8 @@ import (
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/services"
 	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
@@ -146,4 +149,38 @@ func (s *testServices) createRun(t *testing.T, ctx context.Context, ws *workspac
 	})
 	require.NoError(t, err)
 	return run
+}
+
+func (s *testServices) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace) *variable.Variable {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+
+	v, err := s.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
+		Key:      otf.String(uuid.NewString()),
+		Value:    otf.String(uuid.NewString()),
+		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
+	})
+	require.NoError(t, err)
+	return v
+}
+
+func (s *testServices) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *state.Version {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+
+	file, err := os.ReadFile("./testdata/terraform.tfstate")
+	require.NoError(t, err)
+
+	sv, err := s.CreateStateVersion(ctx, state.CreateStateVersionOptions{
+		State:       file,
+		WorkspaceID: otf.String(ws.ID),
+	})
+	require.NoError(t, err)
+	return sv
 }

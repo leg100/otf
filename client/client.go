@@ -60,7 +60,7 @@ type (
 		// CreateRegistrySession creates a registry session for the given organization.
 		CreateRegistrySession(ctx context.Context, organization string) (*auth.RegistrySession, error)
 
-		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) error
+		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 
 		Hostname() string

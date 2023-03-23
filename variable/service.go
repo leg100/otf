@@ -15,12 +15,11 @@ type (
 	VariableService = Service
 
 	Service interface {
+		CreateVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
 		ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
-
-		create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
-		get(ctx context.Context, variableID string) (*Variable, error)
-		update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
-		delete(ctx context.Context, variableID string) (*Variable, error)
+		GetVariable(ctx context.Context, variableID string) (*Variable, error)
+		UpdateVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
+		DeleteVariable(ctx context.Context, variableID string) (*Variable, error)
 	}
 
 	service struct {
@@ -68,24 +67,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	variables, err := s.db.list(ctx, workspaceID)
-	if err != nil {
-		s.Error(err, "listing variables", "subject", subject, "workspace_id", workspaceID)
-		return nil, err
-	}
-
-	s.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
-
-	return variables, nil
-}
-
-func (s *service) create(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
+func (s *service) CreateVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.CreateVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -107,7 +89,24 @@ func (s *service) create(ctx context.Context, workspaceID string, opts CreateVar
 	return v, nil
 }
 
-func (s *service) get(ctx context.Context, variableID string) (*Variable, error) {
+func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
+	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariablesAction, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	variables, err := s.db.list(ctx, workspaceID)
+	if err != nil {
+		s.Error(err, "listing variables", "subject", subject, "workspace_id", workspaceID)
+		return nil, err
+	}
+
+	s.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
+
+	return variables, nil
+}
+
+func (s *service) GetVariable(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve variable first in order to retrieve workspace ID for authorization
 	variable, err := s.db.get(ctx, variableID)
 	if err != nil {
@@ -125,7 +124,7 @@ func (s *service) get(ctx context.Context, variableID string) (*Variable, error)
 	return variable, nil
 }
 
-func (s *service) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+func (s *service) UpdateVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := s.db.get(ctx, variableID)
 	if err != nil {
@@ -149,7 +148,7 @@ func (s *service) update(ctx context.Context, variableID string, opts UpdateVari
 	return updated, nil
 }
 
-func (s *service) delete(ctx context.Context, variableID string) (*Variable, error) {
+func (s *service) DeleteVariable(ctx context.Context, variableID string) (*Variable, error) {
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := s.db.get(ctx, variableID)
 	if err != nil {

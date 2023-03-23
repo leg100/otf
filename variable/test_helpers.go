@@ -19,7 +19,7 @@ type fakeService struct {
 	Service
 }
 
-func (f *fakeService) update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+func (f *fakeService) UpdateVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	if err := f.variable.Update(opts); err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func (h *api) create(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variable, err := h.svc.create(r.Context(), workspaceID, CreateVariableOptions{
+	variable, err := h.svc.CreateVariable(r.Context(), workspaceID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -60,7 +60,7 @@ func (h *api) get(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	variable, err := h.svc.get(r.Context(), variableID)
+	variable, err := h.svc.GetVariable(r.Context(), variableID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -93,7 +93,7 @@ func (h *api) update(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	updated, err := h.svc.update(r.Context(), variableID, UpdateVariableOptions{
+	updated, err := h.svc.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -114,7 +114,7 @@ func (h *api) delete(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	_, err = h.svc.delete(r.Context(), variableID)
+	_, err = h.svc.DeleteVariable(r.Context(), variableID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

@@ -5,6 +5,8 @@ import (
 	"net/url"
 
 	"github.com/go-logr/logr"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -16,14 +18,26 @@ type (
 	// DB provides access to the postgres db as well as queries generated from
 	// SQL
 	DB struct {
-		*pgxpool.Pool // db connection pool
-		pggen.Querier // generated queries
+		*pgxpool.Pool         // db connection pool
+		pggen.Querier         // generated queries
+		conn          conn    // current connection
+		tx            *pgx.Tx // current transaction
 	}
 
 	// Options for constructing a DB
 	Options struct {
 		Logger     logr.Logger
 		ConnString string
+	}
+
+	// conn abstracts a postgres connection, which could be a single connection,
+	// a pool of connections, or a transaction.
+	conn interface {
+		Begin(ctx context.Context) (pgx.Tx, error)
+		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
+		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
 )
 
@@ -42,18 +56,17 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts.Logger.Info("connected to database", "connstring", connString)
+	opts.Logger.Info("connected to database", "connstr", connString)
 
 	if err := migrate(opts.Logger, opts.ConnString); err != nil {
 		return nil, err
 	}
 
-	db := &DB{
+	return &DB{
 		Pool:    pool,
 		Querier: pggen.NewQuerier(pool),
-	}
-
-	return db, nil
+		conn:    pool,
+	}, nil
 }
 
 func (db *DB) WaitAndLock(ctx context.Context, id int64) (otf.DatabaseLock, error) {
@@ -68,16 +81,20 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64) (otf.DatabaseLock, erro
 	return conn, nil
 }
 
+func (db *DB) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
+	return db.conn.Exec(ctx, sql, arguments...)
+}
+
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
 func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
-	tx, err := db.Begin(ctx)
+	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
 
-	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx)}); err != nil {
+	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx), tx, &tx}); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

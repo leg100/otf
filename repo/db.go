@@ -122,7 +122,8 @@ func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
 	return db.unmarshal(hookRow(result))
 }
 
-// tx constructs a new pgdb within a transaction.
+// lock webhooks table within a transaction, providing a callback within which
+// caller can use the transaction.
 func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := tx.Exec(ctx, "LOCK webhooks")

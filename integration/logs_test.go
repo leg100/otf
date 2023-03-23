@@ -1,53 +1,35 @@
-package logs
+package integration
 
 import (
 	"context"
 	"testing"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/sql"
-	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestDB(t *testing.T) {
-	db := &pgdb{sql.NewTestDB(t)}
-	ctx := context.Background()
-
-	org := organization.CreateTestOrganization(t, db)
-	ws := workspace.CreateTestWorkspace(t, db, org.Name)
-	cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
+func TestLogs(t *testing.T) {
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("upload chunk", func(t *testing.T) {
-		run := run.CreateTestRun(t, db, ws, cv, run.RunCreateOptions{})
+		svc := setup(t, "")
+		run := svc.createRun(t, ctx, nil, nil)
 
-		got, err := db.put(ctx, otf.Chunk{
+		err := svc.PutChunk(ctx, otf.Chunk{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
 		})
 		require.NoError(t, err)
-
-		want := otf.PersistedChunk{
-			ChunkID: got.ChunkID,
-			Chunk: otf.Chunk{
-				RunID: run.ID,
-				Phase: otf.PlanPhase,
-				Data:  []byte("\x02hello world\x03"),
-			},
-		}
-		assert.Equal(t, want, got)
-		assert.Positive(t, got.ChunkID)
 	})
 
 	t.Run("reject empty chunk", func(t *testing.T) {
-		run := run.CreateTestRun(t, db, ws, cv, run.RunCreateOptions{})
+		svc := setup(t, "")
+		run := svc.createRun(t, ctx, nil, nil)
 
-		_, err := db.put(ctx, otf.Chunk{
+		err := svc.PutChunk(ctx, otf.Chunk{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 		})
@@ -55,16 +37,17 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("get chunk", func(t *testing.T) {
-		run := run.CreateTestRun(t, db, ws, cv, run.RunCreateOptions{})
+		svc := setup(t, "")
+		run := svc.createRun(t, ctx, nil, nil)
 
-		_, err := db.put(ctx, otf.Chunk{
+		err := svc.PutChunk(ctx, otf.Chunk{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		})
 		require.NoError(t, err)
 
-		_, err = db.put(ctx, otf.Chunk{
+		err = svc.PutChunk(ctx, otf.Chunk{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte(" world\x03"),
@@ -135,27 +118,11 @@ func TestDB(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := db.get(ctx, tt.opts)
+				got, err := svc.GetChunk(ctx, tt.opts)
 				require.NoError(t, err)
 
 				assert.Equal(t, tt.want, got)
 			})
 		}
-	})
-
-	t.Run("get chunk by id", func(t *testing.T) {
-		run := run.CreateTestRun(t, db, ws, cv, run.RunCreateOptions{})
-
-		want, err := db.put(ctx, otf.Chunk{
-			RunID:  run.ID,
-			Phase:  otf.PlanPhase,
-			Data:   []byte("\x02hello world\x03"),
-			Offset: 0,
-		})
-		require.NoError(t, err)
-
-		got, err := db.getByID(ctx, want.ChunkID)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
 	})
 }

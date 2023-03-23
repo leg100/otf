@@ -71,7 +71,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.create(r.Context(), params.WorkspaceID, CreateVariableOptions{
+	variable, err := h.svc.CreateVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -122,7 +122,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.get(r.Context(), variableID)
+	variable, err := h.svc.GetVariable(r.Context(), variableID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -170,7 +170,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		params.Value = nil
 	}
 
-	variable, err := h.svc.update(r.Context(), params.VariableID, UpdateVariableOptions{
+	variable, err := h.svc.UpdateVariable(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -194,7 +194,7 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.delete(r.Context(), variableID)
+	variable, err := h.svc.DeleteVariable(r.Context(), variableID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

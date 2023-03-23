@@ -102,7 +102,7 @@ func (s *service) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.C
 	return logs, nil
 }
 
-// PutChunk writes a chunk of logs for a phase.
+// PutChunk writes a chunk of logs for a phase
 func (s *service) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, chunk.RunID)
 	if err != nil {
