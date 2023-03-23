@@ -255,7 +255,7 @@ func (h *webHandlers) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := h.svc.delete(r.Context(), workspaceID)
+	ws, err := h.svc.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -420,7 +420,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.svc.setPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
+	err = h.svc.SetPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -439,7 +439,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := h.svc.unsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
+	err := h.svc.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -248,7 +248,7 @@ func (a *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.svc.delete(r.Context(), workspaceID)
+	_, err = a.svc.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
@@ -268,7 +268,7 @@ func (a *api) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	_, err = a.svc.delete(r.Context(), ws.ID)
+	_, err = a.svc.DeleteWorkspace(r.Context(), ws.ID)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

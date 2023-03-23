@@ -7,6 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
@@ -24,6 +26,8 @@ type testServices struct {
 }
 
 func setup(t *testing.T, repo string) *testServices {
+	t.Helper()
+
 	db := sql.NewTestDB(t)
 	cfg := services.NewDefaultConfig()
 
@@ -40,6 +44,8 @@ func setup(t *testing.T, repo string) *testServices {
 }
 
 func (s *testServices) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
+	t.Helper()
+
 	org, err := s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
@@ -48,6 +54,12 @@ func (s *testServices) createOrganization(t *testing.T, ctx context.Context) *or
 }
 
 func (s *testServices) createWorkspace(t *testing.T, ctx context.Context, org *organization.Organization) *workspace.Workspace {
+	t.Helper()
+
+	if org == nil {
+		org = s.createOrganization(t, ctx)
+	}
+
 	ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         otf.String(uuid.NewString()),
 		Organization: &org.Name,
@@ -57,6 +69,8 @@ func (s *testServices) createWorkspace(t *testing.T, ctx context.Context, org *o
 }
 
 func (s *testServices) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
+	t.Helper()
+
 	provider, err := s.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
@@ -70,6 +84,8 @@ func (s *testServices) createVCSProvider(t *testing.T, ctx context.Context, org 
 }
 
 func (s *testServices) createModule(t *testing.T, ctx context.Context, org *organization.Organization) *module.Module {
+	t.Helper()
+
 	module, err := s.CreateModule(ctx, module.CreateOptions{
 		Name:         uuid.NewString(),
 		Provider:     uuid.NewString(),
@@ -77,4 +93,39 @@ func (s *testServices) createModule(t *testing.T, ctx context.Context, org *orga
 	})
 	require.NoError(t, err)
 	return module
+}
+
+func (s *testServices) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
+	t.Helper()
+
+	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
+	require.NoError(t, err)
+	return user
+}
+
+func (s *testServices) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
+	t.Helper()
+
+	if org == nil {
+		org = s.createOrganization(t, ctx)
+	}
+
+	team, err := s.CreateTeam(ctx, auth.NewTeamOptions{
+		Name:         uuid.NewString(),
+		Organization: org.Name,
+	})
+	require.NoError(t, err)
+	return team
+}
+
+func (s *testServices) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+
+	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+	require.NoError(t, err)
+	return cv
 }

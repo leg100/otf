@@ -1,0 +1,125 @@
+package integration
+
+import (
+	"context"
+	"os"
+	"testing"
+
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/configversion"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestConfigurationVersion(t *testing.T) {
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+
+	t.Run("create", func(t *testing.T) {
+		svc := setup(t, "")
+		ws := svc.createWorkspace(t, ctx, nil)
+
+		_, err := svc.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+		require.NoError(t, err)
+	})
+
+	t.Run("upload config", func(t *testing.T) {
+		svc := setup(t, "")
+		cv := svc.createConfigurationVersion(t, ctx, nil)
+		tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
+		require.NoError(t, err)
+
+		err = svc.UploadConfig(ctx, cv.ID, tarball)
+		require.NoError(t, err)
+
+		got, err := svc.GetConfigurationVersion(ctx, cv.ID)
+		require.NoError(t, err)
+
+		assert.Equal(t, configversion.ConfigurationUploaded, got.Status)
+
+		t.Run("download config", func(t *testing.T) {
+			gotConfig, err := svc.DownloadConfig(ctx, cv.ID)
+			require.NoError(t, err)
+			assert.Equal(t, tarball, gotConfig)
+		})
+	})
+
+	t.Run("get", func(t *testing.T) {
+		svc := setup(t, "")
+		want := svc.createConfigurationVersion(t, ctx, nil)
+
+		got, err := svc.GetConfigurationVersion(ctx, want.ID)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("get latest", func(t *testing.T) {
+		svc := setup(t, "")
+		want := svc.createConfigurationVersion(t, ctx, nil)
+
+		got, err := svc.GetLatestConfigurationVersion(ctx, want.WorkspaceID)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("list", func(t *testing.T) {
+		svc := setup(t, "")
+		ws := svc.createWorkspace(t, ctx, nil)
+		cv1 := svc.createConfigurationVersion(t, ctx, ws)
+		cv2 := svc.createConfigurationVersion(t, ctx, ws)
+
+		tests := []struct {
+			name        string
+			workspaceID string
+			opts        configversion.ConfigurationVersionListOptions
+			want        func(*testing.T, *configversion.ConfigurationVersionList)
+		}{
+			{
+				name:        "no pagination",
+				workspaceID: ws.ID,
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+					assert.Equal(t, 2, len(got.Items))
+					assert.Equal(t, 2, got.TotalCount())
+					assert.Contains(t, got.Items, cv1)
+					assert.Contains(t, got.Items, cv2)
+				},
+			},
+			{
+				name:        "pagination",
+				workspaceID: ws.ID,
+				opts:        configversion.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+					assert.Equal(t, 1, len(got.Items))
+					assert.Equal(t, 2, got.TotalCount())
+				},
+			},
+			{
+				name:        "stray pagination",
+				workspaceID: ws.ID,
+				opts:        configversion.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+					// Zero items but total count should ignore pagination
+					assert.Equal(t, 0, len(got.Items))
+					assert.Equal(t, 2, got.TotalCount())
+				},
+			},
+			{
+				name:        "query non-existent workspace",
+				workspaceID: "ws-non-existent",
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+					assert.Empty(t, got.Items)
+					assert.Equal(t, 0, got.TotalCount())
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				results, err := svc.ListConfigurationVersions(ctx, tt.workspaceID, tt.opts)
+				require.NoError(t, err)
+
+				tt.want(t, results)
+			})
+		}
+	})
+}

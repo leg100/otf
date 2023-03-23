@@ -7,11 +7,11 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-type permissionsService interface {
+type PermissionsService interface {
 	GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error)
 
-	setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
-	unsetPermission(ctx context.Context, workspaceID, team string) error
+	SetPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
+	UnsetPermission(ctx context.Context, workspaceID, team string) error
 }
 
 // GetPolicy retrieves a workspace policy.
@@ -22,7 +22,7 @@ func (s *service) GetPolicy(ctx context.Context, workspaceID string) (otf.Worksp
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 
-func (s *service) setPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
+func (s *service) SetPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error {
 	subject, err := s.CanAccess(ctx, rbac.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (s *service) setPermission(ctx context.Context, workspaceID, team string, r
 	return nil
 }
 
-func (s *service) unsetPermission(ctx context.Context, workspaceID, team string) error {
+func (s *service) UnsetPermission(ctx context.Context, workspaceID, team string) error {
 	subject, err := s.CanAccess(ctx, rbac.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		s.Error(err, "unsetting workspace permission", "team", team, "subject", subject, "workspace", workspaceID)

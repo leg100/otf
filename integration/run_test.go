@@ -1,4 +1,4 @@
-package run
+package integration
 
 import (
 	"context"
@@ -7,19 +7,18 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestDB(t *testing.T) {
-	ctx := context.Background()
-	db := &pgdb{sql.NewTestDB(t)}
+func TestRun(t *testing.T) {
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name)
+		svc := setup(t, "")
+		ws := svc.createWorkspace(t, ctx, nil)
 		cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
 
 		run := NewRun(cv, ws, RunCreateOptions{})

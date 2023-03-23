@@ -38,13 +38,12 @@ type (
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
 		getRun(ctx context.Context, runID string) (run, error)
-		delete(ctx context.Context, workspaceID string) (*Workspace, error)
 
 		connect(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error)
 		disconnect(ctx context.Context, workspaceID string) error
 
 		LockService
-		permissionsService
+		PermissionsService
 	}
 
 	service struct {
@@ -92,7 +91,7 @@ func NewService(opts Options) *service {
 	}
 	svc.jsonapiMarshaler = &jsonapiMarshaler{
 		Service:            opts.OrganizationService,
-		permissionsService: &svc,
+		PermissionsService: &svc,
 	}
 	svc.api = &api{
 		jsonapiMarshaler: svc.jsonapiMarshaler,
@@ -263,7 +262,35 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 }
 
 func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
-	return nil, nil
+	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err := s.db.get(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// disconnect repo before deleting
+	if ws.Connection != nil {
+		err = s.disconnect(ctx, ws.ID)
+		// ignore warnings; the repo is still disconnected successfully
+		if err != nil && !errors.Is(err, otf.ErrWarning) {
+			return nil, err
+		}
+	}
+
+	if err := s.db.delete(ctx, ws.ID); err != nil {
+		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
+		return nil, err
+	}
+
+	s.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
+
+	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
+
+	return ws, nil
 }
 
 // connect connects the workspace to a repo.
@@ -332,38 +359,6 @@ func (s *service) getRun(ctx context.Context, runID string) (run, error) {
 	s.V(2).Info("retrieved workspace run", "run", runID)
 
 	return result, nil
-}
-
-func (s *service) delete(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	ws, err := s.db.get(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	// disconnect repo before deleting
-	if ws.Connection != nil {
-		err = s.disconnect(ctx, ws.ID)
-		// ignore warnings; the repo is still disconnected successfully
-		if err != nil && !errors.Is(err, otf.ErrWarning) {
-			return nil, err
-		}
-	}
-
-	if err := s.db.delete(ctx, ws.ID); err != nil {
-		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
-		return nil, err
-	}
-
-	s.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
-
-	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
-
-	return ws, nil
 }
 
 // SetCurrentRun sets the current run for the workspace

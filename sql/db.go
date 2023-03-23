@@ -27,7 +27,8 @@ type (
 	}
 )
 
-// New constructs a new DB
+// New constructs a new DB connection pool, and migrates the schema to the
+// latest version.
 func New(ctx context.Context, opts Options) (*DB, error) {
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated

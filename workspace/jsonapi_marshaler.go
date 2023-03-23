@@ -14,7 +14,7 @@ import (
 // into json-api
 type jsonapiMarshaler struct {
 	organization.Service
-	permissionsService
+	PermissionsService
 }
 
 func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
