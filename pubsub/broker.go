@@ -4,7 +4,6 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -46,10 +45,6 @@ type (
 		mu sync.Mutex // sync access to maps
 	}
 
-	BrokerConfig struct {
-		PoolDB otf.DB
-	}
-
 	// Getter retrieves an OTF resource using its ID.
 	Getter interface {
 		GetByID(context.Context, string) (any, error)
@@ -73,27 +68,16 @@ type (
 	}
 )
 
-func NewBroker(logger logr.Logger, cfg BrokerConfig) (*broker, error) {
-	// required config
-	if cfg.PoolDB == nil {
-		return nil, errors.New("missing database connection pool")
-	}
-	pool, err := cfg.PoolDB.Pool()
-	if err != nil {
-		return nil, err
-	}
-
-	broker := &broker{
+func NewBroker(logger logr.Logger, db otf.DB) *broker {
+	return &broker{
 		Logger:  logger.WithValues("component", "pubsub"),
 		pid:     uuid.NewString(),
-		pool:    pool,
+		pool:    db,
 		channel: defaultChannel,
 		tables:  make(map[string]Getter),
 		subs:    make(map[string]chan otf.Event),
 		metrics: make(map[string]prometheus.Gauge),
 	}
-
-	return broker, nil
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to

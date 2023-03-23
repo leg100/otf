@@ -42,7 +42,8 @@ var (
 // DB provides access to generated SQL queries as well as wrappers for
 // performing queries within a transaction or a lock.
 type DB interface {
-	Pool() (*pgxpool.Pool, error)
+	Acquire(ctx context.Context) (*pgxpool.Conn, error)
+
 	// Tx provides a transaction within which to operate on the store.
 	Tx(ctx context.Context, tx func(DB) error) error
 	Close()

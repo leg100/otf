@@ -95,12 +95,8 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, []otf.Handlers, 
 	}
 	logger.Info("started cache", "max_size", cfg.CacheConfig.Size, "ttl", cfg.CacheConfig.TTL)
 
-	broker, err := pubsub.NewBroker(logger, pubsub.BrokerConfig{
-		PoolDB: db,
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("setting up pub sub broker: %w", err)
-	}
+	broker := pubsub.NewBroker(logger, db)
+
 	// Setup url signer
 	signer := otf.NewSigner(cfg.Secret)
 

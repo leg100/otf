@@ -2,12 +2,9 @@ package sql
 
 import (
 	"context"
-	"errors"
 	"net/url"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -16,25 +13,17 @@ import (
 const defaultMaxConnections = "20" // max conns avail in a pgx pool
 
 type (
-	// DB provides access to the postgres db
+	// DB provides access to the postgres db as well as queries generated from
+	// SQL
 	DB struct {
-		Conn
-		pggen.Querier
+		*pgxpool.Pool // db connection pool
+		pggen.Querier // generated queries
 	}
 
 	// Options for constructing a DB
 	Options struct {
 		Logger     logr.Logger
 		ConnString string
-	}
-
-	// Conn is a postgres connection, typically *pgx.Pool or *pgx.Tx
-	Conn interface {
-		Begin(ctx context.Context) (pgx.Tx, error)
-		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
-		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
 )
 
@@ -48,7 +37,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		return nil, err
 	}
 
-	conn, err := pgxpool.Connect(ctx, connString)
+	pool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
 		return nil, err
 	}
@@ -59,42 +48,15 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 
 	db := &DB{
-		Conn:    conn,
-		Querier: pggen.NewQuerier(conn),
+		Pool:    pool,
+		Querier: pggen.NewQuerier(pool),
 	}
 
 	return db, nil
 }
 
-func (db *DB) Pool() (*pgxpool.Pool, error) {
-	pool, ok := db.Conn.(*pgxpool.Pool)
-	if !ok {
-		return nil, errors.New("database connection is not a connection pool")
-	}
-	return pool, nil
-}
-
-// Close closes the DB's connections. If the DB has wrapped a transaction then
-// this method has no effect.
-func (db *DB) Close() {
-	switch c := db.Conn.(type) {
-	case *pgxpool.Conn:
-		c.Conn().Close(context.Background())
-	case *pgx.Conn:
-		c.Close(context.Background())
-	case *pgxpool.Pool:
-		c.Close()
-	default:
-		// *pgx.Tx etc
-	}
-}
-
 func (db *DB) WaitAndLock(ctx context.Context, id int64) (otf.DatabaseLock, error) {
-	pool, ok := db.Conn.(*pgxpool.Pool)
-	if !ok {
-		return nil, errors.New("db connection must be a pool")
-	}
-	conn, err := pool.Acquire(ctx)
+	conn, err := db.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -114,18 +76,10 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 	}
 	defer tx.Rollback(ctx)
 
-	if err := callback(db.copy(tx)); err != nil {
+	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx)}); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
-}
-
-// copy makes a copy of the DB object but with a new connection.
-func (db *DB) copy(conn Conn) *DB {
-	return &DB{
-		Conn:    conn,
-		Querier: pggen.NewQuerier(conn),
-	}
 }
 
 func setDefaultMaxConnections(connString string) (string, error) {

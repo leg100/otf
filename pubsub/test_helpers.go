@@ -7,15 +7,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgconn"
 	"github.com/leg100/otf"
-	"github.com/stretchr/testify/require"
 )
 
 func NewTestBroker(t *testing.T, db otf.DB) Broker {
-	broker, err := NewBroker(logr.Discard(), BrokerConfig{
-		PoolDB: db,
-	})
-	require.NoError(t, err)
-	return broker
+	return NewBroker(logr.Discard(), db)
 }
 
 type fakePool struct {
