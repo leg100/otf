@@ -29,8 +29,8 @@ func TestUser(t *testing.T) {
 		session1 := svc.createSession(t, ctx, user, nil)
 		_ = svc.createSession(t, ctx, user, nil)
 
-		token1 := svc.createToken(t, ctx, user, nil)
-		_ = svc.createToken(t, ctx, user, nil)
+		token1 := svc.createToken(t, ctx, user)
+		_ = svc.createToken(t, ctx, user)
 
 		tests := []struct {
 			name string

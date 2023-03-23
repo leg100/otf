@@ -226,7 +226,7 @@ func (s *testServices) createSession(t *testing.T, ctx context.Context, user *au
 	return rs
 }
 
-func (s *testServices) createToken(t *testing.T, ctx context.Context, user *auth.User, expiry *time.Time) *auth.Token {
+func (s *testServices) createToken(t *testing.T, ctx context.Context, user *auth.User) *auth.Token {
 	t.Helper()
 
 	// If user is provided then add it to context. Otherwise the context is

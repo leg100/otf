@@ -2,16 +2,7 @@ package auth
 
 import (
 	"context"
-	"time"
 )
-
-type NewTestSessionOption func(*Session)
-
-func OverrideTestRegistrySessionExpiry(expiry time.Time) NewTestSessionOption {
-	return func(session *Session) {
-		session.expiry = expiry
-	}
-}
 
 type fakeService struct {
 	sessions   []*Session

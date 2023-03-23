@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,10 +22,25 @@ func TestToken(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("list", func(t *testing.T) {
+		svc := setup(t, "")
+		user := svc.createUser(t, ctx)
+
+		_ = svc.createToken(t, ctx, user)
+		_ = svc.createToken(t, ctx, user)
+		_ = svc.createToken(t, ctx, user)
+
+		ctx := otf.AddSubjectToContext(ctx, user)
+		got, err := svc.ListTokens(ctx)
+		require.NoError(t, err)
+
+		assert.Equal(t, 3, len(got))
+	})
+
 	t.Run("delete", func(t *testing.T) {
 		svc := setup(t, "")
 		user := svc.createUser(t, ctx)
-		token := svc.createToken(t, ctx, user, nil)
+		token := svc.createToken(t, ctx, user)
 
 		ctx := otf.AddSubjectToContext(ctx, user)
 		err := svc.DeleteToken(ctx, token.ID)
