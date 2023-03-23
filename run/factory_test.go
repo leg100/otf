@@ -71,8 +71,8 @@ func TestFactory(t *testing.T) {
 
 func testFactory(ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
 	return &factory{
-		workspace: &fakeFactoryWorkspaceService{ws: ws},
-		config:    &fakeFactoryConfigurationVersionService{cv: cv},
+		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
+		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
 	}
 }
 

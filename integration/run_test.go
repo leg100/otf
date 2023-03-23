@@ -6,8 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,24 +17,19 @@ func TestRun(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, "")
-		ws := svc.createWorkspace(t, ctx, nil)
-		cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
+		cv := svc.createConfigurationVersion(t, ctx, nil)
 
-		run := NewRun(cv, ws, RunCreateOptions{})
-		err := db.CreateRun(ctx, run)
+		_, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
 		require.NoError(t, err)
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name)
-		cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
+		svc := setup(t, "")
+		run := svc.createRun(t, ctx, nil, nil)
 
-		run := CreateTestRun(t, db, ws, cv, RunCreateOptions{})
-		got, err := db.UpdateStatus(ctx, run.ID, func(run *Run) error {
-			return run.EnqueuePlan()
-		})
+		got, err := svc.EnqueuePlan(ctx, run.ID)
 		require.NoError(t, err)
+
 		assert.Equal(t, otf.RunPlanQueued, got.Status)
 		timestamp, err := got.StatusTimestamp(otf.RunPlanQueued)
 		assert.NoError(t, err)
@@ -43,15 +37,12 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("cancel run", func(t *testing.T) {
-		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name)
-		cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
-		run := CreateTestRun(t, db, ws, cv, RunCreateOptions{})
-		got, err := db.UpdateStatus(ctx, run.ID, func(run *Run) error {
-			_, err := run.Cancel()
-			return err
-		})
+		svc := setup(t, "")
+		run := svc.createRun(t, ctx, nil, nil)
+
+		got, err := svc.Cancel(ctx, run.ID)
 		require.NoError(t, err)
+
 		assert.Equal(t, otf.RunCanceled, got.Status)
 		canceled, err := got.StatusTimestamp(otf.RunCanceled)
 		assert.NoError(t, err)
@@ -62,43 +53,40 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name)
-		cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
+		svc := setup(t, "")
+		want := svc.createRun(t, ctx, nil, nil)
 
-		want := CreateTestRun(t, db, ws, cv, RunCreateOptions{})
-
-		got, err := db.GetRun(ctx, want.ID)
+		got, err := svc.GetRun(ctx, want.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, want.ForceCancelAvailableAt, got.ForceCancelAvailableAt)
 		assert.Equal(t, want, got)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		org1 := organization.CreateTestOrganization(t, db)
-		org2 := organization.CreateTestOrganization(t, db)
-		ws1 := workspace.CreateTestWorkspace(t, db, org1.Name)
-		ws2 := workspace.CreateTestWorkspace(t, db, org2.Name)
-		cv1 := configversion.CreateTestConfigurationVersion(t, db, ws1, configversion.ConfigurationVersionCreateOptions{})
-		cv2 := configversion.CreateTestConfigurationVersion(t, db, ws1, configversion.ConfigurationVersionCreateOptions{
+		svc := setup(t, "")
+
+		ws1 := svc.createWorkspace(t, ctx, nil)
+		ws2 := svc.createWorkspace(t, ctx, nil)
+		cv1 := svc.createConfigurationVersion(t, ctx, ws1)
+		cv2, err := svc.CreateConfigurationVersion(ctx, ws2.ID, configversion.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(true),
 		})
+		require.NoError(t, err)
 
-		run1 := CreateTestRun(t, db, ws1, cv1, RunCreateOptions{})
-		run2 := CreateTestRun(t, db, ws1, cv1, RunCreateOptions{})
-		run3 := CreateTestRun(t, db, ws2, cv2, RunCreateOptions{})
-		run4 := CreateTestRun(t, db, ws2, cv2, RunCreateOptions{})
+		run1 := svc.createRun(t, ctx, ws1, cv1)
+		run2 := svc.createRun(t, ctx, ws1, cv1)
+		run3 := svc.createRun(t, ctx, ws2, cv2)
+		run4 := svc.createRun(t, ctx, ws2, cv2)
 
 		tests := []struct {
 			name string
-			opts RunListOptions
-			want func(*testing.T, *RunList)
+			opts run.RunListOptions
+			want func(*testing.T, *run.RunList)
 		}{
 			{
 				name: "unfiltered",
-				opts: RunListOptions{},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{},
+				want: func(t *testing.T, l *run.RunList) {
 					// may match runs in the db belonging to organizations outside
 					// of this test
 					assert.GreaterOrEqual(t, len(l.Items), 4)
@@ -110,8 +98,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by organization name",
-				opts: RunListOptions{Organization: otf.String(org1.Name)},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{Organization: otf.String(ws1.Organization)},
+				want: func(t *testing.T, l *run.RunList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -119,8 +107,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by workspace id",
-				opts: RunListOptions{WorkspaceID: otf.String(ws1.ID)},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
+				want: func(t *testing.T, l *run.RunList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -128,8 +116,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by workspace name and organization",
-				opts: RunListOptions{WorkspaceName: otf.String(ws1.Name), Organization: otf.String(org1.Name)},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{WorkspaceName: otf.String(ws1.Name), Organization: otf.String(ws1.Organization)},
+				want: func(t *testing.T, l *run.RunList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -137,8 +125,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by pending status",
-				opts: RunListOptions{Organization: otf.String(org1.Name), Statuses: []otf.RunStatus{otf.RunPending}},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{Organization: otf.String(ws1.Organization), Statuses: []otf.RunStatus{otf.RunPending}},
+				want: func(t *testing.T, l *run.RunList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -146,15 +134,15 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "by statuses - no match",
-				opts: RunListOptions{Organization: otf.String(org1.Name), Statuses: []otf.RunStatus{otf.RunPlanned}},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{Organization: otf.String(ws1.Organization), Statuses: []otf.RunStatus{otf.RunPlanned}},
+				want: func(t *testing.T, l *run.RunList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter out speculative runs in org1",
-				opts: RunListOptions{Organization: otf.String(org1.Name), Speculative: otf.Bool(false)},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{Organization: otf.String(ws1.Organization), Speculative: otf.Bool(false)},
+				want: func(t *testing.T, l *run.RunList) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
 					assert.Equal(t, 2, l.TotalCount())
@@ -162,8 +150,8 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org2",
-				opts: RunListOptions{Organization: otf.String(org2.Name), Speculative: otf.Bool(false)},
-				want: func(t *testing.T, l *RunList) {
+				opts: run.RunListOptions{Organization: otf.String(ws2.Organization), Speculative: otf.Bool(false)},
+				want: func(t *testing.T, l *run.RunList) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))
 					assert.Equal(t, 0, l.TotalCount())
@@ -172,33 +160,11 @@ func TestRun(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := db.ListRuns(ctx, tt.opts)
+				got, err := svc.ListRuns(ctx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, got)
 			})
 		}
-	})
-
-	t.Run("create plan report", func(t *testing.T) {
-		org := organization.CreateTestOrganization(t, db)
-		ws := workspace.CreateTestWorkspace(t, db, org.Name)
-		cv := configversion.CreateTestConfigurationVersion(t, db, ws, configversion.ConfigurationVersionCreateOptions{})
-		run := CreateTestRun(t, db, ws, cv, RunCreateOptions{})
-
-		report := ResourceReport{
-			Additions:    5,
-			Changes:      2,
-			Destructions: 99,
-		}
-
-		err := db.CreatePlanReport(ctx, run.ID, report)
-		require.NoError(t, err)
-
-		run, err = db.GetRun(ctx, run.ID)
-		require.NoError(t, err)
-
-		assert.NotNil(t, run.Plan.ResourceReport)
-		assert.Equal(t, &report, run.Plan.ResourceReport)
 	})
 }

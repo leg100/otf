@@ -72,12 +72,13 @@ func TestConfigurationVersion(t *testing.T) {
 			name        string
 			workspaceID string
 			opts        configversion.ConfigurationVersionListOptions
-			want        func(*testing.T, *configversion.ConfigurationVersionList)
+			want        func(*testing.T, *configversion.ConfigurationVersionList, error)
 		}{
 			{
 				name:        "no pagination",
 				workspaceID: ws.ID,
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+					require.NoError(t, err)
 					assert.Equal(t, 2, len(got.Items))
 					assert.Equal(t, 2, got.TotalCount())
 					assert.Contains(t, got.Items, cv1)
@@ -88,7 +89,8 @@ func TestConfigurationVersion(t *testing.T) {
 				name:        "pagination",
 				workspaceID: ws.ID,
 				opts:        configversion.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
 					assert.Equal(t, 2, got.TotalCount())
 				},
@@ -97,7 +99,8 @@ func TestConfigurationVersion(t *testing.T) {
 				name:        "stray pagination",
 				workspaceID: ws.ID,
 				opts:        configversion.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+					require.NoError(t, err)
 					// Zero items but total count should ignore pagination
 					assert.Equal(t, 0, len(got.Items))
 					assert.Equal(t, 2, got.TotalCount())
@@ -106,9 +109,8 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "query non-existent workspace",
 				workspaceID: "ws-non-existent",
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList) {
-					assert.Empty(t, got.Items)
-					assert.Equal(t, 0, got.TotalCount())
+				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+					assert.Equal(t, otf.ErrResourceNotFound, err)
 				},
 			},
 		}
@@ -116,9 +118,7 @@ func TestConfigurationVersion(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				results, err := svc.ListConfigurationVersions(ctx, tt.workspaceID, tt.opts)
-				require.NoError(t, err)
-
-				tt.want(t, results)
+				tt.want(t, results, err)
 			})
 		}
 	})

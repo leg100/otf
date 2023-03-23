@@ -37,7 +37,6 @@ type (
 
 		// Download retrieves the config tarball for the given config version ID.
 		download(ctx context.Context, id string) ([]byte, error)
-
 	}
 
 	service struct {
@@ -128,9 +127,10 @@ func (s *service) ListConfigurationVersions(ctx context.Context, workspaceID str
 
 	cvl, err := s.db.ListConfigurationVersions(ctx, workspaceID, ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
-		s.Error(err, "listing configuration versions", "subject", subject)
+		s.Error(err, "listing configuration versions")
 		return nil, err
 	}
+
 	s.V(2).Info("listed configuration versions", "subject", subject)
 	return cvl, nil
 }

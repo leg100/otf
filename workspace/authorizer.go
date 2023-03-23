@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -23,7 +22,7 @@ func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspac
 	}
 	policy, err := a.db.GetWorkspacePolicy(ctx, workspaceID)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving workspace policy: %w", err)
+		return nil, otf.ErrResourceNotFound
 	}
 	if subj.CanAccessWorkspace(action, policy) {
 		return subj, nil

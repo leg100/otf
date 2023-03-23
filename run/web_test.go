@@ -148,6 +148,8 @@ func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*R
 	}, nil
 }
 
+func (f *fakeWebServices) Cancel(ctx context.Context, runID string) (*Run, error) { return nil, nil }
+
 func (f *fakeWebServices) get(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil
 }
@@ -156,5 +158,3 @@ func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, opts
 	f.runs[0].Speculative = *opts.Speculative
 	return f.runs[0], nil
 }
-
-func (f *fakeWebServices) cancel(ctx context.Context, runID string) error { return nil }

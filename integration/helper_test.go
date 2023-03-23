@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/services"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/vcsprovider"
@@ -128,4 +129,21 @@ func (s *testServices) createConfigurationVersion(t *testing.T, ctx context.Cont
 	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
 	require.NoError(t, err)
 	return cv
+}
+
+func (s *testServices) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+	if cv == nil {
+		cv = s.createConfigurationVersion(t, ctx, ws)
+	}
+
+	run, err := s.CreateRun(ctx, ws.ID, run.RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID),
+	})
+	require.NoError(t, err)
+	return run
 }

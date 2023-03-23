@@ -217,7 +217,8 @@ func (s *api) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.svc.cancel(r.Context(), id); err == ErrRunCancelNotAllowed {
+	_, err = s.svc.Cancel(r.Context(), id)
+	if err == ErrRunCancelNotAllowed {
 		jsonapi.Error(w, http.StatusConflict, err)
 		return
 	} else if err != nil {

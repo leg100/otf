@@ -49,13 +49,14 @@ type (
 		// call Watch(), and then defer a Close(), which is more readable IMO.
 		Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error)
 
+		// Cancel a run. If a run is in progress then a cancelation signal will be
+		// sent out.
+		Cancel(ctx context.Context, runID string) (*Run, error)
+
 		get(ctx context.Context, runID string) (*Run, error)
 		// apply enqueues an apply for the run.
 		apply(ctx context.Context, runID string) error
 		discard(ctx context.Context, runID string) error
-		// cancel a run. If a run is in progress then a cancelation signal will be
-		// sent out.
-		cancel(ctx context.Context, runID string) error
 		// forceCancel forcefully cancels a run.
 		forceCancel(ctx context.Context, runID string) error
 
@@ -134,8 +135,7 @@ func NewService(opts Options) *service {
 		Logger:   opts.Logger,
 		Renderer: opts.Renderer,
 		svc:      &svc,
-		starter: &starter{
-		},
+		starter:  &starter{},
 	}
 
 	// Must register table name and service with pubsub broker so that it knows
@@ -240,7 +240,6 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return run, nil
-
 }
 
 func (s *service) Delete(ctx context.Context, runID string) error {
@@ -418,12 +417,12 @@ func (s *service) discard(ctx context.Context, runID string) error {
 	return err
 }
 
-// cancel a run. If a run is in progress then a cancelation signal will be
+// Cancel a run. If a run is in progress then a cancelation signal will be
 // sent out.
-func (s *service) cancel(ctx context.Context, runID string) error {
+func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var enqueue bool
@@ -433,7 +432,7 @@ func (s *service) cancel(ctx context.Context, runID string) error {
 	})
 	if err != nil {
 		s.Error(err, "canceling run", "id", runID, "subject", subject)
-		return err
+		return nil, err
 	}
 	s.V(0).Info("canceled run", "id", runID, "subject", subject)
 	if enqueue {
@@ -441,7 +440,7 @@ func (s *service) cancel(ctx context.Context, runID string) error {
 		s.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
 	}
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
-	return nil
+	return run, nil
 }
 
 // ForceCancelRun forcefully cancels a run.
