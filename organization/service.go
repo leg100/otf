@@ -24,7 +24,6 @@ type (
 		DeleteOrganization(ctx context.Context, name string) error
 
 		getEntitlements(ctx context.Context, organization string) (Entitlements, error)
-
 	}
 
 	service struct {

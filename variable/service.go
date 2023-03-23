@@ -21,7 +21,6 @@ type (
 		get(ctx context.Context, variableID string) (*Variable, error)
 		update(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
 		delete(ctx context.Context, variableID string) (*Variable, error)
-
 	}
 
 	service struct {

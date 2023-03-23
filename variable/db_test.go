@@ -32,7 +32,6 @@ func TestDB_Create(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-
 		org := organization.CreateTestOrganization(t, db)
 		ws := workspace.CreateTestWorkspace(t, db, org.Name)
 		country := createTestVariable(t, db, ws, CreateVariableOptions{

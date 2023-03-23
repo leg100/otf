@@ -40,7 +40,6 @@ type (
 		downloadVersion(ctx context.Context, versionID string) ([]byte, error)
 
 		updateModuleStatus(ctx context.Context, module *Module, status ModuleStatus) (*Module, error)
-
 	}
 
 	service struct {
@@ -119,7 +118,6 @@ func (s *service) PublishModule(ctx context.Context, opts PublishOptions) (*Modu
 }
 
 func (s *service) publishModule(ctx context.Context, organization string, opts PublishOptions) (*Module, error) {
-
 	name, provider, err := opts.Repo.Split()
 	if err != nil {
 		return nil, err

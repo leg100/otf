@@ -15,7 +15,7 @@ type web struct {
 	otf.Renderer
 	workspace.Service
 
-	svc               Service
+	svc Service
 }
 
 func (h *web) addHandlers(r *mux.Router) {

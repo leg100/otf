@@ -247,8 +247,8 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		VCSProviderID string     `schema:"vcs_provider_id,required"`
-		Repo          Repo `schema:"identifier,required"`
+		VCSProviderID string `schema:"vcs_provider_id,required"`
+		Repo          Repo   `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)

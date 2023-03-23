@@ -12,7 +12,7 @@ import (
 )
 
 type api struct {
-	svc             Service
+	svc Service
 }
 
 // Implements TFC workspace variables API:

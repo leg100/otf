@@ -36,7 +36,6 @@ type (
 		downloadState(ctx context.Context, versionID string) ([]byte, error)
 		listVersions(ctx context.Context, opts stateVersionListOptions) (*versionList, error)
 		getOutput(ctx context.Context, outputID string) (*output, error)
-
 	}
 
 	// service provides access to state and state versions

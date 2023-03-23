@@ -52,5 +52,4 @@ func TestDB(t *testing.T) {
 		_, err = db.deleteHook(ctx, hook.id)
 		require.NoError(t, err)
 	})
-
 }

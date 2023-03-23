@@ -12,7 +12,6 @@ func TestTokenDB(t *testing.T) {
 	db := newTestDB(t)
 
 	t.Run("create", func(t *testing.T) {
-
 		user := createTestUser(t, db)
 		token, err := NewToken(user.ID, "testing")
 		require.NoError(t, err)

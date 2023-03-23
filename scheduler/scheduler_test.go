@@ -52,7 +52,6 @@ func TestScheduler(t *testing.T) {
 		assert.Equal(t, otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, sync, <-got)
 		assert.NotContains(t, scheduler.queues, ws)
-
 	})
 
 	t.Run("relay run from db", func(t *testing.T) {
@@ -66,7 +65,6 @@ func TestScheduler(t *testing.T) {
 
 		assert.Equal(t, otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, otf.Event{Type: otf.EventRunStatusUpdate, Payload: r}, <-got)
-
 	})
 
 	t.Run("relay run from event", func(t *testing.T) {
@@ -80,7 +78,6 @@ func TestScheduler(t *testing.T) {
 
 		assert.Equal(t, otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, event, <-got)
-
 	})
 
 	t.Run("relay runs in reverse order", func(t *testing.T) {
