@@ -39,12 +39,12 @@ var (
 	ReSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 )
 
-// DB provides access to generated SQL queries as well as wrappers for
-// performing queries within a transaction or a lock.
+// DB is the otf database. Services may wrap this and implement higher-level
+// queries.
 type DB interface {
-	// Tx provides a transaction within which to operate on the store.
+	// Tx provides a callback in which queries are run within a transaction.
 	Tx(ctx context.Context, tx func(DB) error) error
-	// Acquire dedicated connection from pool.
+	// Acquire dedicated connection from connection pool.
 	Acquire(ctx context.Context) (*pgxpool.Conn, error)
 	// Execute arbitrary SQL
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
@@ -53,8 +53,11 @@ type DB interface {
 	// WaitAndLock obtains a DB with a session-level advisory lock.
 	WaitAndLock(ctx context.Context, id int64) (DatabaseLock, error)
 
-	pggen.Querier // generated SQL queries
+	pggen.Querier // queries generated from SQL
 	Close()       // Close all connections in pool
+
+	// additional queries that wrap the generated queries
+	GetLogs(ctx context.Context, runID string, phase PhaseType) ([]byte, error)
 }
 
 type DatabaseLock interface {

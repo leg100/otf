@@ -37,10 +37,7 @@ func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chunk, err := a.svc.GetChunk(r.Context(), opts)
-	// ignore not found errors because terraform-cli may call this endpoint
-	// before any logs have been written and it'll exit with an error if a not
-	// found error is received.
-	if err != nil && err != otf.ErrResourceNotFound {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}

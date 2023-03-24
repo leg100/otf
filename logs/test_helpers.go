@@ -5,11 +5,31 @@ import (
 	"errors"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/rbac"
 )
 
-type fakeCache struct {
-	cache map[string][]byte
-}
+type (
+	fakeCache struct {
+		cache map[string][]byte
+	}
+
+	fakeDB struct {
+		data []byte
+		db
+	}
+
+	fakeTailProxy struct {
+		// fake chunk to return
+		chunk otf.Chunk
+		chunkdb
+	}
+
+	fakeAuthorizer struct{}
+
+	fakePubSubTailService struct {
+		stream chan otf.Event
+	}
+)
 
 func newFakeCache(keyvalues ...string) *fakeCache {
 	cache := make(map[string][]byte, len(keyvalues)/2)
@@ -32,38 +52,26 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	return val, nil
 }
 
-type fakeBackend struct {
-	store map[string][]byte
+func (s *fakeDB) GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error) {
+	return s.data, nil
 }
 
-func newFakeBackend(keyvalues ...string) *fakeBackend {
-	db := make(map[string][]byte, len(keyvalues)/2)
-	for i := 0; i < len(keyvalues)/2; i += 2 {
-		db[keyvalues[i]] = []byte(keyvalues[i+1])
-	}
-	return &fakeBackend{db}
+func (f *fakeTailProxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	return f.chunk, nil
 }
 
-func (s *fakeBackend) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	key := cacheKey(opts.RunID, opts.Phase)
-	data, ok := s.store[key]
-	if !ok {
-		return otf.Chunk{}, otf.ErrResourceNotFound
-	}
-	return otf.Chunk{Data: data}, nil
+func newFakePubSubService() *fakePubSubTailService {
+	return &fakePubSubTailService{stream: make(chan otf.Event)}
 }
 
-func (s *fakeBackend) put(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
-	key := cacheKey(chunk.RunID, chunk.Phase)
+func (f *fakePubSubTailService) Subscribe(context.Context, string) (<-chan otf.Event, error) {
+	return f.stream, nil
+}
 
-	if existing, ok := s.store[key]; ok {
-		s.store[key] = append(existing, chunk.Data...)
-	} else {
-		s.store[key] = chunk.Data
-	}
+func (f *fakePubSubTailService) Publish(event otf.Event) {
+	f.stream <- event
+}
 
-	return otf.PersistedChunk{
-		ChunkID: 123,
-		Chunk:   chunk,
-	}, nil
+func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (otf.Subject, error) {
+	return &otf.Superuser{}, nil
 }

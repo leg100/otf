@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"reflect"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -27,7 +27,7 @@ const (
 type (
 	Broker interface {
 		otf.PubSubService
-		Register(table string, getter Getter)
+		Register(t reflect.Type, getter Getter)
 		Start(context.Context) error
 	}
 
@@ -38,14 +38,14 @@ type (
 		channel string                      // postgres notification channel name
 		pool    pool                        // pool from which to acquire a dedicated connection to postgres
 		pid     string                      // each pubsub maintains a unique identifier to distriguish messages it
-		tables  map[string]Getter           // map of postgres table names to getters.
+		tables  map[string]Getter           // map of event payload type to a fn that can retrieve the payload
 		subs    map[string]chan otf.Event   // subscriptions
 		metrics map[string]prometheus.Gauge // metric for each subscription
 
 		mu sync.Mutex // sync access to maps
 	}
 
-	// Getter retrieves an OTF resource using its ID.
+	// Getter retrieves an event payload using its ID.
 	Getter interface {
 		GetByID(context.Context, string) (any, error)
 	}
@@ -55,16 +55,12 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	}
 
-	// message is the schema of the payload for use in the postgres notification channel.
-	message struct {
-		// Table is the postgres table on which the event occured
-		Table string `json:"relation"`
-		// Action is the type of change made to the relation
-		Action string `json:"action"`
-		// ID is the primary key of the changed row
-		ID string `json:"id"`
-		// PID is the process id that sent this event
-		PID string `json:"pid"`
+	// pgevent is an event sent via a postgres channel
+	pgevent struct {
+		PayloadType string        `json:"payload_type"` // event payload type
+		Event       otf.EventType `json:"event"`        // event type
+		ID          string        `json:"id"`           // event payload ID
+		PID         string        `json:"pid"`          // process ID that sent this event
 	}
 )
 
@@ -127,7 +123,7 @@ func (b *broker) Publish(event otf.Event) {
 	}
 
 	if err := b.remotePublish(event); err != nil {
-		b.Error(err, "publishing message via postgres", "event", event.Type)
+		b.Error(err, "publishing event via postgres", "event", event.Type)
 	}
 }
 
@@ -175,11 +171,11 @@ func (b *broker) Subscribe(ctx context.Context, name string) (<-chan otf.Event, 
 }
 
 // Register a means of reassembling a postgres message back into an otf event
-func (b *broker) Register(table string, getter Getter) {
+func (b *broker) Register(t reflect.Type, getter Getter) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.tables[table] = getter
+	b.tables[t.String()] = getter
 }
 
 // localPublish publishes an event to subscribers on the local node
@@ -201,27 +197,22 @@ func (b *broker) localPublish(event otf.Event) {
 // remotePublish publishes an event to postgres for relaying onto to remote
 // subscribers
 func (b *broker) remotePublish(event otf.Event) error {
-	// marshal an otf event into a JSON-encoded postgres message
+	// marshal an otf event into a JSON-encoded postgres event
 	id, hasID := otf.GetID(event.Payload)
 	if !hasID {
 		return fmt.Errorf("event payload does not have an ID field")
 	}
-	parts := strings.SplitN(string(event.Type), "_", 2)
-	if len(parts) < 2 {
-		return fmt.Errorf("event has an invalid type format: %s", event.Type)
-	}
-	msg, err := json.Marshal(&message{
-		Table:  parts[0],
-		Action: parts[1],
-		ID:     id,
-		PID:    b.pid,
+	encoded, err := json.Marshal(&pgevent{
+		PayloadType: reflect.TypeOf(event.Payload).String(),
+		Event:       event.Type,
+		ID:          id,
+		PID:         b.pid,
 	})
 	if err != nil {
 		return err
 	}
 	sql := fmt.Sprintf("select pg_notify('%s', $1)", b.channel)
-	_, err = b.pool.Exec(context.Background(), sql, msg)
-	if err != nil {
+	if _, err = b.pool.Exec(context.Background(), sql, encoded); err != nil {
 		return err
 	}
 	return nil
@@ -229,27 +220,27 @@ func (b *broker) remotePublish(event otf.Event) error {
 
 // receive handles notifications from postgres
 func (b *broker) receive(ctx context.Context, notification *pgconn.Notification) error {
-	var msg message
-	if err := json.Unmarshal([]byte(notification.Payload), &msg); err != nil {
+	var event pgevent
+	if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
 		return err
 	}
 
 	// skip notifications that this process sent.
-	if msg.PID == b.pid {
+	if event.PID == b.pid {
 		return nil
 	}
 
-	getter, ok := b.tables[msg.Table]
+	getter, ok := b.tables[event.PayloadType]
 	if !ok {
-		return fmt.Errorf("unregistered table: %s", msg.Table)
+		return fmt.Errorf("unregistered table: %s", event.PayloadType)
 	}
-	payload, err := getter.GetByID(ctx, msg.ID)
+	payload, err := getter.GetByID(ctx, event.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving resource: %w", err)
 	}
 
 	b.localPublish(otf.Event{
-		Type:    otf.EventType(fmt.Sprintf("%s_%s", msg.Table, msg.Action)),
+		Type:    event.Event,
 		Payload: payload,
 	})
 

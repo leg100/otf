@@ -40,13 +40,13 @@ func TestBroker_Publish(t *testing.T) {
 		metrics: map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 
+	type payload struct {
+		ID string
+	}
+
 	event := otf.Event{
-		Type: otf.EventRunStatusUpdate,
-		Payload: struct {
-			ID string
-		}{
-			ID: "resource-123",
-		},
+		Type:    otf.EventType("payload_update"),
+		Payload: &payload{ID: "payload-123"},
 	}
 	broker.Publish(event)
 
@@ -55,17 +55,17 @@ func TestBroker_Publish(t *testing.T) {
 
 	// remotely published message
 	if assert.Equal(t, 1, len(pool.gotExecArgs)) {
-		var msg message
+		var msg pgevent
 		err := json.Unmarshal(pool.gotExecArgs[0].([]byte), &msg)
 		require.NoError(t, err)
-		want := message{Table: "run", Action: "status_update", ID: "resource-123"}
+		want := pgevent{PayloadType: "*pubsub.payload", Event: "payload_update", ID: "payload-123"}
 		assert.Equal(t, want, msg)
 	}
 }
 
 func TestPubSub_receive(t *testing.T) {
 	notification := pgconn.Notification{
-		Payload: "{\"relation\":\"run\",\"action\":\"status_update\",\"id\":\"run-123\",\"pid\":\"process-1\"}",
+		Payload: "{\"payload_type\":\"run\",\"event\":\"run_status_update\",\"id\":\"run-123\",\"pid\":\"process-1\"}",
 	}
 	resource := struct {
 		ID string

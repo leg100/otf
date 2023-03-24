@@ -3,30 +3,53 @@ package logs
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
-// proxy is a caching proxy for log chunks
-type proxy struct {
-	cache otf.Cache
-	db    db
+type (
+	// proxy is a caching proxy for log chunks
+	proxy struct {
+		cache otf.Cache
+		db    db
 
-	otf.PubSubService
-	logr.Logger
+		otf.PubSubService
+		logr.Logger
+	}
+
+	db interface {
+		GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error)
+		put(ctx context.Context, chunk otf.Chunk) (otf.Chunk, error)
+	}
+)
+
+func newProxy(opts Options) *proxy {
+	db := &pgdb{opts.DB}
+	p := &proxy{
+		Logger:        opts.Logger,
+		PubSubService: opts.Broker,
+		cache:         opts.Cache,
+		db:            db,
+	}
+
+	// Register with broker so that it can relay log chunks
+	opts.Register(reflect.TypeOf(otf.Chunk{}), db)
+
+	return p
 }
 
 // Start chunk proxy daemon, which keeps the cache up-to-date with logs
 // published on other nodes in the cluster
-func (c *proxy) Start(ctx context.Context) error {
+func (p *proxy) Start(ctx context.Context) error {
 	ch := make(chan otf.Chunk)
 	defer close(ch)
 
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
 	// it may have missed updates, potentially rendering the cache stale.
-	sub, err := c.Subscribe(ctx, "chunk-proxy")
+	sub, err := p.Subscribe(ctx, "chunk-proxy")
 	if err != nil {
 		return err
 	}
@@ -37,13 +60,13 @@ func (c *proxy) Start(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			chunk, ok := event.Payload.(otf.PersistedChunk)
+			chunk, ok := event.Payload.(otf.Chunk)
 			if !ok {
 				// skip non-log events
 				continue
 			}
-			if err := c.cacheChunk(ctx, chunk.Chunk); err != nil {
-				c.Error(err, "caching log chunk")
+			if err := p.cacheChunk(ctx, chunk); err != nil {
+				p.Error(err, "caching log chunk")
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -53,63 +76,60 @@ func (c *proxy) Start(ctx context.Context) error {
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (c *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (p *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	key := cacheKey(opts.RunID, opts.Phase)
 
-	// Try the cache first
-	if data, err := c.cache.Get(key); err == nil {
-		chunk := otf.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
-		return chunk.Cut(opts), nil
-	}
-	// Fall back to getting chunk from backend
-	chunk, err := c.db.get(ctx, opts)
+	data, err := p.cache.Get(key)
 	if err != nil {
-		return otf.Chunk{}, err
+		// fall back to retrieving from db...
+		data, err = p.db.GetLogs(ctx, opts.RunID, opts.Phase)
+		if err != nil {
+			return otf.Chunk{}, err
+		}
+		// ...and cache it
+		if err := p.cache.Set(key, data); err != nil {
+			return otf.Chunk{}, err
+		}
 	}
-	// Cache it
-	if err := c.cache.Set(key, chunk.Data); err != nil {
-		return otf.Chunk{}, err
-	}
+	chunk := otf.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
 	// Cut chunk down to requested size.
 	return chunk.Cut(opts), nil
 }
 
 // PutChunk writes a chunk of data to the backend store before caching it.
-func (c *proxy) put(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
-	// Write to backend
-	persisted, err := c.db.put(ctx, chunk)
+func (p *proxy) put(ctx context.Context, chunk otf.Chunk) error {
+	persisted, err := p.db.put(ctx, chunk)
 	if err != nil {
-		return otf.PersistedChunk{}, err
+		return err
 	}
-
-	// Then cache it
-	if err := c.cacheChunk(ctx, persisted.Chunk); err != nil {
-		return otf.PersistedChunk{}, err
+	if err := p.cacheChunk(ctx, chunk); err != nil {
+		return err
 	}
-
-	return persisted, nil
+	// publish chunk so that other otfd nodes can receive the chunk
+	p.Publish(otf.Event{
+		Type:    otf.EventLogChunk,
+		Payload: persisted,
+	})
+	return nil
 }
 
-func (c *proxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
+func (p *proxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
 	key := cacheKey(chunk.RunID, chunk.Phase)
 
 	// first chunk: don't append
 	if chunk.IsStart() {
-		return c.cache.Set(key, chunk.Data)
+		return p.cache.Set(key, chunk.Data)
 	}
 	// successive chunks: append
-	if previous, err := c.cache.Get(key); err == nil {
-		return c.cache.Set(key, append(previous, chunk.Data...))
+	if previous, err := p.cache.Get(key); err == nil {
+		return p.cache.Set(key, append(previous, chunk.Data...))
 	}
 	// no cache entry; repopulate cache from db
-	all, err := c.db.get(ctx, otf.GetChunkOptions{
-		RunID: chunk.RunID,
-		Phase: chunk.Phase,
-	})
+	logs, err := p.db.GetLogs(ctx, chunk.RunID, chunk.Phase)
 	if err != nil {
 		return err
 	}
-	return c.cache.Set(key, all.Data)
+	return p.cache.Set(key, logs)
 }
 
 // cacheKey generates a key for caching log chunks.

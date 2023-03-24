@@ -26,6 +26,16 @@ type (
 	}
 )
 
+// GetByID implements pubsub.Getter
+func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
+	r, err := db.FindOrganizationByID(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return row(r).toOrganization(), nil
+}
+
+
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              sql.String(org.ID),
@@ -107,14 +117,6 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*Organi
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, sql.String(name))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return row(r).toOrganization(), nil
-}
-
-func (db *pgdb) getByID(ctx context.Context, id string) (*Organization, error) {
-	r, err := db.FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

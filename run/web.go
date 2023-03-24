@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -20,9 +19,10 @@ import (
 type (
 	webHandlers struct {
 		logr.Logger
-		otf.LogService
 		otf.Renderer
 		WorkspaceService
+
+		logsdb
 
 		starter runStarter
 		svc     Service
@@ -30,6 +30,10 @@ type (
 
 	runStarter interface {
 		startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error)
+	}
+
+	logsdb interface {
+		GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error)
 	}
 )
 
@@ -102,21 +106,14 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get existing logs thus far received for each phase. If none are found then don't treat
-	// that as an error because it merely means no logs have yet been received.
-	planLogs, err := h.GetChunk(r.Context(), otf.GetChunkOptions{
-		RunID: run.ID,
-		Phase: otf.PlanPhase,
-	})
-	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
+	// Get existing logs thus far received for each phase.
+	planLogs, err := h.GetLogs(r.Context(), run.ID, otf.PlanPhase)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.GetChunk(r.Context(), otf.GetChunkOptions{
-		RunID: run.ID,
-		Phase: otf.ApplyPhase,
-	})
-	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
+	applyLogs, err := h.GetLogs(r.Context(), run.ID, otf.ApplyPhase)
+	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -129,8 +126,8 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}{
 		Run:       run,
 		Workspace: ws,
-		PlanLogs:  planLogs,
-		ApplyLogs: applyLogs,
+		PlanLogs:  otf.Chunk{Data: planLogs},
+		ApplyLogs: otf.Chunk{Data: applyLogs},
 	})
 }
 

@@ -54,6 +54,18 @@ func TestListRunsHandler(t *testing.T) {
 	})
 }
 
+func TestWeb_GetHandler(t *testing.T) {
+	h := newTestWebHandlers(t,
+		withWorkspace(&workspace.Workspace{ID: "ws-123"}),
+		withRuns(&Run{ID: "run-123", WorkspaceID: "ws-1"}),
+	)
+
+	r := httptest.NewRequest("GET", "/?run_id=run-123", nil)
+	w := httptest.NewRecorder()
+	h.get(w, r)
+	assert.Equal(t, 200, w.Code, "output: %s", w.Body.String())
+}
+
 func TestRuns_CancelHandler(t *testing.T) {
 	h := newTestWebHandlers(t, withRuns(&Run{ID: "run-1", WorkspaceID: "ws-1"}))
 
@@ -128,6 +140,7 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	return &webHandlers{
 		Renderer:         renderer,
 		WorkspaceService: &svc,
+		logsdb:           &svc,
 		starter:          &svc,
 		svc:              &svc,
 	}
@@ -146,6 +159,10 @@ func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*R
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
 	}, nil
+}
+
+func (f *fakeWebServices) GetLogs(context.Context, string, otf.PhaseType) ([]byte, error) {
+	return nil, nil
 }
 
 func (f *fakeWebServices) Cancel(ctx context.Context, runID string) (*Run, error) { return nil, nil }

@@ -101,47 +101,40 @@ func (q *DBQuerier) InsertLogChunkScan(results pgx.BatchResults) (int, error) {
 	return item, nil
 }
 
-const findLogChunksSQL = `SELECT
-    substring(string_agg(chunk, '') FROM ($1+1) FOR $2)
+const findLogsSQL = `SELECT
+    string_agg(chunk, '')
 FROM (
     SELECT run_id, phase, chunk
     FROM logs
-    WHERE run_id = $3
-    AND   phase  = $4
+    WHERE run_id = $1
+    AND   phase  = $2
     ORDER BY chunk_id
 ) c
 GROUP BY run_id, phase
 ;`
 
-type FindLogChunksParams struct {
-	Offset int
-	Limit  int
-	RunID  pgtype.Text
-	Phase  pgtype.Text
-}
-
-// FindLogChunks implements Querier.FindLogChunks.
-func (q *DBQuerier) FindLogChunks(ctx context.Context, params FindLogChunksParams) ([]byte, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindLogChunks")
-	row := q.conn.QueryRow(ctx, findLogChunksSQL, params.Offset, params.Limit, params.RunID, params.Phase)
+// FindLogs implements Querier.FindLogs.
+func (q *DBQuerier) FindLogs(ctx context.Context, runID pgtype.Text, phase pgtype.Text) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindLogs")
+	row := q.conn.QueryRow(ctx, findLogsSQL, runID, phase)
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query FindLogChunks: %w", err)
+		return item, fmt.Errorf("query FindLogs: %w", err)
 	}
 	return item, nil
 }
 
-// FindLogChunksBatch implements Querier.FindLogChunksBatch.
-func (q *DBQuerier) FindLogChunksBatch(batch genericBatch, params FindLogChunksParams) {
-	batch.Queue(findLogChunksSQL, params.Offset, params.Limit, params.RunID, params.Phase)
+// FindLogsBatch implements Querier.FindLogsBatch.
+func (q *DBQuerier) FindLogsBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text) {
+	batch.Queue(findLogsSQL, runID, phase)
 }
 
-// FindLogChunksScan implements Querier.FindLogChunksScan.
-func (q *DBQuerier) FindLogChunksScan(results pgx.BatchResults) ([]byte, error) {
+// FindLogsScan implements Querier.FindLogsScan.
+func (q *DBQuerier) FindLogsScan(results pgx.BatchResults) ([]byte, error) {
 	row := results.QueryRow()
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan FindLogChunksBatch row: %w", err)
+		return item, fmt.Errorf("scan FindLogsBatch row: %w", err)
 	}
 	return item, nil
 }

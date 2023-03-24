@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -103,9 +104,8 @@ func NewService(opts Options) *service {
 		VCSProviderService: opts.VCSProviderService,
 		svc:                &svc,
 	}
-	// Must register table name and service with pubsub broker so that it knows
-	// how to lookup workspaces in the DB.
-	opts.Register("workspace", &svc)
+	// Register with broker so that it can relay workspace events
+	opts.Register(reflect.TypeOf(Workspace{}), &svc)
 	return &svc
 }
 

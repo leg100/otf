@@ -3,6 +3,7 @@ package organization
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -62,9 +63,8 @@ func NewService(opts Options) *service {
 	}
 	svc.web = &web{opts.Renderer, &svc}
 
-	// Must register table name and service with pubsub broker so that it knows
-	// how to lookup organizations in the DB.
-	opts.Register("organization", &svc)
+	// Register with broker so that it can relay organization events
+	opts.Broker.Register(reflect.TypeOf(&Organization{}), svc.db)
 
 	return &svc
 }
@@ -150,11 +150,6 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 	s.V(2).Info("retrieved organization", "name", name, "id", org.ID, "subject", subject)
 
 	return org, nil
-}
-
-// GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, id string) (any, error) {
-	return s.db.getByID(ctx, id)
 }
 
 func (s *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {

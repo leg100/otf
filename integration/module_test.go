@@ -27,6 +27,31 @@ func TestModule(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("create module with connection", func(t *testing.T) {
+		svc := setup(t, "leg100/terraform-aws-stuff")
+
+		org := svc.createOrganization(t, ctx)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+		mod := svc.createModule(t, ctx, org)
+
+		mod, err := svc.PublishModule(ctx, module.PublishOptions{
+			VCSProviderID: vcsprov.ID,
+			Repo:          module.Repo("leg100/terraform-aws-stuff"),
+		})
+		require.NoError(t, err)
+
+		// webhook should be registered with github
+		require.True(t, svc.githubServer.HasWebhook())
+
+		t.Run("delete module", func(t *testing.T) {
+			_, err := svc.DeleteModule(ctx, mod.ID)
+			require.NoError(t, err)
+		})
+
+		// webhook should now have been deleted from github
+		require.False(t, svc.githubServer.HasWebhook())
+	})
+
 	t.Run("get", func(t *testing.T) {
 		svc := setup(t, "")
 		want := svc.createModule(t, ctx, nil)

@@ -379,12 +379,12 @@ func (f *fakeWebService) GetWorkspaceByName(context.Context, string, string) (*W
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) getRun(context.Context, string) (run, error) {
-	return f.run, nil
+func (f *fakeWebService) DeleteWorkspace(context.Context, string) (*Workspace, error) {
+	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) delete(context.Context, string) (*Workspace, error) {
-	return f.workspaces[0], nil
+func (f *fakeWebService) getRun(context.Context, string) (run, error) {
+	return f.run, nil
 }
 
 func (f *fakeWebService) LockWorkspace(context.Context, string, *string) (*Workspace, error) {

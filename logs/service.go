@@ -2,7 +2,6 @@ package logs
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -25,11 +24,15 @@ type (
 		otf.PubSubService // subscribe to tail log updates
 
 		run   otf.Authorizer
-		proxy db
-		db    *pgdb
+		proxy chunkdb
 
 		api *api
 		web *webHandlers
+	}
+
+	chunkdb interface {
+		get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
+		put(ctx context.Context, chunk otf.Chunk) error
 	}
 
 	Options struct {
@@ -47,13 +50,8 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:        opts.Logger,
 		PubSubService: opts.Broker,
-		proxy: &proxy{
-			Logger:        opts.Logger,
-			PubSubService: opts.Broker,
-			cache:         opts.Cache,
-			db:            newPGDB(opts.DB),
-		},
-		run: opts.RunAuthorizer,
+		proxy:         newProxy(opts),
+		run:           opts.RunAuthorizer,
 	}
 	svc.api = &api{
 		Verifier: opts.Verifier,
@@ -64,10 +62,6 @@ func NewService(opts Options) *service {
 		svc:    &svc,
 	}
 
-	// Must register table name and service with pubsub broker so that it knows
-	// how to lookup chunks in the DB and send them to us via a subscription
-	opts.Register("log", &svc)
-
 	return &svc
 }
 
@@ -76,25 +70,12 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-// GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, chunkID string) (any, error) {
-	id, err := strconv.Atoi(chunkID)
-	if err != nil {
-		return otf.PersistedChunk{}, err
-	}
-	return s.db.getByID(ctx, id)
-}
-
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
 func (s *service) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.proxy.get(ctx, opts)
-	if err == otf.ErrResourceNotFound {
-		// ignore resource not found because no log chunks may not have been
-		// written yet
-		return otf.Chunk{}, nil
-	} else if err != nil {
+	if err != nil {
 		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset, "limit", opts.Limit)
 		return otf.Chunk{}, err
 	}
@@ -109,17 +90,11 @@ func (s *service) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 		return err
 	}
 
-	persisted, err := s.proxy.put(ctx, chunk)
-	if err != nil {
-		s.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
+	if err := s.proxy.put(ctx, chunk); err != nil {
+		s.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase)
 		return err
 	}
-	s.V(2).Info("written logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
-
-	s.Publish(otf.Event{
-		Type:    otf.EventLogChunk,
-		Payload: persisted,
-	})
+	s.V(2).Info("written logs", "id", chunk.RunID, "phase", chunk.Phase)
 
 	return nil
 }
@@ -140,10 +115,7 @@ func (s *service) tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 	}
 
 	chunk, err := s.proxy.get(ctx, opts)
-	if err == otf.ErrResourceNotFound {
-		// ignore resource not found because no log chunks may not have been
-		// written yet
-	} else if err != nil {
+	if err != nil {
 		s.Error(err, "tailing logs", "id", opts.RunID, "offset", opts.Offset, "subject", subject)
 		return nil, err
 	}
@@ -163,7 +135,7 @@ func (s *service) tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 					close(ch)
 					return
 				}
-				chunk, ok := ev.Payload.(otf.PersistedChunk)
+				chunk, ok := ev.Payload.(otf.Chunk)
 				if !ok {
 					// skip non-log events
 					continue
@@ -180,13 +152,13 @@ func (s *service) tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 						continue
 					}
 					// remove overlapping portion of chunk
-					chunk.Chunk = chunk.Cut(otf.GetChunkOptions{Offset: opts.Offset})
+					chunk = chunk.Cut(otf.GetChunkOptions{Offset: opts.Offset})
 				}
 				if len(chunk.Data) == 0 {
 					// don't send empty chunks
 					continue
 				}
-				ch <- chunk.Chunk
+				ch <- chunk
 				if chunk.IsEnd() {
 					close(ch)
 					return

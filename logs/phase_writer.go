@@ -8,26 +8,24 @@ import (
 )
 
 type (
-	logWriter interface {
+	chunkWriter interface {
 		PutChunk(ctx context.Context, chunk otf.Chunk) error
 	}
 
 	// PhaseWriter writes logs on behalf of a run phase.
 	PhaseWriter struct {
-		// started is used internally by the writer to determine whether the first
-		// write has been prefixed with the start marker (STX).
-		started   bool
-		id        string          // ID of run to write logs on behalf of.
-		phase     otf.PhaseType   // run phase
-		offset    int             // current position in stream
-		ctx       context.Context // permits canceling mid-flow
-		logWriter                 // for uploading logs to server
+		ctx         context.Context // permits canceling mid-flow
+		started     bool            // has first chunk been sent?
+		id          string          // ID of run to write logs on behalf of.
+		phase       otf.PhaseType   // run phase
+		offset      int             // current position in stream
+		chunkWriter                 // for uploading logs to server
 	}
 
 	PhaseWriterOptions struct {
 		RunID  string
 		Phase  otf.PhaseType
-		Writer logWriter
+		Writer chunkWriter
 	}
 )
 
@@ -35,28 +33,30 @@ type (
 
 func NewPhaseWriter(ctx context.Context, opts PhaseWriterOptions) *PhaseWriter {
 	return &PhaseWriter{
-		ctx:       ctx,
-		id:        opts.RunID,
-		phase:     opts.Phase,
-		logWriter: opts.Writer,
+		ctx:         ctx,
+		id:          opts.RunID,
+		phase:       opts.Phase,
+		chunkWriter: opts.Writer,
 	}
 }
 
 // Write uploads a chunk of logs to the server.
 func (w *PhaseWriter) Write(p []byte) (int, error) {
+	// TODO: io.Writer's should not retain p but do we need to copy it? Does
+	// this code 'retain' p? Does the cache or the database 'retain' p?
 	data := make([]byte, len(p))
 	copy(data, p)
+
+	if !w.started {
+		w.started = true
+		data = append([]byte{otf.STX}, data...)
+	}
 
 	chunk := otf.Chunk{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Data:   data,
 		Offset: w.offset,
-	}
-
-	if !w.started {
-		w.started = true
-		chunk = chunk.AddStartMarker()
 	}
 	w.offset = chunk.NextOffset()
 
@@ -74,13 +74,14 @@ func (w *PhaseWriter) Close() error {
 		Phase:  w.phase,
 		Offset: w.offset,
 	}
-	chunk = chunk.AddEndMarker()
-	if !w.started {
-		chunk = chunk.AddStartMarker()
+	if w.started {
+		chunk.Data = []byte{otf.ETX}
+	} else {
+		chunk.Data = []byte{otf.STX, otf.ETX}
 	}
-	w.offset += chunk.NextOffset()
 
-	if err := w.PutChunk(w.ctx, chunk); err != nil {
+	err := w.PutChunk(w.ctx, chunk)
+	if err != nil {
 		return fmt.Errorf("closing log stream: %w", err)
 	}
 	return nil

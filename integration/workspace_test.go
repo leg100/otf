@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,62 @@ func TestWorkspace(t *testing.T) {
 				Organization: otf.String(org.Name),
 			})
 			require.Equal(t, otf.ErrResourceAlreadyExists, err)
+		})
+	})
+
+	t.Run("create workspace with connection", func(t *testing.T) {
+		svc := setup(t, "test/dummy")
+
+		org := svc.createOrganization(t, ctx)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
+			Name:         otf.String(uuid.NewString()),
+			Organization: &org.Name,
+			ConnectOptions: &workspace.ConnectOptions{
+				RepoPath:      "test/dummy",
+				VCSProviderID: vcsprov.ID,
+			},
+		})
+		require.NoError(t, err)
+
+		// webhook should be registered with github
+		require.True(t, svc.githubServer.HasWebhook())
+
+		t.Run("delete workspace connection", func(t *testing.T) {
+			err := svc.Disconnect(ctx, repo.DisconnectOptions{
+				ConnectionType: repo.WorkspaceConnection,
+				ResourceID:     ws.ID,
+			})
+			require.NoError(t, err)
+		})
+
+		// webhook should now have been deleted from github
+		require.False(t, svc.githubServer.HasWebhook())
+	})
+
+	t.Run("connect workspace", func(t *testing.T) {
+		svc := setup(t, "test/dummy")
+
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+
+		got, err := svc.Connect(ctx, repo.ConnectOptions{
+			ConnectionType: repo.WorkspaceConnection,
+			VCSProviderID:  vcsprov.ID,
+			ResourceID:     ws.ID,
+			RepoPath:       "test/dummy",
+		})
+		require.NoError(t, err)
+		want := &repo.Connection{VCSProviderID: vcsprov.ID, Repo: "test/dummy"}
+		assert.Equal(t, want, got)
+
+		t.Run("delete workspace connection", func(t *testing.T) {
+			err := svc.Disconnect(ctx, repo.DisconnectOptions{
+				ConnectionType: repo.WorkspaceConnection,
+				ResourceID:     ws.ID,
+			})
+			require.NoError(t, err)
 		})
 	})
 

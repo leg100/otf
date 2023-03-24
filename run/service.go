@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -134,13 +135,13 @@ func NewService(opts Options) *service {
 	svc.web = &webHandlers{
 		Logger:   opts.Logger,
 		Renderer: opts.Renderer,
+		logsdb:   db,
 		svc:      &svc,
 		starter:  &starter{},
 	}
 
-	// Must register table name and service with pubsub broker so that it knows
-	// how to lookup runs in the DB.
-	opts.Register("run", &svc)
+	// Register with broker so that it can relay run events
+	opts.Register(reflect.TypeOf(Run{}), &svc)
 
 	return &svc
 }
@@ -562,7 +563,7 @@ func (s *service) createPlanReport(ctx context.Context, runID string) (ResourceR
 }
 
 func (s *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := s.db.getLogs(ctx, runID, otf.ApplyPhase)
+	logs, err := s.db.GetLogs(ctx, runID, otf.ApplyPhase)
 	if err != nil {
 		return ResourceReport{}, err
 	}
