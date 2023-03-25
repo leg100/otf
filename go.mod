@@ -41,6 +41,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
+	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.0.0-20230324180838-91bb0a8763ec
 	github.com/xanzy/go-gitlab v0.73.1
 	golang.org/x/mod v0.7.0
@@ -111,7 +112,6 @@ require (
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.19.0 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.7.0 // indirect
