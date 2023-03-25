@@ -25,7 +25,7 @@ type AuthenticateTokenService interface {
 
 // AuthenticateToken verifies that all requests to /api/v2 endpoints possess
 // a valid bearer token.
-func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
+func AuthenticateToken(svc AuthenticateTokenService, siteToken string) mux.MiddlewareFunc {
 	isValid := func(ctx context.Context, token string) (otf.Subject, error) {
 		switch {
 		case strings.HasPrefix(token, "agent."):
@@ -33,7 +33,10 @@ func AuthenticateToken(svc AuthenticateTokenService) mux.MiddlewareFunc {
 		case strings.HasPrefix(token, "registry."):
 			return svc.GetRegistrySession(ctx, token)
 		default:
-			// otherwise assume user or site admin token
+			if siteToken != "" && siteToken == token {
+				return &SiteAdmin, nil
+			}
+			// otherwise assume user token
 			return svc.GetUser(ctx, UserSpec{AuthenticationToken: &token})
 		}
 	}

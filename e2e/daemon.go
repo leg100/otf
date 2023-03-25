@@ -11,6 +11,7 @@ import (
 	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/sql"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,8 +58,8 @@ func (d *daemon) registerStatusCallback(callback func(*gogithub.StatusEvent)) {
 
 // start an instance of the otfd daemon and return its hostname.
 func (d *daemon) start(t *testing.T) string {
-	database, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
-	require.True(t, ok, "OTF_TEST_DATABASE_URL not set")
+	// start postgres container
+	_, connstr := sql.NewTestDB(t)
 
 	flags := append(d.flags,
 		"--address", ":0", // listen on random, available port
@@ -68,7 +69,7 @@ func (d *daemon) start(t *testing.T) string {
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
 		"--plugin-cache", // speed up tests by caching providers
-		"--database", database,
+		"--database", connstr,
 	)
 
 	if d.enableGithub {

@@ -20,7 +20,8 @@ func TestCompleteRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	svc := setup(t, &config{db: sql.NewTestDB(t)})
+	db, _ := sql.NewTestDB(t)
+	svc := setup(t, &config{db: db})
 
 	agent, err := svc.NewAgent(logr.Discard())
 	require.NoError(t, err)

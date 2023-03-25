@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
@@ -34,17 +33,17 @@ type (
 func (a *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list)
-	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create)
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.GetWorkspaceByName)
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.UpdateWorkspaceByName)
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.DeleteWorkspaceByName)
+	r.HandleFunc("/organizations/{organization_name}/workspaces", a.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/workspaces", a.create).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.GetWorkspaceByName).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.UpdateWorkspaceByName).Methods("PATCH")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", a.DeleteWorkspaceByName).Methods("DELETE")
 
-	r.HandleFunc("/workspaces/{workspace_id}", a.UpdateWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}", a.GetWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}", a.DeleteWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", a.LockWorkspace)
-	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", a.UnlockWorkspace)
+	r.HandleFunc("/workspaces/{workspace_id}", a.UpdateWorkspace).Methods("PATCH")
+	r.HandleFunc("/workspaces/{workspace_id}", a.GetWorkspace).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}", a.DeleteWorkspace).Methods("DELETE")
+	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", a.LockWorkspace).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", a.UnlockWorkspace).Methods("POST")
 }
 
 func (a *api) create(w http.ResponseWriter, r *http.Request) {
@@ -145,19 +144,13 @@ func (a *api) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) list(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization    string `schema:"organization_name,required"`
-		otf.ListOptions        // Pagination
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	wsl, err := a.svc.ListWorkspaces(r.Context(), ListOptions{
-		Organization: &params.Organization,
-		ListOptions:  params.ListOptions,
-	})
+	wsl, err := a.svc.ListWorkspaces(r.Context(), params)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

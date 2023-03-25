@@ -20,8 +20,9 @@ import (
 )
 
 type (
-	WorkspaceService   = Service
-	VCSProviderService vcsprovider.Service
+	WorkspaceService    = Service
+	VCSProviderService  vcsprovider.Service
+	OrganizationService organization.Service
 
 	Service interface {
 		CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error)
@@ -91,8 +92,8 @@ func NewService(opts Options) *service {
 		site:         &otf.SiteAuthorizer{opts.Logger},
 	}
 	svc.jsonapiMarshaler = &jsonapiMarshaler{
-		Service:            opts.OrganizationService,
-		PermissionsService: &svc,
+		OrganizationService: opts.OrganizationService,
+		PermissionsService:  &svc,
 	}
 	svc.api = &api{
 		jsonapiMarshaler: svc.jsonapiMarshaler,

@@ -117,14 +117,9 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		// Pagination
-		otf.ListOptions
-		// Filter workspaces with name matching prefix.
-		Prefix string `schema:"search[name],omitempty"`
-		// Organization filters workspaces by organization name.
-		Organization *string `schema:"organization_name,omitempty"`
-		// Filter by those for which user has workspace-level permissions.
-		UserID *string
+		otf.ListOptions         // Pagination
+		Prefix          string  `schema:"search[name],omitempty"`
+		Organization    *string `schema:"organization_name,required"`
 	}
 
 	ConnectOptions struct {

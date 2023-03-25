@@ -6,14 +6,13 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
 
 // jsonapiMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
 type jsonapiMarshaler struct {
-	organization.Service
+	OrganizationService
 	PermissionsService
 }
 

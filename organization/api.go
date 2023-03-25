@@ -1,6 +1,7 @@
 package organization
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -21,16 +22,16 @@ type api struct {
 func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
-	r.HandleFunc("/organizations", h.ListOrganizations)
-	r.HandleFunc("/organizations", h.CreateOrganization)
-	r.HandleFunc("/organizations/{name}", h.GetOrganization)
-	r.HandleFunc("/organizations/{name}", h.UpdateOrganization)
-	r.HandleFunc("/organizations/{name}", h.DeleteOrganization)
-	r.HandleFunc("/organizations/{name}/entitlement-set", h.GetEntitlements)
+	r.HandleFunc("/organizations", h.ListOrganizations).Methods("GET")
+	r.HandleFunc("/organizations", h.CreateOrganization).Methods("POST")
+	r.HandleFunc("/organizations/{name}", h.GetOrganization).Methods("GET")
+	r.HandleFunc("/organizations/{name}", h.UpdateOrganization).Methods("PATCH")
+	r.HandleFunc("/organizations/{name}", h.DeleteOrganization).Methods("DELETE")
+	r.HandleFunc("/organizations/{name}/entitlement-set", h.GetEntitlements).Methods("GET")
 }
 
 func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	opts := jsonapi.OrganizationCreateOptions{}
+	var opts jsonapi.OrganizationCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -148,6 +149,9 @@ func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 		payload = h.toOrganization(v)
 	case Entitlements:
 		payload = jsonapi.Entitlements(v)
+	default:
+		jsonapi.Error(w, http.StatusInternalServerError, fmt.Errorf("cannot marshal unknown type: %T", v))
+		return
 	}
 	jsonapi.WriteResponse(w, r, payload, opts...)
 }

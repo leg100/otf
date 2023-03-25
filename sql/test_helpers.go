@@ -47,12 +47,15 @@ func NewContainer() (*DB, *postgres.PostgresContainer, error) {
 	return db, container, nil
 }
 
-func NewTestDB(t *testing.T) *DB {
+func NewTestDB(t *testing.T) (*DB, string) {
+	ctx := context.Background()
 	db, container, err := NewContainer()
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		db.Close()
-		container.Terminate(context.Background())
+		container.Terminate(ctx)
 	})
-	return db
+	connstr, err := container.ConnectionString(ctx)
+	require.NoError(t, err)
+	return db, connstr
 }

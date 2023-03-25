@@ -147,12 +147,13 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
-		Logger:      logger,
-		DB:          db,
-		Broker:      broker,
-		Renderer:    renderer,
-		RepoService: repoService,
-		TeamService: authService,
+		Logger:              logger,
+		DB:                  db,
+		Broker:              broker,
+		Renderer:            renderer,
+		RepoService:         repoService,
+		TeamService:         authService,
+		OrganizationService: orgService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:              logger,

@@ -136,7 +136,7 @@ func TestClusterLogs(t *testing.T) {
 	t.Cleanup(func() { cancel() })
 
 	// simulate a cluster of two otfd nodes
-	db := sql.NewTestDB(t)
+	db, _ := sql.NewTestDB(t)
 	local := setup(t, &config{db: db})
 	remote := setup(t, &config{db: db})
 

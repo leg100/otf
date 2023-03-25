@@ -2,6 +2,7 @@ package configversion
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -17,7 +18,7 @@ type (
 	api struct {
 		otf.Verifier // for verifying upload url
 
-		jsonapiMarshaler
+		*jsonapiMarshaler
 
 		svc Service
 		max int64 // Maximum permitted config upload size in bytes
@@ -33,7 +34,7 @@ type (
 func newAPI(opts apiOptions) *api {
 	return &api{
 		Verifier:         opts.Signer,
-		jsonapiMarshaler: jsonapiMarshaler{opts.Signer},
+		jsonapiMarshaler: &jsonapiMarshaler{opts.Signer},
 		svc:              opts.Service,
 		max:              opts.max,
 	}
@@ -45,10 +46,10 @@ func (s *api) AddHandlers(r *mux.Router) {
 	signed.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion()).Methods("PUT")
 
 	r = otfhttp.APIRouter(r)
-	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)
-	r.HandleFunc("/configuration-versions/{id}", s.GetConfigurationVersion)
-	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
-	r.HandleFunc("/configuration-versions/{id}/download", s.DownloadConfigurationVersion)
+	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion).Methods("POST")
+	r.HandleFunc("/configuration-versions/{id}", s.GetConfigurationVersion).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions).Methods("GET")
+	r.HandleFunc("/configuration-versions/{id}/download", s.DownloadConfigurationVersion).Methods("GET")
 }
 
 func (s *api) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +73,7 @@ func (s *api) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, s.toMarshalable(cv), jsonapi.WithCode(http.StatusCreated))
+	s.writeResponse(w, r, cv, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (s *api) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +88,7 @@ func (s *api) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, s.toMarshalable(cv))
+	s.writeResponse(w, r, cv)
 }
 
 func (s *api) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +110,7 @@ func (s *api) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, s.toMarshableList(cvl))
+	s.writeResponse(w, r, cvl)
 }
 
 func (s *api) UploadConfigurationVersion() http.HandlerFunc {
@@ -147,4 +148,25 @@ func (s *api) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Write(resp)
+}
+
+// writeResponse encodes v as json:api and writes it to the body of the http response.
+func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
+	var payload any
+	var err error
+
+	switch v := v.(type) {
+	case *ConfigurationVersionList:
+		payload, err = s.toList(v)
+	case *ConfigurationVersion:
+		payload, err = s.toConfigurationVersion(v)
+	default:
+		jsonapi.Error(w, http.StatusInternalServerError, fmt.Errorf("cannot marshal unknown type: %T", v))
+		return
+	}
+	if err != nil {
+		jsonapi.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	jsonapi.WriteResponse(w, r, payload, opts...)
 }

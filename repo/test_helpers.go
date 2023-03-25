@@ -32,8 +32,9 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 }
 
 func newTestDB(t *testing.T) *pgdb {
+	db, _ := sql.NewTestDB(t)
 	return &pgdb{
-		DB: sql.NewTestDB(t),
+		DB: db,
 		factory: factory{
 			Service:         fakeCloudService{},
 			HostnameService: fakeHostnameService{},

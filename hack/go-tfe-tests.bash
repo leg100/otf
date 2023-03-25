@@ -68,6 +68,7 @@ export SKIP_PAID=1
 export OTF_SSL=true
 export OTF_CERT_FILE=./e2e/fixtures/cert.crt
 export OTF_KEY_FILE=./e2e/fixtures/key.pem
+export SSL_CERT_DIR=$PWD/e2e/fixtures
 
 TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 

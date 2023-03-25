@@ -135,7 +135,7 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 			EnableRequestLogging: cfg.EnableRequestLogging,
 			DevMode:              cfg.DevMode,
 			Middleware: []mux.MiddlewareFunc{
-				auth.AuthenticateToken(services.AuthService),
+				auth.AuthenticateToken(services.AuthService, cfg.SiteToken),
 				auth.AuthenticateSession(services.AuthService),
 			},
 			Handlers: services.Handlers,

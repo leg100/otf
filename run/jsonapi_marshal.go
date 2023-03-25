@@ -159,19 +159,18 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 	}, nil
 }
 
-func (m JSONAPIMarshaler) toList(list *RunList, r *http.Request) (*jsonapi.RunList, error) {
-	var items []*jsonapi.Run
-	for _, run := range list.Items {
-		jrun, err := m.toRun(run, r)
+func (m JSONAPIMarshaler) toList(from *RunList, r *http.Request) (*jsonapi.RunList, error) {
+	to := &jsonapi.RunList{
+		Pagination: from.Pagination.ToJSONAPI(),
+	}
+	for _, i := range from.Items {
+		run, err := m.toRun(i, r)
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, jrun)
+		to.Items = append(to.Items, run)
 	}
-	return &jsonapi.RunList{
-		Items:      items,
-		Pagination: list.Pagination.ToJSONAPI(),
-	}, nil
+	return to, nil
 }
 
 func (m *JSONAPIMarshaler) toPhase(from Phase, r *http.Request) (any, error) {

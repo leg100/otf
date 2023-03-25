@@ -14,61 +14,44 @@ type jsonapiMarshaler struct {
 	otf.Signer // for signing upload url
 }
 
-func (m jsonapiMarshaler) toMarshalable(cv *ConfigurationVersion) marshalable {
-	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
+func (m *jsonapiMarshaler) toConfigurationVersion(from *ConfigurationVersion) (*jsonapi.ConfigurationVersion, error) {
+	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", from.ID)
 	uploadURL, err := m.Sign(uploadURL, time.Hour)
 	if err != nil {
-		// upstream middleware converts panics to HTTP500's
-		panic("signing url: " + uploadURL + "; error: " + err.Error())
+		return nil, err
 	}
-	return marshalable{cv, uploadURL}
-}
-
-func (m jsonapiMarshaler) toMarshableList(list *ConfigurationVersionList) marshalableList {
-	var items []marshalable
-	for _, i := range list.Items {
-		items = append(items, m.toMarshalable(i))
-	}
-	return marshalableList{items: items, pagination: list.Pagination}
-}
-
-type marshalable struct {
-	*ConfigurationVersion
-	uploadURL string
-}
-
-func (m marshalable) ToJSONAPI() any {
-	cv := &jsonapi.ConfigurationVersion{
-		ID:               m.ID,
-		AutoQueueRuns:    m.AutoQueueRuns,
-		Speculative:      m.Speculative,
-		Source:           string(m.Source),
-		Status:           string(m.Status),
+	to := &jsonapi.ConfigurationVersion{
+		ID:               from.ID,
+		AutoQueueRuns:    from.AutoQueueRuns,
+		Speculative:      from.Speculative,
+		Source:           string(from.Source),
+		Status:           string(from.Status),
 		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
-		UploadURL:        m.uploadURL,
+		UploadURL:        uploadURL,
 	}
-	for _, ts := range m.StatusTimestamps {
+	for _, ts := range from.StatusTimestamps {
 		switch ts.Status {
 		case ConfigurationPending:
-			cv.StatusTimestamps.QueuedAt = &ts.Timestamp
+			to.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case ConfigurationErrored:
-			cv.StatusTimestamps.FinishedAt = &ts.Timestamp
+			to.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case ConfigurationUploaded:
-			cv.StatusTimestamps.StartedAt = &ts.Timestamp
+			to.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-	return cv
+	return to, nil
 }
 
-type marshalableList struct {
-	pagination *otf.Pagination
-	items      []marshalable
-}
-
-func (m marshalableList) ToJSONAPI() any {
-	list := &jsonapi.ConfigurationVersionList{Pagination: m.pagination.ToJSONAPI()}
-	for _, item := range m.items {
-		list.Items = append(list.Items, item.ToJSONAPI().(*jsonapi.ConfigurationVersion))
+func (m *jsonapiMarshaler) toList(from *ConfigurationVersionList) (*jsonapi.ConfigurationVersionList, error) {
+	to := &jsonapi.ConfigurationVersionList{
+		Pagination: from.Pagination.ToJSONAPI(),
 	}
-	return list
+	for _, i := range from.Items {
+		cv, err := m.toConfigurationVersion(i)
+		if err != nil {
+			return nil, err
+		}
+		to.Items = append(to.Items, cv)
+	}
+	return to, nil
 }
