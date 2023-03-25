@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http"
@@ -119,7 +118,12 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 		}
 		defer db.Close()
 
-		services, handlers, err := services.New(logger, db, *cfg)
+		services, err := services.New(logger, db, *cfg)
+		if err != nil {
+			return err
+		}
+
+		agent, err := services.NewAgent(logger)
 		if err != nil {
 			return err
 		}
@@ -134,7 +138,7 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 				auth.AuthenticateToken(services.AuthService),
 				auth.AuthenticateSession(services.AuthService),
 			},
-			Handlers: handlers,
+			Handlers: services.Handlers,
 		})
 		if err != nil {
 			return fmt.Errorf("setting up http server: %w", err)
@@ -155,26 +159,6 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 
 		// Start purging sessions on a regular interval
 		services.StartExpirer(ctx)
-
-		agent, err := agent.NewAgent(
-			logger.WithValues("component", "agent"),
-			client.LocalClient{
-				AgentTokenService:           services.AuthService,
-				WorkspaceService:            services.WorkspaceService,
-				OrganizationService:         services.OrganizationService,
-				VariableService:             services.VariableService,
-				StateService:                services.StateService,
-				HostnameService:             services.HostnameService,
-				ConfigurationVersionService: services.ConfigurationVersionService,
-				RegistrySessionService:      services.AuthService,
-				RunService:                  services.RunService,
-				LogsService:                 services.LogsService,
-			},
-			*cfg.AgentConfig,
-		)
-		if err != nil {
-			return fmt.Errorf("initializing agent: %w", err)
-		}
 
 		// Run pubsub broker
 		g.Go(func() error { return services.Broker.Start(ctx) })

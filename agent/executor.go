@@ -35,6 +35,7 @@ type (
 		out     io.Writer
 		envs    []string
 		workdir *workdir
+		proc    *os.Process // current or last process
 
 		// options
 		redirectStdout   *string
@@ -66,20 +67,14 @@ func (e *executor) execute(args []string, opts ...executionOption) error {
 		out:     e.out,
 		envs:    e.envs,
 		workdir: e.workdir,
+		proc:    e.proc,
 	}
 	for _, fn := range opts {
 		fn(&exe)
 	}
-	cmd, stderr, err := exe.execute(args)
-	if err != nil {
+	if err := exe.execute(args); err != nil {
 		return err
 	}
-	e.proc = cmd.Process
-
-	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
-	}
-
 	return nil
 }
 
@@ -90,6 +85,8 @@ func (e *executor) executeTerraform(args []string, opts ...executionOption) erro
 }
 
 // cancel sends a termination signal to the current process
+//
+// TODO: write unit test using an exe that waits for an INT signal
 func (e *executor) cancel(force bool) {
 	if e.proc != nil {
 		if force {
@@ -100,9 +97,9 @@ func (e *executor) cancel(force bool) {
 	}
 }
 
-func (e *execution) execute(args []string) (*exec.Cmd, *bytes.Buffer, error) {
+func (e *execution) execute(args []string) error {
 	if len(args) == 0 {
-		return nil, nil, fmt.Errorf("missing command name")
+		return fmt.Errorf("missing command name")
 	}
 	if e.sandboxIfEnabled && e.Sandbox {
 		args = e.addSandboxWrapper(args)
@@ -112,10 +109,11 @@ func (e *execution) execute(args []string) (*exec.Cmd, *bytes.Buffer, error) {
 	cmd.Env = append(os.Environ(), e.envs...)
 
 	if e.redirectStdout != nil {
-		dst, err := os.Create(*e.redirectStdout)
+		dst, err := os.Create(path.Join(e.workdir.String(), *e.redirectStdout))
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
+		defer dst.Close()
 		cmd.Stdout = dst
 	} else {
 		cmd.Stdout = e.out
@@ -127,9 +125,14 @@ func (e *execution) execute(args []string) (*exec.Cmd, *bytes.Buffer, error) {
 	cmd.Stderr = io.MultiWriter(e.out, stderr)
 
 	if err := cmd.Start(); err != nil {
-		return nil, nil, err
+		return err
 	}
-	return cmd, stderr, nil
+	e.proc = cmd.Process
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
+	}
+	return nil
 }
 
 // addSandboxWrapper wraps the args within a bubblewrap sandbox.

@@ -16,7 +16,7 @@ func TestState(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		file, err := os.ReadFile("./testdata/terraform.tfstate")
 		require.NoError(t, err)
@@ -29,7 +29,7 @@ func TestState(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createStateVersion(t, ctx, nil)
 
 		got, err := svc.GetStateVersion(ctx, want.ID)
@@ -39,14 +39,14 @@ func TestState(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 
 		_, err := svc.GetStateVersion(ctx, "sv-99999")
 		require.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
 	t.Run("get current", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		_ = svc.createStateVersion(t, ctx, ws)
 		want := svc.createStateVersion(t, ctx, ws)
@@ -58,14 +58,14 @@ func TestState(t *testing.T) {
 	})
 
 	t.Run("get current not found error", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 
 		_, err := svc.GetCurrentStateVersion(ctx, "ws-99999")
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		sv1 := svc.createStateVersion(t, ctx, ws)
 		sv2 := svc.createStateVersion(t, ctx, ws)
@@ -80,7 +80,7 @@ func TestState(t *testing.T) {
 	})
 
 	t.Run("list not found error", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 
 		_, err := svc.ListStateVersions(ctx, state.StateVersionListOptions{
 			Workspace:    "ws-999",

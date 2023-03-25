@@ -13,14 +13,14 @@ import (
 )
 
 type (
-	tailService interface {
-		tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
-	}
-
 	webHandlers struct {
 		logr.Logger
 
 		svc tailService
+	}
+
+	tailService interface {
+		Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
 	}
 )
 
@@ -44,7 +44,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.svc.tail(r.Context(), otf.GetChunkOptions{
+	ch, err := h.svc.Tail(r.Context(), otf.GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,

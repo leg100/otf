@@ -16,7 +16,7 @@ func TestTail(t *testing.T) {
 	t.Run("receive chunk event", func(t *testing.T) {
 		app := fakeService(otf.Chunk{})
 
-		stream, err := app.tail(ctx, otf.GetChunkOptions{
+		stream, err := app.Tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -40,7 +40,7 @@ func TestTail(t *testing.T) {
 		}
 		svc := fakeService(want)
 
-		stream, err := svc.tail(ctx, otf.GetChunkOptions{
+		stream, err := svc.Tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -58,7 +58,7 @@ func TestTail(t *testing.T) {
 		}
 		svc := fakeService(want)
 
-		stream, err := svc.tail(ctx, otf.GetChunkOptions{
+		stream, err := svc.Tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -95,7 +95,7 @@ func TestTail(t *testing.T) {
 		}
 		app := fakeService(want)
 
-		stream, err := app.tail(ctx, otf.GetChunkOptions{
+		stream, err := app.Tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})
@@ -128,7 +128,7 @@ func TestTail(t *testing.T) {
 	t.Run("ignore chunk for other run", func(t *testing.T) {
 		app := fakeService(otf.Chunk{})
 
-		stream, err := app.tail(ctx, otf.GetChunkOptions{
+		stream, err := app.Tail(ctx, otf.GetChunkOptions{
 			RunID: "run-123",
 			Phase: otf.PlanPhase,
 		})

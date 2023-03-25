@@ -54,9 +54,10 @@ type (
 		// sent out.
 		Cancel(ctx context.Context, runID string) (*Run, error)
 
+		// Apply enqueues an Apply for the run.
+		Apply(ctx context.Context, runID string) error
+
 		get(ctx context.Context, runID string) (*Run, error)
-		// apply enqueues an apply for the run.
-		apply(ctx context.Context, runID string) error
 		discard(ctx context.Context, runID string) error
 		// forceCancel forcefully cancels a run.
 		forceCancel(ctx context.Context, runID string) error
@@ -141,7 +142,7 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Register(reflect.TypeOf(Run{}), &svc)
+	opts.Register(reflect.TypeOf(&Run{}), &svc)
 
 	return &svc
 }
@@ -375,8 +376,8 @@ func (s *service) get(ctx context.Context, runID string) (*Run, error) {
 	return run, nil
 }
 
-// apply enqueues an apply for the run.
-func (s *service) apply(ctx context.Context, runID string) error {
+// Apply enqueues an apply for the run.
+func (s *service) Apply(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
 	if err != nil {
 		return err

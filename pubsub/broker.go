@@ -29,18 +29,20 @@ type (
 		otf.PubSubService
 		Register(t reflect.Type, getter Getter)
 		Start(context.Context) error
+		WaitUntilListening()
 	}
 
 	// broker is a pubsub broker implemented using postgres' listen/notify
 	broker struct {
 		logr.Logger
 
-		channel string                      // postgres notification channel name
-		pool    pool                        // pool from which to acquire a dedicated connection to postgres
-		pid     string                      // each pubsub maintains a unique identifier to distriguish messages it
-		tables  map[string]Getter           // map of event payload type to a fn that can retrieve the payload
-		subs    map[string]chan otf.Event   // subscriptions
-		metrics map[string]prometheus.Gauge // metric for each subscription
+		channel       string                      // postgres notification channel name
+		pool          pool                        // pool from which to acquire a dedicated connection to postgres
+		islistening   chan bool                   // semaphore that's closed once broker is listening
+		pid           string                      // pid uniquely identifies a broker
+		registrations map[string]Getter           // map of event payload type to a fn that can retrieve the payload
+		subs          map[string]chan otf.Event   // subscriptions
+		metrics       map[string]prometheus.Gauge // metric for each subscription
 
 		mu sync.Mutex // sync access to maps
 	}
@@ -66,13 +68,14 @@ type (
 
 func NewBroker(logger logr.Logger, db otf.DB) *broker {
 	return &broker{
-		Logger:  logger.WithValues("component", "pubsub"),
-		pid:     uuid.NewString(),
-		pool:    db,
-		channel: defaultChannel,
-		tables:  make(map[string]Getter),
-		subs:    make(map[string]chan otf.Event),
-		metrics: make(map[string]prometheus.Gauge),
+		Logger:        logger.WithValues("component", "pubsub"),
+		pid:           uuid.NewString(),
+		pool:          db,
+		islistening:   make(chan bool),
+		channel:       defaultChannel,
+		registrations: make(map[string]Getter),
+		subs:          make(map[string]chan otf.Event),
+		metrics:       make(map[string]prometheus.Gauge),
 	}
 }
 
@@ -88,6 +91,7 @@ func (b *broker) Start(ctx context.Context) error {
 	if _, err := conn.Exec(ctx, "listen "+b.channel); err != nil {
 		return err
 	}
+	close(b.islistening) // close semaphore to indicate broker is now listening
 
 	op := func() error {
 		for {
@@ -110,6 +114,12 @@ func (b *broker) Start(ctx context.Context) error {
 		}
 	}
 	return backoff.RetryNotify(op, backoff.NewExponentialBackOff(), nil)
+}
+
+// WaitUntilListening will only return once the broker is listening for postgres
+// events.
+func (b *broker) WaitUntilListening() {
+	<-b.islistening
 }
 
 // Publish sends an event to subscribers, via postgres to subscribers on
@@ -175,7 +185,7 @@ func (b *broker) Register(t reflect.Type, getter Getter) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.tables[t.String()] = getter
+	b.registrations[t.String()] = getter
 }
 
 // localPublish publishes an event to subscribers on the local node
@@ -230,9 +240,9 @@ func (b *broker) receive(ctx context.Context, notification *pgconn.Notification)
 		return nil
 	}
 
-	getter, ok := b.tables[event.PayloadType]
+	getter, ok := b.registrations[event.PayloadType]
 	if !ok {
-		return fmt.Errorf("unregistered table: %s", event.PayloadType)
+		return fmt.Errorf("unregistered payload type: %s", event.PayloadType)
 	}
 	payload, err := getter.GetByID(ctx, event.ID)
 	if err != nil {

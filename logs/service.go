@@ -16,7 +16,7 @@ type (
 	Service interface {
 		GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
 		PutChunk(ctx context.Context, chunk otf.Chunk) error
-		tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
+		Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
 	}
 
 	service struct {
@@ -101,7 +101,7 @@ func (s *service) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 
 // tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *service) tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
+func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
 	subject, err := s.run.CanAccess(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err

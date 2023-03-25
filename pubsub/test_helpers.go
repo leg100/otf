@@ -2,16 +2,9 @@ package pubsub
 
 import (
 	"context"
-	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/jackc/pgconn"
-	"github.com/leg100/otf"
 )
-
-func NewTestBroker(t *testing.T, db otf.DB) Broker {
-	return NewBroker(logr.Discard(), db)
-}
 
 type fakePool struct {
 	gotExecArgs []any

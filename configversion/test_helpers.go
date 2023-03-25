@@ -33,6 +33,6 @@ type fakeService struct {
 	Service
 }
 
-func (f *fakeService) upload(context.Context, string, []byte) error {
+func (f *fakeService) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }

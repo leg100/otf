@@ -125,7 +125,7 @@ func (s *api) UploadConfigurationVersion() http.HandlerFunc {
 			jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 			return
 		}
-		if err := s.svc.upload(r.Context(), id, buf.Bytes()); err != nil {
+		if err := s.svc.UploadConfig(r.Context(), id, buf.Bytes()); err != nil {
 			jsonapi.Error(w, http.StatusNotFound, err)
 			return
 		}
@@ -140,7 +140,7 @@ func (s *api) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	resp, err := s.svc.download(r.Context(), id)
+	resp, err := s.svc.DownloadConfig(r.Context(), id)
 	if err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return

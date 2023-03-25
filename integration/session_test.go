@@ -16,7 +16,7 @@ func TestSession(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 		_, err := svc.CreateSession(ctx, auth.CreateSessionOptions{
 			Request: httptest.NewRequest("", "/", nil),
@@ -26,7 +26,7 @@ func TestSession(t *testing.T) {
 	})
 
 	t.Run("get by token", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createSession(t, ctx, nil, nil)
 
 		got, err := svc.GetSession(ctx, want.Token())
@@ -36,7 +36,7 @@ func TestSession(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 		session1 := svc.createSession(t, ctx, user, nil)
 		session2 := svc.createSession(t, ctx, user, nil)
@@ -50,7 +50,7 @@ func TestSession(t *testing.T) {
 	})
 
 	t.Run("purge expired sessions", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		session1 := svc.createSession(t, ctx, nil, nil)
 		session2 := svc.createSession(t, ctx, nil, nil)
 

@@ -2,38 +2,57 @@ package sql
 
 import (
 	"context"
-	"net/url"
-	"os"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	_ "github.com/jackc/pgx/v4"
 )
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
-func NewTestDB(t *testing.T) *DB {
-	urlStr := os.Getenv(TestDatabaseURL)
-	if urlStr == "" {
-		t.Fatalf("%s must be set", TestDatabaseURL)
+func NewContainer() (*DB, *postgres.PostgresContainer, error) {
+	ctx := context.Background()
+
+	container, err := postgres.StartContainer(ctx,
+		postgres.WithImage("postgres:14-alpine"),
+		postgres.WithDatabase("otf"),
+		postgres.WithUsername("testuser"),
+		postgres.WithPassword("testpass"),
+		postgres.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	u, err := url.Parse(urlStr)
-	require.NoError(t, err)
-
-	require.Equal(t, "postgres", u.Scheme)
+	connstr, err := container.ConnectionString(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	opts := Options{
 		Logger:     logr.Discard(),
-		ConnString: u.String(),
+		ConnString: connstr,
 	}
 
-	db, err := New(context.Background(), opts)
+	db, err := New(ctx, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, container, nil
+}
+
+func NewTestDB(t *testing.T) *DB {
+	db, container, err := NewContainer()
 	require.NoError(t, err)
-
-	t.Cleanup(db.Close)
-
+	t.Cleanup(func() {
+		db.Close()
+		container.Terminate(context.Background())
+	})
 	return db
 }

@@ -17,8 +17,8 @@ func TestBroker(t *testing.T) {
 	t.Cleanup(func() { cancel() })
 
 	// simulate a cluster of two otfd nodes
-	local := setup(t, "")
-	remote := setup(t, "")
+	local := setup(t, nil)
+	remote := setup(t, nil)
 
 	done := make(chan error)
 	go func() {
@@ -27,6 +27,10 @@ func TestBroker(t *testing.T) {
 	go func() {
 		done <- remote.Broker.Start(ctx)
 	}()
+
+	// wait 'til brokers are listening
+	local.Broker.WaitUntilListening()
+	remote.Broker.WaitUntilListening()
 
 	localsub, err := local.Subscribe(ctx, "local-sub")
 	require.NoError(t, err)

@@ -2,7 +2,9 @@ package sql
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgconn"
@@ -58,6 +60,8 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 	opts.Logger.Info("connected to database", "connstr", connString)
 
+	// goose gets upset with max_pool_conns parameter so pass it the unaltered
+	// connection string
 	if err := migrate(opts.Logger, opts.ConnString); err != nil {
 		return nil, err
 	}
@@ -101,12 +105,21 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 }
 
 func setDefaultMaxConnections(connString string) (string, error) {
-	u, err := url.Parse(connString)
-	if err != nil {
-		return "", err
+	// pg connection string can be either a URL or a DSN
+	if strings.HasPrefix(connString, "postgres://") || strings.HasPrefix(connString, "postgresql://") {
+		u, err := url.Parse(connString)
+		if err != nil {
+			return "", fmt.Errorf("parsing connection string url: %w", err)
+		}
+		q := u.Query()
+		q.Add("pool_max_conns", defaultMaxConnections)
+		u.RawQuery = q.Encode()
+		return url.PathUnescape(u.String())
+	} else if connString == "" {
+		// presume empty DSN
+		return fmt.Sprintf("pool_max_conns=%s", defaultMaxConnections), nil
+	} else {
+		// presume non-empty DSN
+		return fmt.Sprintf("%s pool_max_conns=%s", connString, defaultMaxConnections), nil
 	}
-	q := u.Query()
-	q.Add("pool_max_conns", defaultMaxConnections)
-	u.RawQuery = q.Encode()
-	return url.PathUnescape(u.String())
 }

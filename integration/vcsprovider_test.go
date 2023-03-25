@@ -16,7 +16,7 @@ func TestVCSProvider(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		_, err := svc.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
@@ -29,7 +29,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createVCSProvider(t, ctx, nil)
 
 		got, err := svc.GetVCSProvider(ctx, want.ID)
@@ -39,7 +39,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		provider1 := svc.createVCSProvider(t, ctx, org)
 		provider2 := svc.createVCSProvider(t, ctx, org)
@@ -54,7 +54,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createVCSProvider(t, ctx, nil)
 
 		got, err := svc.DeleteVCSProvider(ctx, want.ID)

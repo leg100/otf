@@ -105,7 +105,7 @@ func NewService(opts Options) *service {
 		svc:                &svc,
 	}
 	// Register with broker so that it can relay workspace events
-	opts.Register(reflect.TypeOf(Workspace{}), &svc)
+	opts.Register(reflect.TypeOf(&Workspace{}), &svc)
 	return &svc
 }
 

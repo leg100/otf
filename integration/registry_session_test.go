@@ -16,7 +16,7 @@ func TestRegistrySession(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		_, err := svc.CreateRegistrySession(ctx, auth.CreateRegistrySessionOptions{
@@ -26,7 +26,7 @@ func TestRegistrySession(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createRegistrySession(t, ctx, nil, nil)
 
 		got, err := svc.GetRegistrySession(ctx, want.Token)
@@ -36,7 +36,7 @@ func TestRegistrySession(t *testing.T) {
 	})
 
 	t.Run("cleanup", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		rs1 := svc.createRegistrySession(t, ctx, nil, otf.Time(time.Now()))
 		rs2 := svc.createRegistrySession(t, ctx, nil, otf.Time(time.Now()))
 

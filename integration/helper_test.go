@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"log"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/module"
@@ -23,28 +25,76 @@ import (
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-type testServices struct {
-	*services.Services
+var sharedDB otf.DB
 
-	githubServer *github.TestServer
+type (
+	testServices struct {
+		*services.Services
+
+		db otf.DB
+
+		githubServer *github.TestServer
+	}
+	config struct {
+		repo string // create repo on stub github server
+		db   otf.DB // use this db for tests rather than shared db
+	}
+)
+
+func TestMain(t *testing.M) {
+	var container *postgres.PostgresContainer
+	var err error
+	// spin up pg container for duration of tests
+	sharedDB, container, err = sql.NewContainer()
+	if err != nil {
+		log.Fatalf("failed to to run postgres container: %s", err.Error())
+	}
+	defer container.Terminate(context.Background())
+	defer sharedDB.Close()
+
+	os.Exit(t.Run())
 }
 
-func setup(t *testing.T, repo string) *testServices {
+func setup(t *testing.T, cfg *config) *testServices {
 	t.Helper()
 
-	db := sql.NewTestDB(t)
-	cfg := services.NewDefaultConfig()
+	// use caller provided db or shared db
+	var db otf.DB
+	if cfg != nil && cfg.db != nil {
+		db = cfg.db
+	} else {
+		db = sharedDB
+	}
 
-	// Use stub github server
-	githubServer, githubCfg := github.NewTestServer(t, github.WithRepo(repo))
-	cfg.Github.Config = githubCfg
+	svccfg := services.NewDefaultConfig()
 
-	svcs, _, err := services.New(logr.Discard(), db, cfg)
+	// Configure and start stub github server
+	var ghopts []github.TestServerOption
+	if cfg != nil && cfg.repo != "" {
+		ghopts = append(ghopts, github.WithRepo(cfg.repo))
+	}
+	githubServer, githubCfg := github.NewTestServer(t, ghopts...)
+	svccfg.Github.Config = githubCfg
+
+	// Configure logger; discard logs by default
+	var logger logr.Logger
+	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
+		var err error
+		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "trace", Color: "true"})
+		require.NoError(t, err)
+	} else {
+		logger = logr.Discard()
+	}
+
+	svcs, err := services.New(logger, db, svccfg)
 	require.NoError(t, err)
+
 	return &testServices{
 		Services:     svcs,
+		db:           db,
 		githubServer: githubServer,
 	}
 }

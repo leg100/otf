@@ -16,7 +16,7 @@ func TestModule(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		_, err := svc.CreateModule(ctx, module.CreateOptions{
@@ -28,7 +28,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create module with connection", func(t *testing.T) {
-		svc := setup(t, "leg100/terraform-aws-stuff")
+		svc := setup(t, &config{repo: "leg100/terraform-aws-stuff"})
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
@@ -53,7 +53,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.GetModule(ctx, module.GetModuleOptions{
@@ -67,7 +67,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.GetModuleByID(ctx, want.ID)
@@ -77,7 +77,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		module1 := svc.createModule(t, ctx, org)
 		module2 := svc.createModule(t, ctx, org)
@@ -94,7 +94,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.DeleteModule(ctx, want.ID)

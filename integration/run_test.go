@@ -16,7 +16,7 @@ func TestRun(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		cv := svc.createConfigurationVersion(t, ctx, nil)
 
 		_, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
@@ -24,7 +24,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.EnqueuePlan(ctx, run.ID)
@@ -37,7 +37,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("cancel run", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.Cancel(ctx, run.ID)
@@ -53,7 +53,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.GetRun(ctx, want.ID)
@@ -63,7 +63,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 
 		ws1 := svc.createWorkspace(t, ctx, nil)
 		ws2 := svc.createWorkspace(t, ctx, nil)

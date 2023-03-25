@@ -14,7 +14,7 @@ func TestToken(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ctx := otf.AddSubjectToContext(ctx, svc.createUser(t, ctx))
 		_, err := svc.CreateToken(ctx, &auth.TokenCreateOptions{
 			Description: "lorem ipsum...",
@@ -23,7 +23,7 @@ func TestToken(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 
 		_ = svc.createToken(t, ctx, user)
@@ -38,7 +38,7 @@ func TestToken(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 		token := svc.createToken(t, ctx, user)
 

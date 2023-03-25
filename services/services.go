@@ -3,12 +3,14 @@
 package services
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
@@ -22,6 +24,7 @@ import (
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
@@ -30,6 +33,9 @@ import (
 
 type (
 	Services struct {
+		Config
+		Handlers []otf.Handlers
+
 		organization.OrganizationService
 		auth.AuthService
 		variable.VariableService
@@ -61,10 +67,17 @@ type (
 		EnableRequestLogging bool
 		DevMode              bool
 	}
+
+	daemon interface {
+		Start(context.Context) error
+	}
 )
 
 func NewDefaultConfig() Config {
 	return Config{
+		AgentConfig: &agent.Config{
+			Concurrency: agent.DefaultConcurrency,
+		},
 		CacheConfig: &inmem.CacheConfig{},
 		Github: cloud.CloudOAuthConfig{
 			Config:      github.Defaults(),
@@ -78,20 +91,20 @@ func NewDefaultConfig() Config {
 }
 
 // New builds and configures otf services and their http handlers.
-func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, []otf.Handlers, error) {
+func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
 	hostnameService := otf.NewHostnameService(cfg.Hostname)
 
 	renderer, err := html.NewViewEngine(cfg.DevMode)
 	if err != nil {
-		return nil, nil, fmt.Errorf("setting up web page renderer: %w", err)
+		return nil, fmt.Errorf("setting up web page renderer: %w", err)
 	}
 	cloudService, err := inmem.NewCloudService(cfg.Github.Config, cfg.Gitlab.Config)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	cache, err := inmem.NewCache(*cfg.CacheConfig)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	logger.Info("started cache", "max_size", cfg.CacheConfig.Size, "ttl", cfg.CacheConfig.TTL)
 
@@ -116,7 +129,7 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, []otf.Handlers, 
 		OrganizationService: orgService,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("setting up auth service: %w", err)
+		return nil, fmt.Errorf("setting up auth service: %w", err)
 	}
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:       logger,
@@ -206,6 +219,8 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, []otf.Handlers, 
 	}
 
 	return &Services{
+		Config:                      cfg,
+		Handlers:                    handlers,
 		AuthService:                 authService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
@@ -219,5 +234,34 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, []otf.Handlers, 
 		LogsService:                 logsService,
 		RepoService:                 repoService,
 		Broker:                      broker,
-	}, handlers, nil
+	}, nil
+}
+
+func (s *Services) NewAgent(logger logr.Logger) (daemon, error) {
+	return agent.NewAgent(
+		logger.WithValues("component", "agent"),
+		client.LocalClient{
+			AgentTokenService:           s.AuthService,
+			WorkspaceService:            s.WorkspaceService,
+			OrganizationService:         s.OrganizationService,
+			VariableService:             s.VariableService,
+			StateService:                s.StateService,
+			HostnameService:             s.HostnameService,
+			ConfigurationVersionService: s.ConfigurationVersionService,
+			RegistrySessionService:      s.AuthService,
+			RunService:                  s.RunService,
+			LogsService:                 s.LogsService,
+		},
+		*s.AgentConfig,
+	)
+}
+
+func (s *Services) StartScheduler(ctx context.Context, logger logr.Logger, db otf.DB) error {
+	return scheduler.Start(ctx, scheduler.Options{
+		Logger:           logger,
+		WorkspaceService: s.WorkspaceService,
+		RunService:       s.RunService,
+		DB:               db,
+		Subscriber:       s.Broker,
+	})
 }

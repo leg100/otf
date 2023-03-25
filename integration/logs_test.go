@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ func TestLogs(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("upload chunk", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		err := svc.PutChunk(ctx, otf.Chunk{
@@ -26,7 +27,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("reject empty chunk", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		err := svc.PutChunk(ctx, otf.Chunk{
@@ -37,7 +38,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("get chunk", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		err := svc.PutChunk(ctx, otf.Chunk{
@@ -125,4 +126,78 @@ func TestLogs(t *testing.T) {
 			})
 		}
 	})
+}
+
+// TestClusterLogs tests the relaying of logs across a cluster of otfd nodes.
+func TestClusterLogs(t *testing.T) {
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(func() { cancel() })
+
+	// simulate a cluster of two otfd nodes
+	db := sql.NewTestDB(t)
+	local := setup(t, &config{db: db})
+	remote := setup(t, &config{db: db})
+
+	// start broker for each node
+	done := make(chan error)
+	go func() {
+		done <- local.Broker.Start(ctx)
+	}()
+	go func() {
+		done <- remote.Broker.Start(ctx)
+	}()
+
+	// wait 'til brokers are listening
+	local.Broker.WaitUntilListening()
+	remote.Broker.WaitUntilListening()
+
+	// create run on local node
+	run := local.createRun(t, ctx, nil, nil)
+
+	// follow run's plan logs on remote node
+	sub, err := remote.Tail(ctx, otf.GetChunkOptions{
+		RunID: run.ID,
+		Phase: otf.PlanPhase,
+	})
+	require.NoError(t, err)
+
+	// upload first chunk
+	err = local.PutChunk(ctx, otf.Chunk{
+		RunID: run.ID,
+		Phase: otf.PlanPhase,
+		Data:  []byte("\x02hello"),
+	})
+	require.NoError(t, err)
+
+	// upload second and last chunk
+	err = local.PutChunk(ctx, otf.Chunk{
+		RunID:  run.ID,
+		Phase:  otf.PlanPhase,
+		Data:   []byte(" world\x03"),
+		Offset: 6,
+	})
+	require.NoError(t, err)
+
+	want1 := otf.Chunk{
+		ID:    "1",
+		RunID: run.ID,
+		Phase: otf.PlanPhase,
+		Data:  []byte("\x02hello"),
+	}
+	require.Equal(t, want1, <-sub)
+
+	want2 := otf.Chunk{
+		ID:     "2",
+		RunID:  run.ID,
+		Phase:  otf.PlanPhase,
+		Data:   []byte(" world\x03"),
+		Offset: 6,
+	}
+	require.Equal(t, want2, <-sub)
+
+	cancel()
+	assert.NoError(t, <-done)
+	assert.NoError(t, <-done)
 }

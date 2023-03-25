@@ -16,7 +16,7 @@ func TestTeamDB(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		team, err := svc.CreateTeam(ctx, auth.NewTeamOptions{
@@ -35,7 +35,7 @@ func TestTeamDB(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
 		_, err := svc.UpdateTeam(ctx, team.ID, auth.UpdateTeamOptions{
@@ -56,7 +56,7 @@ func TestTeamDB(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
 		got, err := svc.GetTeam(ctx, team.Organization, team.Name)
@@ -66,7 +66,7 @@ func TestTeamDB(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createTeam(t, ctx, nil)
 
 		got, err := svc.GetTeamByID(ctx, want.ID)
@@ -76,7 +76,7 @@ func TestTeamDB(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team1 := svc.createTeam(t, ctx, org)
 		team2 := svc.createTeam(t, ctx, org)
@@ -91,7 +91,7 @@ func TestTeamDB(t *testing.T) {
 	})
 
 	t.Run("list members", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		team := svc.createTeam(t, ctx, org)
@@ -108,7 +108,7 @@ func TestTeamDB(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
 		err := svc.DeleteTeam(ctx, team.ID)

@@ -19,7 +19,7 @@ func TestWorkspace(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -38,7 +38,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("create workspace with connection", func(t *testing.T) {
-		svc := setup(t, "test/dummy")
+		svc := setup(t, &config{repo: "test/dummy"})
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
@@ -68,7 +68,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {
-		svc := setup(t, "test/dummy")
+		svc := setup(t, &config{repo: "test/dummy"})
 
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
@@ -94,7 +94,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		got, err := svc.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
@@ -111,7 +111,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createWorkspace(t, ctx, nil)
 
 		got, err := svc.GetWorkspace(ctx, want.ID)
@@ -120,7 +120,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("get by name", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createWorkspace(t, ctx, nil)
 
 		got, err := svc.GetWorkspaceByName(ctx, want.Organization, want.Name)
@@ -129,7 +129,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
@@ -206,7 +206,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list by user", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
@@ -282,7 +282,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("lock", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
 
@@ -307,7 +307,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)

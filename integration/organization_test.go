@@ -16,7 +16,7 @@ func TestOrganization(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 			Name: otf.String(uuid.NewString()),
 		})
@@ -31,7 +31,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("update name", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		want := uuid.NewString()
@@ -44,7 +44,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		_ = svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
 
@@ -71,7 +71,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("filter list by names", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want1 := svc.createOrganization(t, ctx)
 		want2 := svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
@@ -85,7 +85,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createOrganization(t, ctx)
 
 		got, err := svc.GetOrganization(ctx, want.Name)
@@ -95,7 +95,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		err := svc.DeleteOrganization(ctx, org.Name)
@@ -106,7 +106,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 
 		err := svc.DeleteOrganization(ctx, "does-not-exist")
 		assert.Equal(t, otf.ErrResourceNotFound, err)

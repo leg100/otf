@@ -36,7 +36,7 @@ func TestBroker_Publish(t *testing.T) {
 	broker := &broker{
 		pool:    pool,
 		subs:    map[string]chan otf.Event{"sub-1": got},
-		tables:  make(map[string]Getter),
+		registrations:  make(map[string]Getter),
 		metrics: map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 
@@ -76,7 +76,7 @@ func TestPubSub_receive(t *testing.T) {
 	broker := &broker{
 		pool:    &fakePool{},
 		subs:    map[string]chan otf.Event{"sub-1": got},
-		tables:  map[string]Getter{"run": &fakeGetter{resource: resource}},
+		registrations:  map[string]Getter{"run": &fakeGetter{resource: resource}},
 		metrics: map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 	err := broker.receive(context.Background(), &notification)

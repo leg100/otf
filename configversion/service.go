@@ -30,13 +30,6 @@ type (
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
 
 		delete(ctx context.Context, cvID string) error
-
-		// Upload handles verification and upload of the config tarball, updating
-		// the config version upon success or failure.
-		upload(ctx context.Context, id string, config []byte) error
-
-		// Download retrieves the config tarball for the given config version ID.
-		download(ctx context.Context, id string) ([]byte, error)
 	}
 
 	service struct {
@@ -107,12 +100,12 @@ func (s *service) CloneConfigurationVersion(ctx context.Context, cvID string, op
 		return nil, err
 	}
 
-	config, err := s.download(ctx, cvID)
+	config, err := s.DownloadConfig(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.upload(ctx, cv.ID, config); err != nil {
+	if err := s.UploadConfig(ctx, cv.ID, config); err != nil {
 		return nil, err
 	}
 
@@ -167,14 +160,6 @@ func (s *service) GetLatestConfigurationVersion(ctx context.Context, workspaceID
 
 func (s *service) DeleteConfigurationVersion(ctx context.Context, cvID string) error {
 	return s.svc.delete(ctx, cvID)
-}
-
-func (s *service) UploadConfig(ctx context.Context, workspaceID string, config []byte) error {
-	return s.svc.upload(ctx, workspaceID, config)
-}
-
-func (s *service) DownloadConfig(ctx context.Context, workspaceID string) ([]byte, error) {
-	return s.svc.download(ctx, workspaceID)
 }
 
 func (s *service) delete(ctx context.Context, cvID string) error {

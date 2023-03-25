@@ -15,7 +15,7 @@ func TestVariable(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
@@ -27,7 +27,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		v := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.UpdateVariable(ctx, v.ID, variable.UpdateVariableOptions{
@@ -39,7 +39,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		v1 := svc.createVariable(t, ctx, ws)
 		v2 := svc.createVariable(t, ctx, ws)
@@ -54,7 +54,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.GetVariable(ctx, want.ID)
@@ -64,7 +64,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.DeleteVariable(ctx, want.ID)

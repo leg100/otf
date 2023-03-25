@@ -14,7 +14,7 @@ func TestRepo(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create multiple connections", func(t *testing.T) {
-		svc := setup(t, "test/dummy")
+		svc := setup(t, &config{repo: "test/dummy"})
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)

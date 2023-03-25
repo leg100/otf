@@ -15,7 +15,7 @@ func TestUser(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 
 		org1 := svc.createOrganization(t, ctx)
 		org2 := svc.createOrganization(t, ctx)
@@ -69,13 +69,13 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		_, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String("does-not-exist")})
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		user1 := svc.createUser(t, ctx)
 		user2 := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
@@ -90,7 +90,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 
 		err := svc.DeleteUser(ctx, user.ID)
@@ -101,7 +101,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("add organization membership", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		user := svc.createUser(t, ctx)
 
@@ -115,7 +115,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("remove organization membership", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
 
@@ -129,7 +129,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
@@ -144,7 +144,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("remove team membership", func(t *testing.T) {
-		svc := setup(t, "")
+		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name), auth.WithTeams(team))

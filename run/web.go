@@ -179,7 +179,7 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.apply(r.Context(), runID)
+	err = h.svc.Apply(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

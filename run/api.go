@@ -184,7 +184,7 @@ func (s *api) applyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.svc.apply(r.Context(), id); err != nil {
+	if err := s.svc.Apply(r.Context(), id); err != nil {
 		jsonapi.Error(w, http.StatusNotFound, err)
 		return
 	}
