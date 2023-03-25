@@ -8,6 +8,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,6 +66,22 @@ func TestExecutor_execute(t *testing.T) {
 		if assert.Error(t, err) {
 			assert.Equal(t, "exit status 1: an error", err.Error())
 		}
+	})
+
+	t.Run("cancel", func(t *testing.T) {
+		r, w := io.Pipe()
+		exe := &executor{
+			out:     w,
+			workdir: &workdir{root: ""},
+		}
+		done := make(chan error)
+		go func() {
+			done <- exe.execute([]string{"./testdata/killme"})
+		}()
+
+		assert.Equal(t, "ok, you can kill me now\n", <-iochan.DelimReader(r, '\n'))
+		exe.cancel(false)
+		assert.NoError(t, <-done)
 	})
 }
 

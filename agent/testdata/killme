@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+trap "exit 0" INT
+
+echo "ok, you can kill me now"
+
+while true; do sleep 1; done

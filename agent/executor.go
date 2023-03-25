@@ -25,7 +25,8 @@ type (
 		out     io.Writer
 		envs    []string
 		workdir *workdir
-		proc    *os.Process // current or last process
+
+		*execution // current or last execution of a process
 	}
 
 	// execution is an execution of a process.
@@ -67,11 +68,11 @@ func (e *executor) execute(args []string, opts ...executionOption) error {
 		out:     e.out,
 		envs:    e.envs,
 		workdir: e.workdir,
-		proc:    e.proc,
 	}
 	for _, fn := range opts {
 		fn(&exe)
 	}
+	e.execution = &exe
 	if err := exe.execute(args); err != nil {
 		return err
 	}
@@ -82,19 +83,6 @@ func (e *executor) execute(args []string, opts ...executionOption) error {
 func (e *executor) executeTerraform(args []string, opts ...executionOption) error {
 	args = append([]string{e.TerraformPath(e.version)}, args...)
 	return e.execute(args, opts...)
-}
-
-// cancel sends a termination signal to the current process
-//
-// TODO: write unit test using an exe that waits for an INT signal
-func (e *executor) cancel(force bool) {
-	if e.proc != nil {
-		if force {
-			e.proc.Signal(os.Kill)
-		} else {
-			e.proc.Signal(os.Interrupt)
-		}
-	}
 }
 
 func (e *execution) execute(args []string) error {
@@ -133,6 +121,17 @@ func (e *execution) execute(args []string) error {
 		return fmt.Errorf("%w: %s", err, cleanStderr(stderr.String()))
 	}
 	return nil
+}
+
+// cancel sends a termination signal to the current process
+func (e *execution) cancel(force bool) {
+	if e.proc != nil {
+		if force {
+			e.proc.Signal(os.Kill)
+		} else {
+			e.proc.Signal(os.Interrupt)
+		}
+	}
 }
 
 // addSandboxWrapper wraps the args within a bubblewrap sandbox.
