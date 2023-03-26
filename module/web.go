@@ -262,7 +262,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 	if err != nil && errors.Is(err, otf.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
-	} else if err != nil && errors.Is(err, ErrInvalidModuleRepo) {
+	} else if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

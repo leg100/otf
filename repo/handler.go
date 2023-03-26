@@ -13,6 +13,9 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
+const handlerPrefix = "/webhooks/vcs"
+
 type (
 	// handler is the first point of entry for incoming VCS events, relaying them onto
 	// a cloud-specific handler.

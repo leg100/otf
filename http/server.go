@@ -55,6 +55,12 @@ var (
 		TfeV22:     APIPrefixV2,
 		VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
 	})
+
+	// endpoints with these prefixes require authentication
+	AuthenticatedPrefixes = []string{
+		APIPrefixV2,
+		ModuleV1Prefix,
+	}
 )
 
 type (

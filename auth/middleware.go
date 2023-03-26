@@ -41,9 +41,18 @@ func AuthenticateToken(svc AuthenticateTokenService, siteToken string) mux.Middl
 		}
 	}
 
+	requiresToken := func(path string) bool {
+		for _, prefix := range otfhttp.AuthenticatedPrefixes {
+			if strings.HasPrefix(path, prefix) {
+				return true
+			}
+		}
+		return false
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !strings.HasPrefix(r.URL.Path, otfhttp.APIPrefixV2) {
+			if !requiresToken(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}

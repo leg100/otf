@@ -173,6 +173,7 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 			err := module.StartPublisher(ctx, module.PublisherOptions{
 				Logger:             logger,
 				VCSProviderService: services.VCSProviderService,
+				ModuleService:      services.ModuleService,
 				Subscriber:         services.Broker,
 			})
 			if err != nil {

@@ -143,7 +143,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = h.svc.delete(r.Context(), runID)
+	err = h.svc.Delete(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

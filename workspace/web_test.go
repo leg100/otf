@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/assert"
@@ -82,7 +83,16 @@ func TestWorkspace_GetByName(t *testing.T) {
 
 func TestEditWorkspaceHandler(t *testing.T) {
 	ws := &Workspace{ID: "ws-123"}
-	app := fakeWebHandlers(t, withWorkspaces(ws))
+	devs := &auth.Team{Name: "devs"}
+	policy := otf.WorkspacePolicy{
+		Permissions: []otf.WorkspacePermission{
+			{
+				Team: "devs",
+				Role: rbac.WorkspaceAdminRole,
+			},
+		},
+	}
+	app := fakeWebHandlers(t, withWorkspaces(ws), withTeams(devs), withPolicy(policy))
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -283,6 +293,8 @@ type (
 		workspaces []*Workspace
 		providers  []*vcsprovider.VCSProvider
 		repos      []string
+		policy     otf.WorkspacePolicy
+		teams      []*auth.Team
 
 		Service
 
@@ -311,6 +323,18 @@ func withRepos(repos ...string) fakeWebServiceOption {
 	}
 }
 
+func withPolicy(policy otf.WorkspacePolicy) fakeWebServiceOption {
+	return func(svc *fakeWebService) {
+		svc.policy = policy
+	}
+}
+
+func withTeams(teams ...*auth.Team) fakeWebServiceOption {
+	return func(svc *fakeWebService) {
+		svc.teams = teams
+	}
+}
+
 func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
@@ -328,10 +352,6 @@ func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 	}
 }
 
-func (f *fakeWebService) GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
-	return otf.WorkspacePolicy{}, nil
-}
-
 func (f *fakeWebService) GetVCSProvider(ctx context.Context, providerID string) (*vcsprovider.VCSProvider, error) {
 	return f.providers[0], nil
 }
@@ -344,12 +364,12 @@ func (f *fakeWebService) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeWebService) GetWorkspacePolicy(context.Context, string) ([]*otf.WorkspacePermission, error) {
-	return nil, nil
+func (f *fakeWebService) GetPolicy(context.Context, string) (otf.WorkspacePolicy, error) {
+	return f.policy, nil
 }
 
 func (f *fakeWebService) ListTeams(context.Context, string) ([]*auth.Team, error) {
-	return nil, nil
+	return f.teams, nil
 }
 
 func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {

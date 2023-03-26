@@ -173,6 +173,7 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
 		WorkspaceAuthorizer:         workspaceService,
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
+		VCSProviderService:          vcsProviderService,
 		Broker:                      broker,
 		Cache:                       cache,
 		Signer:                      signer,
@@ -220,6 +221,7 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
 		configService,
 		runService,
 		logsService,
+		repoService,
 	}
 
 	return &Services{

@@ -22,7 +22,7 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team st
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
-	result, err := db.FindWorkspacePermissionsByID(ctx, sql.String(workspaceID))
+	result, err := db.FindWorkspacePolicyByID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return otf.WorkspacePolicy{}, sql.Error(err)
 	}
@@ -30,15 +30,24 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf
 		Organization: result.OrganizationName.String,
 		WorkspaceID:  result.WorkspaceID.String,
 	}
+	// SQL query returns an array of workspace permissions and an array of
+	// teams; the former has the team id but not the team name, which we want, so
+	// lookup the corresponding team name in the latter.
 	for _, perm := range result.WorkspacePermissions {
 		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
 		if err != nil {
 			return otf.WorkspacePolicy{}, err
 		}
-		policy.Permissions = append(policy.Permissions, otf.WorkspacePermission{
-			Team: perm.TeamID.String,
-			Role:   role,
-		})
+		// find corresponding team name in teams array
+		for _, t := range result.Teams {
+			if t.TeamID == perm.TeamID {
+				policy.Permissions = append(policy.Permissions, otf.WorkspacePermission{
+					Team: t.Name.String,
+					Role: role,
+				})
+				break
+			}
+		}
 	}
 	return policy, nil
 }

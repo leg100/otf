@@ -27,21 +27,17 @@ type (
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 		GetRun(ctx context.Context, id string) (*Run, error)
 		ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
-
 		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
-
 		// StartPhase starts a run phase.
 		StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error)
 		// FinishPhase finishes a phase. Creates a report of changes before updating the status of
 		// the run.
 		FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error)
-
 		// GetPlanFile returns the plan file for the run.
 		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
 		// UploadPlanFile persists a run's plan file. The plan format should be either
 		// be binary or json.
 		UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
-
 		// Watch provides access to a stream of run events. The WatchOptions filters
 		// events. Context must be cancelled to close stream.
 		//
@@ -49,21 +45,18 @@ type (
 		// returning a stream object with a Close() method. The calling code would
 		// call Watch(), and then defer a Close(), which is more readable IMO.
 		Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error)
-
 		// Cancel a run. If a run is in progress then a cancelation signal will be
 		// sent out.
 		Cancel(ctx context.Context, runID string) (*Run, error)
-
 		// Apply enqueues an Apply for the run.
 		Apply(ctx context.Context, runID string) error
+		// Delete a run.
+		Delete(ctx context.Context, runID string) error
 
 		get(ctx context.Context, runID string) (*Run, error)
 		discard(ctx context.Context, runID string) error
 		// forceCancel forcefully cancels a run.
 		forceCancel(ctx context.Context, runID string) error
-
-		// delete deletes a run.
-		delete(ctx context.Context, runID string) error
 		// createReport creates a report of changes for the phase.
 		createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
 		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
@@ -98,6 +91,7 @@ type (
 
 		WorkspaceService
 		ConfigurationVersionService
+		VCSProviderService
 
 		logr.Logger
 		otf.Cache
@@ -138,7 +132,12 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		logsdb:   db,
 		svc:      &svc,
-		starter:  &starter{},
+		starter: &starter{
+			ConfigurationVersionService: opts.ConfigurationVersionService,
+			WorkspaceService:            opts.WorkspaceService,
+			VCSProviderService:          opts.VCSProviderService,
+			RunService:                  &svc,
+		},
 	}
 
 	// Register with broker so that it can relay run events
@@ -245,7 +244,23 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 }
 
 func (s *service) Delete(ctx context.Context, runID string) error {
-	return s.delete(ctx, runID)
+	run, err := s.db.GetRun(ctx, runID)
+	if err != nil {
+		return err
+	}
+
+	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteRunAction, run.WorkspaceID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.DeleteRun(ctx, runID); err != nil {
+		s.Error(err, "deleting run", "id", runID, "subject", subject)
+		return err
+	}
+	s.V(0).Info("deleted run", "id", runID, "subject", subject)
+	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
+	return nil
 }
 
 // StartPhase starts a run phase.
@@ -512,27 +527,6 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 		return fmt.Errorf("caching plan: %w", err)
 	}
 
-	return nil
-}
-
-// delete a run.
-func (s *service) delete(ctx context.Context, runID string) error {
-	run, err := s.db.GetRun(ctx, runID)
-	if err != nil {
-		return err
-	}
-
-	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteRunAction, run.WorkspaceID)
-	if err != nil {
-		return err
-	}
-
-	if err := s.db.DeleteRun(ctx, runID); err != nil {
-		s.Error(err, "deleting run", "id", runID, "subject", subject)
-		return err
-	}
-	s.V(0).Info("deleted run", "id", runID, "subject", subject)
-	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 	return nil
 }
 

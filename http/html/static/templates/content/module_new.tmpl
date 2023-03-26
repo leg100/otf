@@ -87,7 +87,7 @@
       </div>
     </div>
     <div>
-      <form action="{{ createModulePath $.Content.Organization }}" method="GET">
+      <form action="{{ createModulePath $.Content.Organization }}" method="POST">
         <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.VCSProvider.ID }}">
         <input type="hidden" name="identifier" id="identifier" value="{{ .Content.Repo }}">
         <button>connect</button>

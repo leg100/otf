@@ -43,7 +43,7 @@ func TestSiteAdmin(t *testing.T) {
 		screenshot(t),
 		chromedp.Text(".content > p", &loginConfirmation, chromedp.NodeVisible),
 		// now go to the list of organizations
-		chromedp.Navigate("https://" + hostname + "/organizations"),
+		chromedp.Navigate("https://" + hostname + "/app/organizations"),
 		// add an org
 		chromedp.Click("#new-organization-button", chromedp.NodeVisible),
 		screenshot(t),
@@ -55,7 +55,7 @@ func TestSiteAdmin(t *testing.T) {
 		chromedp.Location(&orgLocation),
 		chromedp.Text(".flash-success", &orgCreated, chromedp.NodeVisible),
 		// return to the list of organizations
-		chromedp.Navigate("https://" + hostname + "/organizations"),
+		chromedp.Navigate("https://" + hostname + "/app/organizations"),
 		// delete the organization
 		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
 		screenshot(t),
@@ -65,6 +65,6 @@ func TestSiteAdmin(t *testing.T) {
 
 	assert.Equal(t, "site admin", footerLoginText)
 	assert.Equal(t, "You are logged in as site-admin", strings.TrimSpace(loginConfirmation))
-	assert.Equal(t, "https://"+hostname+"/organizations/"+org, orgLocation)
+	assert.Equal(t, "https://"+hostname+"/app/organizations/"+org, orgLocation)
 	assert.Equal(t, "created organization: "+org, strings.TrimSpace(orgCreated))
 }

@@ -32,8 +32,8 @@ func (h *api) addHandlers(r *mux.Router) {
 	// https://developer.hashicorp.com/terraform/internals/module-registry-protocol
 	r = r.PathPrefix(otfhttp.ModuleV1Prefix).Subrouter()
 
-	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions)
-	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink)
+	r.HandleFunc("/{organization}/{name}/{provider}/versions", h.listAvailableVersions).Methods("GET")
+	r.HandleFunc("/{organization}/{name}/{provider}/{version}/download", h.getModuleVersionDownloadLink).Methods("GET")
 }
 
 type (

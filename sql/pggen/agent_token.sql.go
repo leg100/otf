@@ -1028,12 +1028,12 @@ type Querier interface {
 	// UpsertWorkspacePermissionScan scans the result of an executed UpsertWorkspacePermissionBatch query.
 	UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindWorkspacePermissionsByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePermissionsByIDRow, error)
-	// FindWorkspacePermissionsByIDBatch enqueues a FindWorkspacePermissionsByID query into batch to be executed
+	FindWorkspacePolicyByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePolicyByIDRow, error)
+	// FindWorkspacePolicyByIDBatch enqueues a FindWorkspacePolicyByID query into batch to be executed
 	// later by the batch.
-	FindWorkspacePermissionsByIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// FindWorkspacePermissionsByIDScan scans the result of an executed FindWorkspacePermissionsByIDBatch query.
-	FindWorkspacePermissionsByIDScan(results pgx.BatchResults) (FindWorkspacePermissionsByIDRow, error)
+	FindWorkspacePolicyByIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindWorkspacePolicyByIDScan scans the result of an executed FindWorkspacePolicyByIDBatch query.
+	FindWorkspacePolicyByIDScan(results pgx.BatchResults) (FindWorkspacePolicyByIDRow, error)
 
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
@@ -1547,8 +1547,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, upsertWorkspacePermissionSQL, upsertWorkspacePermissionSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertWorkspacePermission': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspacePermissionsByIDSQL, findWorkspacePermissionsByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByID': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspacePolicyByIDSQL, findWorkspacePolicyByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacePolicyByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)

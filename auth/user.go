@@ -85,14 +85,14 @@ func (u *User) CanAccessSite(action rbac.Action) bool {
 	return u.IsSiteAdmin()
 }
 
-func (u *User) CanAccessOrganization(action rbac.Action, name string) bool {
+func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 	// coarser-grained site-level perms take precedence
 	if u.CanAccessSite(action) {
 		return true
 	}
 	// fallback to finer-grained organization-level perms
 	for _, team := range u.Teams {
-		if team.Organization == name {
+		if team.Organization == org {
 			if team.IsOwners() {
 				// owner team members can perform all actions on organization
 				return true
@@ -127,8 +127,11 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy
 	}
 	// fallback to checking finer-grained workspace perms
 	for _, team := range u.Teams {
+		if team.Organization != policy.Organization {
+			continue
+		}
 		for _, perm := range policy.Permissions {
-			if team.ID == perm.Team {
+			if team.Name == perm.Team {
 				return perm.Role.IsAllowed(action)
 			}
 		}

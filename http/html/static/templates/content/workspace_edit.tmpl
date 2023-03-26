@@ -79,14 +79,14 @@
               <td>admin</td>
             </tr>
             {{ range .Content.Permissions }}
-              {{ if eq .Team.Name "owners" }}
+              {{ if eq .Team "owners" }}
                 {{continue}}
               {{ end }}
               <tr>
-                <td>{{ .Team.Name }}</td>
+                <td>{{ .Team }}</td>
                 <td>
                   <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
-                    <input name="team_name" value="{{ .Team.Name }}" type="hidden">
+                    <input name="team_name" value="{{ .Team }}" type="hidden">
                     <select name="role" id="role-select">
                       {{ $currentRole := .Role.String }}
                       {{ range $.Content.Roles }}
@@ -98,7 +98,7 @@
                 </td>
                 <td>
                   <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
-                    <input name="team_name" value="{{ .Team.Name }}" type="hidden">
+                    <input name="team_name" value="{{ .Team }}" type="hidden">
                     <button class="delete">Remove</button>
                   </form>
                 </td>

@@ -70,6 +70,7 @@ func (d *daemon) start(t *testing.T) string {
 		"--dev-mode=false",
 		"--plugin-cache", // speed up tests by caching providers
 		"--database", connstr,
+		"--log-http-requests",
 	)
 
 	if d.enableGithub {

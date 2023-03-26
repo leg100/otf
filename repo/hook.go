@@ -11,9 +11,6 @@ import (
 	"github.com/leg100/otf/cloud"
 )
 
-// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
-const handlerPrefix = "/webhooks/vcs"
-
 // defaultEvents are the VCS events that hooks subscribe to.
 var defaultEvents = []cloud.VCSEventType{
 	cloud.VCSPushEventType,
