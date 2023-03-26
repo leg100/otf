@@ -39,8 +39,6 @@ type (
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
-		getRun(ctx context.Context, runID string) (run, error)
-
 		connect(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error)
 		disconnect(ctx context.Context, workspaceID string) error
 
@@ -347,19 +345,6 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 	s.V(0).Info("disconnected workspace", "workspace", workspaceID, "subject", subject)
 
 	return nil
-}
-
-// getRun retrieves a workspace run.
-func (s *service) getRun(ctx context.Context, runID string) (run, error) {
-	result, err := s.db.getRun(ctx, runID)
-	if err != nil {
-		s.Error(err, "retrieving workspace run", "run", runID)
-		return run{}, err
-	}
-
-	s.V(2).Info("retrieved workspace run", "run", runID)
-
-	return result, nil
 }
 
 // SetCurrentRun sets the current run for the workspace

@@ -19,7 +19,7 @@ func (h *webHandlers) addTokenHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens/create", h.createTokenHandler).Methods("POST")
 
 	// terraform login opens a browser to this hardcoded URL
-	r.HandleFunc("/app/settings/tokens", h.tokensHandler).Methods("GET")
+	r.HandleFunc("/settings/tokens", h.tokensHandler).Methods("GET")
 }
 
 func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {

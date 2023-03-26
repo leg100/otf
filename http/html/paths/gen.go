@@ -195,6 +195,9 @@ var specs = []controllerSpec{
 							{
 								name: "tail",
 							},
+							{
+								name: "widget",
+							},
 						},
 					},
 					{

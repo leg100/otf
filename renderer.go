@@ -11,7 +11,7 @@ type Renderer interface {
 	// various helpers on the root object (.) and the content can be accessed at
 	// .Content.
 	Render(path string, w http.ResponseWriter, r *http.Request, content any)
-	// RenderTemplate renders template to http response. No helpers are made
+	// RenderTemplate renders template to a writer. No helpers are made
 	// available and the content is available on the root object (.) within the
 	// template.
 	RenderTemplate(path string, w io.Writer, content any) error

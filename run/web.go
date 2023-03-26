@@ -43,11 +43,12 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list)
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get)
+	r.HandleFunc("/runs/{run_id}/widget", h.getWidget)
 	r.HandleFunc("/runs/{run_id}/delete", h.delete)
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel)
 	r.HandleFunc("/runs/{run_id}/apply", h.apply)
 	r.HandleFunc("/runs/{run_id}/discard", h.discard)
-	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watchWorkspace).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get)
@@ -80,11 +81,9 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	h.Render("run_list.tmpl", w, r, struct {
 		*RunList
 		*workspace.Workspace
-		StreamID string
 	}{
 		RunList:   runs,
 		Workspace: ws,
-		StreamID:  "watch-ws-runs-" + otf.GenerateRandomString(5),
 	})
 }
 
@@ -129,6 +128,26 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		PlanLogs:  otf.Chunk{Data: planLogs},
 		ApplyLogs: otf.Chunk{Data: applyLogs},
 	})
+}
+
+// getWidget renders a run "widget", i.e. the container that
+// contains info about a run. Intended for use with an ajax request.
+func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := h.svc.get(r.Context(), runID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.RenderTemplate("run_item.tmpl", w, run); err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
@@ -233,10 +252,9 @@ func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
-func (h *webHandlers) watchWorkspace(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		StreamID    string `schema:"stream,required"`
 		Latest      bool   `schema:"latest"`
 		RunID       string `schema:"run_id"`
 	}
@@ -331,7 +349,7 @@ func (h *webHandlers) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling watched run", "run", run.ID)
 				continue
 			}
-			otf.WriteSSEEvent(w, js, event.Type)
+			otf.WriteSSEEvent(w, js, event.Type, false)
 			rc.Flush()
 		}
 	}

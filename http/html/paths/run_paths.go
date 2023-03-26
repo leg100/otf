@@ -47,3 +47,7 @@ func CancelRun(run string) string {
 func TailRun(run string) string {
 	return fmt.Sprintf("/app/runs/%s/tail", run)
 }
+
+func WidgetRun(run string) string {
+	return fmt.Sprintf("/app/runs/%s/widget", run)
+}

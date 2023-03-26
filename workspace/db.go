@@ -309,30 +309,6 @@ func (db *pgdb) delete(ctx context.Context, workspaceID string) error {
 	return nil
 }
 
-func (db *pgdb) getRun(ctx context.Context, runID string) (run, error) {
-	result, err := db.FindRunByID(ctx, sql.String(runID))
-	if err != nil {
-		return run{}, sql.Error(err)
-	}
-	return run{
-		ID:                     result.RunID.String,
-		CreatedAt:              result.CreatedAt.Time.UTC(),
-		IsDestroy:              result.IsDestroy,
-		PositionInQueue:        result.PositionInQueue,
-		Refresh:                result.Refresh,
-		RefreshOnly:            result.RefreshOnly,
-		Status:                 otf.RunStatus(result.Status.String),
-		ReplaceAddrs:           result.ReplaceAddrs,
-		TargetAddrs:            result.TargetAddrs,
-		AutoApply:              result.AutoApply,
-		Speculative:            result.Speculative,
-		Latest:                 result.Latest,
-		Organization:           result.OrganizationName.String,
-		WorkspaceID:            result.WorkspaceID.String,
-		ConfigurationVersionID: result.ConfigurationVersionID.String,
-	}, nil
-}
-
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {

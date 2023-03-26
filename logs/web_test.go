@@ -29,7 +29,7 @@ func TestTailLogs(t *testing.T) {
 		handlers.tailRun(w, r)
 
 		// should receive base64 encoded event
-		want := "data: eyJodG1sIjoic29tZSBsb2dzXHUwMDNjYnJcdTAwM2UiLCJvZmZzZXQiOjl9\nevent: log_update\n\ndata: bm8gbW9yZSBsb2dz\nevent: log_finished\n\n"
+		want := "data: {\"html\":\"some logs\\u003cbr\\u003e\",\"offset\":9}\nevent: log_update\n\ndata: no more logs\nevent: log_finished\n\n"
 		assert.Equal(t, want, w.Body.String())
 
 		done <- struct{}{}

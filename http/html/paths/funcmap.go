@@ -66,6 +66,7 @@ func init() {
 	funcmap["discardRunPath"] = DiscardRun
 	funcmap["cancelRunPath"] = CancelRun
 	funcmap["tailRunPath"] = TailRun
+	funcmap["widgetRunPath"] = WidgetRun
 
 	funcmap["variablesPath"] = Variables
 	funcmap["createVariablePath"] = CreateVariable

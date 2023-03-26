@@ -404,9 +404,7 @@ func (s *api) getApply(w http.ResponseWriter, r *http.Request) {
 	s.writeResponse(w, r, run.Apply)
 }
 
-// Watch handler responds with a stream of events, using json encoding.
-//
-// NOTE: Only run events are currently supported.
+// Watch handler responds with a stream of run events
 func (s *api) watch(w http.ResponseWriter, r *http.Request) {
 	// TODO: populate watch options
 	events, err := s.svc.Watch(r.Context(), WatchOptions{})
@@ -436,7 +434,7 @@ func (s *api) watch(w http.ResponseWriter, r *http.Request) {
 				s.Error(err, "marshalling run event", "event", event.Type)
 				continue
 			}
-			otf.WriteSSEEvent(w, data, event.Type)
+			otf.WriteSSEEvent(w, data, event.Type, true)
 			rc.Flush()
 		case <-r.Context().Done():
 			// client closed connection

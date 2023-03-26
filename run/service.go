@@ -128,10 +128,11 @@ func NewService(opts Options) *service {
 		svc:              &svc,
 	}
 	svc.web = &webHandlers{
-		Logger:   opts.Logger,
-		Renderer: opts.Renderer,
-		logsdb:   db,
-		svc:      &svc,
+		Logger:           opts.Logger,
+		Renderer:         opts.Renderer,
+		WorkspaceService: opts.WorkspaceService,
+		logsdb:           db,
+		svc:              &svc,
 		starter: &starter{
 			ConfigurationVersionService: opts.ConfigurationVersionService,
 			WorkspaceService:            opts.WorkspaceService,

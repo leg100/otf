@@ -123,23 +123,10 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var latest run
-	if ws.LatestRunID != nil {
-		latest, err = h.svc.getRun(r.Context(), *ws.LatestRunID)
-		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
 	h.Render("workspace_get.tmpl", w, r, struct {
 		*Workspace
-		LatestRun      run
-		LatestStreamID string
 	}{
-		Workspace:      ws,
-		LatestRun:      latest,
-		LatestStreamID: "latest-" + otf.GenerateRandomString(5),
+		Workspace: ws,
 	})
 }
 

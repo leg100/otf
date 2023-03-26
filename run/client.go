@@ -163,9 +163,7 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 	return newFromJSONAPI(run), nil
 }
 
-// Watch returns a channel subscribed to events.
-//
-// NOTE: currently only subscribes to run events
+// Watch returns a channel subscribed to run events.
 func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error) {
 	// TODO: why buffered chan of size 1?
 	notifications := make(chan otf.Event, 1)

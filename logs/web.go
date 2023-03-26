@@ -66,7 +66,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				otf.WriteSSEEvent(w, []byte("no more logs"), otf.EventLogFinished)
+				otf.WriteSSEEvent(w, []byte("no more logs"), otf.EventLogFinished, false)
 				return
 			}
 			html := chunk.ToHTML()
@@ -85,7 +85,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling data")
 				continue
 			}
-			otf.WriteSSEEvent(w, js, otf.EventLogChunk)
+			otf.WriteSSEEvent(w, js, otf.EventLogChunk, false)
 			rc.Flush()
 		case <-r.Context().Done():
 			return

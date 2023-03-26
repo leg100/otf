@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -142,6 +143,19 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 		h.AddHandlers(svcRouter)
 	}
 
+	// Add tfp api version header to every api response
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, APIPrefixV2) {
+				// Version 2.5 is the minimum version terraform requires for the
+				// newer 'cloud' configuration block:
+				// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
+				w.Header().Set("TFP-API-Version", "2.5")
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	// Toggle logging HTTP requests
 	if cfg.EnableRequestLogging {
 		http.Handle("/", s.loggingMiddleware(r))
@@ -154,18 +168,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 
 // APIRouter wraps the given router with a router suitable for API routes.
 func APIRouter(r *mux.Router) *mux.Router {
-	r = r.PathPrefix(APIPrefixV2).Subrouter()
-	// Add tfp api version header to every response
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Version 2.5 is the minimum version terraform requires for the
-			// newer 'cloud' configuration block:
-			// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
-			w.Header().Set("TFP-API-Version", "2.5")
-			next.ServeHTTP(w, r)
-		})
-	})
-	return r
+	return r.PathPrefix(APIPrefixV2).Subrouter()
 }
 
 // Start starts serving http traffic on the given listener and waits until the server exits due to
