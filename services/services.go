@@ -157,6 +157,7 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
 		RepoService:         repoService,
 		TeamService:         authService,
 		OrganizationService: orgService,
+		VCSProviderService:  vcsProviderService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:              logger,

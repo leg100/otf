@@ -46,8 +46,10 @@ func TestWeb(t *testing.T) {
 		chromedp.Tasks{
 			// go to org
 			chromedp.Navigate(organizationPath(hostname, org)),
+			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
+			screenshot(t),
 			// select devops team
 			chromedp.Click("#item-team-devops a", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),

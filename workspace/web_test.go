@@ -82,23 +82,50 @@ func TestWorkspace_GetByName(t *testing.T) {
 }
 
 func TestEditWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123"}
-	devs := &auth.Team{Name: "devs"}
-	policy := otf.WorkspacePolicy{
-		Permissions: []otf.WorkspacePermission{
-			{
-				Team: "devs",
-				Role: rbac.WorkspaceAdminRole,
+	tests := []struct {
+		name   string
+		ws     *Workspace
+		teams  []*auth.Team
+		policy otf.WorkspacePolicy
+	}{
+		{
+			name: "default",
+			ws:   &Workspace{ID: "ws-123"},
+		},
+		{
+			name: "with policy",
+			ws:   &Workspace{ID: "ws-123"},
+			policy: otf.WorkspacePolicy{
+				Permissions: []otf.WorkspacePermission{
+					{
+						Team: "devs",
+						Role: rbac.WorkspaceAdminRole,
+					},
+				},
 			},
 		},
+		{
+			name:  "with unassigned teams",
+			ws:    &Workspace{ID: "ws-123"},
+			teams: []*auth.Team{{Name: "devs"}},
+		},
+		{
+			name: "connected repo",
+			ws:   &Workspace{ID: "ws-123", Connection: &repo.Connection{Repo: "leg100/otf"}},
+		},
 	}
-	app := fakeWebHandlers(t, withWorkspaces(ws), withTeams(devs), withPolicy(policy))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := fakeWebHandlers(t,
+				withWorkspaces(tt.ws), withTeams(tt.teams...), withPolicy(tt.policy))
 
-	q := "/?workspace_id=ws-123"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-	app.editWorkspace(w, r)
-	assert.Equal(t, 200, w.Code, "output: %s", w.Body.String())
+			q := "/?workspace_id=ws-123"
+			r := httptest.NewRequest("GET", q, nil)
+			w := httptest.NewRecorder()
+			app.editWorkspace(w, r)
+			assert.Equal(t, 200, w.Code, "output: %s", w.Body.String())
+		})
+	}
 }
 
 func TestUpdateWorkspaceHandler(t *testing.T) {
