@@ -16,6 +16,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func workspacePath(hostname, org, name string) string {
+	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
+}
+
+func organizationPath(hostname, org string) string {
+	return "https://" + hostname + "/app/organizations/" + org
+}
+
 // githubLoginTasks logs into the UI using github; upon success a session cookie
 // is created
 func githubLoginTasks(t *testing.T, hostname, username string) chromedp.Tasks {
@@ -53,7 +61,7 @@ func logoutTasks(t *testing.T, hostname string) chromedp.Tasks {
 // createWorkspaceTasks creates a workspace via the UI
 func createWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
-		chromedp.Navigate("https://" + hostname + "/organizations/" + org),
+		chromedp.Navigate(organizationPath(hostname, org)),
 		screenshot(t),
 		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
 		screenshot(t),
@@ -71,7 +79,7 @@ func createWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tas
 func startRunTasks(t *testing.T, hostname, organization string, workspaceName string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
-		chromedp.Navigate(fmt.Sprintf("https://%s/organizations/%s/workspaces/%s", hostname, organization, workspaceName)),
+		chromedp.Navigate(workspacePath(hostname, organization, workspaceName)),
 		screenshot(t),
 		// select strategy for run
 		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),
@@ -160,10 +168,10 @@ func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 
 // addWorkspacePermissionTasks adds a workspace permission via the UI, assigning
 // a role to a team.
-func addWorkspacePermissionTasks(t *testing.T, url, org, workspaceName, team, role string) chromedp.Tasks {
+func addWorkspacePermissionTasks(t *testing.T, hostname, org, workspaceName, team, role string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+		chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -190,10 +198,10 @@ func terraformInitTasks(t *testing.T, path string) chromedp.Action {
 	})
 }
 
-func createGithubVCSProviderTasks(t *testing.T, url, org, name string) chromedp.Tasks {
+func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to org
-		chromedp.Navigate(path.Join(url, "organizations", org)),
+		chromedp.Navigate(organizationPath(hostname, org)),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		screenshot(t),
@@ -213,10 +221,10 @@ func createGithubVCSProviderTasks(t *testing.T, url, org, name string) chromedp.
 	}
 }
 
-func connectWorkspaceTasks(t *testing.T, url, org, name string) chromedp.Tasks {
+func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", name)),
+		chromedp.Navigate(workspacePath(hostname, org, name)),
 		screenshot(t),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -235,10 +243,10 @@ func connectWorkspaceTasks(t *testing.T, url, org, name string) chromedp.Tasks {
 	}
 }
 
-func disconnectWorkspaceTasks(t *testing.T, url, org, name string) chromedp.Tasks {
+func disconnectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", name)),
+		chromedp.Navigate(workspacePath(hostname, org, name)),
 		screenshot(t),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),

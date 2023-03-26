@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"os"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/auth"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/scheduler"
@@ -57,7 +53,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	// TODO: rename --address to --listen
 	cmd.Flags().StringVar(&cfg.Address, "address", defaultAddress, "Listening address")
 	cmd.Flags().StringVar(&cfg.Database, "database", defaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&cfg.Hostname, "hostname", "", "User-facing hostname for otf")
+	cmd.Flags().StringVar(&cfg.Host, "hostname", "", "User-facing hostname for otf")
 	cmd.Flags().StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 	cmd.Flags().StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
 	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", configversion.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
@@ -128,34 +124,15 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 			return err
 		}
 
-		server, err := http.NewServer(logger, http.ServerConfig{
-			SSL:                  cfg.SSL,
-			CertFile:             cfg.CertFile,
-			KeyFile:              cfg.KeyFile,
-			EnableRequestLogging: cfg.EnableRequestLogging,
-			DevMode:              cfg.DevMode,
-			Middleware: []mux.MiddlewareFunc{
-				auth.AuthenticateToken(services.AuthService, cfg.SiteToken),
-				auth.AuthenticateSession(services.AuthService),
-			},
-			Handlers: services.Handlers,
-		})
-		if err != nil {
-			return fmt.Errorf("setting up http server: %w", err)
-		}
-		ln, err := net.Listen("tcp", cfg.Address)
+		server, listener, err := services.NewServer(logger)
 		if err != nil {
 			return err
 		}
-		defer ln.Close()
+		defer listener.Close()
 
-		// If --hostname not set then use http server's listening address as
-		// hostname
-		if cfg.Hostname == "" {
-			listenAddress := ln.Addr().(*net.TCPAddr)
-			services.SetHostname(otf.NormalizeAddress(listenAddress))
-		}
-		logger.V(0).Info("set system hostname", "hostname", cfg.Hostname)
+		// report hostname now that the http server has been setup, which
+		// sets the hostname if the user has not set one.
+		logger.V(0).Info("set system hostname", "hostname", services.Hostname())
 
 		// Start purging sessions on a regular interval
 		services.StartExpirer(ctx)
@@ -235,7 +212,7 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 
 		// Run HTTP/JSON-API server and web app
 		g.Go(func() error {
-			if err := server.Start(ctx, ln); err != nil {
+			if err := server.Start(ctx, listener); err != nil {
 				return fmt.Errorf("http server terminated: %w", err)
 			}
 			return nil

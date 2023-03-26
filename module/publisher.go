@@ -52,7 +52,7 @@ func StartPublisher(ctx context.Context, opts PublisherOptions) error {
 				opts.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		}
 	}
 }

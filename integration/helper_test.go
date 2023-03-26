@@ -44,6 +44,7 @@ type (
 	}
 )
 
+// TestMain starts a postgres container before invoking the integration tests
 func TestMain(t *testing.M) {
 	var container *postgres.PostgresContainer
 	var err error
@@ -58,6 +59,7 @@ func TestMain(t *testing.M) {
 	os.Exit(t.Run())
 }
 
+// setup configures otfd services for use in a test.
 func setup(t *testing.T, cfg *config) *testServices {
 	t.Helper()
 

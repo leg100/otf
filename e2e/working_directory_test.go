@@ -29,7 +29,6 @@ func TestWorkingDirectory(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 	workspaceName := t.Name()
 
 	// create browser
@@ -42,7 +41,7 @@ func TestWorkingDirectory(t *testing.T) {
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),

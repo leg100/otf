@@ -3,7 +3,6 @@ package e2e
 import (
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -29,7 +28,6 @@ func TestVariables(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 	workspaceName := t.Name()
 
 	// create browser
@@ -45,7 +43,7 @@ func TestVariables(t *testing.T) {
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
@@ -116,7 +114,7 @@ output "foo" {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),

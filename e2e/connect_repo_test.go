@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"testing"
 	"time"
 
@@ -63,7 +62,7 @@ func TestConnectRepo(t *testing.T) {
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org, "github"),
+		createGithubVCSProviderTasks(t, hostname, org, "github"),
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		connectWorkspaceTasks(t, url, org, workspaceName),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
@@ -90,7 +89,7 @@ func TestConnectRepo(t *testing.T) {
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(fmt.Sprintf("%s/organizations/%s/workspaces/%s", url, org, workspaceName)),
+		chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
 		screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
@@ -133,7 +132,7 @@ func TestConnectRepo(t *testing.T) {
 	okDialog(t, ctx)
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+		chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -155,7 +154,7 @@ func TestConnectRepo(t *testing.T) {
 		// delete vcs provider
 		//
 		// go to org
-		chromedp.Navigate(path.Join(url, "organizations", org)),
+		chromedp.Navigate(organizationPath(hostname, org)),
 		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),

@@ -25,7 +25,7 @@ func (w *worker) Start(ctx context.Context) {
 
 // handle executes the incoming run
 func (w *worker) handle(ctx context.Context, r *run.Run) {
-	log := w.Logger.WithValues("run", r.ID, "phase", r.Phase)
+	log := w.Logger.WithValues("run", r.ID, "phase", r.Phase())
 
 	// Claim run phase
 	r, err := w.StartPhase(ctx, r.ID, r.Phase(), run.PhaseStartOptions{AgentID: DefaultID})

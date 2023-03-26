@@ -62,7 +62,7 @@ func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
 				s.Error(err, "handling vcs event")
 			}
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		}
 	}
 }

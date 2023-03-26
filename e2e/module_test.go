@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -55,7 +54,6 @@ func TestModule(t *testing.T) {
 	})
 
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -64,11 +62,11 @@ func TestModule(t *testing.T) {
 	var moduleURL string // captures url for module page
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org, "github"),
+		createGithubVCSProviderTasks(t, hostname, org, "github"),
 		// publish module
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(path.Join(url, "organizations", org)),
+			chromedp.Navigate(organizationPath(hostname, org)),
 			screenshot(t),
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.NodeVisible),

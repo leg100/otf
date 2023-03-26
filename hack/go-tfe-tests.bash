@@ -15,7 +15,7 @@ fi
 SITE_TOKEN=go-tfe-test-site-token
 
 # run otfd on random port in background, logging to a temp file
-logfile=$(tempfile)
+logfile=$(mktemp)
 nohup _build/otfd --address :0 \
     --log-level trace --log-http-requests \
     --site-token $SITE_TOKEN \

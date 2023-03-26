@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"os"
 	"os/exec"
 	"path"
 	"testing"
@@ -14,6 +15,11 @@ import (
 // TestAutoApply tests auto-apply functionality.
 func TestAutoApply(t *testing.T) {
 	addBuildsToPath(t)
+
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Setenv("SSL_CERT_DIR", path.Join(wd, "./fixtures"))
+	t.Logf("SSL_CERT_DIR=%s", os.Getenv("SSL_CERT_DIR"))
 
 	workspace := t.Name() // workspace name reflects test name
 	org := uuid.NewString()
@@ -29,19 +35,18 @@ func TestAutoApply(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()
 
 	// login and create workspace and enable auto-apply
-	err := chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
 		createWorkspaceTasks(t, hostname, org, workspace),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspace)),
+			chromedp.Navigate(workspacePath(hostname, org, workspace)),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),

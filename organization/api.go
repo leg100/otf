@@ -148,7 +148,7 @@ func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 	case *Organization:
 		payload = h.toOrganization(v)
 	case Entitlements:
-		payload = jsonapi.Entitlements(v)
+		payload = (*jsonapi.Entitlements)(&v)
 	default:
 		jsonapi.Error(w, http.StatusInternalServerError, fmt.Errorf("cannot marshal unknown type: %T", v))
 		return

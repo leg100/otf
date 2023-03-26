@@ -35,7 +35,6 @@ func TestWritePermission(t *testing.T) {
 	bossDaemon := &daemon{}
 	bossDaemon.withGithubUser(&boss)
 	bossHostname := bossDaemon.start(t)
-	bossURL := "https://" + bossHostname
 
 	// setup non-owner user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
@@ -63,7 +62,7 @@ func TestWritePermission(t *testing.T) {
 		// create workspace via UI
 		createWorkspaceTasks(t, bossHostname, org, workspaceName),
 		// assign write permissions to devops team
-		addWorkspacePermissionTasks(t, bossURL, org, workspaceName, devops.Name, "write"),
+		addWorkspacePermissionTasks(t, bossHostname, org, workspaceName, devops.Name, "write"),
 		// run terraform login as engineer
 		terraformLoginTasks(t, engineerHostname),
 	})

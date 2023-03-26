@@ -5,8 +5,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
@@ -16,6 +18,7 @@ import (
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/gitlab"
+	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/logs"
@@ -59,7 +62,7 @@ type (
 		Gitlab               cloud.CloudOAuthConfig
 		Secret               string // secret for signing URLs
 		SiteToken            string
-		Hostname             string
+		Host                 string
 		Address, Database    string
 		MaxConfigSize        int64
 		SSL                  bool
@@ -92,7 +95,7 @@ func NewDefaultConfig() Config {
 
 // New builds and configures otf services and their http handlers.
 func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
-	hostnameService := otf.NewHostnameService(cfg.Hostname)
+	hostnameService := otf.NewHostnameService(cfg.Host)
 
 	renderer, err := html.NewViewEngine(cfg.DevMode)
 	if err != nil {
@@ -237,6 +240,37 @@ func New(logger logr.Logger, db otf.DB, cfg Config) (*Services, error) {
 		Broker:                      broker,
 	}, nil
 }
+
+func (s *Services) NewServer(logger logr.Logger) (*http.Server, net.Listener, error) {
+	server, err := http.NewServer(logger, http.ServerConfig{
+		SSL:                  s.SSL,
+		CertFile:             s.CertFile,
+		KeyFile:              s.KeyFile,
+		EnableRequestLogging: s.EnableRequestLogging,
+		DevMode:              s.DevMode,
+		Middleware: []mux.MiddlewareFunc{
+			auth.AuthenticateToken(s.AuthService, s.SiteToken),
+			auth.AuthenticateSession(s.AuthService),
+		},
+		Handlers: s.Handlers,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("setting up http server: %w", err)
+	}
+	ln, err := net.Listen("tcp", s.Address)
+	if err != nil {
+		return nil, nil, err
+	}
+	// Unless user has set a hostname, set the hostname to the listening address
+	// of the http server.
+	if s.Config.Host == "" {
+		listenAddress := ln.Addr().(*net.TCPAddr)
+		s.SetHostname(otf.NormalizeAddress(listenAddress))
+	}
+	return server, ln, nil
+}
+
+// If --hostname not set then use http server's listening address as
 
 func (s *Services) NewAgent(logger logr.Logger) (daemon, error) {
 	return agent.NewAgent(

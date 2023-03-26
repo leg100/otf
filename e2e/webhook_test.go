@@ -48,7 +48,6 @@ func TestWebhook(t *testing.T) {
 	daemon.withGithubTarball(tarball)
 
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -62,10 +61,10 @@ func TestWebhook(t *testing.T) {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// need to login first and create a vcs provider
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org, "github"),
+		createGithubVCSProviderTasks(t, hostname, org, "github"),
 
 		createWorkspaceTasks(t, hostname, org, "workspace-1"),
-		connectWorkspaceTasks(t, url, org, "workspace-1"),
+		connectWorkspaceTasks(t, hostname, org, "workspace-1"),
 	})
 	require.NoError(t, err)
 
@@ -75,7 +74,7 @@ func TestWebhook(t *testing.T) {
 	// create and connect second workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		createWorkspaceTasks(t, hostname, org, "workspace-2"),
-		connectWorkspaceTasks(t, url, org, "workspace-2"),
+		connectWorkspaceTasks(t, hostname, org, "workspace-2"),
 	})
 	require.NoError(t, err)
 
@@ -83,7 +82,7 @@ func TestWebhook(t *testing.T) {
 	require.True(t, daemon.githubServer.HasWebhook())
 
 	// disconnect second workspace
-	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, url, org, "workspace-2"))
+	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, hostname, org, "workspace-2"))
 	require.NoError(t, err)
 
 	// first workspace is still connected, so webhook should still be configured
@@ -91,7 +90,7 @@ func TestWebhook(t *testing.T) {
 	require.True(t, daemon.githubServer.HasWebhook())
 
 	// disconnect first workspace
-	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, url, org, "workspace-1"))
+	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, hostname, org, "workspace-1"))
 	require.NoError(t, err)
 
 	// No more workspaces are connected to repo, so webhook should have been
