@@ -80,9 +80,8 @@ func (w *PhaseWriter) Close() error {
 		chunk.Data = []byte{otf.STX, otf.ETX}
 	}
 
-	err := w.PutChunk(w.ctx, chunk)
-	if err != nil {
-		return fmt.Errorf("closing log stream: %w", err)
+	if err := w.PutChunk(w.ctx, chunk); err != nil {
+		return err
 	}
 	return nil
 }

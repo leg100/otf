@@ -34,9 +34,7 @@ func TestAPI_Watch(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		srv.watch(w, r)
-
 		assert.Equal(t, "data: e30=\nevent: run_created\n\n", w.Body.String())
-
 		done <- struct{}{}
 	}()
 	<-done

@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	gohttp "net/http"
 	"net/url"
 	"path"
-	"strings"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
@@ -167,19 +165,19 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error) {
 	// TODO: why buffered chan of size 1?
 	notifications := make(chan otf.Event, 1)
-	sseClient, err := newSSEClient(c.Config, notifications)
+	sseClient, err := newSSEClient(c.Config, notifications, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
 		err := sseClient.SubscribeRawWithContext(ctx, func(raw *sse.Event) {
-			event, err := unmarshal(raw)
+			run, err := UnmarshalJSONAPI(raw.Data)
 			if err != nil {
 				notifications <- otf.Event{Type: otf.EventError, Payload: err}
 				return
 			}
-			notifications <- event
+			notifications <- otf.Event{Type: otf.EventType(raw.Event), Payload: run}
 		})
 		if err != nil {
 			notifications <- otf.Event{Type: otf.EventError, Payload: err}
@@ -189,7 +187,7 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event
 	return notifications, nil
 }
 
-func newSSEClient(config http.Config, notifications chan otf.Event) (*sse.Client, error) {
+func newSSEClient(config http.Config, notifications chan otf.Event, opts WatchOptions) (*sse.Client, error) {
 	// construct watch URL endpoint
 	addr, err := http.SanitizeAddress(config.Address)
 	if err != nil {
@@ -200,6 +198,11 @@ func newSSEClient(config http.Config, notifications chan otf.Event) (*sse.Client
 		return nil, fmt.Errorf("invalid address: %v", err)
 	}
 	u.Path = path.Join(config.BasePath, "/watch")
+	q := url.Values{}
+	if err := http.Encoder.Encode(&opts, q); err != nil {
+		return nil, err
+	}
+	u.RawQuery = q.Encode()
 
 	client := sse.NewClient(u.String())
 	client.EncodingBase64 = true
@@ -220,18 +223,4 @@ func newSSEClient(config http.Config, notifications chan otf.Event) (*sse.Client
 		}
 	}
 	return client, nil
-}
-
-// unmarshal parses an SSE event and returns the equivalent OTF event
-func unmarshal(event *sse.Event) (otf.Event, error) {
-	if !strings.HasPrefix(string(event.Event), "run_") {
-		return otf.Event{}, fmt.Errorf("no unmarshaler available for event %s", string(event.Event))
-	}
-
-	var run *Run
-	if err := json.Unmarshal(event.Data, &run); err != nil {
-		return otf.Event{}, err
-	}
-
-	return otf.Event{Type: otf.EventType(event.Event), Payload: run}, nil
 }

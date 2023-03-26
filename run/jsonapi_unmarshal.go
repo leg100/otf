@@ -10,12 +10,12 @@ import (
 
 func UnmarshalJSONAPI(b []byte) (*Run, error) {
 	// unmarshal into json:api struct
-	var jrun jsonapi.Run
-	if err := jsonapi.UnmarshalPayload(bytes.NewReader(b), &jrun); err != nil {
+	var run jsonapi.Run
+	if err := jsonapi.UnmarshalPayload(bytes.NewReader(b), &run); err != nil {
 		return nil, err
 	}
 	// convert json:api struct to run
-	return newFromJSONAPI(&jrun), nil
+	return newFromJSONAPI(&run), nil
 }
 
 func newFromJSONAPI(from *jsonapi.Run) *Run {

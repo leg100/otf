@@ -3,7 +3,6 @@
 package run
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -103,17 +102,13 @@ type (
 		Include *string `schema:"include,omitempty"`
 	}
 
-	RunDB interface {
-		GetRun(context.Context, string) (Run, error)
-	}
-
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
 		// Name to uniquely describe the watcher. If not provided then a
 		// name will be auto generated.
-		Name         *string
-		Organization *string `schema:"organization_name"` // filter by organization name
-		WorkspaceID  *string `schema:"workspace_id"`      // filter by workspace ID; mutually exclusive with organization filter
+		Name         *string `schema:"name,omitempty"`
+		Organization *string `schema:"organization_name,omitempty"` // filter by organization name
+		WorkspaceID  *string `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
 )
 

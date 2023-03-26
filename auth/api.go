@@ -56,7 +56,10 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, session)
+	jsonapi.WriteResponse(w, r, &jsonapi.RegistrySession{
+		Token:            session.Token,
+		OrganizationName: session.Organization,
+	})
 }
 
 // Agent token routes

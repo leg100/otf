@@ -57,17 +57,16 @@ func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) (
 	if err != nil {
 		return nil, err
 	}
-	v := &jsonapi.StateVersion{}
-	err = c.Do(ctx, req, v)
-	if err != nil {
+
+	sv := jsonapi.StateVersion{}
+	if err := c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
 
-	req, err = c.NewRequest("GET", v.DownloadURL, nil)
+	req, err = c.NewRequest("GET", sv.DownloadURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/json")
 
 	var buf bytes.Buffer
 	err = c.Do(ctx, req, &buf)

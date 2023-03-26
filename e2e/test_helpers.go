@@ -20,17 +20,19 @@ import (
 
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
-	expect "github.com/google/goexpect"
 	"github.com/google/uuid"
+	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var successfullyConnectedRegex = regexp.MustCompile("stream update.*successfully connected")
 
 // setup dependencies for a test and return names for the org and workspace
 func setup(t *testing.T) (org string, workspace string) {
 	addBuildsToPath(t)
 
-	// instruct terraform to trust the self-signed cert
+	// instruct terraform and otfd-agent to trust the self-signed cert
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	t.Setenv("SSL_CERT_DIR", path.Join(wd, "./fixtures"))
@@ -41,41 +43,69 @@ func setup(t *testing.T) (org string, workspace string) {
 }
 
 func startAgent(t *testing.T, token, address string, flags ...string) {
-	out, err := os.CreateTemp(t.TempDir(), "agent.out")
-	require.NoError(t, err)
-
 	args := []string{
-		"otf-agent",
 		"--token", token,
 		"--address", address,
 	}
 	args = append(args, flags...)
 
-	e, res, err := expect.SpawnWithArgs(
-		args,
-		time.Minute,
-		expect.PartialMatch(true),
-		expect.Verbose(testing.Verbose()),
-		expect.Tee(out),
-	)
+	cmd := exec.Command("otf-agent", args...)
+	out, err := cmd.StdoutPipe()
 	require.NoError(t, err)
-
-	_, err = e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "successfully authenticated"},
-		&expect.BExp{R: "stream update.*successfully connected"},
-	}, time.Second*10)
+	errout, err := cmd.StderrPipe()
 	require.NoError(t, err)
+	stdout := iochan.DelimReader(out, '\n')
+	stderr := iochan.DelimReader(errout, '\n')
+	// reset env
+	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "SSL_CERT_DIR=" + os.Getenv("SSL_CERT_DIR")}
+	require.NoError(t, cmd.Start())
 
-	// terminate at end of parent test
+	// for capturing stdout
+	loglines := []string{}
+
 	t.Cleanup(func() {
-		e.SendSignal(os.Interrupt)
-		if !assert.NoError(t, <-res) || t.Failed() {
-			logs, err := os.ReadFile(out.Name())
-			require.NoError(t, err)
-			t.Log("--- agent logs ---")
-			t.Log(string(logs))
+		// kill otf-agent gracefully
+		cmd.Process.Signal(os.Interrupt)
+		assert.NoError(t, cmd.Wait())
+
+		// upon failure dump stdout+stderr
+		if t.Failed() {
+			t.Log("test failed; here are the otf-agent logs:\n")
+			for _, ll := range loglines {
+				t.Logf(ll)
+			}
 		}
 	})
+
+	// wait for otf-agent to log that it has started successfully
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			t.Fatal("otf-agent failed to start correctly")
+		case logline := <-stdout:
+			loglines = append(loglines, logline)
+
+			if successfullyConnectedRegex.MatchString(logline) {
+				goto STARTED
+			}
+		case err := <-stderr:
+			t.Fatalf(err)
+		}
+	}
+STARTED:
+
+	// capture remainder of stdout in background
+	go func() {
+		for logline := range stdout {
+			loglines = append(loglines, logline)
+		}
+	}()
+	// capture remainder of stderr in background
+	go func() {
+		for logline := range stderr {
+			loglines = append(loglines, logline)
+		}
+	}()
 }
 
 // createAgentToken creates an agent token via the CLI

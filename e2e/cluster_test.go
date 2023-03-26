@@ -7,6 +7,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,9 +36,11 @@ func TestCluster(t *testing.T) {
 		Organizations: []string{org},
 	}
 
-	// start two daemons, one for user, one for agent
+	// start two daemons, one for user, one for agent, both sharing a db
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
+	_, connstr := sql.NewTestDB(t)
+	daemon.withDB(connstr)
 	userHostname := daemon.start(t)
 	agentHostname := daemon.start(t)
 

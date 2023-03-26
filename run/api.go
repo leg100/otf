@@ -2,6 +2,7 @@ package run
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -67,7 +68,7 @@ func (s *api) addHandlers(r *mux.Router) {
 }
 
 func (s *api) create(w http.ResponseWriter, r *http.Request) {
-	opts := jsonapi.RunCreateOptions{}
+	var opts jsonapi.RunCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -99,10 +100,10 @@ func (s *api) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+	var params struct {
 		RunID string        `schema:"id,required"`
 		Phase otf.PhaseType `schema:"phase,required"`
-	}{}
+	}
 	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -118,10 +119,10 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
-	params := struct {
+	var params struct {
 		RunID string        `schema:"id,required"`
 		Phase otf.PhaseType `schema:"phase,required"`
-	}{}
+	}
 	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
@@ -406,10 +407,23 @@ func (s *api) getApply(w http.ResponseWriter, r *http.Request) {
 
 // Watch handler responds with a stream of run events
 func (s *api) watch(w http.ResponseWriter, r *http.Request) {
-	// TODO: populate watch options
-	events, err := s.svc.Watch(r.Context(), WatchOptions{})
-	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	var params WatchOptions
+	if err := decode.Query(&params, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	events, err := s.svc.Watch(r.Context(), params)
+	if err != nil && errors.Is(err, otf.ErrAccessNotPermitted) {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -417,8 +431,8 @@ func (s *api) watch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
-	rc := http.NewResponseController(w)
-	rc.Flush()
+	fmt.Fprintf(w, "\r\n")
+	flusher.Flush()
 
 	for {
 		select {
@@ -435,7 +449,7 @@ func (s *api) watch(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			otf.WriteSSEEvent(w, data, event.Type, true)
-			rc.Flush()
+			flusher.Flush()
 		case <-r.Context().Done():
 			// client closed connection
 			return

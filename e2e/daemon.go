@@ -23,6 +23,7 @@ var startedServerRegex = regexp.MustCompile(`started server \| address=.*:(\d+)`
 type daemon struct {
 	flags         []string
 	enableGithub  bool
+	connstr       *string // postgres connection string; if nil then a postgres container will be started and that will be connected to
 	githubOptions []github.TestServerOption
 	githubServer  *github.TestServer
 }
@@ -56,10 +57,16 @@ func (d *daemon) registerStatusCallback(callback func(*gogithub.StatusEvent)) {
 	d.githubOptions = append(d.githubOptions, github.WithStatusCallback(callback))
 }
 
+func (d *daemon) withDB(connstr string) {
+	d.connstr = &connstr
+}
+
 // start an instance of the otfd daemon and return its hostname.
 func (d *daemon) start(t *testing.T) string {
-	// start postgres container
-	_, connstr := sql.NewTestDB(t)
+	if d.connstr == nil {
+		// start postgres container
+		_, *d.connstr = sql.NewTestDB(t)
+	}
 
 	flags := append(d.flags,
 		"--address", ":0", // listen on random, available port
@@ -69,7 +76,7 @@ func (d *daemon) start(t *testing.T) string {
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
 		"--plugin-cache", // speed up tests by caching providers
-		"--database", connstr,
+		"--database", *d.connstr,
 		"--log-http-requests",
 	)
 
@@ -94,7 +101,6 @@ func (d *daemon) start(t *testing.T) string {
 	stdout := iochan.DelimReader(out, '\n')
 	stderr := iochan.DelimReader(errout, '\n')
 	cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
-
 	require.NoError(t, cmd.Start())
 
 	// record daemon's URL
