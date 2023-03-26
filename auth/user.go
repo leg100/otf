@@ -128,7 +128,7 @@ func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy
 	// fallback to checking finer-grained workspace perms
 	for _, team := range u.Teams {
 		for _, perm := range policy.Permissions {
-			if team.ID == perm.TeamID {
+			if team.ID == perm.Team {
 				return perm.Role.IsAllowed(action)
 			}
 		}

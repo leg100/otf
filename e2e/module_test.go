@@ -17,13 +17,12 @@ import (
 // TestModule tests publishing a module, first via the UI and then via a webhook
 // event, and then invokes a terraform run that sources the module.
 func TestModule(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
 	name := "mod"
 	provider := "aws"
 	repo := cloud.NewTestModuleRepo(provider, name)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{

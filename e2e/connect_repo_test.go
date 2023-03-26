@@ -17,9 +17,8 @@ import (
 // TestConnectRepo tests connecting a workspace to a VCS repository, pushing a
 // git commit which should trigger a run on the workspace.
 func TestConnectRepo(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
@@ -50,7 +49,6 @@ func TestConnectRepo(t *testing.T) {
 
 	hostname := daemon.start(t)
 	url := "https://" + hostname
-	workspaceName := "workspace-connect"
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -63,11 +61,11 @@ func TestConnectRepo(t *testing.T) {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
 		createGithubVCSProviderTasks(t, hostname, org, "github"),
-		createWorkspaceTasks(t, hostname, org, workspaceName),
-		connectWorkspaceTasks(t, url, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
+		connectWorkspaceTasks(t, url, org, workspace),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
-		startRunTasks(t, hostname, org, workspaceName),
+		startRunTasks(t, hostname, org, workspace),
 	})
 	require.NoError(t, err)
 
@@ -89,7 +87,7 @@ func TestConnectRepo(t *testing.T) {
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
+		chromedp.Navigate(workspacePath(hostname, org, workspace)),
 		screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
@@ -132,7 +130,7 @@ func TestConnectRepo(t *testing.T) {
 	okDialog(t, ctx)
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
+		chromedp.Navigate(workspacePath(hostname, org, workspace)),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -149,7 +147,7 @@ func TestConnectRepo(t *testing.T) {
 		chromedp.Click(`//button[text()='Delete workspace']`, chromedp.NodeVisible),
 		screenshot(t),
 		// confirm deletion
-		matchText(t, ".flash-success", "deleted workspace: "+workspaceName),
+		matchText(t, ".flash-success", "deleted workspace: "+workspace),
 		//
 		// delete vcs provider
 		//

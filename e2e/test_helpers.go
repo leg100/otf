@@ -21,9 +21,24 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// setup dependencies for a test and return names for the org and workspace
+func setup(t *testing.T) (org string, workspace string) {
+	addBuildsToPath(t)
+
+	// instruct terraform to trust the self-signed cert
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Setenv("SSL_CERT_DIR", path.Join(wd, "./fixtures"))
+	t.Logf("SSL_CERT_DIR=%s", os.Getenv("SSL_CERT_DIR"))
+
+	// return unique name for org, and use the test name for the workspace name
+	return uuid.NewString(), t.Name()
+}
 
 func startAgent(t *testing.T, token, address string, flags ...string) {
 	out, err := os.CreateTemp(t.TempDir(), "agent.out")

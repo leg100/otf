@@ -6,7 +6,6 @@ import (
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,13 +13,11 @@ import (
 // TestSiteAdmin demonstrates signing into the web app as a site admin, using
 // their super powers to create and delete an organization.
 func TestSiteAdmin(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
 	daemon := &daemon{}
 	daemon.withFlags("--site-token", "abc123")
 	hostname := daemon.start(t)
-
-	org := uuid.NewString()
 
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()

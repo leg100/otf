@@ -12,9 +12,8 @@ import (
 
 // TestWeb is a random walkthrough of the Web UI
 func TestWeb(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
@@ -33,7 +32,6 @@ func TestWeb(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	workspaceName := "test-web"
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -43,7 +41,7 @@ func TestWeb(t *testing.T) {
 		// login
 		githubLoginTasks(t, hostname, user.Name),
 		// create workspace
-		createWorkspaceTasks(t, hostname, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
@@ -62,7 +60,7 @@ func TestWeb(t *testing.T) {
 			matchText(t, ".flash-success", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermissionTasks(t, hostname, org, workspaceName, "devops", "write"),
+		addWorkspacePermissionTasks(t, hostname, org, workspace, "devops", "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org

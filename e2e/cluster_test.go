@@ -22,9 +22,8 @@ import (
 // processes successfully, e.g. relaying of logs from the agent through to the
 // TF CLI
 func TestCluster(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{

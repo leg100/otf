@@ -15,13 +15,10 @@ import (
 // TestPlanPermission demonstrates a user with plan permissions on a workspace interacting
 // with the workspace via the terraform CLI.
 func TestPlanPermission(t *testing.T) {
-	addBuildsToPath(t)
-
-	workspaceName := "plan-perms"
+	org, workspace := setup(t)
 
 	// First we need to setup an organization with a user who is both in the
 	// owners team and the devops team.
-	org := uuid.NewString()
 	owners := cloud.Team{Name: "owners", Organization: org}
 	devops := cloud.Team{Name: "devops", Organization: org}
 
@@ -52,7 +49,7 @@ func TestPlanPermission(t *testing.T) {
 	engineerHostname := engineerDaemon.start(t)
 
 	// create terraform configPath
-	configPath := newRootModule(t, engineerHostname, org, workspaceName)
+	configPath := newRootModule(t, engineerHostname, org, workspace)
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -62,9 +59,9 @@ func TestPlanPermission(t *testing.T) {
 		// login to UI as boss
 		githubLoginTasks(t, bossHostname, boss.Name),
 		// create workspace via UI
-		createWorkspaceTasks(t, bossHostname, org, workspaceName),
+		createWorkspaceTasks(t, bossHostname, org, workspace),
 		// assign plan permissions to devops team
-		addWorkspacePermissionTasks(t, bossHostname, org, workspaceName, devops.Name, "plan"),
+		addWorkspacePermissionTasks(t, bossHostname, org, workspace, devops.Name, "plan"),
 		// logout of UI (as boss)
 		logoutTasks(t, bossHostname),
 		// login to UI as engineer

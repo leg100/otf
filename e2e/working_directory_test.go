@@ -17,9 +17,8 @@ import (
 // WorkingDirectory tests setting a working directory on a workspace and checks
 // that terraform runs use configuration from that directory.
 func TestWorkingDirectory(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name:          uuid.NewString(),
 		Teams:         []cloud.Team{{"owners", org}},
@@ -29,7 +28,6 @@ func TestWorkingDirectory(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	workspaceName := t.Name()
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -38,10 +36,10 @@ func TestWorkingDirectory(t *testing.T) {
 	// login, create workspace and set working directory
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createWorkspaceTasks(t, hostname, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
+			chromedp.Navigate(workspacePath(hostname, org, workspace)),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -61,7 +59,7 @@ func TestWorkingDirectory(t *testing.T) {
 
 	// create root module along with a sub-directory containing the config we're
 	// going to test
-	root := newRootModule(t, hostname, org, workspaceName)
+	root := newRootModule(t, hostname, org, workspace)
 	subdir := path.Join(root, "subdir")
 	err = os.Mkdir(subdir, 0o755)
 	require.NoError(t, err)

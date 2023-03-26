@@ -37,11 +37,11 @@ type (
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/modules", h.list)
-	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new)
-	r.HandleFunc("/modules/{module_id}", h.get)
-	r.HandleFunc("/modules/{module_id}/delete", h.delete)
-	r.HandleFunc("/modules/create", h.publish)
+	r.HandleFunc("/organizations/{organization_name}/modules", h.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/modules/new", h.new).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/modules/create", h.publish).Methods("POST")
+	r.HandleFunc("/modules/{module_id}", h.get).Methods("GET")
+	r.HandleFunc("/modules/{module_id}/delete", h.delete).Methods("POST")
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {

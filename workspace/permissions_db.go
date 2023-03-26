@@ -36,7 +36,7 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf
 			return otf.WorkspacePolicy{}, err
 		}
 		policy.Permissions = append(policy.Permissions, otf.WorkspacePermission{
-			TeamID: perm.TeamID.String,
+			Team: perm.TeamID.String,
 			Role:   role,
 		})
 	}

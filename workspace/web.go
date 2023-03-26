@@ -189,7 +189,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, perm := range policy.Permissions {
 		for it, t := range unassigned {
-			if t.ID == perm.TeamID {
+			if t.ID == perm.Team {
 				unassigned = append(unassigned[:it], unassigned[it+1:]...)
 				break
 			}
@@ -199,12 +199,12 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_edit.tmpl", w, r, struct {
 		*Workspace
 		Permissions []otf.WorkspacePermission
-		Teams       []*auth.Team
+		Unassigned  []*auth.Team
 		Roles       []rbac.Role
 	}{
 		Workspace:   workspace,
 		Permissions: policy.Permissions,
-		Teams:       unassigned,
+		Unassigned:  unassigned,
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
 			rbac.WorkspacePlanRole,

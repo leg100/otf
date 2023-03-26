@@ -19,9 +19,8 @@ func TestSandbox(t *testing.T) {
 		t.Skipf("bwrap binary not found")
 	}
 
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{

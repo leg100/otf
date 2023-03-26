@@ -19,9 +19,8 @@ import (
 // has to then generates hashes for linux, etc. It is notorious for causing
 // difficulties for users and it's no different for OTF.
 func TestLockFile(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name:          uuid.NewString(),
 		Teams:         []cloud.Team{{"owners", org}},
@@ -31,7 +30,6 @@ func TestLockFile(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	workspaceName := t.Name()
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -40,7 +38,7 @@ func TestLockFile(t *testing.T) {
 	// login, create workspace and set working directory
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createWorkspaceTasks(t, hostname, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
 	})
 	require.NoError(t, err)
 
@@ -62,7 +60,7 @@ terraform {
 variable "foo" {
 	default = "bar"
 }
-`, hostname, org, workspaceName))
+`, hostname, org, workspace))
 	err = os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 

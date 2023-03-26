@@ -109,7 +109,7 @@
               <td>
                 <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
                   <option value="">--team--</option>
-                  {{ range .Content.Teams }}
+                  {{ range .Content.Unassigned }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
                   {{ end }}
                 </select>

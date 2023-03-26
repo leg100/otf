@@ -21,9 +21,8 @@ import (
 // triggering workspace runs and publishing module versions in tested in other
 // E2E tests.
 func TestWebhook(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
