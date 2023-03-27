@@ -82,10 +82,10 @@ func (s *service) StartProxy(ctx context.Context) error {
 func (s *service) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.proxy.get(ctx, opts)
 	if err != nil {
-		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset, "limit", opts.Limit)
+		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
 		return otf.Chunk{}, err
 	}
-	s.V(2).Info("read logs", "id", opts.RunID, "offset", opts.Offset, "limit", opts.Limit)
+	s.V(2).Info("read logs", "id", opts.RunID, "offset", opts.Offset)
 	return logs, nil
 }
 
@@ -97,10 +97,10 @@ func (s *service) PutChunk(ctx context.Context, opts otf.PutChunkOptions) error 
 	}
 
 	if err := s.proxy.put(ctx, opts); err != nil {
-		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase)
+		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
-	s.V(2).Info("written logs", "id", opts.RunID, "phase", opts.Phase)
+	s.V(2).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 
 	return nil
 }

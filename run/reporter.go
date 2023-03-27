@@ -51,6 +51,7 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 		HostnameService:             opts.HostnameService,
 		ConfigurationVersionService: opts.ConfigurationVersionService,
 		WorkspaceService:            opts.WorkspaceService,
+		VCSProviderService:          opts.VCSProviderService,
 	}
 
 	op := func() error {
@@ -121,15 +122,11 @@ func (r *reporter) handleRun(ctx context.Context, run *Run) error {
 		status = cloud.VCSSuccessStatus
 		if run.Plan.ResourceReport != nil {
 			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
-		} else {
-			description = "no changes"
 		}
 	case otf.RunApplied:
 		status = cloud.VCSSuccessStatus
-		if run.Plan.ResourceReport != nil {
-			description = fmt.Sprintf("applied: %s", run.Plan.ResourceReport)
-		} else {
-			description = "no changes"
+		if run.Apply.ResourceReport != nil {
+			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 		}
 	case otf.RunErrored, otf.RunCanceled, otf.RunForceCanceled, otf.RunDiscarded:
 		status = cloud.VCSErrorStatus

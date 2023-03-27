@@ -48,7 +48,6 @@ func TestConnectRepo(t *testing.T) {
 	})
 
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -62,7 +61,7 @@ func TestConnectRepo(t *testing.T) {
 		githubLoginTasks(t, hostname, user.Name),
 		createGithubVCSProviderTasks(t, hostname, org, "github"),
 		createWorkspaceTasks(t, hostname, org, workspace),
-		connectWorkspaceTasks(t, url, org, workspace),
+		connectWorkspaceTasks(t, hostname, org, workspace),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
 		startRunTasks(t, hostname, org, workspace),
@@ -122,7 +121,7 @@ func TestConnectRepo(t *testing.T) {
 		t.Fatal(ctx.Err())
 	case status := <-statuses:
 		require.Equal(t, "success", *status.State)
-		require.Equal(t, "no changes", *status.Description)
+		require.Equal(t, "planned: +0/~0/−0", *status.Description)
 	}
 
 	// Clean up after ourselves by disconnecting the workspace and deleting the
