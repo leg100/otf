@@ -2,21 +2,44 @@ package otf
 
 import (
 	"context"
-	"fmt"
-	"strconv"
+	"html/template"
+
+	term2html "github.com/buildkite/terminal-to-html"
 )
 
-// Chunk is a section of logs.
-type Chunk struct {
-	// ID of run that generated the chunk
-	RunID string `schema:"run_id,required"`
-	// Phase that generated the chunk
-	Phase PhaseType `schema:"phase,required"`
-	// Position within logs.
-	Offset int `schema:"offset,required"`
-	// The chunk of logs
-	Data []byte
-}
+const (
+	STX = 0x02 // marks the beginning of logs for a phase
+	ETX = 0x03 // marks the end of logs for a phase
+)
+
+type (
+	// Chunk is a section of logs for a phase.
+	Chunk struct {
+		ID     string    // Uniquely identifies the chunk.
+		RunID  string    // ID of run that generated the chunk
+		Phase  PhaseType // Phase that generated the chunk
+		Offset int       // Position within logs.
+		Data   []byte    // The log data
+	}
+
+	PutChunkOptions struct {
+		RunID  string    `schema:"run_id,required"`
+		Phase  PhaseType `schema:"phase,required"`
+		Offset int       `schema:"offset,required"`
+		Data   []byte
+	}
+
+	GetChunkOptions struct {
+		RunID  string    `schema:"run_id"`
+		Phase  PhaseType `schema:"phase"`
+		Limit  int       `schema:"limit"`  // size of the chunk to retrieve
+		Offset int       `schema:"offset"` // position in overall data to seek from.
+	}
+
+	PutChunkService interface {
+		PutChunk(ctx context.Context, opts PutChunkOptions) error
+	}
+)
 
 // Cut returns a new, smaller chunk.
 func (c Chunk) Cut(opts GetChunkOptions) Chunk {
@@ -25,7 +48,7 @@ func (c Chunk) Cut(opts GetChunkOptions) Chunk {
 		// the end of the chunk
 		return Chunk{Offset: c.NextOffset()}
 	}
-	// sanitize limit - 0 means limitless.
+	// ensure limit is not greater than the chunk itself.
 	if (opts.Offset+opts.Limit) > c.NextOffset() || opts.Limit == 0 {
 		opts.Limit = c.NextOffset() - opts.Offset
 	}
@@ -36,97 +59,30 @@ func (c Chunk) Cut(opts GetChunkOptions) Chunk {
 	return c
 }
 
+// NextOffset returns the offset for the next chunk
 func (c Chunk) NextOffset() int {
 	return c.Offset + len(c.Data)
 }
 
-func (c Chunk) AddStartMarker() Chunk {
-	c.Data = append([]byte{0x02}, c.Data...)
-	return c
-}
-
-func (c Chunk) RemoveStartMarker() Chunk {
-	if c.IsStart() {
-		c.Data = c.Data[1:]
-		c.Offset++
-	}
-	return c
-}
-
-func (c Chunk) AddEndMarker() Chunk {
-	c.Data = append(c.Data, 0x03)
-	return c
-}
-
-func (c Chunk) RemoveEndMarker() Chunk {
-	if c.IsEnd() {
-		c.Data = c.Data[:len(c.Data)-1]
-	}
-	return c
-}
-
 func (c Chunk) IsStart() bool {
-	return len(c.Data) > 0 && c.Data[0] == 0x02
+	return len(c.Data) > 0 && c.Data[0] == STX
 }
 
 func (c Chunk) IsEnd() bool {
-	return len(c.Data) > 0 && c.Data[len(c.Data)-1] == 0x03
+	return len(c.Data) > 0 && c.Data[len(c.Data)-1] == ETX
 }
 
-func (c Chunk) Key() string {
-	return fmt.Sprintf("%s.%s.log", c.RunID, string(c.Phase))
-}
+func (c Chunk) ToHTML() template.HTML {
+	// remove ASCII markers
+	if c.IsStart() {
+		c.Data = c.Data[1:]
+	}
+	if c.IsEnd() {
+		c.Data = c.Data[:len(c.Data)-1]
+	}
 
-// PersistedChunk is a chunk that has been persisted to the backend.
-type PersistedChunk struct {
-	// ChunkID uniquely identifies the chunk.
-	ChunkID int
-	Chunk
-}
+	// convert ANSI escape sequences to HTML
+	html := term2html.Render(c.Data)
 
-func (c PersistedChunk) ID() string     { return strconv.Itoa(c.ChunkID) }
-func (c PersistedChunk) String() string { return strconv.Itoa(c.ChunkID) }
-
-// LogService is an alias for ChunkService
-type LogService ChunkService
-
-// ChunkService provides interaction with chunks.
-type ChunkService interface {
-	// GetChunk fetches a chunk.
-	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
-	// PutChunk uploads a chunk.
-	PutChunk(ctx context.Context, chunk Chunk) error
-}
-
-// ChunkStore implementations provide a persistent store from and to which chunks
-// can be fetched and uploaded.
-type ChunkStore interface {
-	// GetChunk fetches a chunk of logs.
-	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
-	// GetChunkByID fetches a specific chunk with the given ID.
-	GetChunkByID(ctx context.Context, id int) (PersistedChunk, error)
-	// PutChunk uploads a chunk, receiving back the chunk along with a unique
-	// ID.
-	PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error)
-}
-
-type GetChunkOptions struct {
-	RunID string    `schema:"run_id"`
-	Phase PhaseType `schema:"phase"`
-	// Limit is the size of the chunk to retrieve
-	Limit int `schema:"limit"`
-	// Offset is the position in the data from which to retrieve the chunk.
-	Offset int `schema:"offset"`
-}
-
-// Key returns an identifier for looking up chunks in a cache
-func (c GetChunkOptions) Key() string {
-	return fmt.Sprintf("%s.%s.log", c.RunID, string(c.Phase))
-}
-
-type PutChunkOptions struct {
-	// Start indicates this is the first chunk
-	Start bool `schema:"start"`
-	// End indicates this is the last and final chunk
-	End bool `schema:"end"`
+	return template.HTML(string(html))
 }

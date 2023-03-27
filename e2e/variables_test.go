@@ -3,7 +3,6 @@ package e2e
 import (
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -17,9 +16,8 @@ import (
 // TestVariables tests adding, updating and deleting workspace variables via the
 // UI, and tests that variables are made available to runs.
 func TestVariables(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name:          uuid.NewString(),
 		Teams:         []cloud.Team{{"owners", org}},
@@ -29,8 +27,6 @@ func TestVariables(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	url := "https://" + hostname
-	workspaceName := t.Name()
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -42,10 +38,10 @@ func TestVariables(t *testing.T) {
 	// Create variable in browser
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createWorkspaceTasks(t, hostname, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			chromedp.Navigate(workspacePath(hostname, org, workspace)),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
@@ -75,7 +71,7 @@ func TestVariables(t *testing.T) {
 	require.NoError(t, err)
 
 	// write some terraform config that declares and outputs the variable
-	root := newRootModule(t, hostname, org, workspaceName)
+	root := newRootModule(t, hostname, org, workspace)
 	config := `
 variable "foo" {
   default = "overwrite_this"
@@ -116,7 +112,7 @@ output "foo" {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			chromedp.Navigate(workspacePath(hostname, org, workspace)),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),

@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"os/exec"
-	"path"
 	"testing"
 
 	"github.com/chromedp/chromedp"
@@ -13,10 +12,7 @@ import (
 
 // TestAutoApply tests auto-apply functionality.
 func TestAutoApply(t *testing.T) {
-	addBuildsToPath(t)
-
-	workspace := t.Name() // workspace name reflects test name
-	org := uuid.NewString()
+	org, workspace := setup(t)
 
 	// Build and start a daemon
 	user := cloud.User{
@@ -29,7 +25,6 @@ func TestAutoApply(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -41,7 +36,7 @@ func TestAutoApply(t *testing.T) {
 		createWorkspaceTasks(t, hostname, org, workspace),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspace)),
+			chromedp.Navigate(workspacePath(hostname, org, workspace)),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),

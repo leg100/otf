@@ -13,7 +13,7 @@
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchWorkspaceUpdates({{ watchWorkspacePath .Content.ID }}, {{ randAlphaNum 6 }});
+      watchWorkspaceUpdates({{ watchWorkspacePath .Content.ID }});
     });
   </script>
   <div class="content-menu">
@@ -37,16 +37,21 @@
         </select>
       </form>
     </div>
-    {{ with .Content.Repo }}
-    <div>Connected to <span class="data">{{ .Identifier }}</span></div>
+    {{ with .Content.Connection }}
+    <div>Connected to <span class="data">{{ .Repo }}</span></div>
     {{ end }}
-    {{ with .Content.LatestRun }}
+    {{ with .Content.LatestRunID }}
       <div>
         <h3>Latest Run</h3>
-        <div id="latest-run">
-          {{ template "run-item" . }}
-        </div>
+        <div id="latest-run"></div>
       </div>
+      <script type="text/javascript">
+          fetch({{ widgetRunPath . }})
+          .then((response) => response.text())
+          .then((html) => {
+            document.getElementById('latest-run').innerHTML = html;
+          });
+      </script>
     {{ end }}
   </div>
 {{ end }}

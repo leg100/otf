@@ -33,7 +33,7 @@ func TestVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := new(bytes.Buffer)
-			err := run(ctx, tt.args, got)
+			err := parseFlags(ctx, tt.args, got)
 			require.NoError(t, err)
 
 			regexp.MatchString(want, got.String())
@@ -60,7 +60,7 @@ func TestHelp(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := new(bytes.Buffer)
-			err := run(ctx, tt.args, got)
+			err := parseFlags(ctx, tt.args, got)
 			require.NoError(t, err)
 
 			assert.Regexp(t, `^otfd is the daemon component of the open terraforming framework.`, got.String())

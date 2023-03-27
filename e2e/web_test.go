@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"fmt"
-	"path"
 	"testing"
 
 	"github.com/chromedp/chromedp"
@@ -13,9 +12,8 @@ import (
 
 // TestWeb is a random walkthrough of the Web UI
 func TestWeb(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
@@ -34,8 +32,6 @@ func TestWeb(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	url := "https://" + hostname
-	workspaceName := "test-web"
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -45,13 +41,15 @@ func TestWeb(t *testing.T) {
 		// login
 		githubLoginTasks(t, hostname, user.Name),
 		// create workspace
-		createWorkspaceTasks(t, hostname, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(path.Join(url, "organizations", org)),
+			chromedp.Navigate(organizationPath(hostname, org)),
+			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
+			screenshot(t),
 			// select devops team
 			chromedp.Click("#item-team-devops a", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
@@ -64,11 +62,11 @@ func TestWeb(t *testing.T) {
 			matchText(t, ".flash-success", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermissionTasks(t, url, org, workspaceName, "devops", "write"),
+		addWorkspacePermissionTasks(t, hostname, org, workspace, "devops", "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(path.Join(url, "organizations", org)),
+			chromedp.Navigate(organizationPath(hostname, org)),
 			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
@@ -78,7 +76,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(path.Join(url, "organizations", org)),
+			chromedp.Navigate(organizationPath(hostname, org)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),

@@ -3,19 +3,19 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
 )
 
-// Worker sequentially executes runs.
-type Worker struct {
-	*Agent
+// worker sequentially executes runs.
+type worker struct {
+	*agent
 }
 
 // Start starts the worker which waits for runs to execute.
-func (w *Worker) Start(ctx context.Context) {
+func (w *worker) Start(ctx context.Context) {
 	for {
 		select {
-		case job := <-w.Spooler.GetRun():
+		case job := <-w.spooler.getRun():
 			w.handle(ctx, job)
 		case <-ctx.Done():
 			return
@@ -23,22 +23,22 @@ func (w *Worker) Start(ctx context.Context) {
 	}
 }
 
-// handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, run *otf.Run) {
-	log := w.Logger.WithValues("run", run.ID(), "phase", run.Phase())
+// handle executes the incoming run
+func (w *worker) handle(ctx context.Context, r *run.Run) {
+	log := w.Logger.WithValues("run", r.ID, "phase", r.Phase())
 
-	// Claim run job
-	run, err := w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
+	// Claim run phase
+	r, err := w.StartPhase(ctx, r.ID, r.Phase(), run.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "starting phase")
 		return
 	}
 
-	env, err := NewEnvironment(
+	env, err := newEnvironment(
 		ctx,
 		log,
 		w.Client,
-		run,
+		r,
 		w.envs,
 		w.Downloader,
 		w.Config,
@@ -47,26 +47,26 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		log.Error(err, "creating execution environment")
 		return
 	}
-	defer env.Close()
+	defer env.close()
 
 	// Check run in with the terminator so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(run.ID(), env)
-	defer w.CheckOut(run.ID())
+	w.checkIn(r.ID, env)
+	defer w.checkOut(r.ID)
 
-	var finishOptions otf.PhaseFinishOptions
+	var finishOptions run.PhaseFinishOptions
 
 	log.Info("executing phase")
 
-	if err := env.Execute(run); err != nil {
+	if err := env.execute(); err != nil {
 		log.Error(err, "executing phase")
 		finishOptions.Errored = true
 	}
 
 	log.Info("finishing phase")
 
-	// Regardless of job success, mark job as finished
-	_, err = w.FinishPhase(ctx, run.ID(), run.Phase(), finishOptions)
+	// Regardless of success, mark phase as finished
+	_, err = w.FinishPhase(ctx, r.ID, r.Phase(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing phase")
 		return

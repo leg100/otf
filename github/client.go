@@ -110,23 +110,20 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (string, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return cloud.Repo{}, fmt.Errorf("malformed identifier: %s", identifier)
+		return "", fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return cloud.Repo{}, err
+		return "", err
 	}
 
-	return cloud.Repo{
-		Identifier: repo.GetFullName(),
-		Branch:     repo.GetDefaultBranch(),
-	}, nil
+	return repo.GetFullName(), nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
 	repos, _, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: opts.PageSize,
@@ -138,22 +135,17 @@ func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositori
 		return nil, err
 	}
 
-	// convert to common repo type before returning
-	var items []cloud.Repo
+	var names []string
 	for _, repo := range repos {
-		items = append(items, cloud.Repo{
-			Identifier: repo.GetFullName(),
-			Branch:     repo.GetDefaultBranch(),
-		})
+		names = append(names, repo.GetFullName())
 	}
-
-	return items, nil
+	return names, nil
 }
 
 func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	results, _, err := g.client.Git.ListMatchingRefs(ctx, owner, name, &github.ReferenceListOptions{
@@ -172,9 +164,9 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	var gopts github.RepositoryContentGetOptions
@@ -219,9 +211,9 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 
 // CreateWebhook creates a webhook on a github repository.
 func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return "", fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return "", fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	var events []string
@@ -250,9 +242,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 }
 
 func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOptions) error {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
@@ -285,9 +277,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOpti
 }
 
 func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (cloud.Webhook, error) {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return cloud.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return cloud.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
@@ -314,17 +306,17 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	}
 
 	return cloud.Webhook{
-		ID:         strconv.FormatInt(hook.GetID(), 10),
-		Identifier: opts.Identifier,
-		Events:     events,
-		Endpoint:   hook.GetURL(),
+		ID:       strconv.FormatInt(hook.GetID(), 10),
+		Repo:     opts.Repo,
+		Events:   events,
+		Endpoint: hook.GetURL(),
 	}, nil
 }
 
 func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOptions) error {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
@@ -337,9 +329,9 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOpti
 }
 
 func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	var status string

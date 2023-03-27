@@ -4,9 +4,8 @@ import (
 	"time"
 )
 
-// ConfigurationVersion is a representation of an uploaded or ingressed
-// Terraform configuration in TFE. A workspace must have at least one
-// configuration version before any runs may be queued on it.
+// ConfigurationVersion is an uploaded or ingressed Terraform configuration. A workspace
+// must have at least one configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
 	ID               string              `jsonapi:"primary,configuration-versions"`
 	AutoQueueRuns    bool                `jsonapi:"attr,auto-queue-runs"`

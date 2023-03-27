@@ -52,15 +52,3 @@ type CloudOAuthConfig struct {
 	Config
 	OAuthConfig *oauth2.Config
 }
-
-type OAuthConfigs []*CloudOAuthConfig
-
-// Configs returns the list of cloud configs from a list of cloud oauth
-// configs
-func (cfgs OAuthConfigs) Configs() []Config {
-	var configs []Config
-	for _, cfg := range cfgs {
-		configs = append(configs, cfg.Config)
-	}
-	return configs
-}

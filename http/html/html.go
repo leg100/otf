@@ -1,6 +1,4 @@
-/*
-Package html provides the otf web app, serving up HTML formatted pages and associated assets (CSS, JS, etc).
-*/
+// Package html contains code relating specifically to the web UI.
 package html
 
 import (
@@ -72,7 +70,7 @@ func printIf(s string, arg any, args ...any) (string, error) {
 	return s, nil
 }
 
-func markdownToHTML(md []byte) template.HTML {
+func MarkdownToHTML(md []byte) template.HTML {
 	return template.HTML(string(markdown.ToHTML(md, nil, nil)))
 }
 

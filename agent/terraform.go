@@ -5,13 +5,13 @@ import (
 	"path"
 )
 
-type Terraform interface {
+type terraform interface {
 	TerraformPath(version string) string
 }
 
-type TerraformPathFinder struct{}
+type terraformPathFinder struct{}
 
 // TerraformPath returns the path to a given version of the terraform binary
-func (*TerraformPathFinder) TerraformPath(version string) string {
+func (*terraformPathFinder) TerraformPath(version string) string {
 	return path.Join(os.TempDir(), "otf-terraform-bins", version, "terraform")
 }

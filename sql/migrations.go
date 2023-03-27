@@ -24,6 +24,7 @@ func migrate(logger logr.Logger, connStr string) error {
 	if err != nil {
 		return fmt.Errorf("connecting to db for migrations: %w", err)
 	}
+	defer db.Close()
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("setting postgres dialect for migrations: %w", err)

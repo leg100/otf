@@ -28,15 +28,6 @@ type EventHandler interface {
 }
 
 type HandleEventOptions struct {
-	Secret    string
-	WebhookID uuid.UUID
+	Secret string
+	RepoID uuid.UUID
 }
-
-// Repo is a VCS repository belonging to a cloud
-//
-type Repo struct {
-	Identifier string `schema:"identifier,required"` // <repo_owner>/<repo_name>
-	Branch     string `schema:"branch,required"`     // default branch
-}
-
-func (r Repo) ID() string { return r.Identifier }

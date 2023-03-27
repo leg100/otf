@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ func (a *application) workspaceCommand() *cobra.Command {
 }
 
 func (a *application) workspaceListCommand() *cobra.Command {
-	var opts otf.WorkspaceListOptions
+	var opts workspace.ListOptions
 
 	cmd := &cobra.Command{
 		Use:           "list",
@@ -38,13 +38,12 @@ func (a *application) workspaceListCommand() *cobra.Command {
 					return err
 				}
 				for _, ws := range list.Items {
-					fmt.Fprintln(cmd.OutOrStdout(), ws.Name())
+					fmt.Fprintln(cmd.OutOrStdout(), ws.Name)
 				}
-				if list.NextPage() != nil {
-					opts.PageNumber = *list.NextPage()
-				} else {
+				if list.NextPage() == nil {
 					break
 				}
+				opts.PageNumber = *list.NextPage()
 			}
 
 			return nil
@@ -93,7 +92,7 @@ func (a *application) workspaceShowCommand() *cobra.Command {
 func (a *application) workspaceEditCommand() *cobra.Command {
 	var (
 		organization string
-		opts         otf.UpdateWorkspaceOptions
+		opts         workspace.UpdateOptions
 		mode         *string
 	)
 
@@ -104,23 +103,23 @@ func (a *application) workspaceEditCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			workspace := args[0]
+			name := args[0]
 
 			if mode != nil && *mode != "" {
-				opts.ExecutionMode = (*otf.ExecutionMode)(mode)
+				opts.ExecutionMode = (*workspace.ExecutionMode)(mode)
 			}
 
-			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, name)
 			if err != nil {
 				return err
 			}
-			ws, err = a.UpdateWorkspace(cmd.Context(), ws.ID(), opts)
+			ws, err = a.UpdateWorkspace(cmd.Context(), ws.ID, opts)
 			if err != nil {
 				return err
 			}
 
 			if opts.ExecutionMode != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode())
+				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode)
 			}
 
 			return nil
@@ -151,11 +150,11 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.LockWorkspace(cmd.Context(), ws.ID(), otf.WorkspaceLockOptions{})
+			ws, err = a.LockWorkspace(cmd.Context(), ws.ID, nil)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully locked workspace %s\n", ws.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully locked workspace %s\n", ws.Name)
 
 			return nil
 		},
@@ -169,6 +168,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 
 func (a *application) workspaceUnlockCommand() *cobra.Command {
 	var organization string
+	var force bool
 
 	cmd := &cobra.Command{
 		Use:           "unlock [name]",
@@ -183,18 +183,19 @@ func (a *application) workspaceUnlockCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID(), otf.WorkspaceUnlockOptions{})
+			ws, err = a.UnlockWorkspace(cmd.Context(), ws.ID, nil, force)
 			if err != nil {
 				return err
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully unlocked workspace %s\n", ws.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully unlocked workspace %s\n", ws.Name)
 
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.Flags().BoolVar(&force, "force", false, "Forceably unlock workspace.")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

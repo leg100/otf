@@ -13,25 +13,32 @@ import (
 
 const HashicorpReleasesHost = "releases.hashicorp.com"
 
-// TerraformDownloader downloads terraform binaries
-type TerraformDownloader struct {
-	// server hosting binaries
-	host string
-	// used to lookup destination path for saving download
-	Terraform
-	// client for downloading from server via http
-	client *http.Client
-	// mutex channel
-	mu chan struct{}
-}
+type (
+	// terraformDownloader downloads terraform binaries
+	terraformDownloader struct {
+		// server hosting binaries
+		host string
+		// used to lookup destination path for saving download
+		terraform
+		// client for downloading from server via http
+		client *http.Client
+		// mutex channel
+		mu chan struct{}
+	}
 
-func NewTerraformDownloader() *TerraformDownloader {
+	// Downloader downloads a specific version of a binary and returns its path
+	Downloader interface {
+		download(ctx context.Context, version string, w io.Writer) (string, error)
+	}
+)
+
+func newTerraformDownloader() *terraformDownloader {
 	mu := make(chan struct{}, 1)
 	mu <- struct{}{}
 
-	return &TerraformDownloader{
+	return &terraformDownloader{
 		host:      HashicorpReleasesHost,
-		Terraform: &TerraformPathFinder{},
+		terraform: &terraformPathFinder{},
 		client:    &http.Client{},
 		mu:        mu,
 	}
@@ -41,7 +48,7 @@ func NewTerraformDownloader() *TerraformDownloader {
 // filesystem and returns its path. Thread-safe: if a download is in-flight and
 // another download is requested then it'll be made to wait until the
 // former has finished.
-func (d *TerraformDownloader) Download(ctx context.Context, version string, w io.Writer) (string, error) {
+func (d *terraformDownloader) download(ctx context.Context, version string, w io.Writer) (string, error) {
 	if otf.Exists(d.dest(version)) {
 		return d.dest(version), nil
 	}
@@ -52,20 +59,20 @@ func (d *TerraformDownloader) Download(ctx context.Context, version string, w io
 		return "", ctx.Err()
 	}
 
-	err := (&Download{
+	err := (&download{
 		Writer:  w,
 		version: version,
 		src:     d.src(version),
 		dest:    d.dest(version),
 		client:  d.client,
-	}).Download()
+	}).download()
 
 	d.mu <- struct{}{}
 
 	return d.dest(version), err
 }
 
-func (d *TerraformDownloader) src(version string) string {
+func (d *terraformDownloader) src(version string) string {
 	return (&url.URL{
 		Scheme: "https",
 		Host:   d.host,
@@ -76,6 +83,6 @@ func (d *TerraformDownloader) src(version string) string {
 	}).String()
 }
 
-func (d *TerraformDownloader) dest(version string) string {
+func (d *terraformDownloader) dest(version string) string {
 	return d.TerraformPath(version)
 }

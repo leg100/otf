@@ -20,15 +20,27 @@ FOR UPDATE
 -- name: FindOrganizations :many
 SELECT *
 FROM organizations
+WHERE name LIKE ANY(pggen.arg('names'))
 ORDER BY updated_at DESC
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset');
+LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
+;
 
 -- name: CountOrganizations :one
 SELECT count(*)
-FROM organizations;
+FROM organizations
+WHERE name = ANY(pggen.arg('names'))
+;
 
 -- name: FindOrganizationsByUserID :many
 SELECT o.*
+FROM organizations o
+JOIN organization_memberships om ON o.name = om.organization_name
+WHERE om.user_id = pggen.arg('user_id')
+LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
+;
+
+-- name: CountOrganizationsByUserID :one
+SELECT count(*)
 FROM organizations o
 JOIN organization_memberships om ON o.name = om.organization_name
 WHERE om.user_id = pggen.arg('user_id')

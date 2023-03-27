@@ -14,29 +14,33 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type TestServer struct {
-	HookEndpoint *string  // populated upon creation
-	HookSecret   *string  // populated upon creation
-	HookEvents   []string // populated upon creation
+type (
+	TestServer struct {
+		HookEndpoint *string  // populated upon creation
+		HookSecret   *string  // populated upon creation
+		HookEvents   []string // populated upon creation
 
-	statusCallback // callback invoked whenever a commit status is received
+		statusCallback // callback invoked whenever a commit status is received
 
-	*httptest.Server
-	*testServerDB
-}
+		*httptest.Server
+		*testdb
+	}
 
-type testServerDB struct {
-	user    *cloud.User
-	repo    *cloud.Repo
-	tarball []byte
-	refs    []string
-}
+	TestServerOption func(*TestServer)
 
-type statusCallback func(*github.StatusEvent)
+	testdb struct {
+		user    *cloud.User
+		repo    *string
+		tarball []byte
+		refs    []string
+	}
 
-func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
+	statusCallback func(*github.StatusEvent)
+)
+
+func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.Config) {
 	srv := TestServer{
-		testServerDB: &testServerDB{},
+		testdb: &testdb{},
 	}
 	for _, o := range opts {
 		o(&srv)
@@ -110,19 +114,14 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		})
 	}
 	mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
-		repos := []*github.Repository{
-			{
-				FullName:      otf.String(srv.repo.Identifier),
-				DefaultBranch: otf.String(srv.repo.Branch),
-			},
-		}
+		repos := []*github.Repository{{FullName: srv.repo}}
 		out, err := json.Marshal(repos)
 		require.NoError(t, err)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
 	if srv.repo != nil {
-		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
 			var refs []*github.Reference
 			for _, ref := range srv.refs {
 				refs = append(refs, &github.Reference{Ref: otf.String(ref)})
@@ -132,22 +131,19 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier, func(w http.ResponseWriter, r *http.Request) {
-			repo := &github.Repository{
-				FullName:      otf.String(srv.repo.Identifier),
-				DefaultBranch: otf.String(srv.repo.Branch),
-			}
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo, func(w http.ResponseWriter, r *http.Request) {
+			repo := &github.Repository{FullName: srv.repo}
 			out, err := json.Marshal(repo)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/tarball/", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/tarball/", func(w http.ResponseWriter, r *http.Request) {
 			link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
 			http.Redirect(w, r, link.String(), http.StatusFound)
 		})
 		// docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
-		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/hooks", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			// retrieve the webhook url
 			type options struct {
 				Events []string `json:"events"`
@@ -176,7 +172,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 			w.Write(out)
 		})
 		// https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#delete-a-repository-webhook
-		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case "GET":
 				hook := github.Hook{
@@ -200,7 +196,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 			}
 		})
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
-		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
 			var commit github.StatusEvent
 			if err := json.NewDecoder(r.Body).Decode(&commit); err != nil {
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -229,10 +225,18 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 
 	srv.Server = httptest.NewTLSServer(mux)
 	t.Cleanup(srv.Close)
-	return &srv
-}
 
-type TestServerOption func(*TestServer)
+	u, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	cfg := cloud.Config{
+		Name:                "github",
+		Hostname:            u.Host,
+		Cloud:               &Cloud{},
+		SkipTLSVerification: true,
+	}
+	return &srv, cfg
+}
 
 func WithUser(user *cloud.User) TestServerOption {
 	return func(srv *TestServer) {
@@ -240,7 +244,7 @@ func WithUser(user *cloud.User) TestServerOption {
 	}
 }
 
-func WithRepo(repo cloud.Repo) TestServerOption {
+func WithRepo(repo string) TestServerOption {
 	return func(srv *TestServer) {
 		srv.repo = &repo
 	}
@@ -262,4 +266,8 @@ func WithStatusCallback(callback statusCallback) TestServerOption {
 	return func(srv *TestServer) {
 		srv.statusCallback = callback
 	}
+}
+
+func (s *TestServer) HasWebhook() bool {
+	return s.HookEndpoint != nil && s.HookSecret != nil
 }

@@ -79,8 +79,8 @@ func NewPagination(opts ListOptions, count int) *Pagination {
 	return &Pagination{opts, count}
 }
 
-// UnmarshalPaginationJSONAPI converts a JSON-API DTO into a pagination object.
-func UnmarshalPaginationJSONAPI(json *jsonapi.Pagination) *Pagination {
+// NewPaginationFromJSONAPI constructs pagination from a json:api struct
+func NewPaginationFromJSONAPI(json *jsonapi.Pagination) *Pagination {
 	return &Pagination{
 		count: json.TotalCount,
 		// we can't determine the page size so we'll just pass in 0 which

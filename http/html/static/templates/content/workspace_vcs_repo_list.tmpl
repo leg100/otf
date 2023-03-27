@@ -21,18 +21,20 @@
   </form>
 
   <div id="content-list" class="content-list">
-    {{ range .Content.Items }}
+    {{ range .Content.Repos }}
       <div class="item">
         <div class="item-heading">
-          <span class="status">{{ .Identifier }}</span>
+          <span class="status">{{ . }}</span>
           <form action="{{ connectWorkspacePath $.Content.ID }}" method="POST">
             <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.Content.VCSProviderID }}">
-            <input type="hidden" name="identifier" id="identifier" value="{{ .Identifier }}">
+            <input type="hidden" name="identifier" id="identifier" value="{{ . }}">
             <button>connect</button>
           </form>
         </div>
         <div class="item-content">
-          {{ template "identifier" . }}
+          <div>
+            <a title="copy to clipboard" class="clipboard-copyable identifier">{{ . }}</a>
+          </div>
         </div>
       </div>
     {{ else }}

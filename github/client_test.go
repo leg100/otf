@@ -3,7 +3,6 @@ package github
 import (
 	"bytes"
 	"context"
-	"net/url"
 	"os"
 	"path"
 	"testing"
@@ -46,12 +45,12 @@ func TestGetRepoTarball(t *testing.T) {
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
-		WithRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
+		WithRepo("acme/terraform"),
 		WithArchive(want),
 	)
 
 	got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-		Identifier: "acme/terraform",
+		Repo: "acme/terraform",
 	})
 	require.NoError(t, err)
 
@@ -65,12 +64,12 @@ func TestCreateWebhook(t *testing.T) {
 	ctx := context.Background()
 
 	client := newTestServerClient(t,
-		WithRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
+		WithRepo("acme/terraform"),
 	)
 
 	_, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
-		Identifier: "acme/terraform",
-		Secret:     "me-secret",
+		Repo:   "acme/terraform",
+		Secret: "me-secret",
 	})
 	require.NoError(t, err)
 }
@@ -78,13 +77,10 @@ func TestCreateWebhook(t *testing.T) {
 // newTestServerClient creates a github server for testing purposes and
 // returns a client configured to access the server.
 func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
-	srv := NewTestServer(t, opts...)
-
-	u, err := url.Parse(srv.URL)
-	require.NoError(t, err)
+	_, cfg := NewTestServer(t, opts...)
 
 	client, err := NewClient(context.Background(), cloud.ClientOptions{
-		Hostname:            u.Host,
+		Hostname:            cfg.Hostname,
 		SkipTLSVerification: true,
 		Credentials: cloud.Credentials{
 			OAuthToken: &oauth2.Token{AccessToken: "fake-token"},

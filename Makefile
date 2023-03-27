@@ -3,6 +3,7 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otfd
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
+GOOSE_DBSTRING=postgres:///otf
 LD_FLAGS = " \
     -s -w \
 	-X 'github.com/leg100/otf.Version=$(VERSION)' \
@@ -78,10 +79,15 @@ image: build
 load: image
 	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
 
+# Install sql code generator
+.PHONY: install-pggen
+install-pggen:
+	@sh -c "which pggen > /dev/null || go install github.com/leg100/pggen/cmd/pggen@latest"
+
 # Generate sql code
 .PHONY: sql
-sql:
-	../pggen/dist/pggen-linux-amd64 gen go \
+sql: install-pggen
+	pggen gen go \
 		--postgres-connection "dbname=otf" \
 		--query-glob 'sql/queries/*.sql' \
 		--output-dir sql/pggen \
@@ -99,15 +105,30 @@ sql:
 	goimports -w ./sql/pggen
 	go fmt ./sql/pggen
 
-# Migrate SQL schema
+# Install DB migration tool
+.PHONY: install-goose
+install-goose:
+	@sh -c "which goose > /dev/null || go install github.com/pressly/goose/v3/cmd/goose@latest"
+
+# Migrate SQL schema to latest version
 .PHONY: migrate
-migrate:
-	GOOSE_DRIVER=postgres goose -dir ./sql/migrations up
+migrate: install-goose
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations up
 
 # Redo SQL schema migration
 .PHONY: migrate-redo
-migrate-redo:
-	GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo
+migrate-redo: install-goose
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo
+
+# Rollback SQL schema by one version
+.PHONY: migrate-rollback
+migrate-rollback: install-goose
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations down
+
+# Get SQL schema migration status
+.PHONY: migrate-status
+migrate-status: install-goose
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations status
 
 # Run docs server with live reload
 .PHONY: serve-docs
@@ -125,6 +146,11 @@ tunnel:
 paths:
 	go generate ./http/html/paths
 	goimports -w ./http/html/paths
+
+# Re-generate RBAC action strings
+.PHONY: actions
+actions:
+	stringer -type Action ./rbac
 
 # Install staticcheck linter
 .PHONY: install-linter

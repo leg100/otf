@@ -15,7 +15,7 @@ fi
 SITE_TOKEN=go-tfe-test-site-token
 
 # run otfd on random port in background, logging to a temp file
-logfile=$(tempfile)
+logfile=$(mktemp)
 nohup _build/otfd --address :0 \
     --log-level trace --log-http-requests \
     --site-token $SITE_TOKEN \
@@ -68,6 +68,7 @@ export SKIP_PAID=1
 export OTF_SSL=true
 export OTF_CERT_FILE=./e2e/fixtures/cert.crt
 export OTF_KEY_FILE=./e2e/fixtures/key.pem
+export SSL_CERT_DIR=$PWD/e2e/fixtures
 
 TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 

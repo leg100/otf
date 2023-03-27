@@ -3,5 +3,5 @@
 package paths
 
 func RevokeSession() string {
-	return "/profile/sessions/revoke"
+	return "/app/profile/sessions/revoke"
 }

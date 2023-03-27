@@ -207,6 +207,13 @@ type Querier interface {
 	// FindModuleByWebhookIDScan scans the result of an executed FindModuleByWebhookIDBatch query.
 	FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error)
 
+	FindModuleByModuleVersionID(ctx context.Context, moduleVersionID pgtype.Text) (FindModuleByModuleVersionIDRow, error)
+	// FindModuleByModuleVersionIDBatch enqueues a FindModuleByModuleVersionID query into batch to be executed
+	// later by the batch.
+	FindModuleByModuleVersionIDBatch(batch genericBatch, moduleVersionID pgtype.Text)
+	// FindModuleByModuleVersionIDScan scans the result of an executed FindModuleByModuleVersionIDBatch query.
+	FindModuleByModuleVersionIDScan(results pgx.BatchResults) (FindModuleByModuleVersionIDRow, error)
+
 	UpdateModuleStatusByID(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
 	// UpdateModuleStatusByIDBatch enqueues a UpdateModuleStatusByID query into batch to be executed
 	// later by the batch.
@@ -235,12 +242,19 @@ type Querier interface {
 	// UpdateModuleVersionStatusByIDScan scans the result of an executed UpdateModuleVersionStatusByIDBatch query.
 	UpdateModuleVersionStatusByIDScan(results pgx.BatchResults) (UpdateModuleVersionStatusByIDRow, error)
 
-	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
+	DeleteModuleByID(ctx context.Context, moduleID pgtype.Text) (pgtype.Text, error)
 	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
 	// later by the batch.
-	DeleteModuleByIDBatch(batch genericBatch, id pgtype.Text)
+	DeleteModuleByIDBatch(batch genericBatch, moduleID pgtype.Text)
 	// DeleteModuleByIDScan scans the result of an executed DeleteModuleByIDBatch query.
 	DeleteModuleByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteModuleVersionByID(ctx context.Context, moduleVersionID pgtype.Text) (pgtype.Text, error)
+	// DeleteModuleVersionByIDBatch enqueues a DeleteModuleVersionByID query into batch to be executed
+	// later by the batch.
+	DeleteModuleVersionByIDBatch(batch genericBatch, moduleVersionID pgtype.Text)
+	// DeleteModuleVersionByIDScan scans the result of an executed DeleteModuleVersionByIDBatch query.
+	DeleteModuleVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
@@ -270,26 +284,33 @@ type Querier interface {
 	// FindOrganizationByNameForUpdateScan scans the result of an executed FindOrganizationByNameForUpdateBatch query.
 	FindOrganizationByNameForUpdateScan(results pgx.BatchResults) (FindOrganizationByNameForUpdateRow, error)
 
-	FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error)
+	FindOrganizations(ctx context.Context, params FindOrganizationsParams) ([]FindOrganizationsRow, error)
 	// FindOrganizationsBatch enqueues a FindOrganizations query into batch to be executed
 	// later by the batch.
-	FindOrganizationsBatch(batch genericBatch, limit int, offset int)
+	FindOrganizationsBatch(batch genericBatch, params FindOrganizationsParams)
 	// FindOrganizationsScan scans the result of an executed FindOrganizationsBatch query.
 	FindOrganizationsScan(results pgx.BatchResults) ([]FindOrganizationsRow, error)
 
-	CountOrganizations(ctx context.Context) (*int, error)
+	CountOrganizations(ctx context.Context, names []string) (*int, error)
 	// CountOrganizationsBatch enqueues a CountOrganizations query into batch to be executed
 	// later by the batch.
-	CountOrganizationsBatch(batch genericBatch)
+	CountOrganizationsBatch(batch genericBatch, names []string)
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 
-	FindOrganizationsByUserID(ctx context.Context, userID pgtype.Text) ([]FindOrganizationsByUserIDRow, error)
+	FindOrganizationsByUserID(ctx context.Context, params FindOrganizationsByUserIDParams) ([]FindOrganizationsByUserIDRow, error)
 	// FindOrganizationsByUserIDBatch enqueues a FindOrganizationsByUserID query into batch to be executed
 	// later by the batch.
-	FindOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	FindOrganizationsByUserIDBatch(batch genericBatch, params FindOrganizationsByUserIDParams)
 	// FindOrganizationsByUserIDScan scans the result of an executed FindOrganizationsByUserIDBatch query.
 	FindOrganizationsByUserIDScan(results pgx.BatchResults) ([]FindOrganizationsByUserIDRow, error)
+
+	CountOrganizationsByUserID(ctx context.Context, userID pgtype.Text) (*int, error)
+	// CountOrganizationsByUserIDBatch enqueues a CountOrganizationsByUserID query into batch to be executed
+	// later by the batch.
+	CountOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	// CountOrganizationsByUserIDScan scans the result of an executed CountOrganizationsByUserIDBatch query.
+	CountOrganizationsByUserIDScan(results pgx.BatchResults) (*int, error)
 
 	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
@@ -340,12 +361,14 @@ type Querier interface {
 	// InsertLogChunkScan scans the result of an executed InsertLogChunkBatch query.
 	InsertLogChunkScan(results pgx.BatchResults) (int, error)
 
-	FindLogChunks(ctx context.Context, params FindLogChunksParams) ([]byte, error)
-	// FindLogChunksBatch enqueues a FindLogChunks query into batch to be executed
+	// FindLogs retrieves all the logs for the given run and phase.
+	//
+	FindLogs(ctx context.Context, runID pgtype.Text, phase pgtype.Text) ([]byte, error)
+	// FindLogsBatch enqueues a FindLogs query into batch to be executed
 	// later by the batch.
-	FindLogChunksBatch(batch genericBatch, params FindLogChunksParams)
-	// FindLogChunksScan scans the result of an executed FindLogChunksBatch query.
-	FindLogChunksScan(results pgx.BatchResults) ([]byte, error)
+	FindLogsBatch(batch genericBatch, runID pgtype.Text, phase pgtype.Text)
+	// FindLogsScan scans the result of an executed FindLogsBatch query.
+	FindLogsScan(results pgx.BatchResults) ([]byte, error)
 
 	FindLogChunkByID(ctx context.Context, chunkID int) (FindLogChunkByIDRow, error)
 	// FindLogChunkByIDBatch enqueues a FindLogChunkByID query into batch to be executed
@@ -711,6 +734,13 @@ type Querier interface {
 	// FindTokensByUserIDScan scans the result of an executed FindTokensByUserIDBatch query.
 	FindTokensByUserIDScan(results pgx.BatchResults) ([]FindTokensByUserIDRow, error)
 
+	FindTokenByID(ctx context.Context, tokenID pgtype.Text) (FindTokenByIDRow, error)
+	// FindTokenByIDBatch enqueues a FindTokenByID query into batch to be executed
+	// later by the batch.
+	FindTokenByIDBatch(batch genericBatch, tokenID pgtype.Text)
+	// FindTokenByIDScan scans the result of an executed FindTokenByIDBatch query.
+	FindTokenByIDScan(results pgx.BatchResults) (FindTokenByIDRow, error)
+
 	DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error)
 	// DeleteTokenByIDBatch enqueues a DeleteTokenByID query into batch to be executed
 	// later by the batch.
@@ -942,34 +972,6 @@ type Querier interface {
 	// CountWorkspacesByUserIDScan scans the result of an executed CountWorkspacesByUserIDBatch query.
 	CountWorkspacesByUserIDScan(results pgx.BatchResults) (*int, error)
 
-	FindWorkspaceIDByRunID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByRunIDBatch enqueues a FindWorkspaceIDByRunID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByRunIDBatch(batch genericBatch, runID pgtype.Text)
-	// FindWorkspaceIDByRunIDScan scans the result of an executed FindWorkspaceIDByRunIDBatch query.
-	FindWorkspaceIDByRunIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	FindWorkspaceIDByStateVersionID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByStateVersionIDBatch enqueues a FindWorkspaceIDByStateVersionID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByStateVersionIDBatch(batch genericBatch, stateVersionID pgtype.Text)
-	// FindWorkspaceIDByStateVersionIDScan scans the result of an executed FindWorkspaceIDByStateVersionIDBatch query.
-	FindWorkspaceIDByStateVersionIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	FindWorkspaceIDByCVID(ctx context.Context, configurationVersionID pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByCVIDBatch enqueues a FindWorkspaceIDByCVID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByCVIDBatch(batch genericBatch, configurationVersionID pgtype.Text)
-	// FindWorkspaceIDByCVIDScan scans the result of an executed FindWorkspaceIDByCVIDBatch query.
-	FindWorkspaceIDByCVIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	FindWorkspaceIDByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
-	// FindWorkspaceIDByNameBatch enqueues a FindWorkspaceIDByName query into batch to be executed
-	// later by the batch.
-	FindWorkspaceIDByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// FindWorkspaceIDByNameScan scans the result of an executed FindWorkspaceIDByNameBatch query.
-	FindWorkspaceIDByNameScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	FindWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
 	// later by the batch.
@@ -1026,19 +1028,12 @@ type Querier interface {
 	// UpsertWorkspacePermissionScan scans the result of an executed UpsertWorkspacePermissionBatch query.
 	UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindWorkspacePermissionsByID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspacePermissionsByIDRow, error)
-	// FindWorkspacePermissionsByIDBatch enqueues a FindWorkspacePermissionsByID query into batch to be executed
+	FindWorkspacePolicyByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePolicyByIDRow, error)
+	// FindWorkspacePolicyByIDBatch enqueues a FindWorkspacePolicyByID query into batch to be executed
 	// later by the batch.
-	FindWorkspacePermissionsByIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// FindWorkspacePermissionsByIDScan scans the result of an executed FindWorkspacePermissionsByIDBatch query.
-	FindWorkspacePermissionsByIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByIDRow, error)
-
-	FindWorkspacePermissionsByName(ctx context.Context, workspaceName pgtype.Text, organizationName pgtype.Text) ([]FindWorkspacePermissionsByNameRow, error)
-	// FindWorkspacePermissionsByNameBatch enqueues a FindWorkspacePermissionsByName query into batch to be executed
-	// later by the batch.
-	FindWorkspacePermissionsByNameBatch(batch genericBatch, workspaceName pgtype.Text, organizationName pgtype.Text)
-	// FindWorkspacePermissionsByNameScan scans the result of an executed FindWorkspacePermissionsByNameBatch query.
-	FindWorkspacePermissionsByNameScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByNameRow, error)
+	FindWorkspacePolicyByIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindWorkspacePolicyByIDScan scans the result of an executed FindWorkspacePolicyByIDBatch query.
+	FindWorkspacePolicyByIDScan(results pgx.BatchResults) (FindWorkspacePolicyByIDRow, error)
 
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
@@ -1046,13 +1041,6 @@ type Querier interface {
 	DeleteWorkspacePermissionByIDBatch(batch genericBatch, workspaceID pgtype.Text, teamName pgtype.Text)
 	// DeleteWorkspacePermissionByIDScan scans the result of an executed DeleteWorkspacePermissionByIDBatch query.
 	DeleteWorkspacePermissionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	DeleteWorkspacePermissionByName(ctx context.Context, params DeleteWorkspacePermissionByNameParams) (pgconn.CommandTag, error)
-	// DeleteWorkspacePermissionByNameBatch enqueues a DeleteWorkspacePermissionByName query into batch to be executed
-	// later by the batch.
-	DeleteWorkspacePermissionByNameBatch(batch genericBatch, params DeleteWorkspacePermissionByNameParams)
-	// DeleteWorkspacePermissionByNameScan scans the result of an executed DeleteWorkspacePermissionByNameBatch query.
-	DeleteWorkspacePermissionByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 }
 
 type DBQuerier struct {
@@ -1208,6 +1196,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findModuleByModuleVersionIDSQL, findModuleByModuleVersionIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByModuleVersionID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateModuleStatusByIDSQL, updateModuleStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateModuleStatusByID': %w", err)
 	}
@@ -1222,6 +1213,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteModuleVersionByIDSQL, deleteModuleVersionByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteModuleVersionByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
@@ -1244,6 +1238,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findOrganizationsByUserIDSQL, findOrganizationsByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationsByUserID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, countOrganizationsByUserIDSQL, countOrganizationsByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountOrganizationsByUserID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)
 	}
@@ -1265,8 +1262,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertLogChunkSQL, insertLogChunkSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertLogChunk': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findLogChunksSQL, findLogChunksSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindLogChunks': %w", err)
+	if _, err := p.Prepare(ctx, findLogsSQL, findLogsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindLogs': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findLogChunkByIDSQL, findLogChunkByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindLogChunkByID': %w", err)
@@ -1424,6 +1421,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findTokensByUserIDSQL, findTokensByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTokensByUserID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findTokenByIDSQL, findTokenByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTokenByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteTokenByIDSQL, deleteTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTokenByID': %w", err)
 	}
@@ -1523,18 +1523,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, countWorkspacesByUserIDSQL, countWorkspacesByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountWorkspacesByUserID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByRunIDSQL, findWorkspaceIDByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByRunID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByStateVersionIDSQL, findWorkspaceIDByStateVersionIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByStateVersionID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByCVIDSQL, findWorkspaceIDByCVIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByCVID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceIDByNameSQL, findWorkspaceIDByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceIDByName': %w", err)
-	}
 	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)
 	}
@@ -1559,17 +1547,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, upsertWorkspacePermissionSQL, upsertWorkspacePermissionSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertWorkspacePermission': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspacePermissionsByIDSQL, findWorkspacePermissionsByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspacePermissionsByNameSQL, findWorkspacePermissionsByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByName': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspacePolicyByIDSQL, findWorkspacePolicyByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacePolicyByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByNameSQL, deleteWorkspacePermissionByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByName': %w", err)
 	}
 	return nil
 }
@@ -1600,16 +1582,6 @@ type ModuleVersions struct {
 	Status          pgtype.Text        `json:"status"`
 	StatusError     pgtype.Text        `json:"status_error"`
 	ModuleID        pgtype.Text        `json:"module_id"`
-}
-
-// Organizations represents the Postgres composite type "organizations".
-type Organizations struct {
-	OrganizationID  pgtype.Text        `json:"organization_id"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	Name            pgtype.Text        `json:"name"`
-	SessionRemember int                `json:"session_remember"`
-	SessionTimeout  int                `json:"session_timeout"`
 }
 
 // PhaseStatusTimestamps represents the Postgres composite type "phase_status_timestamps".
@@ -1696,6 +1668,13 @@ type Webhooks struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	Cloud      pgtype.Text `json:"cloud"`
+}
+
+// WorkspacePermissions represents the Postgres composite type "workspace_permissions".
+type WorkspacePermissions struct {
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	TeamID      pgtype.Text `json:"team_id"`
+	Role        pgtype.Text `json:"role"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1824,20 +1803,6 @@ func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
 	)
 }
 
-// newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'organizations'.
-func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"organizations",
-		compositeField{"organization_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"session_remember", "int4", &pgtype.Int4{}},
-		compositeField{"session_timeout", "int4", &pgtype.Int4{}},
-	)
-}
-
 // newPhaseStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'phase_status_timestamps'.
 func (tr *typeResolver) newPhaseStatusTimestamps() pgtype.ValueTranscoder {
@@ -1960,6 +1925,17 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 	)
 }
 
+// newWorkspacePermissions creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'workspace_permissions'.
+func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"workspace_permissions",
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
+		compositeField{"team_id", "text", &pgtype.Text{}},
+		compositeField{"role", "text", &pgtype.Text{}},
+	)
+}
+
 // newConfigurationVersionStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
@@ -1994,6 +1970,12 @@ func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 // '_teams' array type.
 func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_teams", "teams", tr.newTeams)
+}
+
+// newWorkspacePermissionsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_workspace_permissions' array type.
+func (tr *typeResolver) newWorkspacePermissionsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_workspace_permissions", "workspace_permissions", tr.newWorkspacePermissions)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (

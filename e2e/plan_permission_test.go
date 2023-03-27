@@ -8,6 +8,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,15 +16,15 @@ import (
 // TestPlanPermission demonstrates a user with plan permissions on a workspace interacting
 // with the workspace via the terraform CLI.
 func TestPlanPermission(t *testing.T) {
-	addBuildsToPath(t)
-
-	workspaceName := "plan-perms"
+	org, workspace := setup(t)
 
 	// First we need to setup an organization with a user who is both in the
 	// owners team and the devops team.
-	org := uuid.NewString()
 	owners := cloud.Team{Name: "owners", Organization: org}
 	devops := cloud.Team{Name: "devops", Organization: org}
+
+	// Run postgres in a container
+	_, connstr := sql.NewTestDB(t)
 
 	// Build and start a daemon specifically for the boss
 	boss := cloud.User{
@@ -35,9 +36,9 @@ func TestPlanPermission(t *testing.T) {
 		},
 	}
 	bossDaemon := &daemon{}
+	bossDaemon.withDB(connstr)
 	bossDaemon.withGithubUser(&boss)
 	bossHostname := bossDaemon.start(t)
-	bossURL := "https://" + bossHostname
 
 	// setup non-owner engineer user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
@@ -49,11 +50,12 @@ func TestPlanPermission(t *testing.T) {
 		},
 	}
 	engineerDaemon := &daemon{}
+	engineerDaemon.withDB(connstr)
 	engineerDaemon.withGithubUser(&engineer)
 	engineerHostname := engineerDaemon.start(t)
 
 	// create terraform configPath
-	configPath := newRootModule(t, engineerHostname, org, workspaceName)
+	configPath := newRootModule(t, engineerHostname, org, workspace)
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -63,9 +65,9 @@ func TestPlanPermission(t *testing.T) {
 		// login to UI as boss
 		githubLoginTasks(t, bossHostname, boss.Name),
 		// create workspace via UI
-		createWorkspaceTasks(t, bossHostname, org, workspaceName),
+		createWorkspaceTasks(t, bossHostname, org, workspace),
 		// assign plan permissions to devops team
-		addWorkspacePermissionTasks(t, bossURL, org, workspaceName, devops.Name, "plan"),
+		addWorkspacePermissionTasks(t, bossHostname, org, workspace, devops.Name, "plan"),
 		// logout of UI (as boss)
 		logoutTasks(t, bossHostname),
 		// login to UI as engineer

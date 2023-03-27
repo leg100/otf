@@ -7,37 +7,62 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/vcsprovider"
 )
 
-type Service struct {
-	logr.Logger
-	otf.VCSProviderService
-	otf.Database
+type (
+	RepoService = Service
 
-	factory // produce new hooks
-}
+	// Service manages VCS repositories
+	Service interface {
+		// Connect adds a connection between a VCS repo and an OTF resource. A
+		// webhook is created if one doesn't exist already.
+		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
+		// Disconnect removes a connection between a VCS repo and an OTF
+		// resource. If there are no more connections then its
+		// webhook is removed.
+		Disconnect(ctx context.Context, opts DisconnectOptions) error
+	}
 
-func NewService(opts NewServiceOptions) *Service {
+	service struct {
+		logr.Logger
+		vcsprovider.Service
+		otf.DB
+
+		factory // produce new hooks
+		*handler
+	}
+
+	Options struct {
+		logr.Logger
+
+		CloudService cloud.Service
+
+		otf.DB
+		otf.HostnameService
+		otf.Publisher
+		VCSProviderService vcsprovider.Service
+	}
+)
+
+func NewService(opts Options) *service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
-	return &Service{
-		Logger:             opts.Logger,
-		VCSProviderService: opts.VCSProviderService,
-		Database:           opts.Database,
-		factory:            factory,
+	handler := &handler{
+		Logger:    opts.Logger,
+		Publisher: opts.Publisher,
+		db:        newPGDB(opts.DB, factory),
+	}
+	return &service{
+		Logger:  opts.Logger,
+		Service: opts.VCSProviderService,
+		DB:      opts.DB,
+		factory: factory,
+		handler: handler,
 	}
 }
 
-type NewServiceOptions struct {
-	CloudService cloud.Service
-
-	otf.Database
-	logr.Logger
-	otf.HostnameService
-	otf.VCSProviderService
-}
-
 // Connect an OTF resource to a VCS repo.
-func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Connection, error) {
+func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, err
@@ -46,14 +71,14 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 	if err != nil {
 		return nil, err
 	}
-	_, err = client.GetRepository(ctx, opts.Identifier)
+	_, err = client.GetRepository(ctx, opts.RepoPath)
 	if err != nil {
 		return nil, fmt.Errorf("checking repository exists: %w", err)
 	}
 
 	hook, err := s.newHook(newHookOpts{
-		identifier: opts.Identifier,
-		cloud:      vcsProvider.CloudConfig().Name,
+		identifier: opts.RepoPath,
+		cloud:      vcsProvider.CloudConfig.Name,
 	})
 	if err != nil {
 		return nil, err
@@ -64,7 +89,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 	if opts.Tx != nil {
 		db = newPGDB(opts.Tx, s.factory)
 	} else {
-		db = newPGDB(s.Database, s.factory)
+		db = newPGDB(s.DB, s.factory)
 	}
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
@@ -85,10 +110,12 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 
 		return tx.createConnection(ctx, hook.id, opts)
 	})
-	return &otf.Connection{
-		WebhookID:     hook.id,
+	if err != nil {
+		return nil, err
+	}
+	return &Connection{
+		Repo:          opts.RepoPath,
 		VCSProviderID: opts.VCSProviderID,
-		Identifier:    opts.Identifier,
 	}, nil
 }
 
@@ -96,7 +123,7 @@ func (s *Service) Connect(ctx context.Context, opts otf.ConnectOptions) (*otf.Co
 //
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
 // fatal and the hook is still deleted from the database.
-func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) error {
+func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
 	// separately capture any error resulting from attempting to delete the
 	// webhook from the VCS repo
 	var repoErr error
@@ -106,7 +133,7 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) er
 	if opts.Tx != nil {
 		db = newPGDB(opts.Tx, s.factory)
 	} else {
-		db = newPGDB(s.Database, s.factory)
+		db = newPGDB(s.DB, s.factory)
 	}
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
@@ -136,8 +163,8 @@ func (s *Service) Disconnect(ctx context.Context, opts otf.DisconnectOptions) er
 			return err
 		}
 		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
-			Identifier: hook.identifier,
-			ID:         *hook.cloudID,
+			Repo: hook.identifier,
+			ID:   *hook.cloudID,
 		})
 		if err != nil {
 			s.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)

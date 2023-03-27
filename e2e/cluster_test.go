@@ -7,6 +7,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,9 +23,8 @@ import (
 // processes successfully, e.g. relaying of logs from the agent through to the
 // TF CLI
 func TestCluster(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
@@ -36,9 +36,11 @@ func TestCluster(t *testing.T) {
 		Organizations: []string{org},
 	}
 
-	// start two daemons, one for user, one for agent
+	// start two daemons, one for user, one for agent, both sharing a db
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
+	_, connstr := sql.NewTestDB(t)
+	daemon.withDB(connstr)
 	userHostname := daemon.start(t)
 	agentHostname := daemon.start(t)
 
@@ -101,7 +103,7 @@ func TestCluster(t *testing.T) {
 	okDialog(t, ctx)
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to org main menu
-		chromedp.Navigate("https://" + userHostname + "/organizations/" + org),
+		chromedp.Navigate(organizationPath(userHostname, org)),
 		screenshot(t),
 		// go to list of agent tokens
 		chromedp.Click("#agent_tokens > a", chromedp.NodeVisible),
@@ -109,7 +111,7 @@ func TestCluster(t *testing.T) {
 		// delete the token
 		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
 		screenshot(t),
-		matchText(t, ".flash-success", "Deleted token: "+"test-agent-token"),
+		matchText(t, ".flash-success", "Deleted token: test-agent-token"),
 	})
 	require.NoError(t, err)
 }

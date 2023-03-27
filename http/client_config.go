@@ -36,6 +36,9 @@ type Config struct {
 	HTTPClient *http.Client
 	// RetryLogHook is invoked each time a request is retried.
 	RetryLogHook RetryLogHook
+	// insecure skips verification of upstream TLS certs. Should only be used
+	// for testing purposes. NOTE: Only takes effect on SSE connections.
+	Insecure bool
 	// Options for overriding config
 	options []ConfigOption
 }

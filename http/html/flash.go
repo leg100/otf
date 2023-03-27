@@ -42,38 +42,38 @@ func PopFlashes(w http.ResponseWriter, r *http.Request) ([]flash, error) {
 		return nil, err
 	}
 	// purge cookie from browser
-	setCookie(w, flashCookie, "", &time.Time{})
+	SetCookie(w, flashCookie, "", &time.Time{})
 
 	return flashes, nil
 }
 
-// flashStack is a stack of flash messages
-type flashStack []flash
+// FlashStack is a stack of flash messages
+type FlashStack []flash
 
-func (s *flashStack) push(t flashType, msg string) {
+func (s *FlashStack) Push(t flashType, msg string) {
 	*s = append(*s, flash{t, msg})
 }
 
-func (s flashStack) write(w http.ResponseWriter) {
+func (s FlashStack) Write(w http.ResponseWriter) {
 	js, err := json.Marshal(s)
 	if err != nil {
 		htmlPanic("marshalling flash messages to json: %v", err)
 	}
 	encoded := base64.URLEncoding.EncodeToString(js)
-	setCookie(w, flashCookie, encoded, nil)
+	SetCookie(w, flashCookie, encoded, nil)
 }
 
 // FlashSuccess helper writes a single flash success message
 func FlashSuccess(w http.ResponseWriter, msg string) {
-	flashStack{{Type: FlashSuccessType, Message: msg}}.write(w)
+	FlashStack{{Type: FlashSuccessType, Message: msg}}.Write(w)
 }
 
 // FlashWarning helper writes a single flash warning message
 func FlashWarning(w http.ResponseWriter, msg string) {
-	flashStack{{Type: FlashWarningType, Message: msg}}.write(w)
+	FlashStack{{Type: FlashWarningType, Message: msg}}.Write(w)
 }
 
 // FlashError helper writes a single flash error message
 func FlashError(w http.ResponseWriter, msg string) {
-	flashStack{{Type: FlashErrorType, Message: msg}}.write(w)
+	FlashStack{{Type: FlashErrorType, Message: msg}}.Write(w)
 }

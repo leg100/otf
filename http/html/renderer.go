@@ -22,56 +22,16 @@ const (
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
 
-// renderer is capable of locating and rendering a template.
+// renderer locates and renders a template.
 type renderer interface {
-	renderTemplate(name string, w io.Writer, data any) error
+	RenderTemplate(name string, w io.Writer, data any) error
 }
-
-// embeddedRenderer renders templates embedded in the go bin. Uses cache for
-// performance.
-type embeddedRenderer struct {
-	cache map[string]*template.Template
-}
-
-// devRenderer renders templates located on disk. The cache is rebuilt every
-// time a template is rendered. For development purposes.
-type devRenderer struct{}
 
 func newRenderer(devMode bool) (renderer, error) {
 	if devMode {
 		return &devRenderer{}, nil
 	}
 	return newEmbeddedRenderer()
-}
-
-func newEmbeddedRenderer() (*embeddedRenderer, error) {
-	buster := &cacheBuster{embedded}
-
-	cache, err := newTemplateCache(embedded, buster)
-	if err != nil {
-		return nil, err
-	}
-
-	renderer := embeddedRenderer{
-		cache: cache,
-	}
-
-	return &renderer, nil
-}
-
-func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data any) error {
-	return renderTemplateFromCache(r.cache, name, w, data)
-}
-
-func (r *devRenderer) renderTemplate(name string, w io.Writer, data any) error {
-	buster := &cacheBuster{localDisk}
-
-	cache, err := newTemplateCache(localDisk, buster)
-	if err != nil {
-		return err
-	}
-
-	return renderTemplateFromCache(cache, name, w, data)
 }
 
 func renderTemplateFromCache(cache map[string]*template.Template, name string, w io.Writer, data any) error {

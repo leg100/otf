@@ -4,32 +4,25 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"os"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/app"
-	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/registry"
+	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/module"
+	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/scheduler"
+	"github.com/leg100/otf/services"
 	"github.com/leg100/otf/sql"
-	"github.com/leg100/otf/state"
-	"github.com/leg100/otf/variable"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	DefaultAddress  = ":8080"
-	DefaultDatabase = "postgres:///otf?host=/var/run/postgresql"
-	DefaultDataDir  = "~/.otf-data"
+	defaultAddress  = ":8080"
+	defaultDatabase = "postgres:///otf?host=/var/run/postgresql"
 )
 
 func main() {
@@ -37,13 +30,15 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdutil.CatchCtrlC(cancel)
 
-	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
+	if err := parseFlags(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, args []string, out io.Writer) error {
+func parseFlags(ctx context.Context, args []string, out io.Writer) error {
+	cfg := services.NewDefaultConfig()
+
 	cmd := &cobra.Command{
 		Use:           "otfd",
 		Short:         "otf daemon",
@@ -51,23 +46,39 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       otf.Version,
+		RunE:          runFunc(&cfg),
 	}
 	cmd.SetOut(out)
 
-	d := &daemon{
-		ServerConfig:       newServerConfigFromFlags(cmd.Flags()),
-		CacheConfig:        newCacheConfigFromFlags(cmd.Flags()),
-		LoggerConfig:       cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
-		ApplicationOptions: newHTMLConfigFromFlags(cmd.Flags()),
-		Config:             agent.NewConfigFromFlags(cmd.Flags()),
-		OAuthConfigs:       cloudFlags(cmd.Flags()),
-	}
-	cmd.RunE = d.run
-
 	// TODO: rename --address to --listen
-	cmd.Flags().StringVar(&d.address, "address", DefaultAddress, "Listening address")
-	cmd.Flags().StringVar(&d.database, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&d.hostname, "hostname", "", "User-facing hostname for otf")
+	cmd.Flags().StringVar(&cfg.Address, "address", defaultAddress, "Listening address")
+	cmd.Flags().StringVar(&cfg.Database, "database", defaultDatabase, "Postgres connection string")
+	cmd.Flags().StringVar(&cfg.Host, "hostname", "", "User-facing hostname for otf")
+	cmd.Flags().StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
+	cmd.Flags().StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
+	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", configversion.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
+
+	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
+	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
+
+	cmd.Flags().BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
+	cmd.Flags().StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
+	cmd.Flags().StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
+	cmd.Flags().BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
+	cmd.Flags().BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
+
+	cmd.Flags().StringVar(&cfg.Github.Hostname, "github-hostname", cfg.Github.Hostname, "github hostname")
+	cmd.Flags().BoolVar(&cfg.Github.SkipTLSVerification, "github-skip-tls-verification", false, "Skip github TLS verification")
+	cmd.Flags().StringVar(&cfg.Github.OAuthConfig.ClientID, "github-client-id", "", "github client ID")
+	cmd.Flags().StringVar(&cfg.Github.OAuthConfig.ClientSecret, "github-client-secret", "", "github client secret")
+
+	cmd.Flags().StringVar(&cfg.Gitlab.Hostname, "gitlab-hostname", cfg.Gitlab.Hostname, "gitlab hostname")
+	cmd.Flags().BoolVar(&cfg.Gitlab.SkipTLSVerification, "gitlab-skip-tls-verification", false, "Skip gitlab TLS verification")
+	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientID, "gitlab-client-id", "", "gitlab client ID")
+	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientSecret, "gitlab-client-secret", "", "gitlab client secret")
+
+	cfg.LoggerConfig = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
+	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
@@ -77,231 +88,141 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	return cmd.ExecuteContext(ctx)
 }
 
-type daemon struct {
-	address, hostname, database string
+func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		ctx := cmd.Context()
+		// Give superuser privileges to all server processes
+		ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
+		// Cancel context the first time a func started with g.Go() fails
+		g, ctx := errgroup.WithContext(ctx)
 
-	*http.ServerConfig
-	*inmem.CacheConfig
-	*cmdutil.LoggerConfig
-	*html.ApplicationOptions
-	*agent.Config
-	cloud.OAuthConfigs
-}
-
-func (d *daemon) run(cmd *cobra.Command, _ []string) error {
-	ctx := cmd.Context()
-
-	// Setup logger
-	logger, err := cmdutil.NewLogger(d.LoggerConfig)
-	if err != nil {
-		return err
-	}
-
-	// populate cloud service with cloud configurations
-	cloudService, err := inmem.NewCloudService(d.OAuthConfigs.Configs()...)
-	if err != nil {
-		return err
-	}
-
-	// Setup cache
-	cache, err := inmem.NewCache(*d.CacheConfig)
-	if err != nil {
-		return err
-	}
-	logger.Info("started cache", "max_size", d.CacheConfig.Size, "ttl", d.CacheConfig.TTL.String())
-
-	// Group several daemons and if any one of them errors then terminate them
-	// all
-	g, ctx := errgroup.WithContext(ctx)
-
-	// give local agent unlimited access to services
-	agentCtx := otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
-	// give other components unlimited access too
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
-
-	// Setup database(s)
-	db, err := sql.New(ctx, sql.Options{
-		Logger:       logger,
-		ConnString:   d.database,
-		Cache:        cache,
-		CloudService: cloudService,
-	})
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	// Setup pub sub broker
-	pubsub, err := sql.NewPubSub(logger, db)
-	if err != nil {
-		return fmt.Errorf("setting up pub sub broker")
-	}
-
-	// Setup authorizer
-	authorizer := otf.NewAuthorizer(logger, db)
-
-	stateService := state.NewService(state.ServiceOptions{
-		Authorizer: authorizer,
-		Logger:     logger,
-		Database:   db,
-		Cache:      cache,
-	})
-
-	// Setup application services
-	app, err := app.NewApplication(ctx, app.Options{
-		Logger:              logger,
-		DB:                  db,
-		Cache:               cache,
-		PubSub:              pubsub,
-		CloudService:        cloudService,
-		Authorizer:          authorizer,
-		StateVersionService: stateService,
-	})
-	if err != nil {
-		return fmt.Errorf("setting up services: %w", err)
-	}
-
-	renderer, err := html.NewViewEngine(d.ApplicationOptions.DevMode)
-	if err != nil {
-		return fmt.Errorf("setting up renderer: %w", err)
-	}
-
-	variableService := variable.NewApplication(variable.ApplicationOptions{
-		Authorizer:       authorizer,
-		Logger:           logger,
-		Database:         db,
-		WorkspaceService: app.WorkspaceService,
-		Renderer:         renderer,
-	})
-
-	registrySessionService := registry.NewApplication(ctx, registry.ApplicationOptions{
-		Authorizer: authorizer,
-		Logger:     logger,
-		Database:   db,
-	})
-
-	// Setup http server and web app
-	server, err := http.NewServer(logger, *d.ServerConfig, app, db, stateService, variableService, registrySessionService)
-	if err != nil {
-		return fmt.Errorf("setting up http server: %w", err)
-	}
-	ln, err := net.Listen("tcp", d.address)
-	if err != nil {
-		return err
-	}
-	defer ln.Close()
-
-	// Set system hostname
-	if err := app.SetHostname(d.hostname, ln.Addr().(*net.TCPAddr)); err != nil {
-		return err
-	}
-
-	d.ApplicationOptions.ServerConfig = d.ServerConfig
-	d.ApplicationOptions.Application = app
-	d.ApplicationOptions.Router = server.Router
-	d.ApplicationOptions.CloudConfigs = d.OAuthConfigs
-	d.ApplicationOptions.VariableService = variableService
-	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
-		return err
-	}
-
-	// Setup client app for use by agent
-	client := struct {
-		otf.OrganizationService
-		otf.AgentTokenService
-		otf.VariableApp
-		otf.StateVersionApp
-		otf.WorkspaceService
-		otf.HostnameService
-		otf.ConfigurationVersionService
-		otf.RegistrySessionService
-		otf.RunService
-		otf.EventService
-	}{
-		AgentTokenService:           app,
-		WorkspaceService:            app.WorkspaceService,
-		OrganizationService:         app,
-		VariableApp:                 variableService,
-		StateVersionApp:             stateService,
-		HostnameService:             app,
-		ConfigurationVersionService: app,
-		RegistrySessionService:      registrySessionService,
-		RunService:                  app,
-		EventService:                app,
-	}
-
-	// Setup agent
-	agent, err := agent.NewAgent(
-		logger.WithValues("component", "agent"),
-		client,
-		*d.Config)
-	if err != nil {
-		return fmt.Errorf("initializing agent: %w", err)
-	}
-
-	// Run pubsub broker
-	g.Go(func() error { return pubsub.Start(ctx) })
-
-	// Run scheduler - if there is another scheduler running already then
-	// this'll wait until the other scheduler exits.
-	g.Go(func() error {
-		return scheduler.ExclusiveScheduler(ctx, logger, app)
-	})
-
-	// Run PR reporter - if there is another reporter running already then
-	// this'll wait until the other reporter exits.
-	g.Go(func() error {
-		return otf.ExclusiveReporter(ctx, logger, d.hostname, app)
-	})
-
-	// Run local agent in background
-	g.Go(func() error {
-		if err := agent.Start(agentCtx); err != nil {
-			return fmt.Errorf("agent terminated: %w", err)
+		logger, err := cmdutil.NewLogger(cfg.LoggerConfig)
+		if err != nil {
+			return err
 		}
-		return nil
-	})
 
-	// Run HTTP/JSON-API server and web app
-	g.Go(func() error {
-		if err := server.Start(ctx, ln); err != nil {
-			return fmt.Errorf("http server terminated: %w", err)
+		if cfg.DevMode {
+			logger.Info("enabled developer mode")
 		}
-		return nil
-	})
 
-	// Block until error or Ctrl-C received.
-	return g.Wait()
-}
+		db, err := sql.New(ctx, sql.Options{
+			Logger:     logger,
+			ConnString: cfg.Database,
+		})
+		if err != nil {
+			return err
+		}
+		defer db.Close()
 
-// newCacheConfigFromFlags adds flags pertaining to cache config
-func newCacheConfigFromFlags(flags *pflag.FlagSet) *inmem.CacheConfig {
-	cfg := inmem.CacheConfig{}
+		services, err := services.New(logger, db, *cfg)
+		if err != nil {
+			return err
+		}
 
-	flags.IntVar(&cfg.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
-	flags.DurationVar(&cfg.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
+		agent, err := services.NewAgent(logger)
+		if err != nil {
+			return err
+		}
 
-	return &cfg
-}
+		server, listener, err := services.NewServer(logger)
+		if err != nil {
+			return err
+		}
+		defer listener.Close()
 
-// newServerConfigFromFlags adds flags pertaining to http server config
-func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
-	cfg := http.ServerConfig{}
+		// report hostname now that the http server has been setup, which
+		// sets the hostname if the user has not set one.
+		logger.V(0).Info("set system hostname", "hostname", services.Hostname())
 
-	flags.BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
-	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
-	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
-	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
-	flags.StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
-	flags.StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
-	flags.Int64Var(&cfg.MaxConfigSize, "max-config-size", otf.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
+		// Start purging sessions on a regular interval
+		services.StartExpirer(ctx)
 
-	return &cfg
-}
+		// Run pubsub broker
+		g.Go(func() error { return services.Broker.Start(ctx) })
 
-// newCloudConfigFromFlags binds flags to web app config
-func newHTMLConfigFromFlags(flags *pflag.FlagSet) *html.ApplicationOptions {
-	cfg := html.ApplicationOptions{}
-	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
-	return &cfg
+		// Run logs caching proxy
+		g.Go(func() error { return services.StartProxy(ctx) })
+
+		// Run scheduler - if there is another scheduler running already then
+		// this'll wait until the other scheduler exits.
+		g.Go(func() error {
+			return scheduler.Start(ctx, scheduler.Options{
+				Logger:           logger,
+				WorkspaceService: services.WorkspaceService,
+				RunService:       services.RunService,
+				DB:               db,
+				Subscriber:       services,
+			})
+		})
+
+		// Run run-spawner
+		g.Go(func() error {
+			err := run.StartSpawner(ctx, run.SpawnerOptions{
+				Logger:                      logger,
+				ConfigurationVersionService: services.ConfigurationVersionService,
+				WorkspaceService:            services.WorkspaceService,
+				VCSProviderService:          services.VCSProviderService,
+				RunService:                  services.RunService,
+				Subscriber:                  services.Broker,
+			})
+			if err != nil {
+				return fmt.Errorf("spawner terminated: %w", err)
+			}
+			return nil
+		})
+
+		// Run module publisher
+		g.Go(func() error {
+			err := module.StartPublisher(ctx, module.PublisherOptions{
+				Logger:             logger,
+				VCSProviderService: services.VCSProviderService,
+				ModuleService:      services.ModuleService,
+				Subscriber:         services.Broker,
+			})
+			if err != nil {
+				return fmt.Errorf("module publisher terminated: %w", err)
+			}
+			return nil
+		})
+
+		// Run PR reporter - if there is another reporter running already then
+		// this'll wait until the other reporter exits.
+		g.Go(func() error {
+			err := run.StartReporter(ctx, run.ReporterOptions{
+				Logger:                      logger,
+				ConfigurationVersionService: services.ConfigurationVersionService,
+				WorkspaceService:            services.WorkspaceService,
+				VCSProviderService:          services.VCSProviderService,
+				HostnameService:             services.HostnameService,
+				Subscriber:                  services.Broker,
+				DB:                          db,
+			})
+			if err != nil {
+				return fmt.Errorf("reporter terminated: %w", err)
+			}
+			return nil
+		})
+
+		// Run local agent in background
+		g.Go(func() error {
+			// give local agent unlimited access to services
+			ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
+
+			if err := agent.Start(ctx); err != nil {
+				return fmt.Errorf("agent terminated: %w", err)
+			}
+			return nil
+		})
+
+		// Run HTTP/JSON-API server and web app
+		g.Go(func() error {
+			if err := server.Start(ctx, listener); err != nil {
+				return fmt.Errorf("http server terminated: %w", err)
+			}
+			return nil
+		})
+
+		// Block until error or Ctrl-C received.
+		return g.Wait()
+	}
 }

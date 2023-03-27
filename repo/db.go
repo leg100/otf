@@ -13,11 +13,11 @@ import (
 
 // pgdb is the repo database on postgres
 type pgdb struct {
-	otf.Database
+	otf.DB
 	factory
 }
 
-func newPGDB(db otf.Database, f factory) *pgdb {
+func newPGDB(db otf.DB, f factory) *pgdb {
 	return &pgdb{db, f}
 }
 
@@ -68,17 +68,17 @@ func (db *pgdb) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID str
 	return nil
 }
 
-func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf.ConnectOptions) error {
+func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts ConnectOptions) error {
 	params := pggen.InsertRepoConnectionParams{
 		WebhookID:     sql.UUID(hookID),
 		VCSProviderID: sql.String(opts.VCSProviderID),
 	}
 
 	switch opts.ConnectionType {
-	case otf.WorkspaceConnection:
+	case WorkspaceConnection:
 		params.WorkspaceID = sql.String(opts.ResourceID)
 		params.ModuleID = pgtype.Text{Status: pgtype.Null}
-	case otf.ModuleConnection:
+	case ModuleConnection:
 		params.ModuleID = sql.String(opts.ResourceID)
 		params.WorkspaceID = pgtype.Text{Status: pgtype.Null}
 	default:
@@ -91,15 +91,15 @@ func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts otf
 	return nil
 }
 
-func (db *pgdb) deleteConnection(ctx context.Context, opts otf.DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
+func (db *pgdb) deleteConnection(ctx context.Context, opts DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
 	switch opts.ConnectionType {
-	case otf.WorkspaceConnection:
+	case WorkspaceConnection:
 		result, err := db.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
 		if err != nil {
 			return uuid.UUID{}, "", sql.Error(err)
 		}
 		return result.WebhookID.Bytes, result.VCSProviderID.String, nil
-	case otf.ModuleConnection:
+	case ModuleConnection:
 		result, err := db.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
 		if err != nil {
 			return uuid.UUID{}, "", sql.Error(err)
@@ -122,9 +122,10 @@ func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
 	return db.unmarshal(hookRow(result))
 }
 
-// tx constructs a new pgdb within a transaction.
+// lock webhooks table within a transaction, providing a callback within which
+// caller can use the transaction.
 func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Transaction(ctx, func(tx otf.Database) error {
+	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := tx.Exec(ctx, "LOCK webhooks")
 		if err != nil {
 			return err

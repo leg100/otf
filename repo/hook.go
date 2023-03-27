@@ -11,9 +11,6 @@ import (
 	"github.com/leg100/otf/cloud"
 )
 
-// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
-const handlerPrefix = "/webhooks/vcs"
-
 // defaultEvents are the VCS events that hooks subscribe to.
 var defaultEvents = []cloud.VCSEventType{
 	cloud.VCSPushEventType,
@@ -47,8 +44,8 @@ func (h *hook) sync(ctx context.Context, client cloud.Client) error {
 	// existing hook in DB; check it exists in cloud and create/update
 	// accordingly
 	cloudHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
-		Identifier: h.identifier,
-		ID:         *h.cloudID,
+		Repo: h.identifier,
+		ID:   *h.cloudID,
 	})
 	if errors.Is(err, otf.ErrResourceNotFound) {
 		// hook not found in cloud; create it
@@ -80,9 +77,9 @@ func (h *hook) sync(ctx context.Context, client cloud.Client) error {
 
 func (h *hook) createOpts() cloud.CreateWebhookOptions {
 	return cloud.CreateWebhookOptions{
-		Identifier: h.identifier,
-		Secret:     h.secret,
-		Events:     defaultEvents,
-		Endpoint:   h.endpoint,
+		Repo:     h.identifier,
+		Secret:   h.secret,
+		Events:   defaultEvents,
+		Endpoint: h.endpoint,
 	}
 }

@@ -8,15 +8,13 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/gorilla/schema"
-	"github.com/leg100/jsonapi"
 )
 
-// Query schema Encoder, caches structs, and safe for sharing
-var encoder = schema.NewEncoder()
+// Encoder for encoding structs into queries: caches structs, and safe for sharing
+var Encoder = schema.NewEncoder()
 
 // Absolute returns an absolute URL for the given path. It uses the http request
 // to determine the correct hostname and scheme to use. Handles situations where
@@ -88,25 +86,4 @@ func GetClientIP(r *http.Request) (string, error) {
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	return host, err
-}
-
-// writeError writes an HTTP response with a JSON-API marshalled error obj.
-func writeError(w http.ResponseWriter, code int, err error) {
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	w.WriteHeader(code)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
-		{
-			Status: strconv.Itoa(code),
-			Title:  http.StatusText(code),
-			Detail: err.Error(),
-		},
-	})
-}
-
-// withCode is a helper func for writing an HTTP status code to a response
-// stream.  For use with WriteResponse.
-func withCode(code int) func(w http.ResponseWriter) {
-	return func(w http.ResponseWriter) {
-		w.WriteHeader(code)
-	}
 }

@@ -9,6 +9,7 @@ const (
 	CreateOrganizationAction
 	UpdateOrganizationAction
 	GetOrganizationAction
+	ListOrganizationsAction
 	GetEntitlementsAction
 	DeleteOrganizationAction
 
@@ -29,6 +30,7 @@ const (
 	ListModulesAction
 	GetModuleAction
 	DeleteModuleAction
+	DeleteModuleVersionAction
 
 	CreateVariableAction
 	UpdateVariableAction
@@ -61,9 +63,11 @@ const (
 	DeleteWorkspaceAction
 	SetWorkspacePermissionAction
 	UnsetWorkspacePermissionAction
+	UpdateWorkspaceAction
+
 	LockWorkspaceAction
 	UnlockWorkspaceAction
-	UpdateWorkspaceAction
+	ForceUnlockWorkspaceAction
 
 	CreateStateVersionAction
 	ListStateVersionsAction
@@ -75,6 +79,7 @@ const (
 	ListConfigurationVersionsAction
 	GetConfigurationVersionAction
 	DownloadConfigurationVersionAction
+	DeleteConfigurationVersionAction
 
 	ListUsersAction
 

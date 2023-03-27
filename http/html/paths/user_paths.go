@@ -5,29 +5,29 @@ package paths
 import "fmt"
 
 func Users(organization string) string {
-	return fmt.Sprintf("/organizations/%s/users", organization)
+	return fmt.Sprintf("/app/organizations/%s/users", organization)
 }
 
 func CreateUser(organization string) string {
-	return fmt.Sprintf("/organizations/%s/users/create", organization)
+	return fmt.Sprintf("/app/organizations/%s/users/create", organization)
 }
 
 func NewUser(organization string) string {
-	return fmt.Sprintf("/organizations/%s/users/new", organization)
+	return fmt.Sprintf("/app/organizations/%s/users/new", organization)
 }
 
 func User(user string) string {
-	return fmt.Sprintf("/users/%s", user)
+	return fmt.Sprintf("/app/users/%s", user)
 }
 
 func EditUser(user string) string {
-	return fmt.Sprintf("/users/%s/edit", user)
+	return fmt.Sprintf("/app/users/%s/edit", user)
 }
 
 func UpdateUser(user string) string {
-	return fmt.Sprintf("/users/%s/update", user)
+	return fmt.Sprintf("/app/users/%s/update", user)
 }
 
 func DeleteUser(user string) string {
-	return fmt.Sprintf("/users/%s/delete", user)
+	return fmt.Sprintf("/app/users/%s/delete", user)
 }

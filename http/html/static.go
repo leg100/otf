@@ -4,6 +4,8 @@ import (
 	"embed"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -16,12 +18,15 @@ var (
 	localDisk = os.DirFS("http/html")
 )
 
-// newStaticServer constructs a cache-busting filesystem of static assets (css,
-// javascript, etc). Toggling dev mode enables serving files up from local disk
-// instead.
-func newStaticServer(devMode bool) http.FileSystem {
+// AddStaticHandler adds a handler to router serving static assets
+// (JS, CSS, etc) from within go binary. Dev mode sources files from
+// local disk instead.
+func AddStaticHandler(r *mux.Router, devMode bool) {
+	var fs http.FileSystem
 	if devMode {
-		return &cacheBuster{localDisk}
+		fs = &cacheBuster{localDisk}
+	} else {
+		fs = &cacheBuster{embedded}
 	}
-	return &cacheBuster{embedded}
+	r.PathPrefix("/static/").Handler(http.FileServer(fs)).Methods("GET")
 }

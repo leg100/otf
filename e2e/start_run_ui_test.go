@@ -13,9 +13,8 @@ import (
 // TestStartRunUI tests starting a run via the Web UI before confirming and
 // applying the run.
 func TestStartRunUI(t *testing.T) {
-	addBuildsToPath(t)
+	org, workspace := setup(t)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
@@ -29,8 +28,7 @@ func TestStartRunUI(t *testing.T) {
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
-	workspaceName := "workspace-start-run"
-	root := newRootModule(t, hostname, org, workspaceName)
+	root := newRootModule(t, hostname, org, workspace)
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -39,7 +37,7 @@ func TestStartRunUI(t *testing.T) {
 	// in browser, login and create workspace
 	err := chromedp.Run(ctx,
 		githubLoginTasks(t, hostname, user.Name),
-		createWorkspaceTasks(t, hostname, org, workspaceName),
+		createWorkspaceTasks(t, hostname, org, workspace),
 		terraformLoginTasks(t, hostname),
 	)
 	require.NoError(t, err)
@@ -65,6 +63,6 @@ func TestStartRunUI(t *testing.T) {
 	require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 
 	// now we have a config version, start a run via the browser
-	err = chromedp.Run(ctx, startRunTasks(t, hostname, org, workspaceName))
+	err = chromedp.Run(ctx, startRunTasks(t, hostname, org, workspace))
 	require.NoError(t, err)
 }

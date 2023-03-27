@@ -73,7 +73,7 @@ function setupTail(path, phase, offset, stream) {
         reconnectFunc(path, phase, offset, stream);
     };
 
-    source.addEventListener("new-log-chunk", (e) => {
+    source.addEventListener("log_update", (e) => {
         const obj = JSON.parse(e.data);
 
         // keep running tally of offset in case we need to reconnect
@@ -91,7 +91,7 @@ function setupTail(path, phase, offset, stream) {
         }
     });
 
-    source.addEventListener("finished", (e) => {
+    source.addEventListener("log_finished", (e) => {
         // no more logs to tail
         source.close();
     });
@@ -130,9 +130,8 @@ function watchRunUpdates(path, stream, run) {
     });
 }
 
-function watchWorkspaceUpdates(path, stream) {
-    const url = `${path}?stream=${stream}&latest=true`;
-    var source = new EventSource(url);
+function watchWorkspaceUpdates(path) {
+    var source = new EventSource(path);
 
     source.addEventListener("run_status_update", (e) => {
         const obj = JSON.parse(e.data);
@@ -142,9 +141,8 @@ function watchWorkspaceUpdates(path, stream) {
     });
 }
 
-function watchRuns(path, stream) {
-    const url = `${path}?stream=${stream}`;
-    var source = new EventSource(url);
+function watchRuns(path) {
+    var source = new EventSource(path);
 
     const listElem = document.getElementById('content-list');
 
@@ -162,3 +160,15 @@ function watchRuns(path, stream) {
         listElem.insertAdjacentHTML("afterbegin", obj['run-item-html']);
     });
 }
+
+function getRunWidget(path) {
+  function insert(html) {
+    const latestRunElem = document.getElementById('latest-run');
+    latestRunElem.innerHTML = obj['run-item-html']
+  }
+
+  fetch(path)
+    .then((response) => response.text())
+    .then((html) => insert(html));
+}
+

@@ -487,6 +487,90 @@ func (q *DBQuerier) FindModuleByWebhookIDScan(results pgx.BatchResults) (FindMod
 	return item, nil
 }
 
+const findModuleByModuleVersionIDSQL = `SELECT
+    m.module_id,
+    m.created_at,
+    m.updated_at,
+    m.name,
+    m.provider,
+    m.status,
+    m.organization_name,
+    (r.*)::"repo_connections" AS module_connection,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
+FROM modules m
+JOIN module_versions mv USING (module_id)
+LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
+WHERE mv.module_version_id = $1
+;`
+
+type FindModuleByModuleVersionIDRow struct {
+	ModuleID         pgtype.Text        `json:"module_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Name             pgtype.Text        `json:"name"`
+	Provider         pgtype.Text        `json:"provider"`
+	Status           pgtype.Text        `json:"status"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+	ModuleConnection *RepoConnections   `json:"module_connection"`
+	Webhook          *Webhooks          `json:"webhook"`
+	Versions         []ModuleVersions   `json:"versions"`
+}
+
+// FindModuleByModuleVersionID implements Querier.FindModuleByModuleVersionID.
+func (q *DBQuerier) FindModuleByModuleVersionID(ctx context.Context, moduleVersionID pgtype.Text) (FindModuleByModuleVersionIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindModuleByModuleVersionID")
+	row := q.conn.QueryRow(ctx, findModuleByModuleVersionIDSQL, moduleVersionID)
+	var item FindModuleByModuleVersionIDRow
+	moduleConnectionRow := q.types.newRepoConnections()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleConnectionRow, webhookRow, versionsArray); err != nil {
+		return item, fmt.Errorf("query FindModuleByModuleVersionID: %w", err)
+	}
+	if err := moduleConnectionRow.AssignTo(&item.ModuleConnection); err != nil {
+		return item, fmt.Errorf("assign FindModuleByModuleVersionID row: %w", err)
+	}
+	if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+		return item, fmt.Errorf("assign FindModuleByModuleVersionID row: %w", err)
+	}
+	if err := versionsArray.AssignTo(&item.Versions); err != nil {
+		return item, fmt.Errorf("assign FindModuleByModuleVersionID row: %w", err)
+	}
+	return item, nil
+}
+
+// FindModuleByModuleVersionIDBatch implements Querier.FindModuleByModuleVersionIDBatch.
+func (q *DBQuerier) FindModuleByModuleVersionIDBatch(batch genericBatch, moduleVersionID pgtype.Text) {
+	batch.Queue(findModuleByModuleVersionIDSQL, moduleVersionID)
+}
+
+// FindModuleByModuleVersionIDScan implements Querier.FindModuleByModuleVersionIDScan.
+func (q *DBQuerier) FindModuleByModuleVersionIDScan(results pgx.BatchResults) (FindModuleByModuleVersionIDRow, error) {
+	row := results.QueryRow()
+	var item FindModuleByModuleVersionIDRow
+	moduleConnectionRow := q.types.newRepoConnections()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, &item.Status, &item.OrganizationName, moduleConnectionRow, webhookRow, versionsArray); err != nil {
+		return item, fmt.Errorf("scan FindModuleByModuleVersionIDBatch row: %w", err)
+	}
+	if err := moduleConnectionRow.AssignTo(&item.ModuleConnection); err != nil {
+		return item, fmt.Errorf("assign FindModuleByModuleVersionID row: %w", err)
+	}
+	if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+		return item, fmt.Errorf("assign FindModuleByModuleVersionID row: %w", err)
+	}
+	if err := versionsArray.AssignTo(&item.Versions); err != nil {
+		return item, fmt.Errorf("assign FindModuleByModuleVersionID row: %w", err)
+	}
+	return item, nil
+}
+
 const updateModuleStatusByIDSQL = `UPDATE modules
 SET status = $1
 WHERE module_id = $2
@@ -638,12 +722,13 @@ func (q *DBQuerier) UpdateModuleVersionStatusByIDScan(results pgx.BatchResults) 
 const deleteModuleByIDSQL = `DELETE
 FROM modules
 WHERE module_id = $1
-RETURNING module_id;`
+RETURNING module_id
+;`
 
 // DeleteModuleByID implements Querier.DeleteModuleByID.
-func (q *DBQuerier) DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteModuleByID(ctx context.Context, moduleID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteModuleByID")
-	row := q.conn.QueryRow(ctx, deleteModuleByIDSQL, id)
+	row := q.conn.QueryRow(ctx, deleteModuleByIDSQL, moduleID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query DeleteModuleByID: %w", err)
@@ -652,8 +737,8 @@ func (q *DBQuerier) DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtyp
 }
 
 // DeleteModuleByIDBatch implements Querier.DeleteModuleByIDBatch.
-func (q *DBQuerier) DeleteModuleByIDBatch(batch genericBatch, id pgtype.Text) {
-	batch.Queue(deleteModuleByIDSQL, id)
+func (q *DBQuerier) DeleteModuleByIDBatch(batch genericBatch, moduleID pgtype.Text) {
+	batch.Queue(deleteModuleByIDSQL, moduleID)
 }
 
 // DeleteModuleByIDScan implements Querier.DeleteModuleByIDScan.
@@ -662,6 +747,38 @@ func (q *DBQuerier) DeleteModuleByIDScan(results pgx.BatchResults) (pgtype.Text,
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan DeleteModuleByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const deleteModuleVersionByIDSQL = `DELETE
+FROM module_versions
+WHERE module_version_id = $1
+RETURNING module_version_id
+;`
+
+// DeleteModuleVersionByID implements Querier.DeleteModuleVersionByID.
+func (q *DBQuerier) DeleteModuleVersionByID(ctx context.Context, moduleVersionID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteModuleVersionByID")
+	row := q.conn.QueryRow(ctx, deleteModuleVersionByIDSQL, moduleVersionID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteModuleVersionByID: %w", err)
+	}
+	return item, nil
+}
+
+// DeleteModuleVersionByIDBatch implements Querier.DeleteModuleVersionByIDBatch.
+func (q *DBQuerier) DeleteModuleVersionByIDBatch(batch genericBatch, moduleVersionID pgtype.Text) {
+	batch.Queue(deleteModuleVersionByIDSQL, moduleVersionID)
+}
+
+// DeleteModuleVersionByIDScan implements Querier.DeleteModuleVersionByIDScan.
+func (q *DBQuerier) DeleteModuleVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteModuleVersionByIDBatch row: %w", err)
 	}
 	return item, nil
 }

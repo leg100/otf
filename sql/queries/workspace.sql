@@ -121,31 +121,6 @@ WHERE w.organization_name = pggen.arg('organization_name')
 AND   u.user_id = pggen.arg('user_id')
 ;
 
--- name: FindWorkspaceIDByRunID :one
-SELECT w.workspace_id
-FROM workspaces w
-JOIN runs r USING (workspace_id)
-WHERE r.run_id = pggen.arg('run_id')
-;
-
--- name: FindWorkspaceIDByStateVersionID :one
-SELECT workspace_id
-FROM state_versions
-WHERE state_version_id = pggen.arg('state_version_id')
-;
-
--- name: FindWorkspaceIDByCVID :one
-SELECT workspace_id
-FROM configuration_versions
-WHERE configuration_version_id = pggen.arg('configuration_version_id')
-;
-
--- name: FindWorkspaceIDByName :one
-SELECT workspaces.workspace_id
-FROM workspaces
-WHERE workspaces.name = pggen.arg('name')
-AND workspaces.organization_name = pggen.arg('organization_name');
-
 -- name: FindWorkspaceByName :one
 SELECT w.*,
     (u.*)::"users" AS user_lock,

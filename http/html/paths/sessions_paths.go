@@ -3,5 +3,5 @@
 package paths
 
 func Sessions() string {
-	return "/profile/sessions"
+	return "/app/profile/sessions"
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -18,13 +17,12 @@ import (
 // TestModule tests publishing a module, first via the UI and then via a webhook
 // event, and then invokes a terraform run that sources the module.
 func TestModule(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
 	name := "mod"
 	provider := "aws"
 	repo := cloud.NewTestModuleRepo(provider, name)
 
-	org := uuid.NewString()
 	user := cloud.User{
 		Name: uuid.NewString(),
 		Teams: []cloud.Team{
@@ -55,7 +53,6 @@ func TestModule(t *testing.T) {
 	})
 
 	hostname := daemon.start(t)
-	url := "https://" + hostname
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -64,11 +61,11 @@ func TestModule(t *testing.T) {
 	var moduleURL string // captures url for module page
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org, "github"),
+		createGithubVCSProviderTasks(t, hostname, org, "github"),
 		// publish module
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(path.Join(url, "organizations", org)),
+			chromedp.Navigate(organizationPath(hostname, org)),
 			screenshot(t),
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.NodeVisible),
@@ -98,13 +95,12 @@ func TestModule(t *testing.T) {
 	// should trigger a module version to be published.
 
 	// otfd should have registered a webhook with the github server
-	require.NotNil(t, daemon.githubServer.HookEndpoint)
-	require.NotNil(t, daemon.githubServer.HookSecret)
+	require.True(t, daemon.githubServer.HasWebhook())
 
 	// generate and send push tag event for v1.0.0
 	pushTpl, err := os.ReadFile("fixtures/github_push_tag.json")
 	require.NoError(t, err)
-	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Identifier)
+	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
 	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)
 
 	// v1.0.0 should appear as latest module on workspace

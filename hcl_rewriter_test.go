@@ -31,7 +31,7 @@ terraform {
 	cfgFile := filepath.Join(modulePath, "config.tf")
 	require.NoError(t, os.WriteFile(cfgFile, []byte(got), 0o644))
 
-	err := rewriteHCL(modulePath, removeBackendBlock)
+	err := RewriteHCL(modulePath, RemoveBackendBlock)
 	assert.NoError(t, err)
 
 	f, err := os.ReadFile(cfgFile)

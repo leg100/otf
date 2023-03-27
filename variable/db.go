@@ -11,7 +11,7 @@ import (
 
 // db is a database of variables
 type db interface {
-	otf.Database
+	otf.DB
 
 	create(ctx context.Context, variable *Variable) error
 	list(ctx context.Context, workspaceID string) ([]*Variable, error)
@@ -23,23 +23,23 @@ type db interface {
 
 // pgdb is a database of variables on postgres
 type pgdb struct {
-	otf.Database // provides access to generated SQL queries
+	otf.DB // provides access to generated SQL queries
 }
 
-func newPGDB(db otf.Database) *pgdb {
+func newPGDB(db otf.DB) *pgdb {
 	return &pgdb{db}
 }
 
-func (pdb *pgdb) create(ctx context.Context, ws *Variable) error {
+func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
 	_, err := pdb.InsertVariable(ctx, pggen.InsertVariableParams{
-		VariableID:  sql.String(ws.ID()),
-		Key:         sql.String(ws.Key()),
-		Value:       sql.String(ws.Value()),
-		Description: sql.String(ws.Description()),
-		Category:    sql.String(string(ws.Category())),
-		Sensitive:   ws.Sensitive(),
-		HCL:         ws.HCL(),
-		WorkspaceID: sql.String(ws.WorkspaceID()),
+		VariableID:  sql.String(v.ID),
+		Key:         sql.String(v.Key),
+		Value:       sql.String(v.Value),
+		Description: sql.String(v.Description),
+		Category:    sql.String(string(v.Category)),
+		Sensitive:   v.Sensitive,
+		HCL:         v.HCL,
+		WorkspaceID: sql.String(v.WorkspaceID),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -65,12 +65,12 @@ func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variabl
 		// persist variable
 		_, err = tx.UpdateVariableByID(ctx, pggen.UpdateVariableByIDParams{
 			VariableID:  sql.String(variableID),
-			Key:         sql.String(variable.Key()),
-			Value:       sql.String(variable.Value()),
-			Description: sql.String(variable.Description()),
-			Category:    sql.String(string(variable.Category())),
-			Sensitive:   variable.Sensitive(),
-			HCL:         variable.HCL(),
+			Key:         sql.String(variable.Key),
+			Value:       sql.String(variable.Value),
+			Description: sql.String(variable.Description),
+			Category:    sql.String(string(variable.Category)),
+			Sensitive:   variable.Sensitive,
+			HCL:         variable.HCL,
 		})
 		return err
 	})
@@ -109,7 +109,7 @@ func (pdb *pgdb) delete(ctx context.Context, variableID string) (*Variable, erro
 
 // tx constructs a new pgdb within a transaction.
 func (pdb *pgdb) tx(ctx context.Context, callback func(db) error) error {
-	return pdb.Transaction(ctx, func(tx otf.Database) error {
+	return pdb.Tx(ctx, func(tx otf.DB) error {
 		return callback(newPGDB(tx))
 	})
 }
@@ -127,13 +127,13 @@ type pgRow struct {
 
 func (row pgRow) toVariable() *Variable {
 	return &Variable{
-		id:          row.VariableID.String,
-		key:         row.Key.String,
-		value:       row.Value.String,
-		description: row.Description.String,
-		category:    otf.VariableCategory(row.Category.String),
-		sensitive:   row.Sensitive,
-		hcl:         row.HCL,
-		workspaceID: row.WorkspaceID.String,
+		ID:          row.VariableID.String,
+		Key:         row.Key.String,
+		Value:       row.Value.String,
+		Description: row.Description.String,
+		Category:    VariableCategory(row.Category.String),
+		Sensitive:   row.Sensitive,
+		HCL:         row.HCL,
+		WorkspaceID: row.WorkspaceID.String,
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,6 +31,17 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	)
 }
 
+func newTestDB(t *testing.T) *pgdb {
+	db, _ := sql.NewTestDB(t)
+	return &pgdb{
+		DB: db,
+		factory: factory{
+			Service:         fakeCloudService{},
+			HostnameService: fakeHostnameService{},
+		},
+	}
+}
+
 type fakeCloudService struct {
 	event cloud.VCSEvent
 	cloud.Service
@@ -45,12 +57,13 @@ type fakeCloud struct {
 	cloud.Cloud
 }
 
-func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
+func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.HandleEventOptions) cloud.VCSEvent {
 	return f.event
 }
 
 type fakeHostnameService struct {
 	hostname string
+
 	otf.HostnameService
 }
 
@@ -78,12 +91,4 @@ func (f *fakeCloudClient) UpdateWebhook(context.Context, cloud.UpdateWebhookOpti
 	f.gotUpdate = true
 
 	return nil
-}
-
-type fakeHandlerDB struct {
-	hook *hook
-}
-
-func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) {
-	return db.hook, nil
 }

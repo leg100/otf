@@ -2,7 +2,6 @@ package otf
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Generic errors applicable to all resources.
@@ -41,10 +40,6 @@ var (
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidTerraformVersion = errors.New("invalid terraform version")
 
-	// ErrUnsupportedTerraformVersion is returned when a terraform version is
-	// not supported.
-	ErrUnsupportedTerraformVersion = fmt.Errorf("only terraform versions >= %s are supported", MinTerraformVersion)
-
 	// ErrInvalidWorkspaceID is returned when the workspace ID is invalid.
 	ErrInvalidWorkspaceID = errors.New("invalid value for workspace ID")
 
@@ -58,4 +53,8 @@ var (
 
 	// ErrRequiredOrg is returned when the organization option is not present
 	ErrRequiredOrg = errors.New("organization is required")
+
+	ErrStatusTimestampNotFound = errors.New("corresponding status timestamp not found")
+
+	ErrInvalidRepo = errors.New("repository path is invalid")
 )

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,7 @@ import (
 //
 // https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
 func TestCloudBlock(t *testing.T) {
-	addBuildsToPath(t)
+	org, _ := setup(t)
 
 	token := "abc123" // site-admin's token
 
@@ -29,7 +28,6 @@ func TestCloudBlock(t *testing.T) {
 	t.Setenv(otf.HostnameCredentialEnv(hostname), token)
 
 	// create org via CLI
-	org := uuid.NewString()
 	cmd := exec.Command("otf", "organizations", "new", "--address", hostname, org)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))

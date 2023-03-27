@@ -4,12 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestVariable(t *testing.T, ws *otf.Workspace, opts otf.CreateVariableOptions) *Variable {
-	v, err := NewVariable(ws.ID(), opts)
+func NewTestVariable(t *testing.T, workspaceID string, opts CreateVariableOptions) *Variable {
+	v, err := NewVariable(workspaceID, opts)
 	require.NoError(t, err)
 	return v
 }
@@ -17,10 +16,10 @@ func NewTestVariable(t *testing.T, ws *otf.Workspace, opts otf.CreateVariableOpt
 type fakeService struct {
 	variable *Variable
 
-	service
+	Service
 }
 
-func (f *fakeService) update(ctx context.Context, variableID string, opts otf.UpdateVariableOptions) (*Variable, error) {
+func (f *fakeService) UpdateVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	if err := f.variable.Update(opts); err != nil {
 		return nil, err
 	}

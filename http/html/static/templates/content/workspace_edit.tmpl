@@ -16,9 +16,9 @@
 
 {{ define "content" }}
   <div>
-    {{ if .Content.Repo }}
-      <form action="{{ disconnectWorkspacePath .Content.ID }}" method="POST">
-        <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.Repo.Identifier }}</button>
+    {{ with .Content.Connection }}
+      <form action="{{ disconnectWorkspacePath $.Content.ID }}" method="POST">
+        <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Repo }}</button>
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Content.ID }}" method="GET">
@@ -79,14 +79,14 @@
               <td>admin</td>
             </tr>
             {{ range .Content.Permissions }}
-              {{ if eq .Team.Name "owners" }}
+              {{ if eq .Team "owners" }}
                 {{continue}}
               {{ end }}
               <tr>
-                <td>{{ .Team.Name }}</td>
+                <td>{{ .Team }}</td>
                 <td>
                   <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
-                    <input name="team_name" value="{{ .Team.Name }}" type="hidden">
+                    <input name="team_name" value="{{ .Team }}" type="hidden">
                     <select name="role" id="role-select">
                       {{ $currentRole := .Role.String }}
                       {{ range $.Content.Roles }}
@@ -98,7 +98,7 @@
                 </td>
                 <td>
                   <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
-                    <input name="team_name" value="{{ .Team.Name }}" type="hidden">
+                    <input name="team_name" value="{{ .Team }}" type="hidden">
                     <button class="delete">Remove</button>
                   </form>
                 </td>
@@ -109,7 +109,7 @@
               <td>
                 <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
                   <option value="">--team--</option>
-                  {{ range .Content.Teams }}
+                  {{ range .Content.Unassigned }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
                   {{ end }}
                 </select>

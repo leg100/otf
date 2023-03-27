@@ -15,7 +15,7 @@
         <div>
           <label>Version</label>
           <select name="version" id="version" onchange="this.form.submit()">
-            {{ range reverse .Content.Versions }}
+            {{ range reverse .Content.AvailableVersions }}
               {{ if eq .Status "ok" }}
                 <option value="{{ .Version }}" {{ selected .Version $.Content.CurrentVersion.Version }}>{{ .Version }}</option>
               {{ end }}
@@ -24,7 +24,7 @@
         </div>
       </form>
       <div>
-        Source <span class="data">{{ .Content.Repo.Identifier }}</span>
+        Source <span class="data">{{ .Content.Connection.Repo }}</span>
       </div>
     </div>
     <div class="main-form">

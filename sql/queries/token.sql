@@ -19,6 +19,12 @@ FROM tokens
 WHERE user_id = pggen.arg('user_id')
 ;
 
+-- name: FindTokenByID :one
+SELECT *
+FROM tokens
+WHERE token_id = pggen.arg('token_id')
+;
+
 -- name: DeleteTokenByID :one
 DELETE
 FROM tokens

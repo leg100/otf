@@ -1,20 +1,32 @@
-// Package variable is responsible for workspace variables
+// Package variable manages terraform workspace variables
 package variable
 
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 )
+
+// VariableCategory is the category of variable
+type VariableCategory string
+
+// VariableCategoryPtr returns a pointer to the given category type.
+func VariableCategoryPtr(v VariableCategory) *VariableCategory {
+	return &v
+}
 
 const (
 	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables/managing-variables#character-limits
 	VariableDescriptionMaxChars = 512
 	VariableKeyMaxChars         = 128
 	VariableValueMaxKB          = 256 // 256*1024 bytes
+
+	CategoryTerraform VariableCategory = "terraform"
+	CategoryEnv       VariableCategory = "env"
 )
 
 var (
@@ -23,26 +35,39 @@ var (
 	ErrVariableValueMaxExceeded       = fmt.Errorf("maximum variable value size of %d KB exceeded", VariableValueMaxKB)
 )
 
-// VariableCategoryPtr returns a pointer to the given category type.
-func VariableCategoryPtr(v otf.VariableCategory) *otf.VariableCategory {
-	return &v
-}
+type (
+	Variable struct {
+		ID          string
+		Key         string
+		Value       string
+		Description string
+		Category    VariableCategory
+		Sensitive   bool
+		HCL         bool
+		WorkspaceID string
+	}
+	CreateVariableOptions struct {
+		Key         *string
+		Value       *string
+		Description *string
+		Category    *VariableCategory
+		Sensitive   *bool
+		HCL         *bool
+	}
+	UpdateVariableOptions struct {
+		Key         *string
+		Value       *string
+		Description *string
+		Category    *VariableCategory
+		Sensitive   *bool
+		HCL         *bool
+	}
+)
 
-type Variable struct {
-	id          string
-	key         string
-	value       string
-	description string
-	category    otf.VariableCategory
-	sensitive   bool
-	hcl         bool
-	workspaceID string
-}
-
-func NewVariable(workspaceID string, opts otf.CreateVariableOptions) (*Variable, error) {
+func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		id:          otf.NewID("var"),
-		workspaceID: workspaceID,
+		ID:          otf.NewID("var"),
+		WorkspaceID: workspaceID,
 	}
 
 	// Required fields
@@ -71,23 +96,14 @@ func NewVariable(workspaceID string, opts otf.CreateVariableOptions) (*Variable,
 		}
 	}
 	if opts.Sensitive != nil {
-		v.sensitive = *opts.Sensitive
+		v.Sensitive = *opts.Sensitive
 	}
 	if opts.HCL != nil {
-		v.hcl = *opts.HCL
+		v.HCL = *opts.HCL
 	}
 
 	return &v, nil
 }
-
-func (v *Variable) ID() string                     { return v.id }
-func (v *Variable) Key() string                    { return v.key }
-func (v *Variable) Value() string                  { return v.value }
-func (v *Variable) Description() string            { return v.description }
-func (v *Variable) Category() otf.VariableCategory { return v.category }
-func (v *Variable) Sensitive() bool                { return v.sensitive }
-func (v *Variable) HCL() bool                      { return v.hcl }
-func (v *Variable) WorkspaceID() string            { return v.workspaceID }
 
 func (v *Variable) MarshalLog() any {
 	log := struct {
@@ -97,21 +113,21 @@ func (v *Variable) MarshalLog() any {
 		Sensitive   bool   `json:"sensitive"`
 		WorkspaceID string `json:"workspace_id"`
 	}{
-		ID:          v.id,
-		Key:         v.key,
-		Value:       v.value,
-		Sensitive:   v.sensitive,
-		WorkspaceID: v.workspaceID,
+		ID:          v.ID,
+		Key:         v.Key,
+		Value:       v.Value,
+		Sensitive:   v.Sensitive,
+		WorkspaceID: v.WorkspaceID,
 	}
-	if v.sensitive {
+	if v.Sensitive {
 		log.Value = "*****"
 	}
 	return log
 }
 
-func (v *Variable) Update(opts otf.UpdateVariableOptions) error {
+func (v *Variable) Update(opts UpdateVariableOptions) error {
 	if opts.Key != nil {
-		if v.sensitive {
+		if v.Sensitive {
 			return errors.New("changing the key of a sensitive variable is not allowed")
 		}
 		if err := v.setKey(*opts.Key); err != nil {
@@ -129,7 +145,7 @@ func (v *Variable) Update(opts otf.UpdateVariableOptions) error {
 		}
 	}
 	if opts.Category != nil {
-		if v.sensitive {
+		if v.Sensitive {
 			return errors.New("changing the category of a sensitive variable is not allowed")
 		}
 		if err := v.setCategory(*opts.Category); err != nil {
@@ -137,10 +153,10 @@ func (v *Variable) Update(opts otf.UpdateVariableOptions) error {
 		}
 	}
 	if opts.HCL != nil {
-		if v.sensitive {
+		if v.Sensitive {
 			return errors.New("toggling HCL mode on a sensitive variable is not allowed")
 		}
-		v.hcl = *opts.HCL
+		v.HCL = *opts.HCL
 	}
 	if opts.Sensitive != nil {
 		if err := v.setSensitive(*opts.Sensitive); err != nil {
@@ -150,30 +166,11 @@ func (v *Variable) Update(opts otf.UpdateVariableOptions) error {
 	return nil
 }
 
-func (v *Variable) ToJSONAPI() any {
-	to := jsonapiVariable{
-		ID:          v.ID(),
-		Key:         v.Key(),
-		Value:       v.Value(),
-		Description: v.Description(),
-		Category:    string(v.Category()),
-		Sensitive:   v.Sensitive(),
-		HCL:         v.HCL(),
-		Workspace: &jsonapi.Workspace{
-			ID: v.WorkspaceID(),
-		},
-	}
-	if to.Sensitive {
-		to.Value = "" // scrub sensitive values
-	}
-	return &to
-}
-
 func (v *Variable) setKey(key string) error {
 	if len(key) > VariableKeyMaxChars {
 		return ErrVariableKeyMaxExceeded
 	}
-	v.key = strings.TrimSpace(key)
+	v.Key = strings.TrimSpace(key)
 	return nil
 }
 
@@ -181,7 +178,7 @@ func (v *Variable) setValue(value string) error {
 	if len([]byte(value)) > (VariableValueMaxKB * 1024) {
 		return ErrVariableValueMaxExceeded
 	}
-	v.value = strings.TrimSpace(value)
+	v.Value = strings.TrimSpace(value)
 	return nil
 }
 
@@ -189,23 +186,57 @@ func (v *Variable) setDescription(desc string) error {
 	if len(desc) > VariableDescriptionMaxChars {
 		return ErrVariableDescriptionMaxExceeded
 	}
-	v.description = desc
+	v.Description = desc
 	return nil
 }
 
-func (v *Variable) setCategory(cat otf.VariableCategory) error {
-	if cat != otf.CategoryEnv && cat != otf.CategoryTerraform {
+func (v *Variable) setCategory(cat VariableCategory) error {
+	if cat != CategoryEnv && cat != CategoryTerraform {
 		return errors.New("invalid variable category")
 	}
 
-	v.category = cat
+	v.Category = cat
 	return nil
 }
 
 func (v *Variable) setSensitive(sensitive bool) error {
-	if v.sensitive && !sensitive {
+	if v.Sensitive && !sensitive {
 		return errors.New("cannot change a sensitive variable to a non-sensitive variable")
 	}
-	v.sensitive = sensitive
+	v.Sensitive = sensitive
+	return nil
+}
+
+// WriteTerraformVars writes workspace variables to a file named
+// terraform.tfvars located in the given path. If the file already exists it'll
+// be appended to.
+func WriteTerraformVars(dir string, vars []*Variable) error {
+	path := path.Join(dir, "terraform.tfvars")
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var b strings.Builder
+	// lazily start with a new line in case user uploaded terraform.tfvars with
+	// content already
+	b.WriteRune('\n')
+	for _, v := range vars {
+		if v.Category == CategoryTerraform {
+			b.WriteString(v.Key)
+			b.WriteString(" = ")
+			if v.HCL {
+				b.WriteString(v.Value)
+			} else {
+				b.WriteString(`"`)
+				b.WriteString(v.Value)
+				b.WriteString(`"`)
+			}
+			b.WriteRune('\n')
+		}
+	}
+	f.WriteString(b.String())
+
 	return nil
 }

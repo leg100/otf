@@ -118,6 +118,45 @@ func (q *DBQuerier) FindTokensByUserIDScan(results pgx.BatchResults) ([]FindToke
 	return items, err
 }
 
+const findTokenByIDSQL = `SELECT *
+FROM tokens
+WHERE token_id = $1
+;`
+
+type FindTokenByIDRow struct {
+	TokenID     pgtype.Text        `json:"token_id"`
+	Token       pgtype.Text        `json:"token"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description pgtype.Text        `json:"description"`
+	UserID      pgtype.Text        `json:"user_id"`
+}
+
+// FindTokenByID implements Querier.FindTokenByID.
+func (q *DBQuerier) FindTokenByID(ctx context.Context, tokenID pgtype.Text) (FindTokenByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindTokenByID")
+	row := q.conn.QueryRow(ctx, findTokenByIDSQL, tokenID)
+	var item FindTokenByIDRow
+	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
+		return item, fmt.Errorf("query FindTokenByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindTokenByIDBatch implements Querier.FindTokenByIDBatch.
+func (q *DBQuerier) FindTokenByIDBatch(batch genericBatch, tokenID pgtype.Text) {
+	batch.Queue(findTokenByIDSQL, tokenID)
+}
+
+// FindTokenByIDScan implements Querier.FindTokenByIDScan.
+func (q *DBQuerier) FindTokenByIDScan(results pgx.BatchResults) (FindTokenByIDRow, error) {
+	row := results.QueryRow()
+	var item FindTokenByIDRow
+	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
+		return item, fmt.Errorf("scan FindTokenByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const deleteTokenByIDSQL = `DELETE
 FROM tokens
 WHERE token_id = $1

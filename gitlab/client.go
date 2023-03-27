@@ -95,19 +95,16 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (string, error) {
 	proj, _, err := g.client.Projects.GetProject(identifier, nil)
 	if err != nil {
-		return cloud.Repo{}, err
+		return "", err
 	}
 
-	return cloud.Repo{
-		Identifier: proj.PathWithNamespace,
-		Branch:     proj.DefaultBranch,
-	}, nil
+	return proj.PathWithNamespace, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositoriesOptions) ([]string, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: lopts.PageSize,
@@ -121,19 +118,15 @@ func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositor
 		return nil, err
 	}
 
-	// convert to common repo type before returning
-	var items []cloud.Repo
+	var repos []string
 	for _, proj := range projects {
-		items = append(items, cloud.Repo{
-			Identifier: proj.PathWithNamespace,
-			Branch:     proj.DefaultBranch,
-		})
+		repos = append(repos, proj.PathWithNamespace)
 	}
-	return items, nil
+	return repos, nil
 }
 
 func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
-	results, _, err := g.client.Tags.ListTags(opts.Identifier, &gitlab.ListTagsOptions{
+	results, _, err := g.client.Tags.ListTags(opts.Repo, &gitlab.ListTagsOptions{
 		Search: otf.String("^" + opts.Prefix),
 	})
 	if err != nil {
@@ -148,12 +141,12 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
-	owner, name, found := strings.Cut(opts.Identifier, "/")
+	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
-	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
+	tarball, _, err := g.client.Repositories.Archive(opts.Repo, &gitlab.ArchiveOptions{
 		Format: otf.String("tar.gz"),
 		SHA:    opts.Ref,
 	})
@@ -197,7 +190,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 		}
 	}
 
-	hook, _, err := g.client.Projects.AddProjectHook(opts.Identifier, addOpts)
+	hook, _, err := g.client.Projects.AddProjectHook(opts.Repo, addOpts)
 	if err != nil {
 		return "", err
 	}
@@ -224,7 +217,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOpti
 		}
 	}
 
-	_, _, err = g.client.Projects.EditProjectHook(opts.Identifier, id, editOpts)
+	_, _, err = g.client.Projects.EditProjectHook(opts.Repo, id, editOpts)
 	if err != nil {
 		return err
 	}
@@ -237,7 +230,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 		return cloud.Webhook{}, err
 	}
 
-	hook, resp, err := g.client.Projects.GetProjectHook(opts.Identifier, id)
+	hook, resp, err := g.client.Projects.GetProjectHook(opts.Repo, id)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			return cloud.Webhook{}, otf.ErrResourceNotFound
@@ -254,10 +247,10 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	}
 
 	return cloud.Webhook{
-		ID:         strconv.Itoa(id),
-		Identifier: opts.Identifier,
-		Events:     events,
-		Endpoint:   hook.URL,
+		ID:       strconv.Itoa(id),
+		Repo:     opts.Repo,
+		Events:   events,
+		Endpoint: hook.URL,
 	}, nil
 }
 
@@ -267,7 +260,7 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOpti
 		return err
 	}
 
-	_, err = g.client.Projects.DeleteProjectHook(opts.Identifier, id)
+	_, err = g.client.Projects.DeleteProjectHook(opts.Repo, id)
 	return err
 }
 

@@ -6,27 +6,35 @@ import (
 	"strings"
 )
 
-type HostnameService interface {
-	Hostname() string
+type (
+	// HostnameService provides the OTF user-facing hostname.
+	HostnameService interface {
+		Hostname() string
+		SetHostname(string)
+	}
+
+	hostnameService struct {
+		hostname string
+	}
+)
+
+func NewHostnameService(hostname string) *hostnameService {
+	return &hostnameService{hostname}
 }
 
-// SetHostname sets the system hostname. If hostname is provided it'll use
-// that; otherwise the listen address is used (which should be that used by the
-// otfd daemon).
-func SetHostname(hostname string, listen *net.TCPAddr) (string, error) {
-	if hostname != "" {
-		return hostname, nil
-	} else if listen != nil {
-		// If ip is unspecified assume 127.0.0.1 - an IP is used instead of
-		// 'localhost' because terraform insists on a dot in the registry hostname.
-		if listen.IP.IsUnspecified() {
-			return fmt.Sprintf("127.0.0.1:%d", listen.Port), nil
-		} else {
-			return fmt.Sprintf("%s:%d", listen.IP.String(), listen.Port), nil
-		}
-	} else {
-		return "", fmt.Errorf("neither hostname nor listen adddress specified")
+func (s *hostnameService) Hostname() string            { return s.hostname }
+func (s *hostnameService) SetHostname(hostname string) { s.hostname = hostname }
+
+// NormalizeAddress takes a host:port and converts it into a host:port
+// appropriate for setting as the addressable hostname of otfd, e.g. converting
+// 0.0.0.0 to 127.0.0.1.
+func NormalizeAddress(addr *net.TCPAddr) string {
+	// If ip is unspecified assume 127.0.0.1 - an IP is used instead of
+	// 'localhost' because terraform insists on a dot in the registry hostname.
+	if addr.IP.IsUnspecified() {
+		return fmt.Sprintf("127.0.0.1:%d", addr.Port)
 	}
+	return fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
 }
 
 // HostnameCredentialEnv returns the environment variable key for an API

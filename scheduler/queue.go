@@ -7,49 +7,65 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 )
 
-// queue enqueues and schedules runs for a workspace
-type queue struct {
-	otf.Application
-	logr.Logger
+type (
+	// queue enqueues and schedules runs for a workspace
+	queue struct {
+		logr.Logger
 
-	ws      *otf.Workspace
-	current *otf.Run
-	queue   []*otf.Run
-}
+		WorkspaceService
+		RunService
 
-type queueMaker struct{}
+		ws      *workspace.Workspace
+		current *run.Run
+		queue   []*run.Run
+	}
 
-func (queueMaker) newQueue(app otf.Application, logger logr.Logger, ws *otf.Workspace) eventHandler {
+	queueOptions struct {
+		logr.Logger
+
+		WorkspaceService
+		RunService
+
+		*workspace.Workspace
+	}
+
+	queueMaker struct{}
+)
+
+func (queueMaker) newQueue(opts queueOptions) eventHandler {
 	return &queue{
-		Application: app,
-		ws:          ws,
-		Logger:      logger.WithValues("workspace", ws.ID()),
+		Logger:           opts.WithValues("workspace", opts.Workspace.ID),
+		RunService:       opts.RunService,
+		WorkspaceService: opts.WorkspaceService,
+		ws:               opts.Workspace,
 	}
 }
 
 func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 	switch payload := event.Payload.(type) {
-	case *otf.Workspace:
+	case *workspace.Workspace:
 		q.ws = payload
-		if event.Type == otf.EventWorkspaceUnlocked {
+		if event.Type == workspace.EventUnlocked {
 			if q.current != nil {
 				if err := q.scheduleRun(ctx, q.current); err != nil {
 					return err
 				}
 			}
 		}
-	case *otf.Run:
-		if payload.Speculative() {
-			if payload.Status() == otf.RunPending {
+	case *run.Run:
+		if payload.Speculative {
+			if payload.Status == otf.RunPending {
 				// immediately enqueue onto global queue
-				_, err := q.EnqueuePlan(ctx, payload.ID())
+				_, err := q.EnqueuePlan(ctx, payload.ID)
 				if err != nil {
 					return err
 				}
 			}
-		} else if q.current != nil && q.current.ID() == payload.ID() {
+		} else if q.current != nil && q.current.ID == payload.ID {
 			// current run event; scheduler only interested if it's done
 			if payload.Done() {
 				// current run is done; see if there is pending run waiting to
@@ -65,9 +81,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 				} else {
 					// no current run & queue is empty; unlock workspace
 					q.current = nil
-					// unlock workspace as run
-					ctx = otf.AddSubjectToContext(ctx, payload)
-					ws, err := q.UnlockWorkspace(ctx, q.ws.ID(), otf.WorkspaceUnlockOptions{})
+					ws, err := q.UnlockWorkspace(ctx, q.ws.ID, &payload.ID, false)
 					if err != nil {
 						return err
 					}
@@ -83,7 +97,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 		} else {
 			// check if run is in workspace queue
 			for i, queued := range q.queue {
-				if payload.ID() == queued.ID() {
+				if payload.ID == queued.ID {
 					if payload.Done() {
 						// remove run from queue
 						q.queue = append(q.queue[:i], q.queue[i+1:]...)
@@ -98,15 +112,15 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 	return nil
 }
 
-func (q *queue) setCurrentRun(ctx context.Context, run *otf.Run) error {
+func (q *queue) setCurrentRun(ctx context.Context, run *run.Run) error {
 	q.current = run
 
-	if q.ws.LatestRunID() != nil && *q.ws.LatestRunID() == run.ID() {
+	if q.ws.LatestRunID != nil && *q.ws.LatestRunID == run.ID {
 		// run is already set as the workspace's latest run
 		return nil
 	}
 
-	ws, err := q.SetCurrentRun(ctx, q.ws.ID(), run.ID())
+	ws, err := q.SetCurrentRun(ctx, q.ws.ID, run.ID)
 	if err != nil {
 		return fmt.Errorf("setting current run: %w", err)
 	}
@@ -115,26 +129,25 @@ func (q *queue) setCurrentRun(ctx context.Context, run *otf.Run) error {
 	return nil
 }
 
-func (q *queue) scheduleRun(ctx context.Context, run *otf.Run) error {
-	if run.Status() != otf.RunPending {
+func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
+	if run.Status != otf.RunPending {
 		// run has already been scheduled
 		return nil
 	}
 
-	// if workspace is locked by a user then do not schedule;
+	// if workspace is userLocked by a user then do not schedule;
 	// instead wait for an unlock event to arrive.
-	if _, locked := q.ws.GetLock().(*otf.User); locked {
-		q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID())
+	if _, userLocked := q.ws.LockedState.(workspace.UserLock); userLocked {
+		q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)
 		return nil
 	}
 
-	// Lock the workspace as the run
-	ws, err := q.LockWorkspace(otf.AddSubjectToContext(ctx, run), q.ws.ID(), otf.WorkspaceLockOptions{})
+	ws, err := q.LockWorkspace(ctx, q.ws.ID, &run.ID)
 	if err != nil {
-		if errors.Is(err, otf.ErrWorkspaceAlreadyLocked) {
+		if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between
 			// getting the lock above and attempting to enqueue plan.
-			q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID())
+			q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)
 			return nil
 		}
 		return err
@@ -142,7 +155,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *otf.Run) error {
 	q.ws = ws
 
 	// schedule the run
-	current, err := q.EnqueuePlan(ctx, run.ID())
+	current, err := q.EnqueuePlan(ctx, run.ID)
 	if err != nil {
 		return err
 	}

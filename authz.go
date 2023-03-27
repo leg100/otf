@@ -16,21 +16,27 @@ const subjectCtxKey subjectCtxKeyType = "subject"
 type Subject interface {
 	CanAccessSite(action rbac.Action) bool
 	CanAccessOrganization(action rbac.Action, name string) bool
-	CanAccessWorkspace(action rbac.Action, policy *WorkspacePolicy) bool
+	CanAccessWorkspace(action rbac.Action, policy WorkspacePolicy) bool
 
-	Identity
+	IsOwner(organization string) bool
+	IsSiteAdmin() bool
+
+	// ListOrganizations returns subject's organization memberships
+	ListOrganizations() []string
+
+	String() string
 }
 
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
 	Organization string
 	WorkspaceID  string
-	Permissions  []*WorkspacePermission
+	Permissions  []WorkspacePermission
 }
 
 // WorkspacePermission binds a role to a team.
 type WorkspacePermission struct {
-	Team *Team
+	Team string // team name
 	Role rbac.Role
 }
 
@@ -48,52 +54,16 @@ func SubjectFromContext(ctx context.Context) (Subject, error) {
 	return subj, nil
 }
 
-// UserFromContext retrieves a user from a context
-func UserFromContext(ctx context.Context) (*User, error) {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	user, ok := subj.(*User)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not a user")
-	}
-	return user, nil
-}
-
-// AgentFromContext retrieves an agent(-token) from a context
-func AgentFromContext(ctx context.Context) (*AgentToken, error) {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	agent, ok := subj.(*AgentToken)
-	if !ok {
-		return nil, fmt.Errorf("subject found in context but it is not an agent")
-	}
-	return agent, nil
-}
-
-// LockFromContext retrieves a workspace lock from a context
-func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	lock, ok := subj.(WorkspaceLockState)
-	if !ok {
-		return nil, fmt.Errorf("no lock subject in context")
-	}
-	return lock, nil
-}
-
 // Superuser is a subject with unlimited privileges.
 type Superuser struct {
 	Username string
 }
 
-func (*Superuser) CanAccessSite(action rbac.Action) bool                 { return true }
-func (*Superuser) CanAccessOrganization(rbac.Action, string) bool        { return true }
-func (*Superuser) CanAccessWorkspace(rbac.Action, *WorkspacePolicy) bool { return true }
-func (s *Superuser) String() string                                      { return s.Username }
-func (s *Superuser) ID() string                                          { return s.Username }
+func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
+func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
+func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
+func (s *Superuser) ListOrganizations() []string                        { return nil }
+func (s *Superuser) String() string                                     { return s.Username }
+func (s *Superuser) ID() string                                         { return s.Username }
+func (s *Superuser) IsSiteAdmin() bool                                  { return true }
+func (s *Superuser) IsOwner(string) bool                                { return true }

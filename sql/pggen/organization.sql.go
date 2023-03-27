@@ -159,8 +159,16 @@ func (q *DBQuerier) FindOrganizationByNameForUpdateScan(results pgx.BatchResults
 
 const findOrganizationsSQL = `SELECT *
 FROM organizations
+WHERE name LIKE ANY($1)
 ORDER BY updated_at DESC
-LIMIT $1 OFFSET $2;`
+LIMIT $2 OFFSET $3
+;`
+
+type FindOrganizationsParams struct {
+	Names  []string
+	Limit  int
+	Offset int
+}
 
 type FindOrganizationsRow struct {
 	OrganizationID  pgtype.Text        `json:"organization_id"`
@@ -172,9 +180,9 @@ type FindOrganizationsRow struct {
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
-func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error) {
+func (q *DBQuerier) FindOrganizations(ctx context.Context, params FindOrganizationsParams) ([]FindOrganizationsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizations")
-	rows, err := q.conn.Query(ctx, findOrganizationsSQL, limit, offset)
+	rows, err := q.conn.Query(ctx, findOrganizationsSQL, params.Names, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query FindOrganizations: %w", err)
 	}
@@ -194,8 +202,8 @@ func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int
 }
 
 // FindOrganizationsBatch implements Querier.FindOrganizationsBatch.
-func (q *DBQuerier) FindOrganizationsBatch(batch genericBatch, limit int, offset int) {
-	batch.Queue(findOrganizationsSQL, limit, offset)
+func (q *DBQuerier) FindOrganizationsBatch(batch genericBatch, params FindOrganizationsParams) {
+	batch.Queue(findOrganizationsSQL, params.Names, params.Limit, params.Offset)
 }
 
 // FindOrganizationsScan implements Querier.FindOrganizationsScan.
@@ -220,12 +228,14 @@ func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrgan
 }
 
 const countOrganizationsSQL = `SELECT count(*)
-FROM organizations;`
+FROM organizations
+WHERE name = ANY($1)
+;`
 
 // CountOrganizations implements Querier.CountOrganizations.
-func (q *DBQuerier) CountOrganizations(ctx context.Context) (*int, error) {
+func (q *DBQuerier) CountOrganizations(ctx context.Context, names []string) (*int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountOrganizations")
-	row := q.conn.QueryRow(ctx, countOrganizationsSQL)
+	row := q.conn.QueryRow(ctx, countOrganizationsSQL, names)
 	var item int
 	if err := row.Scan(&item); err != nil {
 		return &item, fmt.Errorf("query CountOrganizations: %w", err)
@@ -234,8 +244,8 @@ func (q *DBQuerier) CountOrganizations(ctx context.Context) (*int, error) {
 }
 
 // CountOrganizationsBatch implements Querier.CountOrganizationsBatch.
-func (q *DBQuerier) CountOrganizationsBatch(batch genericBatch) {
-	batch.Queue(countOrganizationsSQL)
+func (q *DBQuerier) CountOrganizationsBatch(batch genericBatch, names []string) {
+	batch.Queue(countOrganizationsSQL, names)
 }
 
 // CountOrganizationsScan implements Querier.CountOrganizationsScan.
@@ -252,7 +262,14 @@ const findOrganizationsByUserIDSQL = `SELECT o.*
 FROM organizations o
 JOIN organization_memberships om ON o.name = om.organization_name
 WHERE om.user_id = $1
+LIMIT $2 OFFSET $3
 ;`
+
+type FindOrganizationsByUserIDParams struct {
+	UserID pgtype.Text
+	Limit  int
+	Offset int
+}
 
 type FindOrganizationsByUserIDRow struct {
 	OrganizationID  pgtype.Text        `json:"organization_id"`
@@ -264,9 +281,9 @@ type FindOrganizationsByUserIDRow struct {
 }
 
 // FindOrganizationsByUserID implements Querier.FindOrganizationsByUserID.
-func (q *DBQuerier) FindOrganizationsByUserID(ctx context.Context, userID pgtype.Text) ([]FindOrganizationsByUserIDRow, error) {
+func (q *DBQuerier) FindOrganizationsByUserID(ctx context.Context, params FindOrganizationsByUserIDParams) ([]FindOrganizationsByUserIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationsByUserID")
-	rows, err := q.conn.Query(ctx, findOrganizationsByUserIDSQL, userID)
+	rows, err := q.conn.Query(ctx, findOrganizationsByUserIDSQL, params.UserID, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query FindOrganizationsByUserID: %w", err)
 	}
@@ -286,8 +303,8 @@ func (q *DBQuerier) FindOrganizationsByUserID(ctx context.Context, userID pgtype
 }
 
 // FindOrganizationsByUserIDBatch implements Querier.FindOrganizationsByUserIDBatch.
-func (q *DBQuerier) FindOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text) {
-	batch.Queue(findOrganizationsByUserIDSQL, userID)
+func (q *DBQuerier) FindOrganizationsByUserIDBatch(batch genericBatch, params FindOrganizationsByUserIDParams) {
+	batch.Queue(findOrganizationsByUserIDSQL, params.UserID, params.Limit, params.Offset)
 }
 
 // FindOrganizationsByUserIDScan implements Querier.FindOrganizationsByUserIDScan.
@@ -309,6 +326,38 @@ func (q *DBQuerier) FindOrganizationsByUserIDScan(results pgx.BatchResults) ([]F
 		return nil, fmt.Errorf("close FindOrganizationsByUserIDBatch rows: %w", err)
 	}
 	return items, err
+}
+
+const countOrganizationsByUserIDSQL = `SELECT count(*)
+FROM organizations o
+JOIN organization_memberships om ON o.name = om.organization_name
+WHERE om.user_id = $1
+;`
+
+// CountOrganizationsByUserID implements Querier.CountOrganizationsByUserID.
+func (q *DBQuerier) CountOrganizationsByUserID(ctx context.Context, userID pgtype.Text) (*int, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "CountOrganizationsByUserID")
+	row := q.conn.QueryRow(ctx, countOrganizationsByUserIDSQL, userID)
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("query CountOrganizationsByUserID: %w", err)
+	}
+	return &item, nil
+}
+
+// CountOrganizationsByUserIDBatch implements Querier.CountOrganizationsByUserIDBatch.
+func (q *DBQuerier) CountOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text) {
+	batch.Queue(countOrganizationsByUserIDSQL, userID)
+}
+
+// CountOrganizationsByUserIDScan implements Querier.CountOrganizationsByUserIDScan.
+func (q *DBQuerier) CountOrganizationsByUserIDScan(results pgx.BatchResults) (*int, error) {
+	row := results.QueryRow()
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("scan CountOrganizationsByUserIDBatch row: %w", err)
+	}
+	return &item, nil
 }
 
 const insertOrganizationSQL = `INSERT INTO organizations (

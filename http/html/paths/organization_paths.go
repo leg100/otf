@@ -5,29 +5,29 @@ package paths
 import "fmt"
 
 func Organizations() string {
-	return "/organizations"
+	return "/app/organizations"
 }
 
 func CreateOrganization() string {
-	return "/organizations/create"
+	return "/app/organizations/create"
 }
 
 func NewOrganization() string {
-	return "/organizations/new"
+	return "/app/organizations/new"
 }
 
 func Organization(organization string) string {
-	return fmt.Sprintf("/organizations/%s", organization)
+	return fmt.Sprintf("/app/organizations/%s", organization)
 }
 
 func EditOrganization(organization string) string {
-	return fmt.Sprintf("/organizations/%s/edit", organization)
+	return fmt.Sprintf("/app/organizations/%s/edit", organization)
 }
 
 func UpdateOrganization(organization string) string {
-	return fmt.Sprintf("/organizations/%s/update", organization)
+	return fmt.Sprintf("/app/organizations/%s/update", organization)
 }
 
 func DeleteOrganization(organization string) string {
-	return fmt.Sprintf("/organizations/%s/delete", organization)
+	return fmt.Sprintf("/app/organizations/%s/delete", organization)
 }

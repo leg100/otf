@@ -52,18 +52,16 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			}
 
 			return cloud.VCSTagEvent{
-				WebhookID:     opts.WebhookID,
+				RepoID:        opts.RepoID,
 				Tag:           parts[2],
 				Action:        action,
-				Identifier:    event.GetRepo().GetFullName(),
 				CommitSHA:     event.GetAfter(),
 				DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			}, nil
 		case "heads":
 			return cloud.VCSPushEvent{
-				WebhookID:     opts.WebhookID,
+				RepoID:        opts.RepoID,
 				Branch:        parts[2],
-				Identifier:    event.GetRepo().GetFullName(),
 				CommitSHA:     event.GetAfter(),
 				DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			}, nil
@@ -86,9 +84,8 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		}
 
 		return cloud.VCSPullEvent{
-			WebhookID:     opts.WebhookID,
+			RepoID:        opts.RepoID,
 			Action:        action,
-			Identifier:    event.GetRepo().GetFullName(),
 			Branch:        event.PullRequest.Head.GetRef(),
 			CommitSHA:     event.GetPullRequest().GetHead().GetSHA(),
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ func (a *application) agentTokenCommand() *cobra.Command {
 }
 
 func (a *application) agentTokenNewCommand() *cobra.Command {
-	opts := otf.CreateAgentTokenOptions{}
+	opts := auth.CreateAgentTokenOptions{}
 
 	cmd := &cobra.Command{
 		Use:           "new [description]",
@@ -46,7 +46,7 @@ func (a *application) agentTokenNewCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created agent token: %s\n", *at.Token())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created agent token: %s\n", at.Token)
 
 			return nil
 		},

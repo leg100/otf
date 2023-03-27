@@ -26,9 +26,11 @@ INSERT INTO logs (
 RETURNING chunk_id
 ;
 
--- name: FindLogChunks :one
+-- FindLogs retrieves all the logs for the given run and phase.
+--
+-- name: FindLogs :one
 SELECT
-    substring(string_agg(chunk, '') FROM (pggen.arg('offset')+1) FOR pggen.arg('limit'))
+    string_agg(chunk, '')
 FROM (
     SELECT run_id, phase, chunk
     FROM logs

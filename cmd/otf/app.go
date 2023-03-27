@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
@@ -13,7 +12,7 @@ import (
 )
 
 type application struct {
-	otf.Client
+	client.Client
 }
 
 func (a *application) run(ctx context.Context, args []string, out io.Writer) error {

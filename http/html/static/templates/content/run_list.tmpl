@@ -17,7 +17,7 @@
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchRuns({{ watchWorkspacePath .Content.ID }}, {{ randAlphaNum 6 }});
+      watchRuns({{ watchWorkspacePath .Content.ID }});
     });
   </script>
   {{ template "content-list" . }}

@@ -11,6 +11,7 @@ import (
 	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/sql"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,6 +23,7 @@ var startedServerRegex = regexp.MustCompile(`started server \| address=.*:(\d+)`
 type daemon struct {
 	flags         []string
 	enableGithub  bool
+	connstr       *string // postgres connection string; if nil then a postgres container will be started and that will be connected to
 	githubOptions []github.TestServerOption
 	githubServer  *github.TestServer
 }
@@ -35,7 +37,7 @@ func (d *daemon) withGithubUser(user *cloud.User) {
 	d.githubOptions = append(d.githubOptions, github.WithUser(user))
 }
 
-func (d *daemon) withGithubRepo(repo cloud.Repo) {
+func (d *daemon) withGithubRepo(repo string) {
 	d.enableGithub = true
 	d.githubOptions = append(d.githubOptions, github.WithRepo(repo))
 }
@@ -55,10 +57,17 @@ func (d *daemon) registerStatusCallback(callback func(*gogithub.StatusEvent)) {
 	d.githubOptions = append(d.githubOptions, github.WithStatusCallback(callback))
 }
 
+func (d *daemon) withDB(connstr string) {
+	d.connstr = &connstr
+}
+
 // start an instance of the otfd daemon and return its hostname.
 func (d *daemon) start(t *testing.T) string {
-	database, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
-	require.True(t, ok, "OTF_TEST_DATABASE_URL not set")
+	if d.connstr == nil {
+		// start postgres container
+		_, connstr := sql.NewTestDB(t)
+		d.connstr = &connstr
+	}
 
 	flags := append(d.flags,
 		"--address", ":0", // listen on random, available port
@@ -68,11 +77,12 @@ func (d *daemon) start(t *testing.T) string {
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
 		"--plugin-cache", // speed up tests by caching providers
-		"--database", database,
+		"--database", *d.connstr,
+		"--log-http-requests",
 	)
 
 	if d.enableGithub {
-		d.githubServer = github.NewTestServer(t, d.githubOptions...)
+		d.githubServer, _ = github.NewTestServer(t, d.githubOptions...)
 		githubURL, err := url.Parse(d.githubServer.URL)
 		require.NoError(t, err)
 
@@ -92,7 +102,6 @@ func (d *daemon) start(t *testing.T) string {
 	stdout := iochan.DelimReader(out, '\n')
 	stderr := iochan.DelimReader(errout, '\n')
 	cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
-
 	require.NoError(t, cmd.Start())
 
 	// record daemon's URL

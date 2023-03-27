@@ -7,9 +7,9 @@ import (
 	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf/cloud"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -33,93 +33,47 @@ const (
 
 var (
 	// A regular expression used to validate common string ID patterns.
-	reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
+	ReStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 
 	// A regular expression used to validate semantic versions (major.minor.patch).
-	reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
+	ReSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 )
 
-// Application provides access to the otf application services
-type Application interface {
-	// Tx provides a transaction within which to operate on the store.
-	Tx(ctx context.Context, tx func(Application) error) error
-	DB() DB
-	OrganizationService
-	WorkspaceService
-	StateVersionService
-	ConfigurationVersionService
-	RunService
-	EventService
-	UserService
-	SessionService
-	TokenService
-	TeamService
-	AgentTokenService
-	CurrentRunService
-	VCSProviderService
-	LockableApplication
-	cloud.Service
-	ModuleService
-	ModuleVersionService
-	HostnameService
-	RepoService
-}
-
-// LockableApplication is an application that holds an exclusive lock with the given ID.
-type LockableApplication interface {
-	WithLock(ctx context.Context, id int64, cb func(Application) error) error
-}
-
-// DB provides access to otf database
+// DB is the otf database. Services may wrap this and implement higher-level
+// queries.
 type DB interface {
-	Database
-
+	// Tx provides a callback in which queries are run within a transaction.
 	Tx(ctx context.Context, tx func(DB) error) error
-	// WaitAndLock obtains a DB with a session-level advisory lock.
-	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
-	Close()
-	UserStore
-	TeamStore
-	OrganizationStore
-	WorkspaceStore
-	RunStore
-	SessionStore
-	TokenStore
-	ConfigurationVersionStore
-	ChunkStore
-	AgentTokenStore
-	VCSProviderStore
-	ModuleStore
-	ModuleVersionStore
-}
-
-// Database provides access to generated SQL queries as well as wrappers for
-// performing queries within a transaction or a lock.
-type Database interface {
-	// Send batches of SQL queries over the wire.
-	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+	// Acquire dedicated connection from connection pool.
+	Acquire(ctx context.Context) (*pgxpool.Conn, error)
 	// Execute arbitrary SQL
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	// Send batches of SQL queries over the wire.
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 
-	pggen.Querier // generated SQL queries
+	pggen.Querier // queries generated from SQL
+	Close()       // Close all connections in pool
 
-	// Tx provides a transaction within which to operate on the store.
-	Transaction(ctx context.Context, tx func(Database) error) error
-	// WaitAndLock obtains a DB with a session-level advisory lock.
-	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
+	// additional queries that wrap the generated queries
+	GetLogs(ctx context.Context, runID string, phase PhaseType) ([]byte, error)
 }
 
-// Unmarshaler unmarshals database rows
-type Unmarshaler struct {
-	cloud.Service
+type DatabaseLock interface {
+	Release()
 }
 
-// Identity is an identifiable otf entity.
-type Identity interface {
-	// Human friendly identification of the entity.
-	String() string
-	// Uniquely identifies the entity.
-	ID() string
+// GetID retrieves the ID field of a struct contained in s. If s is not a struct,
+// or there is no ID field, then false is returned.
+func GetID(s any) (string, bool) {
+	v := reflect.Indirect(reflect.ValueOf(s))
+	if v.Kind() != reflect.Struct {
+		return "", false
+	}
+	f := v.FieldByName("ID")
+	if !f.IsValid() {
+		return "", false
+	}
+	return f.String(), true
 }
 
 func String(str string) *string   { return &str }
@@ -169,38 +123,16 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
-// ResourceReport reports a summary of additions, changes, and deletions of
-// resources in a plan or an apply.
-type ResourceReport struct {
-	Additions    int
-	Changes      int
-	Destructions int
-}
-
-func (r ResourceReport) HasChanges() bool {
-	if r.Additions > 0 || r.Changes > 0 || r.Destructions > 0 {
-		return true
-	}
-	return false
-}
-
-func (r ResourceReport) String() string {
-	// \u2212 is a proper minus sign; an ascii hyphen is too narrow (in the
-	// default github font at least) and looks incongruous alongside
-	// the wider '+' and '~' characters.
-	return fmt.Sprintf("+%d/~%d/\u2212%d", r.Additions, r.Changes, r.Destructions)
-}
-
 // ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
 func ValidStringID(v *string) bool {
-	return v != nil && reStringID.MatchString(*v)
+	return v != nil && ReStringID.MatchString(*v)
 }
 
-// validStringID checks if the given string pointer is non-nil and contains a
+// ValidSemanticVersion checks if v is a
 // valid semantic version (major.minor.patch).
-func validSemanticVersion(v string) bool {
-	return reSemanticVersion.MatchString(v)
+func ValidSemanticVersion(v string) bool {
+	return ReSemanticVersion.MatchString(v)
 }
 
 func GetMapKeys(m map[string]interface{}) []string {

@@ -13,14 +13,17 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
+const handlerPrefix = "/webhooks/vcs"
+
 type (
 	// handler is the first point of entry for incoming VCS events, relaying them onto
 	// a cloud-specific handler.
 	handler struct {
 		logr.Logger
+		otf.Publisher
 
-		events chan<- cloud.VCSEvent
-		db     handlerDB
+		db handlerDB
 	}
 
 	// handleDB is the database the handler interacts with
@@ -28,14 +31,6 @@ type (
 		getHookByID(context.Context, uuid.UUID) (*hook, error)
 	}
 )
-
-func NewHandler(logger logr.Logger, events chan<- cloud.VCSEvent, app otf.Application) *handler {
-	return &handler{
-		Logger: logger,
-		events: events,
-		db:     newPGDB(app.DB(), newFactory(app, app)),
-	}
-}
 
 func (h *handler) AddHandlers(r *mux.Router) {
 	r.Handle(path.Join(handlerPrefix, "{webhook_id}"), h)
@@ -57,8 +52,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, WebhookID: hook.id})
+	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, RepoID: hook.id})
 	if event != nil {
-		h.events <- event
+		h.Publish(otf.Event{
+			Type:    otf.EventVCS,
+			Payload: event,
+		})
 	}
 }

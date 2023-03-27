@@ -36,7 +36,7 @@ func (cs *CloudService) ListCloudConfigs() []cloud.Config {
 	return configs
 }
 
-func NewTestCloudService() *CloudService {
+func NewCloudServiceWithDefaults() *CloudService {
 	return &CloudService{
 		db: map[string]cloud.Config{
 			"github": github.Defaults(),

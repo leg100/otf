@@ -11,8 +11,8 @@ import (
 
 type hclOperation func(*hclwrite.File) bool
 
-// rewriteHCL performs HCL surgery on a terraform module.
-func rewriteHCL(modulePath string, operations ...hclOperation) error {
+// RewriteHCL performs HCL surgery on a terraform module.
+func RewriteHCL(modulePath string, operations ...hclOperation) error {
 	return filepath.Walk(modulePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
@@ -52,9 +52,9 @@ func rewriteHCL(modulePath string, operations ...hclOperation) error {
 	})
 }
 
-// removeBackendBlock is an HCL operation that removes terraform remote backend /
+// RemoveBackendBlock is an HCL operation that removes terraform remote backend /
 // cloud configuration
-func removeBackendBlock(f *hclwrite.File) bool {
+func RemoveBackendBlock(f *hclwrite.File) bool {
 	for _, block := range f.Body().Blocks() {
 		if block.Type() == "terraform" {
 			for _, b2 := range block.Body().Blocks() {

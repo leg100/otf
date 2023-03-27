@@ -8,42 +8,78 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
-// scheduler performs two principle tasks :
-// (a) manages lifecycle of workspace queues, creating/destroying them
-// (b) relays run and workspace events onto queues.
-type scheduler struct {
-	otf.Application
-	logr.Logger
-	queues map[string]eventHandler
-	queueFactory
-}
+// lockID guarantees only one scheduler on a cluster is running at any
+// time.
+const lockID int64 = 5577006791947779410
 
-// newScheduler constructs and initialises the scheduler.
-func newScheduler(logger logr.Logger, app otf.Application) *scheduler {
-	s := &scheduler{
-		Application:  app,
-		Logger:       logger.WithValues("component", "scheduler"),
-		queues:       make(map[string]eventHandler),
-		queueFactory: queueMaker{},
+type (
+	// scheduler performs two principle tasks :
+	// (a) manages lifecycle of workspace queues, creating/destroying them
+	// (b) relays run and workspace events onto queues.
+	scheduler struct {
+		logr.Logger
+
+		otf.Subscriber
+		WorkspaceService
+		RunService
+
+		queues map[string]eventHandler
+		queueFactory
 	}
-	s.V(2).Info("started")
 
-	return s
-}
+	Options struct {
+		logr.Logger
+		otf.DB
+		otf.Subscriber
 
+		WorkspaceService
+		RunService
+	}
+
+	WorkspaceService workspace.Service
+	RunService       run.Service
+)
+
+// Start constructs and initialises the scheduler.
 // start starts the scheduler daemon. Should be invoked in a go routine.
-func (s *scheduler) start(ctx context.Context) error {
+func Start(ctx context.Context, opts Options) error {
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
 
+	sched := &scheduler{
+		Logger:           opts.Logger.WithValues("component", "scheduler"),
+		WorkspaceService: opts.WorkspaceService,
+		RunService:       opts.RunService,
+		Subscriber:       opts.Subscriber,
+		queues:           make(map[string]eventHandler),
+		queueFactory:     queueMaker{},
+	}
+	sched.V(2).Info("started")
+
 	op := func() error {
-		return s.reinitialize(ctx)
+		conn, err := opts.Acquire(ctx)
+		if err != nil {
+			return err
+		}
+		defer conn.Release()
+
+		// block on getting an exclusive lock
+		if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", lockID); err != nil {
+			if ctx.Err() != nil {
+				return nil // exit
+			}
+			return err // retry
+		}
+
+		return sched.reinitialize(ctx)
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-		s.Error(err, "restarting scheduler")
+		sched.Error(err, "restarting scheduler")
 	})
 }
 
@@ -51,19 +87,19 @@ func (s *scheduler) start(ctx context.Context) error {
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
 func (s *scheduler) reinitialize(ctx context.Context) error {
-	// Unsubscribe Watch() whenever exiting this routine.
+	// Unsubscribe Subscribe() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// subscribe to run events and workspace unlock events
-	sub, err := s.Watch(ctx, otf.WatchOptions{Name: otf.String("scheduler")})
+	sub, err := s.Subscribe(ctx, "scheduler")
 	if err != nil {
 		return err
 	}
 
 	// retrieve existing workspaces, page by page
-	workspaces := []*otf.Workspace{}
-	workspaceListOpts := otf.WorkspaceListOptions{
+	workspaces := []*workspace.Workspace{}
+	workspaceListOpts := workspace.ListOptions{
 		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
 	for {
@@ -78,8 +114,8 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 		workspaceListOpts.PageNumber = *page.NextPage()
 	}
 	// retrieve runs incomplete runs, page by page
-	runs := []*otf.Run{}
-	runListOpts := otf.RunListOptions{
+	runs := []*run.Run{}
+	runListOpts := run.RunListOptions{
 		Statuses:    otf.IncompleteRun,
 		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
 	}
@@ -94,7 +130,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 		}
 		runListOpts.PageNumber = *page.NextPage()
 	}
-	// feed in existing objects and then events to the scheduler for processing
+	// feed in existing runs and workspaces and then events to the scheduler for processing
 	queue := make(chan otf.Event)
 	go func() {
 		for _, ws := range workspaces {
@@ -114,39 +150,41 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 		for event := range sub {
 			queue <- event
 		}
+		close(queue)
 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case event := <-queue:
-			switch payload := event.Payload.(type) {
-			case *otf.Workspace:
-				if event.Type == otf.EventWorkspaceDeleted {
-					delete(s.queues, payload.ID())
-					continue
-				}
-				// create workspace queue if it doesn't exist
-				q, ok := s.queues[payload.ID()]
-				if !ok {
-					q = s.newQueue(s.Application, s.Logger, payload)
-					s.queues[payload.ID()] = q
-				}
-				if err := q.handleEvent(ctx, event); err != nil {
-					return err
-				}
-			case *otf.Run:
-				q, ok := s.queues[payload.WorkspaceID()]
-				if !ok {
-					// should never happen
-					s.Error(fmt.Errorf("workspace queue does not exist for run event"), "workspace", payload.WorkspaceID(), "run", payload.ID())
-					continue
-				}
-				if err := q.handleEvent(ctx, event); err != nil {
-					return err
-				}
+	for event := range queue {
+		switch payload := event.Payload.(type) {
+		case *workspace.Workspace:
+			if event.Type == otf.EventWorkspaceDeleted {
+				delete(s.queues, payload.ID)
+				continue
+			}
+			// create workspace queue if it doesn't exist
+			q, ok := s.queues[payload.ID]
+			if !ok {
+				q = s.newQueue(queueOptions{
+					Logger:           s.Logger,
+					RunService:       s.RunService,
+					WorkspaceService: s.WorkspaceService,
+					Workspace:        payload,
+				})
+				s.queues[payload.ID] = q
+			}
+			if err := q.handleEvent(ctx, event); err != nil {
+				return err
+			}
+		case *run.Run:
+			q, ok := s.queues[payload.WorkspaceID]
+			if !ok {
+				// should never happen
+				s.Error(fmt.Errorf("workspace queue does not exist for run event"), "workspace", payload.WorkspaceID, "run", payload.ID)
+				continue
+			}
+			if err := q.handleEvent(ctx, event); err != nil {
+				return err
 			}
 		}
 	}
+	return nil
 }

@@ -1,6 +1,6 @@
 package jsonapi
 
-// User represents a Terraform Enterprise user.
+// User represents an OTF user.
 type User struct {
 	ID               string     `jsonapi:"primary,users"`
 	AvatarURL        string     `jsonapi:"attr,avatar-url"`

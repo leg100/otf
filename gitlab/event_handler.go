@@ -43,9 +43,8 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
 		return cloud.VCSPushEvent{
-			WebhookID:     opts.WebhookID,
+			RepoID:        opts.RepoID,
 			Branch:        refParts[2],
-			Identifier:    event.Project.PathWithNamespace,
 			CommitSHA:     event.After,
 			DefaultBranch: event.Project.DefaultBranch,
 		}, nil
@@ -55,10 +54,9 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
 		return cloud.VCSTagEvent{
-			WebhookID: opts.WebhookID,
-			Tag:       refParts[2],
+			RepoID: opts.RepoID,
+			Tag:    refParts[2],
 			// Action:     action,
-			Identifier:    event.Project.PathWithNamespace,
 			CommitSHA:     event.After,
 			DefaultBranch: event.Project.DefaultBranch,
 		}, nil

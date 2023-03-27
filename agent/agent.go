@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/client"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,29 +29,29 @@ var (
 	}
 )
 
-// Agent processes runs.
-type Agent struct {
+// agent processes runs.
+type agent struct {
 	Config
-	otf.Client
+	client.Client
 	logr.Logger
 
-	Spooler        // spools new run events
-	*Terminator    // terminates runs
-	otf.Downloader // terraform cli downloader
+	spooler     // spools new run events
+	*terminator // terminates runs
+	Downloader  // terraform cli downloader
 
 	envs []string // terraform environment variables
 }
 
-// NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, app otf.Client, cfg Config) (*Agent, error) {
-	agent := &Agent{
-		Client:   app,
+// NewAgent is the constructor for an agent
+func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error) {
+	agent := &agent{
+		Client:     app,
 		Config:     cfg,
 		Logger:     logger,
 		envs:       DefaultEnvs,
-		Spooler:    NewSpooler(app, logger, cfg),
-		Terminator: NewTerminator(),
-		Downloader: NewTerraformDownloader(),
+		spooler:    newSpooler(app, logger, cfg),
+		terminator: newTerminator(),
+		Downloader: newTerraformDownloader(),
 	}
 
 	if cfg.Sandbox {
@@ -76,11 +76,11 @@ func NewAgent(logger logr.Logger, app otf.Client, cfg Config) (*Agent, error) {
 }
 
 // Start starts the agent daemon and its workers
-func (a *Agent) Start(ctx context.Context) error {
+func (a *agent) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		if err := a.Spooler.Start(ctx); err != nil {
+		if err := a.spooler.start(ctx); err != nil {
 			return fmt.Errorf("spooler terminated: %w", err)
 		}
 		return nil
@@ -88,14 +88,14 @@ func (a *Agent) Start(ctx context.Context) error {
 
 	g.Go(func() error {
 		for i := 0; i < a.Concurrency; i++ {
-			w := &Worker{a}
+			w := &worker{a}
 			go w.Start(ctx)
 		}
 
 		for {
 			select {
-			case cancelation := <-a.GetCancelation():
-				a.Cancel(cancelation.Run.ID(), cancelation.Forceful)
+			case cancelation := <-a.getCancelation():
+				a.cancel(cancelation.Run.ID, cancelation.Forceful)
 			case <-ctx.Done():
 				return nil
 			}

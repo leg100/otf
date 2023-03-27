@@ -5,7 +5,7 @@
 {{ end }}
 
 {{ define "phase-status" }}
-  <span id="{{ .Phase }}-status" class="phase-status phase-status-{{ .Status }}">
+  <span id="{{ .PhaseType }}-status" class="phase-status phase-status-{{ .Status }}">
     {{ .Status.String }}
   </span>
 {{ end }}

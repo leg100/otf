@@ -18,6 +18,8 @@ const (
 	EventError               EventType = "error"
 	EventInfo                EventType = "info"
 	EventLogChunk            EventType = "log_update"
+	EventLogFinished         EventType = "log_finished"
+	EventVCS                 EventType = "vcs_event"
 )
 
 // EventType identifies the type of event
@@ -27,44 +29,24 @@ type EventType string
 type Event struct {
 	Type    EventType
 	Payload interface{}
+	Local   bool // for local node only and not to be published to rest of cluster
 }
 
 // PubSubService provides low-level access to pub-sub behaviours. Access is
 // unauthenticated.
 type PubSubService interface {
+	Publisher
+	Subscriber
+}
+
+type Publisher interface {
 	// Publish an event
 	Publish(Event)
-	// Subscribe creates a subscription to a stream of errors. Name is a
-	// unique identifier describing the subscriber.
+}
+
+// Subscriber is capable of creating a subscription to events.
+type Subscriber interface {
+	// Subscribe subscribes the caller to OTF events. Name uniquely identifies the
+	// caller.
 	Subscribe(ctx context.Context, name string) (<-chan Event, error)
 }
-
-// EventService allows interacting with events. Access is authenticated.
-type EventService interface {
-	// Watch provides access to a stream of events. The WatchOptions filters
-	// events. Context must be cancelled to close stream.
-	//
-	// TODO(@leg100): it would be clearer to the caller if the stream is closed by
-	// returning a stream object with a Close() method. The calling code would
-	// call Watch(), and then defer a Close(), which is more readable IMO.
-	Watch(context.Context, WatchOptions) (<-chan Event, error)
-	// WatchLogs provides access to a stream of phase logs. The WatchLogsOptions filters
-	// events. Context must be cancelled to close stream.
-	//
-	// TODO(@leg100): it would be clearer to the caller if the stream is closed by
-	// returning a stream object with a Close() method. The calling code would
-	// call WatchLogs(), and then defer a Close(), which is more readable IMO.
-	WatchLogs(context.Context, WatchLogsOptions) (<-chan Chunk, error)
-}
-
-// WatchOptions filters events returned by the Watch endpoint.
-type WatchOptions struct {
-	// Name to uniquely describe the watcher. If not provided then a
-	// name will be auto generated.
-	Name         *string
-	Organization *string `schema:"organization_name"` // filter by organization name
-	WorkspaceID  *string `schema:"workspace_id"`      // filter by workspace ID; mutually exclusive with organization filter
-}
-
-// WatchLogsOptions filters logs returned by the WatchLogs endpoint.
-type WatchLogsOptions WatchOptions
