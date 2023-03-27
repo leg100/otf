@@ -8,6 +8,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +23,9 @@ func TestPlanPermission(t *testing.T) {
 	owners := cloud.Team{Name: "owners", Organization: org}
 	devops := cloud.Team{Name: "devops", Organization: org}
 
+	// Run postgres in a container
+	_, connstr := sql.NewTestDB(t)
+
 	// Build and start a daemon specifically for the boss
 	boss := cloud.User{
 		Name:          "boss-" + uuid.NewString(),
@@ -32,6 +36,7 @@ func TestPlanPermission(t *testing.T) {
 		},
 	}
 	bossDaemon := &daemon{}
+	bossDaemon.withDB(connstr)
 	bossDaemon.withGithubUser(&boss)
 	bossHostname := bossDaemon.start(t)
 
@@ -45,6 +50,7 @@ func TestPlanPermission(t *testing.T) {
 		},
 	}
 	engineerDaemon := &daemon{}
+	engineerDaemon.withDB(connstr)
 	engineerDaemon.withGithubUser(&engineer)
 	engineerHostname := engineerDaemon.start(t)
 

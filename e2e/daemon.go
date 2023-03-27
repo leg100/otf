@@ -65,7 +65,8 @@ func (d *daemon) withDB(connstr string) {
 func (d *daemon) start(t *testing.T) string {
 	if d.connstr == nil {
 		// start postgres container
-		_, *d.connstr = sql.NewTestDB(t)
+		_, connstr := sql.NewTestDB(t)
+		d.connstr = &connstr
 	}
 
 	flags := append(d.flags,
