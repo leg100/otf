@@ -15,8 +15,8 @@ type (
 
 	Service interface {
 		GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
-		PutChunk(ctx context.Context, chunk otf.Chunk) error
 		Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
+		otf.PutChunkService
 	}
 
 	service struct {
@@ -32,7 +32,7 @@ type (
 
 	chunkdb interface {
 		get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
-		put(ctx context.Context, chunk otf.Chunk) error
+		put(ctx context.Context, opts otf.PutChunkOptions) error
 	}
 
 	Options struct {
@@ -84,17 +84,17 @@ func (s *service) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.C
 }
 
 // PutChunk writes a chunk of logs for a phase
-func (s *service) PutChunk(ctx context.Context, chunk otf.Chunk) error {
-	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, chunk.RunID)
+func (s *service) PutChunk(ctx context.Context, opts otf.PutChunkOptions) error {
+	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, opts.RunID)
 	if err != nil {
 		return err
 	}
 
-	if err := s.proxy.put(ctx, chunk); err != nil {
-		s.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase)
+	if err := s.proxy.put(ctx, opts); err != nil {
+		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase)
 		return err
 	}
-	s.V(2).Info("written logs", "id", chunk.RunID, "phase", chunk.Phase)
+	s.V(2).Info("written logs", "id", opts.RunID, "phase", opts.Phase)
 
 	return nil
 }

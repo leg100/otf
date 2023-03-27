@@ -29,7 +29,7 @@ type StateVersionOutput struct {
 	Name      string `jsonapi:"attr,name"`
 	Sensitive bool   `jsonapi:"attr,sensitive"`
 	Type      string `jsonapi:"attr,type"`
-	Value     any    `jsonapi:"attr,value"`
+	Value     string `jsonapi:"attr,value"`
 }
 
 // StateVersionOutputList is a list of state version outputs suitable for marshaling into

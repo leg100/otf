@@ -49,8 +49,8 @@ func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
-	chunk := otf.Chunk{}
-	if err := decode.All(&chunk, r); err != nil {
+	var opts otf.PutChunkOptions
+	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -60,8 +60,8 @@ func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	chunk.Data = buf.Bytes()
-	if err := a.svc.PutChunk(r.Context(), chunk); err != nil {
+	opts.Data = buf.Bytes()
+	if err := a.svc.PutChunk(r.Context(), opts); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}

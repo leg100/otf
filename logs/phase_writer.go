@@ -8,24 +8,21 @@ import (
 )
 
 type (
-	chunkWriter interface {
-		PutChunk(ctx context.Context, chunk otf.Chunk) error
-	}
-
 	// PhaseWriter writes logs on behalf of a run phase.
 	PhaseWriter struct {
-		ctx         context.Context // permits canceling mid-flow
-		started     bool            // has first chunk been sent?
-		id          string          // ID of run to write logs on behalf of.
-		phase       otf.PhaseType   // run phase
-		offset      int             // current position in stream
-		chunkWriter                 // for uploading logs to server
+		ctx     context.Context // permits canceling mid-flow
+		started bool            // has first chunk been sent?
+		id      string          // ID of run to write logs on behalf of.
+		phase   otf.PhaseType   // run phase
+		offset  int             // current position in stream
+
+		otf.PutChunkService // for uploading logs to server
 	}
 
 	PhaseWriterOptions struct {
 		RunID  string
 		Phase  otf.PhaseType
-		Writer chunkWriter
+		Writer otf.PutChunkService
 	}
 )
 
@@ -33,10 +30,10 @@ type (
 
 func NewPhaseWriter(ctx context.Context, opts PhaseWriterOptions) *PhaseWriter {
 	return &PhaseWriter{
-		ctx:         ctx,
-		id:          opts.RunID,
-		phase:       opts.Phase,
-		chunkWriter: opts.Writer,
+		ctx:             ctx,
+		id:              opts.RunID,
+		phase:           opts.Phase,
+		PutChunkService: opts.Writer,
 	}
 }
 
@@ -52,13 +49,13 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 		data = append([]byte{otf.STX}, data...)
 	}
 
-	chunk := otf.Chunk{
+	chunk := otf.PutChunkOptions{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Data:   data,
 		Offset: w.offset,
 	}
-	w.offset = chunk.NextOffset()
+	w.offset += len(data)
 
 	if err := w.PutChunk(w.ctx, chunk); err != nil {
 		return 0, fmt.Errorf("writing log stream: %w", err)
@@ -69,18 +66,18 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (w *PhaseWriter) Close() error {
-	chunk := otf.Chunk{
+	opts := otf.PutChunkOptions{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Offset: w.offset,
 	}
 	if w.started {
-		chunk.Data = []byte{otf.ETX}
+		opts.Data = []byte{otf.ETX}
 	} else {
-		chunk.Data = []byte{otf.STX, otf.ETX}
+		opts.Data = []byte{otf.STX, otf.ETX}
 	}
 
-	if err := w.PutChunk(w.ctx, chunk); err != nil {
+	if err := w.PutChunk(w.ctx, opts); err != nil {
 		return err
 	}
 	return nil

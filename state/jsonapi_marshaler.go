@@ -9,14 +9,14 @@ import (
 type jsonapiMarshaler struct{}
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toVersion(form *Version) *jsonapi.StateVersion {
+func (m *jsonapiMarshaler) toVersion(from *Version) *jsonapi.StateVersion {
 	to := &jsonapi.StateVersion{
-		ID:          form.ID,
-		CreatedAt:   form.CreatedAt,
-		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", form.ID),
-		Serial:      form.Serial,
+		ID:          from.ID,
+		CreatedAt:   from.CreatedAt,
+		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
+		Serial:      from.Serial,
 	}
-	for _, out := range form.Outputs {
+	for _, out := range from.Outputs {
 		to.Outputs = append(to.Outputs, m.toOutput(out))
 	}
 	return to

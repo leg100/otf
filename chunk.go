@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"html/template"
 
 	term2html "github.com/buildkite/terminal-to-html"
@@ -21,13 +22,22 @@ type (
 		Data   []byte    // The log data
 	}
 
+	PutChunkOptions struct {
+		RunID  string    `schema:"run_id,required"`
+		Phase  PhaseType `schema:"phase,required"`
+		Offset int       `schema:"offset,required"`
+		Data   []byte
+	}
+
 	GetChunkOptions struct {
-		RunID string    `schema:"run_id"`
-		Phase PhaseType `schema:"phase"`
-		// Limit is the size of the chunk to retrieve
-		Limit int `schema:"limit"`
-		// Offset is the position in the data from which to retrieve the chunk.
-		Offset int `schema:"offset"`
+		RunID  string    `schema:"run_id"`
+		Phase  PhaseType `schema:"phase"`
+		Limit  int       `schema:"limit"`  // size of the chunk to retrieve
+		Offset int       `schema:"offset"` // position in overall data to seek from.
+	}
+
+	PutChunkService interface {
+		PutChunk(ctx context.Context, opts PutChunkOptions) error
 	}
 )
 

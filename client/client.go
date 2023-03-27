@@ -51,8 +51,6 @@ type (
 		StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)
 		FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseFinishOptions) (*run.Run, error)
 
-		PutChunk(ctx context.Context, chunk otf.Chunk) error
-
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
 
 		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
@@ -65,6 +63,7 @@ type (
 
 		Hostname() string
 
+		otf.PutChunkService
 		workspace.LockService
 	}
 

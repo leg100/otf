@@ -17,21 +17,22 @@ type pgdb struct {
 
 // put persists a chunk of logs to the DB and returns the chunk updated with a
 // unique identifier
-func (db *pgdb) put(ctx context.Context, chunk otf.Chunk) (otf.Chunk, error) {
-	if len(chunk.Data) == 0 {
-		return otf.Chunk{}, fmt.Errorf("refusing to persist empty chunk")
+
+// put persists data to the DB and returns a unique identifier for the chunk
+func (db *pgdb) put(ctx context.Context, opts otf.PutChunkOptions) (string, error) {
+	if len(opts.Data) == 0 {
+		return "", fmt.Errorf("refusing to persist empty chunk")
 	}
 	id, err := db.InsertLogChunk(ctx, pggen.InsertLogChunkParams{
-		RunID:  sql.String(chunk.RunID),
-		Phase:  sql.String(string(chunk.Phase)),
-		Chunk:  chunk.Data,
-		Offset: chunk.Offset,
+		RunID:  sql.String(opts.RunID),
+		Phase:  sql.String(string(opts.Phase)),
+		Chunk:  opts.Data,
+		Offset: opts.Offset,
 	})
 	if err != nil {
-		return otf.Chunk{}, sql.Error(err)
+		return "", sql.Error(err)
 	}
-	chunk.ID = strconv.Itoa(id)
-	return chunk, nil
+	return strconv.Itoa(id), nil
 }
 
 // GetByID implements pubsub.Getter

@@ -54,10 +54,10 @@ func (s *api) addHandlers(r *mux.Router) {
 	// Run routes for exclusive use by remote agents
 	r.HandleFunc("/runs/{id}/actions/start/{phase}", s.startPhase).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/finish/{phase}", s.finishPhase).Methods("POST")
-	r.HandleFunc("/runs/{run_id}/planfile", s.getPlanFile).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/planfile", s.uploadPlanFile).Methods("PUT")
-	r.HandleFunc("/runs/{run_id}/lockfile", s.getLockFile).Methods("GET")
-	r.HandleFunc("/runs/{run_id}/lockfile", s.uploadLockFile).Methods("PUT")
+	r.HandleFunc("/runs/{id}/planfile", s.getPlanFile).Methods("GET")
+	r.HandleFunc("/runs/{id}/planfile", s.uploadPlanFile).Methods("PUT")
+	r.HandleFunc("/runs/{id}/lockfile", s.getLockFile).Methods("GET")
+	r.HandleFunc("/runs/{id}/lockfile", s.uploadLockFile).Methods("PUT")
 
 	// Plan routes
 	r.HandleFunc("/plans/{plan_id}", s.getPlan).Methods("GET")
@@ -434,26 +434,16 @@ func (s *api) watch(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "\r\n")
 	flusher.Flush()
 
-	for {
-		select {
-		case event, ok := <-events:
-			if !ok {
-				// server closed connection
-				return
-			}
-
-			run := event.Payload.(*Run)
-			data, err := s.MarshalJSONAPI(run, r)
-			if err != nil {
-				s.Error(err, "marshalling run event", "event", event.Type)
-				continue
-			}
-			otf.WriteSSEEvent(w, data, event.Type, true)
-			flusher.Flush()
-		case <-r.Context().Done():
-			// client closed connection
-			return
+	for event := range events {
+		run := event.Payload.(*Run)
+		data, err := s.MarshalJSONAPI(run, r)
+		if err != nil {
+			s.Error(err, "marshalling run event", "event", event.Type)
+			continue
 		}
+		otf.WriteSSEEvent(w, data, event.Type, true)
+		flusher.Flush()
+		s.Info("sent event", "run", run.ID)
 	}
 }
 

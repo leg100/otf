@@ -21,7 +21,7 @@ type (
 
 	db interface {
 		GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error)
-		put(ctx context.Context, chunk otf.Chunk) (otf.Chunk, error)
+		put(ctx context.Context, opts otf.PutChunkOptions) (string, error)
 	}
 )
 
@@ -96,20 +96,25 @@ func (p *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, e
 	return chunk.Cut(opts), nil
 }
 
-// PutChunk writes a chunk of data to the backend store before caching it.
-func (p *proxy) put(ctx context.Context, chunk otf.Chunk) error {
-	persisted, err := p.db.put(ctx, chunk)
+// put writes a chunk of data to the backend store before caching it.
+func (p *proxy) put(ctx context.Context, opts otf.PutChunkOptions) error {
+	id, err := p.db.put(ctx, opts)
 	if err != nil {
 		return err
+	}
+	// make a chunk from the options and the id
+	chunk := otf.Chunk{
+		ID:     id,
+		RunID:  opts.RunID,
+		Phase:  opts.Phase,
+		Data:   opts.Data,
+		Offset: opts.Offset,
 	}
 	if err := p.cacheChunk(ctx, chunk); err != nil {
 		return err
 	}
-	// publish chunk so that other otfd nodes can receive the chunk
-	p.Publish(otf.Event{
-		Type:    otf.EventLogChunk,
-		Payload: persisted,
-	})
+	// publish chunk so that other otfd nodes can receive and cache the chunk
+	p.Publish(otf.Event{Type: otf.EventLogChunk, Payload: chunk})
 	return nil
 }
 

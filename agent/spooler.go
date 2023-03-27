@@ -115,17 +115,11 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 		})
 	}
 	// then spool events as they come in
-	for {
-		select {
-		case event, ok := <-sub:
-			if !ok {
-				return fmt.Errorf("watch subscription closed")
-			}
-			s.handleEvent(event)
-		case <-ctx.Done():
-			return nil
-		}
+	for event := range sub {
+		s.Info("received event", "event", event.Type)
+		s.handleEvent(event)
 	}
+	return nil
 }
 
 func (s *spoolerDaemon) handleEvent(ev otf.Event) {
