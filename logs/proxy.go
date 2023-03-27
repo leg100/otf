@@ -41,7 +41,7 @@ func newProxy(opts Options) *proxy {
 }
 
 // Start chunk proxy daemon, which keeps the cache up-to-date with logs
-// published on other nodes in the cluster
+// published across the cluster.
 func (p *proxy) Start(ctx context.Context) error {
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
@@ -52,10 +52,31 @@ func (p *proxy) Start(ctx context.Context) error {
 	}
 
 	for event := range sub {
-		if chunk, ok := event.Payload.(otf.Chunk); ok {
-			if err := p.cacheChunk(ctx, chunk); err != nil {
-				p.Error(err, "caching log chunk")
+		chunk, ok := event.Payload.(otf.Chunk)
+		if !ok {
+			continue
+		}
+		key := cacheKey(chunk.RunID, chunk.Phase)
+
+		var logs []byte
+		// The first log chunk can be written straight to the cache, whereas
+		// successive chunks require the cache to be checked first.
+		if chunk.IsStart() {
+			logs = chunk.Data
+		} else {
+			if existing, err := p.cache.Get(key); err != nil {
+				// no cache entry; retrieve logs from db
+				logs, err = p.db.GetLogs(ctx, chunk.RunID, chunk.Phase)
+				if err != nil {
+					return err
+				}
+			} else {
+				// append received chunk to existing cached logs
+				logs = append(existing, chunk.Data...)
 			}
+		}
+		if err := p.cache.Set(key, logs); err != nil {
+			p.Error(err, "caching log chunk")
 		}
 	}
 	return nil
@@ -83,7 +104,7 @@ func (p *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, e
 	return chunk.Cut(opts), nil
 }
 
-// put writes a chunk of data to the backend store before caching it.
+// put writes a chunk of data to the db
 func (p *proxy) put(ctx context.Context, opts otf.PutChunkOptions) error {
 	id, err := p.db.put(ctx, opts)
 	if err != nil {
@@ -97,31 +118,9 @@ func (p *proxy) put(ctx context.Context, opts otf.PutChunkOptions) error {
 		Data:   opts.Data,
 		Offset: opts.Offset,
 	}
-	if err := p.cacheChunk(ctx, chunk); err != nil {
-		return err
-	}
 	// publish chunk so that other otfd nodes can receive and cache the chunk
 	p.Publish(otf.Event{Type: otf.EventLogChunk, Payload: chunk})
 	return nil
-}
-
-func (p *proxy) cacheChunk(ctx context.Context, chunk otf.Chunk) error {
-	key := cacheKey(chunk.RunID, chunk.Phase)
-
-	// first chunk: don't append
-	if chunk.IsStart() {
-		return p.cache.Set(key, chunk.Data)
-	}
-	// successive chunks: append
-	if previous, err := p.cache.Get(key); err == nil {
-		return p.cache.Set(key, append(previous, chunk.Data...))
-	}
-	// no cache entry; repopulate cache from db
-	logs, err := p.db.GetLogs(ctx, chunk.RunID, chunk.Phase)
-	if err != nil {
-		return err
-	}
-	return p.cache.Set(key, logs)
 }
 
 // cacheKey generates a key for caching log chunks.

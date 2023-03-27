@@ -26,7 +26,7 @@ type (
 
 	fakeAuthorizer struct{}
 
-	fakePubSubTailService struct {
+	fakePubSubService struct {
 		stream chan otf.Event
 	}
 )
@@ -60,15 +60,19 @@ func (f *fakeTailProxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.
 	return f.chunk, nil
 }
 
-func newFakePubSubService() *fakePubSubTailService {
-	return &fakePubSubTailService{stream: make(chan otf.Event)}
+func newFakePubSubService() *fakePubSubService {
+	return &fakePubSubService{stream: make(chan otf.Event)}
 }
 
-func (f *fakePubSubTailService) Subscribe(context.Context, string) (<-chan otf.Event, error) {
+func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan otf.Event, error) {
+	go func() {
+		<-ctx.Done()
+		close(f.stream)
+	}()
 	return f.stream, nil
 }
 
-func (f *fakePubSubTailService) Publish(event otf.Event) {
+func (f *fakePubSubService) Publish(event otf.Event) {
 	f.stream <- event
 }
 
