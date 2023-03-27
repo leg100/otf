@@ -48,7 +48,7 @@ func (c Chunk) Cut(opts GetChunkOptions) Chunk {
 		// the end of the chunk
 		return Chunk{Offset: c.NextOffset()}
 	}
-	// sanitize limit - 0 means limitless.
+	// ensure limit is not greater than the chunk itself.
 	if (opts.Offset+opts.Limit) > c.NextOffset() || opts.Limit == 0 {
 		opts.Limit = c.NextOffset() - opts.Offset
 	}

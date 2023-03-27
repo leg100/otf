@@ -111,7 +111,7 @@ func TestCluster(t *testing.T) {
 		// delete the token
 		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
 		screenshot(t),
-		matchText(t, ".flash-success", "Deleted token: "+"test-agent-token"),
+		matchText(t, ".flash-success", "Deleted token: test-agent-token"),
 	})
 	require.NoError(t, err)
 }
