@@ -73,17 +73,6 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}, nil
 }
 
-func (db *DB) WaitAndLock(ctx context.Context, id int64) (otf.DatabaseLock, error) {
-	conn, err := db.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
-		return nil, err
-	}
-	return conn, nil
-}
-
 func (db *DB) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
 	return db.conn.Exec(ctx, sql, arguments...)
 }

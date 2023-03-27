@@ -22,6 +22,12 @@ func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) 
 	}, nil
 }
 
-func (a *fakeSpoolerApp) Watch(_ context.Context, _ run.WatchOptions) (<-chan otf.Event, error) {
+func (a *fakeSpoolerApp) Watch(ctx context.Context, opts run.WatchOptions) (<-chan otf.Event, error) {
+	// the non-fake watch takes care of closing channel when context is
+	// terminated.
+	go func() {
+		<-ctx.Done()
+		close(a.events)
+	}()
 	return a.events, nil
 }

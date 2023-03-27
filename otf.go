@@ -50,8 +50,6 @@ type DB interface {
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	// Send batches of SQL queries over the wire.
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
-	// WaitAndLock obtains a DB with a session-level advisory lock.
-	WaitAndLock(ctx context.Context, id int64) (DatabaseLock, error)
 
 	pggen.Querier // queries generated from SQL
 	Close()       // Close all connections in pool

@@ -18,7 +18,7 @@ func TestLogs(t *testing.T) {
 		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, otf.Chunk{
+		err := svc.PutChunk(ctx, otf.PutChunkOptions{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
@@ -30,7 +30,7 @@ func TestLogs(t *testing.T) {
 		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, otf.Chunk{
+		err := svc.PutChunk(ctx, otf.PutChunkOptions{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 		})
@@ -41,14 +41,14 @@ func TestLogs(t *testing.T) {
 		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, otf.Chunk{
+		err := svc.PutChunk(ctx, otf.PutChunkOptions{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte("\x02hello"),
 		})
 		require.NoError(t, err)
 
-		err = svc.PutChunk(ctx, otf.Chunk{
+		err = svc.PutChunk(ctx, otf.PutChunkOptions{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
 			Data:  []byte(" world\x03"),
@@ -164,7 +164,7 @@ func TestClusterLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	// upload first chunk
-	err = local.PutChunk(ctx, otf.Chunk{
+	err = local.PutChunk(ctx, otf.PutChunkOptions{
 		RunID: run.ID,
 		Phase: otf.PlanPhase,
 		Data:  []byte("\x02hello"),
@@ -172,7 +172,7 @@ func TestClusterLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	// upload second and last chunk
-	err = local.PutChunk(ctx, otf.Chunk{
+	err = local.PutChunk(ctx, otf.PutChunkOptions{
 		RunID:  run.ID,
 		Phase:  otf.PlanPhase,
 		Data:   []byte(" world\x03"),
