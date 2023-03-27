@@ -17,6 +17,7 @@ type (
 		GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
 		Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
 		otf.PutChunkService
+		StartProxy(ctx context.Context) error
 	}
 
 	service struct {
@@ -24,13 +25,14 @@ type (
 		otf.PubSubService // subscribe to tail log updates
 
 		run   otf.Authorizer
-		proxy chunkdb
+		proxy chunkproxy
 
 		api *api
 		web *webHandlers
 	}
 
-	chunkdb interface {
+	chunkproxy interface {
+		Start(ctx context.Context) error
 		get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
 		put(ctx context.Context, opts otf.PutChunkOptions) error
 	}
@@ -68,6 +70,10 @@ func NewService(opts Options) *service {
 func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
+}
+
+func (s *service) StartProxy(ctx context.Context) error {
+	return s.proxy.Start(ctx)
 }
 
 // GetChunk reads a chunk of logs for a phase.
@@ -121,54 +127,45 @@ func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 	}
 	opts.Offset += len(chunk.Data)
 
-	ch := make(chan otf.Chunk)
+	// relay is the chan returned to the caller on which chunks are relayed to.
+	relay := make(chan otf.Chunk)
 	go func() {
 		// send existing chunk
 		if len(chunk.Data) > 0 {
-			ch <- chunk
+			relay <- chunk
 		}
 
-		for {
-			select {
-			case ev, ok := <-sub:
-				if !ok {
-					close(ch)
-					return
-				}
-				chunk, ok := ev.Payload.(otf.Chunk)
-				if !ok {
-					// skip non-log events
+		// relay chunks from subscription
+		for ev := range sub {
+			chunk, ok := ev.Payload.(otf.Chunk)
+			if !ok {
+				// skip non-chunk events
+				continue
+			}
+			if opts.RunID != chunk.RunID || opts.Phase != chunk.Phase {
+				// skip logs for different run/phase
+				continue
+			}
+			if chunk.Offset < opts.Offset {
+				// chunk has overlapping offset
+				if chunk.Offset+len(chunk.Data) <= opts.Offset {
+					// skip entirely overlapping chunk
 					continue
 				}
-				if opts.RunID != chunk.RunID || opts.Phase != chunk.Phase {
-					// skip logs for different run/phase
-					continue
-				}
-				if chunk.Offset < opts.Offset {
-					// chunk has overlapping offset
-
-					if chunk.Offset+len(chunk.Data) <= opts.Offset {
-						// skip entirely overlapping chunk
-						continue
-					}
-					// remove overlapping portion of chunk
-					chunk = chunk.Cut(otf.GetChunkOptions{Offset: opts.Offset})
-				}
-				if len(chunk.Data) == 0 {
-					// don't send empty chunks
-					continue
-				}
-				ch <- chunk
-				if chunk.IsEnd() {
-					close(ch)
-					return
-				}
-			case <-ctx.Done():
-				close(ch)
-				return
+				// remove overlapping portion of chunk
+				chunk = chunk.Cut(otf.GetChunkOptions{Offset: opts.Offset})
+			}
+			if len(chunk.Data) == 0 {
+				// don't send empty chunks
+				continue
+			}
+			relay <- chunk
+			if chunk.IsEnd() {
+				break
 			}
 		}
+		close(relay)
 	}()
 	s.V(2).Info("tailing logs", "id", opts.RunID, "phase", opts.Phase, "subject", subject)
-	return ch, nil
+	return relay, nil
 }

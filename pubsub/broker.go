@@ -158,7 +158,7 @@ func (b *broker) Subscribe(ctx context.Context, name string) (<-chan otf.Event, 
 		ConstLabels: prometheus.Labels{"name": name},
 	})
 	if err := prometheus.Register(b.metrics[name]); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("registering metric for subscriber: %s: %w", name, err)
 	}
 
 	// when the context is done remove the subscriber

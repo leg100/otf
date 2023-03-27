@@ -43,35 +43,22 @@ func newProxy(opts Options) *proxy {
 // Start chunk proxy daemon, which keeps the cache up-to-date with logs
 // published on other nodes in the cluster
 func (p *proxy) Start(ctx context.Context) error {
-	ch := make(chan otf.Chunk)
-	defer close(ch)
-
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
 	// it may have missed updates, potentially rendering the cache stale.
-	sub, err := p.Subscribe(ctx, "chunk-proxy")
+	sub, err := p.Subscribe(ctx, "chunk-proxy-"+otf.GenerateRandomString(4))
 	if err != nil {
 		return err
 	}
 
-	for {
-		select {
-		case event, ok := <-sub:
-			if !ok {
-				return nil
-			}
-			chunk, ok := event.Payload.(otf.Chunk)
-			if !ok {
-				// skip non-log events
-				continue
-			}
+	for event := range sub {
+		if chunk, ok := event.Payload.(otf.Chunk); ok {
 			if err := p.cacheChunk(ctx, chunk); err != nil {
 				p.Error(err, "caching log chunk")
 			}
-		case <-ctx.Done():
-			return ctx.Err()
 		}
 	}
+	return nil
 }
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to

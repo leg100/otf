@@ -140,6 +140,9 @@ func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error
 		// Run pubsub broker
 		g.Go(func() error { return services.Broker.Start(ctx) })
 
+		// Run logs caching proxy
+		g.Go(func() error { return services.StartProxy(ctx) })
+
 		// Run scheduler - if there is another scheduler running already then
 		// this'll wait until the other scheduler exits.
 		g.Go(func() error {

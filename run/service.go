@@ -337,42 +337,34 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Even
 		return nil, err
 	}
 
-	ch := make(chan otf.Event)
+	// relay is returned to the caller to which filtered run events are sent
+	relay := make(chan otf.Event)
 	go func() {
-		for {
-			select {
-			case ev, ok := <-sub:
-				if !ok {
-					close(ch)
-					return
-				}
-
-				run, ok := ev.Payload.(*Run)
-				if !ok {
-					continue // skip anything other than a run or a workspace
-				}
-
-				// apply workspace filter
-				if opts.WorkspaceID != nil {
-					if run.WorkspaceID != *opts.WorkspaceID {
-						continue
-					}
-				}
-				// apply organization filter
-				if opts.Organization != nil {
-					if run.Organization != *opts.Organization {
-						continue
-					}
-				}
-
-				ch <- ev
-			case <-ctx.Done():
-				close(ch)
-				return
+		// relay events
+		for ev := range sub {
+			run, ok := ev.Payload.(*Run)
+			if !ok {
+				continue // skip anything other than a run or a workspace
 			}
+
+			// apply workspace filter
+			if opts.WorkspaceID != nil {
+				if run.WorkspaceID != *opts.WorkspaceID {
+					continue
+				}
+			}
+			// apply organization filter
+			if opts.Organization != nil {
+				if run.Organization != *opts.Organization {
+					continue
+				}
+			}
+
+			relay <- ev
 		}
+		close(relay)
 	}()
-	return ch, nil
+	return relay, nil
 }
 
 // GetRun retrieves a run from the db.

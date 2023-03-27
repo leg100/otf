@@ -21,7 +21,7 @@ type (
 	fakeTailProxy struct {
 		// fake chunk to return
 		chunk otf.Chunk
-		chunkdb
+		chunkproxy
 	}
 
 	fakeAuthorizer struct{}

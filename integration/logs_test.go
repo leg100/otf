@@ -140,13 +140,19 @@ func TestClusterLogs(t *testing.T) {
 	local := setup(t, &config{db: db})
 	remote := setup(t, &config{db: db})
 
-	// start broker for each node
+	// start broker and caching proxy for each node
 	done := make(chan error)
 	go func() {
 		done <- local.Broker.Start(ctx)
 	}()
 	go func() {
+		done <- local.StartProxy(ctx)
+	}()
+	go func() {
 		done <- remote.Broker.Start(ctx)
+	}()
+	go func() {
+		done <- remote.StartProxy(ctx)
 	}()
 
 	// wait 'til brokers are listening
@@ -163,7 +169,7 @@ func TestClusterLogs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// upload first chunk
+	// upload first chunk to local node
 	err = local.PutChunk(ctx, otf.PutChunkOptions{
 		RunID: run.ID,
 		Phase: otf.PlanPhase,
@@ -171,7 +177,7 @@ func TestClusterLogs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// upload second and last chunk
+	// upload second and last chunk to local node
 	err = local.PutChunk(ctx, otf.PutChunkOptions{
 		RunID:  run.ID,
 		Phase:  otf.PlanPhase,
