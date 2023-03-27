@@ -78,8 +78,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64) (otf.DatabaseLock, erro
 	if err != nil {
 		return nil, err
 	}
-	_, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id)
-	if err != nil {
+	if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
 		return nil, err
 	}
 	return conn, nil

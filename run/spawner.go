@@ -50,21 +50,16 @@ func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
 		RunService:                  opts.RunService,
 	}
 
-	for {
-		select {
-		case event := <-sub:
-			// skip non-vcs events
-			if event.Type != otf.EventVCS {
-				continue
-			}
-
-			if err := s.handle(ctx, event.Payload); err != nil {
-				s.Error(err, "handling vcs event")
-			}
-		case <-ctx.Done():
-			return nil
+	for event := range sub {
+		// skip non-vcs events
+		if event.Type != otf.EventVCS {
+			continue
+		}
+		if err := s.handle(ctx, event.Payload); err != nil {
+			s.Error(err, "handling vcs event")
 		}
 	}
+	return nil
 }
 
 func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {

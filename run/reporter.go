@@ -88,21 +88,17 @@ func (r *reporter) start(ctx context.Context) error {
 		return err
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case event := <-sub:
-			run, ok := event.Payload.(*Run)
-			if !ok {
-				// Skip non-run events
-				continue
-			}
-			if err := r.handleRun(ctx, run); err != nil {
-				return err
-			}
+	for event := range sub {
+		run, ok := event.Payload.(*Run)
+		if !ok {
+			// Skip non-run events
+			continue
+		}
+		if err := r.handleRun(ctx, run); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 func (r *reporter) handleRun(ctx context.Context, run *Run) error {

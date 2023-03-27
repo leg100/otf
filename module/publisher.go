@@ -41,20 +41,16 @@ func StartPublisher(ctx context.Context, opts PublisherOptions) error {
 		ModuleService:      opts.ModuleService,
 	}
 
-	for {
-		select {
-		case event := <-sub:
-			// skip non-vcs events
-			if event.Type != otf.EventVCS {
-				continue
-			}
-			if err := p.handleEvent(ctx, event.Payload); err != nil {
-				opts.Error(err, "handling vcs event")
-			}
-		case <-ctx.Done():
-			return nil
+	for event := range sub {
+		// skip non-vcs events
+		if event.Type != otf.EventVCS {
+			continue
+		}
+		if err := p.handleEvent(ctx, event.Payload); err != nil {
+			opts.Error(err, "handling vcs event")
 		}
 	}
+	return nil
 }
 
 // PublishFromEvent publishes a module version in response to a vcs event.
