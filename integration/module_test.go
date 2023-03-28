@@ -27,7 +27,7 @@ func TestModule(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("create module with connection", func(t *testing.T) {
+	t.Run("create connected module", func(t *testing.T) {
 		svc := setup(t, &config{repo: "leg100/terraform-aws-stuff"})
 
 		org := svc.createOrganization(t, ctx)

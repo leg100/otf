@@ -37,7 +37,7 @@ func TestWorkspace(t *testing.T) {
 		})
 	})
 
-	t.Run("create workspace with connection", func(t *testing.T) {
+	t.Run("create connected workspace", func(t *testing.T) {
 		svc := setup(t, &config{repo: "test/dummy"})
 
 		org := svc.createOrganization(t, ctx)
@@ -62,6 +62,31 @@ func TestWorkspace(t *testing.T) {
 			})
 			require.NoError(t, err)
 		})
+
+		// webhook should now have been deleted from github
+		require.False(t, svc.githubServer.HasWebhook())
+	})
+
+	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
+		svc := setup(t, &config{repo: "test/dummy"})
+
+		org := svc.createOrganization(t, ctx)
+		vcsprov := svc.createVCSProvider(t, ctx, org)
+		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
+			Name:         otf.String(uuid.NewString()),
+			Organization: &org.Name,
+			ConnectOptions: &workspace.ConnectOptions{
+				RepoPath:      "test/dummy",
+				VCSProviderID: vcsprov.ID,
+			},
+		})
+		require.NoError(t, err)
+
+		// webhook should be registered with github
+		require.True(t, svc.githubServer.HasWebhook())
+
+		_, err = svc.DeleteWorkspace(ctx, ws.ID)
+		require.NoError(t, err)
 
 		// webhook should now have been deleted from github
 		require.False(t, svc.githubServer.HasWebhook())
