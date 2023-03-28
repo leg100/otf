@@ -42,6 +42,7 @@ func (a *application) run(ctx context.Context, args []string, out io.Writer) err
 
 	cmd.AddCommand(a.organizationCommand())
 	cmd.AddCommand(a.userCommand())
+	cmd.AddCommand(a.teamCommand())
 	cmd.AddCommand(a.workspaceCommand())
 	cmd.AddCommand(a.runCommand())
 	cmd.AddCommand(a.agentCommand())

@@ -34,6 +34,12 @@ func withUser(user *auth.User) fakeOption {
 	}
 }
 
+func withTeam(team *auth.Team) fakeOption {
+	return func(c *fakeClient) {
+		c.team = team
+	}
+}
+
 func withWorkspaces(workspaces ...*workspace.Workspace) fakeOption {
 	return func(c *fakeClient) {
 		c.workspaces = workspaces
@@ -61,6 +67,7 @@ func withTarball(tarball []byte) fakeOption {
 type fakeClient struct {
 	organization *organization.Organization
 	user         *auth.User
+	team         *auth.Team
 	workspaces   []*workspace.Workspace
 	run          *run.Run
 	agentToken   *auth.AgentToken
@@ -77,6 +84,18 @@ func (f *fakeClient) CreateUser(context.Context, string, ...auth.NewUserOption) 
 }
 
 func (f *fakeClient) DeleteUser(context.Context, string) error {
+	return nil
+}
+
+func (f *fakeClient) CreateTeam(context.Context, auth.NewTeamOptions) (*auth.Team, error) {
+	return f.team, nil
+}
+
+func (f *fakeClient) GetTeam(context.Context, string, string) (*auth.Team, error) {
+	return f.team, nil
+}
+
+func (f *fakeClient) DeleteTeam(context.Context, string) error {
 	return nil
 }
 

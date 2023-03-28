@@ -42,6 +42,51 @@ func (c *Client) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
+// CreateTeam creates a team via HTTP/JSONAPI.
+func (c *Client) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
+	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
+	req, err := c.NewRequest("POST", u, &jsonapi.CreateTeamOptions{
+		Name: otf.String(opts.Name),
+	})
+	if err != nil {
+		return nil, err
+	}
+	team := &jsonapi.Team{}
+	err = c.Do(ctx, req, team)
+	if err != nil {
+		return nil, err
+	}
+	return &Team{ID: team.ID, Name: team.Name}, nil
+}
+
+// GetTeam retrieves a team via HTTP/JSONAPI.
+func (c *Client) GetTeam(ctx context.Context, organization, name string) (*Team, error) {
+	u := fmt.Sprintf("organizations/%s/teams/%s", url.QueryEscape(organization), url.QueryEscape(name))
+	req, err := c.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+	team := &jsonapi.Team{}
+	err = c.Do(ctx, req, team)
+	if err != nil {
+		return nil, err
+	}
+	return &Team{ID: team.ID, Name: team.Name}, nil
+}
+
+// DeleteTeam deletes a team via HTTP/JSONAPI.
+func (c *Client) DeleteTeam(ctx context.Context, id string) error {
+	u := fmt.Sprintf("teams/%s", url.QueryEscape(id))
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 // CreateRegistrySession creates a registry session via HTTP/JSONAPI
 func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) (*RegistrySession, error) {
 	req, err := c.NewRequest("POST", "registry/sessions/create", &jsonapi.RegistrySessionCreateOptions{
