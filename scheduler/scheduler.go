@@ -92,7 +92,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	defer cancel()
 
 	// subscribe to run events and workspace unlock events
-	sub, err := s.Subscribe(ctx, "scheduler")
+	sub, err := s.Subscribe(ctx, "scheduler-")
 	if err != nil {
 		return err
 	}

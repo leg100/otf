@@ -329,10 +329,7 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Even
 		return nil, err
 	}
 
-	if opts.Name == nil {
-		opts.Name = otf.String("watch-" + otf.GenerateRandomString(6))
-	}
-	sub, err := s.Subscribe(ctx, *opts.Name)
+	sub, err := s.Subscribe(ctx, "run-watch-")
 	if err != nil {
 		return nil, err
 	}

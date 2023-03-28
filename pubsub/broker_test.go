@@ -20,7 +20,7 @@ func TestBroker_Subscribe(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	sub, err := broker.Subscribe(ctx, "sub-1")
+	sub, err := broker.Subscribe(ctx, "")
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(broker.subs))

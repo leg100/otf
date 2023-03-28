@@ -82,7 +82,7 @@ func (r *reporter) start(ctx context.Context) error {
 	defer cancel()
 
 	// subscribe to run events
-	sub, err := r.Subscribe(ctx, "reporter")
+	sub, err := r.Subscribe(ctx, "reporter-")
 	if err != nil {
 		return err
 	}

@@ -137,10 +137,14 @@ func (b *broker) Publish(event otf.Event) {
 	}
 }
 
-// Subscribe subscribes the caller to a stream of events.
-func (b *broker) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
+// Subscribe subscribes the caller to a stream of events. Prefix is an
+// identifier prefixed to a random string to helpfully identify the subscriber
+// in metrics.
+func (b *broker) Subscribe(ctx context.Context, prefix string) (<-chan otf.Event, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
+	name := prefix + otf.GenerateRandomString(4)
 
 	sub := make(chan otf.Event, subBufferSize)
 	if _, ok := b.subs[name]; ok {

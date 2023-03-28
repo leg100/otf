@@ -46,7 +46,7 @@ func (p *proxy) Start(ctx context.Context) error {
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
 	// it may have missed updates, potentially rendering the cache stale.
-	sub, err := p.Subscribe(ctx, "chunk-proxy-"+otf.GenerateRandomString(4))
+	sub, err := p.Subscribe(ctx, "chunk-proxy-")
 	if err != nil {
 		return err
 	}

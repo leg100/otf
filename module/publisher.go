@@ -31,7 +31,7 @@ type (
 func StartPublisher(ctx context.Context, opts PublisherOptions) error {
 	opts.V(2).Info("started module publisher")
 
-	sub, err := opts.Subscribe(ctx, "module-publisher")
+	sub, err := opts.Subscribe(ctx, "module-publisher-")
 	if err != nil {
 		return err
 	}

@@ -34,7 +34,7 @@ func TestCompleteRun(t *testing.T) {
 	terminated := make(chan error)
 	go func() { terminated <- g.Wait() }()
 
-	sub, err := svc.Subscribe(ctx, "test-complete-run")
+	sub, err := svc.Subscribe(ctx, "")
 	require.NoError(t, err)
 
 	ws := svc.createWorkspace(t, ctx, nil)

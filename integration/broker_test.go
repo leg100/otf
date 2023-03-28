@@ -32,9 +32,9 @@ func TestBroker(t *testing.T) {
 	local.Broker.WaitUntilListening()
 	remote.Broker.WaitUntilListening()
 
-	localsub, err := local.Subscribe(ctx, "local-sub")
+	localsub, err := local.Subscribe(ctx, "")
 	require.NoError(t, err)
-	remotesub, err := remote.Subscribe(ctx, "remote-sub")
+	remotesub, err := remote.Subscribe(ctx, "")
 	require.NoError(t, err)
 
 	// sends event via local broker

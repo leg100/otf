@@ -115,7 +115,7 @@ func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub, err := s.Subscribe(ctx, "tail-"+otf.GenerateRandomString(6))
+	sub, err := s.Subscribe(ctx, "tail-")
 	if err != nil {
 		return nil, err
 	}

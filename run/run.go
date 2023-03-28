@@ -104,9 +104,6 @@ type (
 
 	// WatchOptions filters events returned by the Watch endpoint.
 	WatchOptions struct {
-		// Name to uniquely describe the watcher. If not provided then a
-		// name will be auto generated.
-		Name         *string `schema:"name,omitempty"`
 		Organization *string `schema:"organization_name,omitempty"` // filter by organization name
 		WorkspaceID  *string `schema:"workspace_id,omitempty"`      // filter by workspace ID; mutually exclusive with organization filter
 	}
