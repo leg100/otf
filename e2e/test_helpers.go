@@ -30,13 +30,14 @@ var successfullyConnectedRegex = regexp.MustCompile("stream update.*successfully
 
 // setup dependencies for a test and return names for the org and workspace
 func setup(t *testing.T) (org string, workspace string) {
+	t.Helper()
+
 	addBuildsToPath(t)
 
 	// instruct terraform and otfd-agent to trust the self-signed cert
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	t.Setenv("SSL_CERT_DIR", path.Join(wd, "./fixtures"))
-	t.Logf("SSL_CERT_DIR=%s", os.Getenv("SSL_CERT_DIR"))
 
 	// return unique name for org, and use the test name for the workspace name
 	return uuid.NewString(), t.Name()

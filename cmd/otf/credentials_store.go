@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
 )
 
@@ -17,17 +16,19 @@ const (
 	CredentialsPath = ".terraform.d/credentials.tfrc.json"
 )
 
-// CredentialsStore is a JSON file in a user's home dir that stores tokens for
-// one or more TFE-type hosts
-type CredentialsStore string
+type (
+	// CredentialsStore is a JSON file in a user's home dir that stores tokens for
+	// one or more TFE-type hosts
+	CredentialsStore string
 
-type CredentialsConfig struct {
-	Credentials map[string]TokenConfig `json:"credentials"`
-}
+	CredentialsConfig struct {
+		Credentials map[string]TokenConfig `json:"credentials"`
+	}
 
-type TokenConfig struct {
-	Token string `json:"token"`
-}
+	TokenConfig struct {
+		Token string `json:"token"`
+	}
+)
 
 // NewCredentialsStore is a contructor for CredentialsStore
 func NewCredentialsStore() (CredentialsStore, error) {
@@ -46,15 +47,6 @@ func (c CredentialsStore) Load(hostname string) (string, error) {
 	hostname, err := http.SanitizeHostname(hostname)
 	if err != nil {
 		return "", err
-	}
-
-	// TF v1.2.0 and later supports environment variables:
-	//
-	// https://developer.hashicorp.com/terraform/cli/config/config-file#environment-variable-credentials
-	//
-	// They take precendence over reading from file.
-	if token, ok := os.LookupEnv(otf.HostnameCredentialEnv(hostname)); ok {
-		return token, nil
 	}
 
 	config, err := c.read()
@@ -123,22 +115,6 @@ func (c CredentialsStore) write(config *CredentialsConfig) error {
 	}
 
 	if err := os.WriteFile(string(c), data, 0o600); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// LoadCredentials is passed as an arg to http.NewClient to instruct it to load
-// the auth token from the credentials store.
-func LoadCredentials(cfg *http.Config) error {
-	creds, err := NewCredentialsStore()
-	if err != nil {
-		return err
-	}
-
-	cfg.Token, err = creds.Load(cfg.Address)
-	if err != nil {
 		return err
 	}
 

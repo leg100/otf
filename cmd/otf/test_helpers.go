@@ -17,7 +17,7 @@ func fakeApp(opts ...fakeOption) *application {
 	for _, fn := range opts {
 		fn(&client)
 	}
-	return &application{&client}
+	return &application{&client, ""}
 }
 
 type fakeOption func(*fakeClient)
@@ -25,6 +25,12 @@ type fakeOption func(*fakeClient)
 func withOrganization(org *organization.Organization) fakeOption {
 	return func(c *fakeClient) {
 		c.organization = org
+	}
+}
+
+func withUser(user *auth.User) fakeOption {
+	return func(c *fakeClient) {
+		c.user = user
 	}
 }
 
@@ -54,6 +60,7 @@ func withTarball(tarball []byte) fakeOption {
 
 type fakeClient struct {
 	organization *organization.Organization
+	user         *auth.User
 	workspaces   []*workspace.Workspace
 	run          *run.Run
 	agentToken   *auth.AgentToken
@@ -63,6 +70,14 @@ type fakeClient struct {
 
 func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error) {
 	return f.organization, nil
+}
+
+func (f *fakeClient) CreateUser(context.Context, string, ...auth.NewUserOption) (*auth.User, error) {
+	return f.user, nil
+}
+
+func (f *fakeClient) DeleteUser(context.Context, string) error {
+	return nil
 }
 
 func (f *fakeClient) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {

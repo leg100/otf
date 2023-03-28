@@ -279,14 +279,13 @@ func (s *Services) NewAgent(logger logr.Logger) (daemon, error) {
 	return agent.NewAgent(
 		logger.WithValues("component", "agent"),
 		client.LocalClient{
-			AgentTokenService:           s.AuthService,
+			AuthService:                 s.AuthService,
 			WorkspaceService:            s.WorkspaceService,
 			OrganizationService:         s.OrganizationService,
 			VariableService:             s.VariableService,
 			StateService:                s.StateService,
 			HostnameService:             s.HostnameService,
 			ConfigurationVersionService: s.ConfigurationVersionService,
-			RegistrySessionService:      s.AuthService,
 			RunService:                  s.RunService,
 			LogsService:                 s.LogsService,
 		},

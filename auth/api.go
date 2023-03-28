@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
 )
 
@@ -26,9 +27,42 @@ func (h *api) addHandlers(r *mux.Router) {
 
 	// User routes
 	r.HandleFunc("/account/details", h.getCurrentUser).Methods("GET")
+	r.HandleFunc("/admin/users", h.createUser).Methods("POST")
+	r.HandleFunc("/admin/users/{username}", h.deleteUser).Methods("DELETE")
 }
 
 // User routes
+
+func (h *api) createUser(w http.ResponseWriter, r *http.Request) {
+	var params jsonapi.CreateUserOptions
+	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	user, err := h.svc.CreateUser(r.Context(), *params.Username)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+
+	jsonapi.WriteResponse(w, r, &jsonapi.User{ID: user.ID, Username: user.Username}, jsonapi.WithCode(http.StatusCreated))
+}
+
+func (h *api) deleteUser(w http.ResponseWriter, r *http.Request) {
+	username, err := decode.Param("username", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := h.svc.DeleteUser(r.Context(), username); err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
 
 func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user, err := userFromContext(r.Context())

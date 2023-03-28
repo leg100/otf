@@ -31,10 +31,7 @@ func run(ctx context.Context, args []string) error {
 		cfg       *agent.Config
 	)
 
-	clientCfg, err := http.NewConfig()
-	if err != nil {
-		return err
-	}
+	clientCfg := http.NewConfig()
 
 	cmd := &cobra.Command{
 		Use:           "otf-agent",
@@ -83,7 +80,7 @@ func run(ctx context.Context, args []string) error {
 	// otfd.
 	cfg.External = true
 
-	if err = cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
+	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
 	}
 
