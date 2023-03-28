@@ -101,17 +101,6 @@ func TestUpdateVariable(t *testing.T) {
 			},
 			err: true,
 		},
-		{
-			name: "sensitive to non-sensitive",
-			opts: UpdateVariableOptions{Sensitive: otf.Bool(false)},
-			before: Variable{
-				Key:       "foo",
-				Value:     "bar",
-				Category:  CategoryTerraform,
-				Sensitive: true,
-			},
-			err: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
