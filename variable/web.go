@@ -56,7 +56,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) create(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		Key         *string `schema:"key,required"`
 		Value       *string
 		Description *string
@@ -65,7 +65,6 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		HCL         bool
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -147,36 +146,63 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *web) update(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Key         *string `schema:"key,required"`
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	variable, err := h.svc.GetVariable(r.Context(), variableID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Handle updates to sensitive variables in a separate handler.
+	if variable.Sensitive {
+		h.updateSensitive(w, r, variable)
+		return
+	}
+
+	var params struct {
+		Key         *string
 		Value       *string
 		Description *string
-		Category    *VariableCategory `schema:"category,required"`
-		Sensitive   bool
-		HCL         bool
-		VariableID  string `schema:"variable_id,required"`
+		Category    *VariableCategory
+		Sensitive   *bool // form checkbox can only be true/false, not nil
+		HCL         *bool // form checkbox can only be true/false, not nil
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	// sensitive variable's value form field is deliberately empty, so avoid
-	// updating value with empty string (this does mean users cannot set
-	// a sensitive variable's value to an empty string but there unlikely to be
-	// a valid reason to want to do that...)
-	if params.Sensitive && params.Value != nil && *params.Value == "" {
-		params.Value = nil
-	}
-
-	variable, err := h.svc.UpdateVariable(r.Context(), params.VariableID, UpdateVariableOptions{
+	variable, err = h.svc.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
 		Category:    params.Category,
-		Sensitive:   &params.Sensitive,
-		HCL:         &params.HCL,
+		Sensitive:   params.Sensitive,
+		HCL:         params.HCL,
+	})
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "updated variable: "+variable.Key)
+	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
+}
+
+func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *Variable) {
+	value, err := decode.Param("value", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	variable, err = h.svc.UpdateVariable(r.Context(), variable.ID, UpdateVariableOptions{
+		Value: otf.String(value),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
