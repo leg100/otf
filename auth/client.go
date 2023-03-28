@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
@@ -9,6 +11,35 @@ import (
 
 type Client struct {
 	otf.JSONAPIClient
+}
+
+// CreateUser creates a user via HTTP/JSONAPI. Options are ignored.
+func (c *Client) CreateUser(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
+	req, err := c.NewRequest("POST", "admin/users", &jsonapi.CreateUserOptions{
+		Username: otf.String(username),
+	})
+	if err != nil {
+		return nil, err
+	}
+	user := &jsonapi.User{}
+	err = c.Do(ctx, req, user)
+	if err != nil {
+		return nil, err
+	}
+	return &User{ID: user.ID, Username: user.Username}, nil
+}
+
+// DeleteUser deletes a user via HTTP/JSONAPI.
+func (c *Client) DeleteUser(ctx context.Context, username string) error {
+	u := fmt.Sprintf("admin/users/%s", url.QueryEscape(username))
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateRegistrySession creates a registry session via HTTP/JSONAPI

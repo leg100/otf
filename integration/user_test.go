@@ -93,7 +93,7 @@ func TestUser(t *testing.T) {
 		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 
-		err := svc.DeleteUser(ctx, user.ID)
+		err := svc.DeleteUser(ctx, user.Username)
 		require.NoError(t, err)
 
 		_, err = svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})

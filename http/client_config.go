@@ -24,11 +24,11 @@ type RetryLogHook func(attemptNum int, resp *http.Response)
 
 // Config provides configuration details to the API client.
 type Config struct {
-	// The address of the Terraform Enterprise API.
+	// The address of the otf API.
 	Address string
 	// The base path on which the API is served.
 	BasePath string
-	// API token used to access the Terraform Enterprise API.
+	// API token used to access the otf API.
 	Token string
 	// Headers that will be added to every request.
 	Headers http.Header
@@ -47,7 +47,7 @@ type ConfigOption func(*Config) error
 
 // NewConfig constructs a new http client config. Options are only applied when
 // NewClient() is called.
-func NewConfig(opts ...ConfigOption) (*Config, error) {
+func NewConfig(opts ...ConfigOption) *Config {
 	config := &Config{
 		Address:    os.Getenv("TFE_ADDRESS"),
 		BasePath:   DefaultBasePath,
@@ -62,7 +62,7 @@ func NewConfig(opts ...ConfigOption) (*Config, error) {
 	}
 	// Set the default user agent.
 	config.Headers.Set("User-Agent", userAgent)
-	return config, nil
+	return config
 }
 
 type rawAPIMetadata struct {

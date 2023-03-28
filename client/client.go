@@ -61,6 +61,9 @@ type (
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 
+		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
+		DeleteUser(ctx context.Context, username string) error
+
 		Hostname() string
 
 		otf.PutChunkService
@@ -69,13 +72,12 @@ type (
 
 	LocalClient struct {
 		organization.OrganizationService
-		auth.AgentTokenService
+		auth.AuthService
 		variable.VariableService
 		state.StateService
 		workspace.WorkspaceService
 		otf.HostnameService
 		configversion.ConfigurationVersionService
-		auth.RegistrySessionService
 		run.RunService
 		logs.LogsService
 	}

@@ -76,14 +76,14 @@ func (a *service) RemoveOrganizationMembership(ctx context.Context, userID, orga
 	return nil
 }
 
-func (a *service) DeleteUser(ctx context.Context, userID string) error {
-	err := a.db.DeleteUser(ctx, UserSpec{UserID: otf.String(userID)})
+func (a *service) DeleteUser(ctx context.Context, username string) error {
+	err := a.db.DeleteUser(ctx, UserSpec{Username: otf.String(username)})
 	if err != nil {
-		a.V(2).Info("deleting user", "id", userID)
+		a.V(2).Info("deleting user", "username", username)
 		return err
 	}
 
-	a.V(2).Info("deleted user", "id", userID)
+	a.V(2).Info("deleted user", "username", username)
 
 	return nil
 }
