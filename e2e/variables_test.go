@@ -131,6 +131,19 @@ output "foo" {
 			screenshot(t),
 			// confirm value is hidden (because it is sensitive)
 			matchText(t, `//table[@class='variables']/tbody/tr/td[2]`, "hidden"),
+			// edit variable again
+			chromedp.Click(`//a[text()='foo']`, chromedp.NodeVisible),
+			screenshot(t),
+			// update value
+			chromedp.Focus("textarea#value", chromedp.NodeVisible),
+			input.InsertText("topsecret"),
+			screenshot(t),
+			// submit form
+			chromedp.Click(`//button[text()='Save variable']`, chromedp.NodeVisible),
+			screenshot(t),
+			// confirm variable updated
+			matchText(t, ".flash-success", "updated variable: foo"),
+			screenshot(t),
 			// delete variable
 			chromedp.Click(`//button[text()='Delete']`, chromedp.NodeVisible),
 			screenshot(t),

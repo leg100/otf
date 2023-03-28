@@ -17,7 +17,7 @@ func TestVariable_Update(t *testing.T) {
 	tests := []struct {
 		name     string
 		existing CreateVariableOptions
-		form     url.Values
+		updated  url.Values
 		want     func(t *testing.T, got *Variable)
 	}{
 		{
@@ -27,7 +27,7 @@ func TestVariable_Update(t *testing.T) {
 				Value:    otf.String("bar"),
 				Category: VariableCategoryPtr(CategoryTerraform),
 			},
-			form: url.Values{
+			updated: url.Values{
 				"key":       {"new-key"},
 				"value":     {"new-value"},
 				"category":  {"env"},
@@ -43,21 +43,18 @@ func TestVariable_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "skip sensitive variable empty value",
+			name: "update sensitive value",
 			existing: CreateVariableOptions{
-				Key:      otf.String("foo"),
-				Value:    otf.String("bar"),
-				Category: VariableCategoryPtr(CategoryTerraform),
+				Key:       otf.String("foo"),
+				Value:     otf.String("topsecret"),
+				Category:  VariableCategoryPtr(CategoryTerraform),
+				Sensitive: otf.Bool(true),
 			},
-			form: url.Values{
-				"key":       {"foo"},
-				"value":     {""},
-				"sensitive": {"on"},
-				"category":  {"terraform"},
+			updated: url.Values{
+				"value": {"evenmoretopsecret"},
 			},
 			want: func(t *testing.T, got *Variable) {
-				// should get original value
-				assert.Equal(t, "bar", got.Value)
+				assert.Equal(t, "evenmoretopsecret", got.Value)
 			},
 		},
 	}
@@ -66,13 +63,13 @@ func TestVariable_Update(t *testing.T) {
 			// create existing variable for test to update
 			v := NewTestVariable(t, "ws-123", tt.existing)
 
-			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.form.Encode()))
+			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.updated.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
 			fakeHTMLApp(t, v).update(w, r)
 
-			if assert.Equal(t, 302, w.Code) {
+			if assert.Equal(t, 302, w.Code, "got body: %s", w.Body.String()) {
 				redirect, err := w.Result().Location()
 				require.NoError(t, err)
 				assert.Equal(t, paths.Variables(v.WorkspaceID), redirect.Path)
