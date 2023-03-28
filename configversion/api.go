@@ -152,8 +152,10 @@ func (s *api) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.
 func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
-	var payload any
-	var err error
+	var (
+		payload any
+		err     error
+	)
 
 	switch v := v.(type) {
 	case *ConfigurationVersionList:

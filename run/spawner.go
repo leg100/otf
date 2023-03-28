@@ -63,10 +63,12 @@ func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
 }
 
 func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
-	var repoID uuid.UUID
-	var isPullRequest bool
-	var branch, defaultBranch string
-	var sha string
+	var (
+		repoID                uuid.UUID
+		isPullRequest         bool
+		branch, defaultBranch string
+		sha                   string
+	)
 
 	switch event := event.(type) {
 	case cloud.VCSPushEvent:

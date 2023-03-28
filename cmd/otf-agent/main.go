@@ -26,8 +26,10 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	var loggerCfg *cmdutil.LoggerConfig
-	var cfg *agent.Config
+	var (
+		loggerCfg *cmdutil.LoggerConfig
+		cfg       *agent.Config
+	)
 
 	clientCfg, err := http.NewConfig()
 	if err != nil {

@@ -21,8 +21,10 @@ type Client struct {
 }
 
 func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
-	var err error
-	var client *gitlab.Client
+	var (
+		client *gitlab.Client
+		err    error
+	)
 
 	baseURL := (&url.URL{Scheme: "https", Host: cfg.Hostname}).String()
 

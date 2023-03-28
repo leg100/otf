@@ -187,8 +187,10 @@ func (s *service) GetByID(ctx context.Context, runID string) (any, error) {
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
 func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
-	var subject otf.Subject
-	var authErr error
+	var (
+		subject otf.Subject
+		authErr error
+	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {
 		workspace, err := s.GetWorkspaceByName(ctx, *opts.Organization, *opts.WorkspaceName)
 		if err != nil {

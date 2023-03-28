@@ -111,8 +111,10 @@ func (r *reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	var status cloud.VCSStatus
-	var description string
+	var (
+		status      cloud.VCSStatus
+		description string
+	)
 	switch run.Status {
 	case otf.RunPending, otf.RunPlanQueued, otf.RunApplyQueued:
 		status = cloud.VCSPendingStatus

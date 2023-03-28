@@ -21,8 +21,10 @@ type Client struct {
 }
 
 func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
-	var err error
-	var client *github.Client
+	var (
+		client *github.Client
+		err    error
+	)
 
 	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {

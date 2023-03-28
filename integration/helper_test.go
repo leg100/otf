@@ -46,8 +46,10 @@ type (
 
 // TestMain starts a postgres container before invoking the integration tests
 func TestMain(t *testing.M) {
-	var container *postgres.PostgresContainer
-	var err error
+	var (
+		container *postgres.PostgresContainer
+		err       error
+	)
 	// spin up pg container for duration of tests
 	sharedDB, container, err = sql.NewContainer()
 	if err != nil {

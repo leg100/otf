@@ -167,8 +167,10 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 }
 
 func (a *application) workspaceUnlockCommand() *cobra.Command {
-	var organization string
-	var force bool
+	var (
+		organization string
+		force        bool
+	)
 
 	cmd := &cobra.Command{
 		Use:           "unlock [name]",

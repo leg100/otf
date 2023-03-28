@@ -305,8 +305,10 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.
 func (a *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
-	var payload any
-	var err error
+	var (
+		payload any
+		err     error
+	)
 
 	switch v := v.(type) {
 	case *WorkspaceList:
