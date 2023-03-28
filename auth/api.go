@@ -29,6 +29,11 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/account/details", h.getCurrentUser).Methods("GET")
 	r.HandleFunc("/admin/users", h.createUser).Methods("POST")
 	r.HandleFunc("/admin/users/{username}", h.deleteUser).Methods("DELETE")
+
+	// Team routes
+	r.HandleFunc("/organizations/{organization_name}/teams", h.createTeam).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/teams/{team_name}", h.getTeam).Methods("GET")
+	r.HandleFunc("/teams/{team_id}", h.deleteTeam).Methods("DELETE")
 }
 
 // User routes
@@ -71,6 +76,67 @@ func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonapi.WriteResponse(w, r, &jsonapi.User{ID: user.ID, Username: user.Username})
+}
+
+// Team routes
+
+func (h *api) createTeam(w http.ResponseWriter, r *http.Request) {
+	var params jsonapi.CreateTeamOptions
+	if err := decode.Route(&params, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	team, err := h.svc.CreateTeam(r.Context(), NewTeamOptions{
+		Name:         *params.Name,
+		Organization: *params.Organization,
+	})
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+
+	jsonapi.WriteResponse(w, r,
+		&jsonapi.Team{ID: team.ID, Name: team.Name},
+		jsonapi.WithCode(http.StatusCreated))
+}
+
+func (h *api) getTeam(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Organization *string `schema:"organization_name,required"`
+		Name         *string `schema:"team_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	team, err := h.svc.GetTeam(r.Context(), *params.Organization, *params.Name)
+	if err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+
+	jsonapi.WriteResponse(w, r, &jsonapi.Team{ID: team.ID, Name: team.Name})
+}
+
+func (h *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("team_id", r)
+	if err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := h.svc.DeleteTeam(r.Context(), id); err != nil {
+		jsonapi.Error(w, http.StatusNotFound, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // Registry session routes

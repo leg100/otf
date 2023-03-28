@@ -64,6 +64,10 @@ type (
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error
 
+		CreateTeam(ctx context.Context, opts auth.NewTeamOptions) (*auth.Team, error)
+		GetTeam(ctx context.Context, organization, team string) (*auth.Team, error)
+		DeleteTeam(ctx context.Context, teamID string) error
+
 		Hostname() string
 
 		otf.PutChunkService
