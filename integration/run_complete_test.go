@@ -15,13 +15,15 @@ import (
 
 // TestCompleteRun tests a terraform run from start to finish.
 func TestCompleteRun(t *testing.T) {
+	t.Parallel()
+
+	db, _ := sql.NewTestDB(t)
+	svc := setup(t, &config{db: db})
+
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	db, _ := sql.NewTestDB(t)
-	svc := setup(t, &config{db: db})
 
 	agent, err := svc.NewAgent(logr.Discard())
 	require.NoError(t, err)
