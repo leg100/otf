@@ -130,15 +130,17 @@ func TestLogs(t *testing.T) {
 
 // TestClusterLogs tests the relaying of logs across a cluster of otfd nodes.
 func TestClusterLogs(t *testing.T) {
-	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
-	ctx, cancel := context.WithCancel(ctx)
-	t.Cleanup(func() { cancel() })
+	t.Parallel()
 
 	// simulate a cluster of two otfd nodes
 	db, _ := sql.NewTestDB(t)
 	local := setup(t, &config{db: db})
 	remote := setup(t, &config{db: db})
+
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(func() { cancel() })
 
 	// start broker and caching proxy for each node
 	done := make(chan error)

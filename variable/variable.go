@@ -154,7 +154,7 @@ func (v *Variable) Update(opts UpdateVariableOptions) error {
 	}
 	if opts.HCL != nil {
 		if v.Sensitive {
-			return errors.New("toggling HCL mode on a sensitive variable is not allowed")
+			return errors.New("changing HCL mode on a sensitive variable is not allowed")
 		}
 		v.HCL = *opts.HCL
 	}
