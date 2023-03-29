@@ -19,8 +19,8 @@ func TestSession(t *testing.T) {
 		svc := setup(t, nil)
 		user := svc.createUser(t, ctx)
 		_, err := svc.CreateSession(ctx, auth.CreateSessionOptions{
-			Request: httptest.NewRequest("", "/", nil),
-			UserID:  &user.ID,
+			Request:  httptest.NewRequest("", "/", nil),
+			Username: &user.Username,
 		})
 		require.NoError(t, err)
 	})
@@ -42,7 +42,7 @@ func TestSession(t *testing.T) {
 		session2 := svc.createSession(t, ctx, user, nil)
 
 		// Retrieve all sessions
-		sessions, err := svc.ListSessions(ctx, user.ID)
+		sessions, err := svc.ListSessions(ctx, user.Username)
 		require.NoError(t, err)
 
 		assert.Contains(t, sessions, session1)

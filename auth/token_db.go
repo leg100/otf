@@ -13,14 +13,14 @@ func (db *pgdb) CreateToken(ctx context.Context, token *Token) error {
 		TokenID:     sql.String(token.ID),
 		Token:       sql.String(token.Token),
 		Description: sql.String(token.Description),
-		UserID:      sql.String(token.UserID),
+		Username:    sql.String(token.Username),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
 	})
 	return err
 }
 
-func (db *pgdb) ListTokens(ctx context.Context, userID string) ([]*Token, error) {
-	result, err := db.FindTokensByUserID(ctx, sql.String(userID))
+func (db *pgdb) ListTokens(ctx context.Context, username string) ([]*Token, error) {
+	result, err := db.FindTokensByUsername(ctx, sql.String(username))
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (db *pgdb) ListTokens(ctx context.Context, userID string) ([]*Token, error)
 			CreatedAt:   row.CreatedAt.Time,
 			Token:       row.Token.String,
 			Description: row.Description.String,
-			UserID:      row.UserID.String,
+			Username:    row.Username.String,
 		})
 	}
 	return tokens, nil
@@ -47,7 +47,7 @@ func (db *pgdb) GetToken(ctx context.Context, id string) (*Token, error) {
 		CreatedAt:   row.CreatedAt.Time,
 		Token:       row.Token.String,
 		Description: row.Description.String,
-		UserID:      row.UserID.String,
+		Username:    row.Username.String,
 	}, nil
 }
 

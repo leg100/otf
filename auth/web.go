@@ -109,7 +109,7 @@ func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) 
 
 	session, err := h.svc.CreateSession(r.Context(), CreateSessionOptions{
 		Request: r,
-		UserID:  otf.String(otf.SiteAdminID),
+		Username:  otf.String(otf.SiteAdminID),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

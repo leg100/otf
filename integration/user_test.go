@@ -105,7 +105,7 @@ func TestUser(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 		user := svc.createUser(t, ctx)
 
-		err := svc.AddOrganizationMembership(ctx, user.ID, org.Name)
+		err := svc.AddOrganizationMembership(ctx, user.Username, org.Name)
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
@@ -119,7 +119,7 @@ func TestUser(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
 
-		err := svc.RemoveOrganizationMembership(ctx, user.ID, org.Name)
+		err := svc.RemoveOrganizationMembership(ctx, user.Username, org.Name)
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
@@ -134,7 +134,7 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
 
-		err := svc.AddTeamMembership(ctx, user.ID, team.ID)
+		err := svc.AddTeamMembership(ctx, user.Username, team.ID)
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
@@ -149,7 +149,7 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name), auth.WithTeams(team))
 
-		err := svc.RemoveTeamMembership(ctx, user.ID, team.ID)
+		err := svc.RemoveTeamMembership(ctx, user.Username, team.ID)
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})

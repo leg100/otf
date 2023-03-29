@@ -23,7 +23,7 @@ func (a *service) CreateToken(ctx context.Context, opts *TokenCreateOptions) (*T
 		return nil, err
 	}
 
-	token, err := NewToken(user.ID, opts.Description)
+	token, err := NewToken(user.Username, opts.Description)
 	if err != nil {
 		a.Error(err, "constructing token", "user", user)
 		return nil, err
@@ -45,7 +45,7 @@ func (a *service) ListTokens(ctx context.Context) ([]*Token, error) {
 		return nil, err
 	}
 
-	return a.db.ListTokens(ctx, user.ID)
+	return a.db.ListTokens(ctx, user.Username)
 }
 
 func (a *service) DeleteToken(ctx context.Context, tokenID string) error {
@@ -60,7 +60,7 @@ func (a *service) DeleteToken(ctx context.Context, tokenID string) error {
 		return err
 	}
 
-	if user.ID != token.UserID {
+	if user.Username != token.Username {
 		return otf.ErrAccessNotPermitted
 	}
 

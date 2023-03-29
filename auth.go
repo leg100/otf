@@ -19,9 +19,9 @@ type Session interface {
 
 type SessionService interface {
 	// CreateSession creates a user session.
-	CreateSession(r *http.Request, userID string) (Session, error)
+	CreateSession(r *http.Request, username string) (Session, error)
 	// ListSessions lists current sessions for a user
-	ListSessions(ctx context.Context, userID string) ([]Session, error)
+	ListSessions(ctx context.Context, username string) ([]Session, error)
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
 }

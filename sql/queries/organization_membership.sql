@@ -1,9 +1,9 @@
 -- name: InsertOrganizationMembership :exec
 INSERT INTO organization_memberships (
-    user_id,
+    username,
     organization_name
 ) VALUES (
-    pggen.arg('user_id'),
+    pggen.arg('username'),
     pggen.arg('organization_name')
 )
 ;
@@ -11,7 +11,7 @@ INSERT INTO organization_memberships (
 -- name: DeleteOrganizationMembership :one
 DELETE
 FROM organization_memberships
-WHERE user_id           = pggen.arg('user_id')
+WHERE username          = pggen.arg('username')
 AND   organization_name = pggen.arg('organization_name')
-RETURNING user_id
+RETURNING username
 ;

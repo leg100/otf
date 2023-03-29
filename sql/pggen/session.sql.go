@@ -16,7 +16,7 @@ const insertSessionSQL = `INSERT INTO sessions (
     created_at,
     address,
     expiry,
-    user_id
+    username
 ) VALUES (
     $1,
     $2,
@@ -30,13 +30,13 @@ type InsertSessionParams struct {
 	CreatedAt pgtype.Timestamptz
 	Address   pgtype.Text
 	Expiry    pgtype.Timestamptz
-	UserID    pgtype.Text
+	Username  pgtype.Text
 }
 
 // InsertSession implements Querier.InsertSession.
 func (q *DBQuerier) InsertSession(ctx context.Context, params InsertSessionParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertSession")
-	cmdTag, err := q.conn.Exec(ctx, insertSessionSQL, params.Token, params.CreatedAt, params.Address, params.Expiry, params.UserID)
+	cmdTag, err := q.conn.Exec(ctx, insertSessionSQL, params.Token, params.CreatedAt, params.Address, params.Expiry, params.Username)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertSession: %w", err)
 	}
@@ -45,7 +45,7 @@ func (q *DBQuerier) InsertSession(ctx context.Context, params InsertSessionParam
 
 // InsertSessionBatch implements Querier.InsertSessionBatch.
 func (q *DBQuerier) InsertSessionBatch(batch genericBatch, params InsertSessionParams) {
-	batch.Queue(insertSessionSQL, params.Token, params.CreatedAt, params.Address, params.Expiry, params.UserID)
+	batch.Queue(insertSessionSQL, params.Token, params.CreatedAt, params.Address, params.Expiry, params.Username)
 }
 
 // InsertSessionScan implements Querier.InsertSessionScan.
@@ -57,64 +57,64 @@ func (q *DBQuerier) InsertSessionScan(results pgx.BatchResults) (pgconn.CommandT
 	return cmdTag, err
 }
 
-const findSessionsByUserIDSQL = `SELECT *
+const findSessionsByUsernameSQL = `SELECT *
 FROM sessions
-WHERE user_id = $1
+WHERE username = $1
 AND   expiry > current_timestamp
 ;`
 
-type FindSessionsByUserIDRow struct {
+type FindSessionsByUsernameRow struct {
 	Token     pgtype.Text        `json:"token"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	Address   pgtype.Text        `json:"address"`
 	Expiry    pgtype.Timestamptz `json:"expiry"`
-	UserID    pgtype.Text        `json:"user_id"`
+	Username  pgtype.Text        `json:"username"`
 }
 
-// FindSessionsByUserID implements Querier.FindSessionsByUserID.
-func (q *DBQuerier) FindSessionsByUserID(ctx context.Context, userID pgtype.Text) ([]FindSessionsByUserIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindSessionsByUserID")
-	rows, err := q.conn.Query(ctx, findSessionsByUserIDSQL, userID)
+// FindSessionsByUsername implements Querier.FindSessionsByUsername.
+func (q *DBQuerier) FindSessionsByUsername(ctx context.Context, username pgtype.Text) ([]FindSessionsByUsernameRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindSessionsByUsername")
+	rows, err := q.conn.Query(ctx, findSessionsByUsernameSQL, username)
 	if err != nil {
-		return nil, fmt.Errorf("query FindSessionsByUserID: %w", err)
+		return nil, fmt.Errorf("query FindSessionsByUsername: %w", err)
 	}
 	defer rows.Close()
-	items := []FindSessionsByUserIDRow{}
+	items := []FindSessionsByUsernameRow{}
 	for rows.Next() {
-		var item FindSessionsByUserIDRow
-		if err := rows.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.UserID); err != nil {
-			return nil, fmt.Errorf("scan FindSessionsByUserID row: %w", err)
+		var item FindSessionsByUsernameRow
+		if err := rows.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.Username); err != nil {
+			return nil, fmt.Errorf("scan FindSessionsByUsername row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindSessionsByUserID rows: %w", err)
+		return nil, fmt.Errorf("close FindSessionsByUsername rows: %w", err)
 	}
 	return items, err
 }
 
-// FindSessionsByUserIDBatch implements Querier.FindSessionsByUserIDBatch.
-func (q *DBQuerier) FindSessionsByUserIDBatch(batch genericBatch, userID pgtype.Text) {
-	batch.Queue(findSessionsByUserIDSQL, userID)
+// FindSessionsByUsernameBatch implements Querier.FindSessionsByUsernameBatch.
+func (q *DBQuerier) FindSessionsByUsernameBatch(batch genericBatch, username pgtype.Text) {
+	batch.Queue(findSessionsByUsernameSQL, username)
 }
 
-// FindSessionsByUserIDScan implements Querier.FindSessionsByUserIDScan.
-func (q *DBQuerier) FindSessionsByUserIDScan(results pgx.BatchResults) ([]FindSessionsByUserIDRow, error) {
+// FindSessionsByUsernameScan implements Querier.FindSessionsByUsernameScan.
+func (q *DBQuerier) FindSessionsByUsernameScan(results pgx.BatchResults) ([]FindSessionsByUsernameRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindSessionsByUserIDBatch: %w", err)
+		return nil, fmt.Errorf("query FindSessionsByUsernameBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindSessionsByUserIDRow{}
+	items := []FindSessionsByUsernameRow{}
 	for rows.Next() {
-		var item FindSessionsByUserIDRow
-		if err := rows.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.UserID); err != nil {
-			return nil, fmt.Errorf("scan FindSessionsByUserIDBatch row: %w", err)
+		var item FindSessionsByUsernameRow
+		if err := rows.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.Username); err != nil {
+			return nil, fmt.Errorf("scan FindSessionsByUsernameBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindSessionsByUserIDBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindSessionsByUsernameBatch rows: %w", err)
 	}
 	return items, err
 }
@@ -129,7 +129,7 @@ type FindSessionByTokenRow struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	Address   pgtype.Text        `json:"address"`
 	Expiry    pgtype.Timestamptz `json:"expiry"`
-	UserID    pgtype.Text        `json:"user_id"`
+	Username  pgtype.Text        `json:"username"`
 }
 
 // FindSessionByToken implements Querier.FindSessionByToken.
@@ -137,7 +137,7 @@ func (q *DBQuerier) FindSessionByToken(ctx context.Context, token pgtype.Text) (
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindSessionByToken")
 	row := q.conn.QueryRow(ctx, findSessionByTokenSQL, token)
 	var item FindSessionByTokenRow
-	if err := row.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.UserID); err != nil {
+	if err := row.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.Username); err != nil {
 		return item, fmt.Errorf("query FindSessionByToken: %w", err)
 	}
 	return item, nil
@@ -152,7 +152,7 @@ func (q *DBQuerier) FindSessionByTokenBatch(batch genericBatch, token pgtype.Tex
 func (q *DBQuerier) FindSessionByTokenScan(results pgx.BatchResults) (FindSessionByTokenRow, error) {
 	row := results.QueryRow()
 	var item FindSessionByTokenRow
-	if err := row.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.UserID); err != nil {
+	if err := row.Scan(&item.Token, &item.CreatedAt, &item.Address, &item.Expiry, &item.Username); err != nil {
 		return item, fmt.Errorf("scan FindSessionByTokenBatch row: %w", err)
 	}
 	return item, nil

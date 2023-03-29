@@ -4,19 +4,19 @@ INSERT INTO tokens (
     token,
     created_at,
     description,
-    user_id
+    username
 ) VALUES (
     pggen.arg('token_id'),
     pggen.arg('token'),
     pggen.arg('created_at'),
     pggen.arg('description'),
-    pggen.arg('user_id')
+    pggen.arg('username')
 );
 
--- name: FindTokensByUserID :many
+-- name: FindTokensByUsername :many
 SELECT *
 FROM tokens
-WHERE user_id = pggen.arg('user_id')
+WHERE username = pggen.arg('username')
 ;
 
 -- name: FindTokenByID :one

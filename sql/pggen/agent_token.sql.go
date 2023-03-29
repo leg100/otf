@@ -298,20 +298,6 @@ type Querier interface {
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 
-	FindOrganizationsByUserID(ctx context.Context, params FindOrganizationsByUserIDParams) ([]FindOrganizationsByUserIDRow, error)
-	// FindOrganizationsByUserIDBatch enqueues a FindOrganizationsByUserID query into batch to be executed
-	// later by the batch.
-	FindOrganizationsByUserIDBatch(batch genericBatch, params FindOrganizationsByUserIDParams)
-	// FindOrganizationsByUserIDScan scans the result of an executed FindOrganizationsByUserIDBatch query.
-	FindOrganizationsByUserIDScan(results pgx.BatchResults) ([]FindOrganizationsByUserIDRow, error)
-
-	CountOrganizationsByUserID(ctx context.Context, userID pgtype.Text) (*int, error)
-	// CountOrganizationsByUserIDBatch enqueues a CountOrganizationsByUserID query into batch to be executed
-	// later by the batch.
-	CountOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text)
-	// CountOrganizationsByUserIDScan scans the result of an executed CountOrganizationsByUserIDBatch query.
-	CountOrganizationsByUserIDScan(results pgx.BatchResults) (*int, error)
-
 	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
 	// later by the batch.
@@ -333,17 +319,17 @@ type Querier interface {
 	// DeleteOrganizationByNameScan scans the result of an executed DeleteOrganizationByNameBatch query.
 	DeleteOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
+	InsertOrganizationMembership(ctx context.Context, username pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
 	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
 	// later by the batch.
-	InsertOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationName pgtype.Text)
+	InsertOrganizationMembershipBatch(batch genericBatch, username pgtype.Text, organizationName pgtype.Text)
 	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
 	InsertOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
+	DeleteOrganizationMembership(ctx context.Context, username pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
 	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
 	// later by the batch.
-	DeleteOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationName pgtype.Text)
+	DeleteOrganizationMembershipBatch(batch genericBatch, username pgtype.Text, organizationName pgtype.Text)
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
 	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
 
@@ -559,12 +545,12 @@ type Querier interface {
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
 	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindSessionsByUserID(ctx context.Context, userID pgtype.Text) ([]FindSessionsByUserIDRow, error)
-	// FindSessionsByUserIDBatch enqueues a FindSessionsByUserID query into batch to be executed
+	FindSessionsByUsername(ctx context.Context, username pgtype.Text) ([]FindSessionsByUsernameRow, error)
+	// FindSessionsByUsernameBatch enqueues a FindSessionsByUsername query into batch to be executed
 	// later by the batch.
-	FindSessionsByUserIDBatch(batch genericBatch, userID pgtype.Text)
-	// FindSessionsByUserIDScan scans the result of an executed FindSessionsByUserIDBatch query.
-	FindSessionsByUserIDScan(results pgx.BatchResults) ([]FindSessionsByUserIDRow, error)
+	FindSessionsByUsernameBatch(batch genericBatch, username pgtype.Text)
+	// FindSessionsByUsernameScan scans the result of an executed FindSessionsByUsernameBatch query.
+	FindSessionsByUsernameScan(results pgx.BatchResults) ([]FindSessionsByUsernameRow, error)
 
 	FindSessionByToken(ctx context.Context, token pgtype.Text) (FindSessionByTokenRow, error)
 	// FindSessionByTokenBatch enqueues a FindSessionByToken query into batch to be executed
@@ -706,17 +692,17 @@ type Querier interface {
 	// DeleteTeamByIDScan scans the result of an executed DeleteTeamByIDBatch query.
 	DeleteTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error)
+	InsertTeamMembership(ctx context.Context, username pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error)
 	// InsertTeamMembershipBatch enqueues a InsertTeamMembership query into batch to be executed
 	// later by the batch.
-	InsertTeamMembershipBatch(batch genericBatch, userID pgtype.Text, teamID pgtype.Text)
+	InsertTeamMembershipBatch(batch genericBatch, username pgtype.Text, teamID pgtype.Text)
 	// InsertTeamMembershipScan scans the result of an executed InsertTeamMembershipBatch query.
 	InsertTeamMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgtype.Text, error)
+	DeleteTeamMembership(ctx context.Context, username pgtype.Text, teamID pgtype.Text) (pgtype.Text, error)
 	// DeleteTeamMembershipBatch enqueues a DeleteTeamMembership query into batch to be executed
 	// later by the batch.
-	DeleteTeamMembershipBatch(batch genericBatch, userID pgtype.Text, teamID pgtype.Text)
+	DeleteTeamMembershipBatch(batch genericBatch, username pgtype.Text, teamID pgtype.Text)
 	// DeleteTeamMembershipScan scans the result of an executed DeleteTeamMembershipBatch query.
 	DeleteTeamMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
 
@@ -727,12 +713,12 @@ type Querier interface {
 	// InsertTokenScan scans the result of an executed InsertTokenBatch query.
 	InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindTokensByUserID(ctx context.Context, userID pgtype.Text) ([]FindTokensByUserIDRow, error)
-	// FindTokensByUserIDBatch enqueues a FindTokensByUserID query into batch to be executed
+	FindTokensByUsername(ctx context.Context, username pgtype.Text) ([]FindTokensByUsernameRow, error)
+	// FindTokensByUsernameBatch enqueues a FindTokensByUsername query into batch to be executed
 	// later by the batch.
-	FindTokensByUserIDBatch(batch genericBatch, userID pgtype.Text)
-	// FindTokensByUserIDScan scans the result of an executed FindTokensByUserIDBatch query.
-	FindTokensByUserIDScan(results pgx.BatchResults) ([]FindTokensByUserIDRow, error)
+	FindTokensByUsernameBatch(batch genericBatch, username pgtype.Text)
+	// FindTokensByUsernameScan scans the result of an executed FindTokensByUsernameBatch query.
+	FindTokensByUsernameScan(results pgx.BatchResults) ([]FindTokensByUsernameRow, error)
 
 	FindTokenByID(ctx context.Context, tokenID pgtype.Text) (FindTokenByIDRow, error)
 	// FindTokenByIDBatch enqueues a FindTokenByID query into batch to be executed
@@ -958,19 +944,19 @@ type Querier interface {
 	// FindWorkspacesByWebhookIDScan scans the result of an executed FindWorkspacesByWebhookIDBatch query.
 	FindWorkspacesByWebhookIDScan(results pgx.BatchResults) ([]FindWorkspacesByWebhookIDRow, error)
 
-	FindWorkspacesByUserID(ctx context.Context, params FindWorkspacesByUserIDParams) ([]FindWorkspacesByUserIDRow, error)
-	// FindWorkspacesByUserIDBatch enqueues a FindWorkspacesByUserID query into batch to be executed
+	FindWorkspacesByUsername(ctx context.Context, params FindWorkspacesByUsernameParams) ([]FindWorkspacesByUsernameRow, error)
+	// FindWorkspacesByUsernameBatch enqueues a FindWorkspacesByUsername query into batch to be executed
 	// later by the batch.
-	FindWorkspacesByUserIDBatch(batch genericBatch, params FindWorkspacesByUserIDParams)
-	// FindWorkspacesByUserIDScan scans the result of an executed FindWorkspacesByUserIDBatch query.
-	FindWorkspacesByUserIDScan(results pgx.BatchResults) ([]FindWorkspacesByUserIDRow, error)
+	FindWorkspacesByUsernameBatch(batch genericBatch, params FindWorkspacesByUsernameParams)
+	// FindWorkspacesByUsernameScan scans the result of an executed FindWorkspacesByUsernameBatch query.
+	FindWorkspacesByUsernameScan(results pgx.BatchResults) ([]FindWorkspacesByUsernameRow, error)
 
-	CountWorkspacesByUserID(ctx context.Context, organizationName pgtype.Text, userID pgtype.Text) (*int, error)
-	// CountWorkspacesByUserIDBatch enqueues a CountWorkspacesByUserID query into batch to be executed
+	CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (*int, error)
+	// CountWorkspacesByUsernameBatch enqueues a CountWorkspacesByUsername query into batch to be executed
 	// later by the batch.
-	CountWorkspacesByUserIDBatch(batch genericBatch, organizationName pgtype.Text, userID pgtype.Text)
-	// CountWorkspacesByUserIDScan scans the result of an executed CountWorkspacesByUserIDBatch query.
-	CountWorkspacesByUserIDScan(results pgx.BatchResults) (*int, error)
+	CountWorkspacesByUsernameBatch(batch genericBatch, organizationName pgtype.Text, username pgtype.Text)
+	// CountWorkspacesByUsernameScan scans the result of an executed CountWorkspacesByUsernameBatch query.
+	CountWorkspacesByUsernameScan(results pgx.BatchResults) (*int, error)
 
 	FindWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
@@ -1235,12 +1221,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, countOrganizationsSQL, countOrganizationsSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountOrganizations': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findOrganizationsByUserIDSQL, findOrganizationsByUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindOrganizationsByUserID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, countOrganizationsByUserIDSQL, countOrganizationsByUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountOrganizationsByUserID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)
 	}
@@ -1346,8 +1326,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertSession': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findSessionsByUserIDSQL, findSessionsByUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindSessionsByUserID': %w", err)
+	if _, err := p.Prepare(ctx, findSessionsByUsernameSQL, findSessionsByUsernameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindSessionsByUsername': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findSessionByTokenSQL, findSessionByTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindSessionByToken': %w", err)
@@ -1418,8 +1398,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertToken': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findTokensByUserIDSQL, findTokensByUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindTokensByUserID': %w", err)
+	if _, err := p.Prepare(ctx, findTokensByUsernameSQL, findTokensByUsernameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTokensByUsername': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findTokenByIDSQL, findTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTokenByID': %w", err)
@@ -1517,11 +1497,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspacesByWebhookIDSQL, findWorkspacesByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacesByWebhookID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspacesByUserIDSQL, findWorkspacesByUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacesByUserID': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspacesByUsernameSQL, findWorkspacesByUsernameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacesByUsername': %w", err)
 	}
-	if _, err := p.Prepare(ctx, countWorkspacesByUserIDSQL, countWorkspacesByUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountWorkspacesByUserID': %w", err)
+	if _, err := p.Prepare(ctx, countWorkspacesByUsernameSQL, countWorkspacesByUsernameSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountWorkspacesByUsername': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)

@@ -31,13 +31,13 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		switch state := ws.LockedState.(type) {
 		case RunLock:
 			params.RunID = pgtype.Text{String: state.ID, Status: pgtype.Present}
-			params.UserID = pgtype.Text{Status: pgtype.Null}
+			params.Username = pgtype.Text{Status: pgtype.Null}
 		case UserLock:
-			params.UserID = pgtype.Text{String: state.ID, Status: pgtype.Present}
+			params.Username = pgtype.Text{String: state.Username, Status: pgtype.Present}
 			params.RunID = pgtype.Text{Status: pgtype.Null}
 		case nil:
 			params.RunID = pgtype.Text{Status: pgtype.Null}
-			params.UserID = pgtype.Text{Status: pgtype.Null}
+			params.Username = pgtype.Text{Status: pgtype.Null}
 		default:
 			return ErrWorkspaceInvalidLock
 		}

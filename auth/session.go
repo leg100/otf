@@ -27,13 +27,13 @@ type (
 		createdAt time.Time
 
 		// Session belongs to a user
-		userID string
+		username string
 	}
 
 	CreateSessionOptions struct {
-		Request *http.Request
-		UserID  *string
-		Expiry  *time.Time
+		Request  *http.Request
+		Username *string
+		Expiry   *time.Time
 	}
 )
 
@@ -43,8 +43,8 @@ func newSession(opts CreateSessionOptions) (*Session, error) {
 	if opts.Request == nil {
 		return nil, fmt.Errorf("missing HTTP request")
 	}
-	if opts.UserID == nil {
-		return nil, fmt.Errorf("missing user ID")
+	if opts.Username == nil {
+		return nil, fmt.Errorf("missing username")
 	}
 
 	ip, err := otfhttp.GetClientIP(opts.Request)
@@ -65,7 +65,7 @@ func newSession(opts CreateSessionOptions) (*Session, error) {
 		token:     token,
 		address:   ip,
 		expiry:    expiry,
-		userID:    *opts.UserID,
+		username:  *opts.Username,
 	}
 
 	return &session, nil
@@ -74,7 +74,7 @@ func newSession(opts CreateSessionOptions) (*Session, error) {
 func (s *Session) CreatedAt() time.Time { return s.createdAt }
 func (s *Session) ID() string           { return s.token }
 func (s *Session) Token() string        { return s.token }
-func (s *Session) UserID() string       { return s.userID }
+func (s *Session) Username() string     { return s.username }
 func (s *Session) Address() string      { return s.address }
 func (s *Session) Expiry() time.Time    { return s.expiry }
 

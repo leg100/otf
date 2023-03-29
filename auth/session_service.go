@@ -7,7 +7,7 @@ import (
 type sessionService interface {
 	CreateSession(ctx context.Context, opts CreateSessionOptions) (*Session, error)
 	GetSession(ctx context.Context, token string) (*Session, error)
-	ListSessions(ctx context.Context, userID string) ([]*Session, error)
+	ListSessions(ctx context.Context, username string) ([]*Session, error)
 	DeleteSession(ctx context.Context, token string) error
 }
 
@@ -19,11 +19,11 @@ func (a *service) CreateSession(ctx context.Context, opts CreateSessionOptions) 
 	}
 
 	if err := a.db.createSession(ctx, session); err != nil {
-		a.Error(err, "creating session", "uid", *opts.UserID)
+		a.Error(err, "creating session", "username", *opts.Username)
 		return nil, err
 	}
 
-	a.V(2).Info("created session", "uid", *opts.UserID)
+	a.V(2).Info("created session", "username", *opts.Username)
 
 	return session, nil
 }
@@ -32,8 +32,8 @@ func (a *service) GetSession(ctx context.Context, token string) (*Session, error
 	return a.db.getSessionByToken(ctx, token)
 }
 
-func (a *service) ListSessions(ctx context.Context, userID string) ([]*Session, error) {
-	return a.db.listSessions(ctx, userID)
+func (a *service) ListSessions(ctx context.Context, username string) ([]*Session, error) {
+	return a.db.listSessions(ctx, username)
 }
 
 func (a *service) DeleteSession(ctx context.Context, token string) error {

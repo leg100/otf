@@ -13,10 +13,10 @@ type UserService interface {
 	GetUser(ctx context.Context, spec UserSpec) (*User, error)
 	ListUsers(ctx context.Context, organization string) ([]*User, error)
 	DeleteUser(ctx context.Context, username string) error
-	AddOrganizationMembership(ctx context.Context, userID, organization string) error
-	RemoveOrganizationMembership(ctx context.Context, userID, organization string) error
-	AddTeamMembership(ctx context.Context, userID, teamID string) error
-	RemoveTeamMembership(ctx context.Context, userID, teamID string) error
+	AddOrganizationMembership(ctx context.Context, username, organization string) error
+	RemoveOrganizationMembership(ctx context.Context, username, organization string) error
+	AddTeamMembership(ctx context.Context, username, teamID string) error
+	RemoveTeamMembership(ctx context.Context, username, teamID string) error
 
 	sync(ctx context.Context, from cloud.User) (*User, error)
 }
@@ -56,22 +56,22 @@ func (a *service) ListUsers(ctx context.Context, organization string) ([]*User, 
 	return a.db.listUsers(ctx, organization)
 }
 
-func (a *service) AddOrganizationMembership(ctx context.Context, userID, organization string) error {
-	if err := a.db.addOrganizationMembership(ctx, userID, organization); err != nil {
-		a.Error(err, "adding organization membership", "user", userID, "org", organization)
+func (a *service) AddOrganizationMembership(ctx context.Context, username, organization string) error {
+	if err := a.db.addOrganizationMembership(ctx, username, organization); err != nil {
+		a.Error(err, "adding organization membership", "user", username, "org", organization)
 		return err
 	}
-	a.V(0).Info("added organization membership", "user", userID, "org", organization)
+	a.V(0).Info("added organization membership", "user", username, "org", organization)
 
 	return nil
 }
 
-func (a *service) RemoveOrganizationMembership(ctx context.Context, userID, organization string) error {
-	if err := a.db.removeOrganizationMembership(ctx, userID, organization); err != nil {
-		a.Error(err, "removing organization membership", "user", userID, "org", organization)
+func (a *service) RemoveOrganizationMembership(ctx context.Context, username, organization string) error {
+	if err := a.db.removeOrganizationMembership(ctx, username, organization); err != nil {
+		a.Error(err, "removing organization membership", "user", username, "org", organization)
 		return err
 	}
-	a.V(0).Info("removed organization membership", "user", userID, "org", organization)
+	a.V(0).Info("removed organization membership", "user", username, "org", organization)
 
 	return nil
 }
@@ -88,22 +88,22 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
-func (a *service) AddTeamMembership(ctx context.Context, userID, teamID string) error {
-	if err := a.db.addTeamMembership(ctx, userID, teamID); err != nil {
-		a.Error(err, "adding team membership", "user", userID, "team", teamID)
+func (a *service) AddTeamMembership(ctx context.Context, username, teamID string) error {
+	if err := a.db.addTeamMembership(ctx, username, teamID); err != nil {
+		a.Error(err, "adding team membership", "user", username, "team", teamID)
 		return err
 	}
-	a.V(0).Info("added team membership", "user", userID, "team", teamID)
+	a.V(0).Info("added team membership", "user", username, "team", teamID)
 
 	return nil
 }
 
-func (a *service) RemoveTeamMembership(ctx context.Context, userID, teamID string) error {
-	if err := a.db.removeTeamMembership(ctx, userID, teamID); err != nil {
-		a.Error(err, "removing team membership", "user", userID, "team", teamID)
+func (a *service) RemoveTeamMembership(ctx context.Context, username, teamID string) error {
+	if err := a.db.removeTeamMembership(ctx, username, teamID); err != nil {
+		a.Error(err, "removing team membership", "user", username, "team", teamID)
 		return err
 	}
-	a.V(0).Info("removed team membership", "user", userID, "team", teamID)
+	a.V(0).Info("removed team membership", "user", username, "team", teamID)
 
 	return nil
 }

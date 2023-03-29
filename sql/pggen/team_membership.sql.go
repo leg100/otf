@@ -12,7 +12,7 @@ import (
 )
 
 const insertTeamMembershipSQL = `INSERT INTO team_memberships (
-    user_id,
+    username,
     team_id
 ) VALUES (
     $1,
@@ -21,9 +21,9 @@ const insertTeamMembershipSQL = `INSERT INTO team_memberships (
 ;`
 
 // InsertTeamMembership implements Querier.InsertTeamMembership.
-func (q *DBQuerier) InsertTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertTeamMembership(ctx context.Context, username pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertTeamMembership")
-	cmdTag, err := q.conn.Exec(ctx, insertTeamMembershipSQL, userID, teamID)
+	cmdTag, err := q.conn.Exec(ctx, insertTeamMembershipSQL, username, teamID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertTeamMembership: %w", err)
 	}
@@ -31,8 +31,8 @@ func (q *DBQuerier) InsertTeamMembership(ctx context.Context, userID pgtype.Text
 }
 
 // InsertTeamMembershipBatch implements Querier.InsertTeamMembershipBatch.
-func (q *DBQuerier) InsertTeamMembershipBatch(batch genericBatch, userID pgtype.Text, teamID pgtype.Text) {
-	batch.Queue(insertTeamMembershipSQL, userID, teamID)
+func (q *DBQuerier) InsertTeamMembershipBatch(batch genericBatch, username pgtype.Text, teamID pgtype.Text) {
+	batch.Queue(insertTeamMembershipSQL, username, teamID)
 }
 
 // InsertTeamMembershipScan implements Querier.InsertTeamMembershipScan.
@@ -47,15 +47,15 @@ func (q *DBQuerier) InsertTeamMembershipScan(results pgx.BatchResults) (pgconn.C
 const deleteTeamMembershipSQL = `DELETE
 FROM team_memberships
 WHERE
-    user_id = $1 AND
-    team_id = $2
-RETURNING user_id
+    username = $1 AND
+    team_id  = $2
+RETURNING username
 ;`
 
 // DeleteTeamMembership implements Querier.DeleteTeamMembership.
-func (q *DBQuerier) DeleteTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteTeamMembership(ctx context.Context, username pgtype.Text, teamID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTeamMembership")
-	row := q.conn.QueryRow(ctx, deleteTeamMembershipSQL, userID, teamID)
+	row := q.conn.QueryRow(ctx, deleteTeamMembershipSQL, username, teamID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query DeleteTeamMembership: %w", err)
@@ -64,8 +64,8 @@ func (q *DBQuerier) DeleteTeamMembership(ctx context.Context, userID pgtype.Text
 }
 
 // DeleteTeamMembershipBatch implements Querier.DeleteTeamMembershipBatch.
-func (q *DBQuerier) DeleteTeamMembershipBatch(batch genericBatch, userID pgtype.Text, teamID pgtype.Text) {
-	batch.Queue(deleteTeamMembershipSQL, userID, teamID)
+func (q *DBQuerier) DeleteTeamMembershipBatch(batch genericBatch, username pgtype.Text, teamID pgtype.Text) {
+	batch.Queue(deleteTeamMembershipSQL, username, teamID)
 }
 
 // DeleteTeamMembershipScan implements Querier.DeleteTeamMembershipScan.
