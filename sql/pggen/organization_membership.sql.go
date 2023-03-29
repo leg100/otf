@@ -12,7 +12,7 @@ import (
 )
 
 const insertOrganizationMembershipSQL = `INSERT INTO organization_memberships (
-    user_id,
+    username,
     organization_name
 ) VALUES (
     $1,
@@ -21,9 +21,9 @@ const insertOrganizationMembershipSQL = `INSERT INTO organization_memberships (
 ;`
 
 // InsertOrganizationMembership implements Querier.InsertOrganizationMembership.
-func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, username pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertOrganizationMembership")
-	cmdTag, err := q.conn.Exec(ctx, insertOrganizationMembershipSQL, userID, organizationName)
+	cmdTag, err := q.conn.Exec(ctx, insertOrganizationMembershipSQL, username, organizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertOrganizationMembership: %w", err)
 	}
@@ -31,8 +31,8 @@ func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, userID pgt
 }
 
 // InsertOrganizationMembershipBatch implements Querier.InsertOrganizationMembershipBatch.
-func (q *DBQuerier) InsertOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationName pgtype.Text) {
-	batch.Queue(insertOrganizationMembershipSQL, userID, organizationName)
+func (q *DBQuerier) InsertOrganizationMembershipBatch(batch genericBatch, username pgtype.Text, organizationName pgtype.Text) {
+	batch.Queue(insertOrganizationMembershipSQL, username, organizationName)
 }
 
 // InsertOrganizationMembershipScan implements Querier.InsertOrganizationMembershipScan.
@@ -46,15 +46,15 @@ func (q *DBQuerier) InsertOrganizationMembershipScan(results pgx.BatchResults) (
 
 const deleteOrganizationMembershipSQL = `DELETE
 FROM organization_memberships
-WHERE user_id           = $1
+WHERE username          = $1
 AND   organization_name = $2
-RETURNING user_id
+RETURNING username
 ;`
 
 // DeleteOrganizationMembership implements Querier.DeleteOrganizationMembership.
-func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, username pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteOrganizationMembership")
-	row := q.conn.QueryRow(ctx, deleteOrganizationMembershipSQL, userID, organizationName)
+	row := q.conn.QueryRow(ctx, deleteOrganizationMembershipSQL, username, organizationName)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query DeleteOrganizationMembership: %w", err)
@@ -63,8 +63,8 @@ func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, userID pgt
 }
 
 // DeleteOrganizationMembershipBatch implements Querier.DeleteOrganizationMembershipBatch.
-func (q *DBQuerier) DeleteOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationName pgtype.Text) {
-	batch.Queue(deleteOrganizationMembershipSQL, userID, organizationName)
+func (q *DBQuerier) DeleteOrganizationMembershipBatch(batch genericBatch, username pgtype.Text, organizationName pgtype.Text) {
+	batch.Queue(deleteOrganizationMembershipSQL, username, organizationName)
 }
 
 // DeleteOrganizationMembershipScan implements Querier.DeleteOrganizationMembershipScan.

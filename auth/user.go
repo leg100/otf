@@ -7,8 +7,13 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
+const (
+	SiteAdminID       = "user-site-admin"
+	SiteAdminUsername = "site-admin"
+)
+
 var (
-	SiteAdmin             = User{ID: otf.SiteAdminID, Username: "site-admin"}
+	SiteAdmin             = User{ID: SiteAdminID, Username: SiteAdminUsername}
 	_         otf.Subject = (*User)(nil)
 )
 
@@ -78,7 +83,7 @@ func (u *User) IsTeamMember(teamID string) bool {
 
 func (u *User) ListOrganizations() []string { return u.Organizations }
 
-func (u *User) IsSiteAdmin() bool { return u.ID == otf.SiteAdminID }
+func (u *User) IsSiteAdmin() bool { return u.ID == SiteAdminID }
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	// Only site admin can perform actions on the site

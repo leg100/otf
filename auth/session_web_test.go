@@ -14,8 +14,8 @@ import (
 
 func TestSessionHandlers(t *testing.T) {
 	user := NewUser(uuid.NewString())
-	active := newTestSession(t, user.ID, nil)
-	other := newTestSession(t, user.ID, nil)
+	active := newTestSession(t, user.Username, nil)
+	other := newTestSession(t, user.Username, nil)
 
 	h := newFakeWeb(t, &fakeService{
 		sessions: []*Session{active, other},

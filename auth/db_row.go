@@ -81,7 +81,7 @@ type sessionRow struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	Address   pgtype.Text        `json:"address"`
 	Expiry    pgtype.Timestamptz `json:"expiry"`
-	UserID    pgtype.Text        `json:"user_id"`
+	Username  pgtype.Text        `json:"username"`
 }
 
 func (result sessionRow) toSession() *Session {
@@ -89,7 +89,7 @@ func (result sessionRow) toSession() *Session {
 		token:     result.Token.String,
 		createdAt: result.CreatedAt.Time.UTC(),
 		expiry:    result.Expiry.Time.UTC(),
-		userID:    result.UserID.String,
+		username:  result.Username.String,
 		address:   result.Address.String,
 	}
 }

@@ -15,8 +15,7 @@ type (
 		CreatedAt   time.Time
 		Token       string
 		Description string
-		// Token belongs to a user
-		UserID string
+		Username    string // Token belongs to a user
 	}
 
 	TokenCreateOptions struct {
@@ -25,11 +24,11 @@ type (
 
 	TokenService interface {
 		// CreateToken creates a user token.
-		CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error)
+		CreateToken(ctx context.Context, username string, opts *TokenCreateOptions) (*Token, error)
 		// ListTokens lists API tokens for a user
-		ListTokens(ctx context.Context, userID string) ([]*Token, error)
+		ListTokens(ctx context.Context, username string) ([]*Token, error)
 		// DeleteToken deletes a user token.
-		DeleteToken(ctx context.Context, userID string, tokenID string) error
+		DeleteToken(ctx context.Context, username string, tokenID string) error
 	}
 
 	// TokenStore is a persistence store for user authentication tokens.
@@ -53,7 +52,7 @@ func NewToken(uid, description string) (*Token, error) {
 		CreatedAt:   otf.CurrentTimestamp(),
 		Token:       t,
 		Description: description,
-		UserID:      uid,
+		Username:    uid,
 	}
 	return &token, nil
 }

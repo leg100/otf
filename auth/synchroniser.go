@@ -116,7 +116,7 @@ func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []
 	// Add org memberships
 	for _, want := range wanted {
 		if !otf.Contains(u.Organizations, want) {
-			if err := s.AddOrganizationMembership(ctx, u.ID, want); err != nil {
+			if err := s.AddOrganizationMembership(ctx, u.Username, want); err != nil {
 				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate orgs
@@ -131,7 +131,7 @@ func (s *synchroniser) syncOrganizations(ctx context.Context, u *User, wanted []
 	// Remove org memberships
 	for _, got := range u.Organizations {
 		if !otf.Contains(wanted, got) {
-			if err := s.RemoveOrganizationMembership(ctx, u.ID, got); err != nil {
+			if err := s.RemoveOrganizationMembership(ctx, u.Username, got); err != nil {
 				return err
 			}
 		}
@@ -145,7 +145,7 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 	// Add team memberships
 	for _, want := range wanted {
 		if !u.IsTeamMember(want.ID) {
-			if err := s.AddTeamMembership(ctx, u.ID, want.ID); err != nil {
+			if err := s.AddTeamMembership(ctx, u.Username, want.ID); err != nil {
 				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate teams
@@ -160,7 +160,7 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 	// Remove team memberships
 	for _, team := range u.Teams {
 		if !inTeamList(wanted, team.ID) {
-			if err := s.RemoveTeamMembership(ctx, u.ID, team.ID); err != nil {
+			if err := s.RemoveTeamMembership(ctx, u.Username, team.ID); err != nil {
 				return err
 			}
 		}

@@ -43,10 +43,10 @@ type (
 		TriggerPrefixes            []string               `json:"trigger_prefixes"`
 		WorkingDirectory           pgtype.Text            `json:"working_directory"`
 		LockRunID                  pgtype.Text            `json:"lock_run_id"`
-		LockUserID                 pgtype.Text            `json:"lock_user_id"`
 		LatestRunID                pgtype.Text            `json:"latest_run_id"`
 		OrganizationName           pgtype.Text            `json:"organization_name"`
 		Branch                     pgtype.Text            `json:"branch"`
+		LockUsername               pgtype.Text            `json:"lock_username"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
 		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
@@ -96,7 +96,8 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.LockedState = nil
 	} else if r.UserLock != nil {
 		ws.LockedState = UserLock{
-			ID: r.UserLock.UserID.String, Username: r.UserLock.Username.String,
+			ID:       r.UserLock.UserID.String,
+			Username: r.UserLock.Username.String,
 		}
 	} else if r.RunLock != nil {
 		ws.LockedState = RunLock{ID: r.RunLock.RunID.String}
@@ -248,24 +249,24 @@ func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace
 	return items, nil
 }
 
-func (db *pgdb) listByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts otf.ListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
-	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
+	db.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
-		UserID:           sql.String(userID),
+		Username:         sql.String(username),
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
-	db.CountWorkspacesByUserIDBatch(batch, sql.String(organization), sql.String(userID))
+	db.CountWorkspacesByUsernameBatch(batch, sql.String(organization), sql.String(username))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindWorkspacesByUserIDScan(results)
+	rows, err := db.FindWorkspacesByUsernameScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := db.CountWorkspacesByUserIDScan(results)
+	count, err := db.CountWorkspacesByUsernameScan(results)
 	if err != nil {
 		return nil, err
 	}

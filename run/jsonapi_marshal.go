@@ -147,10 +147,10 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 		// Relations
 		Plan:  plan,
 		Apply: apply,
-		// Hardcoded anonymous user until authorization is introduced
+		// TODO: populate with real user.
 		CreatedBy: &jsonapi.User{
-			ID:       otf.DefaultUserID,
-			Username: otf.DefaultUsername,
+			ID:       "user-123",
+			Username: "otf",
 		},
 		ConfigurationVersion: &jsonapi.ConfigurationVersion{
 			ID: run.ConfigurationVersionID,

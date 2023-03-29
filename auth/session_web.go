@@ -26,7 +26,7 @@ func (h *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessions, err := h.svc.ListSessions(r.Context(), user.ID)
+	sessions, err := h.svc.ListSessions(r.Context(), user.Username)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

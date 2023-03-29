@@ -16,7 +16,7 @@ const insertTokenSQL = `INSERT INTO tokens (
     token,
     created_at,
     description,
-    user_id
+    username
 ) VALUES (
     $1,
     $2,
@@ -30,13 +30,13 @@ type InsertTokenParams struct {
 	Token       pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	Description pgtype.Text
-	UserID      pgtype.Text
+	Username    pgtype.Text
 }
 
 // InsertToken implements Querier.InsertToken.
 func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertToken")
-	cmdTag, err := q.conn.Exec(ctx, insertTokenSQL, params.TokenID, params.Token, params.CreatedAt, params.Description, params.UserID)
+	cmdTag, err := q.conn.Exec(ctx, insertTokenSQL, params.TokenID, params.Token, params.CreatedAt, params.Description, params.Username)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertToken: %w", err)
 	}
@@ -45,7 +45,7 @@ func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (
 
 // InsertTokenBatch implements Querier.InsertTokenBatch.
 func (q *DBQuerier) InsertTokenBatch(batch genericBatch, params InsertTokenParams) {
-	batch.Queue(insertTokenSQL, params.TokenID, params.Token, params.CreatedAt, params.Description, params.UserID)
+	batch.Queue(insertTokenSQL, params.TokenID, params.Token, params.CreatedAt, params.Description, params.Username)
 }
 
 // InsertTokenScan implements Querier.InsertTokenScan.
@@ -57,63 +57,63 @@ func (q *DBQuerier) InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag
 	return cmdTag, err
 }
 
-const findTokensByUserIDSQL = `SELECT *
+const findTokensByUsernameSQL = `SELECT *
 FROM tokens
-WHERE user_id = $1
+WHERE username = $1
 ;`
 
-type FindTokensByUserIDRow struct {
+type FindTokensByUsernameRow struct {
 	TokenID     pgtype.Text        `json:"token_id"`
 	Token       pgtype.Text        `json:"token"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	Description pgtype.Text        `json:"description"`
-	UserID      pgtype.Text        `json:"user_id"`
+	Username    pgtype.Text        `json:"username"`
 }
 
-// FindTokensByUserID implements Querier.FindTokensByUserID.
-func (q *DBQuerier) FindTokensByUserID(ctx context.Context, userID pgtype.Text) ([]FindTokensByUserIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindTokensByUserID")
-	rows, err := q.conn.Query(ctx, findTokensByUserIDSQL, userID)
+// FindTokensByUsername implements Querier.FindTokensByUsername.
+func (q *DBQuerier) FindTokensByUsername(ctx context.Context, username pgtype.Text) ([]FindTokensByUsernameRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindTokensByUsername")
+	rows, err := q.conn.Query(ctx, findTokensByUsernameSQL, username)
 	if err != nil {
-		return nil, fmt.Errorf("query FindTokensByUserID: %w", err)
+		return nil, fmt.Errorf("query FindTokensByUsername: %w", err)
 	}
 	defer rows.Close()
-	items := []FindTokensByUserIDRow{}
+	items := []FindTokensByUsernameRow{}
 	for rows.Next() {
-		var item FindTokensByUserIDRow
-		if err := rows.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
-			return nil, fmt.Errorf("scan FindTokensByUserID row: %w", err)
+		var item FindTokensByUsernameRow
+		if err := rows.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.Username); err != nil {
+			return nil, fmt.Errorf("scan FindTokensByUsername row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindTokensByUserID rows: %w", err)
+		return nil, fmt.Errorf("close FindTokensByUsername rows: %w", err)
 	}
 	return items, err
 }
 
-// FindTokensByUserIDBatch implements Querier.FindTokensByUserIDBatch.
-func (q *DBQuerier) FindTokensByUserIDBatch(batch genericBatch, userID pgtype.Text) {
-	batch.Queue(findTokensByUserIDSQL, userID)
+// FindTokensByUsernameBatch implements Querier.FindTokensByUsernameBatch.
+func (q *DBQuerier) FindTokensByUsernameBatch(batch genericBatch, username pgtype.Text) {
+	batch.Queue(findTokensByUsernameSQL, username)
 }
 
-// FindTokensByUserIDScan implements Querier.FindTokensByUserIDScan.
-func (q *DBQuerier) FindTokensByUserIDScan(results pgx.BatchResults) ([]FindTokensByUserIDRow, error) {
+// FindTokensByUsernameScan implements Querier.FindTokensByUsernameScan.
+func (q *DBQuerier) FindTokensByUsernameScan(results pgx.BatchResults) ([]FindTokensByUsernameRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindTokensByUserIDBatch: %w", err)
+		return nil, fmt.Errorf("query FindTokensByUsernameBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindTokensByUserIDRow{}
+	items := []FindTokensByUsernameRow{}
 	for rows.Next() {
-		var item FindTokensByUserIDRow
-		if err := rows.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
-			return nil, fmt.Errorf("scan FindTokensByUserIDBatch row: %w", err)
+		var item FindTokensByUsernameRow
+		if err := rows.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.Username); err != nil {
+			return nil, fmt.Errorf("scan FindTokensByUsernameBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindTokensByUserIDBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindTokensByUsernameBatch rows: %w", err)
 	}
 	return items, err
 }
@@ -128,7 +128,7 @@ type FindTokenByIDRow struct {
 	Token       pgtype.Text        `json:"token"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	Description pgtype.Text        `json:"description"`
-	UserID      pgtype.Text        `json:"user_id"`
+	Username    pgtype.Text        `json:"username"`
 }
 
 // FindTokenByID implements Querier.FindTokenByID.
@@ -136,7 +136,7 @@ func (q *DBQuerier) FindTokenByID(ctx context.Context, tokenID pgtype.Text) (Fin
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTokenByID")
 	row := q.conn.QueryRow(ctx, findTokenByIDSQL, tokenID)
 	var item FindTokenByIDRow
-	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
+	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.Username); err != nil {
 		return item, fmt.Errorf("query FindTokenByID: %w", err)
 	}
 	return item, nil
@@ -151,7 +151,7 @@ func (q *DBQuerier) FindTokenByIDBatch(batch genericBatch, tokenID pgtype.Text) 
 func (q *DBQuerier) FindTokenByIDScan(results pgx.BatchResults) (FindTokenByIDRow, error) {
 	row := results.QueryRow()
 	var item FindTokenByIDRow
-	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
+	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.Username); err != nil {
 		return item, fmt.Errorf("scan FindTokenByIDBatch row: %w", err)
 	}
 	return item, nil

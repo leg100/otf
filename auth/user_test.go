@@ -3,14 +3,13 @@ package auth
 import (
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSiteAdminCanAccessOrganization(t *testing.T) {
 	u := User{
-		ID:            otf.SiteAdminID,
+		ID:            SiteAdminID,
 		Organizations: []string{"acme-corp"},
 	}
 	assert.True(t, u.CanAccessOrganization(rbac.ListRunsAction, "acme-corp"))

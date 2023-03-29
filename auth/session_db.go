@@ -12,7 +12,7 @@ func (db *pgdb) createSession(ctx context.Context, session *Session) error {
 		Token:     sql.String(session.Token()),
 		Address:   sql.String(session.Address()),
 		Expiry:    sql.Timestamptz(session.Expiry()),
-		UserID:    sql.String(session.UserID()),
+		Username:  sql.String(session.Username()),
 		CreatedAt: sql.Timestamptz(session.CreatedAt()),
 	})
 	return err
@@ -26,8 +26,8 @@ func (db *pgdb) getSessionByToken(ctx context.Context, token string) (*Session, 
 	return sessionRow(result).toSession(), nil
 }
 
-func (db *pgdb) listSessions(ctx context.Context, userID string) ([]*Session, error) {
-	result, err := db.FindSessionsByUserID(ctx, sql.String(userID))
+func (db *pgdb) listSessions(ctx context.Context, username string) ([]*Session, error) {
+	result, err := db.FindSessionsByUsername(ctx, sql.String(username))
 	if err != nil {
 		return nil, err
 	}

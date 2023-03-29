@@ -22,13 +22,13 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 			return err
 		}
 		for _, org := range user.Organizations {
-			_, err = tx.InsertOrganizationMembership(ctx, sql.String(user.ID), sql.String(org))
+			_, err = tx.InsertOrganizationMembership(ctx, sql.String(user.Username), sql.String(org))
 			if err != nil {
 				return err
 			}
 		}
 		for _, team := range user.Teams {
-			_, err = tx.InsertTeamMembership(ctx, sql.String(user.ID), sql.String(team.ID))
+			_, err = tx.InsertTeamMembership(ctx, sql.String(user.Username), sql.String(team.ID))
 			if err != nil {
 				return err
 			}
@@ -94,32 +94,32 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	}
 }
 
-func (db *pgdb) addOrganizationMembership(ctx context.Context, userID, organization string) error {
-	_, err := db.InsertOrganizationMembership(ctx, sql.String(userID), sql.String(organization))
+func (db *pgdb) addOrganizationMembership(ctx context.Context, username, organization string) error {
+	_, err := db.InsertOrganizationMembership(ctx, sql.String(username), sql.String(organization))
 	if err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) removeOrganizationMembership(ctx context.Context, id, orgID string) error {
-	_, err := db.DeleteOrganizationMembership(ctx, sql.String(id), sql.String(orgID))
+func (db *pgdb) removeOrganizationMembership(ctx context.Context, username, orgID string) error {
+	_, err := db.DeleteOrganizationMembership(ctx, sql.String(username), sql.String(orgID))
 	if err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) addTeamMembership(ctx context.Context, userID, teamID string) error {
-	_, err := db.InsertTeamMembership(ctx, sql.String(userID), sql.String(teamID))
+func (db *pgdb) addTeamMembership(ctx context.Context, username, teamID string) error {
+	_, err := db.InsertTeamMembership(ctx, sql.String(username), sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) removeTeamMembership(ctx context.Context, userID, teamID string) error {
-	_, err := db.DeleteTeamMembership(ctx, sql.String(userID), sql.String(teamID))
+func (db *pgdb) removeTeamMembership(ctx context.Context, username, teamID string) error {
+	_, err := db.DeleteTeamMembership(ctx, sql.String(username), sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}

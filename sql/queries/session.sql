@@ -4,19 +4,19 @@ INSERT INTO sessions (
     created_at,
     address,
     expiry,
-    user_id
+    username
 ) VALUES (
     pggen.arg('token'),
     pggen.arg('created_at'),
     pggen.arg('address'),
     pggen.arg('expiry'),
-    pggen.arg('user_id')
+    pggen.arg('username')
 );
 
--- name: FindSessionsByUserID :many
+-- name: FindSessionsByUsername :many
 SELECT *
 FROM sessions
-WHERE user_id = pggen.arg('user_id')
+WHERE username = pggen.arg('username')
 AND   expiry > current_timestamp
 ;
 
