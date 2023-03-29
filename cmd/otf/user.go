@@ -52,24 +52,3 @@ func (a *application) userDeleteCommand() *cobra.Command {
 		},
 	}
 }
-
-func (a *application) userAddOrgMembershipCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:           "add-org [username]",
-		Short:         "Add user to organization",
-		Args:          cobra.ExactArgs(1),
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			user, err := a.CreateUser(cmd.Context(), args[0])
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created user %s\n", user.Username)
-			return nil
-		},
-	}
-
-	opts.Organization = cmd.Flags().String("organization", "", "Organization workspace belongs to")
-	cmd.MarkFlagRequired("organization")
-}

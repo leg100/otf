@@ -76,7 +76,11 @@ type fakeClient struct {
 }
 
 func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error) {
-	return f.organization, nil
+	return &organization.Organization{Name: *opts.Name}, nil
+}
+
+func (f *fakeClient) DeleteOrganization(context.Context, string) error {
+	return nil
 }
 
 func (f *fakeClient) CreateUser(context.Context, string, ...auth.NewUserOption) (*auth.User, error) {
@@ -84,6 +88,22 @@ func (f *fakeClient) CreateUser(context.Context, string, ...auth.NewUserOption) 
 }
 
 func (f *fakeClient) DeleteUser(context.Context, string) error {
+	return nil
+}
+
+func (f *fakeClient) AddOrganizationMembership(context.Context, string, string) error {
+	return nil
+}
+
+func (f *fakeClient) RemoveOrganizationMembership(context.Context, string, string) error {
+	return nil
+}
+
+func (f *fakeClient) AddTeamMembership(context.Context, string, string) error {
+	return nil
+}
+
+func (f *fakeClient) RemoveTeamMembership(context.Context, string, string) error {
 	return nil
 }
 
