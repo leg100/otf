@@ -61,21 +61,14 @@ func Start(ctx context.Context, opts Options) error {
 	sched.V(2).Info("started")
 
 	op := func() error {
-		conn, err := opts.Acquire(ctx)
-		if err != nil {
-			return err
-		}
-		defer conn.Release()
-
 		// block on getting an exclusive lock
-		if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", lockID); err != nil {
-			if ctx.Err() != nil {
-				return nil // exit
-			}
-			return err // retry
+		err := opts.WaitAndLock(ctx, lockID, func() error {
+			return sched.reinitialize(ctx)
+		})
+		if ctx.Err() != nil {
+			return nil // exit
 		}
-
-		return sched.reinitialize(ctx)
+		return err // retry
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
