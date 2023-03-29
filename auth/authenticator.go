@@ -86,8 +86,8 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	session, err := a.CreateSession(ctx, CreateSessionOptions{
-		Request: r,
-		Username:  &user.Username,
+		Request:  r,
+		Username: &user.Username,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

@@ -35,7 +35,6 @@ func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
 	return row(r).toOrganization(), nil
 }
 
-
 func (db *pgdb) create(ctx context.Context, org *Organization) error {
 	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              sql.String(org.ID),

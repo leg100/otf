@@ -12,7 +12,7 @@ func (db *pgdb) createSession(ctx context.Context, session *Session) error {
 		Token:     sql.String(session.Token()),
 		Address:   sql.String(session.Address()),
 		Expiry:    sql.Timestamptz(session.Expiry()),
-		Username:    sql.String(session.Username()),
+		Username:  sql.String(session.Username()),
 		CreatedAt: sql.Timestamptz(session.CreatedAt()),
 	})
 	return err

@@ -272,9 +272,9 @@ func (s *testServices) createSession(t *testing.T, ctx context.Context, user *au
 	}
 
 	rs, err := s.CreateSession(ctx, auth.CreateSessionOptions{
-		Request: httptest.NewRequest("", "/", nil),
-		Username:  &user.Username,
-		Expiry:  expiry,
+		Request:  httptest.NewRequest("", "/", nil),
+		Username: &user.Username,
+		Expiry:   expiry,
 	})
 	require.NoError(t, err)
 	return rs

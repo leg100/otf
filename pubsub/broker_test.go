@@ -34,10 +34,10 @@ func TestBroker_Publish(t *testing.T) {
 	got := make(chan otf.Event, 1)
 	pool := &fakePool{}
 	broker := &broker{
-		pool:    pool,
-		subs:    map[string]chan otf.Event{"sub-1": got},
-		registrations:  make(map[string]Getter),
-		metrics: map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
+		pool:          pool,
+		subs:          map[string]chan otf.Event{"sub-1": got},
+		registrations: make(map[string]Getter),
+		metrics:       map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 
 	type payload struct {
@@ -74,10 +74,10 @@ func TestPubSub_receive(t *testing.T) {
 	}
 	got := make(chan otf.Event, 1)
 	broker := &broker{
-		pool:    &fakePool{},
-		subs:    map[string]chan otf.Event{"sub-1": got},
-		registrations:  map[string]Getter{"run": &fakeGetter{resource: resource}},
-		metrics: map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
+		pool:          &fakePool{},
+		subs:          map[string]chan otf.Event{"sub-1": got},
+		registrations: map[string]Getter{"run": &fakeGetter{resource: resource}},
+		metrics:       map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 	err := broker.receive(context.Background(), &notification)
 	require.NoError(t, err)

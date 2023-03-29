@@ -30,7 +30,7 @@ func (row outputRow) toOutput() *Output {
 	return &Output{
 		ID:             row.StateVersionOutputID.String,
 		Sensitive:      row.Sensitive,
-		Type:            row.Type.String,
+		Type:           row.Type.String,
 		Value:          row.Value.String,
 		Name:           row.Name.String,
 		StateVersionID: row.StateVersionID.String,
