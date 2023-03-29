@@ -42,6 +42,32 @@ func (c *Client) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
+// AddOrganizationMembership adds a user to an organization via HTTP.
+func (c *Client) AddOrganizationMembership(ctx context.Context, username, organization string) error {
+	u := fmt.Sprintf("organizations/%s/memberships/%s", url.QueryEscape(organization), url.QueryEscape(username))
+	req, err := c.NewRequest("POST", u, nil)
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteOrganizationMembership removes a user from an organization via HTTP.
+func (c *Client) DeleteOrganizationMembership(ctx context.Context, username, organization string) error {
+	u := fmt.Sprintf("organizations/%s/memberships/%s", url.QueryEscape(organization), url.QueryEscape(username))
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	if err := c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 // CreateTeam creates a team via HTTP/JSONAPI.
 func (c *Client) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
 	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
