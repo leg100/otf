@@ -27,10 +27,12 @@ type (
 
 		*synchroniser
 
-		api          *api
-		db           *pgdb
-		organization otf.Authorizer
-		web          *webHandlers
+		site         otf.Authorizer // authorizes site access
+		organization otf.Authorizer // authorizes org access
+
+		api *api
+		db  *pgdb
+		web *webHandlers
 	}
 
 	Options struct {
@@ -48,7 +50,11 @@ type (
 )
 
 func NewService(opts Options) (*service, error) {
-	svc := service{Logger: opts.Logger}
+	svc := service{
+		Logger:       opts.Logger,
+		organization: &organization.Authorizer{opts.Logger},
+		site:         &otf.SiteAuthorizer{opts.Logger},
+	}
 
 	authenticators, err := newAuthenticators(authenticatorOptions{
 		Logger:          opts.Logger,
@@ -65,7 +71,6 @@ func NewService(opts Options) (*service, error) {
 	svc.synchroniser = &synchroniser{opts.Logger, opts.OrganizationService, &svc}
 	svc.api = &api{svc: &svc}
 	svc.db = db
-	svc.organization = &organization.Authorizer{opts.Logger}
 	svc.web = &webHandlers{
 		Renderer:       opts.Renderer,
 		svc:            &svc,

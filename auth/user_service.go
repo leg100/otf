@@ -22,14 +22,19 @@ type UserService interface {
 }
 
 func (a *service) CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
-	user := NewUser(username, opts...)
-
-	if err := a.db.CreateUser(ctx, user); err != nil {
-		a.Error(err, "creating user", "username", username)
+	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, "")
+	if err != nil {
 		return nil, err
 	}
 
-	a.V(0).Info("created user", "username", username)
+	user := NewUser(username, opts...)
+
+	if err := a.db.CreateUser(ctx, user); err != nil {
+		a.Error(err, "creating user", "username", username, "subject", subject)
+		return nil, err
+	}
+
+	a.V(0).Info("created user", "username", username, "subject", subject)
 
 	return user, nil
 }
@@ -57,53 +62,90 @@ func (a *service) ListUsers(ctx context.Context, organization string) ([]*User, 
 }
 
 func (a *service) AddOrganizationMembership(ctx context.Context, username, organization string) error {
-	if err := a.db.addOrganizationMembership(ctx, username, organization); err != nil {
-		a.Error(err, "adding organization membership", "user", username, "org", organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.AddOrganizationMembershipAction, organization)
+	if err != nil {
 		return err
 	}
-	a.V(0).Info("added organization membership", "user", username, "org", organization)
+
+	if err := a.db.addOrganizationMembership(ctx, username, organization); err != nil {
+		a.Error(err, "adding user to organization", "user", username, "org", organization, "subject", subject)
+		return err
+	}
+	a.V(0).Info("added user to organization", "user", username, "org", organization, "subject", subject)
 
 	return nil
 }
 
 func (a *service) RemoveOrganizationMembership(ctx context.Context, username, organization string) error {
-	if err := a.db.removeOrganizationMembership(ctx, username, organization); err != nil {
-		a.Error(err, "removing organization membership", "user", username, "org", organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.RemoveOrganizationMembershipAction, organization)
+	if err != nil {
 		return err
 	}
-	a.V(0).Info("removed organization membership", "user", username, "org", organization)
+
+	if err := a.db.removeOrganizationMembership(ctx, username, organization); err != nil {
+		a.Error(err, "removing user from organization", "user", username, "org", organization, "subject", subject)
+		return err
+	}
+	a.V(0).Info("removed user from organization", "user", username, "org", organization, "subject", subject)
 
 	return nil
 }
 
 func (a *service) DeleteUser(ctx context.Context, username string) error {
-	err := a.db.DeleteUser(ctx, UserSpec{Username: otf.String(username)})
+	subject, err := a.site.CanAccess(ctx, rbac.DeleteUserAction, "")
 	if err != nil {
-		a.V(2).Info("deleting user", "username", username)
 		return err
 	}
 
-	a.V(2).Info("deleted user", "username", username)
+	err = a.db.DeleteUser(ctx, UserSpec{Username: otf.String(username)})
+	if err != nil {
+		a.V(2).Info("deleting user", "username", username, "subject", subject)
+		return err
+	}
+
+	a.V(2).Info("deleted user", "username", username, "subject", subject)
 
 	return nil
 }
 
 func (a *service) AddTeamMembership(ctx context.Context, username, teamID string) error {
-	if err := a.db.addTeamMembership(ctx, username, teamID); err != nil {
-		a.Error(err, "adding team membership", "user", username, "team", teamID)
+	team, err := a.db.getTeamByID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team", "team_id", teamID)
 		return err
 	}
-	a.V(0).Info("added team membership", "user", username, "team", teamID)
+
+	subject, err := a.organization.CanAccess(ctx, rbac.AddTeamMembershipAction, team.Organization)
+	if err != nil {
+		return err
+	}
+
+	if err := a.db.addTeamMembership(ctx, username, teamID); err != nil {
+		a.Error(err, "adding team membership", "user", username, "team", teamID, "subject", subject)
+		return err
+	}
+	a.V(0).Info("added team membership", "user", username, "team", teamID, "subject", subject)
 
 	return nil
 }
 
 func (a *service) RemoveTeamMembership(ctx context.Context, username, teamID string) error {
-	if err := a.db.removeTeamMembership(ctx, username, teamID); err != nil {
-		a.Error(err, "removing team membership", "user", username, "team", teamID)
+	team, err := a.db.getTeamByID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team", "team_id", teamID)
 		return err
 	}
-	a.V(0).Info("removed team membership", "user", username, "team", teamID)
+
+	subject, err := a.organization.CanAccess(ctx, rbac.RemoveOrganizationMembershipAction, team.Organization)
+	if err != nil {
+		return err
+	}
+
+	if err := a.db.removeTeamMembership(ctx, username, teamID); err != nil {
+		a.Error(err, "removing team membership", "user", username, "team", teamID, "subject", subject)
+		return err
+	}
+	a.V(0).Info("removed team membership", "user", username, "team", teamID, "subject", subject)
 
 	return nil
 }
