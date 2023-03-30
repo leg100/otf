@@ -5,20 +5,24 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestBroker demonstrates publishing and subscribing of events via postgres.
 func TestBroker(t *testing.T) {
+	t.Parallel()
+
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(func() { cancel() })
 
-	// simulate a cluster of two otfd nodes
-	local := setup(t, nil)
-	remote := setup(t, nil)
+	// simulate a cluster of two otfd nodes sharing a db
+	db, _ := sql.NewTestDB(t)
+	local := setup(t, &config{db: db})
+	remote := setup(t, &config{db: db})
 
 	done := make(chan error)
 	go func() {

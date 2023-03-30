@@ -21,7 +21,7 @@ func TestWritePermission(t *testing.T) {
 	owners := cloud.Team{Name: "owners", Organization: org}
 	devops := cloud.Team{Name: "devops", Organization: org}
 
-	// Run postgres in a container
+	// Create database to be shared between two daemons
 	_, connstr := sql.NewTestDB(t)
 
 	// Build and start a daemon specifically for the boss
