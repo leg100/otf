@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,4 +43,12 @@ func TestWaitAndLock(t *testing.T) {
 			require.NoError(t, err)
 		}()
 	}
+}
+
+func TestConnStringParse(t *testing.T) {
+	got := "postgres:///"
+	u, err := url.Parse(got)
+	u.Path = "/mydb"
+	require.NoError(t, err)
+	assert.Equal(t, "postgres:///mydb", u.String())
 }

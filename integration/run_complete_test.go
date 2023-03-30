@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
@@ -17,8 +16,7 @@ import (
 func TestCompleteRun(t *testing.T) {
 	t.Parallel()
 
-	db, _ := sql.NewTestDB(t)
-	svc := setup(t, &config{db: db})
+	svc := setup(t, nil)
 
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})

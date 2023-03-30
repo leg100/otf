@@ -11,6 +11,8 @@ import (
 )
 
 func TestToken(t *testing.T) {
+	t.Parallel()
+
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 

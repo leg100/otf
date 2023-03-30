@@ -63,8 +63,9 @@ func (d *daemon) withDB(connstr string) {
 
 // start an instance of the otfd daemon and return its hostname.
 func (d *daemon) start(t *testing.T) string {
+	// either use test-specific connection string or create a new logical
+	// database and use a connection string to that.
 	if d.connstr == nil {
-		// start postgres container
 		_, connstr := sql.NewTestDB(t)
 		d.connstr = &connstr
 	}
