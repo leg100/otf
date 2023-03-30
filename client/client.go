@@ -28,6 +28,7 @@ type (
 	// in-process, while the external agent is remote) as well as the CLI.
 	Client interface {
 		CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error)
+		DeleteOrganization(ctx context.Context, organization string) error
 
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
@@ -63,6 +64,10 @@ type (
 
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error
+		AddOrganizationMembership(ctx context.Context, username, organization string) error
+		RemoveOrganizationMembership(ctx context.Context, username, organization string) error
+		AddTeamMembership(ctx context.Context, username, teamID string) error
+		RemoveTeamMembership(ctx context.Context, username, teamID string) error
 
 		CreateTeam(ctx context.Context, opts auth.NewTeamOptions) (*auth.Team, error)
 		GetTeam(ctx context.Context, organization, team string) (*auth.Team, error)

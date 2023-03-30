@@ -29,6 +29,10 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/account/details", h.getCurrentUser).Methods("GET")
 	r.HandleFunc("/admin/users", h.createUser).Methods("POST")
 	r.HandleFunc("/admin/users/{username}", h.deleteUser).Methods("DELETE")
+	r.HandleFunc("/organizations/{organization_name}/memberships/{username}", h.addOrganizationMembership).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/memberships/{username}", h.removeOrganizationMembership).Methods("DELETE")
+	r.HandleFunc("/teams/{team_id}/memberships/{username}", h.addTeamMembership).Methods("POST")
+	r.HandleFunc("/teams/{team_id}/memberships/{username}", h.removeTeamMembership).Methods("DELETE")
 
 	// Team routes
 	r.HandleFunc("/organizations/{organization_name}/teams", h.createTeam).Methods("POST")
@@ -67,6 +71,78 @@ func (h *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *api) addOrganizationMembership(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Organization *string `schema:"organization_name,required"`
+		Username     *string `schema:"username,required"`
+	}
+	if err := decode.Route(&params, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := h.svc.AddOrganizationMembership(r.Context(), *params.Username, *params.Organization); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *api) removeOrganizationMembership(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Organization *string `schema:"organization_name,required"`
+		Username     *string `schema:"username,required"`
+	}
+	if err := decode.Route(&params, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := h.svc.RemoveOrganizationMembership(r.Context(), *params.Username, *params.Organization); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *api) addTeamMembership(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		TeamID   *string `schema:"team_id,required"`
+		Username *string `schema:"username,required"`
+	}
+	if err := decode.Route(&params, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := h.svc.AddTeamMembership(r.Context(), *params.Username, *params.TeamID); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *api) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		TeamID   *string `schema:"team_id,required"`
+		Username *string `schema:"username,required"`
+	}
+	if err := decode.Route(&params, r); err != nil {
+		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := h.svc.RemoveTeamMembership(r.Context(), *params.Username, *params.TeamID); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {

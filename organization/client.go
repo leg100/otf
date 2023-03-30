@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
@@ -30,4 +31,18 @@ func (c *Client) CreateOrganization(ctx context.Context, options OrganizationCre
 		return nil, err
 	}
 	return newFromJSONAPI(org), nil
+}
+
+// DeleteOrganization deletes an organization via http.
+func (c *Client) DeleteOrganization(ctx context.Context, organization string) error {
+	u := fmt.Sprintf("organizations/%s", organization)
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	err = c.Do(ctx, req, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
