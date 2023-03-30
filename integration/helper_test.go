@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"log"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -25,10 +24,7 @@ import (
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
-
-var sharedDB otf.DB
 
 type (
 	testServices struct {
@@ -44,33 +40,16 @@ type (
 	}
 )
 
-// TestMain starts a postgres container before invoking the integration tests
-func TestMain(t *testing.M) {
-	var (
-		container *postgres.PostgresContainer
-		err       error
-	)
-	// spin up pg container for duration of tests
-	sharedDB, container, err = sql.NewContainer()
-	if err != nil {
-		log.Fatalf("failed to to run postgres container: %s", err.Error())
-	}
-	defer container.Terminate(context.Background())
-	defer sharedDB.Close()
-
-	os.Exit(t.Run())
-}
-
 // setup configures otfd services for use in a test.
 func setup(t *testing.T, cfg *config) *testServices {
 	t.Helper()
 
-	// use caller provided db or shared db
+	// use caller provided db or new db
 	var db otf.DB
 	if cfg != nil && cfg.db != nil {
 		db = cfg.db
 	} else {
-		db = sharedDB
+		db, _ = sql.NewTestDB(t)
 	}
 
 	svccfg := services.NewDefaultConfig()
