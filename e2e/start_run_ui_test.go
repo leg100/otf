@@ -23,7 +23,6 @@ func TestStartRunUI(t *testing.T) {
 				Organization: org,
 			},
 		},
-		Organizations: []string{org},
 	}
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)

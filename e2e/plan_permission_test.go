@@ -28,8 +28,7 @@ func TestPlanPermission(t *testing.T) {
 
 	// Build and start a daemon specifically for the boss
 	boss := cloud.User{
-		Name:          "boss-" + uuid.NewString(),
-		Organizations: []string{org},
+		Name: "boss-" + uuid.NewString(),
 		Teams: []cloud.Team{
 			owners,
 			devops,
@@ -43,8 +42,7 @@ func TestPlanPermission(t *testing.T) {
 	// setup non-owner engineer user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
 	engineer := cloud.User{
-		Name:          "engineer-" + uuid.NewString(),
-		Organizations: []string{org},
+		Name: "engineer-" + uuid.NewString(),
 		Teams: []cloud.Team{
 			devops,
 		},

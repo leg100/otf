@@ -13,8 +13,6 @@ type UserService interface {
 	GetUser(ctx context.Context, spec UserSpec) (*User, error)
 	ListUsers(ctx context.Context, organization string) ([]*User, error)
 	DeleteUser(ctx context.Context, username string) error
-	AddOrganizationMembership(ctx context.Context, username, organization string) error
-	RemoveOrganizationMembership(ctx context.Context, username, organization string) error
 	AddTeamMembership(ctx context.Context, username, teamID string) error
 	RemoveTeamMembership(ctx context.Context, username, teamID string) error
 
@@ -59,36 +57,6 @@ func (a *service) ListUsers(ctx context.Context, organization string) ([]*User, 
 	}
 
 	return a.db.listUsers(ctx, organization)
-}
-
-func (a *service) AddOrganizationMembership(ctx context.Context, username, organization string) error {
-	subject, err := a.organization.CanAccess(ctx, rbac.AddOrganizationMembershipAction, organization)
-	if err != nil {
-		return err
-	}
-
-	if err := a.db.addOrganizationMembership(ctx, username, organization); err != nil {
-		a.Error(err, "adding user to organization", "user", username, "org", organization, "subject", subject)
-		return err
-	}
-	a.V(0).Info("added user to organization", "user", username, "org", organization, "subject", subject)
-
-	return nil
-}
-
-func (a *service) RemoveOrganizationMembership(ctx context.Context, username, organization string) error {
-	subject, err := a.organization.CanAccess(ctx, rbac.RemoveOrganizationMembershipAction, organization)
-	if err != nil {
-		return err
-	}
-
-	if err := a.db.removeOrganizationMembership(ctx, username, organization); err != nil {
-		a.Error(err, "removing user from organization", "user", username, "org", organization, "subject", subject)
-		return err
-	}
-	a.V(0).Info("removed user from organization", "user", username, "org", organization, "subject", subject)
-
-	return nil
 }
 
 func (a *service) DeleteUser(ctx context.Context, username string) error {
@@ -136,7 +104,7 @@ func (a *service) RemoveTeamMembership(ctx context.Context, username, teamID str
 		return err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.RemoveOrganizationMembershipAction, team.Organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.RemoveTeamMembershipAction, team.Organization)
 	if err != nil {
 		return err
 	}

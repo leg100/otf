@@ -21,12 +21,6 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 		if err != nil {
 			return err
 		}
-		for _, org := range user.Organizations {
-			_, err = tx.InsertOrganizationMembership(ctx, sql.String(user.Username), sql.String(org))
-			if err != nil {
-				return err
-			}
-		}
 		for _, team := range user.Teams {
 			_, err = tx.InsertTeamMembership(ctx, sql.String(user.Username), sql.String(team.ID))
 			if err != nil {
@@ -92,22 +86,6 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}
-}
-
-func (db *pgdb) addOrganizationMembership(ctx context.Context, username, organization string) error {
-	_, err := db.InsertOrganizationMembership(ctx, sql.String(username), sql.String(organization))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
-}
-
-func (db *pgdb) removeOrganizationMembership(ctx context.Context, username, orgID string) error {
-	_, err := db.DeleteOrganizationMembership(ctx, sql.String(username), sql.String(orgID))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
 }
 
 func (db *pgdb) addTeamMembership(ctx context.Context, username, teamID string) error {

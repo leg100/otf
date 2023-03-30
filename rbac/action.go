@@ -84,8 +84,6 @@ const (
 	CreateUserAction
 	ListUsersAction
 	DeleteUserAction
-	AddOrganizationMembershipAction
-	RemoveOrganizationMembershipAction
 
 	CreateTeamAction
 	UpdateTeamAction

@@ -319,20 +319,6 @@ type Querier interface {
 	// DeleteOrganizationByNameScan scans the result of an executed DeleteOrganizationByNameBatch query.
 	DeleteOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertOrganizationMembership(ctx context.Context, username pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
-	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
-	// later by the batch.
-	InsertOrganizationMembershipBatch(batch genericBatch, username pgtype.Text, organizationName pgtype.Text)
-	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
-	InsertOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	DeleteOrganizationMembership(ctx context.Context, username pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
-	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
-	// later by the batch.
-	DeleteOrganizationMembershipBatch(batch genericBatch, username pgtype.Text, organizationName pgtype.Text)
-	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
-	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	InsertPhaseStatusTimestamp(ctx context.Context, params InsertPhaseStatusTimestampParams) (pgconn.CommandTag, error)
 	// InsertPhaseStatusTimestampBatch enqueues a InsertPhaseStatusTimestamp query into batch to be executed
 	// later by the batch.
@@ -1222,12 +1208,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteOrganizationByNameSQL, deleteOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteOrganizationByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertOrganizationMembershipSQL, insertOrganizationMembershipSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertOrganizationMembership': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteOrganizationMembershipSQL, deleteOrganizationMembershipSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteOrganizationMembership': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertPhaseStatusTimestampSQL, insertPhaseStatusTimestampSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPhaseStatusTimestamp': %w", err)

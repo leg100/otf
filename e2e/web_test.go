@@ -26,7 +26,6 @@ func TestWeb(t *testing.T) {
 				Organization: org,
 			},
 		},
-		Organizations: []string{org},
 	}
 
 	daemon := &daemon{}

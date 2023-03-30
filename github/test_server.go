@@ -79,7 +79,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 		})
 		mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
 			var orgs []*github.Organization
-			for _, org := range srv.user.Organizations {
+			for _, org := range srv.user.Organizations() {
 				orgs = append(orgs, &github.Organization{Login: otf.String(org)})
 			}
 			out, err := json.Marshal(orgs)
@@ -87,7 +87,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		for _, org := range srv.user.Organizations {
+		for _, org := range srv.user.Organizations() {
 			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org, func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Membership{
 					Role: otf.String("member"),

@@ -42,32 +42,6 @@ func (c *Client) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
-// AddOrganizationMembership adds a user to an organization via HTTP.
-func (c *Client) AddOrganizationMembership(ctx context.Context, username, organization string) error {
-	u := fmt.Sprintf("organizations/%s/memberships/%s", url.QueryEscape(organization), url.QueryEscape(username))
-	req, err := c.NewRequest("POST", u, nil)
-	if err != nil {
-		return err
-	}
-	if err := c.Do(ctx, req, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
-// RemoveOrganizationMembership removes a user from an organization via HTTP.
-func (c *Client) RemoveOrganizationMembership(ctx context.Context, username, organization string) error {
-	u := fmt.Sprintf("organizations/%s/memberships/%s", url.QueryEscape(organization), url.QueryEscape(username))
-	req, err := c.NewRequest("DELETE", u, nil)
-	if err != nil {
-		return err
-	}
-	if err := c.Do(ctx, req, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
 // AddTeamMembership adds a user to a team via HTTP.
 func (c *Client) AddTeamMembership(ctx context.Context, username, teamID string) error {
 	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(teamID), url.QueryEscape(username))

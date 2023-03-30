@@ -21,8 +21,8 @@ type Subject interface {
 	IsOwner(organization string) bool
 	IsSiteAdmin() bool
 
-	// ListOrganizations returns subject's organization memberships
-	ListOrganizations() []string
+	// Organizations returns subject's organization memberships
+	Organizations() []string
 
 	String() string
 }
@@ -62,7 +62,7 @@ type Superuser struct {
 func (*Superuser) CanAccessSite(action rbac.Action) bool                { return true }
 func (*Superuser) CanAccessOrganization(rbac.Action, string) bool       { return true }
 func (*Superuser) CanAccessWorkspace(rbac.Action, WorkspacePolicy) bool { return true }
-func (s *Superuser) ListOrganizations() []string                        { return nil }
+func (s *Superuser) Organizations() []string                            { return nil }
 func (s *Superuser) String() string                                     { return s.Username }
 func (s *Superuser) ID() string                                         { return s.Username }
 func (s *Superuser) IsSiteAdmin() bool                                  { return true }

@@ -22,12 +22,6 @@ func fakeApp(opts ...fakeOption) *application {
 
 type fakeOption func(*fakeClient)
 
-func withOrganization(org *organization.Organization) fakeOption {
-	return func(c *fakeClient) {
-		c.organization = org
-	}
-}
-
 func withUser(user *auth.User) fakeOption {
 	return func(c *fakeClient) {
 		c.user = user
@@ -65,13 +59,12 @@ func withTarball(tarball []byte) fakeOption {
 }
 
 type fakeClient struct {
-	organization *organization.Organization
-	user         *auth.User
-	team         *auth.Team
-	workspaces   []*workspace.Workspace
-	run          *run.Run
-	agentToken   *auth.AgentToken
-	tarball      []byte
+	user       *auth.User
+	team       *auth.Team
+	workspaces []*workspace.Workspace
+	run        *run.Run
+	agentToken *auth.AgentToken
+	tarball    []byte
 	client.Client
 }
 
@@ -88,14 +81,6 @@ func (f *fakeClient) CreateUser(context.Context, string, ...auth.NewUserOption) 
 }
 
 func (f *fakeClient) DeleteUser(context.Context, string) error {
-	return nil
-}
-
-func (f *fakeClient) AddOrganizationMembership(context.Context, string, string) error {
-	return nil
-}
-
-func (f *fakeClient) RemoveOrganizationMembership(context.Context, string, string) error {
 	return nil
 }
 

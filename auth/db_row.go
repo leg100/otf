@@ -7,12 +7,11 @@ import (
 
 // userRow represents the result of a database query for a user.
 type userRow struct {
-	UserID        pgtype.Text        `json:"user_id"`
-	Username      pgtype.Text        `json:"username"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []string           `json:"organizations"`
-	Teams         []pggen.Teams      `json:"teams"`
+	UserID    pgtype.Text        `json:"user_id"`
+	Username  pgtype.Text        `json:"username"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Teams     []pggen.Teams      `json:"teams"`
 }
 
 func (row userRow) toUser() *User {
@@ -21,10 +20,6 @@ func (row userRow) toUser() *User {
 		CreatedAt: row.CreatedAt.Time.UTC(),
 		UpdatedAt: row.UpdatedAt.Time.UTC(),
 		Username:  row.Username.String,
-	}
-	// avoid assigning empty slice to ensure equality in tests
-	if len(row.Organizations) > 0 {
-		user.Organizations = row.Organizations
 	}
 	for _, tr := range row.Teams {
 		user.Teams = append(user.Teams, teamRow(tr).toTeam())

@@ -24,7 +24,6 @@ func TestGetUser(t *testing.T) {
 				Organization: "fake-org",
 			},
 		},
-		Organizations: []string{"fake-org"},
 	}
 	client := newTestServerClient(t, WithUser(&want))
 
@@ -32,11 +31,9 @@ func TestGetUser(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want.Name, got.Name)
-	if assert.Equal(t, 1, len(got.Organizations)) {
-		assert.Equal(t, "fake-org", got.Organizations[0])
-	}
 	if assert.Equal(t, 1, len(got.Teams)) {
 		assert.Equal(t, "fake-team", got.Teams[0].Name)
+		assert.Equal(t, "fake-org", got.Teams[0].Organization)
 	}
 }
 
