@@ -29,7 +29,6 @@ func TestSandbox(t *testing.T) {
 				Organization: org,
 			},
 		},
-		Organizations: []string{org},
 	}
 
 	daemon := &daemon{}

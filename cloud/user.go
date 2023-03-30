@@ -13,3 +13,10 @@ type (
 		Organization string // team belongs to an organization
 	}
 )
+
+func (u User) Organizations() (organizations []string) {
+	for _, t := range u.Teams {
+		organizations = append(organizations, t.Organization)
+	}
+	return
+}

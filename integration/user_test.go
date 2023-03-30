@@ -25,7 +25,6 @@ func TestUser(t *testing.T) {
 		team2 := svc.createTeam(t, ctx, org2)
 
 		user := svc.createUser(t, ctx,
-			auth.WithOrganizations(org1.Name, org2.Name),
 			auth.WithTeams(team1, team2))
 
 		session1 := svc.createSession(t, ctx, user, nil)
@@ -64,7 +63,7 @@ func TestUser(t *testing.T) {
 				assert.Equal(t, got.Username, user.Username)
 				assert.Equal(t, got.CreatedAt, user.CreatedAt)
 				assert.Equal(t, got.UpdatedAt, user.UpdatedAt)
-				assert.Equal(t, 2, len(got.Organizations))
+				assert.Equal(t, 2, len(got.Organizations()))
 				assert.Equal(t, 2, len(got.Teams))
 			})
 		}
@@ -79,9 +78,10 @@ func TestUser(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
+		team := svc.createTeam(t, ctx, org)
 		user1 := svc.createUser(t, ctx)
-		user2 := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
-		user3 := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
+		user2 := svc.createUser(t, ctx, auth.WithTeams(team))
+		user3 := svc.createUser(t, ctx, auth.WithTeams(team))
 
 		users, err := svc.ListUsers(ctx, org.Name)
 		require.NoError(t, err)
@@ -102,39 +102,11 @@ func TestUser(t *testing.T) {
 		assert.Equal(t, err, otf.ErrResourceNotFound)
 	})
 
-	t.Run("add organization membership", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
-		user := svc.createUser(t, ctx)
-
-		err := svc.AddOrganizationMembership(ctx, user.Username, org.Name)
-		require.NoError(t, err)
-
-		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
-		require.NoError(t, err)
-
-		assert.Contains(t, got.Organizations, org.Name)
-	})
-
-	t.Run("remove organization membership", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
-		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
-
-		err := svc.RemoveOrganizationMembership(ctx, user.Username, org.Name)
-		require.NoError(t, err)
-
-		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
-		require.NoError(t, err)
-
-		assert.NotContains(t, got.Organizations, org.Name)
-	})
-
 	t.Run("add team membership", func(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
-		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name))
+		user := svc.createUser(t, ctx)
 
 		err := svc.AddTeamMembership(ctx, user.Username, team.ID)
 		require.NoError(t, err)
@@ -149,7 +121,7 @@ func TestUser(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
-		user := svc.createUser(t, ctx, auth.WithOrganizations(org.Name), auth.WithTeams(team))
+		user := svc.createUser(t, ctx, auth.WithTeams(team))
 
 		err := svc.RemoveTeamMembership(ctx, user.Username, team.ID)
 		require.NoError(t, err)

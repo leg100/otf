@@ -47,10 +47,10 @@ func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	return &Client{client: client}, nil
 }
 
-// GetUser retrieves a user from gitlab. The user's organizations map to gitlab
-// groups and the user's teams map to their access level on the groups, e.g. a
-// user with maintainer access level on group acme maps to a user in the
-// maintainer team in the acme organization.
+// GetUser retrieves a user. Their team memberships are determined based on
+// their access level in their gitlab groups, e.g. a user with owners access
+// level on group acme maps to a user in the owners team in the acme
+// organization.
 func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
@@ -83,7 +83,6 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 		case gitlab.GuestPermissions:
 			team = "guests"
 		default:
-			// TODO: skip unknown access levels without error
 			return nil, fmt.Errorf("unknown gitlab access level: %d", membership.AccessLevel)
 		}
 		user.Teams = append(user.Teams, cloud.Team{

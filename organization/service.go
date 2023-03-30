@@ -131,7 +131,7 @@ func (s *service) ListOrganizations(ctx context.Context, opts OrganizationListOp
 	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
 		return s.db.list(ctx, opts)
 	}
-	opts.Names = subject.ListOrganizations()
+	opts.Names = subject.Organizations()
 	return s.db.list(ctx, opts)
 }
 

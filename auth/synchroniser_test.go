@@ -9,29 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUserSyncOrganizations(t *testing.T) {
-	ctx := context.Background()
-	svc := &fakeSynchroniserService{}
-
-	user := NewUser(uuid.NewString(), WithOrganizations("org-1", "org-2"))
-
-	s := &synchroniser{
-		AuthService: svc,
-	}
-	want := []string{"org-2", "org-3"}
-	err := s.syncOrganizations(ctx, user, want)
-	require.NoError(t, err)
-
-	// expect membership to have been added to org3
-	if assert.Equal(t, 1, len(svc.addedOrgs)) {
-		assert.Equal(t, "org-3", svc.addedOrgs[0])
-	}
-	// expect membership to have been removed from org1
-	if assert.Equal(t, 1, len(svc.removedOrgs)) {
-		assert.Equal(t, "org-1", svc.removedOrgs[0])
-	}
-}
-
 func TestUserSyncTeams(t *testing.T) {
 	ctx := context.Background()
 	svc := &fakeSynchroniserService{}
@@ -60,19 +37,9 @@ func TestUserSyncTeams(t *testing.T) {
 }
 
 type fakeSynchroniserService struct {
-	addedOrgs, removedOrgs, addedTeams, removedTeams []string
+	addedTeams, removedTeams []string
 
 	AuthService
-}
-
-func (f *fakeSynchroniserService) AddOrganizationMembership(ctx context.Context, _, orgID string) error {
-	f.addedOrgs = append(f.addedOrgs, orgID)
-	return nil
-}
-
-func (f *fakeSynchroniserService) RemoveOrganizationMembership(ctx context.Context, _, orgID string) error {
-	f.removedOrgs = append(f.removedOrgs, orgID)
-	return nil
 }
 
 func (f *fakeSynchroniserService) AddTeamMembership(ctx context.Context, _, team string) error {

@@ -16,8 +16,7 @@ func TestAutoApply(t *testing.T) {
 
 	// Build and start a daemon
 	user := cloud.User{
-		Name:          uuid.NewString(),
-		Organizations: []string{org},
+		Name: uuid.NewString(),
 		Teams: []cloud.Team{
 			{Name: "owners", Organization: org},
 		},

@@ -52,7 +52,6 @@ func TestAuthenticator(t *testing.T) {
 				Organization: "fake-org",
 			},
 		},
-		Organizations: []string{"fake-org"},
 	}
 
 	t.Run("response_handler", func(t *testing.T) {

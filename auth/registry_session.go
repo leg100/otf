@@ -59,7 +59,7 @@ func (t *RegistrySession) ToJSONAPI() any {
 	}
 }
 
-func (t *RegistrySession) ListOrganizations() []string { return nil }
+func (t *RegistrySession) Organizations() []string { return nil }
 
 func (t *RegistrySession) IsSiteAdmin() bool   { return true }
 func (t *RegistrySession) IsOwner(string) bool { return true }

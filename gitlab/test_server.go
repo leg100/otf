@@ -122,7 +122,7 @@ func WithGitlabUser(user *cloud.User) TestGitlabServerOption {
 		db.user = &gitlab.User{Username: user.Name, ID: 1}
 		db.access = make(map[int]gitlab.AccessLevelValue)
 
-		for i, org := range user.Organizations {
+		for i, org := range user.Organizations() {
 			db.groups = append(db.groups, &gitlab.Group{
 				ID:   i,
 				Path: org,

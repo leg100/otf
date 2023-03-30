@@ -26,7 +26,6 @@ func TestClient(t *testing.T) {
 					Organization: "fake-org",
 				},
 			},
-			Organizations: []string{"fake-org"},
 		}
 
 		provider := newTestClient(t, WithGitlabUser(&want))
@@ -35,11 +34,9 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, "fake-user", user.Name)
-		if assert.Equal(t, 1, len(user.Organizations)) {
-			assert.Equal(t, "fake-org", user.Organizations[0])
-		}
 		if assert.Equal(t, 1, len(user.Teams)) {
 			assert.Equal(t, "maintainers", user.Teams[0].Name)
+			assert.Equal(t, "fake-org", user.Teams[0].Organization)
 		}
 	})
 

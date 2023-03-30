@@ -22,9 +22,8 @@ func TestLockFile(t *testing.T) {
 	org, workspace := setup(t)
 
 	user := cloud.User{
-		Name:          uuid.NewString(),
-		Teams:         []cloud.Team{{"owners", org}},
-		Organizations: []string{org},
+		Name:  uuid.NewString(),
+		Teams: []cloud.Team{{"owners", org}},
 	}
 
 	daemon := &daemon{}

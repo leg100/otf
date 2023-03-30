@@ -9,15 +9,13 @@ import (
 
 func TestSiteAdminCanAccessOrganization(t *testing.T) {
 	u := User{
-		ID:            SiteAdminID,
-		Organizations: []string{"acme-corp"},
+		ID: SiteAdminID,
 	}
 	assert.True(t, u.CanAccessOrganization(rbac.ListRunsAction, "acme-corp"))
 }
 
 func TestOwnerCanAccessOrganization(t *testing.T) {
 	u := User{
-		Organizations: []string{"acme-corp"},
 		Teams: []*Team{
 			{
 				Name:         "owners",

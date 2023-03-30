@@ -31,7 +31,6 @@ func TestWebhook(t *testing.T) {
 				Organization: org,
 			},
 		},
-		Organizations: []string{org},
 	}
 
 	repo := cloud.NewTestRepo()

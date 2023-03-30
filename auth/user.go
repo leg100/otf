@@ -74,7 +74,7 @@ func (u *User) IsTeamMember(teamID string) bool {
 	return false
 }
 
-func (u *User) ListOrganizations() (organizations []string) {
+func (u *User) Organizations() (organizations []string) {
 	for _, t := range u.Teams {
 		organizations = append(organizations, t.Organization)
 	}

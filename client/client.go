@@ -64,8 +64,6 @@ type (
 
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error
-		AddOrganizationMembership(ctx context.Context, username, organization string) error
-		RemoveOrganizationMembership(ctx context.Context, username, organization string) error
 		AddTeamMembership(ctx context.Context, username, teamID string) error
 		RemoveTeamMembership(ctx context.Context, username, teamID string) error
 

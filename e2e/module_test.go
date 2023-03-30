@@ -31,7 +31,6 @@ func TestModule(t *testing.T) {
 				Organization: org,
 			},
 		},
-		Organizations: []string{org},
 	}
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,

@@ -71,33 +71,12 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 		return nil, err
 	}
 
-	gorgs, _, err := g.client.Organizations.List(ctx, "", nil)
-	if err != nil {
-		return nil, err
-	}
-
 	gteams, _, err := g.client.Teams.ListUserTeams(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	user := cloud.User{Name: guser.GetLogin()}
-
-	for _, gorg := range gorgs {
-		user.Organizations = append(user.Organizations, gorg.GetLogin())
-
-		// Determine if they are an admin; if so, add them to the owners team.
-		membership, _, err := g.client.Organizations.GetOrgMembership(ctx, "", gorg.GetLogin())
-		if err != nil {
-			return nil, err
-		}
-		if membership.GetRole() == "admin" {
-			user.Teams = append(user.Teams, cloud.Team{
-				Name:         "owners",
-				Organization: gorg.GetLogin(),
-			})
-		}
-	}
 
 	// Convert each github team to a cloud team. Use the github slug rather than
 	// the github name because the latter often contains whitespace, and OTF
@@ -107,6 +86,24 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 			Name:         gteam.GetSlug(),
 			Organization: gteam.GetOrganization().GetLogin(),
 		})
+	}
+
+	organizations, _, err := g.client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, org := range organizations {
+		// Determine if they are an admin; if so, add them to the owners team.
+		membership, _, err := g.client.Organizations.GetOrgMembership(ctx, "", org.GetLogin())
+		if err != nil {
+			return nil, err
+		}
+		if membership.GetRole() == "admin" {
+			user.Teams = append(user.Teams, cloud.Team{
+				Name:         "owners",
+				Organization: org.GetLogin(),
+			})
+		}
 	}
 
 	return &user, nil

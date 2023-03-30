@@ -33,7 +33,6 @@ func TestCluster(t *testing.T) {
 				Organization: org,
 			},
 		},
-		Organizations: []string{org},
 	}
 
 	// start two daemons, one for user, one for agent, both sharing a db
