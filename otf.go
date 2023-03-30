@@ -50,16 +50,14 @@ type DB interface {
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	// Send batches of SQL queries over the wire.
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+	// Wait for a session-level advisory lock to become available.
+	WaitAndLock(ctx context.Context, id int64, fn func() error) error
 
 	pggen.Querier // queries generated from SQL
 	Close()       // Close all connections in pool
 
 	// additional queries that wrap the generated queries
 	GetLogs(ctx context.Context, runID string, phase PhaseType) ([]byte, error)
-}
-
-type DatabaseLock interface {
-	Release()
 }
 
 // GetID retrieves the ID field of a struct contained in s. If s is not a struct,

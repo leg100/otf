@@ -37,20 +37,6 @@ WHERE o.name = pggen.arg('organization_name')
 GROUP BY u.user_id
 ;
 
--- name: FindUsersByTeam :many
-SELECT
-    u.*,
-    array_remove(array_agg(o.name), NULL) AS organizations,
-    array_remove(array_agg(t), NULL) AS teams
-FROM users u
-JOIN team_memberships tm USING (username)
-JOIN teams t USING (team_id)
-JOIN organizations o ON o.name = t.organization_name
-WHERE o.name = pggen.arg('organization_name')
-AND   t.name = pggen.arg('team_name')
-GROUP BY u.user_id
-;
-
 -- name: FindUsersByTeamID :many
 SELECT
     u.*,

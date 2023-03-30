@@ -77,6 +77,31 @@ func (db *DB) Exec(ctx context.Context, sql string, arguments ...interface{}) (p
 	return db.conn.Exec(ctx, sql, arguments...)
 }
 
+// WaitAndLock obtains an exclusive session-level advisory lock. If another
+// session holds the lock with the given id then it'll wait until the other
+// session releases the lock. The given fn is called once the lock is obtained
+// and when the fn finishes the lock is released.
+func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) error {
+	// A dedicated connection is obtained. Using a connection pool would cause
+	// problems because a lock must be released on the same connection on which
+	// it was obtained.
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
+		return err
+	}
+	defer conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
+
+	if err := fn(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
 func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {

@@ -755,13 +755,6 @@ type Querier interface {
 	// FindUsersByOrganizationScan scans the result of an executed FindUsersByOrganizationBatch query.
 	FindUsersByOrganizationScan(results pgx.BatchResults) ([]FindUsersByOrganizationRow, error)
 
-	FindUsersByTeam(ctx context.Context, organizationName pgtype.Text, teamName pgtype.Text) ([]FindUsersByTeamRow, error)
-	// FindUsersByTeamBatch enqueues a FindUsersByTeam query into batch to be executed
-	// later by the batch.
-	FindUsersByTeamBatch(batch genericBatch, organizationName pgtype.Text, teamName pgtype.Text)
-	// FindUsersByTeamScan scans the result of an executed FindUsersByTeamBatch query.
-	FindUsersByTeamScan(results pgx.BatchResults) ([]FindUsersByTeamRow, error)
-
 	FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) ([]FindUsersByTeamIDRow, error)
 	// FindUsersByTeamIDBatch enqueues a FindUsersByTeamID query into batch to be executed
 	// later by the batch.
@@ -1415,9 +1408,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findUsersByOrganizationSQL, findUsersByOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUsersByOrganization': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUsersByTeamSQL, findUsersByTeamSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUsersByTeam': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findUsersByTeamIDSQL, findUsersByTeamIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUsersByTeamID': %w", err)
