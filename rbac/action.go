@@ -81,10 +81,16 @@ const (
 	DownloadConfigurationVersionAction
 	DeleteConfigurationVersionAction
 
+	CreateUserAction
 	ListUsersAction
+	DeleteUserAction
+	AddOrganizationMembershipAction
+	RemoveOrganizationMembershipAction
 
 	CreateTeamAction
 	UpdateTeamAction
 	GetTeamAction
 	ListTeamsAction
+	AddTeamMembershipAction
+	RemoveTeamMembershipAction
 )
