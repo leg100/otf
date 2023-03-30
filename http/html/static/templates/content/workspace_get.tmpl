@@ -40,11 +40,15 @@
     {{ with .Content.Connection }}
     <div>Connected to <span class="data">{{ .Repo }}</span></div>
     {{ end }}
-    {{ with .Content.LatestRunID }}
-      <div>
-        <h3>Latest Run</h3>
-        <div id="latest-run"></div>
+    <div>
+      <h3>Latest Run</h3>
+      <div id="latest-run">
+        {{ if not .Content.LatestRunID }}
+          There are no runs for this workspace.
+        {{ end }}
       </div>
+    </div>
+    {{ with .Content.LatestRunID }}
       <script type="text/javascript">
           fetch({{ widgetRunPath . }})
           .then((response) => response.text())
