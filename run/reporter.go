@@ -55,21 +55,14 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 	}
 
 	op := func() error {
-		conn, err := opts.Acquire(ctx)
-		if err != nil {
-			return err
-		}
-		defer conn.Release()
-
 		// block on getting an exclusive lock
-		if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", reporterLockID); err != nil {
-			if ctx.Err() != nil {
-				return nil // exit
-			}
-			return err // retry
+		err := opts.WaitAndLock(ctx, reporterLockID, func() error {
+			return rptr.start(ctx)
+		})
+		if ctx.Err() != nil {
+			return nil // exit
 		}
-
-		return rptr.start(ctx)
+		return err // retry
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, nil)

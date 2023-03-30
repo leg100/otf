@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,5 +25,21 @@ func TestSetDefaultMaxConnections(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+// TestWaitAndLock tests acquiring a connection from a pool, obtaining a session
+// lock and then releasing lock and the connection, and it does this several
+// times, to demonstrate that it is returning resources and not running into
+// limits.
+func TestWaitAndLock(t *testing.T) {
+	ctx := context.Background()
+	db, _ := NewTestDB(t)
+
+	for i := 0; i < 100; i++ {
+		func() {
+			err := db.WaitAndLock(ctx, 123, func() error { return nil })
+			require.NoError(t, err)
+		}()
 	}
 }
