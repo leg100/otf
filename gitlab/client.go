@@ -65,9 +65,6 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 
 	user := cloud.User{Name: guser.Username}
 	for _, group := range groups {
-		// Create org for each top-level group
-		user.Organizations = append(user.Organizations, group.Path)
-
 		// Get group membership info
 		membership, _, err := g.client.GroupMembers.GetGroupMember(group.ID, guser.ID)
 		if err != nil {

@@ -20,12 +20,11 @@ var (
 type (
 	// User represents an otf user account.
 	User struct {
-		ID            string // ID uniquely identifies users
-		CreatedAt     time.Time
-		UpdatedAt     time.Time
-		Username      string   // username is globally unique
-		Organizations []string // user belongs to many organizations
-		Teams         []*Team  // user belongs to many teams
+		ID        string // ID uniquely identifies users
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		Username  string  // username is globally unique
+		Teams     []*Team // user belongs to many teams
 	}
 
 	// UserListOptions are options for the ListUsers endpoint.
@@ -57,12 +56,6 @@ func NewUser(username string, opts ...NewUserOption) *User {
 	return user
 }
 
-func WithOrganizations(organizations ...string) NewUserOption {
-	return func(user *User) {
-		user.Organizations = organizations
-	}
-}
-
 func WithTeams(memberships ...*Team) NewUserOption {
 	return func(user *User) {
 		user.Teams = memberships
@@ -81,7 +74,12 @@ func (u *User) IsTeamMember(teamID string) bool {
 	return false
 }
 
-func (u *User) ListOrganizations() []string { return u.Organizations }
+func (u *User) ListOrganizations() (organizations []string) {
+	for _, t := range u.Teams {
+		organizations = append(organizations, t.Organization)
+	}
+	return organizations
+}
 
 func (u *User) IsSiteAdmin() bool { return u.ID == SiteAdminID }
 
