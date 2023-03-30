@@ -15,8 +15,14 @@ type (
 )
 
 func (u User) Organizations() (organizations []string) {
+	// De-dup organizations
+	seen := make(map[string]bool)
 	for _, t := range u.Teams {
+		if _, ok := seen[t.Organization]; ok {
+			continue
+		}
 		organizations = append(organizations, t.Organization)
+		seen[t.Organization] = true
 	}
-	return
+	return organizations
 }

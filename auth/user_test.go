@@ -25,3 +25,32 @@ func TestOwnerCanAccessOrganization(t *testing.T) {
 	}
 	assert.True(t, u.CanAccessOrganization(rbac.ListRunsAction, "acme-corp"))
 }
+
+func TestUser_Organizations(t *testing.T) {
+	u := User{
+		Teams: []*Team{
+			{
+				Name:         "owners",
+				Organization: "acme-corp",
+			},
+			{
+				Name:         "owners",
+				Organization: "big-tabacco",
+			},
+			{
+				Name:         "owners",
+				Organization: "big-pharma",
+			},
+			{
+				Name:         "engineers",
+				Organization: "acme-corp",
+			},
+		},
+	}
+	want := []string{
+		"acme-corp",
+		"big-tabacco",
+		"big-pharma",
+	}
+	assert.Equal(t, want, u.Organizations())
+}
