@@ -22,7 +22,7 @@ func TestWritePermission(t *testing.T) {
 	devops := cloud.Team{Name: "devops", Organization: org}
 
 	// Create database to be shared between two daemons
-	_, connstr := sql.NewTestDB(t)
+	connstr := sql.NewTestDB(t)
 
 	// Build and start a daemon specifically for the boss
 	boss := cloud.User{

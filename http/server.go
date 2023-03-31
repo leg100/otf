@@ -87,12 +87,6 @@ type (
 
 // NewServer constructs the http server for OTF
 func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
-	s := &Server{
-		server:       &http.Server{},
-		Logger:       logger,
-		ServerConfig: cfg,
-	}
-
 	if cfg.SSL {
 		if cfg.CertFile == "" || cfg.KeyFile == "" {
 			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
@@ -136,10 +130,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 
 	// Subject service routes to provided middleware, verifying tokens,
 	// sessions.
-	svcRouter.Use(s.Middleware...)
+	svcRouter.Use(cfg.Middleware...)
 
 	// Add handlers for each service
-	for _, h := range s.Handlers {
+	for _, h := range cfg.Handlers {
 		h.AddHandlers(svcRouter)
 	}
 
@@ -156,19 +150,25 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 		})
 	})
 
-	// Toggle logging HTTP requests
+	// Optionally log every request
 	if cfg.EnableRequestLogging {
-		http.Handle("/", s.loggingMiddleware(r))
-	} else {
-		http.Handle("/", r)
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m := httpsnoop.CaptureMetrics(next, w, r)
+				logger.Info("request",
+					"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
+					"status", m.Code,
+					"method", r.Method,
+					"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+			})
+		})
 	}
 
-	return s, nil
-}
-
-// APIRouter wraps the given router with a router suitable for API routes.
-func APIRouter(r *mux.Router) *mux.Router {
-	return r.PathPrefix(APIPrefixV2).Subrouter()
+	return &Server{
+		Logger:       logger,
+		ServerConfig: cfg,
+		server:       &http.Server{Handler: r},
+	}, nil
 }
 
 // Start starts serving http traffic on the given listener and waits until the server exits due to
@@ -206,15 +206,7 @@ func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
 	}
 }
 
-// newLoggingMiddleware returns middleware that logs HTTP requests
-func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		m := httpsnoop.CaptureMetrics(next, w, r)
-
-		s.Info("request",
-			"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
-			"status", m.Code,
-			"method", r.Method,
-			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
-	})
+// APIRouter wraps the given router with a router suitable for API routes.
+func APIRouter(r *mux.Router) *mux.Router {
+	return r.PathPrefix(APIPrefixV2).Subrouter()
 }

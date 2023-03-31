@@ -66,7 +66,7 @@ func (d *daemon) start(t *testing.T) string {
 	// either use test-specific connection string or create a new logical
 	// database and use a connection string to that.
 	if d.connstr == nil {
-		_, connstr := sql.NewTestDB(t)
+		connstr := sql.NewTestDB(t)
 		d.connstr = &connstr
 	}
 

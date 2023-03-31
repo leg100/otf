@@ -25,31 +25,19 @@ const (
 )
 
 type (
-	Broker interface {
-		otf.PubSubService
-		Register(t reflect.Type, getter Getter)
-		Start(context.Context) error
-		WaitUntilListening()
-	}
-
-	// broker is a pubsub broker implemented using postgres' listen/notify
-	broker struct {
+	// Broker is a pubsub Broker implemented using postgres' listen/notify
+	Broker struct {
 		logr.Logger
 
 		channel       string                      // postgres notification channel name
 		pool          pool                        // pool from which to acquire a dedicated connection to postgres
 		islistening   chan bool                   // semaphore that's closed once broker is listening
 		pid           string                      // pid uniquely identifies a broker
-		registrations map[string]Getter           // map of event payload type to a fn that can retrieve the payload
+		registrations map[string]otf.Getter       // map of event payload type to a fn that can retrieve the payload
 		subs          map[string]chan otf.Event   // subscriptions
 		metrics       map[string]prometheus.Gauge // metric for each subscription
 
 		mu sync.Mutex // sync access to maps
-	}
-
-	// Getter retrieves an event payload using its ID.
-	Getter interface {
-		GetByID(context.Context, string) (any, error)
 	}
 
 	pool interface {
@@ -66,22 +54,24 @@ type (
 	}
 )
 
-func NewBroker(logger logr.Logger, db otf.DB) *broker {
-	return &broker{
-		Logger:        logger.WithValues("component", "pubsub"),
+func NewBroker(logger logr.Logger, db otf.DB) *Broker {
+	return &Broker{
+		Logger:        logger.WithValues("component", "broker"),
 		pid:           uuid.NewString(),
 		pool:          db,
 		islistening:   make(chan bool),
 		channel:       defaultChannel,
-		registrations: make(map[string]Getter),
+		registrations: make(map[string]otf.Getter),
 		subs:          make(map[string]chan otf.Event),
 		metrics:       make(map[string]prometheus.Gauge),
 	}
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
-// local pubsub broker.
-func (b *broker) Start(ctx context.Context) error {
+// local pubsub broker. The listening channel is closed once the broker has
+// started listening; from this point onwards published messages will be
+// forwarded.
+func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 	conn, err := b.pool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -91,7 +81,8 @@ func (b *broker) Start(ctx context.Context) error {
 	if _, err := conn.Exec(ctx, "listen "+b.channel); err != nil {
 		return err
 	}
-	close(b.islistening) // close semaphore to indicate broker is now listening
+	close(isListening) // close semaphore to indicate broker is now listening
+	b.Info("listening for events")
 
 	op := func() error {
 		for {
@@ -113,19 +104,14 @@ func (b *broker) Start(ctx context.Context) error {
 			}
 		}
 	}
-	return backoff.RetryNotify(op, backoff.NewExponentialBackOff(), nil)
-}
-
-// WaitUntilListening will only return once the broker is listening for postgres
-// events.
-func (b *broker) WaitUntilListening() {
-	<-b.islistening
+	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
+	return backoff.RetryNotify(op, policy, nil)
 }
 
 // Publish sends an event to subscribers, via postgres to subscribers on
 // other machines, and via the local broker to subscribers within the same
 // process.
-func (b *broker) Publish(event otf.Event) {
+func (b *Broker) Publish(event otf.Event) {
 	b.localPublish(event)
 
 	if event.Local {
@@ -140,7 +126,7 @@ func (b *broker) Publish(event otf.Event) {
 // Subscribe subscribes the caller to a stream of events. Prefix is an
 // identifier prefixed to a random string to helpfully identify the subscriber
 // in metrics.
-func (b *broker) Subscribe(ctx context.Context, prefix string) (<-chan otf.Event, error) {
+func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan otf.Event, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -185,7 +171,7 @@ func (b *broker) Subscribe(ctx context.Context, prefix string) (<-chan otf.Event
 }
 
 // Register a means of reassembling a postgres message back into an otf event
-func (b *broker) Register(t reflect.Type, getter Getter) {
+func (b *Broker) Register(t reflect.Type, getter otf.Getter) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -193,7 +179,7 @@ func (b *broker) Register(t reflect.Type, getter Getter) {
 }
 
 // localPublish publishes an event to subscribers on the local node
-func (b *broker) localPublish(event otf.Event) {
+func (b *Broker) localPublish(event otf.Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -210,7 +196,7 @@ func (b *broker) localPublish(event otf.Event) {
 
 // remotePublish publishes an event to postgres for relaying onto to remote
 // subscribers
-func (b *broker) remotePublish(event otf.Event) error {
+func (b *Broker) remotePublish(event otf.Event) error {
 	// marshal an otf event into a JSON-encoded postgres event
 	id, hasID := otf.GetID(event.Payload)
 	if !hasID {
@@ -233,7 +219,7 @@ func (b *broker) remotePublish(event otf.Event) error {
 }
 
 // receive handles notifications from postgres
-func (b *broker) receive(ctx context.Context, notification *pgconn.Notification) error {
+func (b *Broker) receive(ctx context.Context, notification *pgconn.Notification) error {
 	var event pgevent
 	if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
 		return err

@@ -13,11 +13,11 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/services"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
@@ -27,32 +27,43 @@ import (
 )
 
 type (
-	testServices struct {
-		*services.Services
+	testDaemon struct {
+		*daemon.Daemon
 
-		db otf.DB
-
-		githubServer *github.TestServer
+		vcsServer
 	}
+
 	config struct {
-		repo string // create repo on stub github server
-		db   otf.DB // use this db for tests rather than shared db
+		repo             string  // create repo on stub github server
+		connstr          *string // use this database conn string for tests rather than one specifically created for test.
+		disableScheduler bool    // don't start the run scheduler
+	}
+
+	// some tests want to know whether a webhook has been created on the vcs
+	// server
+	vcsServer interface {
+		HasWebhook() bool
 	}
 )
 
 // setup configures otfd services for use in a test.
-func setup(t *testing.T, cfg *config) *testServices {
+func setup(t *testing.T, cfg *config) *testDaemon {
 	t.Helper()
 
-	// use caller provided db or new db
-	var db otf.DB
-	if cfg != nil && cfg.db != nil {
-		db = cfg.db
-	} else {
-		db, _ = sql.NewTestDB(t)
-	}
+	dcfg := daemon.NewDefaultConfig()
 
-	svccfg := services.NewDefaultConfig()
+	// use caller provided connstr or new connstr
+	var connstr string
+	if cfg != nil && cfg.connstr != nil {
+		connstr = *cfg.connstr
+	} else {
+		connstr = sql.NewTestDB(t)
+	}
+	dcfg.Database = connstr
+
+	if cfg != nil && cfg.disableScheduler {
+		dcfg.DisableRunScheduler = true
+	}
 
 	// Configure and start stub github server
 	var ghopts []github.TestServerOption
@@ -60,29 +71,52 @@ func setup(t *testing.T, cfg *config) *testServices {
 		ghopts = append(ghopts, github.WithRepo(cfg.repo))
 	}
 	githubServer, githubCfg := github.NewTestServer(t, ghopts...)
-	svccfg.Github.Config = githubCfg
+	dcfg.Github.Config = githubCfg
 
 	// Configure logger; discard logs by default
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "trace", Color: "true"})
+		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "error", Color: "true"})
 		require.NoError(t, err)
 	} else {
 		logger = logr.Discard()
 	}
 
-	svcs, err := services.New(logger, db, svccfg)
+	d, err := daemon.New(context.Background(), logger, dcfg)
 	require.NoError(t, err)
 
-	return &testServices{
-		Services:     svcs,
-		db:           db,
-		githubServer: githubServer,
+	// cancel ctx upon test completion
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// start daemon and upon test completion check that it exited cleanly
+	done := make(chan error)
+	started := make(chan struct{})
+	go func() {
+		err := d.Start(ctx, started)
+		// if context was canceled don't report any error
+		if ctx.Err() != nil {
+			done <- nil
+			return
+		}
+		require.NoError(t, err, "daemon exited with an error")
+		done <- err
+	}()
+	// don't proceed until daemon has started.
+	<-started
+
+	t.Cleanup(func() {
+		cancel() // terminates daemon
+		<-done   // don't exit test until daemon is fully terminated
+	})
+
+	return &testDaemon{
+		Daemon:    d,
+		vcsServer: githubServer,
 	}
 }
 
-func (s *testServices) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
+func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
 	org, err := s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
@@ -92,7 +126,7 @@ func (s *testServices) createOrganization(t *testing.T, ctx context.Context) *or
 	return org
 }
 
-func (s *testServices) createWorkspace(t *testing.T, ctx context.Context, org *organization.Organization) *workspace.Workspace {
+func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *organization.Organization) *workspace.Workspace {
 	t.Helper()
 
 	if org == nil {
@@ -107,7 +141,7 @@ func (s *testServices) createWorkspace(t *testing.T, ctx context.Context, org *o
 	return ws
 }
 
-func (s *testServices) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
+func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
 	t.Helper()
 
 	if org == nil {
@@ -126,7 +160,7 @@ func (s *testServices) createVCSProvider(t *testing.T, ctx context.Context, org 
 	return provider
 }
 
-func (s *testServices) createModule(t *testing.T, ctx context.Context, org *organization.Organization) *module.Module {
+func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organization.Organization) *module.Module {
 	t.Helper()
 
 	if org == nil {
@@ -142,7 +176,7 @@ func (s *testServices) createModule(t *testing.T, ctx context.Context, org *orga
 	return module
 }
 
-func (s *testServices) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
+func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
 	t.Helper()
 
 	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
@@ -150,7 +184,7 @@ func (s *testServices) createUser(t *testing.T, ctx context.Context, opts ...aut
 	return user
 }
 
-func (s *testServices) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
+func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
 	t.Helper()
 
 	if org == nil {
@@ -165,7 +199,7 @@ func (s *testServices) createTeam(t *testing.T, ctx context.Context, org *organi
 	return team
 }
 
-func (s *testServices) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
+func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
 	t.Helper()
 
 	if ws == nil {
@@ -177,7 +211,7 @@ func (s *testServices) createConfigurationVersion(t *testing.T, ctx context.Cont
 	return cv
 }
 
-func (s *testServices) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
+func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
 	t.Helper()
 
 	if ws == nil {
@@ -194,7 +228,7 @@ func (s *testServices) createRun(t *testing.T, ctx context.Context, ws *workspac
 	return run
 }
 
-func (s *testServices) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace) *variable.Variable {
+func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *workspace.Workspace) *variable.Variable {
 	t.Helper()
 
 	if ws == nil {
@@ -210,7 +244,7 @@ func (s *testServices) createVariable(t *testing.T, ctx context.Context, ws *wor
 	return v
 }
 
-func (s *testServices) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *state.Version {
+func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *state.Version {
 	t.Helper()
 
 	if ws == nil {
@@ -228,7 +262,7 @@ func (s *testServices) createStateVersion(t *testing.T, ctx context.Context, ws 
 	return sv
 }
 
-func (s *testServices) createRegistrySession(t *testing.T, ctx context.Context, org *organization.Organization, expiry *time.Time) *auth.RegistrySession {
+func (s *testDaemon) createRegistrySession(t *testing.T, ctx context.Context, org *organization.Organization, expiry *time.Time) *auth.RegistrySession {
 	t.Helper()
 
 	if org == nil {
@@ -243,7 +277,7 @@ func (s *testServices) createRegistrySession(t *testing.T, ctx context.Context, 
 	return rs
 }
 
-func (s *testServices) createSession(t *testing.T, ctx context.Context, user *auth.User, expiry *time.Time) *auth.Session {
+func (s *testDaemon) createSession(t *testing.T, ctx context.Context, user *auth.User, expiry *time.Time) *auth.Session {
 	t.Helper()
 
 	if user == nil {
@@ -259,7 +293,7 @@ func (s *testServices) createSession(t *testing.T, ctx context.Context, user *au
 	return rs
 }
 
-func (s *testServices) createToken(t *testing.T, ctx context.Context, user *auth.User) *auth.Token {
+func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) *auth.Token {
 	t.Helper()
 
 	// If user is provided then add it to context. Otherwise the context is

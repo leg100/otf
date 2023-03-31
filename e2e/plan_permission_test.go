@@ -24,7 +24,7 @@ func TestPlanPermission(t *testing.T) {
 	devops := cloud.Team{Name: "devops", Organization: org}
 
 	// Run postgres in a container
-	_, connstr := sql.NewTestDB(t)
+	connstr := sql.NewTestDB(t)
 
 	// Build and start a daemon specifically for the boss
 	boss := cloud.User{

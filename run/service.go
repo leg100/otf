@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
@@ -97,7 +96,7 @@ type (
 		otf.Cache
 		otf.DB
 		otf.Renderer
-		pubsub.Broker
+		otf.Broker
 		otf.Signer
 	}
 )

@@ -55,7 +55,7 @@ func TestWorkspace(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.githubServer.HasWebhook())
+		require.True(t, svc.HasWebhook())
 
 		t.Run("delete workspace connection", func(t *testing.T) {
 			err := svc.Disconnect(ctx, repo.DisconnectOptions{
@@ -66,7 +66,7 @@ func TestWorkspace(t *testing.T) {
 		})
 
 		// webhook should now have been deleted from github
-		require.False(t, svc.githubServer.HasWebhook())
+		require.False(t, svc.HasWebhook())
 	})
 
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
@@ -85,13 +85,13 @@ func TestWorkspace(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.githubServer.HasWebhook())
+		require.True(t, svc.HasWebhook())
 
 		_, err = svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
 		// webhook should now have been deleted from github
-		require.False(t, svc.githubServer.HasWebhook())
+		require.False(t, svc.HasWebhook())
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {

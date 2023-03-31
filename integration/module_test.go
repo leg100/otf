@@ -43,7 +43,7 @@ func TestModule(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.githubServer.HasWebhook())
+		require.True(t, svc.HasWebhook())
 
 		t.Run("delete module", func(t *testing.T) {
 			_, err := svc.DeleteModule(ctx, mod.ID)
@@ -51,7 +51,7 @@ func TestModule(t *testing.T) {
 		})
 
 		// webhook should now have been deleted from github
-		require.False(t, svc.githubServer.HasWebhook())
+		require.False(t, svc.HasWebhook())
 	})
 
 	t.Run("get", func(t *testing.T) {

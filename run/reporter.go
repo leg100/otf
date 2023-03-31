@@ -70,7 +70,7 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 
 // start starts the reporter daemon. Should be invoked in a go routine.
 func (r *reporter) start(ctx context.Context) error {
-	// Unsubscribe Watch() whenever exiting this routine.
+	// Unsubscribe whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

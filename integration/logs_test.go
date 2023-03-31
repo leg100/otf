@@ -135,33 +135,14 @@ func TestClusterLogs(t *testing.T) {
 	t.Parallel()
 
 	// simulate a cluster of two otfd nodes
-	db, _ := sql.NewTestDB(t)
-	local := setup(t, &config{db: db})
-	remote := setup(t, &config{db: db})
+	connstr := sql.NewTestDB(t)
+	local := setup(t, &config{connstr: &connstr})
+	remote := setup(t, &config{connstr: &connstr})
 
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(func() { cancel() })
-
-	// start broker and caching proxy for each node
-	done := make(chan error)
-	go func() {
-		done <- local.Broker.Start(ctx)
-	}()
-	go func() {
-		done <- local.StartProxy(ctx)
-	}()
-	go func() {
-		done <- remote.Broker.Start(ctx)
-	}()
-	go func() {
-		done <- remote.StartProxy(ctx)
-	}()
-
-	// wait 'til brokers are listening
-	local.Broker.WaitUntilListening()
-	remote.Broker.WaitUntilListening()
 
 	// create run on local node
 	run := local.createRun(t, ctx, nil, nil)
@@ -206,8 +187,4 @@ func TestClusterLogs(t *testing.T) {
 		Offset: 6,
 	}
 	require.Equal(t, want2, <-sub)
-
-	cancel()
-	assert.NoError(t, <-done)
-	assert.NoError(t, <-done)
 }
