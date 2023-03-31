@@ -135,9 +135,9 @@ func TestClusterLogs(t *testing.T) {
 	t.Parallel()
 
 	// simulate a cluster of two otfd nodes
-	db, _ := sql.NewTestDB(t)
-	local := setup(t, &config{db: db})
-	remote := setup(t, &config{db: db})
+	connstr := sql.NewTestDB(t)
+	local := setup(t, &config{connstr: &connstr})
+	remote := setup(t, &config{connstr: &connstr})
 
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})

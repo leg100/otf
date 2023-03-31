@@ -158,9 +158,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 
 	// Toggle logging HTTP requests
 	if cfg.EnableRequestLogging {
-		http.Handle("/", s.loggingMiddleware(r))
+		http.NewServeMux().Handle("/", s.loggingMiddleware(r))
 	} else {
-		http.Handle("/", r)
+		http.NewServeMux().Handle("/", r)
 	}
 
 	return s, nil

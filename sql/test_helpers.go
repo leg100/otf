@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/iancoleman/strcase"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
@@ -18,10 +17,10 @@ import (
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
-// NewTestDB creates a logical database in postgres for a test, dropping the
-// database upon completion. The db connection is returned along with its
-// connection string.
-func NewTestDB(t *testing.T) (*DB, string) {
+// NewTestDB creates a logical database in postgres for a test and returns a
+// connection string for connecting to the database. The database is dropped
+// upon test completion.
+func NewTestDB(t *testing.T) string {
 	t.Helper()
 
 	connstr, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
@@ -53,15 +52,6 @@ func NewTestDB(t *testing.T) (*DB, string) {
 	u, err := url.Parse(connstr)
 	require.NoError(t, err)
 	u.Path = "/" + logical
-	logicalConnString := u.String()
 
-	// create otf db in new logical database, establish conn pool, etc.
-	db, err := New(ctx, Options{
-		Logger:     logr.Discard(),
-		ConnString: logicalConnString,
-	})
-	require.NoError(t, err)
-	t.Cleanup(db.Close)
-
-	return db, logicalConnString
+	return u.String()
 }

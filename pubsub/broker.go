@@ -118,6 +118,8 @@ func (b *broker) Start(ctx context.Context) error {
 
 // WaitUntilListening will only return once the broker is listening for postgres
 // events.
+//
+// TODO: add timeout
 func (b *broker) WaitUntilListening() {
 	<-b.islistening
 }

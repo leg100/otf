@@ -58,7 +58,7 @@ func TestRepo(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.githubServer.HasWebhook())
+		require.True(t, svc.HasWebhook())
 
 		t.Run("delete multiple connections", func(t *testing.T) {
 			err = svc.Disconnect(ctx, repo.DisconnectOptions{
@@ -86,7 +86,7 @@ func TestRepo(t *testing.T) {
 			require.NoError(t, err)
 
 			// webhook should now have been deleted from github
-			require.False(t, svc.githubServer.HasWebhook())
+			require.False(t, svc.HasWebhook())
 		})
 	})
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
@@ -10,14 +9,9 @@ import (
 	"github.com/leg100/otf/agent"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/module"
-	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/scheduler"
-	"github.com/leg100/otf/services"
-	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/daemon"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -37,7 +31,7 @@ func main() {
 }
 
 func parseFlags(ctx context.Context, args []string, out io.Writer) error {
-	cfg := services.NewDefaultConfig()
+	cfg := daemon.NewDefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:           "otfd",
@@ -46,7 +40,19 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       otf.Version,
-		RunE:          runFunc(&cfg),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := cmdutil.NewLogger(cfg.LoggerConfig)
+			if err != nil {
+				return err
+			}
+
+			d, err := daemon.New(cmd.Context(), logger, cfg)
+			if err != nil {
+				return err
+			}
+			// block until ^C received
+			return d.Start(cmd.Context())
+		},
 	}
 	cmd.SetOut(out)
 
@@ -86,143 +92,4 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	cmd.SetArgs(args)
 	return cmd.ExecuteContext(ctx)
-}
-
-func runFunc(cfg *services.Config) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, _ []string) error {
-		ctx := cmd.Context()
-		// Give superuser privileges to all server processes
-		ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
-		// Cancel context the first time a func started with g.Go() fails
-		g, ctx := errgroup.WithContext(ctx)
-
-		logger, err := cmdutil.NewLogger(cfg.LoggerConfig)
-		if err != nil {
-			return err
-		}
-
-		if cfg.DevMode {
-			logger.Info("enabled developer mode")
-		}
-
-		db, err := sql.New(ctx, sql.Options{
-			Logger:     logger,
-			ConnString: cfg.Database,
-		})
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-
-		services, err := services.New(logger, db, *cfg)
-		if err != nil {
-			return err
-		}
-
-		agent, err := services.NewAgent(logger)
-		if err != nil {
-			return err
-		}
-
-		server, listener, err := services.NewServer(logger)
-		if err != nil {
-			return err
-		}
-		defer listener.Close()
-
-		// report hostname now that the http server has been setup, which
-		// sets the hostname if the user has not set one.
-		logger.V(0).Info("set system hostname", "hostname", services.Hostname())
-
-		// Start purging sessions on a regular interval
-		services.StartExpirer(ctx)
-
-		// Run pubsub broker
-		g.Go(func() error { return services.Broker.Start(ctx) })
-
-		// Run logs caching proxy
-		g.Go(func() error { return services.StartProxy(ctx) })
-
-		// Run scheduler - if there is another scheduler running already then
-		// this'll wait until the other scheduler exits.
-		g.Go(func() error {
-			return scheduler.Start(ctx, scheduler.Options{
-				Logger:           logger,
-				WorkspaceService: services.WorkspaceService,
-				RunService:       services.RunService,
-				DB:               db,
-				Subscriber:       services,
-			})
-		})
-
-		// Run run-spawner
-		g.Go(func() error {
-			err := run.StartSpawner(ctx, run.SpawnerOptions{
-				Logger:                      logger,
-				ConfigurationVersionService: services.ConfigurationVersionService,
-				WorkspaceService:            services.WorkspaceService,
-				VCSProviderService:          services.VCSProviderService,
-				RunService:                  services.RunService,
-				Subscriber:                  services.Broker,
-			})
-			if err != nil {
-				return fmt.Errorf("spawner terminated: %w", err)
-			}
-			return nil
-		})
-
-		// Run module publisher
-		g.Go(func() error {
-			err := module.StartPublisher(ctx, module.PublisherOptions{
-				Logger:             logger,
-				VCSProviderService: services.VCSProviderService,
-				ModuleService:      services.ModuleService,
-				Subscriber:         services.Broker,
-			})
-			if err != nil {
-				return fmt.Errorf("module publisher terminated: %w", err)
-			}
-			return nil
-		})
-
-		// Run PR reporter - if there is another reporter running already then
-		// this'll wait until the other reporter exits.
-		g.Go(func() error {
-			err := run.StartReporter(ctx, run.ReporterOptions{
-				Logger:                      logger,
-				ConfigurationVersionService: services.ConfigurationVersionService,
-				WorkspaceService:            services.WorkspaceService,
-				VCSProviderService:          services.VCSProviderService,
-				HostnameService:             services.HostnameService,
-				Subscriber:                  services.Broker,
-				DB:                          db,
-			})
-			if err != nil {
-				return fmt.Errorf("reporter terminated: %w", err)
-			}
-			return nil
-		})
-
-		// Run local agent in background
-		g.Go(func() error {
-			// give local agent unlimited access to services
-			ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
-
-			if err := agent.Start(ctx); err != nil {
-				return fmt.Errorf("agent terminated: %w", err)
-			}
-			return nil
-		})
-
-		// Run HTTP/JSON-API server and web app
-		g.Go(func() error {
-			if err := server.Start(ctx, listener); err != nil {
-				return fmt.Errorf("http server terminated: %w", err)
-			}
-			return nil
-		})
-
-		// Block until error or Ctrl-C received.
-		return g.Wait()
-	}
 }

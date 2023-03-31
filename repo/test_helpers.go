@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
@@ -32,7 +33,13 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 }
 
 func newTestDB(t *testing.T) *pgdb {
-	db, _ := sql.NewTestDB(t)
+	db, err := sql.New(context.Background(), sql.Options{
+		Logger:     logr.Discard(),
+		ConnString: sql.NewTestDB(t),
+	})
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
+
 	return &pgdb{
 		DB: db,
 		factory: factory{
