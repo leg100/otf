@@ -34,8 +34,9 @@ type (
 	}
 
 	config struct {
-		repo    string  // create repo on stub github server
-		connstr *string // use this database conn string for tests rather than one specifically created for test.
+		repo             string  // create repo on stub github server
+		connstr          *string // use this database conn string for tests rather than one specifically created for test.
+		disableScheduler bool    // don't start the run scheduler
 	}
 
 	// some tests want to know whether a webhook has been created on the vcs
@@ -60,6 +61,10 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 	}
 	dcfg.Database = connstr
 
+	if cfg != nil && cfg.disableScheduler {
+		dcfg.DisableRunScheduler = true
+	}
+
 	// Configure and start stub github server
 	var ghopts []github.TestServerOption
 	if cfg != nil && cfg.repo != "" {
@@ -72,7 +77,7 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "trace", Color: "true"})
+		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "error", Color: "true"})
 		require.NoError(t, err)
 	} else {
 		logger = logr.Discard()
@@ -86,8 +91,9 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 
 	// start daemon and upon test completion check that it exited cleanly
 	done := make(chan error)
+	started := make(chan struct{})
 	go func() {
-		err := d.Start(ctx)
+		err := d.Start(ctx, started)
 		// if context was canceled don't report any error
 		if ctx.Err() != nil {
 			done <- nil
@@ -96,6 +102,8 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 		require.NoError(t, err, "daemon exited with an error")
 		done <- err
 	}()
+	// don't proceed until daemon has started.
+	<-started
 
 	t.Cleanup(func() {
 		cancel() // terminates daemon

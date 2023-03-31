@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -30,7 +29,7 @@ type (
 	service struct {
 		otf.Authorizer // authorize access to org
 		logr.Logger
-		pubsub.Broker
+		otf.Broker
 
 		api  *api
 		db   *pgdb
@@ -42,7 +41,7 @@ type (
 
 	Options struct {
 		otf.DB
-		pubsub.Broker
+		otf.Broker
 		otf.Renderer
 		logr.Logger
 	}

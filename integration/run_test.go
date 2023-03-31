@@ -18,7 +18,7 @@ func TestRun(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc := setup(t, &config{disableScheduler: true})
 		cv := svc.createConfigurationVersion(t, ctx, nil)
 
 		_, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
@@ -26,7 +26,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc := setup(t, &config{disableScheduler: true})
 		run := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.EnqueuePlan(ctx, run.ID)
@@ -39,7 +39,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("cancel run", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc := setup(t, &config{disableScheduler: true})
 		run := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.Cancel(ctx, run.ID)
@@ -55,7 +55,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc := setup(t, &config{disableScheduler: true})
 		want := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.GetRun(ctx, want.ID)
@@ -65,7 +65,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc := setup(t, &config{disableScheduler: true})
 
 		ws1 := svc.createWorkspace(t, ctx, nil)
 		ws2 := svc.createWorkspace(t, ctx, nil)

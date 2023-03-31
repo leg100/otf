@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
@@ -65,7 +64,7 @@ type (
 
 	Options struct {
 		otf.DB
-		pubsub.Broker
+		otf.Broker
 		otf.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService

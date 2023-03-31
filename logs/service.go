@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -41,7 +40,7 @@ type (
 		logr.Logger
 		otf.Cache
 		otf.DB
-		pubsub.Broker
+		otf.Broker
 		otf.Verifier
 
 		RunAuthorizer otf.Authorizer

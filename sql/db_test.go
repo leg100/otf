@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +36,12 @@ func TestSetDefaultMaxConnections(t *testing.T) {
 // limits.
 func TestWaitAndLock(t *testing.T) {
 	ctx := context.Background()
-	db, _ := NewTestDB(t)
+	db, err := New(ctx, Options{
+		Logger:     logr.Discard(),
+		ConnString: NewTestDB(t),
+	})
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
 
 	for i := 0; i < 100; i++ {
 		func() {

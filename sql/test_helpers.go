@@ -43,7 +43,7 @@ func NewTestDB(t *testing.T) string {
 	require.NoError(t, err, "unable to create database")
 	t.Cleanup(func() {
 		_, err := conn.Exec(ctx, "DROP DATABASE "+logical)
-		assert.NoError(t, err, "unable to drop database %s")
+		assert.NoError(t, err, "unable to drop database %s", logical)
 		err = conn.Close(ctx)
 		assert.NoError(t, err, "unable to close connection")
 	})

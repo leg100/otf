@@ -38,8 +38,7 @@ func TestCluster(t *testing.T) {
 	// start two daemons, one for user, one for agent, both sharing a db
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
-	_, connstr := sql.NewTestDB(t)
-	daemon.withDB(connstr)
+	daemon.withDB(sql.NewTestDB(t))
 	userHostname := daemon.start(t)
 	agentHostname := daemon.start(t)
 

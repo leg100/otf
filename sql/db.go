@@ -24,6 +24,8 @@ type (
 		pggen.Querier         // generated queries
 		conn          conn    // current connection
 		tx            *pgx.Tx // current transaction
+
+		logr.Logger
 	}
 
 	// Options for constructing a DB
@@ -70,6 +72,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		Pool:    pool,
 		Querier: pggen.NewQuerier(pool),
 		conn:    pool,
+		Logger:  opts.Logger,
 	}, nil
 }
 
@@ -81,7 +84,7 @@ func (db *DB) Exec(ctx context.Context, sql string, arguments ...interface{}) (p
 // session holds the lock with the given id then it'll wait until the other
 // session releases the lock. The given fn is called once the lock is obtained
 // and when the fn finishes the lock is released.
-func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) error {
+func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) (err error) {
 	// A dedicated connection is obtained. Using a connection pool would cause
 	// problems because a lock must be released on the same connection on which
 	// it was obtained.
@@ -91,15 +94,22 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) error 
 	}
 	defer conn.Release()
 
-	if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
+	if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
 		return err
 	}
-	defer conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
+	defer func() {
+		_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
+		if err != nil {
+			db.Error(err, "unlocking session lock")
+			return
+		}
+		err = closeErr
+	}()
 
-	if err := fn(); err != nil {
+	if err = fn(); err != nil {
 		return err
 	}
-	return nil
+	return
 }
 
 // Tx provides the caller with a callback in which all operations are conducted
@@ -111,7 +121,7 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 	}
 	defer tx.Rollback(ctx)
 
-	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx), tx, &tx}); err != nil {
+	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx), tx, &tx, db.Logger}); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

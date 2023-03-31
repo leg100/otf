@@ -1,9 +1,11 @@
+// Package daemon configures and starts the otfd daemon and its subsystems.
 package daemon
 
 import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -40,7 +42,7 @@ type (
 		logr.Logger
 
 		otf.DB
-		pubsub.Broker
+		*pubsub.Broker
 
 		agent process
 
@@ -69,12 +71,14 @@ type (
 		Secret               string // secret for signing URLs
 		SiteToken            string
 		Host                 string
-		Address, Database    string
+		Address              string
+		Database             string
 		MaxConfigSize        int64
 		SSL                  bool
 		CertFile, KeyFile    string
 		EnableRequestLogging bool
 		DevMode              bool
+		DisableRunScheduler  bool
 	}
 
 	process interface {
@@ -286,8 +290,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}, nil
 }
 
-// Start the otfd daemon and block until ctx is cancelled or an error is returned.
-func (d *Daemon) Start(ctx context.Context) error {
+// Start the otfd daemon and block until ctx is cancelled or an error is
+// returned. The started channel is closed once the daemon has started.
+func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Give superuser privileges to all server processes
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
 	// Cancel context the first time a func started with g.Go() fails
@@ -331,33 +336,38 @@ func (d *Daemon) Start(ctx context.Context) error {
 	// Start purging sessions on a regular interval
 	d.StartExpirer(ctx)
 
-	// Run pubsub broker
-	g.Go(func() error { return d.Broker.Start(ctx) })
-
-	// don't proceed further until broker is listening - we
-	// don't want it to miss any postgres events that are sent between the time
-	// it is started and the time it starts listening.
-	// d.Broker.WaitUntilListening()
+	// Run pubsub broker and wait for it to start listening
+	isListening := make(chan struct{})
+	g.Go(func() error { return d.Broker.Start(ctx, isListening) })
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(time.Second):
+		return fmt.Errorf("timed out waiting for broker to start")
+	case <-isListening:
+	}
 
 	// Run logs caching proxy
 	g.Go(func() error { return d.StartProxy(ctx) })
 
-	// Run scheduler - if there is another scheduler running already then
-	// this'll wait until the other scheduler exits.
-	g.Go(func() error {
-		err := scheduler.Start(ctx, scheduler.Options{
-			Logger:           d.Logger,
-			WorkspaceService: d.WorkspaceService,
-			RunService:       d.RunService,
-			DB:               d.DB,
-			Subscriber:       d,
+	if !d.DisableRunScheduler {
+		// Run scheduler - if there is another scheduler running already then
+		// this'll wait until the other scheduler exits.
+		g.Go(func() error {
+			err := scheduler.Start(ctx, scheduler.Options{
+				Logger:           d.Logger,
+				WorkspaceService: d.WorkspaceService,
+				RunService:       d.RunService,
+				DB:               d.DB,
+				Subscriber:       d,
+			})
+			if err != nil {
+				return fmt.Errorf("scheduler terminated: %w", err)
+			}
+			d.V(2).Info("scheduler gracefully shutdown")
+			return nil
 		})
-		if err != nil {
-			return fmt.Errorf("scheduler terminated: %w", err)
-		}
-		d.V(2).Info("scheduler gracefully shutdown")
-		return nil
-	})
+	}
 
 	// Run run-spawner
 	g.Go(func() error {
@@ -428,6 +438,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 		}
 		return nil
 	})
+
+	// Inform the caller the daemon has started
+	close(started)
 
 	// Block until error or Ctrl-C received.
 	return g.Wait()

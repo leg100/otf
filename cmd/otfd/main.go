@@ -51,7 +51,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 				return err
 			}
 			// block until ^C received
-			return d.Start(cmd.Context())
+			return d.Start(cmd.Context(), make(chan struct{}))
 		},
 	}
 	cmd.SetOut(out)

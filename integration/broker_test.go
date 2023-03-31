@@ -14,17 +14,13 @@ import (
 func TestBroker(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	// perform all actions as superuser
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 
 	// simulate a cluster of two otfd nodes sharing a connstr
 	connstr := sql.NewTestDB(t)
 	local := setup(t, &config{connstr: &connstr})
 	remote := setup(t, &config{connstr: &connstr})
-
-	// wait 'til brokers are listening
-	local.Broker.WaitUntilListening()
-	remote.Broker.WaitUntilListening()
 
 	localsub, err := local.Subscribe(ctx, "")
 	require.NoError(t, err)

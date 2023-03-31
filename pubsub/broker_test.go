@@ -13,7 +13,7 @@ import (
 )
 
 func TestBroker_Subscribe(t *testing.T) {
-	broker := &broker{
+	broker := &Broker{
 		subs:    make(map[string]chan otf.Event),
 		metrics: make(map[string]prometheus.Gauge),
 	}
@@ -33,10 +33,10 @@ func TestBroker_Subscribe(t *testing.T) {
 func TestBroker_Publish(t *testing.T) {
 	got := make(chan otf.Event, 1)
 	pool := &fakePool{}
-	broker := &broker{
+	broker := &Broker{
 		pool:          pool,
 		subs:          map[string]chan otf.Event{"sub-1": got},
-		registrations: make(map[string]Getter),
+		registrations: make(map[string]otf.Getter),
 		metrics:       map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 
@@ -73,10 +73,10 @@ func TestPubSub_receive(t *testing.T) {
 		ID: "run-123",
 	}
 	got := make(chan otf.Event, 1)
-	broker := &broker{
+	broker := &Broker{
 		pool:          &fakePool{},
 		subs:          map[string]chan otf.Event{"sub-1": got},
-		registrations: map[string]Getter{"run": &fakeGetter{resource: resource}},
+		registrations: map[string]otf.Getter{"run": &fakeGetter{resource: resource}},
 		metrics:       map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 	err := broker.receive(context.Background(), &notification)
