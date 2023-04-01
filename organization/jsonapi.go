@@ -4,11 +4,11 @@ import (
 	"github.com/leg100/otf/http/jsonapi"
 )
 
-// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
+// JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
 // into json-api
-type jsonapiMarshaler struct{}
+type JSONAPIMarshaler struct{}
 
-func (m *jsonapiMarshaler) toOrganization(org *Organization) *jsonapi.Organization {
+func (m *JSONAPIMarshaler) ToOrganization(org *Organization) *jsonapi.Organization {
 	return &jsonapi.Organization{
 		Name:            org.Name,
 		CreatedAt:       org.CreatedAt,
@@ -19,22 +19,12 @@ func (m *jsonapiMarshaler) toOrganization(org *Organization) *jsonapi.Organizati
 	}
 }
 
-func (m *jsonapiMarshaler) toList(from *OrganizationList) *jsonapi.OrganizationList {
+func (m *JSONAPIMarshaler) toList(from *OrganizationList) *jsonapi.OrganizationList {
 	to := &jsonapi.OrganizationList{
 		Pagination: from.Pagination.ToJSONAPI(),
 	}
 	for _, item := range from.Items {
-		to.Items = append(to.Items, m.toOrganization(item))
+		to.Items = append(to.Items, m.ToOrganization(item))
 	}
 	return to
-}
-
-func newFromJSONAPI(from jsonapi.Organization) *Organization {
-	return &Organization{
-		ID:              from.ExternalID,
-		CreatedAt:       from.CreatedAt,
-		Name:            from.Name,
-		SessionRemember: from.SessionRemember,
-		SessionTimeout:  from.SessionTimeout,
-	}
 }

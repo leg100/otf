@@ -24,6 +24,7 @@ import (
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/run"
@@ -47,6 +48,7 @@ type (
 		agent process
 
 		organization.OrganizationService
+		orgcreator.OrganizationCreatorService
 		auth.AuthService
 		variable.VariableService
 		vcsprovider.VCSProviderService
@@ -158,6 +160,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("setting up auth service: %w", err)
 	}
+	orgCreatorService := orgcreator.NewService(orgcreator.Options{
+		Logger:   logger,
+		DB:       db,
+		Renderer: renderer,
+		Broker:   broker,
+	})
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:       logger,
 		DB:           db,
@@ -258,6 +266,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		authService,
 		workspaceService,
 		orgService,
+		orgCreatorService,
 		variableService,
 		vcsProviderService,
 		stateService,
@@ -275,6 +284,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
+		OrganizationCreatorService:  orgCreatorService,
 		VariableService:             variableService,
 		VCSProviderService:          vcsProviderService,
 		StateService:                stateService,

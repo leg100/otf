@@ -7,7 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 )
 
 // synchroniser synchronises a user account from the cloud to an a user account
@@ -22,6 +22,7 @@ import (
 type synchroniser struct {
 	logr.Logger
 	OrganizationService
+	OrganizationCreatorService
 
 	AuthService
 }
@@ -40,7 +41,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	getOrCreateOrg := func(name string) error {
 		_, err := s.GetOrganization(ctx, name)
 		if err == otf.ErrResourceNotFound {
-			_, err = s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+			_, err = s.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 				Name: otf.String(name),
 			})
 			return err

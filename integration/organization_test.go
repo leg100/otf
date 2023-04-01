@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,13 +20,13 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
-		org, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+		org, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 			Name: otf.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+			_, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 				Name: otf.String(org.Name),
 			})
 			require.Equal(t, otf.ErrResourceAlreadyExists, err)

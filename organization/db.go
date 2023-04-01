@@ -35,21 +35,6 @@ func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
 	return row(r).toOrganization(), nil
 }
 
-func (db *pgdb) create(ctx context.Context, org *Organization) error {
-	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-		ID:              sql.String(org.ID),
-		CreatedAt:       sql.Timestamptz(org.CreatedAt),
-		UpdatedAt:       sql.Timestamptz(org.UpdatedAt),
-		Name:            sql.String(org.Name),
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
-	})
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
-}
-
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
 	err := db.Tx(ctx, func(tx otf.DB) error {

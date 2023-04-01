@@ -8,9 +8,14 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 )
 
 type (
+	// Aliases to disambiguate service names when embedded together.
+	OrganizationService        organization.Service
+	OrganizationCreatorService orgcreator.Service
+
 	AuthService interface {
 		AgentTokenService
 		RegistrySessionService
@@ -40,13 +45,12 @@ type (
 		SiteToken string
 
 		OrganizationService
+		OrganizationCreatorService
 		otf.DB
 		otf.Renderer
 		otf.HostnameService
 		logr.Logger
 	}
-
-	OrganizationService organization.Service
 )
 
 func NewService(opts Options) (*service, error) {
@@ -68,7 +72,12 @@ func NewService(opts Options) (*service, error) {
 
 	db := newDB(opts.DB, opts.Logger)
 
-	svc.synchroniser = &synchroniser{opts.Logger, opts.OrganizationService, &svc}
+	svc.synchroniser = &synchroniser{
+		Logger:                     opts.Logger,
+		OrganizationService:        opts.OrganizationService,
+		OrganizationCreatorService: opts.OrganizationCreatorService,
+		AuthService:                &svc,
+	}
 	svc.api = &api{svc: &svc}
 	svc.db = db
 	svc.web = &webHandlers{
