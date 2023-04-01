@@ -98,7 +98,7 @@ func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 			}
 			cookie, err := r.Cookie(sessionCookie)
 			if err == http.ErrNoCookie {
-				sendUserToLoginPage(w, r)
+				html.SendUserToLoginPage(w, r)
 				return
 			}
 			user, err := svc.GetUser(r.Context(), UserSpec{
@@ -106,14 +106,14 @@ func AuthenticateSession(svc AuthenticateSessionService) mux.MiddlewareFunc {
 			})
 			if err != nil {
 				html.FlashError(w, "unable to find user: "+err.Error())
-				sendUserToLoginPage(w, r)
+				html.SendUserToLoginPage(w, r)
 				return
 			}
 
 			session, err := svc.GetSession(r.Context(), cookie.Value)
 			if err != nil {
 				html.FlashError(w, "session expired")
-				sendUserToLoginPage(w, r)
+				html.SendUserToLoginPage(w, r)
 				return
 			}
 

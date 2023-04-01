@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
 )
@@ -30,8 +29,6 @@ type (
 	service struct {
 		logr.Logger
 
-		*synchroniser
-
 		site         otf.Authorizer // authorizes site access
 		organization otf.Authorizer // authorizes org access
 
@@ -41,11 +38,8 @@ type (
 	}
 
 	Options struct {
-		Configs   []cloud.CloudOAuthConfig
 		SiteToken string
 
-		OrganizationService
-		OrganizationCreatorService
 		otf.DB
 		otf.Renderer
 		otf.HostnameService
@@ -60,31 +54,14 @@ func NewService(opts Options) (*service, error) {
 		site:         &otf.SiteAuthorizer{opts.Logger},
 	}
 
-	authenticators, err := newAuthenticators(authenticatorOptions{
-		Logger:          opts.Logger,
-		HostnameService: opts.HostnameService,
-		AuthService:     &svc,
-		configs:         opts.Configs,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	db := newDB(opts.DB, opts.Logger)
 
-	svc.synchroniser = &synchroniser{
-		Logger:                     opts.Logger,
-		OrganizationService:        opts.OrganizationService,
-		OrganizationCreatorService: opts.OrganizationCreatorService,
-		AuthService:                &svc,
-	}
 	svc.api = &api{svc: &svc}
 	svc.db = db
 	svc.web = &webHandlers{
-		Renderer:       opts.Renderer,
-		svc:            &svc,
-		authenticators: authenticators,
-		siteToken:      opts.SiteToken,
+		Renderer:  opts.Renderer,
+		svc:       &svc,
+		siteToken: opts.SiteToken,
 	}
 
 	return &svc, nil

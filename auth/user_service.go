@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -15,8 +14,6 @@ type UserService interface {
 	DeleteUser(ctx context.Context, username string) error
 	AddTeamMembership(ctx context.Context, username, teamID string) error
 	RemoveTeamMembership(ctx context.Context, username, teamID string) error
-
-	sync(ctx context.Context, from cloud.User) (*User, error)
 }
 
 func (a *service) CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {

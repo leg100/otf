@@ -83,6 +83,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientID, "gitlab-client-id", "", "gitlab client ID")
 	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientSecret, "gitlab-client-secret", "", "gitlab client secret")
 
+	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin")
+
 	cfg.LoggerConfig = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())
 

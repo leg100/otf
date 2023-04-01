@@ -1,4 +1,4 @@
-package auth
+package authenticator
 
 import (
 	"context"
@@ -6,7 +6,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
 )
 
@@ -21,15 +23,15 @@ import (
 // * team memberships are removed if they exist in otf but not on the cloud
 type synchroniser struct {
 	logr.Logger
-	OrganizationService
-	OrganizationCreatorService
 
-	AuthService
+	organization.OrganizationService
+	orgcreator.OrganizationCreatorService
+	auth.AuthService
 }
 
-func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error) {
+func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*auth.User, error) {
 	// Create user account
-	user, err := s.GetUser(ctx, UserSpec{Username: otf.String(from.Name)})
+	user, err := s.GetUser(ctx, auth.UserSpec{Username: otf.String(from.Name)})
 	if err == otf.ErrResourceNotFound {
 		user, err = s.CreateUser(ctx, from.Name)
 		if err != nil {
@@ -50,10 +52,10 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	}
 
 	// fn for idempotently creating a team
-	getOrCreateTeam := func(ct cloud.Team) (*Team, error) {
+	getOrCreateTeam := func(ct cloud.Team) (*auth.Team, error) {
 		team, err := s.GetTeam(ctx, ct.Organization, ct.Name)
 		if err == otf.ErrResourceNotFound {
-			return s.CreateTeam(ctx, NewTeamOptions{
+			return s.CreateTeam(ctx, auth.NewTeamOptions{
 				Name:         ct.Name,
 				Organization: ct.Organization,
 			})
@@ -62,7 +64,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 	}
 
 	// Create org and team for each cloud team
-	var teams []*Team
+	var teams []*auth.Team
 	for _, ct := range from.Teams {
 		if err := getOrCreateOrg(ct.Organization); err != nil {
 			return nil, err
@@ -93,7 +95,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*User, error)
 }
 
 // syncTeams updates a user's team memberships to match those in wanted.
-func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) error {
+func (s *synchroniser) syncTeams(ctx context.Context, u *auth.User, wanted []*auth.Team) error {
 	// Add team memberships
 	for _, want := range wanted {
 		if !u.IsTeamMember(want.ID) {
@@ -121,7 +123,7 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *User, wanted []*Team) e
 	return nil
 }
 
-func inTeamList(teams []*Team, teamID string) bool {
+func inTeamList(teams []*auth.Team, teamID string) bool {
 	for _, team := range teams {
 		if team.ID == teamID {
 			return true
