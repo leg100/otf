@@ -56,7 +56,7 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		AuthService:                  opts.AuthService,
 		db:                           opts.DB,
-		site:                         &otf.SiteAuthorizer{opts.Logger},
+		site:                         &otf.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.api = &api{
 		svc:              &svc,

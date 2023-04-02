@@ -109,8 +109,8 @@ func NewService(opts Options) *service {
 		WorkspaceService: opts.WorkspaceService,
 	}
 
-	svc.site = &otf.SiteAuthorizer{opts.Logger}
-	svc.organization = &organization.Authorizer{opts.Logger}
+	svc.site = &otf.SiteAuthorizer{Logger: opts.Logger}
+	svc.organization = &organization.Authorizer{Logger: opts.Logger}
 	svc.workspace = opts.WorkspaceAuthorizer
 	svc.authorizer = &authorizer{db, opts.WorkspaceAuthorizer}
 

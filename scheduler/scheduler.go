@@ -48,7 +48,7 @@ type (
 // Start constructs and initialises the scheduler.
 // start starts the scheduler daemon. Should be invoked in a go routine.
 func Start(ctx context.Context, opts Options) error {
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"scheduler"})
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "scheduler"})
 
 	sched := &scheduler{
 		Logger:           opts.Logger.WithValues("component", "scheduler"),

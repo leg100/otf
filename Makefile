@@ -54,7 +54,7 @@ install-latest-release:
 	}
 
 
-# Run staticcheck metalinter recursively against code
+# Run staticcheck metalinter and go vet recursively against code
 .PHONY: lint
 lint:
 	go list ./... | grep -v pggen | xargs staticcheck

@@ -51,7 +51,7 @@ func NewService(opts Options) *service {
 		Logger:           opts.Logger,
 		Broker:           opts.Broker,
 		db:               &pgdb{opts.DB},
-		site:             &otf.SiteAuthorizer{opts.Logger},
+		site:             &otf.SiteAuthorizer{Logger: opts.Logger},
 		JSONAPIMarshaler: &JSONAPIMarshaler{},
 	}
 	svc.api = &api{

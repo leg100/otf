@@ -20,7 +20,7 @@ func TestVariables(t *testing.T) {
 
 	user := cloud.User{
 		Name:  uuid.NewString(),
-		Teams: []cloud.Team{{"owners", org}},
+		Teams: []cloud.Team{{Name: "owners", Organization: org}},
 	}
 
 	daemon := &daemon{}
