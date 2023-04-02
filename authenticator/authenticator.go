@@ -26,17 +26,17 @@ type (
 		auth.AuthService // for creating user session
 
 		oauthClient
-		userSynchroniser
+		Synchroniser
 	}
 
 	service struct {
-		otf.Renderer
-
+		renderer       otf.Renderer
 		authenticators []*authenticator
+		Synchroniser
 	}
 
-	userSynchroniser interface {
-		sync(ctx context.Context, from cloud.User) (*auth.User, error)
+	Synchroniser interface {
+		Sync(ctx context.Context, from cloud.User) error
 	}
 
 	Options struct {
@@ -54,7 +54,13 @@ type (
 
 func NewAuthenticatorService(opts Options) (*service, error) {
 	svc := service{
-		Renderer: opts.Renderer,
+		renderer: opts.Renderer,
+		Synchroniser: &synchroniser{
+			Logger:                     opts.Logger,
+			OrganizationService:        opts.OrganizationService,
+			OrganizationCreatorService: opts.OrganizationCreatorService,
+			AuthService:                opts.AuthService,
+		},
 	}
 
 	for _, cfg := range opts.Configs {
@@ -73,12 +79,6 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 			HostnameService: opts.HostnameService,
 			AuthService:     opts.AuthService,
 			oauthClient:     client,
-			userSynchroniser: &synchroniser{
-				Logger:                     opts.Logger,
-				OrganizationService:        opts.OrganizationService,
-				OrganizationCreatorService: opts.OrganizationCreatorService,
-				AuthService:                opts.AuthService,
-			},
 		}
 		svc.authenticators = append(svc.authenticators, authenticator)
 
@@ -97,7 +97,7 @@ func (a *service) AddHandlers(r *mux.Router) {
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	a.Render("login.tmpl", w, r, a.authenticators)
+	a.renderer.Render("login.tmpl", w, r, a.authenticators)
 }
 
 // exchanging its auth code for a token.
@@ -128,15 +128,14 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Synchronise cloud user with otf user
-	user, err := a.sync(ctx, *cuser)
-	if err != nil {
+	if err := a.Sync(ctx, *cuser); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	session, err := a.CreateSession(ctx, auth.CreateSessionOptions{
 		Request:  r,
-		Username: &user.Username,
+		Username: &cuser.Name,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

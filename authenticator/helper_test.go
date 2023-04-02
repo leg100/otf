@@ -9,21 +9,26 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type fakeAuthenticatorService struct {
-	auth.AuthService
-}
+type (
+	fakeAuthenticatorService struct {
+		auth.AuthService
+	}
 
-func (f *fakeAuthenticatorService) sync(context.Context, cloud.User) (*auth.User, error) {
-	return auth.NewUser("fake-user"), nil
-}
+	fakeOAuthClient struct {
+		user *cloud.User
+		oauthClient
+	}
+
+	fakeCloudClient struct {
+		user *cloud.User
+		cloud.Client
+	}
+
+	fakeUserSynchroniser struct{}
+)
 
 func (f *fakeAuthenticatorService) CreateSession(context.Context, auth.CreateSessionOptions) (*auth.Session, error) {
 	return &auth.Session{}, nil
-}
-
-type fakeOAuthClient struct {
-	user *cloud.User
-	oauthClient
 }
 
 func (f *fakeOAuthClient) CallbackHandler(*http.Request) (*oauth2.Token, error) {
@@ -34,33 +39,10 @@ func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (cloud.Clien
 	return &fakeCloudClient{user: f.user}, nil
 }
 
-type fakeCloudClient struct {
-	user *cloud.User
-	cloud.Client
-}
-
 func (f *fakeCloudClient) GetUser(context.Context) (*cloud.User, error) {
 	return f.user, nil
 }
 
-type fakeAuthService struct {
-	addedTeams, removedTeams []string
-
-	auth.AuthService
-}
-
-func (f *fakeAuthService) AddTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error {
-	f.addedTeams = append(f.addedTeams, opts.TeamID)
+func (f *fakeUserSynchroniser) Sync(ctx context.Context, from cloud.User) error {
 	return nil
-}
-
-func (f *fakeAuthService) RemoveTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error {
-	f.removedTeams = append(f.removedTeams, opts.TeamID)
-	return nil
-}
-
-type fakeUserSynchroniser struct{}
-
-func (f *fakeUserSynchroniser) sync(ctx context.Context, from cloud.User) (*auth.User, error) {
-	return &auth.User{}, nil
 }

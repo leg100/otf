@@ -99,6 +99,15 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		if err != nil {
 			return sql.Error(err)
 		}
+
+		// pre-emptively make the creator an owner to avoid a chicken-and-egg
+		// problem when creating the owners team below: only an owner can create teams
+		// but an owner can't be created until an owners team is created...
+		creator.Teams = append(creator.Teams, &auth.Team{
+			Name:         "owners",
+			Organization: *opts.Name,
+		})
+
 		owners, err := s.AuthService.CreateTeam(ctx, auth.CreateTeamOptions{
 			Name:         "owners",
 			Organization: org.Name,

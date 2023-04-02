@@ -55,9 +55,9 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	}
 
 	authenticator := &authenticator{
-		AuthService:      &fakeAuthenticatorService{},
-		oauthClient:      &fakeOAuthClient{user: &cuser},
-		userSynchroniser: &fakeUserSynchroniser{},
+		AuthService:  &fakeAuthenticatorService{},
+		oauthClient:  &fakeOAuthClient{user: &cuser},
+		Synchroniser: &fakeUserSynchroniser{},
 	}
 
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
@@ -80,7 +80,7 @@ func TestLoginHandler(t *testing.T) {
 	renderer, err := html.NewViewEngine(false)
 	require.NoError(t, err)
 	svc := &service{
-		Renderer: renderer,
+		renderer: renderer,
 	}
 
 	svc.authenticators = []*authenticator{

@@ -45,6 +45,7 @@ type (
 
 		otf.DB
 		*pubsub.Broker
+		authenticator.Synchroniser
 
 		agent process
 
@@ -310,6 +311,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:                  runService,
 		LogsService:                 logsService,
 		RepoService:                 repoService,
+		Synchroniser:                authenticatorService,
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,
