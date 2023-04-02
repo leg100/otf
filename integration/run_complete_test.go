@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func TestCompleteRun(t *testing.T) {
 
 	svc := setup(t, nil)
 
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

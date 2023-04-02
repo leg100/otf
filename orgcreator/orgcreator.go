@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
 )
 
@@ -47,16 +46,6 @@ func NewOrganization(opts OrganizationCreateOptions) (*organization.Organization
 		org.SessionRemember = *opts.SessionRemember
 	}
 	return &org, nil
-}
-
-func newFromJSONAPI(from jsonapi.Organization) *organization.Organization {
-	return &organization.Organization{
-		ID:              from.ExternalID,
-		CreatedAt:       from.CreatedAt,
-		Name:            from.Name,
-		SessionRemember: from.SessionRemember,
-		SessionTimeout:  from.SessionTimeout,
-	}
 }
 
 func (opts *OrganizationCreateOptions) Validate() error {

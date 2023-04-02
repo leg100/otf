@@ -2,19 +2,29 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
-type UserService interface {
-	CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
-	GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	ListUsers(ctx context.Context, organization string) ([]*User, error)
-	DeleteUser(ctx context.Context, username string) error
-	AddTeamMembership(ctx context.Context, username, teamID string) error
-	RemoveTeamMembership(ctx context.Context, username, teamID string) error
-}
+var ErrCannotDeleteOnlyOwner = errors.New("cannot remove the last owner")
+
+type (
+	UserService interface {
+		CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
+		GetUser(ctx context.Context, spec UserSpec) (*User, error)
+		ListUsers(ctx context.Context, organization string) ([]*User, error)
+		DeleteUser(ctx context.Context, username string) error
+		AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
+		RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
+	}
+	TeamMembershipOptions struct {
+		Username string `schema:"username,required"`
+		TeamID   string `schema:"team_id,required"`
+		Tx       otf.DB
+	}
+)
 
 func (a *service) CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.CreateUserAction, "")
@@ -73,10 +83,17 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
-func (a *service) AddTeamMembership(ctx context.Context, username, teamID string) error {
-	team, err := a.db.getTeamByID(ctx, teamID)
+// AddTeamMembership adds a user to a team. If opts.Tx is non-nil then database
+// queries are made within that transaction.
+func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
+	db := a.db
+	if opts.Tx != nil {
+		db = newDB(opts.Tx, a.db.Logger)
+	}
+
+	team, err := db.getTeamByID(ctx, opts.TeamID)
 	if err != nil {
-		a.Error(err, "retrieving team", "team_id", teamID)
+		a.Error(err, "retrieving team", "team_id", opts.TeamID)
 		return err
 	}
 
@@ -85,19 +102,26 @@ func (a *service) AddTeamMembership(ctx context.Context, username, teamID string
 		return err
 	}
 
-	if err := a.db.addTeamMembership(ctx, username, teamID); err != nil {
-		a.Error(err, "adding team membership", "user", username, "team", teamID, "subject", subject)
+	if err := db.addTeamMembership(ctx, opts.Username, opts.TeamID); err != nil {
+		a.Error(err, "adding team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("added team membership", "user", username, "team", teamID, "subject", subject)
+	a.V(0).Info("added team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
 
 	return nil
 }
 
-func (a *service) RemoveTeamMembership(ctx context.Context, username, teamID string) error {
-	team, err := a.db.getTeamByID(ctx, teamID)
+// RemoveTeamMembership removes a user from a team. If opts.Tx is non-nil then database
+// queries are made within that transaction.
+func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
+	db := a.db
+	if opts.Tx != nil {
+		db = newDB(opts.Tx, a.db.Logger)
+	}
+
+	team, err := db.getTeamByID(ctx, opts.TeamID)
 	if err != nil {
-		a.Error(err, "retrieving team", "team_id", teamID)
+		a.Error(err, "retrieving team", "team_id", opts.TeamID)
 		return err
 	}
 
@@ -106,11 +130,21 @@ func (a *service) RemoveTeamMembership(ctx context.Context, username, teamID str
 		return err
 	}
 
-	if err := a.db.removeTeamMembership(ctx, username, teamID); err != nil {
-		a.Error(err, "removing team membership", "user", username, "team", teamID, "subject", subject)
+	if team.Name == "owners" {
+		owners, err := a.ListTeamMembers(ctx, team.ID)
+		if err != nil {
+			return err
+		}
+		if len(owners) == 1 {
+			return ErrCannotDeleteOnlyOwner
+		}
+	}
+
+	if err := db.removeTeamMembership(ctx, opts.Username, opts.TeamID); err != nil {
+		a.Error(err, "removing team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("removed team membership", "user", username, "team", teamID, "subject", subject)
+	a.V(0).Info("removed team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
 
 	return nil
 }

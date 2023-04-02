@@ -192,7 +192,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.CreateTeam(ctx, auth.NewTeamOptions{
+	team, err := s.CreateTeam(ctx, auth.CreateTeamOptions{
 		Name:         uuid.NewString(),
 		Organization: org.Name,
 	})

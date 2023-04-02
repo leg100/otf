@@ -100,7 +100,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) (err e
 	defer func() {
 		_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
 		if err != nil {
-			db.Error(err, "unlocking session lock")
+			db.Error(err, "unlocking session-level advisory lock")
 			return
 		}
 		err = closeErr

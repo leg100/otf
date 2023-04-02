@@ -164,7 +164,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                       logger,
 		DB:                           db,
 		Renderer:                     renderer,
-		Broker:                       broker,
+		Publisher:                    broker,
+		AuthService:                  authService,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 	})
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{

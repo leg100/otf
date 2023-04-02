@@ -18,7 +18,7 @@ func TestWorkspace(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
@@ -312,15 +312,6 @@ func TestWorkspace(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
-
-		// create user with owner perms
-		team, err := svc.CreateTeam(ctx, auth.NewTeamOptions{
-			Name:         "owners", // has perm to lock/unlock workspace
-			Organization: org.Name,
-		})
-		require.NoError(t, err)
-		user := svc.createUser(t, ctx, auth.WithTeams(team))
-		ctx := otf.AddSubjectToContext(ctx, user)
 
 		got, err := svc.LockWorkspace(ctx, ws.ID, nil)
 		require.NoError(t, err)

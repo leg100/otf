@@ -72,16 +72,13 @@ func (h *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) addTeamMembership(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		TeamID   *string `schema:"team_id,required"`
-		Username *string `schema:"username,required"`
-	}
+	var params TeamMembershipOptions
 	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if err := h.svc.AddTeamMembership(r.Context(), *params.Username, *params.TeamID); err != nil {
+	if err := h.svc.AddTeamMembership(r.Context(), params); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -90,16 +87,13 @@ func (h *api) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		TeamID   *string `schema:"team_id,required"`
-		Username *string `schema:"username,required"`
-	}
+	var params TeamMembershipOptions
 	if err := decode.Route(&params, r); err != nil {
 		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if err := h.svc.RemoveTeamMembership(r.Context(), *params.Username, *params.TeamID); err != nil {
+	if err := h.svc.RemoveTeamMembership(r.Context(), params); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -108,7 +102,7 @@ func (h *api) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := UserFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -129,7 +123,7 @@ func (h *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	team, err := h.svc.CreateTeam(r.Context(), NewTeamOptions{
+	team, err := h.svc.CreateTeam(r.Context(), CreateTeamOptions{
 		Name:         *params.Name,
 		Organization: *params.Organization,
 	})

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,7 @@ func TestLogs(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("upload chunk", func(t *testing.T) {
 		svc := setup(t, nil)
@@ -140,7 +141,7 @@ func TestClusterLogs(t *testing.T) {
 	remote := setup(t, &config{connstr: &connstr})
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(func() { cancel() })
 

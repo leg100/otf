@@ -7,8 +7,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 type (
@@ -20,23 +23,26 @@ type (
 
 	service struct {
 		logr.Logger
-		otf.Broker
+		otf.Publisher
 
 		api  *api
-		db   *pgdb
+		db   otf.DB
 		site otf.Authorizer // authorize access to site
 		web  *web
 
 		*organization.JSONAPIMarshaler
+		auth.AuthService
 
 		RestrictOrganizationCreation bool
 	}
 
 	Options struct {
 		otf.DB
-		otf.Broker
+		otf.Publisher
 		otf.Renderer
 		logr.Logger
+
+		auth.AuthService
 
 		RestrictOrganizationCreation bool
 	}
@@ -45,11 +51,12 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:                       opts.Logger,
-		Broker:                       opts.Broker,
-		db:                           &pgdb{opts.DB},
-		site:                         &otf.SiteAuthorizer{opts.Logger},
+		Publisher:                    opts.Publisher,
 		JSONAPIMarshaler:             &organization.JSONAPIMarshaler{},
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
+		AuthService:                  opts.AuthService,
+		db:                           opts.DB,
+		site:                         &otf.SiteAuthorizer{opts.Logger},
 	}
 	svc.api = &api{
 		svc:              &svc,
@@ -70,7 +77,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
 func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*organization.Organization, error) {
-	subject, err := s.site.CanAccess(ctx, rbac.CreateOrganizationAction, "")
+	creator, err := s.authorize(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,14 +87,61 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	if err := s.db.create(ctx, org); err != nil {
-		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
+	err = s.db.Tx(ctx, func(tx otf.DB) error {
+		_, err := tx.InsertOrganization(ctx, pggen.InsertOrganizationParams{
+			ID:              sql.String(org.ID),
+			CreatedAt:       sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:       sql.Timestamptz(org.UpdatedAt),
+			Name:            sql.String(org.Name),
+			SessionRemember: org.SessionRemember,
+			SessionTimeout:  org.SessionTimeout,
+		})
+		if err != nil {
+			return sql.Error(err)
+		}
+		owners, err := s.AuthService.CreateTeam(ctx, auth.CreateTeamOptions{
+			Name:         "owners",
+			Organization: org.Name,
+			Tx:           tx,
+		})
+		if err != nil {
+			return fmt.Errorf("creating owners team: %w", err)
+		}
+		err = s.AuthService.AddTeamMembership(ctx, auth.TeamMembershipOptions{
+			TeamID:   owners.ID,
+			Username: creator.Username,
+			Tx:       tx,
+		})
+		if err != nil {
+			return fmt.Errorf("adding owner to owners team: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
 		return nil, err
 	}
 
 	s.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
+	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
 
 	return org, nil
+}
+
+func (s *service) authorize(ctx context.Context) (*auth.User, error) {
+	subject, err := otf.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user, ok := subject.(*auth.User)
+	if !ok {
+		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
+		return nil, otf.ErrAccessNotPermitted
+	}
+	if s.RestrictOrganizationCreation && !user.IsSiteAdmin() {
+		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
+		return nil, otf.ErrAccessNotPermitted
+	}
+	return user, nil
 }

@@ -41,5 +41,5 @@ func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, org, jsonapi.WithCode(http.StatusCreated))
+	jsonapi.WriteResponse(w, r, h.ToOrganization(org), jsonapi.WithCode(http.StatusCreated))
 }

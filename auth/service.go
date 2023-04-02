@@ -7,13 +7,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/orgcreator"
 )
 
 type (
 	// Aliases to disambiguate service names when embedded together.
-	OrganizationService        organization.Service
-	OrganizationCreatorService orgcreator.Service
+	OrganizationService organization.Service
 
 	AuthService interface {
 		AgentTokenService
@@ -52,12 +50,9 @@ func NewService(opts Options) (*service, error) {
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{opts.Logger},
 		site:         &otf.SiteAuthorizer{opts.Logger},
+		db:           newDB(opts.DB, opts.Logger),
 	}
-
-	db := newDB(opts.DB, opts.Logger)
-
 	svc.api = &api{svc: &svc}
-	svc.db = db
 	svc.web = &webHandlers{
 		Renderer:  opts.Renderer,
 		svc:       &svc,

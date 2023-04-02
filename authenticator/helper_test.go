@@ -49,13 +49,13 @@ type fakeAuthService struct {
 	auth.AuthService
 }
 
-func (f *fakeAuthService) AddTeamMembership(ctx context.Context, _, team string) error {
-	f.addedTeams = append(f.addedTeams, team)
+func (f *fakeAuthService) AddTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error {
+	f.addedTeams = append(f.addedTeams, opts.TeamID)
 	return nil
 }
 
-func (f *fakeAuthService) RemoveTeamMembership(ctx context.Context, _, team string) error {
-	f.removedTeams = append(f.removedTeams, team)
+func (f *fakeAuthService) RemoveTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error {
+	f.removedTeams = append(f.removedTeams, opts.TeamID)
 	return nil
 }
 

@@ -16,7 +16,7 @@ func (h *webHandlers) addSessionHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := UserFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

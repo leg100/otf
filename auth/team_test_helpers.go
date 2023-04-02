@@ -12,7 +12,7 @@ import (
 )
 
 func NewTestTeam(t *testing.T, organization string) *Team {
-	return NewTeam(NewTeamOptions{uuid.NewString(), organization})
+	return NewTeam(CreateTeamOptions{uuid.NewString(), organization, nil})
 }
 
 func CreateTestTeam(t *testing.T, db otf.DB, organization *organization.Organization) *Team {
@@ -34,5 +34,5 @@ func createTestTeam(t *testing.T, db *pgdb, organization string) *Team {
 }
 
 func newTestOwners(t *testing.T, organization string) *Team {
-	return NewTeam(NewTeamOptions{"owners", organization})
+	return NewTeam(CreateTeamOptions{"owners", organization, nil})
 }

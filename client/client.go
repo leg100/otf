@@ -65,10 +65,10 @@ type (
 
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error
-		AddTeamMembership(ctx context.Context, username, teamID string) error
-		RemoveTeamMembership(ctx context.Context, username, teamID string) error
+		AddTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error
+		RemoveTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error
 
-		CreateTeam(ctx context.Context, opts auth.NewTeamOptions) (*auth.Team, error)
+		CreateTeam(ctx context.Context, opts auth.CreateTeamOptions) (*auth.Team, error)
 		GetTeam(ctx context.Context, organization, team string) (*auth.Team, error)
 		DeleteTeam(ctx context.Context, teamID string) error
 

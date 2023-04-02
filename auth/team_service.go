@@ -2,12 +2,15 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	"github.com/leg100/otf/rbac"
 )
 
+var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
+
 type TeamService interface {
-	CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error)
+	CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
 	GetTeam(ctx context.Context, organization, team string) (*Team, error)
 	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
@@ -16,7 +19,9 @@ type TeamService interface {
 	DeleteTeam(ctx context.Context, teamID string) error
 }
 
-func (a *service) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
+// CreateTeam creates a team. If Tx in opts is non-nil then the team is created
+// within that database transaction.
+func (a *service) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
@@ -24,7 +29,11 @@ func (a *service) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, e
 
 	team := NewTeam(opts)
 
-	if err := a.db.createTeam(ctx, team); err != nil {
+	db := a.db
+	if opts.Tx != nil {
+		db = newDB(opts.Tx, a.db.Logger)
+	}
+	if err := db.createTeam(ctx, team); err != nil {
 		a.Error(err, "creating team", "name", opts.Name, "organization", opts.Organization, "subject", subject)
 		return nil, err
 	}
@@ -144,6 +153,10 @@ func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, team.Organization)
 	if err != nil {
 		return err
+	}
+
+	if team.Name == "owners" {
+		return ErrRemovingOwnersTeamNotPermitted
 	}
 
 	err = a.db.deleteTeam(ctx, teamID)

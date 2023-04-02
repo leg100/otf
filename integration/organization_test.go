@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ func TestOrganization(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
@@ -30,6 +31,19 @@ func TestOrganization(t *testing.T) {
 				Name: otf.String(org.Name),
 			})
 			require.Equal(t, otf.ErrResourceAlreadyExists, err)
+		})
+
+		t.Run("owners team should be created", func(t *testing.T) {
+			owners, err := svc.GetTeam(ctx, org.Name, "owners")
+			require.NoError(t, err)
+
+			t.Run("creator should be a member", func(t *testing.T) {
+				members, err := svc.ListTeamMembers(ctx, owners.ID)
+				require.NoError(t, err)
+				if assert.Equal(t, 1, len(members)) {
+					assert.Equal(t, auth.SiteAdminUsername, members[0].Username)
+				}
+			})
 		})
 	})
 

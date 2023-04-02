@@ -55,7 +55,7 @@ func (s *synchroniser) sync(ctx context.Context, from cloud.User) (*auth.User, e
 	getOrCreateTeam := func(ct cloud.Team) (*auth.Team, error) {
 		team, err := s.GetTeam(ctx, ct.Organization, ct.Name)
 		if err == otf.ErrResourceNotFound {
-			return s.CreateTeam(ctx, auth.NewTeamOptions{
+			return s.CreateTeam(ctx, auth.CreateTeamOptions{
 				Name:         ct.Name,
 				Organization: ct.Organization,
 			})
@@ -99,7 +99,11 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *auth.User, wanted []*au
 	// Add team memberships
 	for _, want := range wanted {
 		if !u.IsTeamMember(want.ID) {
-			if err := s.AddTeamMembership(ctx, u.Username, want.ID); err != nil {
+			err := s.AddTeamMembership(ctx, auth.TeamMembershipOptions{
+				Username: u.Username,
+				TeamID:   want.ID,
+			})
+			if err != nil {
 				if errors.Is(err, otf.ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate teams
@@ -114,7 +118,11 @@ func (s *synchroniser) syncTeams(ctx context.Context, u *auth.User, wanted []*au
 	// Remove team memberships
 	for _, team := range u.Teams {
 		if !inTeamList(wanted, team.ID) {
-			if err := s.RemoveTeamMembership(ctx, u.Username, team.ID); err != nil {
+			err := s.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
+				Username: u.Username,
+				TeamID:   team.ID,
+			})
+			if err != nil {
 				return err
 			}
 		}

@@ -15,20 +15,20 @@ func TestTeamDB(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
-		team, err := svc.CreateTeam(ctx, auth.NewTeamOptions{
+		team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
 			Name:         uuid.NewString(),
 			Organization: org.Name,
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := svc.CreateTeam(ctx, auth.NewTeamOptions{
+			_, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
 				Name:         team.Name,
 				Organization: org.Name,
 			})
@@ -115,5 +115,16 @@ func TestTeamDB(t *testing.T) {
 
 		err := svc.DeleteTeam(ctx, team.ID)
 		require.NoError(t, err)
+	})
+
+	t.Run("disallow deleting owners team", func(t *testing.T) {
+		svc := setup(t, nil)
+		org := svc.createOrganization(t, ctx) // creates owners team
+
+		owners, err := svc.GetTeam(ctx, org.Name, "owners")
+		require.NoError(t, err)
+
+		err = svc.DeleteTeam(ctx, owners.ID)
+		assert.Equal(t, auth.ErrRemovingOwnersTeamNotPermitted, err)
 	})
 }

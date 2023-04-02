@@ -30,5 +30,11 @@ func (c *Client) CreateOrganization(ctx context.Context, options OrganizationCre
 	if err != nil {
 		return nil, err
 	}
-	return newFromJSONAPI(org), nil
+	return &organization.Organization{
+		ID:              org.ExternalID,
+		CreatedAt:       org.CreatedAt,
+		Name:            org.Name,
+		SessionRemember: org.SessionRemember,
+		SessionTimeout:  org.SessionTimeout,
+	}, nil
 }

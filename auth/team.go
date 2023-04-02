@@ -19,9 +19,13 @@ type (
 		Access OrganizationAccess
 	}
 
-	NewTeamOptions struct {
-		Name         string `schema:"team_name,required"`
+	CreateTeamOptions struct {
+		// Name of team to create
+		Name string `schema:"team_name,required"`
+		// Organization in which to creat team
 		Organization string `schema:"organization_name,required"`
+		// Database transaction within which to create team. Optional.
+		Tx otf.DB
 	}
 
 	// OrganizationAccess defines a team's organization access.
@@ -36,7 +40,7 @@ type (
 	}
 )
 
-func NewTeam(opts NewTeamOptions) *Team {
+func NewTeam(opts CreateTeamOptions) *Team {
 	team := Team{
 		ID:           otf.NewID("team"),
 		Name:         opts.Name,
