@@ -76,6 +76,7 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 			return nil, err
 		}
 		authenticator := &authenticator{
+			Synchroniser:    svc.Synchroniser,
 			HostnameService: opts.HostnameService,
 			AuthService:     opts.AuthService,
 			oauthClient:     client,

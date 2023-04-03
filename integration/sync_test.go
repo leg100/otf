@@ -2,11 +2,13 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/orgcreator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,28 +19,72 @@ func TestSync(t *testing.T) {
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
-	svc := setup(t, nil)
-	err := svc.Sync(ctx, cloud.User{
-		Name: "bobby",
-		Teams: []cloud.Team{
-			{Name: "owners", Organization: "acme-corp"},
-		},
+	t.Run("new user", func(t *testing.T) {
+		svc := setup(t, nil)
+
+		err := svc.Sync(ctx, cloud.User{
+			Name: "bobby",
+			Teams: []cloud.Team{
+				{Name: "owners", Organization: "acme-corp"},
+				{Name: "devs", Organization: "big-pharma"},
+			},
+		})
+		require.NoError(t, err)
+
+		t.Run("made owner of acme-corp", func(t *testing.T) {
+			_, err = svc.GetOrganization(ctx, "acme-corp")
+			assert.NoError(t, err)
+			isOwner(t, svc, "bobby", "bobby")
+		})
+
+		t.Run("made owner of personal org", func(t *testing.T) {
+			_, err = svc.GetOrganization(ctx, "bobby")
+			assert.NoError(t, err)
+			isOwner(t, svc, "bobby", "bobby")
+		})
+
+		t.Run("should not have created big-pharma", func(t *testing.T) {
+			_, err = svc.GetOrganization(ctx, "big-pharma")
+			assert.True(t, errors.Is(err, otf.ErrResourceNotFound))
+		})
 	})
-	require.NoError(t, err)
 
-	// should have created an organization named acme-corp
-	_, err = svc.GetOrganization(ctx, "acme-corp")
-	assert.NoError(t, err)
+	t.Run("existing user", func(t *testing.T) {
+		svc := setup(t, nil)
 
-	// and made them an owner of acme-corp
-	isOwner(t, svc, "bobby", "bobby")
+		// create existing user:
+		// 1) member of a existing of an org
+		existing := svc.createTeam(t, ctx, nil)
+		user, err := svc.CreateUser(ctx, "bobby", auth.WithTeams(existing))
+		require.NoError(t, err)
+		// 2) owner of personal org
+		userCtx := otf.AddSubjectToContext(ctx, user)
+		_, err = svc.CreateOrganization(userCtx, orgcreator.OrganizationCreateOptions{
+			Name: otf.String("bobby"),
+		})
+		require.NoError(t, err)
 
-	// should have created a personal organization
-	_, err = svc.GetOrganization(ctx, "bobby")
-	assert.NoError(t, err)
+		err = svc.Sync(ctx, cloud.User{
+			Name: "bobby",
+			Teams: []cloud.Team{
+				// new org
+				{Name: "owners", Organization: "acme-corp"},
+			},
+		})
+		require.NoError(t, err)
 
-	// and made them an owner of their personal organization
-	isOwner(t, svc, "bobby", "bobby")
+		t.Run("made owner of acme-corp", func(t *testing.T) {
+			_, err = svc.GetOrganization(ctx, "acme-corp")
+			assert.NoError(t, err)
+			isOwner(t, svc, "bobby", "bobby")
+		})
+
+		t.Run("removed from existing team", func(t *testing.T) {
+			members, err := svc.ListTeamMembers(ctx, existing.ID)
+			require.NoError(t, err)
+			assert.Empty(t, members)
+		})
+	})
 }
 
 func isOwner(t *testing.T, svc *testDaemon, organization, username string) {
