@@ -19,12 +19,12 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 			UpdatedAt: sql.Timestamptz(user.UpdatedAt),
 		})
 		if err != nil {
-			return err
+			return sql.Error(err)
 		}
 		for _, team := range user.Teams {
 			_, err = tx.InsertTeamMembership(ctx, sql.String(user.Username), sql.String(team.ID))
 			if err != nil {
-				return err
+				return sql.Error(err)
 			}
 		}
 		return nil

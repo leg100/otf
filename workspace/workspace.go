@@ -3,7 +3,6 @@ package workspace
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
@@ -21,15 +20,6 @@ const (
 
 	MinTerraformVersion     = "1.2.0"
 	DefaultTerraformVersion = "1.3.7"
-)
-
-var (
-	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
-	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
-	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
-	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
-	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
-	ErrUnsupportedTerraformVersion    = fmt.Errorf("only terraform versions >= %s are supported", MinTerraformVersion)
 )
 
 type (
@@ -335,7 +325,7 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 		return otf.ErrInvalidTerraformVersion
 	}
 	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
-		return ErrUnsupportedTerraformVersion
+		return otf.ErrUnsupportedTerraformVersion
 	}
 	ws.TerraformVersion = v
 	return nil

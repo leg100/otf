@@ -22,13 +22,7 @@ const (
 	defaultRefresh = true
 )
 
-var (
-	ErrRunDiscardNotAllowed      = errors.New("run was not paused for confirmation or priority; discard not allowed")
-	ErrRunCancelNotAllowed       = errors.New("run was not planning or applying; cancel not allowed")
-	ErrRunForceCancelNotAllowed  = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
-	ErrInvalidRunGetOptions      = errors.New("invalid run get options")
-	ErrInvalidRunStateTransition = errors.New("invalid run state transition")
-)
+var ErrInvalidRunStateTransition = errors.New("invalid run state transition")
 
 type (
 	PlanFormat string
@@ -181,7 +175,7 @@ func (r *Run) Phase() otf.PhaseType {
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.Discardable() {
-		return ErrRunDiscardNotAllowed
+		return otf.ErrRunDiscardNotAllowed
 	}
 	r.updateStatus(otf.RunDiscarded)
 
@@ -197,7 +191,7 @@ func (r *Run) Discard() error {
 // enqueued (for an agent to kill an in progress process)
 func (r *Run) Cancel() (enqueue bool, err error) {
 	if !r.Cancelable() {
-		return false, ErrRunCancelNotAllowed
+		return false, otf.ErrRunCancelNotAllowed
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
@@ -231,7 +225,7 @@ func (r *Run) ForceCancel() error {
 		r.updateStatus(otf.RunCanceled)
 		return nil
 	}
-	return ErrRunForceCancelNotAllowed
+	return otf.ErrRunForceCancelNotAllowed
 }
 
 // Done determines whether run has reached an end state, e.g. applied,

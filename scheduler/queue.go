@@ -144,7 +144,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
 
 	ws, err := q.LockWorkspace(ctx, q.ws.ID, &run.ID)
 	if err != nil {
-		if errors.Is(err, workspace.ErrWorkspaceAlreadyLocked) {
+		if errors.Is(err, otf.ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between
 			// getting the lock above and attempting to enqueue plan.
 			q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)

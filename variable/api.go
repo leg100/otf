@@ -31,12 +31,12 @@ func (h *api) addHandlers(r *mux.Router) {
 func (h *api) create(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	var opts jsonapi.VariableCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	variable, err := h.svc.CreateVariable(r.Context(), workspaceID, CreateVariableOptions{
@@ -48,7 +48,7 @@ func (h *api) create(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	h.writeResponse(w, r, variable, jsonapi.WithCode(http.StatusCreated))
@@ -57,12 +57,12 @@ func (h *api) create(w http.ResponseWriter, r *http.Request) {
 func (h *api) get(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	variable, err := h.svc.GetVariable(r.Context(), variableID)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	h.writeResponse(w, r, variable)
@@ -71,12 +71,12 @@ func (h *api) get(w http.ResponseWriter, r *http.Request) {
 func (h *api) list(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	variables, err := h.svc.ListVariables(r.Context(), workspaceID)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	h.writeResponse(w, r, variables)
@@ -85,12 +85,12 @@ func (h *api) list(w http.ResponseWriter, r *http.Request) {
 func (h *api) update(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	var opts jsonapi.VariableUpdateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	updated, err := h.svc.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
@@ -102,7 +102,7 @@ func (h *api) update(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	h.writeResponse(w, r, updated)
@@ -111,12 +111,12 @@ func (h *api) update(w http.ResponseWriter, r *http.Request) {
 func (h *api) delete(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	_, err = h.svc.DeleteVariable(r.Context(), variableID)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 }
@@ -155,7 +155,7 @@ func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 		payload = &to
 	default:
 		err := fmt.Errorf("no json:api struct found for %T", v)
-		jsonapi.Error(w, http.StatusInternalServerError, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	jsonapi.WriteResponse(w, r, payload, opts...)

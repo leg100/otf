@@ -44,7 +44,7 @@ func (m *jsonapiMarshaler) toConfigurationVersion(from *ConfigurationVersion) (*
 
 func (m *jsonapiMarshaler) toList(from *ConfigurationVersionList) (*jsonapi.ConfigurationVersionList, error) {
 	to := &jsonapi.ConfigurationVersionList{
-		Pagination: from.Pagination.ToJSONAPI(),
+		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
 	for _, i := range from.Items {
 		cv, err := m.toConfigurationVersion(i)

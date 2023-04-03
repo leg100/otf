@@ -152,7 +152,7 @@ func (s *service) DeleteVariable(ctx context.Context, variableID string) (*Varia
 	// retrieve existing in order to retrieve workspace ID for authorization
 	existing, err := s.db.get(ctx, variableID)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving variable")
+		return nil, err
 	}
 
 	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteVariableAction, existing.WorkspaceID)
