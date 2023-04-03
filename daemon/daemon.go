@@ -281,8 +281,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	handlers := []otf.Handlers{
 		authService,
 		workspaceService,
-		orgService,
+		// deliberating placing org creator service prior to org service because
+		// org creator adds web routes that take priority (gorilla mux routes
+		// are checked in the order they are added to the router).
 		orgCreatorService,
+		orgService,
 		variableService,
 		vcsProviderService,
 		stateService,

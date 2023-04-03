@@ -20,11 +20,11 @@ type web struct {
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations", a.list)
-	r.HandleFunc("/organizations/{name}", a.get)
-	r.HandleFunc("/organizations/{name}/edit", a.edit)
-	r.HandleFunc("/organizations/{name}/update", a.update)
-	r.HandleFunc("/organizations/{name}/delete", a.delete)
+	r.HandleFunc("/organizations", a.list).Methods("GET")
+	r.HandleFunc("/organizations/{name}", a.get).Methods("GET")
+	r.HandleFunc("/organizations/{name}/edit", a.edit).Methods("GET")
+	r.HandleFunc("/organizations/{name}/update", a.update).Methods("POST")
+	r.HandleFunc("/organizations/{name}/delete", a.delete).Methods("POST")
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {

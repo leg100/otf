@@ -20,7 +20,8 @@ type web struct {
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/create", a.create)
+	r.HandleFunc("/organizations/new", a.new).Methods("GET")
+	r.HandleFunc("/organizations/create", a.create).Methods("POST")
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {

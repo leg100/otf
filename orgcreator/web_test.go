@@ -3,7 +3,6 @@ package orgcreator
 import (
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -14,9 +13,6 @@ import (
 
 func TestWeb(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
-		wd, _ := os.Getwd()
-		t.Log(wd)
-
 		svc := newFakeWeb(t, &fakeService{})
 
 		r := httptest.NewRequest("GET", "/?", nil)
