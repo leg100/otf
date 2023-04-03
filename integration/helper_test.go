@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
@@ -119,7 +120,7 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+	org, err := s.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 		Name: otf.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
@@ -191,7 +192,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.CreateTeam(ctx, auth.NewTeamOptions{
+	team, err := s.CreateTeam(ctx, auth.CreateTeamOptions{
 		Name:         uuid.NewString(),
 		Organization: org.Name,
 	})

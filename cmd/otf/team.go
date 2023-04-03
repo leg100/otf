@@ -31,7 +31,7 @@ func (a *application) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.CreateTeam(cmd.Context(), auth.NewTeamOptions{
+			team, err := a.CreateTeam(cmd.Context(), auth.CreateTeamOptions{
 				Organization: organization,
 				Name:         args[0],
 			})
@@ -94,7 +94,11 @@ func (a *application) addTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := a.AddTeamMembership(cmd.Context(), args[0], team.ID); err != nil {
+			err = a.AddTeamMembership(cmd.Context(), auth.TeamMembershipOptions{
+				Username: args[0],
+				TeamID:   team.ID,
+			})
+			if err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args[0], name)
@@ -127,7 +131,11 @@ func (a *application) deleteTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := a.RemoveTeamMembership(cmd.Context(), args[0], team.ID); err != nil {
+			err = a.RemoveTeamMembership(cmd.Context(), auth.TeamMembershipOptions{
+				Username: args[0],
+				TeamID:   team.ID,
+			})
+			if err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args[0], name)

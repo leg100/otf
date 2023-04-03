@@ -15,21 +15,14 @@ import (
 type webHandlers struct {
 	otf.Renderer
 
-	svc            AuthService
-	authenticators []*authenticator
-	siteToken      string
+	svc       AuthService
+	siteToken string
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	// Unauthenticated routes
-	r.HandleFunc("/login", h.loginHandler)
 	r.HandleFunc("/admin/login", h.adminLoginPromptHandler).Methods("GET")
 	r.HandleFunc("/admin/login", h.adminLoginHandler).Methods("POST")
-
-	for _, auth := range h.authenticators {
-		r.HandleFunc(auth.RequestPath(), auth.RequestHandler)
-		r.HandleFunc(auth.CallbackPath(), auth.responseHandler)
-	}
 
 	// Authenticated routes
 	r = html.UIRouter(r)
@@ -69,10 +62,6 @@ func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Render("profile.tmpl", w, r, user)
-}
-
-func (h *webHandlers) loginHandler(w http.ResponseWriter, r *http.Request) {
-	h.Render("login.tmpl", w, r, h.authenticators)
 }
 
 func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +105,7 @@ func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session.setCookie(w)
+	session.SetCookie(w)
 
-	returnUserOriginalPage(w, r)
+	html.ReturnUserOriginalPage(w, r)
 }

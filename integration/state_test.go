@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +17,7 @@ func TestState(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)

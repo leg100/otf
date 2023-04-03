@@ -20,39 +20,11 @@ type web struct {
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations", a.list)
-	r.HandleFunc("/organizations/new", a.new)
-	r.HandleFunc("/organizations/create", a.create)
-	r.HandleFunc("/organizations/{name}", a.get)
-	r.HandleFunc("/organizations/{name}/edit", a.edit)
-	r.HandleFunc("/organizations/{name}/update", a.update)
-	r.HandleFunc("/organizations/{name}/delete", a.delete)
-}
-
-func (a *web) new(w http.ResponseWriter, r *http.Request) {
-	a.Render("organization_new.tmpl", w, r, nil)
-}
-
-func (a *web) create(w http.ResponseWriter, r *http.Request) {
-	var opts OrganizationCreateOptions
-	if err := decode.Form(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	org, err := a.svc.CreateOrganization(r.Context(), opts)
-	if err == otf.ErrResourceAlreadyExists {
-		html.FlashError(w, "organization already exists: "+*opts.Name)
-		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)
-		return
-	}
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	html.FlashSuccess(w, "created organization: "+org.Name)
-	http.Redirect(w, r, paths.Organization(org.Name), http.StatusFound)
+	r.HandleFunc("/organizations", a.list).Methods("GET")
+	r.HandleFunc("/organizations/{name}", a.get).Methods("GET")
+	r.HandleFunc("/organizations/{name}/edit", a.edit).Methods("GET")
+	r.HandleFunc("/organizations/{name}/update", a.update).Methods("POST")
+	r.HandleFunc("/organizations/{name}/delete", a.delete).Methods("POST")
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {

@@ -19,9 +19,13 @@ type (
 		Access OrganizationAccess
 	}
 
-	NewTeamOptions struct {
-		Name         string `schema:"team_name,required"`
+	CreateTeamOptions struct {
+		// Name of team to create
+		Name string `schema:"team_name,required"`
+		// Organization in which to creat team
 		Organization string `schema:"organization_name,required"`
+		// Database transaction within which to create team. Optional.
+		Tx otf.DB
 	}
 
 	// OrganizationAccess defines a team's organization access.
@@ -36,7 +40,7 @@ type (
 	}
 )
 
-func NewTeam(opts NewTeamOptions) *Team {
+func NewTeam(opts CreateTeamOptions) *Team {
 	team := Team{
 		ID:           otf.NewID("team"),
 		Name:         opts.Name,
@@ -46,16 +50,16 @@ func NewTeam(opts NewTeamOptions) *Team {
 	return &team
 }
 
-func (u *Team) String() string                         { return u.Name }
-func (u *Team) OrganizationAccess() OrganizationAccess { return u.Access }
+func (t *Team) String() string                         { return t.Name }
+func (t *Team) OrganizationAccess() OrganizationAccess { return t.Access }
 
-func (u *Team) IsOwners() bool {
-	return u.Name == "owners"
+func (t *Team) IsOwners() bool {
+	return t.Name == "owners"
 }
 
-func (u *Team) Update(opts UpdateTeamOptions) error {
-	u.Access.ManageWorkspaces = opts.ManageWorkspaces
-	u.Access.ManageVCS = opts.ManageVCS
-	u.Access.ManageRegistry = opts.ManageRegistry
+func (t *Team) Update(opts UpdateTeamOptions) error {
+	t.Access.ManageWorkspaces = opts.ManageWorkspaces
+	t.Access.ManageVCS = opts.ManageVCS
+	t.Access.ManageRegistry = opts.ManageRegistry
 	return nil
 }

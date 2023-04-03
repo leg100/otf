@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/authenticator"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
@@ -24,6 +25,7 @@ import (
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/run"
@@ -43,10 +45,12 @@ type (
 
 		otf.DB
 		*pubsub.Broker
+		authenticator.Synchroniser
 
 		agent process
 
 		organization.OrganizationService
+		orgcreator.OrganizationCreatorService
 		auth.AuthService
 		variable.VariableService
 		vcsprovider.VCSProviderService
@@ -63,22 +67,23 @@ type (
 	}
 
 	Config struct {
-		AgentConfig          *agent.Config
-		LoggerConfig         *cmdutil.LoggerConfig
-		CacheConfig          *inmem.CacheConfig
-		Github               cloud.CloudOAuthConfig
-		Gitlab               cloud.CloudOAuthConfig
-		Secret               string // secret for signing URLs
-		SiteToken            string
-		Host                 string
-		Address              string
-		Database             string
-		MaxConfigSize        int64
-		SSL                  bool
-		CertFile, KeyFile    string
-		EnableRequestLogging bool
-		DevMode              bool
-		DisableRunScheduler  bool
+		AgentConfig                  *agent.Config
+		LoggerConfig                 *cmdutil.LoggerConfig
+		CacheConfig                  *inmem.CacheConfig
+		Github                       cloud.CloudOAuthConfig
+		Gitlab                       cloud.CloudOAuthConfig
+		Secret                       string // secret for signing URLs
+		SiteToken                    string
+		Host                         string
+		Address                      string
+		Database                     string
+		MaxConfigSize                int64
+		SSL                          bool
+		CertFile, KeyFile            string
+		EnableRequestLogging         bool
+		DevMode                      bool
+		DisableRunScheduler          bool
+		RestrictOrganizationCreation bool
 	}
 
 	process interface {
@@ -147,17 +152,23 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:   broker,
 	})
 	authService, err := auth.NewService(auth.Options{
-		Logger:              logger,
-		DB:                  db,
-		Renderer:            renderer,
-		Configs:             []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
-		SiteToken:           cfg.SiteToken,
-		HostnameService:     hostnameService,
-		OrganizationService: orgService,
+		Logger:          logger,
+		DB:              db,
+		Renderer:        renderer,
+		SiteToken:       cfg.SiteToken,
+		HostnameService: hostnameService,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up auth service: %w", err)
 	}
+	orgCreatorService := orgcreator.NewService(orgcreator.Options{
+		Logger:                       logger,
+		DB:                           db,
+		Renderer:                     renderer,
+		Publisher:                    broker,
+		AuthService:                  authService,
+		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
+	})
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:       logger,
 		DB:           db,
@@ -254,9 +265,26 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	authenticatorService, err := authenticator.NewAuthenticatorService(authenticator.Options{
+		Logger:                     logger,
+		Renderer:                   renderer,
+		HostnameService:            hostnameService,
+		OrganizationService:        orgService,
+		OrganizationCreatorService: orgCreatorService,
+		AuthService:                authService,
+		Configs:                    []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	handlers := []otf.Handlers{
 		authService,
 		workspaceService,
+		// deliberating placing org creator service prior to org service because
+		// org creator adds web routes that take priority (gorilla mux routes
+		// are checked in the order they are added to the router).
+		orgCreatorService,
 		orgService,
 		variableService,
 		vcsProviderService,
@@ -266,6 +294,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		runService,
 		logsService,
 		repoService,
+		authenticatorService,
 	}
 
 	return &Daemon{
@@ -275,6 +304,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
+		OrganizationCreatorService:  orgCreatorService,
 		VariableService:             variableService,
 		VCSProviderService:          vcsProviderService,
 		StateService:                stateService,
@@ -284,6 +314,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:                  runService,
 		LogsService:                 logsService,
 		RepoService:                 repoService,
+		Synchroniser:                authenticatorService,
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,

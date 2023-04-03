@@ -2,7 +2,6 @@ package organization
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -16,7 +15,6 @@ type (
 	OrganizationService = Service
 
 	Service interface {
-		CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 		UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
 		GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
@@ -36,7 +34,7 @@ type (
 		site otf.Authorizer // authorize access to site
 		web  *web
 
-		*jsonapiMarshaler
+		*JSONAPIMarshaler
 	}
 
 	Options struct {
@@ -54,11 +52,11 @@ func NewService(opts Options) *service {
 		Broker:           opts.Broker,
 		db:               &pgdb{opts.DB},
 		site:             &otf.SiteAuthorizer{opts.Logger},
-		jsonapiMarshaler: &jsonapiMarshaler{},
+		JSONAPIMarshaler: &JSONAPIMarshaler{},
 	}
 	svc.api = &api{
 		svc:              &svc,
-		jsonapiMarshaler: &jsonapiMarshaler{},
+		JSONAPIMarshaler: &JSONAPIMarshaler{},
 	}
 	svc.web = &web{opts.Renderer, &svc}
 
@@ -71,29 +69,6 @@ func NewService(opts Options) *service {
 func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 	s.web.addHandlers(r)
-}
-
-func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
-	subject, err := s.site.CanAccess(ctx, rbac.CreateOrganizationAction, "")
-	if err != nil {
-		return nil, err
-	}
-
-	org, err := NewOrganization(opts)
-	if err != nil {
-		return nil, fmt.Errorf("creating organization: %w", err)
-	}
-
-	if err := s.db.create(ctx, org); err != nil {
-		s.Error(err, "creating organization", "id", org.ID, "subject", subject)
-		return nil, err
-	}
-
-	s.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
-
-	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", subject)
-
-	return org, nil
 }
 
 func (s *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
@@ -156,7 +131,7 @@ func (s *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jso
 	if err != nil {
 		return nil, err
 	}
-	return s.toOrganization(org), nil
+	return s.ToOrganization(org), nil
 }
 
 func (s *service) DeleteOrganization(ctx context.Context, name string) error {

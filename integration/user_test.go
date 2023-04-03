@@ -14,7 +14,7 @@ func TestUser(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("get", func(t *testing.T) {
 		svc := setup(t, nil)
@@ -108,7 +108,10 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, ctx)
 
-		err := svc.AddTeamMembership(ctx, user.Username, team.ID)
+		err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
+			Username: user.Username,
+			TeamID:   team.ID,
+		})
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
@@ -123,12 +126,30 @@ func TestUser(t *testing.T) {
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, ctx, auth.WithTeams(team))
 
-		err := svc.RemoveTeamMembership(ctx, user.Username, team.ID)
+		err := svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
+			Username: user.Username,
+			TeamID:   team.ID,
+		})
 		require.NoError(t, err)
 
 		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
 		require.NoError(t, err)
 
 		assert.NotContains(t, got.Teams, team)
+	})
+
+	t.Run("cannot remove last owner", func(t *testing.T) {
+		svc := setup(t, nil)
+		// automatically creates owners team with site admin as owner
+		org := svc.createOrganization(t, ctx)
+
+		owners, err := svc.GetTeam(ctx, org.Name, "owners")
+		require.NoError(t, err)
+
+		err = svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
+			Username: auth.SiteAdminUsername,
+			TeamID:   owners.ID,
+		})
+		assert.Equal(t, auth.ErrCannotDeleteOnlyOwner, err)
 	})
 }

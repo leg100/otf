@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
@@ -68,7 +69,7 @@ type fakeClient struct {
 	client.Client
 }
 
-func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error) {
+func (f *fakeClient) CreateOrganization(ctx context.Context, opts orgcreator.OrganizationCreateOptions) (*organization.Organization, error) {
 	return &organization.Organization{Name: *opts.Name}, nil
 }
 
@@ -84,15 +85,15 @@ func (f *fakeClient) DeleteUser(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeClient) AddTeamMembership(context.Context, string, string) error {
+func (f *fakeClient) AddTeamMembership(context.Context, auth.TeamMembershipOptions) error {
 	return nil
 }
 
-func (f *fakeClient) RemoveTeamMembership(context.Context, string, string) error {
+func (f *fakeClient) RemoveTeamMembership(context.Context, auth.TeamMembershipOptions) error {
 	return nil
 }
 
-func (f *fakeClient) CreateTeam(context.Context, auth.NewTeamOptions) (*auth.Team, error) {
+func (f *fakeClient) CreateTeam(context.Context, auth.CreateTeamOptions) (*auth.Team, error) {
 	return f.team, nil
 }
 

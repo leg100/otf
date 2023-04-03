@@ -14,7 +14,7 @@ func TestToken(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
+	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)

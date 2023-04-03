@@ -8,14 +8,11 @@ import (
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
 )
 
 const (
 	defaultExpiry          = 24 * time.Hour
 	defaultCleanupInterval = 5 * time.Minute
-	// path cookie stores the last path the user attempted to access
-	pathCookie = "path"
 )
 
 type (
@@ -78,25 +75,6 @@ func (s *Session) Username() string     { return s.username }
 func (s *Session) Address() string      { return s.address }
 func (s *Session) Expiry() time.Time    { return s.expiry }
 
-func (s *Session) setCookie(w http.ResponseWriter) {
+func (s *Session) SetCookie(w http.ResponseWriter) {
 	html.SetCookie(w, sessionCookie, s.token, otf.Time(s.Expiry()))
-}
-
-// sendUserToLoginPage sends user to the login prompt page, saving the original
-// page they tried to access so it can return them there after login.
-func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
-	html.SetCookie(w, pathCookie, r.URL.Path, nil)
-	http.Redirect(w, r, paths.Login(), http.StatusFound)
-}
-
-// returnUserOriginalPage returns a user to the original page they tried to
-// access before they were redirected to the login page.
-func returnUserOriginalPage(w http.ResponseWriter, r *http.Request) {
-	// Return user to the original path they attempted to access
-	if cookie, err := r.Cookie(pathCookie); err == nil {
-		html.SetCookie(w, pathCookie, "", &time.Time{})
-		http.Redirect(w, r, cookie.Value, http.StatusFound)
-	} else {
-		http.Redirect(w, r, paths.Profile(), http.StatusFound)
-	}
 }

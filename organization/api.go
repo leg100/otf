@@ -13,7 +13,7 @@ import (
 type api struct {
 	svc Service
 
-	*jsonapiMarshaler
+	*JSONAPIMarshaler
 }
 
 // Implements TFC state versions API:
@@ -23,31 +23,10 @@ func (h *api) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
 	r.HandleFunc("/organizations", h.ListOrganizations).Methods("GET")
-	r.HandleFunc("/organizations", h.CreateOrganization).Methods("POST")
 	r.HandleFunc("/organizations/{name}", h.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{name}", h.UpdateOrganization).Methods("PATCH")
 	r.HandleFunc("/organizations/{name}", h.DeleteOrganization).Methods("DELETE")
 	r.HandleFunc("/organizations/{name}/entitlement-set", h.GetEntitlements).Methods("GET")
-}
-
-func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	var opts jsonapi.OrganizationCreateOptions
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	org, err := h.svc.CreateOrganization(r.Context(), OrganizationCreateOptions{
-		Name:            opts.Name,
-		SessionRemember: opts.SessionRemember,
-		SessionTimeout:  opts.SessionTimeout,
-	})
-	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
-		return
-	}
-
-	h.writeResponse(w, r, org, jsonapi.WithCode(http.StatusCreated))
 }
 
 func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +125,7 @@ func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 	case *OrganizationList:
 		payload = h.toList(v)
 	case *Organization:
-		payload = h.toOrganization(v)
+		payload = h.ToOrganization(v)
 	case Entitlements:
 		payload = (*jsonapi.Entitlements)(&v)
 	default:

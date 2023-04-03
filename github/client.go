@@ -65,6 +65,10 @@ func NewEnterpriseClient(hostname string, httpClient *http.Client) (*github.Clie
 		httpClient)
 }
 
+// GetUser retrieves a user from github along with their team memberships.
+// They are determined to be in the owners team if either:
+// (a) they are a member of a github team called 'owners'
+// (b) they are an admin of a github organization.
 func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
@@ -88,12 +92,16 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 		})
 	}
 
+	// check if they are an admin of any orgs; if so, make them an owner.
 	organizations, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
 	for _, org := range organizations {
-		// Determine if they are an admin; if so, add them to the owners team.
+		if user.IsOwner(org.GetLogin()) {
+			// user already determined to be an owner, so skip this check.
+			continue
+		}
 		membership, _, err := g.client.Organizations.GetOrgMembership(ctx, "", org.GetLogin())
 		if err != nil {
 			return nil, err

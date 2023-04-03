@@ -43,8 +43,8 @@ func (c *Client) DeleteUser(ctx context.Context, username string) error {
 }
 
 // AddTeamMembership adds a user to a team via HTTP.
-func (c *Client) AddTeamMembership(ctx context.Context, username, teamID string) error {
-	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(teamID), url.QueryEscape(username))
+func (c *Client) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
+	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(opts.TeamID), url.QueryEscape(opts.Username))
 	req, err := c.NewRequest("POST", u, nil)
 	if err != nil {
 		return err
@@ -56,8 +56,8 @@ func (c *Client) AddTeamMembership(ctx context.Context, username, teamID string)
 }
 
 // RemoveTeamMembership removes a user from a team via HTTP.
-func (c *Client) RemoveTeamMembership(ctx context.Context, username, teamID string) error {
-	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(teamID), url.QueryEscape(username))
+func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
+	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(opts.TeamID), url.QueryEscape(opts.Username))
 	req, err := c.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (c *Client) RemoveTeamMembership(ctx context.Context, username, teamID stri
 }
 
 // CreateTeam creates a team via HTTP/JSONAPI.
-func (c *Client) CreateTeam(ctx context.Context, opts NewTeamOptions) (*Team, error) {
+func (c *Client) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
 	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
 	req, err := c.NewRequest("POST", u, &jsonapi.CreateTeamOptions{
 		Name: otf.String(opts.Name),

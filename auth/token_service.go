@@ -18,7 +18,7 @@ type tokenService interface {
 // CreateToken creates a user token. Only users can create a user token, and
 // they can only create a token for themselves.
 func (a *service) CreateToken(ctx context.Context, opts *TokenCreateOptions) (*Token, error) {
-	user, err := userFromContext(ctx)
+	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (a *service) CreateToken(ctx context.Context, opts *TokenCreateOptions) (*T
 }
 
 func (a *service) ListTokens(ctx context.Context) ([]*Token, error) {
-	user, err := userFromContext(ctx)
+	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (a *service) ListTokens(ctx context.Context) ([]*Token, error) {
 }
 
 func (a *service) DeleteToken(ctx context.Context, tokenID string) error {
-	user, err := userFromContext(ctx)
+	user, err := UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

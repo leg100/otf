@@ -14,6 +14,17 @@ type (
 	}
 )
 
+func (u User) IsOwner(organization string) bool {
+	for _, team := range u.Teams {
+		if team.Organization == organization {
+			if team.IsOwners() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (u User) Organizations() (organizations []string) {
 	// De-dup organizations
 	seen := make(map[string]bool)
@@ -25,4 +36,8 @@ func (u User) Organizations() (organizations []string) {
 		seen[t.Organization] = true
 	}
 	return organizations
+}
+
+func (t Team) IsOwners() bool {
+	return t.Name == "owners"
 }
