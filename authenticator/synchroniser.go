@@ -96,12 +96,12 @@ func (s *synchroniser) Sync(ctx context.Context, user cloud.User) error {
 		}
 		team, err := s.GetTeam(ctx, t.Organization, t.Name)
 		if err == otf.ErrResourceNotFound {
-			if team.Name == "owners" {
+			if t.Name == "owners" {
 				// this should not happen: an organization always has an owners
 				// team
 				return errors.New("owners team not found")
 			}
-			_, err := s.CreateTeam(ctx, auth.CreateTeamOptions{
+			team, err = s.CreateTeam(ctx, auth.CreateTeamOptions{
 				Name:         t.Name,
 				Organization: t.Organization,
 			})

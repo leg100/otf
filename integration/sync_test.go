@@ -26,20 +26,18 @@ func TestSync(t *testing.T) {
 			Name: "bobby",
 			Teams: []cloud.Team{
 				{Name: "owners", Organization: "acme-corp"},
+				// this team should not be created because big-pharma does not
+				// exist and can only be created if user was an owner...
 				{Name: "devs", Organization: "big-pharma"},
 			},
 		})
 		require.NoError(t, err)
 
 		t.Run("made owner of acme-corp", func(t *testing.T) {
-			_, err = svc.GetOrganization(ctx, "acme-corp")
-			assert.NoError(t, err)
-			isOwner(t, svc, "bobby", "bobby")
+			isOwner(t, svc, "acme-corp", "bobby")
 		})
 
 		t.Run("made owner of personal org", func(t *testing.T) {
-			_, err = svc.GetOrganization(ctx, "bobby")
-			assert.NoError(t, err)
 			isOwner(t, svc, "bobby", "bobby")
 		})
 
@@ -53,7 +51,7 @@ func TestSync(t *testing.T) {
 		svc := setup(t, nil)
 
 		// create existing user:
-		// 1) member of a existing of an org
+		// 1) member of an existing team
 		existing := svc.createTeam(t, ctx, nil)
 		user, err := svc.CreateUser(ctx, "bobby", auth.WithTeams(existing))
 		require.NoError(t, err)
@@ -68,15 +66,28 @@ func TestSync(t *testing.T) {
 			Name: "bobby",
 			Teams: []cloud.Team{
 				// new org
-				{Name: "owners", Organization: "acme-corp"},
+				{Organization: "acme-corp", Name: "owners"},
+				{Organization: "acme-corp", Name: "devs"},
+				// existing team is omitted so their membership should be
+				// removed
 			},
 		})
 		require.NoError(t, err)
 
 		t.Run("made owner of acme-corp", func(t *testing.T) {
-			_, err = svc.GetOrganization(ctx, "acme-corp")
-			assert.NoError(t, err)
+			isOwner(t, svc, "acme-corp", "bobby")
+		})
+
+		t.Run("remains owner of personal org", func(t *testing.T) {
 			isOwner(t, svc, "bobby", "bobby")
+		})
+
+		t.Run("made developer of acme-corp", func(t *testing.T) {
+			devs, err := svc.GetTeam(ctx, "acme-corp", "devs")
+			assert.NoError(t, err)
+			members, err := svc.ListTeamMembers(ctx, devs.ID)
+			require.NoError(t, err)
+			assert.Equal(t, 1, len(members))
 		})
 
 		t.Run("removed from existing team", func(t *testing.T) {
