@@ -24,15 +24,15 @@ func TestTeamCLI(t *testing.T) {
 	require.NoError(t, err, string(out))
 	require.Equal(t, "Successfully created organization acme-corp\n", string(out))
 
-	// create team
-	cmd = exec.Command("otf", "teams", "new", "owners",
+	// create developers team
+	cmd = exec.Command("otf", "teams", "new", "devs",
 		"--address", hostname,
 		"--token", "abc123",
 		"--organization", "acme-corp",
 	)
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
-	require.Equal(t, "Successfully created team owners\n", string(out))
+	require.Equal(t, "Successfully created team devs\n", string(out))
 
 	// create user
 	cmd = exec.Command("otf", "users", "new", "bobby",
@@ -43,35 +43,35 @@ func TestTeamCLI(t *testing.T) {
 	require.NoError(t, err, string(out))
 	require.Equal(t, "Successfully created user bobby\n", string(out))
 
-	// add user to team
+	// add user to developers
 	cmd = exec.Command("otf", "teams", "add-user", "bobby",
 		"--address", hostname,
 		"--token", "abc123",
 		"--organization", "acme-corp",
-		"--team", "owners",
+		"--team", "devs",
 	)
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
-	require.Equal(t, "Successfully added bobby to owners\n", string(out))
+	require.Equal(t, "Successfully added bobby to devs\n", string(out))
 
 	// remove user from team
 	cmd = exec.Command("otf", "teams", "del-user", "bobby",
 		"--address", hostname,
 		"--token", "abc123",
 		"--organization", "acme-corp",
-		"--team", "owners",
+		"--team", "devs",
 	)
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
-	require.Equal(t, "Successfully removed bobby from owners\n", string(out))
+	require.Equal(t, "Successfully removed bobby from devs\n", string(out))
 
 	// delete team
-	cmd = exec.Command("otf", "teams", "delete", "owners",
+	cmd = exec.Command("otf", "teams", "delete", "devs",
 		"--address", hostname,
 		"--token", "abc123",
 		"--organization", "acme-corp",
 	)
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err, string(out))
-	require.Equal(t, "Successfully deleted team owners\n", string(out))
+	require.Equal(t, "Successfully deleted team devs\n", string(out))
 }
