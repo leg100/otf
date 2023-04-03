@@ -43,13 +43,13 @@ func (h *api) addHandlers(r *mux.Router) {
 func (h *api) createUser(w http.ResponseWriter, r *http.Request) {
 	var params jsonapi.CreateUserOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	user, err := h.svc.CreateUser(r.Context(), *params.Username)
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -59,12 +59,12 @@ func (h *api) createUser(w http.ResponseWriter, r *http.Request) {
 func (h *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 	username, err := decode.Param("username", r)
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	if err := h.svc.DeleteUser(r.Context(), username); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (h *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *api) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params TeamMembershipOptions
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (h *api) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 func (h *api) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params TeamMembershipOptions
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -115,11 +115,11 @@ func (h *api) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (h *api) createTeam(w http.ResponseWriter, r *http.Request) {
 	var params jsonapi.CreateTeamOptions
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (h *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		Organization: *params.Organization,
 	})
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -143,13 +143,13 @@ func (h *api) getTeam(w http.ResponseWriter, r *http.Request) {
 		Name         *string `schema:"team_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	team, err := h.svc.GetTeam(r.Context(), *params.Organization, *params.Name)
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -159,12 +159,12 @@ func (h *api) getTeam(w http.ResponseWriter, r *http.Request) {
 func (h *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("team_id", r)
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	if err := h.svc.DeleteTeam(r.Context(), id); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -176,7 +176,7 @@ func (h *api) deleteTeam(w http.ResponseWriter, r *http.Request) {
 func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 	var opts jsonapi.RegistrySessionCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -184,7 +184,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		Organization: opts.Organization,
 	})
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts jsonapi.AgentTokenCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 	at, err := h.svc.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
@@ -207,7 +207,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		Organization: opts.Organization,
 	})
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
@@ -220,7 +220,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 func (h *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
 	at, err := agentFromContext(r.Context())
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{

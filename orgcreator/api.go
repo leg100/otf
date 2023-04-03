@@ -27,7 +27,7 @@ func (h *api) addHandlers(r *mux.Router) {
 func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	var opts jsonapi.OrganizationCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -37,7 +37,7 @@ func (h *api) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		SessionTimeout:  opts.SessionTimeout,
 	})
 	if err != nil {
-		jsonapi.Error(w,  err)
+		jsonapi.Error(w, err)
 		return
 	}
 
