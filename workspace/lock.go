@@ -49,7 +49,7 @@ func (l *Lock) Lock(state LockedState) error {
 // Unlock the lock.
 func (l *Lock) Unlock(state LockedState, force bool) error {
 	if !l.Locked() {
-		return ErrWorkspaceAlreadyUnlocked
+		return otf.ErrWorkspaceAlreadyUnlocked
 	}
 	if err := l.LockedState.CanUnlock(state, force); err != nil {
 		return err

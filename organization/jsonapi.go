@@ -21,7 +21,7 @@ func (m *JSONAPIMarshaler) ToOrganization(org *Organization) *jsonapi.Organizati
 
 func (m *JSONAPIMarshaler) toList(from *OrganizationList) *jsonapi.OrganizationList {
 	to := &jsonapi.OrganizationList{
-		Pagination: from.Pagination.ToJSONAPI(),
+		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
 	for _, item := range from.Items {
 		to.Items = append(to.Items, m.ToOrganization(item))

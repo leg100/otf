@@ -161,7 +161,7 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 
 func (m JSONAPIMarshaler) toList(from *RunList, r *http.Request) (*jsonapi.RunList, error) {
 	to := &jsonapi.RunList{
-		Pagination: from.Pagination.ToJSONAPI(),
+		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
 	for _, i := range from.Items {
 		run, err := m.toRun(i, r)

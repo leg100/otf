@@ -50,11 +50,10 @@ func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
 func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variable) error) (*Variable, error) {
 	var variable *Variable
 	err := pdb.tx(ctx, func(tx db) error {
-		var err error
 		// retrieve variable
 		row, err := tx.FindVariableForUpdate(ctx, sql.String(variableID))
 		if err != nil {
-			return sql.Error(err)
+			return err
 		}
 		variable = pgRow(row).toVariable()
 
@@ -74,13 +73,13 @@ func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variabl
 		})
 		return err
 	})
-	return variable, err
+	return variable, sql.Error(err)
 }
 
 func (pdb *pgdb) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
 	rows, err := pdb.FindVariables(ctx, sql.String(workspaceID))
 	if err != nil {
-		return nil, err
+		return nil, sql.Error(err)
 	}
 
 	var variables []*Variable
@@ -93,7 +92,7 @@ func (pdb *pgdb) list(ctx context.Context, workspaceID string) ([]*Variable, err
 func (pdb *pgdb) get(ctx context.Context, variableID string) (*Variable, error) {
 	row, err := pdb.FindVariable(ctx, sql.String(variableID))
 	if err != nil {
-		return nil, err
+		return nil, sql.Error(err)
 	}
 
 	return pgRow(row).toVariable(), nil

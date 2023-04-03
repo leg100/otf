@@ -10,9 +10,8 @@ import (
 	"strings"
 
 	"github.com/leg100/jsonapi"
+	"github.com/leg100/otf"
 )
-
-type ErrorsPayload jsonapi.ErrorsPayload
 
 // Pagination is used to return the pagination details of an API request.
 type Pagination struct {
@@ -21,6 +20,26 @@ type Pagination struct {
 	NextPage     *int `json:"next-page"`
 	TotalPages   int  `json:"total-pages"`
 	TotalCount   int  `json:"total-count"`
+}
+
+func NewPagination(p *otf.Pagination) *Pagination {
+	return &Pagination{
+		CurrentPage:  p.Opts.SanitizedPageNumber(),
+		PreviousPage: p.PrevPage(),
+		NextPage:     p.NextPage(),
+		TotalPages:   p.TotalPages(),
+		TotalCount:   p.Count,
+	}
+}
+
+// NewPaginationFromJSONAPI constructs pagination from a json:api struct
+func NewPaginationFromJSONAPI(json *Pagination) *otf.Pagination {
+	return &otf.Pagination{
+		Count: json.TotalCount,
+		// we can't determine the page size so we'll just pass in 0 which
+		// ListOptions interprets as the default page size
+		Opts: otf.ListOptions{PageNumber: json.CurrentPage, PageSize: 0},
+	}
 }
 
 func UnmarshalPayload(in io.Reader, model interface{}) error {
@@ -92,7 +111,7 @@ func WriteResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(h
 		err = jsonapi.MarshalPayloadWithoutIncluded(w, v)
 	}
 	if err != nil {
-		Error(w, http.StatusInternalServerError, err)
+		Error(w, err)
 	}
 }
 

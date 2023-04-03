@@ -42,7 +42,7 @@ func newFromJSONAPI(from *jsonapi.Run) *Run {
 // newListFromJSONAPI constructs a run list from a json:api struct
 func newListFromJSONAPI(from *jsonapi.RunList) *RunList {
 	to := RunList{
-		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
+		Pagination: jsonapi.NewPaginationFromJSONAPI(from.Pagination),
 	}
 	for _, i := range from.Items {
 		to.Items = append(to.Items, newFromJSONAPI(i))

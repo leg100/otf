@@ -32,13 +32,13 @@ func (h *api) addHandlers(r *mux.Router) {
 func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	org, err := h.svc.GetOrganization(r.Context(), name)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -48,13 +48,13 @@ func (h *api) GetOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	list, err := h.svc.ListOrganizations(r.Context(), opts)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -64,13 +64,13 @@ func (h *api) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	opts := jsonapi.OrganizationUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	org, err := h.svc.UpdateOrganization(r.Context(), name, OrganizationUpdateOptions{
@@ -79,7 +79,7 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		SessionTimeout:  opts.SessionTimeout,
 	})
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -89,12 +89,12 @@ func (h *api) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *api) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	if err := h.svc.DeleteOrganization(r.Context(), name); err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -104,13 +104,13 @@ func (h *api) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *api) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	entitlements, err := h.svc.getEntitlements(r.Context(), name)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 	case Entitlements:
 		payload = (*jsonapi.Entitlements)(&v)
 	default:
-		jsonapi.Error(w, http.StatusInternalServerError, fmt.Errorf("cannot marshal unknown type: %T", v))
+		jsonapi.Error(w, fmt.Errorf("cannot marshal unknown type: %T", v))
 		return
 	}
 	jsonapi.WriteResponse(w, r, payload, opts...)

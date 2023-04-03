@@ -70,11 +70,11 @@ func (s *api) addHandlers(r *mux.Router) {
 func (s *api) create(w http.ResponseWriter, r *http.Request) {
 	var opts jsonapi.RunCreateOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	if opts.Workspace == nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, fmt.Errorf("missing workspace"))
+		jsonapi.Error(w, fmt.Errorf("%w: %s", otf.ErrMissingParameter, "workspace"))
 		return
 	}
 	var configurationVersionID *string
@@ -92,7 +92,7 @@ func (s *api) create(w http.ResponseWriter, r *http.Request) {
 		ReplaceAddrs:           opts.ReplaceAddrs,
 	})
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -105,13 +105,13 @@ func (s *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		Phase otf.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	run, err := s.svc.StartPhase(r.Context(), params.RunID, params.Phase, PhaseStartOptions{})
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -124,13 +124,13 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		Phase otf.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	run, err := s.svc.FinishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -140,13 +140,13 @@ func (s *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 func (s *api) get(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	run, err := s.svc.get(r.Context(), id)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -165,13 +165,13 @@ func (s *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
 
 func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts RunListOptions) {
 	if err := decode.All(&opts, r); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	list, err := s.svc.ListRuns(r.Context(), opts)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -181,12 +181,12 @@ func (s *api) listRuns(w http.ResponseWriter, r *http.Request, opts RunListOptio
 func (s *api) applyRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	if err := s.svc.Apply(r.Context(), id); err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -196,15 +196,12 @@ func (s *api) applyRun(w http.ResponseWriter, r *http.Request) {
 func (s *api) discard(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
-	if err = s.svc.discard(r.Context(), id); err == ErrRunDiscardNotAllowed {
-		jsonapi.Error(w, http.StatusConflict, err)
-		return
-	} else if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+	if err = s.svc.discard(r.Context(), id); err != nil {
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -214,16 +211,12 @@ func (s *api) discard(w http.ResponseWriter, r *http.Request) {
 func (s *api) cancel(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
-	_, err = s.svc.Cancel(r.Context(), id)
-	if err == ErrRunCancelNotAllowed {
-		jsonapi.Error(w, http.StatusConflict, err)
-		return
-	} else if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+	if _, err = s.svc.Cancel(r.Context(), id); err != nil {
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -233,16 +226,12 @@ func (s *api) cancel(w http.ResponseWriter, r *http.Request) {
 func (s *api) forceCancel(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
-	err = s.svc.forceCancel(r.Context(), id)
-	if err == ErrRunForceCancelNotAllowed {
-		jsonapi.Error(w, http.StatusConflict, err)
-		return
-	} else if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+	if err := s.svc.forceCancel(r.Context(), id); err != nil {
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -252,18 +241,18 @@ func (s *api) forceCancel(w http.ResponseWriter, r *http.Request) {
 func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	file, err := s.svc.GetPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -276,24 +265,24 @@ func (s *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	err = s.svc.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -303,13 +292,13 @@ func (s *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	file, err := s.svc.GetLockFile(r.Context(), id)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -322,19 +311,19 @@ func (s *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	err = s.svc.UploadLockFile(r.Context(), id, buf.Bytes())
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -352,14 +341,14 @@ func (s *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
 	run, err := s.svc.get(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -372,14 +361,14 @@ func (s *api) getPlan(w http.ResponseWriter, r *http.Request) {
 func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
 	json, err := s.svc.GetPlanFile(r.Context(), otf.ConvertID(id, "run"), PlanFormatJSON)
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	if _, err := w.Write(json); err != nil {
@@ -391,14 +380,14 @@ func (s *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 func (s *api) getApply(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("apply_id", r)
 	if err != nil {
-		jsonapi.Error(w, http.StatusUnprocessableEntity, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
 	run, err := s.svc.get(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
-		jsonapi.Error(w, http.StatusNotFound, err)
+		jsonapi.Error(w, err)
 		return
 	}
 
@@ -463,7 +452,7 @@ func (s *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts 
 		payload, err = s.toPhase(v, r)
 	}
 	if err != nil {
-		jsonapi.Error(w, http.StatusInternalServerError, err)
+		jsonapi.Error(w, err)
 		return
 	}
 	jsonapi.WriteResponse(w, r, payload, opts...)

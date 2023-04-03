@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-// Generic errors applicable to all resources.
+// Generic errors
 var (
 	// ErrAccessNotPermitted is returned when an authorization check fails.
 	ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
@@ -14,6 +14,9 @@ var (
 
 	// ErrResourceNotFound is returned when a receiving a 404.
 	ErrResourceNotFound = errors.New("resource not found")
+
+	// ErrMissingParameter is returned when a required parameter is missing
+	ErrMissingParameter = errors.New("missing required parameter")
 
 	// ErrResourceAlreadyExists is returned when attempting to create a resource
 	// that already exists.
@@ -32,6 +35,10 @@ var (
 
 	// ErrWarning is a non-fatal error
 	ErrWarning = errors.New("warning")
+
+	// ErrUploadTooLarge is returned when a user attempts to upload data that
+	// is too large.
+	ErrUploadTooLarge = errors.New("upload is too large")
 )
 
 // Resource Errors
@@ -57,4 +64,21 @@ var (
 	ErrStatusTimestampNotFound = errors.New("corresponding status timestamp not found")
 
 	ErrInvalidRepo = errors.New("repository path is invalid")
+)
+
+// Workspace errors
+var (
+	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
+	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
+	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
+	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
+	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
+	ErrUnsupportedTerraformVersion    = errors.New("unsupported terraform version")
+)
+
+// Run errors
+var (
+	ErrRunDiscardNotAllowed     = errors.New("run was not paused for confirmation or priority; discard not allowed")
+	ErrRunCancelNotAllowed      = errors.New("run was not planning or applying; cancel not allowed")
+	ErrRunForceCancelNotAllowed = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
 )

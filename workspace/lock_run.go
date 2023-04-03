@@ -1,5 +1,7 @@
 package workspace
 
+import "github.com/leg100/otf"
+
 // RunLock is a workspace lock held by a run
 type RunLock struct {
 	ID string
@@ -12,7 +14,7 @@ func (RunLock) CanLock(lock LockedState) error {
 	if _, ok := lock.(RunLock); ok {
 		return nil
 	}
-	return ErrWorkspaceAlreadyLocked
+	return otf.ErrWorkspaceAlreadyLocked
 }
 
 func (RunLock) CanUnlock(lock LockedState, force bool) error {
@@ -21,7 +23,7 @@ func (RunLock) CanUnlock(lock LockedState, force bool) error {
 		if force {
 			return nil
 		}
-		return ErrWorkspaceLockedByDifferentUser
+		return otf.ErrWorkspaceLockedByDifferentUser
 	}
 	// anyone/anything else is allowed to unlock a run lock
 	return nil

@@ -25,7 +25,7 @@ func (m *jsonapiMarshaler) toVersion(from *Version) *jsonapi.StateVersion {
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
 func (m *jsonapiMarshaler) toList(from *VersionList) *jsonapi.StateVersionList {
 	jl := &jsonapi.StateVersionList{
-		Pagination: from.Pagination.ToJSONAPI(),
+		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
 	for _, item := range from.Items {
 		jl.Items = append(jl.Items, m.toVersion(item))
