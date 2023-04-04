@@ -43,7 +43,7 @@ type (
 
 // StartReporter starts a reporter.
 func StartReporter(ctx context.Context, opts ReporterOptions) error {
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{"reporter"})
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "reporter"})
 
 	rptr := &reporter{
 		Logger:                      opts.Logger.WithValues("component", "reporter"),

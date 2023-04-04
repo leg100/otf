@@ -85,8 +85,8 @@ func NewService(opts Options) *service {
 		},
 		db:           db,
 		repo:         opts.RepoService,
-		organization: &organization.Authorizer{opts.Logger},
-		site:         &otf.SiteAuthorizer{opts.Logger},
+		organization: &organization.Authorizer{Logger: opts.Logger},
+		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.jsonapiMarshaler = &jsonapiMarshaler{
 		OrganizationService: opts.OrganizationService,

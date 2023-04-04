@@ -53,6 +53,10 @@ jobs:
         run: |
           make install-linter lint
       -
+        name: Vet check
+        run: |
+          make vet
+      -
         name: Unit tests
         run: |
           make unit

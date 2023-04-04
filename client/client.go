@@ -127,14 +127,14 @@ func New(config http.Config) (*remoteClient, error) {
 
 	return &remoteClient{
 		Client:                    httpClient,
-		stateClient:               &stateClient{httpClient},
-		configClient:              &configClient{httpClient},
-		variableClient:            &variableClient{httpClient},
-		authClient:                &authClient{httpClient},
-		organizationClient:        &organizationClient{httpClient},
-		organizationCreatorClient: &organizationCreatorClient{httpClient},
-		workspaceClient:           &workspaceClient{httpClient},
-		runClient:                 &runClient{httpClient, config},
-		logsClient:                &logsClient{httpClient},
+		stateClient:               &stateClient{JSONAPIClient: httpClient},
+		configClient:              &configClient{JSONAPIClient: httpClient},
+		variableClient:            &variableClient{JSONAPIClient: httpClient},
+		authClient:                &authClient{JSONAPIClient: httpClient},
+		organizationClient:        &organizationClient{JSONAPIClient: httpClient},
+		organizationCreatorClient: &organizationCreatorClient{JSONAPIClient: httpClient},
+		workspaceClient:           &workspaceClient{JSONAPIClient: httpClient},
+		runClient:                 &runClient{JSONAPIClient: httpClient, Config: config},
+		logsClient:                &logsClient{JSONAPIClient: httpClient},
 	}, nil
 }

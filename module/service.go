@@ -71,7 +71,7 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:             opts.Logger,
 		VCSProviderService: opts.VCSProviderService,
-		organization:       &organization.Authorizer{opts.Logger},
+		organization:       &organization.Authorizer{Logger: opts.Logger},
 		db:                 &pgdb{opts.DB},
 		repo:               opts.RepoService,
 	}

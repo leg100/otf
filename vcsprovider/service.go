@@ -51,7 +51,7 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:       opts.Logger,
-		organization: &organization.Authorizer{opts.Logger},
+		organization: &organization.Authorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.CloudService),
 		factory: &factory{
 			CloudService: opts.CloudService,
