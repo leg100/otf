@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"google.golang.org/api/idtoken"
 )
 
 const (
@@ -17,27 +19,50 @@ const (
 	sessionCookie = "session"
 )
 
-type AuthenticateTokenService interface {
-	GetAgentToken(context.Context, string) (*AgentToken, error)
-	GetRegistrySession(context.Context, string) (*RegistrySession, error)
-	GetUser(ctx context.Context, spec UserSpec) (*User, error)
-}
+type (
+	AuthenticateTokenService interface {
+		GetAgentToken(context.Context, string) (*AgentToken, error)
+		GetRegistrySession(context.Context, string) (*RegistrySession, error)
+		GetUser(ctx context.Context, spec UserSpec) (*User, error)
+	}
+
+	AuthenticateTokenConfig struct {
+		SiteToken string
+		GoogleJWTConfig
+	}
+
+	GoogleJWTConfig struct {
+		Enabled  bool
+		Header   string
+		Audience string
+	}
+)
 
 // AuthenticateToken verifies that all requests to /api/v2 endpoints possess
 // a valid bearer token.
-func AuthenticateToken(svc AuthenticateTokenService, siteToken string) mux.MiddlewareFunc {
-	isValid := func(ctx context.Context, token string) (otf.Subject, error) {
+func AuthenticateToken(svc AuthenticateTokenService, cfg AuthenticateTokenConfig) mux.MiddlewareFunc {
+	isValid := func(r *http.Request, token string) (otf.Subject, error) {
+		ctx := r.Context()
 		switch {
 		case strings.HasPrefix(token, "agent."):
 			return svc.GetAgentToken(ctx, token)
 		case strings.HasPrefix(token, "registry."):
 			return svc.GetRegistrySession(ctx, token)
-		default:
-			if siteToken != "" && siteToken == token {
-				return &SiteAdmin, nil
-			}
-			// otherwise assume user token
+		case strings.HasPrefix(token, "user."):
 			return svc.GetUser(ctx, UserSpec{AuthenticationToken: &token})
+		case cfg.SiteToken != "" && cfg.SiteToken == token:
+			return &SiteAdmin, nil
+		case cfg.GoogleJWTConfig.Enabled:
+			if cfg.Header != "" {
+				token = r.Header.Get(cfg.Header)
+			}
+			payload, err := idtoken.Validate(ctx, token, cfg.Audience)
+			if err != nil {
+				return nil, err
+			}
+			return svc.GetUser(ctx, UserSpec{Username: &payload.Subject})
+		default:
+			return nil, fmt.Errorf("no auth token found")
 		}
 	}
 
@@ -68,9 +93,9 @@ func AuthenticateToken(svc AuthenticateTokenService, siteToken string) mux.Middl
 			}
 			token := hdr[1]
 
-			subj, err := isValid(r.Context(), token)
+			subj, err := isValid(r, token)
 			if err != nil {
-				http.Error(w, "invalid token", http.StatusUnauthorized)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 

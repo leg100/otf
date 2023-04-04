@@ -15,10 +15,7 @@ import (
 	"github.com/leg100/otf/authenticator"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/cloud"
-	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/github"
-	"github.com/leg100/otf/gitlab"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
@@ -66,47 +63,10 @@ type (
 		Handlers []otf.Handlers
 	}
 
-	Config struct {
-		AgentConfig                  *agent.Config
-		LoggerConfig                 *cmdutil.LoggerConfig
-		CacheConfig                  *inmem.CacheConfig
-		Github                       cloud.CloudOAuthConfig
-		Gitlab                       cloud.CloudOAuthConfig
-		Secret                       string // secret for signing URLs
-		SiteToken                    string
-		Host                         string
-		Address                      string
-		Database                     string
-		MaxConfigSize                int64
-		SSL                          bool
-		CertFile, KeyFile            string
-		EnableRequestLogging         bool
-		DevMode                      bool
-		DisableRunScheduler          bool
-		RestrictOrganizationCreation bool
-	}
-
 	process interface {
 		Start(context.Context) error
 	}
 )
-
-func NewDefaultConfig() Config {
-	return Config{
-		AgentConfig: &agent.Config{
-			Concurrency: agent.DefaultConcurrency,
-		},
-		CacheConfig: &inmem.CacheConfig{},
-		Github: cloud.CloudOAuthConfig{
-			Config:      github.Defaults(),
-			OAuthConfig: github.OAuthDefaults(),
-		},
-		Gitlab: cloud.CloudOAuthConfig{
-			Config:      gitlab.Defaults(),
-			OAuthConfig: gitlab.OAuthDefaults(),
-		},
-	}
-}
 
 // New builds a new daemon and establishes a connection to the database and
 // migrates it to the latest schema. Close() should be called to close this
@@ -342,7 +302,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
 		Middleware: []mux.MiddlewareFunc{
-			auth.AuthenticateToken(d.AuthService, d.SiteToken),
+			auth.AuthenticateToken(d.AuthService, auth.AuthenticateTokenConfig{
+				SiteToken:       d.SiteToken,
+				GoogleJWTConfig: d.GoogleJWTConfig,
+			}),
 			auth.AuthenticateSession(d.AuthService),
 		},
 		Handlers: d.Handlers,
