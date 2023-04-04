@@ -302,7 +302,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
 		Middleware: []mux.MiddlewareFunc{
-			auth.AuthenticateToken(d.AuthService, auth.AuthenticateTokenConfig{
+			auth.NewAuthTokenMiddleware(d.AuthService, auth.AuthenticateTokenConfig{
 				SiteToken:       d.SiteToken,
 				GoogleJWTConfig: d.GoogleJWTConfig,
 			}),

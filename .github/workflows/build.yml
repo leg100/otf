@@ -55,9 +55,8 @@ jobs:
       -
         name: Unit tests
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google_credentials.json
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: |
-          echo ${{ secrets.GOOGLE_CREDENTIALS }} > google_credentials.json
           make unit
       -
         name: E2E tests
