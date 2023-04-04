@@ -36,8 +36,8 @@ type (
 	}
 )
 
-// AuthenticateToken verifies that all requests to /api/v2 endpoints possess
-// a valid bearer token.
+// NewAuthTokenMiddleware constructs middleware that verifies that all requests
+// to protected endpoints possess a valid token.
 func NewAuthTokenMiddleware(svc AuthenticateTokenService, cfg AuthenticateTokenConfig) mux.MiddlewareFunc {
 	mw := authTokenMiddleware{
 		AuthenticateTokenService: svc,
