@@ -55,7 +55,7 @@ jobs:
       -
         name: Unit tests
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.HOME }}/google_credentials.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google_credentials.json
         run: |
           echo ${{ secrets.GOOGLE_CREDENTIALS }} > google_credentials.json
           make unit
