@@ -180,7 +180,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.svc.CreateRegistrySession(r.Context(), CreateRegistrySessionOptions{
+	token, err := h.svc.CreateRegistrySessionToken(r.Context(), CreateRegistrySessionOptions{
 		Organization: opts.Organization,
 	})
 	if err != nil {
@@ -188,10 +188,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, &jsonapi.RegistrySession{
-		Token:            session.Token,
-		OrganizationName: session.Organization,
-	})
+	w.Write(token)
 }
 
 // Agent token routes

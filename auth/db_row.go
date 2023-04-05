@@ -70,17 +70,3 @@ func (row agentTokenRow) toAgentToken() *AgentToken {
 		Organization: row.OrganizationName.String,
 	}
 }
-
-type registrySessionRow struct {
-	Token            pgtype.Text        `json:"token"`
-	Expiry           pgtype.Timestamptz `json:"expiry"`
-	OrganizationName pgtype.Text        `json:"organization_name"`
-}
-
-func (result registrySessionRow) toRegistrySession() *RegistrySession {
-	return &RegistrySession{
-		Token:        result.Token.String,
-		Expiry:       result.Expiry.Time.UTC(),
-		Organization: result.OrganizationName.String,
-	}
-}

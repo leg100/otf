@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/url"
@@ -114,22 +115,19 @@ func (c *Client) DeleteTeam(ctx context.Context, id string) error {
 }
 
 // CreateRegistrySession creates a registry session via HTTP/JSONAPI
-func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) (*RegistrySession, error) {
+func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) ([]byte, error) {
 	req, err := c.NewRequest("POST", "registry/sessions/create", &jsonapi.RegistrySessionCreateOptions{
 		Organization: opts.Organization,
 	})
 	if err != nil {
 		return nil, err
 	}
-	session := &jsonapi.RegistrySession{}
-	err = c.Do(ctx, req, session)
+	var buf bytes.Buffer
+	err = c.Do(ctx, req, &buf)
 	if err != nil {
 		return nil, err
 	}
-	return &RegistrySession{
-		Organization: session.OrganizationName,
-		Token:        session.Token,
-	}, nil
+	return buf.Bytes(), nil
 }
 
 func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error) {

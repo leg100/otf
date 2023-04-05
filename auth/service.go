@@ -21,7 +21,6 @@ type (
 
 	AuthService interface {
 		AgentTokenService
-		RegistrySessionService
 		TeamService
 		tokenService
 		UserService
