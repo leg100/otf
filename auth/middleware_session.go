@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
@@ -23,9 +24,14 @@ type AuthenticateSessionService interface {
 	GetUser(context.Context, UserSpec) (*User, error)
 }
 
-// AuthenticateSession verifies that all requests to /app endpoints possess
-// a valid session cookie before attaching the corresponding to the context.
-func AuthenticateSession(svc AuthenticateSessionService, secret []byte) mux.MiddlewareFunc {
+// NewAuthSessionMiddleware constructs middleware that verifies all requests to
+// /app endpoints possess a valid session cookie before attaching the
+// corresponding to the context.
+func NewAuthSessionMiddleware(svc AuthenticateSessionService, secret string) (mux.MiddlewareFunc, error) {
+	key, err := jwk.FromRaw([]byte(secret))
+	if err != nil {
+		return nil, err
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
@@ -38,7 +44,7 @@ func AuthenticateSession(svc AuthenticateSessionService, secret []byte) mux.Midd
 				return
 			}
 			// parse jwt from cookie and verify signature
-			token, err := jwt.Parse([]byte(cookie.Value), jwt.WithKey(jwa.HS256, secret))
+			token, err := jwt.Parse([]byte(cookie.Value), jwt.WithKey(jwa.HS256, key))
 			if err != nil {
 				if errors.Is(err, jwt.ErrTokenExpired()) {
 					html.FlashError(w, "session expired")
@@ -60,5 +66,5 @@ func AuthenticateSession(svc AuthenticateSessionService, secret []byte) mux.Midd
 			ctx := otf.AddSubjectToContext(r.Context(), user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-	}
+	}, nil
 }

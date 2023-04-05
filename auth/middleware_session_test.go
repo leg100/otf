@@ -17,10 +17,11 @@ func Test_AuthenticateSession(t *testing.T) {
 	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// implicitly respond with 200 OK
 	})
-	secret := []byte("abcdef123")
-	mw := AuthenticateSession(&fakeMiddlewareService{
+	secret := "abcdef123"
+	mw, err := NewAuthSessionMiddleware(&fakeMiddlewareService{
 		sessionToken: "session.token",
 	}, secret)
+	require.NoError(t, err)
 
 	t.Run("with session", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -57,7 +58,7 @@ func Test_AuthenticateSession(t *testing.T) {
 	})
 }
 
-func newTestJWT(t *testing.T, key []byte, expiry time.Time) []byte {
+func newTestJWT(t *testing.T, key string, expiry time.Time) []byte {
 	t.Helper()
 
 	token, err := jwt.NewBuilder().
@@ -65,7 +66,7 @@ func newTestJWT(t *testing.T, key []byte, expiry time.Time) []byte {
 		Expiration(expiry).
 		Build()
 	require.NoError(t, err)
-	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, key))
+	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, []byte(key)))
 	require.NoError(t, err)
 	return serialized
 }
