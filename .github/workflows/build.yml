@@ -58,6 +58,8 @@ jobs:
           make vet
       -
         name: Unit tests
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: |
           make unit
       -
