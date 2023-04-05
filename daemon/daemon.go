@@ -116,6 +116,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:              db,
 		Renderer:        renderer,
 		SiteToken:       cfg.SiteToken,
+		Secret:          cfg.Secret,
 		HostnameService: hostnameService,
 	})
 	if err != nil {

@@ -28,7 +28,7 @@ type (
 )
 
 func newStatelessSessionService(logger logr.Logger, secret string) (*statelessSessionService, error) {
-	key, err := jwk.FromRaw(secret)
+	key, err := jwk.FromRaw([]byte(secret))
 	if err != nil {
 		return nil, err
 	}
