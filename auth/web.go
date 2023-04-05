@@ -86,7 +86,7 @@ func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.svc.StartSession(w, r, CreateStatelessSessionOptions{
+	err = h.svc.StartSession(w, r, StartUserSessionOptions{
 		Username: otf.String(SiteAdminUsername),
 	})
 	if err != nil {

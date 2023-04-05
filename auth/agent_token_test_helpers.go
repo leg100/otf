@@ -7,9 +7,11 @@ import (
 )
 
 func NewTestAgentToken(t *testing.T, org string) *AgentToken {
-	token, err := NewAgentToken(CreateAgentTokenOptions{
-		Organization: org,
-		Description:  "lorem ipsum...",
+	token, _, err := NewAgentToken(NewAgentTokenOptions{
+		CreateAgentTokenOptions: CreateAgentTokenOptions{
+			Organization: org,
+			Description:  "lorem ipsum...",
+		},
 	})
 	require.NoError(t, err)
 	return token

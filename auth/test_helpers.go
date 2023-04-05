@@ -16,7 +16,7 @@ type fakeService struct {
 	AuthService
 }
 
-func (f *fakeService) CreateAgentToken(context.Context, CreateAgentTokenOptions) (*AgentToken, error) {
+func (f *fakeService) CreateAgentToken(context.Context, CreateAgentTokenOptions) ([]byte, error) {
 	return f.agentToken, nil
 }
 
@@ -57,7 +57,7 @@ func (f *fakeService) DeleteToken(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts CreateStatelessSessionOptions) error {
+func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts StartUserSessionOptions) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

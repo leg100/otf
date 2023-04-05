@@ -11,7 +11,6 @@ import (
 func (db *pgdb) CreateAgentToken(ctx context.Context, token *AgentToken) error {
 	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
 		TokenID:          sql.String(token.ID),
-		Token:            sql.String(token.Token),
 		Description:      sql.String(token.Description),
 		OrganizationName: sql.String(token.Organization),
 		CreatedAt:        sql.Timestamptz(token.CreatedAt),
@@ -21,14 +20,6 @@ func (db *pgdb) CreateAgentToken(ctx context.Context, token *AgentToken) error {
 
 func (db *pgdb) GetAgentTokenByID(ctx context.Context, id string) (*AgentToken, error) {
 	r, err := db.FindAgentTokenByID(ctx, sql.String(id))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return agentTokenRow(r).toAgentToken(), nil
-}
-
-func (db *pgdb) GetAgentTokenByToken(ctx context.Context, token string) (*AgentToken, error) {
-	r, err := db.FindAgentTokenByToken(ctx, sql.String(token))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

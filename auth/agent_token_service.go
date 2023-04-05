@@ -8,7 +8,7 @@ import (
 
 type (
 	AgentTokenService interface {
-		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error)
+		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error)
 		// GetAgentToken retrieves an agent token using the given token.
 		GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
@@ -16,8 +16,8 @@ type (
 	}
 )
 
-func (a *service) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
-	at, err := a.db.GetAgentTokenByToken(ctx, token)
+func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
+	at, err := a.db.GetAgentTokenByID(ctx, tokenID)
 	if err != nil {
 		a.Error(err, "retrieving agent token", "token", "******")
 		return nil, err
@@ -26,21 +26,24 @@ func (a *service) GetAgentToken(ctx context.Context, token string) (*AgentToken,
 	return at, nil
 }
 
-func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error) {
+func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := NewAgentToken(opts)
+	at, token, err := NewAgentToken(NewAgentTokenOptions{
+		CreateAgentTokenOptions: opts,
+		key:                     a.key,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if err := a.db.CreateAgentToken(ctx, token); err != nil {
-		a.Error(err, "creating agent token", "organization", opts.Organization, "id", token.ID, "subject", subject)
+	if err := a.db.CreateAgentToken(ctx, at); err != nil {
+		a.Error(err, "creating agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created agent token", "organization", opts.Organization, "id", token.ID, "subject", subject)
+	a.V(0).Info("created agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
 	return token, nil
 }
 

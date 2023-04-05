@@ -55,7 +55,6 @@ func (row teamRow) toTeam() *Team {
 
 type agentTokenRow struct {
 	TokenID          pgtype.Text        `json:"token_id"`
-	Token            pgtype.Text        `json:"token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Description      pgtype.Text        `json:"description"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
@@ -65,7 +64,6 @@ func (row agentTokenRow) toAgentToken() *AgentToken {
 	return &AgentToken{
 		ID:           row.TokenID.String,
 		CreatedAt:    row.CreatedAt.Time,
-		Token:        row.Token.String,
 		Description:  row.Description.String,
 		Organization: row.OrganizationName.String,
 	}

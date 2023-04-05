@@ -130,7 +130,7 @@ func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistryS
 	return buf.Bytes(), nil
 }
 
-func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error) {
+func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error) {
 	req, err := c.NewRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
 		Description:  options.Description,
 		Organization: options.Organization,
@@ -138,12 +138,12 @@ func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenO
 	if err != nil {
 		return nil, err
 	}
-	at := &jsonapi.AgentToken{}
-	err = c.Do(ctx, req, at)
+	var buf bytes.Buffer
+	err = c.Do(ctx, req, &buf)
 	if err != nil {
 		return nil, err
 	}
-	return &AgentToken{ID: at.ID, Token: *at.Token, Organization: at.Organization}, nil
+	return buf.Bytes(), nil
 }
 
 func (c *Client) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {

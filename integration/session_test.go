@@ -23,7 +23,7 @@ func TestSession(t *testing.T) {
 		want := svc.createUser(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
-		err := svc.StartSession(w, r, auth.CreateStatelessSessionOptions{
+		err := svc.StartSession(w, r, auth.StartUserSessionOptions{
 			Username: &want.Username,
 		})
 		require.NoError(t, err)

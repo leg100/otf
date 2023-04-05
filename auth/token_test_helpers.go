@@ -8,7 +8,12 @@ import (
 )
 
 func NewTestToken(t *testing.T, org string) *Token {
-	token, err := NewToken(uuid.NewString(), "lorem ipsum...")
+	token, _, err := NewToken(NewTokenOptions{
+		Username: uuid.NewString(),
+		TokenCreateOptions: TokenCreateOptions{
+			Description: "lorem ipsum...",
+		},
+	})
 	require.NoError(t, err)
 	return token
 }

@@ -389,61 +389,7 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 	return item, nil
 }
 
-const findUserBySessionTokenSQL = `SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
-FROM users u
-JOIN sessions s ON u.username = s.username AND s.expiry > current_timestamp
-WHERE s.token = $1
-;`
-
-type FindUserBySessionTokenRow struct {
-	UserID    pgtype.Text        `json:"user_id"`
-	Username  pgtype.Text        `json:"username"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Teams     []Teams            `json:"teams"`
-}
-
-// FindUserBySessionToken implements Querier.FindUserBySessionToken.
-func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token pgtype.Text) (FindUserBySessionTokenRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserBySessionToken")
-	row := q.conn.QueryRow(ctx, findUserBySessionTokenSQL, token)
-	var item FindUserBySessionTokenRow
-	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
-		return item, fmt.Errorf("query FindUserBySessionToken: %w", err)
-	}
-	if err := teamsArray.AssignTo(&item.Teams); err != nil {
-		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
-	}
-	return item, nil
-}
-
-// FindUserBySessionTokenBatch implements Querier.FindUserBySessionTokenBatch.
-func (q *DBQuerier) FindUserBySessionTokenBatch(batch genericBatch, token pgtype.Text) {
-	batch.Queue(findUserBySessionTokenSQL, token)
-}
-
-// FindUserBySessionTokenScan implements Querier.FindUserBySessionTokenScan.
-func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUserBySessionTokenRow, error) {
-	row := results.QueryRow()
-	var item FindUserBySessionTokenRow
-	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
-		return item, fmt.Errorf("scan FindUserBySessionTokenBatch row: %w", err)
-	}
-	if err := teamsArray.AssignTo(&item.Teams); err != nil {
-		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
-	}
-	return item, nil
-}
-
-const findUserByAuthenticationTokenSQL = `SELECT u.*,
+const findUserByAuthenticationTokenIDSQL = `SELECT u.*,
     (
         SELECT array_agg(t)
         FROM teams t
@@ -452,10 +398,10 @@ const findUserByAuthenticationTokenSQL = `SELECT u.*,
     ) AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
-WHERE t.token = $1
+WHERE t.token_id = $1
 ;`
 
-type FindUserByAuthenticationTokenRow struct {
+type FindUserByAuthenticationTokenIDRow struct {
 	UserID    pgtype.Text        `json:"user_id"`
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
@@ -463,36 +409,36 @@ type FindUserByAuthenticationTokenRow struct {
 	Teams     []Teams            `json:"teams"`
 }
 
-// FindUserByAuthenticationToken implements Querier.FindUserByAuthenticationToken.
-func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token pgtype.Text) (FindUserByAuthenticationTokenRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationToken")
-	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenSQL, token)
-	var item FindUserByAuthenticationTokenRow
+// FindUserByAuthenticationTokenID implements Querier.FindUserByAuthenticationTokenID.
+func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID pgtype.Text) (FindUserByAuthenticationTokenIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationTokenID")
+	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenIDSQL, tokenID)
+	var item FindUserByAuthenticationTokenIDRow
 	teamsArray := q.types.newTeamsArray()
 	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
-		return item, fmt.Errorf("query FindUserByAuthenticationToken: %w", err)
+		return item, fmt.Errorf("query FindUserByAuthenticationTokenID: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
-		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
 	}
 	return item, nil
 }
 
-// FindUserByAuthenticationTokenBatch implements Querier.FindUserByAuthenticationTokenBatch.
-func (q *DBQuerier) FindUserByAuthenticationTokenBatch(batch genericBatch, token pgtype.Text) {
-	batch.Queue(findUserByAuthenticationTokenSQL, token)
+// FindUserByAuthenticationTokenIDBatch implements Querier.FindUserByAuthenticationTokenIDBatch.
+func (q *DBQuerier) FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID pgtype.Text) {
+	batch.Queue(findUserByAuthenticationTokenIDSQL, tokenID)
 }
 
-// FindUserByAuthenticationTokenScan implements Querier.FindUserByAuthenticationTokenScan.
-func (q *DBQuerier) FindUserByAuthenticationTokenScan(results pgx.BatchResults) (FindUserByAuthenticationTokenRow, error) {
+// FindUserByAuthenticationTokenIDScan implements Querier.FindUserByAuthenticationTokenIDScan.
+func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error) {
 	row := results.QueryRow()
-	var item FindUserByAuthenticationTokenRow
+	var item FindUserByAuthenticationTokenIDRow
 	teamsArray := q.types.newTeamsArray()
 	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
-		return item, fmt.Errorf("scan FindUserByAuthenticationTokenBatch row: %w", err)
+		return item, fmt.Errorf("scan FindUserByAuthenticationTokenIDBatch row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
-		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
 	}
 	return item, nil
 }

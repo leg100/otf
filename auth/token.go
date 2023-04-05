@@ -1,11 +1,12 @@
 package auth
 
 import (
-	"context"
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 type (
@@ -13,7 +14,6 @@ type (
 	Token struct {
 		ID          string
 		CreatedAt   time.Time
-		Token       string
 		Description string
 		Username    string // Token belongs to a user
 	}
@@ -22,37 +22,30 @@ type (
 		Description string
 	}
 
-	TokenService interface {
-		// CreateToken creates a user token.
-		CreateToken(ctx context.Context, username string, opts *TokenCreateOptions) (*Token, error)
-		// ListTokens lists API tokens for a user
-		ListTokens(ctx context.Context, username string) ([]*Token, error)
-		// DeleteToken deletes a user token.
-		DeleteToken(ctx context.Context, username string, tokenID string) error
-	}
-
-	// TokenStore is a persistence store for user authentication tokens.
-	TokenStore interface {
-		// CreateToken creates a user token.
-		CreateToken(ctx context.Context, token *Token) error
-		// ListTokens lists user tokens.
-		ListTokens(ctx context.Context, userID string) ([]*Token, error)
-		// DeleteToken deletes a user token.
-		DeleteToken(ctx context.Context, id string) error
+	NewTokenOptions struct {
+		TokenCreateOptions
+		Username string
+		key      jwk.Key
 	}
 )
 
-func NewToken(uid, description string) (*Token, error) {
-	t, err := otf.GenerateAuthToken("user")
+func NewToken(opts NewTokenOptions) (*Token, []byte, error) {
+	token, err := jwt.NewBuilder().
+		Claim("kind", registrySessionKind).
+		IssuedAt(time.Now()).
+		Build()
 	if err != nil {
-		return nil, fmt.Errorf("generating token: %w", err)
+		return nil, nil, err
 	}
-	token := Token{
+	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, opts.key))
+	if err != nil {
+		return nil, nil, err
+	}
+	ut := Token{
 		ID:          otf.NewID("ut"),
 		CreatedAt:   otf.CurrentTimestamp(),
-		Token:       t,
-		Description: description,
-		Username:    uid,
+		Description: opts.Description,
+		Username:    opts.Username,
 	}
-	return &token, nil
+	return &ut, serialized, nil
 }

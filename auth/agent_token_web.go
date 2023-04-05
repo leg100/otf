@@ -43,7 +43,7 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	if err := h.RenderTemplate("token_created.tmpl", buf, token.Token); err != nil {
+	if err := h.RenderTemplate("token_created.tmpl", buf, token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -11,7 +11,6 @@ import (
 func (db *pgdb) CreateToken(ctx context.Context, token *Token) error {
 	_, err := db.InsertToken(ctx, pggen.InsertTokenParams{
 		TokenID:     sql.String(token.ID),
-		Token:       sql.String(token.Token),
 		Description: sql.String(token.Description),
 		Username:    sql.String(token.Username),
 		CreatedAt:   sql.Timestamptz(token.CreatedAt),
@@ -29,7 +28,6 @@ func (db *pgdb) ListTokens(ctx context.Context, username string) ([]*Token, erro
 		tokens = append(tokens, &Token{
 			ID:          row.TokenID.String,
 			CreatedAt:   row.CreatedAt.Time,
-			Token:       row.Token.String,
 			Description: row.Description.String,
 			Username:    row.Username.String,
 		})
@@ -45,7 +43,6 @@ func (db *pgdb) GetToken(ctx context.Context, id string) (*Token, error) {
 	return &Token{
 		ID:          row.TokenID.String,
 		CreatedAt:   row.CreatedAt.Time,
-		Token:       row.Token.String,
 		Description: row.Description.String,
 		Username:    row.Username.String,
 	}, nil

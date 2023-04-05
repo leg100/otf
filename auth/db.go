@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -23,18 +22,4 @@ func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		return callback(newDB(tx, db.Logger))
 	})
-}
-
-func (db *pgdb) startExpirer(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	for {
-		select {
-		case <-ticker.C:
-			if _, err := db.DeleteExpiredRegistrySessions(ctx); err != nil {
-				db.Error(err, "purging expired registry sessions")
-			}
-		case <-ctx.Done():
-			return
-		}
-	}
 }

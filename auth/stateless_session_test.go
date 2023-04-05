@@ -20,7 +20,7 @@ func TestStatelessSessionService(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)
-	svc.StartSession(w, r, CreateStatelessSessionOptions{
+	svc.StartSession(w, r, StartUserSessionOptions{
 		Username: otf.String("bobby"),
 	})
 

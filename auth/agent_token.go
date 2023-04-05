@@ -6,14 +6,17 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 type (
-	// AgentToken is an long-lived authentication token for an external agent.
+	// AgentToken represents the authentication token for an external agent.
+	// NOTE: the cryptographic token itself is not retained.
 	AgentToken struct {
 		ID           string
 		CreatedAt    time.Time
-		Token        string
 		Description  string
 		Organization string
 	}
@@ -22,27 +25,39 @@ type (
 		Organization string `schema:"organization_name,required"`
 		Description  string `schema:"description,required"`
 	}
+
+	NewAgentTokenOptions struct {
+		CreateAgentTokenOptions
+		key jwk.Key // key for signing new token
+	}
 )
 
-func NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, error) {
+func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Organization == "" {
-		return nil, fmt.Errorf("organization name cannot be an empty string")
+		return nil, nil, fmt.Errorf("organization name cannot be an empty string")
 	}
 	if opts.Description == "" {
-		return nil, fmt.Errorf("description cannot be an empty string")
+		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
-	t, err := otf.GenerateAuthToken("agent")
+	token, err := jwt.NewBuilder().
+		Claim("kind", registrySessionKind).
+		Claim("organization", opts.Organization).
+		IssuedAt(time.Now()).
+		Build()
 	if err != nil {
-		return nil, fmt.Errorf("generating token: %w", err)
+		return nil, nil, err
 	}
-	token := AgentToken{
+	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, opts.key))
+	if err != nil {
+		return nil, nil, err
+	}
+	at := AgentToken{
 		ID:           otf.NewID("at"),
 		CreatedAt:    otf.CurrentTimestamp(),
-		Token:        t,
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	}
-	return &token, nil
+	return &at, serialized, nil
 }
 
 func (t *AgentToken) String() string      { return t.ID }

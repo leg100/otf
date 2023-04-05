@@ -75,20 +75,7 @@ FROM users u
 WHERE u.username = pggen.arg('username')
 ;
 
--- name: FindUserBySessionToken :one
-SELECT u.*,
-    (
-        SELECT array_agg(t)
-        FROM teams t
-        JOIN team_memberships tm USING (team_id)
-        WHERE tm.username = u.username
-    ) AS teams
-FROM users u
-JOIN sessions s ON u.username = s.username AND s.expiry > current_timestamp
-WHERE s.token = pggen.arg('token')
-;
-
--- name: FindUserByAuthenticationToken :one
+-- name: FindUserByAuthenticationTokenID :one
 SELECT u.*,
     (
         SELECT array_agg(t)
@@ -98,7 +85,7 @@ SELECT u.*,
     ) AS teams
 FROM users u
 JOIN tokens t ON u.username = t.username
-WHERE t.token = pggen.arg('token')
+WHERE t.token_id = pggen.arg('token_id')
 ;
 
 -- name: DeleteUserByID :one

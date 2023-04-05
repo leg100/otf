@@ -8,7 +8,7 @@ import (
 
 type tokenService interface {
 	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, opts *TokenCreateOptions) (*Token, error)
+	CreateToken(ctx context.Context, opts TokenCreateOptions) ([]byte, error)
 	// ListTokens lists API tokens for a user
 	ListTokens(ctx context.Context) ([]*Token, error)
 	// DeleteToken deletes a user token.
@@ -17,19 +17,23 @@ type tokenService interface {
 
 // CreateToken creates a user token. Only users can create a user token, and
 // they can only create a token for themselves.
-func (a *service) CreateToken(ctx context.Context, opts *TokenCreateOptions) (*Token, error) {
+func (a *service) CreateToken(ctx context.Context, opts TokenCreateOptions) ([]byte, error) {
 	user, err := UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := NewToken(user.Username, opts.Description)
+	ut, token, err := NewToken(NewTokenOptions{
+		TokenCreateOptions: opts,
+		Username:           user.Username,
+		key:                a.key,
+	})
 	if err != nil {
 		a.Error(err, "constructing token", "user", user)
 		return nil, err
 	}
 
-	if err := a.db.CreateToken(ctx, token); err != nil {
+	if err := a.db.CreateToken(ctx, ut); err != nil {
 		a.Error(err, "creating token", "user", user)
 		return nil, err
 	}
