@@ -93,44 +93,18 @@ func (o oidcAuthenticator) CallbackHandler(r *http.Request) (*oidcClaims, error)
 	return &claims, nil
 }
 
-func (o oidcAuthenticator) buildUserTeamsFromPolicy(
+func (o oidcAuthenticator) buildUserTeamsFromPolicies(
 	teams []cloud.Team,
 	groupsMap map[string]bool,
-	policy cloud.OIDCOrganizationPolicy,
+	policies []cloud.OIDCOrganizationPolicy,
 ) []cloud.Team {
-	if groupsMap[policy.OwnerRole] {
-		teams = append(teams, cloud.Team{
-			Name:         "owners",
-			Organization: policy.Organization,
-		})
-	}
-
-	if groupsMap[policy.AdminRole] {
-		teams = append(teams, cloud.Team{
-			Name:         "admins",
-			Organization: policy.Organization,
-		})
-	}
-
-	if groupsMap[policy.WriteRole] {
-		teams = append(teams, cloud.Team{
-			Name:         "write",
-			Organization: policy.Organization,
-		})
-	}
-
-	if groupsMap[policy.PlanRole] {
-		teams = append(teams, cloud.Team{
-			Name:         "plan",
-			Organization: policy.Organization,
-		})
-	}
-
-	if groupsMap[policy.ReadRole] {
-		teams = append(teams, cloud.Team{
-			Name:         "read",
-			Organization: policy.Organization,
-		})
+	for _, policy := range policies {
+		if groupsMap[policy.Group] {
+			teams = append(teams, cloud.Team{
+				Name:         policy.Team,
+				Organization: policy.Organization,
+			})
+		}
 	}
 
 	return teams
@@ -145,10 +119,8 @@ func (o oidcAuthenticator) getUserFromClaims(claims *oidcClaims) (*cloud.User, e
 		groupsMap[group] = true
 	}
 
-	for _, organizationPolicy := range o.policies {
-		teams = o.buildUserTeamsFromPolicy(teams, groupsMap, organizationPolicy)
-	}
-
+	teams = o.buildUserTeamsFromPolicies(teams, groupsMap, o.policies)
+	
 	return &cloud.User{
 		Name:  claims.Name,
 		Teams: teams,

@@ -94,7 +94,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.OIDC.RedirectURL, "oidc-redirect-url", cfg.OIDC.RedirectURL, "oidc redirect url")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "oidc client ID")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "oidc client secret")
-	cmd.Flags().StringArrayVar(&cfg.OIDC.OrganizationPolicies, "oidc-organization-policies", nil, "an comma separated list containing the organization name, then the groups that should map to the following roles: owner, admin, write, plan, read")
+	cmd.Flags().StringArrayVar(&cfg.OIDC.OrganizationPolicies, "oidc-policies", nil, "a comma separated list of the organization name, group name, and team name. example: \"my-org, admin, team:owners\". Can be specified multiple times to map multiple groups to the same team.")
 
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin")
 

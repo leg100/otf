@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var ErrInvalidOrganizationPolicy = errors.New("must provide a valid policy consisting of \"organization name,owner role, admin role, write role, plan role, read role\"")
+var ErrInvalidOrganizationPolicy = errors.New("must provide a valid policy consisting of \"organization, group, team:team-name\"")
 
 // Config is configuration for a cloud provider
 type Config struct {
@@ -76,21 +76,13 @@ type OIDCConfig struct {
 	OrganizationPolicies []string
 }
 
-// OIDCOrganizationPolicy is a struct containing the policies for an oidc organization.
 type OIDCOrganizationPolicy struct {
-	// Organization is the name of the organization.
 	Organization string
-	// OwnerRole is the name of the team that owns the organization.
-	OwnerRole string
-	// AdminRole is the name of the team that has admin privileges on the organization.
-	AdminRole string
-	// WriteRole is the name of the team that has write permissions on the organization.
-	WriteRole string
-	// PlanRole is the name of the team that has plan permissions on the organization.
-	PlanRole string
-	// ReadRole is the name of the team that has read permissions on the organization.
-	ReadRole string
+	Group        string
+	Team         string
 }
+
+const oidcPolicyTeamPrefix = "team:"
 
 // GetOrganizationPolicies parses the comma separated OrganizationPolicies and turns it into OIDCOrganizationPolicy structs.
 func (o OIDCConfig) GetOrganizationPolicies() ([]OIDCOrganizationPolicy, error) {
@@ -98,17 +90,24 @@ func (o OIDCConfig) GetOrganizationPolicies() ([]OIDCOrganizationPolicy, error) 
 	for _, org := range o.OrganizationPolicies {
 		tokens := strings.Split(org, ",")
 
-		if len(tokens) != 6 {
+		if len(tokens) != 3 {
 			return nil, ErrInvalidOrganizationPolicy
 		}
 
+		organization := strings.Trim(tokens[0], " ")
+		group := strings.Trim(tokens[1], " ")
+		team := strings.Trim(tokens[2], " ")
+
+		if !strings.HasPrefix(team, oidcPolicyTeamPrefix) {
+			return nil, ErrInvalidOrganizationPolicy
+		}
+
+		teamToken := strings.TrimPrefix(team, oidcPolicyTeamPrefix)
+
 		orgs = append(orgs, OIDCOrganizationPolicy{
-			Organization: tokens[0],
-			OwnerRole:    tokens[1],
-			AdminRole:    tokens[2],
-			WriteRole:    tokens[3],
-			PlanRole:     tokens[4],
-			ReadRole:     tokens[5],
+			Organization: organization,
+			Group:        group,
+			Team:         teamToken,
 		})
 	}
 
