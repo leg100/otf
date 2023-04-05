@@ -110,16 +110,6 @@ var specs = []controllerSpec{
 		controllerType: singlePath,
 	},
 	{
-		Name:           "sessions",
-		controllerType: singlePath,
-		path:           "/profile/sessions",
-	},
-	{
-		Name:           "revoke_session",
-		controllerType: singlePath,
-		path:           "/profile/sessions/revoke",
-	},
-	{
 		Name:           "tokens",
 		controllerType: singlePath,
 		path:           "/profile/tokens",

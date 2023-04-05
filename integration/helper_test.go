@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -38,6 +37,7 @@ type (
 		repo             string  // create repo on stub github server
 		connstr          *string // use this database conn string for tests rather than one specifically created for test.
 		disableScheduler bool    // don't start the run scheduler
+		secret           string
 	}
 
 	// some tests want to know whether a webhook has been created on the vcs
@@ -64,6 +64,11 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 
 	if cfg != nil && cfg.disableScheduler {
 		dcfg.DisableRunScheduler = true
+	}
+	if cfg != nil && cfg.secret != "" {
+		dcfg.Secret = cfg.secret
+	} else {
+		dcfg.Secret = "dklfjfldsfjfj"
 	}
 
 	// Configure and start stub github server
@@ -273,22 +278,6 @@ func (s *testDaemon) createRegistrySession(t *testing.T, ctx context.Context, or
 	rs, err := s.CreateRegistrySession(ctx, auth.CreateRegistrySessionOptions{
 		Organization: &org.Name,
 		Expiry:       expiry,
-	})
-	require.NoError(t, err)
-	return rs
-}
-
-func (s *testDaemon) createSession(t *testing.T, ctx context.Context, user *auth.User, expiry *time.Time) *auth.Session {
-	t.Helper()
-
-	if user == nil {
-		user = s.createUser(t, ctx)
-	}
-
-	rs, err := s.CreateSession(ctx, auth.CreateSessionOptions{
-		Request:  httptest.NewRequest("", "/", nil),
-		Username: &user.Username,
-		Expiry:   expiry,
 	})
 	require.NoError(t, err)
 	return rs

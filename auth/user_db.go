@@ -77,12 +77,6 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 			return nil, sql.Error(err)
 		}
 		return userRow(result).toUser(), nil
-	} else if spec.SessionToken != nil {
-		result, err := db.FindUserBySessionToken(ctx, sql.String(*spec.SessionToken))
-		if err != nil {
-			return nil, sql.Error(err)
-		}
-		return userRow(result).toUser(), nil
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}

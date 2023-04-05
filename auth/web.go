@@ -28,7 +28,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	h.addAgentTokenHandlers(r)
-	h.addSessionHandlers(r)
 	h.addTeamHandlers(r)
 	h.addTokenHandlers(r)
 

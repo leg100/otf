@@ -70,8 +70,6 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	loc, err := w.Result().Location()
 	require.NoError(t, err)
 	assert.Equal(t, "/app/profile", loc.Path)
-
-	assert.Equal(t, 1, len(w.Result().Cookies()))
 }
 
 // TestLoginHandler tests the login page handler, testing for the presence of a

@@ -38,7 +38,6 @@ type (
 	UserSpec struct {
 		UserID              *string
 		Username            *string
-		SessionToken        *string
 		AuthenticationToken *string
 	}
 )

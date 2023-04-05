@@ -524,48 +524,6 @@ type Querier interface {
 	// DeleteRunByIDScan scans the result of an executed DeleteRunByIDBatch query.
 	DeleteRunByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertSession(ctx context.Context, params InsertSessionParams) (pgconn.CommandTag, error)
-	// InsertSessionBatch enqueues a InsertSession query into batch to be executed
-	// later by the batch.
-	InsertSessionBatch(batch genericBatch, params InsertSessionParams)
-	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
-	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindSessionsByUsername(ctx context.Context, username pgtype.Text) ([]FindSessionsByUsernameRow, error)
-	// FindSessionsByUsernameBatch enqueues a FindSessionsByUsername query into batch to be executed
-	// later by the batch.
-	FindSessionsByUsernameBatch(batch genericBatch, username pgtype.Text)
-	// FindSessionsByUsernameScan scans the result of an executed FindSessionsByUsernameBatch query.
-	FindSessionsByUsernameScan(results pgx.BatchResults) ([]FindSessionsByUsernameRow, error)
-
-	FindSessionByToken(ctx context.Context, token pgtype.Text) (FindSessionByTokenRow, error)
-	// FindSessionByTokenBatch enqueues a FindSessionByToken query into batch to be executed
-	// later by the batch.
-	FindSessionByTokenBatch(batch genericBatch, token pgtype.Text)
-	// FindSessionByTokenScan scans the result of an executed FindSessionByTokenBatch query.
-	FindSessionByTokenScan(results pgx.BatchResults) (FindSessionByTokenRow, error)
-
-	UpdateSessionExpiry(ctx context.Context, expiry pgtype.Timestamptz, token pgtype.Text) (pgtype.Text, error)
-	// UpdateSessionExpiryBatch enqueues a UpdateSessionExpiry query into batch to be executed
-	// later by the batch.
-	UpdateSessionExpiryBatch(batch genericBatch, expiry pgtype.Timestamptz, token pgtype.Text)
-	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
-	UpdateSessionExpiryScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgtype.Text, error)
-	// DeleteSessionByTokenBatch enqueues a DeleteSessionByToken query into batch to be executed
-	// later by the batch.
-	DeleteSessionByTokenBatch(batch genericBatch, token pgtype.Text)
-	// DeleteSessionByTokenScan scans the result of an executed DeleteSessionByTokenBatch query.
-	DeleteSessionByTokenScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	DeleteSessionsExpired(ctx context.Context) (pgtype.Text, error)
-	// DeleteSessionsExpiredBatch enqueues a DeleteSessionsExpired query into batch to be executed
-	// later by the batch.
-	DeleteSessionsExpiredBatch(batch genericBatch)
-	// DeleteSessionsExpiredScan scans the result of an executed DeleteSessionsExpiredBatch query.
-	DeleteSessionsExpiredScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (pgconn.CommandTag, error)
 	// InsertStateVersionBatch enqueues a InsertStateVersion query into batch to be executed
 	// later by the batch.
@@ -1295,24 +1253,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertSession': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findSessionsByUsernameSQL, findSessionsByUsernameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindSessionsByUsername': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findSessionByTokenSQL, findSessionByTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindSessionByToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateSessionExpirySQL, updateSessionExpirySQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionExpiry': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteSessionByTokenSQL, deleteSessionByTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteSessionByToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteSessionsExpiredSQL, deleteSessionsExpiredSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteSessionsExpired': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)

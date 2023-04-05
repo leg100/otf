@@ -2,11 +2,17 @@ package auth
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
+)
+
+const (
+	defaultExpiry          = 24 * time.Hour
+	defaultCleanupInterval = 5 * time.Minute
 )
 
 type (
@@ -16,7 +22,6 @@ type (
 	AuthService interface {
 		AgentTokenService
 		RegistrySessionService
-		sessionService
 		TeamService
 		tokenService
 		UserService
@@ -34,8 +39,6 @@ type (
 		api *api
 		db  *pgdb
 		web *webHandlers
-
-		secret []byte
 
 		*statelessSessionService
 	}

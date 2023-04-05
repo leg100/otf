@@ -27,9 +27,6 @@ func TestUser(t *testing.T) {
 		user := svc.createUser(t, ctx,
 			auth.WithTeams(team1, team2))
 
-		session1 := svc.createSession(t, ctx, user, nil)
-		_ = svc.createSession(t, ctx, user, nil)
-
 		token1 := svc.createToken(t, ctx, user)
 		_ = svc.createToken(t, ctx, user)
 
@@ -44,10 +41,6 @@ func TestUser(t *testing.T) {
 			{
 				name: "username",
 				spec: auth.UserSpec{Username: otf.String(user.Username)},
-			},
-			{
-				name: "session token",
-				spec: auth.UserSpec{SessionToken: otf.String(session1.Token())},
 			},
 			{
 				name: "auth token",

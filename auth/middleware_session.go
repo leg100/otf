@@ -20,13 +20,11 @@ const (
 )
 
 type AuthenticateSessionService interface {
-	GetSession(ctx context.Context, token string) (*Session, error)
 	GetUser(context.Context, UserSpec) (*User, error)
 }
 
 // AuthenticateSession verifies that all requests to /app endpoints possess
-// a valid session cookie before attaching the corresponding user and session to
-// the context.
+// a valid session cookie before attaching the corresponding to the context.
 func AuthenticateSession(svc AuthenticateSessionService, secret []byte) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

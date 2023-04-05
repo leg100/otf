@@ -2,28 +2,18 @@ package auth
 
 import (
 	"context"
+	"net/http"
+
+	"github.com/leg100/otf/http/html/paths"
 )
 
 type fakeService struct {
-	sessions   []*Session
 	agentToken *AgentToken
 	team       *Team
 	members    []*User
 	token      *Token
 
 	AuthService
-}
-
-func (f *fakeService) ListSessions(context.Context, string) ([]*Session, error) {
-	return f.sessions, nil
-}
-
-func (f *fakeService) DeleteSession(context.Context, string) error {
-	return nil
-}
-
-func (f *fakeService) CreateSession(context.Context, CreateSessionOptions) (*Session, error) {
-	return &Session{}, nil
 }
 
 func (f *fakeService) CreateAgentToken(context.Context, CreateAgentTokenOptions) (*AgentToken, error) {
@@ -64,5 +54,10 @@ func (f *fakeService) ListTokens(context.Context) ([]*Token, error) {
 }
 
 func (f *fakeService) DeleteToken(context.Context, string) error {
+	return nil
+}
+
+func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts CreateStatelessSessionOptions) error {
+	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

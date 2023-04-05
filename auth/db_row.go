@@ -71,24 +71,6 @@ func (row agentTokenRow) toAgentToken() *AgentToken {
 	}
 }
 
-type sessionRow struct {
-	Token     pgtype.Text        `json:"token"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	Address   pgtype.Text        `json:"address"`
-	Expiry    pgtype.Timestamptz `json:"expiry"`
-	Username  pgtype.Text        `json:"username"`
-}
-
-func (result sessionRow) toSession() *Session {
-	return &Session{
-		token:     result.Token.String,
-		createdAt: result.CreatedAt.Time.UTC(),
-		expiry:    result.Expiry.Time.UTC(),
-		username:  result.Username.String,
-		address:   result.Address.String,
-	}
-}
-
 type registrySessionRow struct {
 	Token            pgtype.Text        `json:"token"`
 	Expiry           pgtype.Timestamptz `json:"expiry"`
