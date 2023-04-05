@@ -116,6 +116,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:              db,
 		Renderer:        renderer,
 		SiteToken:       cfg.SiteToken,
+		Secret:          cfg.Secret,
 		HostnameService: hostnameService,
 	})
 	if err != nil {
@@ -294,6 +295,11 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		d.DB.Close()
 	}()
 
+	sessionMiddleware, err := auth.NewAuthSessionMiddleware(d.AuthService, d.Secret)
+	if err != nil {
+		return fmt.Errorf("setting up authentication middleware: %w", err)
+	}
+
 	// Construct web server and start listening on port
 	server, err := http.NewServer(d.Logger, http.ServerConfig{
 		SSL:                  d.SSL,
@@ -306,7 +312,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				SiteToken:       d.SiteToken,
 				GoogleJWTConfig: d.GoogleJWTConfig,
 			}),
-			auth.AuthenticateSession(d.AuthService),
+			sessionMiddleware,
 		},
 		Handlers: d.Handlers,
 	})

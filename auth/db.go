@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-// pgdb is a registry session database on postgres
+// pgdb stores authentication resources in a postgres database
 type pgdb struct {
 	otf.DB // provides access to generated SQL queries
 	logr.Logger
@@ -30,9 +30,6 @@ func (db *pgdb) startExpirer(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			if _, err := db.DeleteSessionsExpired(ctx); err != nil {
-				db.Error(err, "purging expired user sessions")
-			}
 			if _, err := db.DeleteExpiredRegistrySessions(ctx); err != nil {
 				db.Error(err, "purging expired registry sessions")
 			}

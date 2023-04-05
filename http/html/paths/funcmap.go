@@ -17,10 +17,6 @@ func init() {
 
 	funcmap["profilePath"] = Profile
 
-	funcmap["sessionsPath"] = Sessions
-
-	funcmap["revokeSessionPath"] = RevokeSession
-
 	funcmap["tokensPath"] = Tokens
 
 	funcmap["deleteTokenPath"] = DeleteToken

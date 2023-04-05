@@ -26,10 +26,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	// Authenticated routes
 	r = html.UIRouter(r)
-	r.Use(AuthenticateSession(h.svc)) // require session cookie
 
 	h.addAgentTokenHandlers(r)
-	h.addSessionHandlers(r)
 	h.addTeamHandlers(r)
 	h.addTokenHandlers(r)
 
@@ -65,15 +63,7 @@ func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := getSessionCtx(r.Context())
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if err := h.svc.DeleteSession(r.Context(), session.token); err != nil {
-		return
-	}
-	html.SetCookie(w, sessionCookie, session.token, &time.Time{})
+	html.SetCookie(w, sessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
@@ -96,16 +86,11 @@ func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := h.svc.CreateSession(r.Context(), CreateSessionOptions{
-		Request:  r,
+	err = h.svc.StartSession(w, r, CreateStatelessSessionOptions{
 		Username: otf.String(SiteAdminUsername),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	session.SetCookie(w)
-
-	html.ReturnUserOriginalPage(w, r)
 }

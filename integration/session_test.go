@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -17,53 +18,31 @@ func TestSession(t *testing.T) {
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
-	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
-		user := svc.createUser(t, ctx)
-		_, err := svc.CreateSession(ctx, auth.CreateSessionOptions{
-			Request:  httptest.NewRequest("", "/", nil),
-			Username: &user.Username,
+	t.Run("start", func(t *testing.T) {
+		svc := setup(t, &config{secret: "abcd123"})
+		want := svc.createUser(t, ctx)
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "/?", nil)
+		err := svc.StartSession(w, r, auth.CreateStatelessSessionOptions{
+			Username: &want.Username,
 		})
 		require.NoError(t, err)
-	})
+		cookies := w.Result().Cookies()
+		require.Equal(t, 1, len(cookies))
 
-	t.Run("get by token", func(t *testing.T) {
-		svc := setup(t, nil)
-		want := svc.createSession(t, ctx, nil, nil)
-
-		got, err := svc.GetSession(ctx, want.Token())
-		require.NoError(t, err)
-
-		assert.Equal(t, want, got)
-	})
-
-	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
-		user := svc.createUser(t, ctx)
-		session1 := svc.createSession(t, ctx, user, nil)
-		session2 := svc.createSession(t, ctx, user, nil)
-
-		// Retrieve all sessions
-		sessions, err := svc.ListSessions(ctx, user.Username)
-		require.NoError(t, err)
-
-		assert.Contains(t, sessions, session1)
-		assert.Contains(t, sessions, session2)
-	})
-
-	t.Run("purge expired sessions", func(t *testing.T) {
-		svc := setup(t, nil)
-		session1 := svc.createSession(t, ctx, nil, nil)
-		session2 := svc.createSession(t, ctx, nil, nil)
-
-		ctx, cancel := context.WithCancel(ctx)
-		svc.StartExpirer(ctx)
-		defer cancel()
-
-		_, err := svc.GetRegistrySession(ctx, session1.Token())
-		assert.Equal(t, otf.ErrResourceNotFound, err)
-
-		_, err = svc.GetRegistrySession(ctx, session2.Token())
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		t.Run("authenticate", func(t *testing.T) {
+			upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got, err := auth.UserFromContext(r.Context())
+				require.NoError(t, err)
+				assert.Equal(t, want.Username, got.Username)
+			})
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/app?", nil)
+			r.AddCookie(cookies[0])
+			mw, err := auth.NewAuthSessionMiddleware(svc, "abcd123")
+			require.NoError(t, err)
+			mw(upstream).ServeHTTP(w, r)
+			assert.Equal(t, 200, w.Code)
+		})
 	})
 }

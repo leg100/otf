@@ -31,20 +31,9 @@ func (f *fakeMiddlewareService) GetRegistrySession(ctx context.Context, token st
 	return nil, errors.New("invalid")
 }
 
-func (f *fakeMiddlewareService) GetSession(ctx context.Context, token string) (*Session, error) {
-	if f.sessionToken == token {
-		return nil, nil
-	}
-	return nil, errors.New("invalid")
-}
-
 func (f *fakeMiddlewareService) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.AuthenticationToken != nil {
 		if f.userToken == *spec.AuthenticationToken {
-			return nil, nil
-		}
-	} else if spec.SessionToken != nil {
-		if f.sessionToken == *spec.SessionToken {
 			return nil, nil
 		}
 	} else if spec.Username != nil {

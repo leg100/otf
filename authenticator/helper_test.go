@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html/paths"
 	"golang.org/x/oauth2"
 )
 
@@ -27,8 +28,9 @@ type (
 	fakeUserSynchroniser struct{}
 )
 
-func (f *fakeAuthenticatorService) CreateSession(context.Context, auth.CreateSessionOptions) (*auth.Session, error) {
-	return &auth.Session{}, nil
+func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts auth.CreateStatelessSessionOptions) error {
+	http.Redirect(w, r, paths.Profile(), http.StatusFound)
+	return nil
 }
 
 func (f *fakeOAuthClient) CallbackHandler(*http.Request) (*oauth2.Token, error) {
