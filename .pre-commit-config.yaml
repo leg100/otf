@@ -1,0 +1,35 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: check-json
+    -   id: check-yaml
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+        exclude: '.tfstate|run|testdata'
+-   repo: local
+    hooks:
+    -   id: make-vet
+        name: make vet
+        entry: make vet
+        types: [go]
+        language: "golang"
+        require_serial: true
+        pass_filenames: false
+        description: "Runs `make vet`"
+    -   id: make-fmt
+        name: make fmt
+        entry: make fmt
+        types: [go]
+        language: "golang"
+        require_serial: true
+        pass_filenames: false
+        description: "Runs `make fmt`"
+    -   id: make-lint
+        name: make lint
+        entry: make lint
+        language: "golang"
+        types: [go]
+        require_serial: true
+        pass_filenames: false
+        description: "Runs `make lint`"

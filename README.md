@@ -96,4 +96,3 @@ You've reached the end of this quickstart demo. See the [docs](https://docs.otf.
 ## Legal
 
 otf is in no way affiliated with Hashicorp. Terraform and Terraform Enterprise are trademarks of Hashicorp.
-
