@@ -19,6 +19,7 @@ type Config struct {
 	CacheConfig                  *inmem.CacheConfig
 	Github                       cloud.CloudOAuthConfig
 	Gitlab                       cloud.CloudOAuthConfig
+	OIDC                         cloud.OIDCConfig
 	Secret                       string // secret for signing URLs
 	SiteToken                    string
 	Host                         string

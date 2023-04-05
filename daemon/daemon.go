@@ -254,6 +254,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                authService,
 		TokensService:              tokensService,
 		Configs:                    []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
+		OIDCConfigs:                []cloud.OIDCConfig{cfg.OIDC},
 	})
 	if err != nil {
 		return nil, err

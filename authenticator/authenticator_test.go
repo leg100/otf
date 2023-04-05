@@ -53,7 +53,7 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 		},
 	}
 
-	authenticator := &authenticator{
+	authenticator := &oauthAuthenticator{
 		TokensService: &fakeAuthenticatorService{},
 		oauthClient:   &fakeOAuthClient{user: &cuser},
 	}
@@ -61,7 +61,7 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
 	w := httptest.NewRecorder()
-	authenticator.responseHandler(w, r)
+	authenticator.ResponseHandler(w, r)
 
 	assert.Equal(t, http.StatusFound, w.Result().StatusCode)
 
@@ -79,13 +79,13 @@ func TestLoginHandler(t *testing.T) {
 		renderer: renderer,
 	}
 
-	svc.authenticators = []*authenticator{
-		{
+	svc.authenticators = []authenticator{
+		&oauthAuthenticator{
 			oauthClient: &OAuthClient{
 				cloudConfig: cloud.Config{Name: "cloud1"},
 			},
 		},
-		{
+		&oauthAuthenticator{
 			oauthClient: &OAuthClient{
 				cloudConfig: cloud.Config{Name: "cloud2"},
 			},

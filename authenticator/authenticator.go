@@ -3,8 +3,8 @@
 package authenticator
 
 import (
-	"net/http"
-
+	"context"
+	"github.com/coreos/go-oidc"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -15,13 +15,22 @@ import (
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/tokens"
+	"golang.org/x/oauth2"
+	"net/http"
 )
 
 type (
-	// authenticator logs people onto the system using an OAuth handshake with an
+	authenticator interface {
+		RequestPath() string
+		CallbackPath() string
+		RequestHandler(w http.ResponseWriter, r *http.Request)
+		ResponseHandler(w http.ResponseWriter, r *http.Request)
+	}
+
+	// oauthAuthenticator logs people onto the system using an OAuth handshake with an
 	// Identity provider before synchronising their user account and various organization
 	// and team memberships from the provider.
-	authenticator struct {
+	oauthAuthenticator struct {
 		otf.HostnameService
 		tokens.TokensService // for creating session
 
@@ -30,7 +39,7 @@ type (
 
 	service struct {
 		renderer       otf.Renderer
-		authenticators []*authenticator
+		authenticators []authenticator
 	}
 
 	Options struct {
@@ -43,7 +52,8 @@ type (
 		auth.AuthService
 		tokens.TokensService
 
-		Configs []cloud.CloudOAuthConfig
+		Configs     []cloud.CloudOAuthConfig
+		OIDCConfigs []cloud.OIDCConfig
 	}
 )
 
@@ -64,7 +74,7 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 		if err != nil {
 			return nil, err
 		}
-		authenticator := &authenticator{
+		authenticator := &oauthAuthenticator{
 			HostnameService: opts.HostnameService,
 			TokensService:   opts.TokensService,
 			oauthClient:     client,
@@ -74,13 +84,53 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 		opts.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
 	}
 
+	for _, cfg := range opts.OIDCConfigs {
+		if cfg.ClientID == "" && cfg.ClientSecret == "" {
+			// skip creating oidc client when creds are unspecified
+			continue
+		}
+
+		provider, err := oidc.NewProvider(context.Background(), cfg.IssuerURL)
+		if err != nil {
+			return nil, err
+		}
+
+		verifier := provider.Verifier(&oidc.Config{ClientID: cfg.ClientID})
+
+		policies, err := cfg.GetOrganizationPolicies()
+		if err != nil {
+			return nil, err
+		}
+
+		authenticator := &oidcAuthenticator{
+			TokensService: opts.TokensService,
+			oidcConfig:    cfg,
+			provider:      provider,
+			verifier:      verifier,
+			policies:      policies,
+			oauth2Config: oauth2.Config{
+				ClientID:     cfg.ClientID,
+				ClientSecret: cfg.ClientSecret,
+				RedirectURL:  cfg.RedirectURL,
+				Endpoint:     provider.Endpoint(),
+
+				// "openid" is a required scope for OpenID Connect flows.
+				// groups is used for managing permissions.
+				Scopes: append(cfg.Scopes, oidc.ScopeOpenID, "groups", "profile"),
+			},
+		}
+		svc.authenticators = append(svc.authenticators, authenticator)
+
+		opts.V(2).Info("activated oidc client", "name", cfg, "issuerURL", cfg.IssuerURL, "redirectURL", cfg.RedirectURL, "name", cfg.Name)
+	}
+
 	return &svc, nil
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	for _, authenticator := range a.authenticators {
 		r.HandleFunc(authenticator.RequestPath(), authenticator.RequestHandler)
-		r.HandleFunc(authenticator.CallbackPath(), authenticator.responseHandler)
+		r.HandleFunc(authenticator.CallbackPath(), authenticator.ResponseHandler)
 	}
 	r.HandleFunc("/login", a.loginHandler)
 }
@@ -89,8 +139,8 @@ func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
 	a.renderer.Render("login.tmpl", w, r, a.authenticators)
 }
 
-// exchanging its auth code for a token.
-func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) {
+// ResponseHandler handles exchanging its auth code for a token.
+func (a *oauthAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Request) {
 	// Handle oauth response; if there is an error, return user to login page
 	// along with flash error.
 	token, err := a.CallbackHandler(r)
@@ -106,7 +156,7 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// give authenticator unlimited access to services
+	// give oauthAuthenticator unlimited access to services
 	ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{Username: "authenticator"})
 
 	// Get cloud user

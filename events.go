@@ -46,7 +46,7 @@ type Publisher interface {
 
 // Subscriber is capable of creating a subscription to events.
 type Subscriber interface {
-	// Subscribe subscribes the caller to OTF events. Name uniquely identifies the
+	// Subscribe subscribes the caller to OTF events. Organization uniquely identifies the
 	// caller.
 	Subscribe(ctx context.Context, name string) (<-chan Event, error)
 }

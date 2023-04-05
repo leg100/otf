@@ -89,6 +89,13 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientID, "gitlab-client-id", "", "gitlab client ID")
 	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientSecret, "gitlab-client-secret", "", "gitlab client secret")
 
+	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", cfg.OIDC.Name, "user friendly oidc name")
+	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", cfg.OIDC.IssuerURL, "oidc issuer url")
+	cmd.Flags().StringVar(&cfg.OIDC.RedirectURL, "oidc-redirect-url", cfg.OIDC.RedirectURL, "oidc redirect url")
+	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "oidc client ID")
+	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "oidc client secret")
+	cmd.Flags().StringArrayVar(&cfg.OIDC.OrganizationPolicies, "oidc-organization-policies", nil, "an comma separated list containing the organization name, then the groups that should map to the following roles: owner, admin, write, plan, read")
+
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin")
 
 	cmd.Flags().StringVar(&cfg.GoogleIAPConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")

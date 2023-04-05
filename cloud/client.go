@@ -27,7 +27,6 @@ type Client interface {
 type ClientOptions struct {
 	Hostname            string
 	SkipTLSVerification bool
-
 	Credentials
 }
 
