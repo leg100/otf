@@ -306,7 +306,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				SiteToken:       d.SiteToken,
 				GoogleJWTConfig: d.GoogleJWTConfig,
 			}),
-			auth.AuthenticateSession(d.AuthService),
+			auth.AuthenticateSession(d.AuthService, []byte(d.Secret)),
 		},
 		Handlers: d.Handlers,
 	})

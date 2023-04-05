@@ -96,16 +96,11 @@ func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := h.svc.CreateSession(r.Context(), CreateSessionOptions{
-		Request:  r,
+	err = h.svc.StartSession(w, r, CreateStatelessSessionOptions{
 		Username: otf.String(SiteAdminUsername),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	session.SetCookie(w)
-
-	html.ReturnUserOriginalPage(w, r)
 }

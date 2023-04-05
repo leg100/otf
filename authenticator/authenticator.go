@@ -134,16 +134,11 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := a.CreateSession(ctx, auth.CreateSessionOptions{
-		Request:  r,
+	err = a.StartSession(w, r, auth.CreateStatelessSessionOptions{
 		Username: &cuser.Name,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	session.SetCookie(w)
-
-	html.ReturnUserOriginalPage(w, r)
 }

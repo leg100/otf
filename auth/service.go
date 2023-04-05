@@ -20,6 +20,7 @@ type (
 		TeamService
 		tokenService
 		UserService
+		StatelessSessionService
 
 		StartExpirer(context.Context)
 	}
@@ -33,10 +34,15 @@ type (
 		api *api
 		db  *pgdb
 		web *webHandlers
+
+		secret []byte
+
+		*statelessSessionService
 	}
 
 	Options struct {
 		SiteToken string
+		Secret    string
 
 		otf.DB
 		otf.Renderer
@@ -58,6 +64,11 @@ func NewService(opts Options) (*service, error) {
 		svc:       &svc,
 		siteToken: opts.SiteToken,
 	}
+	stateless, err := newStatelessSessionService(opts.Logger, opts.Secret)
+	if err != nil {
+		return nil, err
+	}
+	svc.statelessSessionService = stateless
 
 	return &svc, nil
 }
