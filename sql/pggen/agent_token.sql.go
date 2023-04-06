@@ -699,6 +699,20 @@ type Querier interface {
 	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
 	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
 
+	UpdateUserSiteAdmins(ctx context.Context, usernames []string) ([]pgtype.Text, error)
+	// UpdateUserSiteAdminsBatch enqueues a UpdateUserSiteAdmins query into batch to be executed
+	// later by the batch.
+	UpdateUserSiteAdminsBatch(batch genericBatch, usernames []string)
+	// UpdateUserSiteAdminsScan scans the result of an executed UpdateUserSiteAdminsBatch query.
+	UpdateUserSiteAdminsScan(results pgx.BatchResults) ([]pgtype.Text, error)
+
+	ResetUserSiteAdmins(ctx context.Context) ([]pgtype.Text, error)
+	// ResetUserSiteAdminsBatch enqueues a ResetUserSiteAdmins query into batch to be executed
+	// later by the batch.
+	ResetUserSiteAdminsBatch(batch genericBatch)
+	// ResetUserSiteAdminsScan scans the result of an executed ResetUserSiteAdminsBatch query.
+	ResetUserSiteAdminsScan(results pgx.BatchResults) ([]pgtype.Text, error)
+
 	DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgtype.Text, error)
 	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed
 	// later by the batch.
@@ -1294,6 +1308,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenIDSQL, findUserByAuthenticationTokenIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUserByAuthenticationTokenID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateUserSiteAdminsSQL, updateUserSiteAdminsSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateUserSiteAdmins': %w", err)
+	}
+	if _, err := p.Prepare(ctx, resetUserSiteAdminsSQL, resetUserSiteAdminsSQL); err != nil {
+		return fmt.Errorf("prepare query 'ResetUserSiteAdmins': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteUserByIDSQL, deleteUserByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteUserByID': %w", err)
 	}
@@ -1499,6 +1519,7 @@ type Users struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 }
 
 // Webhooks represents the Postgres composite type "webhooks".
@@ -1749,6 +1770,7 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 		compositeField{"username", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"site_admin", "bool", &pgtype.Bool{}},
 	)
 }
 

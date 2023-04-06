@@ -113,12 +113,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Renderer: renderer,
 		Broker:   broker,
 	})
+
 	authService := auth.NewService(auth.Options{
 		Logger:          logger,
 		DB:              db,
 		Renderer:        renderer,
 		HostnameService: hostnameService,
 	})
+	// promote nominated users to site admin
+	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
+		return nil, err
+	}
 
 	tokensService, err := tokens.NewService(tokens.Options{
 		Logger:          logger,

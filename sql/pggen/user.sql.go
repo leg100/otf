@@ -69,6 +69,7 @@ type FindUsersRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -84,7 +85,7 @@ func (q *DBQuerier) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsers row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -114,7 +115,7 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersBatch row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -146,6 +147,7 @@ type FindUsersByOrganizationRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -161,7 +163,7 @@ func (q *DBQuerier) FindUsersByOrganization(ctx context.Context, organizationNam
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByOrganizationRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByOrganization row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -191,7 +193,7 @@ func (q *DBQuerier) FindUsersByOrganizationScan(results pgx.BatchResults) ([]Fin
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByOrganizationRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByOrganizationBatch row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -224,6 +226,7 @@ type FindUsersByTeamIDRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -239,7 +242,7 @@ func (q *DBQuerier) FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) (
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByTeamIDRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByTeamID row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -269,7 +272,7 @@ func (q *DBQuerier) FindUsersByTeamIDScan(results pgx.BatchResults) ([]FindUsers
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByTeamIDRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByTeamIDBatch row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -299,6 +302,7 @@ type FindUserByIDRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -308,7 +312,7 @@ func (q *DBQuerier) FindUserByID(ctx context.Context, userID pgtype.Text) (FindU
 	row := q.conn.QueryRow(ctx, findUserByIDSQL, userID)
 	var item FindUserByIDRow
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByID: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -327,7 +331,7 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 	row := results.QueryRow()
 	var item FindUserByIDRow
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByIDBatch row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -352,6 +356,7 @@ type FindUserByUsernameRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -361,7 +366,7 @@ func (q *DBQuerier) FindUserByUsername(ctx context.Context, username pgtype.Text
 	row := q.conn.QueryRow(ctx, findUserByUsernameSQL, username)
 	var item FindUserByUsernameRow
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByUsername: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -380,7 +385,7 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 	row := results.QueryRow()
 	var item FindUserByUsernameRow
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByUsernameBatch row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -406,6 +411,7 @@ type FindUserByAuthenticationTokenIDRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []Teams            `json:"teams"`
 }
 
@@ -415,7 +421,7 @@ func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID
 	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenIDSQL, tokenID)
 	var item FindUserByAuthenticationTokenIDRow
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByAuthenticationTokenID: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
@@ -434,13 +440,121 @@ func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults
 	row := results.QueryRow()
 	var item FindUserByAuthenticationTokenIDRow
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.SiteAdmin, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByAuthenticationTokenIDBatch row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
 	}
 	return item, nil
+}
+
+const updateUserSiteAdminsSQL = `UPDATE users
+SET site_admin = true
+WHERE username = ANY($1)
+RETURNING username
+;`
+
+// UpdateUserSiteAdmins implements Querier.UpdateUserSiteAdmins.
+func (q *DBQuerier) UpdateUserSiteAdmins(ctx context.Context, usernames []string) ([]pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateUserSiteAdmins")
+	rows, err := q.conn.Query(ctx, updateUserSiteAdminsSQL, usernames)
+	if err != nil {
+		return nil, fmt.Errorf("query UpdateUserSiteAdmins: %w", err)
+	}
+	defer rows.Close()
+	items := []pgtype.Text{}
+	for rows.Next() {
+		var item pgtype.Text
+		if err := rows.Scan(&item); err != nil {
+			return nil, fmt.Errorf("scan UpdateUserSiteAdmins row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close UpdateUserSiteAdmins rows: %w", err)
+	}
+	return items, err
+}
+
+// UpdateUserSiteAdminsBatch implements Querier.UpdateUserSiteAdminsBatch.
+func (q *DBQuerier) UpdateUserSiteAdminsBatch(batch genericBatch, usernames []string) {
+	batch.Queue(updateUserSiteAdminsSQL, usernames)
+}
+
+// UpdateUserSiteAdminsScan implements Querier.UpdateUserSiteAdminsScan.
+func (q *DBQuerier) UpdateUserSiteAdminsScan(results pgx.BatchResults) ([]pgtype.Text, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query UpdateUserSiteAdminsBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []pgtype.Text{}
+	for rows.Next() {
+		var item pgtype.Text
+		if err := rows.Scan(&item); err != nil {
+			return nil, fmt.Errorf("scan UpdateUserSiteAdminsBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close UpdateUserSiteAdminsBatch rows: %w", err)
+	}
+	return items, err
+}
+
+const resetUserSiteAdminsSQL = `UPDATE users
+SET site_admin = false
+WHERE site_admin = true
+RETURNING username
+;`
+
+// ResetUserSiteAdmins implements Querier.ResetUserSiteAdmins.
+func (q *DBQuerier) ResetUserSiteAdmins(ctx context.Context) ([]pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "ResetUserSiteAdmins")
+	rows, err := q.conn.Query(ctx, resetUserSiteAdminsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("query ResetUserSiteAdmins: %w", err)
+	}
+	defer rows.Close()
+	items := []pgtype.Text{}
+	for rows.Next() {
+		var item pgtype.Text
+		if err := rows.Scan(&item); err != nil {
+			return nil, fmt.Errorf("scan ResetUserSiteAdmins row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close ResetUserSiteAdmins rows: %w", err)
+	}
+	return items, err
+}
+
+// ResetUserSiteAdminsBatch implements Querier.ResetUserSiteAdminsBatch.
+func (q *DBQuerier) ResetUserSiteAdminsBatch(batch genericBatch) {
+	batch.Queue(resetUserSiteAdminsSQL)
+}
+
+// ResetUserSiteAdminsScan implements Querier.ResetUserSiteAdminsScan.
+func (q *DBQuerier) ResetUserSiteAdminsScan(results pgx.BatchResults) ([]pgtype.Text, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query ResetUserSiteAdminsBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []pgtype.Text{}
+	for rows.Next() {
+		var item pgtype.Text
+		if err := rows.Scan(&item); err != nil {
+			return nil, fmt.Errorf("scan ResetUserSiteAdminsBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close ResetUserSiteAdminsBatch rows: %w", err)
+	}
+	return items, err
 }
 
 const deleteUserByIDSQL = `DELETE
