@@ -71,8 +71,8 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 			return nil, sql.Error(err)
 		}
 		return userRow(result).toUser(), nil
-	} else if spec.AuthenticationToken != nil {
-		result, err := db.FindUserByAuthenticationToken(ctx, sql.String(*spec.AuthenticationToken))
+	} else if spec.AuthenticationTokenID != nil {
+		result, err := db.FindUserByAuthenticationTokenID(ctx, sql.String(*spec.AuthenticationTokenID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}

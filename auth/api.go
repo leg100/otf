@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
@@ -180,7 +179,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.svc.CreateRegistrySession(r.Context(), CreateRegistrySessionOptions{
+	token, err := h.svc.CreateRegistryToken(r.Context(), CreateRegistryTokenOptions{
 		Organization: opts.Organization,
 	})
 	if err != nil {
@@ -188,10 +187,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonapi.WriteResponse(w, r, &jsonapi.RegistrySession{
-		Token:            session.Token,
-		OrganizationName: session.Organization,
-	})
+	w.Write(token)
 }
 
 // Agent token routes
@@ -202,7 +198,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, err)
 		return
 	}
-	at, err := h.svc.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
+	token, err := h.svc.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	})
@@ -210,11 +206,7 @@ func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, err)
 		return
 	}
-	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
-		ID:           at.ID,
-		Token:        otf.String(at.Token),
-		Organization: at.Organization,
-	})
+	w.Write(token)
 }
 
 func (h *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
@@ -225,7 +217,6 @@ func (h *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonapi.WriteResponse(w, r, &jsonapi.AgentToken{
 		ID:           at.ID,
-		Token:        nil, // deliberately omit token
 		Organization: at.Organization,
 	})
 }

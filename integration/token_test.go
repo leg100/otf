@@ -21,7 +21,7 @@ func TestToken(t *testing.T) {
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := otf.AddSubjectToContext(ctx, svc.createUser(t, ctx))
-		_, err := svc.CreateToken(ctx, &auth.TokenCreateOptions{
+		_, _, err := svc.CreateToken(ctx, auth.CreateTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

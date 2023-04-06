@@ -134,7 +134,7 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = a.StartSession(w, r, auth.CreateStatelessSessionOptions{
+	err = a.StartSession(w, r, auth.StartUserSessionOptions{
 		Username: &cuser.Name,
 	})
 	if err != nil {

@@ -1,13 +1,11 @@
 -- name: InsertAgentToken :exec
 INSERT INTO agent_tokens (
     token_id,
-    token,
     created_at,
     description,
     organization_name
 ) VALUES (
     pggen.arg('token_id'),
-    pggen.arg('token'),
     pggen.arg('created_at'),
     pggen.arg('description'),
     pggen.arg('organization_name')
@@ -17,12 +15,6 @@ INSERT INTO agent_tokens (
 SELECT *
 FROM agent_tokens
 WHERE token_id = pggen.arg('token_id')
-;
-
--- name: FindAgentTokenByToken :one
-SELECT *
-FROM agent_tokens
-WHERE token = pggen.arg('token')
 ;
 
 -- name: FindAgentTokens :many

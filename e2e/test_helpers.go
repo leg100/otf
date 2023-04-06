@@ -111,11 +111,13 @@ STARTED:
 
 // createAgentToken creates an agent token via the CLI
 func createAgentToken(t *testing.T, organization, hostname, description string) string {
+	t.Helper()
+
 	cmd := exec.Command("otf", "agents", "tokens", "new", description, "--organization", organization, "--address", hostname)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
-	re := regexp.MustCompile(`Successfully created agent token: (agent\.[a-zA-Z0-9\-_]+)`)
+	re := regexp.MustCompile(`Successfully created agent token: (.+)`)
 	matches := re.FindStringSubmatch(string(out))
 	require.Equal(t, 2, len(matches))
 	return matches[1]

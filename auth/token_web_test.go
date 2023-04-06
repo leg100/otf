@@ -74,6 +74,6 @@ func TestTokenWeb(t *testing.T) {
 
 func newTestTokenHandlers(t *testing.T, org string) *webHandlers {
 	return newFakeWeb(t, &fakeService{
-		token: NewTestToken(t, org),
+		userToken: NewTestToken(t, org),
 	})
 }

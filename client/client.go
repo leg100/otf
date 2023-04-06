@@ -38,7 +38,7 @@ type (
 
 		ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
 
-		CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) (*auth.AgentToken, error)
+		CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) ([]byte, error)
 		GetAgentToken(ctx context.Context, token string) (*auth.AgentToken, error)
 
 		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
@@ -57,8 +57,7 @@ type (
 
 		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
 
-		// CreateRegistrySession creates a registry session for the given organization.
-		CreateRegistrySession(ctx context.Context, opts auth.CreateRegistrySessionOptions) (*auth.RegistrySession, error)
+		CreateRegistryToken(ctx context.Context, opts auth.CreateRegistryTokenOptions) ([]byte, error)
 
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)

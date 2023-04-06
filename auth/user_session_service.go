@@ -5,37 +5,23 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
+// session cookie stores the session token
+const sessionCookie = "session"
+
 type (
-	StatelessSessionService interface {
-		StartSession(w http.ResponseWriter, r *http.Request, opts CreateStatelessSessionOptions) error
-	}
-	CreateStatelessSessionOptions struct {
+	StartUserSessionOptions struct {
 		Username *string
 		Expiry   *time.Time
 	}
-	statelessSessionService struct {
-		logr.Logger
-		key jwk.Key
-	}
 )
 
-func newStatelessSessionService(logger logr.Logger, secret string) (*statelessSessionService, error) {
-	key, err := jwk.FromRaw([]byte(secret))
-	if err != nil {
-		return nil, err
-	}
-	return &statelessSessionService{Logger: logger, key: key}, nil
-}
-
-func (a *statelessSessionService) StartSession(w http.ResponseWriter, r *http.Request, opts CreateStatelessSessionOptions) error {
+func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts StartUserSessionOptions) error {
 	if opts.Username == nil {
 		return fmt.Errorf("missing username")
 	}
@@ -46,6 +32,7 @@ func (a *statelessSessionService) StartSession(w http.ResponseWriter, r *http.Re
 
 	token, err := jwt.NewBuilder().
 		Subject(*opts.Username).
+		Claim("kind", userSessionKind).
 		IssuedAt(time.Now()).
 		Expiration(expiry).
 		Build()

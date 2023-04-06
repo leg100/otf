@@ -17,6 +17,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/json"
 )
 
@@ -61,6 +62,7 @@ var (
 	AuthenticatedPrefixes = []string{
 		APIPrefixV2,
 		ModuleV1Prefix,
+		paths.UIPrefix,
 	}
 )
 

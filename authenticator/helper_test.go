@@ -28,7 +28,7 @@ type (
 	fakeUserSynchroniser struct{}
 )
 
-func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts auth.CreateStatelessSessionOptions) error {
+func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts auth.StartUserSessionOptions) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

@@ -2,26 +2,18 @@ package auth
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
-type (
-	RegistrySessionService interface {
-		CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) (*RegistrySession, error)
-		// GetRegistrySession retrieves a registry session using a token. Intended
-		// as means of checking whether a given token is valid.
-		GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error)
-	}
-)
-
-// Registry session services
-
-func (a *service) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) (*RegistrySession, error) {
-	session, err := NewRegistrySession(opts)
-	if err != nil {
-		a.Error(err, "constructing registry session")
-		return nil, err
+func (a *service) CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error) {
+	if opts.Organization == nil {
+		return nil, fmt.Errorf("missing organization")
 	}
 
 	subject, err := a.organization.CanAccess(ctx, rbac.CreateRegistrySessionAction, *opts.Organization)
@@ -29,24 +21,26 @@ func (a *service) CreateRegistrySession(ctx context.Context, opts CreateRegistry
 		return nil, err
 	}
 
-	if err := a.db.createRegistrySession(ctx, session); err != nil {
-		a.Error(err, "creating registry session", "subject", subject, "session", session)
-		return nil, err
+	expiry := otf.CurrentTimestamp().Add(defaultRegistrySessionExpiry)
+	if opts.Expiry != nil {
+		expiry = *opts.Expiry
 	}
 
-	a.V(2).Info("created registry session", "subject", subject, "session", session)
-
-	return session, nil
-}
-
-func (a *service) GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error) {
-	session, err := a.db.getRegistrySession(ctx, token)
+	token, err := jwt.NewBuilder().
+		Claim("kind", registrySessionKind).
+		Claim("organization", *opts.Organization).
+		IssuedAt(time.Now()).
+		Expiration(expiry).
+		Build()
 	if err != nil {
-		a.Error(err, "retrieving registry session", "token", "*****")
+		return nil, err
+	}
+	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, a.key))
+	if err != nil {
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved registry session", "session", session)
+	a.V(2).Info("created registry session", "subject", subject, "run")
 
-	return session, nil
+	return serialized, nil
 }

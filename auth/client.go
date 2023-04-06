@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/url"
@@ -113,26 +114,23 @@ func (c *Client) DeleteTeam(ctx context.Context, id string) error {
 	return nil
 }
 
-// CreateRegistrySession creates a registry session via HTTP/JSONAPI
-func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) (*RegistrySession, error) {
+// CreateRegistryToken creates a registry token via HTTP/JSONAPI
+func (c *Client) CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error) {
 	req, err := c.NewRequest("POST", "registry/sessions/create", &jsonapi.RegistrySessionCreateOptions{
 		Organization: opts.Organization,
 	})
 	if err != nil {
 		return nil, err
 	}
-	session := &jsonapi.RegistrySession{}
-	err = c.Do(ctx, req, session)
+	var buf bytes.Buffer
+	err = c.Do(ctx, req, &buf)
 	if err != nil {
 		return nil, err
 	}
-	return &RegistrySession{
-		Organization: session.OrganizationName,
-		Token:        session.Token,
-	}, nil
+	return buf.Bytes(), nil
 }
 
-func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) (*AgentToken, error) {
+func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error) {
 	req, err := c.NewRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
 		Description:  options.Description,
 		Organization: options.Organization,
@@ -140,12 +138,12 @@ func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenO
 	if err != nil {
 		return nil, err
 	}
-	at := &jsonapi.AgentToken{}
-	err = c.Do(ctx, req, at)
+	var buf bytes.Buffer
+	err = c.Do(ctx, req, &buf)
 	if err != nil {
 		return nil, err
 	}
-	return &AgentToken{ID: at.ID, Token: *at.Token, Organization: at.Organization}, nil
+	return buf.Bytes(), nil
 }
 
 func (c *Client) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {

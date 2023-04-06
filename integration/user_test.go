@@ -44,7 +44,7 @@ func TestUser(t *testing.T) {
 			},
 			{
 				name: "auth token",
-				spec: auth.UserSpec{AuthenticationToken: otf.String(token1.Token)},
+				spec: auth.UserSpec{AuthenticationTokenID: otf.String(token1.ID)},
 			},
 		}
 		for _, tt := range tests {

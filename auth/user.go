@@ -36,9 +36,9 @@ type (
 	NewUserOption func(*User)
 
 	UserSpec struct {
-		UserID              *string
-		Username            *string
-		AuthenticationToken *string
+		UserID                *string
+		Username              *string
+		AuthenticationTokenID *string
 	}
 )
 
@@ -162,8 +162,8 @@ func (u *User) IsOwner(organization string) bool {
 }
 
 func (s UserSpec) MarshalLog() any {
-	if s.AuthenticationToken != nil {
-		s.AuthenticationToken = otf.String("*****")
+	if s.AuthenticationTokenID != nil {
+		s.AuthenticationTokenID = otf.String("*****")
 	}
 	return s
 }

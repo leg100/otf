@@ -1,11 +1,9 @@
 package jsonapi
 
-// AgentToken is an otf agent token. The token field is only populated upon
-// creation and never thereafter.
+// AgentToken represents an otf agent token.
 type AgentToken struct {
-	ID           string  `jsonapi:"primary,agent_tokens"`
-	Token        *string `jsonapi:"attr,token,omitempty"`
-	Organization string  `jsonapi:"attr,organization_name"`
+	ID           string `jsonapi:"primary,agent_tokens"`
+	Organization string `jsonapi:"attr,organization_name"`
 }
 
 // AgentTokenCreateOptions represents the options for creating a new otf agent token.

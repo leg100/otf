@@ -2,17 +2,24 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
 const (
-	defaultExpiry          = 24 * time.Hour
-	defaultCleanupInterval = 5 * time.Minute
+	// default user session expiry
+	defaultExpiry = 24 * time.Hour
+
+	userSessionKind     authKind = "user_session"
+	registrySessionKind authKind = "registry_session"
+	agentTokenKind      authKind = "agent_token"
+	userTokenKind       authKind = "user_token"
 )
 
 type (
@@ -21,13 +28,12 @@ type (
 
 	AuthService interface {
 		AgentTokenService
-		RegistrySessionService
 		TeamService
 		tokenService
 		UserService
-		StatelessSessionService
 
-		StartExpirer(context.Context)
+		StartSession(w http.ResponseWriter, r *http.Request, opts StartUserSessionOptions) error
+		CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error)
 	}
 
 	service struct {
@@ -40,7 +46,7 @@ type (
 		db  *pgdb
 		web *webHandlers
 
-		*statelessSessionService
+		key jwk.Key
 	}
 
 	Options struct {
@@ -52,6 +58,9 @@ type (
 		otf.HostnameService
 		logr.Logger
 	}
+
+	// the kind of authentication token: user session, user token, agent token, etc
+	authKind string
 )
 
 func NewService(opts Options) (*service, error) {
@@ -67,18 +76,13 @@ func NewService(opts Options) (*service, error) {
 		svc:       &svc,
 		siteToken: opts.SiteToken,
 	}
-	stateless, err := newStatelessSessionService(opts.Logger, opts.Secret)
+	key, err := jwk.FromRaw([]byte(opts.Secret))
 	if err != nil {
 		return nil, err
 	}
-	svc.statelessSessionService = stateless
+	svc.key = key
 
 	return &svc, nil
-}
-
-func (a *service) StartExpirer(ctx context.Context) {
-	// purge expired sessions on regular interval
-	go a.db.startExpirer(ctx, defaultExpiry)
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
