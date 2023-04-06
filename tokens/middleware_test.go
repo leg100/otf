@@ -1,4 +1,4 @@
-package auth
+package tokens
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf/auth"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,8 +46,8 @@ func TestMiddleware(t *testing.T) {
 		token := newTestJWT(t, "secret", userTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &User{})).ServeHTTP(w, r)
-		assert.Equal(t, 200, w.Code)
+		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
+		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
 	t.Run("valid registry session token", func(t *testing.T) {
@@ -81,7 +82,7 @@ func TestMiddleware(t *testing.T) {
 		token := newTestJWT(t, "secret", userTokenKind, time.Hour)
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &User{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -104,32 +105,32 @@ func TestMiddleware(t *testing.T) {
 	t.Run("valid iap token", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add(googleIAPHeader, fakeIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &User{})).ServeHTTP(w, r)
+		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
+		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("valid iap token for ui path", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		r.Header.Add(googleIAPHeader, fakeIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &User{})).ServeHTTP(w, r)
+		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
+		fakeIAPMiddleware(t, "")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("valid iap audience", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add(googleIAPHeader, fakeIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "https://example.com")(wantSubjectHandler(t, &User{})).ServeHTTP(w, r)
+		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
+		fakeIAPMiddleware(t, "https://example.com")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("invalid iap audience", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add(googleIAPHeader, fakeIAPToken(t, "https://example.com"))
-		fakeIAPMiddleware(t, "https://invalid.com")(wantSubjectHandler(t, &User{})).ServeHTTP(w, r)
+		r.Header.Add(googleIAPHeader, newIAPToken(t, "https://example.com"))
+		fakeIAPMiddleware(t, "https://invalid.com")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 401, w.Code)
 	})
 }

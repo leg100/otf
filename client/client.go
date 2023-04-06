@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
 )
@@ -38,8 +39,8 @@ type (
 
 		ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
 
-		CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) ([]byte, error)
-		GetAgentToken(ctx context.Context, token string) (*auth.AgentToken, error)
+		CreateAgentToken(ctx context.Context, opts tokens.CreateAgentTokenOptions) ([]byte, error)
+		GetAgentToken(ctx context.Context, token string) (*tokens.AgentToken, error)
 
 		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
 		UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
@@ -57,7 +58,7 @@ type (
 
 		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
 
-		CreateRegistryToken(ctx context.Context, opts auth.CreateRegistryTokenOptions) ([]byte, error)
+		CreateRegistryToken(ctx context.Context, opts tokens.CreateRegistryTokenOptions) ([]byte, error)
 
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
@@ -81,6 +82,7 @@ type (
 		organization.OrganizationService
 		orgcreator.OrganizationCreatorService
 		auth.AuthService
+		tokens.TokensService
 		variable.VariableService
 		state.StateService
 		workspace.WorkspaceService
@@ -98,6 +100,7 @@ type (
 		*configClient
 		*variableClient
 		*authClient
+		*tokensClient
 		*organizationClient
 		*organizationCreatorClient
 		*workspaceClient
@@ -109,6 +112,7 @@ type (
 	configClient              = configversion.Client
 	variableClient            = variable.Client
 	authClient                = auth.Client
+	tokensClient              = tokens.Client
 	organizationClient        = organization.Client
 	organizationCreatorClient = orgcreator.Client
 	workspaceClient           = workspace.Client
@@ -130,6 +134,7 @@ func New(config http.Config) (*remoteClient, error) {
 		configClient:              &configClient{JSONAPIClient: httpClient},
 		variableClient:            &variableClient{JSONAPIClient: httpClient},
 		authClient:                &authClient{JSONAPIClient: httpClient},
+		tokensClient:              &tokensClient{JSONAPIClient: httpClient},
 		organizationClient:        &organizationClient{JSONAPIClient: httpClient},
 		organizationCreatorClient: &organizationCreatorClient{JSONAPIClient: httpClient},
 		workspaceClient:           &workspaceClient{JSONAPIClient: httpClient},

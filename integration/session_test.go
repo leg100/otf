@@ -19,7 +19,7 @@ func TestSession(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("start", func(t *testing.T) {
-		svc := setup(t, &config{secret: "abcd123"})
+		svc := setup(t, nil)
 		want := svc.createUser(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
@@ -39,9 +39,7 @@ func TestSession(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/app?", nil)
 			r.AddCookie(cookies[0])
-			mw, err := auth.NewMiddleware(svc, auth.MiddlewareConfig{Secret: "abcd123"})
-			require.NoError(t, err)
-			mw(upstream).ServeHTTP(w, r)
+			svc.AuthMiddleware(upstream).ServeHTTP(w, r)
 			assert.Equal(t, 200, w.Code)
 		})
 	})

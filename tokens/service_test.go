@@ -1,4 +1,4 @@
-package auth
+package tokens
 
 import (
 	"net/http/httptest"
@@ -21,7 +21,7 @@ func TestService_StartSession(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)
-	svc.StartSession(w, r, StartUserSessionOptions{
+	svc.StartSession(w, r, StartSessionOptions{
 		Username: otf.String("bobby"),
 	})
 

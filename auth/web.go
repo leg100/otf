@@ -2,13 +2,11 @@ package auth
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
 )
 
 // webHandlers provides handlers for the web UI
@@ -16,24 +14,19 @@ type webHandlers struct {
 	otf.Renderer
 
 	svc       AuthService
-	siteToken string
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	// Unauthenticated routes
 	r.HandleFunc("/admin/login", h.adminLoginPromptHandler).Methods("GET")
-	r.HandleFunc("/admin/login", h.adminLoginHandler).Methods("POST")
 
 	// Authenticated routes
 	r = html.UIRouter(r)
 
-	h.addAgentTokenHandlers(r)
 	h.addTeamHandlers(r)
-	h.addTokenHandlers(r)
 
 	r.HandleFunc("/organizations/{name}/users", h.listUsers).Methods("GET")
 
-	r.HandleFunc("/logout", h.logoutHandler).Methods("POST")
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
 }
 
@@ -62,35 +55,7 @@ func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 	h.Render("profile.tmpl", w, r, user)
 }
 
-func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	html.SetCookie(w, sessionCookie, "", &time.Time{})
-	http.Redirect(w, r, "/login", http.StatusFound)
-}
-
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
 	h.Render("site_admin_login.tmpl", w, r, nil)
-}
-
-// adminLoginHandler logs in a site admin
-func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := decode.Param("token", r)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	if token != h.siteToken {
-		html.FlashError(w, "incorrect token")
-		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
-		return
-	}
-
-	err = h.svc.StartSession(w, r, StartUserSessionOptions{
-		Username: otf.String(SiteAdminUsername),
-	})
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }

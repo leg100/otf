@@ -1,6 +1,7 @@
-package auth
+package tokens
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -83,4 +84,17 @@ func (t *AgentToken) CanAccessOrganization(action rbac.Action, name string) bool
 func (t *AgentToken) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
 	// agent can access anything within its organization
 	return t.Organization == policy.Organization
+}
+
+// agentFromContext retrieves an agent(-token) from a context
+func agentFromContext(ctx context.Context) (*AgentToken, error) {
+	subj, err := otf.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	agent, ok := subj.(*AgentToken)
+	if !ok {
+		return nil, fmt.Errorf("subject found in context but it is not an agent")
+	}
+	return agent, nil
 }
