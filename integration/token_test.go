@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestToken(t *testing.T) {
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := otf.AddSubjectToContext(ctx, svc.createUser(t, ctx))
-		_, _, err := svc.CreateToken(ctx, auth.CreateTokenOptions{
+		_, _, err := svc.CreateToken(ctx, tokens.CreateTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)

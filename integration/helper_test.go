@@ -19,6 +19,7 @@ import (
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
@@ -267,7 +268,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
-func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) *auth.Token {
+func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) *tokens.Token {
 	t.Helper()
 
 	// If user is provided then add it to context. Otherwise the context is
@@ -276,7 +277,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 		ctx = otf.AddSubjectToContext(ctx, user)
 	}
 
-	ut, _, err := s.CreateToken(ctx, auth.CreateTokenOptions{
+	ut, _, err := s.CreateToken(ctx, tokens.CreateTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)

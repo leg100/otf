@@ -1,4 +1,4 @@
-package auth
+package tokens
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -24,15 +25,14 @@ const (
 )
 
 type (
-	MiddlewareService interface {
-		GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
-		GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	}
+	middlewareOptions struct {
+		AgentTokenService
+		auth.AuthService
 
-	MiddlewareConfig struct {
-		SiteToken string
-		Secret    string
 		GoogleIAPConfig
+		SiteToken string
+
+		key jwk.Key
 	}
 
 	GoogleIAPConfig struct {
@@ -40,14 +40,11 @@ type (
 	}
 
 	middleware struct {
-		MiddlewareService
-		MiddlewareConfig
-
-		key jwk.Key
+		middlewareOptions
 	}
 )
 
-// NewMiddleware constructs middleware that verifies that all requests
+// newMiddleware constructs middleware that verifies that all requests
 // to protected endpoints possess a valid token, applying the following logic:
 //
 // 1. Skip authentication for non-protected paths and allow request.
@@ -61,17 +58,8 @@ type (
 //
 // Where authentication succeeds, the authenticated subject is attached to the request
 // context and the upstream handler is called.
-func NewMiddleware(svc MiddlewareService, cfg MiddlewareConfig) (mux.MiddlewareFunc, error) {
-	key, err := jwk.FromRaw([]byte(cfg.Secret))
-	if err != nil {
-		return nil, err
-	}
-
-	mw := middleware{
-		MiddlewareService: svc,
-		MiddlewareConfig:  cfg,
-		key:               key,
-	}
+func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
+	mw := middleware{middlewareOptions: opts}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +97,7 @@ func NewMiddleware(svc MiddlewareService, cfg MiddlewareConfig) (mux.MiddlewareF
 			ctx := otf.AddSubjectToContext(r.Context(), subject)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-	}, nil
+	}
 }
 
 func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Subject, error) {
@@ -117,7 +105,11 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Su
 	if err != nil {
 		return nil, err
 	}
-	return m.GetUser(ctx, UserSpec{Username: &payload.Subject})
+	email, ok := payload.Claims["email"]
+	if !ok {
+		return nil, fmt.Errorf("IAP token is missing email claim")
+	}
+	return m.GetUser(ctx, auth.UserSpec{Username: otf.String(email.(string))})
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Subject, error) {
@@ -128,7 +120,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Sub
 	token := splitToken[1]
 
 	if m.SiteToken != "" && m.SiteToken == token {
-		return &SiteAdmin, nil
+		return &auth.SiteAdmin, nil
 	}
 	//
 	// parse jwt from cookie and verify signature
@@ -136,15 +128,15 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Sub
 	if err != nil {
 		return nil, err
 	}
-	kind, ok := parsed.Get("kind")
+	kindClaim, ok := parsed.Get("kind")
 	if !ok {
 		return nil, fmt.Errorf("missing claim: kind")
 	}
-	switch authKind(kind.(string)) {
+	switch kind(kindClaim.(string)) {
 	case agentTokenKind:
 		return m.GetAgentToken(ctx, parsed.Subject())
 	case userTokenKind:
-		return m.GetUser(ctx, UserSpec{AuthenticationTokenID: otf.String(parsed.Subject())})
+		return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: otf.String(parsed.Subject())})
 	case registrySessionKind:
 		return NewRegistrySessionFromJWT(parsed)
 	default:
@@ -167,7 +159,7 @@ func (m *middleware) validateUIRequest(w http.ResponseWriter, r *http.Request) (
 		}
 		return nil, false
 	}
-	user, err := m.GetUser(r.Context(), UserSpec{
+	user, err := m.GetUser(r.Context(), auth.UserSpec{
 		Username: otf.String(token.Subject()),
 	})
 	if err != nil {

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
@@ -166,4 +168,17 @@ func (s UserSpec) MarshalLog() any {
 		s.AuthenticationTokenID = otf.String("*****")
 	}
 	return s
+}
+
+// UserFromContext retrieves a user from a context
+func UserFromContext(ctx context.Context) (*User, error) {
+	subj, err := otf.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user, ok := subj.(*User)
+	if !ok {
+		return nil, fmt.Errorf("no user in context")
+	}
+	return user, nil
 }

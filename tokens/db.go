@@ -1,11 +1,35 @@
-package auth
+package tokens
 
 import (
 	"context"
 
+	"github.com/jackc/pgtype"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
+
+type (
+	// pgdb stores authentication resources in a postgres database
+	pgdb struct {
+		otf.DB // provides access to generated SQL queries
+	}
+	agentTokenRow struct {
+		TokenID          pgtype.Text        `json:"token_id"`
+		CreatedAt        pgtype.Timestamptz `json:"created_at"`
+		Description      pgtype.Text        `json:"description"`
+		OrganizationName pgtype.Text        `json:"organization_name"`
+	}
+)
+
+func (row agentTokenRow) toAgentToken() *AgentToken {
+	return &AgentToken{
+		ID:           row.TokenID.String,
+		CreatedAt:    row.CreatedAt.Time,
+		Description:  row.Description.String,
+		Organization: row.OrganizationName.String,
+	}
+}
 
 // CreateToken inserts the token, associating it with the user.
 func (db *pgdb) CreateToken(ctx context.Context, token *Token) error {

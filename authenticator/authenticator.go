@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
+	"github.com/leg100/otf/tokens"
 )
 
 type (
@@ -23,7 +24,7 @@ type (
 	// and team memberships from the provider.
 	authenticator struct {
 		otf.HostnameService
-		auth.AuthService // for creating user session
+		tokens.TokensService // for creating session
 
 		oauthClient
 		Synchroniser
@@ -47,6 +48,7 @@ type (
 		organization.OrganizationService
 		orgcreator.OrganizationCreatorService
 		auth.AuthService
+		tokens.TokensService
 
 		Configs []cloud.CloudOAuthConfig
 	}
@@ -78,7 +80,7 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 		authenticator := &authenticator{
 			Synchroniser:    svc.Synchroniser,
 			HostnameService: opts.HostnameService,
-			AuthService:     opts.AuthService,
+			TokensService:   opts.TokensService,
 			oauthClient:     client,
 		}
 		svc.authenticators = append(svc.authenticators, authenticator)
@@ -134,7 +136,7 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = a.StartSession(w, r, auth.StartUserSessionOptions{
+	err = a.StartSession(w, r, tokens.StartSessionOptions{
 		Username: &cuser.Name,
 	})
 	if err != nil {

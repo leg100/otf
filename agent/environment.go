@@ -9,10 +9,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/pkg/errors"
 )
@@ -62,7 +62,7 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	token, err := svc.CreateRegistryToken(ctx, auth.CreateRegistryTokenOptions{
+	token, err := svc.CreateRegistryToken(ctx, tokens.CreateRegistryTokenOptions{
 		Organization: &ws.Organization,
 	})
 	if err != nil {

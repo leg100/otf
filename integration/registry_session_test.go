@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/tokens"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ func TestRegistrySession(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
-		_, err := svc.CreateRegistryToken(ctx, auth.CreateRegistryTokenOptions{
+		_, err := svc.CreateRegistryToken(ctx, tokens.CreateRegistryTokenOptions{
 			Organization: &org.Name,
 		})
 		require.NoError(t, err)

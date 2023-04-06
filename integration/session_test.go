@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,11 +20,11 @@ func TestSession(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("start", func(t *testing.T) {
-		svc := setup(t, &config{secret: "abcd123"})
+		svc := setup(t, nil)
 		want := svc.createUser(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
-		err := svc.StartSession(w, r, auth.StartUserSessionOptions{
+		err := svc.StartSession(w, r, tokens.StartSessionOptions{
 			Username: &want.Username,
 		})
 		require.NoError(t, err)
@@ -39,9 +40,7 @@ func TestSession(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/app?", nil)
 			r.AddCookie(cookies[0])
-			mw, err := auth.NewMiddleware(svc, auth.MiddlewareConfig{Secret: "abcd123"})
-			require.NoError(t, err)
-			mw(upstream).ServeHTTP(w, r)
+			svc.Middleware()(upstream).ServeHTTP(w, r)
 			assert.Equal(t, 200, w.Code)
 		})
 	})

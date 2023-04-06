@@ -4,15 +4,15 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/tokens"
 	"golang.org/x/oauth2"
 )
 
 type (
 	fakeAuthenticatorService struct {
-		auth.AuthService
+		tokens.TokensService
 	}
 
 	fakeOAuthClient struct {
@@ -28,7 +28,7 @@ type (
 	fakeUserSynchroniser struct{}
 )
 
-func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts auth.StartUserSessionOptions) error {
+func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
 	http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	return nil
 }

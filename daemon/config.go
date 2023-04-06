@@ -2,12 +2,12 @@ package daemon
 
 import (
 	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/gitlab"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/tokens"
 )
 
 // Config configures the otfd daemon. Descriptions of each field can be found in
@@ -31,7 +31,7 @@ type Config struct {
 	DisableRunScheduler          bool
 	RestrictOrganizationCreation bool
 
-	auth.GoogleIAPConfig
+	tokens.GoogleIAPConfig
 }
 
 func NewDefaultConfig() Config {

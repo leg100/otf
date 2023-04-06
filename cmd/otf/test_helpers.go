@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
 )
@@ -145,6 +146,6 @@ func (f *fakeClient) DownloadConfig(context.Context, string) ([]byte, error) {
 	return f.tarball, nil
 }
 
-func (f *fakeClient) CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) ([]byte, error) {
+func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAgentTokenOptions) ([]byte, error) {
 	return f.agentToken, nil
 }

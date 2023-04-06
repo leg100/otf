@@ -1,4 +1,4 @@
-package auth
+package tokens
 
 import (
 	"context"
@@ -10,23 +10,23 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/idtoken"
 )
 
-type fakeMiddlewareService struct{}
+type fakeMiddlewareService struct {
+	auth.AuthService
+	TokensService
+}
 
 func (f *fakeMiddlewareService) GetAgentToken(ctx context.Context, token string) (*AgentToken, error) {
 	return &AgentToken{}, nil
 }
 
-func (f *fakeMiddlewareService) GetRegistrySession(ctx context.Context, token string) (*RegistrySession, error) {
-	return &RegistrySession{}, nil
-}
-
-func (f *fakeMiddlewareService) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	return &User{}, nil
+func (f *fakeMiddlewareService) GetUser(ctx context.Context, spec auth.UserSpec) (*auth.User, error) {
+	return &auth.User{}, nil
 }
 
 // getGoogleCredentialsPath is a test helper to retrieve the path to a google
@@ -60,35 +60,38 @@ func getGoogleCredentialsPath(t *testing.T) string {
 func fakeTokenMiddleware(t *testing.T, secret string) mux.MiddlewareFunc {
 	t.Helper()
 
-	mw, err := NewMiddleware(&fakeMiddlewareService{}, MiddlewareConfig{
-		Secret: secret,
+	key := newTestJWK(t, secret)
+	return newMiddleware(middlewareOptions{
+		AuthService:       &fakeMiddlewareService{},
+		AgentTokenService: &fakeMiddlewareService{},
+		key:               key,
 	})
-	require.NoError(t, err)
-	return mw
 }
 
 func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 	t.Helper()
 
-	mw, err := NewMiddleware(&fakeMiddlewareService{}, MiddlewareConfig{
-		Secret:    "abcdef123", // not used but constructor requires non-empty string
-		SiteToken: token,
+	key := newTestJWK(t, "abcdef123") // not used but constructor requires it
+	return newMiddleware(middlewareOptions{
+		AuthService:       &fakeMiddlewareService{},
+		AgentTokenService: &fakeMiddlewareService{},
+		SiteToken:         token,
+		key:               key,
 	})
-	require.NoError(t, err)
-	return mw
 }
 
 func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 	t.Helper()
 
-	mw, err := NewMiddleware(&fakeMiddlewareService{}, MiddlewareConfig{
-		Secret: "abcdef123", // not used but constructor requires non-empty string
+	key := newTestJWK(t, "abcdef123") // not used but constructor requires it
+	return newMiddleware(middlewareOptions{
+		AuthService:       &fakeMiddlewareService{},
+		AgentTokenService: &fakeMiddlewareService{},
 		GoogleIAPConfig: GoogleIAPConfig{
 			Audience: aud,
 		},
+		key: key,
 	})
-	require.NoError(t, err)
-	return mw
 }
 
 var emptyHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +110,7 @@ func wantSubjectHandler(t *testing.T, want any) http.HandlerFunc {
 	})
 }
 
-func fakeIAPToken(t *testing.T, aud string) string {
+func newIAPToken(t *testing.T, aud string) string {
 	t.Helper()
 
 	credspath := getGoogleCredentialsPath(t)

@@ -1,4 +1,4 @@
-package auth
+package tokens
 
 import (
 	"fmt"

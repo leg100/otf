@@ -29,6 +29,7 @@ import (
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/leg100/otf/workspace"
@@ -49,6 +50,7 @@ type (
 		organization.OrganizationService
 		orgcreator.OrganizationCreatorService
 		auth.AuthService
+		tokens.TokensService
 		variable.VariableService
 		vcsprovider.VCSProviderService
 		state.StateService
@@ -61,9 +63,6 @@ type (
 		logs.LogsService
 
 		Handlers []otf.Handlers
-
-		// AuthMiddleware protects authenticated routes
-		AuthMiddleware mux.MiddlewareFunc
 	}
 
 	process interface {
@@ -114,22 +113,21 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Renderer: renderer,
 		Broker:   broker,
 	})
-	authService, err := auth.NewService(auth.Options{
+	authService := auth.NewService(auth.Options{
 		Logger:          logger,
 		DB:              db,
 		Renderer:        renderer,
-		SiteToken:       cfg.SiteToken,
-		Secret:          cfg.Secret,
 		HostnameService: hostnameService,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("setting up auth service: %w", err)
-	}
 
-	authMiddleware, err := auth.NewMiddleware(authService, auth.MiddlewareConfig{
+	tokensService, err := tokens.NewService(tokens.Options{
+		Logger:          logger,
+		DB:              db,
+		Renderer:        renderer,
+		AuthService:     authService,
+		GoogleIAPConfig: cfg.GoogleIAPConfig,
 		SiteToken:       cfg.SiteToken,
 		Secret:          cfg.Secret,
-		GoogleIAPConfig: cfg.GoogleIAPConfig,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
@@ -224,6 +222,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logger.WithValues("component", "agent"),
 		client.LocalClient{
 			AuthService:                 authService,
+			TokensService:               tokensService,
 			WorkspaceService:            workspaceService,
 			OrganizationService:         orgService,
 			VariableService:             variableService,
@@ -246,6 +245,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService:        orgService,
 		OrganizationCreatorService: orgCreatorService,
 		AuthService:                authService,
+		TokensService:              tokensService,
 		Configs:                    []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
 	})
 	if err != nil {
@@ -254,6 +254,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	handlers := []otf.Handlers{
 		authService,
+		tokensService,
 		workspaceService,
 		// deliberating placing org creator service prior to org service because
 		// org creator adds web routes that take priority (gorilla mux routes
@@ -276,6 +277,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                      logger,
 		Handlers:                    handlers,
 		AuthService:                 authService,
+		TokensService:               tokensService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
 		OrganizationCreatorService:  orgCreatorService,
@@ -291,7 +293,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Synchroniser:                authenticatorService,
 		Broker:                      broker,
 		DB:                          db,
-		AuthMiddleware:              authMiddleware,
 		agent:                       agent,
 	}, nil
 }
@@ -316,7 +317,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		KeyFile:              d.KeyFile,
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
-		Middleware:           []mux.MiddlewareFunc{d.AuthMiddleware},
+		Middleware:           []mux.MiddlewareFunc{d.TokensService.Middleware()},
 		Handlers:             d.Handlers,
 	})
 	if err != nil {
