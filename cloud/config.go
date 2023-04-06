@@ -1,10 +1,12 @@
 package cloud
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -59,7 +61,7 @@ type CloudOAuthConfig struct {
 
 // OIDCConfig is the configuration for a generic oidc provider.
 type OIDCConfig struct {
-	// Name is the user friendly identifier of the oidc endpoint.
+	// Name is the user-friendly identifier of the oidc endpoint.
 	Name string
 	// IssuerURL is the issuer url for the oidc provider.
 	IssuerURL string
@@ -74,6 +76,8 @@ type OIDCConfig struct {
 	// OrganizationPolicies is a comma separated list containing the organization name, then the groups that should map
 	// to the following roles: owner, admin, write, plan, read.
 	OrganizationPolicies []string
+	// OrganizationPoliciesFile
+	OrganizationPoliciesFile string
 }
 
 type OIDCOrganizationPolicy struct {
@@ -82,33 +86,67 @@ type OIDCOrganizationPolicy struct {
 	Team         string
 }
 
-const oidcPolicyTeamPrefix = "team:"
+const (
+	oidcPolicyGroup      = "g"
+	oidcPolicyTeamPrefix = "team:"
+)
 
 // GetOrganizationPolicies parses the comma separated OrganizationPolicies and turns it into OIDCOrganizationPolicy structs.
 func (o OIDCConfig) GetOrganizationPolicies() ([]OIDCOrganizationPolicy, error) {
+	policies := o.OrganizationPolicies
+
+	if o.OrganizationPoliciesFile != "" {
+		file, err := os.Open(o.OrganizationPoliciesFile)
+		if err != nil {
+			return nil, err
+		}
+
+		fileScanner := bufio.NewScanner(file)
+		fileScanner.Split(bufio.ScanLines)
+
+		for fileScanner.Scan() {
+			line := fileScanner.Text()
+			if strings.HasPrefix(line, "#") {
+				continue
+			}
+
+			policies = append(policies, line)
+		}
+	}
+
 	var orgs []OIDCOrganizationPolicy
-	for _, org := range o.OrganizationPolicies {
+	for _, org := range policies {
 		tokens := strings.Split(org, ",")
 
-		if len(tokens) != 3 {
+		if len(tokens) == 0 {
 			return nil, ErrInvalidOrganizationPolicy
 		}
 
-		organization := strings.Trim(tokens[0], " ")
-		group := strings.Trim(tokens[1], " ")
-		team := strings.Trim(tokens[2], " ")
+		policyType := strings.Trim(tokens[0], " ")
+		switch policyType {
+		case oidcPolicyGroup:
+			if len(tokens) != 4 {
+				return nil, ErrInvalidOrganizationPolicy
+			}
 
-		if !strings.HasPrefix(team, oidcPolicyTeamPrefix) {
+			organization := strings.Trim(tokens[1], " ")
+			group := strings.Trim(tokens[2], " ")
+			team := strings.Trim(tokens[3], " ")
+
+			if !strings.HasPrefix(team, oidcPolicyTeamPrefix) {
+				return nil, ErrInvalidOrganizationPolicy
+			}
+
+			teamToken := strings.TrimPrefix(team, oidcPolicyTeamPrefix)
+
+			orgs = append(orgs, OIDCOrganizationPolicy{
+				Organization: organization,
+				Group:        group,
+				Team:         teamToken,
+			})
+		default:
 			return nil, ErrInvalidOrganizationPolicy
 		}
-
-		teamToken := strings.TrimPrefix(team, oidcPolicyTeamPrefix)
-
-		orgs = append(orgs, OIDCOrganizationPolicy{
-			Organization: organization,
-			Group:        group,
-			Team:         teamToken,
-		})
 	}
 
 	return orgs, nil

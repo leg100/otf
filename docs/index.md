@@ -218,6 +218,7 @@ Users sign into OTF primarily via an SSO provider. Support currently exists for:
 
 * Github
 * Gitlab
+* OIDC
 
 Alternatively, an administrator can sign into OTF using a Site Admin token. This should only be used ad-hoc, e.g. to investigate issues.
 
@@ -282,6 +283,25 @@ If you're hosting your own Gitlab you'll also need to inform otfd of its hostnam
     `--gitlab-hostname=<hostname>`
 
 Now when you start `otfd` navigate to its URL in your browser and you'll be prompted to login with Gitlab.
+
+### OIDC
+
+You can configure OTF to sign users in using [OpenID-Connect](https://openid.net/connect/)(OIDC). 
+
+TODO
+
+    `--oidc-name="Azure SSO"`
+    `--oidc-issuer-url=https://login.microsoftonline.com/organizations/v2.0/`
+    `--oidc-redirect-url=http://otf.localhost:8080/oauth/dex/callback`
+    `--oidc-client-id=some-client-id`
+    `--oidc-client-secret=some-client-secret`
+
+!!! note
+OIDC functions differently from the other authentication providers. When using OIDC you will need to manually configure what organizations, and teams should exist and what oidc groups they should map to.
+
+In the following example we are configuring the `SomeCoolOrg` organization to have make users with the group `admins` in their group claims to be a part of the `owners` team. 
+
+    `--oidc-policies="g, SomeCoolOrg, admins, team:owners"`
 
 ### Site Admin
 
