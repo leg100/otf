@@ -63,9 +63,6 @@ type (
 		logs.LogsService
 
 		Handlers []otf.Handlers
-
-		// AuthMiddleware protects authenticated routes
-		AuthMiddleware mux.MiddlewareFunc
 	}
 
 	process interface {
@@ -248,6 +245,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService:        orgService,
 		OrganizationCreatorService: orgCreatorService,
 		AuthService:                authService,
+		TokensService:              tokensService,
 		Configs:                    []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
 	})
 	if err != nil {
@@ -319,7 +317,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		KeyFile:              d.KeyFile,
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
-		Middleware:           []mux.MiddlewareFunc{d.AuthMiddleware},
+		Middleware:           []mux.MiddlewareFunc{d.TokensService.Middleware()},
 		Handlers:             d.Handlers,
 	})
 	if err != nil {

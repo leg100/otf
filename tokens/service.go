@@ -88,7 +88,7 @@ func NewService(opts Options) (*service, error) {
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
-		db:           newDB(opts.DB, opts.Logger),
+		db:           &pgdb{opts.DB},
 	}
 	svc.api = &api{svc: &svc}
 	svc.web = &webHandlers{

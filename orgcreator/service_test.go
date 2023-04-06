@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/tokens"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +20,7 @@ func TestAuthorize(t *testing.T) {
 	}{
 		{"site admin", &auth.SiteAdmin, false, nil},
 		{"normal user", &auth.User{}, false, nil},
-		{"non-user", &auth.AgentToken{}, false, otf.ErrAccessNotPermitted},
+		{"non-user", &tokens.AgentToken{}, false, otf.ErrAccessNotPermitted},
 		{"restrict to site admin - site admin", &auth.SiteAdmin, true, nil},
 		{"restrict to site admin - user", &auth.User{}, true, otf.ErrAccessNotPermitted},
 	}

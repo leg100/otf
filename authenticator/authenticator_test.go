@@ -14,11 +14,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func TestNewAuthenticators(t *testing.T) {
+func TestNewAuthenticatorService(t *testing.T) {
 	opts := Options{
 		Logger:          logr.Discard(),
 		HostnameService: otf.FakeHostnameService{Host: "fake-host.org"},
-		AuthService:     &fakeAuthenticatorService{},
 		Configs: []cloud.CloudOAuthConfig{
 			{
 				OAuthConfig: &oauth2.Config{

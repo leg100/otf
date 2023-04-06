@@ -1,17 +1,10 @@
 package auth
 
 import (
-	"time"
-
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
-)
-
-const (
-	// default user session expiry
-	defaultExpiry = 24 * time.Hour
 )
 
 type (

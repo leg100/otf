@@ -3,7 +3,6 @@ package tokens
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
@@ -14,7 +13,6 @@ type (
 	// pgdb stores authentication resources in a postgres database
 	pgdb struct {
 		otf.DB // provides access to generated SQL queries
-		logr.Logger
 	}
 	agentTokenRow struct {
 		TokenID          pgtype.Text        `json:"token_id"`
@@ -23,17 +21,6 @@ type (
 		OrganizationName pgtype.Text        `json:"organization_name"`
 	}
 )
-
-func newDB(database otf.DB, logger logr.Logger) *pgdb {
-	return &pgdb{database, logger}
-}
-
-// tx constructs a new pgdb within a transaction.
-func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
-		return callback(newDB(tx, db.Logger))
-	})
-}
 
 func (row agentTokenRow) toAgentToken() *AgentToken {
 	return &AgentToken{
