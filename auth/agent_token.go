@@ -32,6 +32,10 @@ type (
 	}
 )
 
+// NewAgentToken constructs a token for an external agent, returning both the
+// representation of the token, and the cryptographic token itself.
+//
+// TODO(@leg100): Unit test this.
 func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Organization == "" {
 		return nil, nil, fmt.Errorf("organization name cannot be an empty string")
@@ -47,7 +51,7 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 	}
 	token, err := jwt.NewBuilder().
 		Subject(at.ID).
-		Claim("kind", registrySessionKind).
+		Claim("kind", agentTokenKind).
 		Claim("organization", opts.Organization).
 		IssuedAt(time.Now()).
 		Build()

@@ -9,8 +9,7 @@ import (
 type (
 	AgentTokenService interface {
 		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error)
-		// GetAgentToken retrieves an agent token using the given token.
-		GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
+		GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
 		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
 		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 	}

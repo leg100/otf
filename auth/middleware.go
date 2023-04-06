@@ -25,7 +25,7 @@ const (
 
 type (
 	MiddlewareService interface {
-		GetAgentToken(context.Context, string) (*AgentToken, error)
+		GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
 		GetUser(ctx context.Context, spec UserSpec) (*User, error)
 	}
 
