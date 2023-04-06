@@ -105,7 +105,11 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Su
 	if err != nil {
 		return nil, err
 	}
-	return m.GetUser(ctx, auth.UserSpec{Username: &payload.Subject})
+	email, ok := payload.Claims["email"]
+	if !ok {
+		return nil, fmt.Errorf("IAP token is missing email claim")
+	}
+	return m.GetUser(ctx, auth.UserSpec{Username: otf.String(email.(string))})
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Subject, error) {
