@@ -39,8 +39,12 @@ func getGoogleCredentialsPath(t *testing.T) string {
 	path, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
 	if !ok {
 		// fallback to using an environment variable containing the key itself.
-		key, ok := os.LookupEnv("GOOGLE_CREDENTIALS")
-		if !ok {
+		//
+		// NOTE: GOOGLE_CREDENTIALS is set in the github build workflow - if a
+		// contributor triggers a PR from a forked repo then GOOGLE_CREDENTIALS
+		// is set to an empty string, so skip the test in this scenario.
+		key := os.Getenv("GOOGLE_CREDENTIALS")
+		if key == "" {
 			t.Skip("Export a valid GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_CREDENTIALS before running this test")
 		}
 		path = filepath.Join(t.TempDir(), "google_credentials.json")
@@ -50,7 +54,6 @@ func getGoogleCredentialsPath(t *testing.T) string {
 			os.Remove(path)
 		})
 	}
-
 	return path
 }
 
