@@ -114,8 +114,8 @@ func (c *Client) DeleteTeam(ctx context.Context, id string) error {
 	return nil
 }
 
-// CreateRegistrySession creates a registry session via HTTP/JSONAPI
-func (c *Client) CreateRegistrySession(ctx context.Context, opts CreateRegistrySessionOptions) ([]byte, error) {
+// CreateRegistryToken creates a registry token via HTTP/JSONAPI
+func (c *Client) CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error) {
 	req, err := c.NewRequest("POST", "registry/sessions/create", &jsonapi.RegistrySessionCreateOptions{
 		Organization: opts.Organization,
 	})

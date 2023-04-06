@@ -11,6 +11,9 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
+// session cookie stores the session token
+const sessionCookie = "session"
+
 type (
 	StartUserSessionOptions struct {
 		Username *string

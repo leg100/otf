@@ -16,9 +16,10 @@ const (
 	// default user session expiry
 	defaultExpiry = 24 * time.Hour
 
-	userSessionKind     tokenKind = "user"
-	registrySessionKind tokenKind = "registry"
-	agentTokenKind      tokenKind = "agent_token"
+	userSessionKind     authKind = "user_session"
+	registrySessionKind authKind = "registry_session"
+	agentTokenKind      authKind = "agent_token"
+	userTokenKind       authKind = "user_token"
 )
 
 type (
@@ -32,7 +33,7 @@ type (
 		UserService
 
 		StartSession(w http.ResponseWriter, r *http.Request, opts StartUserSessionOptions) error
-		CreateRegistrySessionToken(ctx context.Context, opts CreateRegistrySessionOptions) ([]byte, error)
+		CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error)
 	}
 
 	service struct {
@@ -59,7 +60,7 @@ type (
 	}
 
 	// the kind of authentication token: user session, user token, agent token, etc
-	tokenKind string
+	authKind string
 )
 
 func NewService(opts Options) (*service, error) {

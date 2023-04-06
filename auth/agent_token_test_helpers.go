@@ -12,6 +12,7 @@ func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 			Organization: org,
 			Description:  "lorem ipsum...",
 		},
+		key: newTestJWK(t, "something_secret"),
 	})
 	require.NoError(t, err)
 	return token

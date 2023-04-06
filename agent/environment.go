@@ -62,13 +62,13 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	session, err := svc.CreateRegistrySession(ctx, auth.CreateRegistrySessionOptions{
+	token, err := svc.CreateRegistryToken(ctx, auth.CreateRegistryTokenOptions{
 		Organization: &ws.Organization,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}
-	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(svc.Hostname()), session.Token)
+	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(svc.Hostname()), token)
 	envs = append(envs, tokenEnvVar)
 
 	// retrieve workspace variables and add them to the environment

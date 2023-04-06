@@ -85,9 +85,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin")
 
-	cmd.Flags().BoolVar(&cfg.GoogleJWTConfig.Enabled, "google-jwt-auth", false, "Enable Google JWT authentication")
-	cmd.Flags().StringVar(&cfg.GoogleJWTConfig.Header, "google-jwt-header", "", "The HTTP request header containing the Google JWT")
-	cmd.Flags().StringVar(&cfg.GoogleJWTConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")
+	cmd.Flags().StringVar(&cfg.GoogleIAPConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")
 
 	cfg.LoggerConfig = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())

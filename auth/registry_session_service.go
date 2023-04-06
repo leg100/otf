@@ -11,7 +11,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
-func (a *service) CreateRegistrySessionToken(ctx context.Context, opts CreateRegistrySessionOptions) ([]byte, error) {
+func (a *service) CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error) {
 	if opts.Organization == nil {
 		return nil, fmt.Errorf("missing organization")
 	}

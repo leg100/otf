@@ -31,7 +31,7 @@ type Config struct {
 	DisableRunScheduler          bool
 	RestrictOrganizationCreation bool
 
-	auth.GoogleJWTConfig
+	auth.GoogleIAPConfig
 }
 
 func NewDefaultConfig() Config {

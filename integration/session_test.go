@@ -39,7 +39,7 @@ func TestSession(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/app?", nil)
 			r.AddCookie(cookies[0])
-			mw, err := auth.NewAuthSessionMiddleware(svc, "abcd123")
+			mw, err := auth.NewMiddleware(svc, auth.MiddlewareConfig{Secret: "abcd123"})
 			require.NoError(t, err)
 			mw(upstream).ServeHTTP(w, r)
 			assert.Equal(t, 200, w.Code)

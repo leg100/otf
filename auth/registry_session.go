@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 const (
@@ -19,12 +21,20 @@ type (
 		Organization string
 	}
 
-	CreateRegistrySessionOptions struct {
+	CreateRegistryTokenOptions struct {
 		Organization *string    // required organization
 		RunID        *string    // required ID of run that is accessing the registry
 		Expiry       *time.Time // optionally override expiry
 	}
 )
+
+func NewRegistrySessionFromJWT(token jwt.Token) (*RegistrySession, error) {
+	org, ok := token.Get("organization")
+	if !ok {
+		return nil, fmt.Errorf("missing claim: organization")
+	}
+	return &RegistrySession{Organization: org.(string)}, nil
+}
 
 func (t *RegistrySession) String() string { return "registry-session" }
 func (t *RegistrySession) ID() string     { return "registry-session" }

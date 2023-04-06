@@ -41,12 +41,12 @@ func (a *application) agentTokenNewCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Description = args[0]
 
-			at, err := a.CreateAgentToken(cmd.Context(), opts)
+			token, err := a.CreateAgentToken(cmd.Context(), opts)
 			if err != nil {
 				return err
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created agent token: %s\n", at.Token)
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created agent token: %s\n", token)
 
 			return nil
 		},

@@ -39,7 +39,14 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 	if opts.Description == "" {
 		return nil, nil, fmt.Errorf("description cannot be an empty string")
 	}
+	at := AgentToken{
+		ID:           otf.NewID("at"),
+		CreatedAt:    otf.CurrentTimestamp(),
+		Description:  opts.Description,
+		Organization: opts.Organization,
+	}
 	token, err := jwt.NewBuilder().
+		Subject(at.ID).
 		Claim("kind", registrySessionKind).
 		Claim("organization", opts.Organization).
 		IssuedAt(time.Now()).
@@ -50,12 +57,6 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, opts.key))
 	if err != nil {
 		return nil, nil, err
-	}
-	at := AgentToken{
-		ID:           otf.NewID("at"),
-		CreatedAt:    otf.CurrentTimestamp(),
-		Description:  opts.Description,
-		Organization: opts.Organization,
 	}
 	return &at, serialized, nil
 }

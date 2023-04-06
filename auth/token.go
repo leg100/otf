@@ -18,20 +18,31 @@ type (
 		Username    string // Token belongs to a user
 	}
 
-	TokenCreateOptions struct {
+	// CreateTokenOptions are options for creating a user token via the service
+	// endpoint
+	CreateTokenOptions struct {
 		Description string
 	}
 
+	// NewTokenOptions are options for constructing a user token via the
+	// constructor.
 	NewTokenOptions struct {
-		TokenCreateOptions
+		CreateTokenOptions
 		Username string
 		key      jwk.Key
 	}
 )
 
 func NewToken(opts NewTokenOptions) (*Token, []byte, error) {
+	ut := Token{
+		ID:          otf.NewID("ut"),
+		CreatedAt:   otf.CurrentTimestamp(),
+		Description: opts.Description,
+		Username:    opts.Username,
+	}
 	token, err := jwt.NewBuilder().
-		Claim("kind", registrySessionKind).
+		Subject(ut.ID).
+		Claim("kind", userTokenKind).
 		IssuedAt(time.Now()).
 		Build()
 	if err != nil {
@@ -40,12 +51,6 @@ func NewToken(opts NewTokenOptions) (*Token, []byte, error) {
 	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, opts.key))
 	if err != nil {
 		return nil, nil, err
-	}
-	ut := Token{
-		ID:          otf.NewID("ut"),
-		CreatedAt:   otf.CurrentTimestamp(),
-		Description: opts.Description,
-		Username:    opts.Username,
 	}
 	return &ut, serialized, nil
 }

@@ -61,6 +61,9 @@ type (
 		logs.LogsService
 
 		Handlers []otf.Handlers
+
+		// AuthMiddleware protects authenticated routes
+		AuthMiddleware mux.MiddlewareFunc
 	}
 
 	process interface {
@@ -122,6 +125,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("setting up auth service: %w", err)
 	}
+
+	authMiddleware, err := auth.NewMiddleware(authService, auth.MiddlewareConfig{
+		SiteToken:       cfg.SiteToken,
+		Secret:          cfg.Secret,
+		GoogleIAPConfig: cfg.GoogleIAPConfig,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
+	}
+
 	orgCreatorService := orgcreator.NewService(orgcreator.Options{
 		Logger:                       logger,
 		DB:                           db,
@@ -278,6 +291,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Synchroniser:                authenticatorService,
 		Broker:                      broker,
 		DB:                          db,
+		AuthMiddleware:              authMiddleware,
 		agent:                       agent,
 	}, nil
 }
@@ -295,11 +309,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		d.DB.Close()
 	}()
 
-	sessionMiddleware, err := auth.NewAuthSessionMiddleware(d.AuthService, d.Secret)
-	if err != nil {
-		return fmt.Errorf("setting up authentication middleware: %w", err)
-	}
-
 	// Construct web server and start listening on port
 	server, err := http.NewServer(d.Logger, http.ServerConfig{
 		SSL:                  d.SSL,
@@ -307,14 +316,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		KeyFile:              d.KeyFile,
 		EnableRequestLogging: d.EnableRequestLogging,
 		DevMode:              d.DevMode,
-		Middleware: []mux.MiddlewareFunc{
-			auth.NewAuthTokenMiddleware(d.AuthService, auth.AuthenticateTokenConfig{
-				SiteToken:       d.SiteToken,
-				GoogleJWTConfig: d.GoogleJWTConfig,
-			}),
-			sessionMiddleware,
-		},
-		Handlers: d.Handlers,
+		Middleware:           []mux.MiddlewareFunc{d.AuthMiddleware},
+		Handlers:             d.Handlers,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
@@ -332,9 +335,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		d.SetHostname(otf.NormalizeAddress(listenAddress))
 	}
 	d.V(0).Info("set system hostname", "hostname", d.Hostname())
-
-	// Start purging sessions on a regular interval
-	d.StartExpirer(ctx)
 
 	// Run pubsub broker and wait for it to start listening
 	isListening := make(chan struct{})

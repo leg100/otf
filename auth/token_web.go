@@ -27,12 +27,12 @@ func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	var opts TokenCreateOptions
+	var opts CreateTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := h.svc.CreateToken(r.Context(), opts)
+	_, token, err := h.svc.CreateToken(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

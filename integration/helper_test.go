@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -268,21 +267,6 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
-func (s *testDaemon) createRegistrySession(t *testing.T, ctx context.Context, org *organization.Organization, expiry *time.Time) *auth.RegistrySession {
-	t.Helper()
-
-	if org == nil {
-		org = s.createOrganization(t, ctx)
-	}
-
-	rs, err := s.CreateRegistrySession(ctx, auth.CreateRegistrySessionOptions{
-		Organization: &org.Name,
-		Expiry:       expiry,
-	})
-	require.NoError(t, err)
-	return rs
-}
-
 func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) *auth.Token {
 	t.Helper()
 
@@ -292,9 +276,9 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 		ctx = otf.AddSubjectToContext(ctx, user)
 	}
 
-	token, err := s.CreateToken(ctx, &auth.TokenCreateOptions{
+	ut, _, err := s.CreateToken(ctx, auth.CreateTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)
-	return token
+	return ut
 }

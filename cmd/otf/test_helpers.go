@@ -47,9 +47,9 @@ func withRun(run *run.Run) fakeOption {
 	}
 }
 
-func withAgentToken(at *auth.AgentToken) fakeOption {
+func withAgentToken(token []byte) fakeOption {
 	return func(c *fakeClient) {
-		c.agentToken = at
+		c.agentToken = token
 	}
 }
 
@@ -64,7 +64,7 @@ type fakeClient struct {
 	team       *auth.Team
 	workspaces []*workspace.Workspace
 	run        *run.Run
-	agentToken *auth.AgentToken
+	agentToken []byte
 	tarball    []byte
 	client.Client
 }
@@ -145,6 +145,6 @@ func (f *fakeClient) DownloadConfig(context.Context, string) ([]byte, error) {
 	return f.tarball, nil
 }
 
-func (f *fakeClient) CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) (*auth.AgentToken, error) {
+func (f *fakeClient) CreateAgentToken(ctx context.Context, opts auth.CreateAgentTokenOptions) ([]byte, error) {
 	return f.agentToken, nil
 }

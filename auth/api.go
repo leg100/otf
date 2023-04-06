@@ -179,7 +179,7 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.CreateRegistrySessionToken(r.Context(), CreateRegistrySessionOptions{
+	token, err := h.svc.CreateRegistryToken(r.Context(), CreateRegistryTokenOptions{
 		Organization: opts.Organization,
 	})
 	if err != nil {

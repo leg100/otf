@@ -9,10 +9,11 @@ import (
 
 func NewTestToken(t *testing.T, org string) *Token {
 	token, _, err := NewToken(NewTokenOptions{
-		Username: uuid.NewString(),
-		TokenCreateOptions: TokenCreateOptions{
+		CreateTokenOptions: CreateTokenOptions{
 			Description: "lorem ipsum...",
 		},
+		Username: uuid.NewString(),
+		key: newTestJWK(t, "something_secret"),
 	})
 	require.NoError(t, err)
 	return token
