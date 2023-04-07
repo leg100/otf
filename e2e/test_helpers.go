@@ -125,6 +125,8 @@ func createAgentToken(t *testing.T, organization, hostname, description string) 
 
 // newRootModule creates a terraform root module, returning its directory path
 func newRootModule(t *testing.T, hostname, organization, workspace string) string {
+	t.Helper()
+
 	config := []byte(fmt.Sprintf(`
 terraform {
   backend "remote" {
@@ -147,6 +149,8 @@ resource "null_resource" "e2e" {}
 }
 
 func addBuildsToPath(t *testing.T) {
+	t.Helper()
+
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	t.Setenv("PATH", path.Join(wd, "../_build")+":"+os.Getenv("PATH"))
@@ -155,6 +159,8 @@ func addBuildsToPath(t *testing.T) {
 // matchText is a custom chromedp Task that extracts text content using the
 // selector and asserts that it matches the wanted string.
 func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
+	t.Helper()
+
 	return func(ctx context.Context) error {
 		var got string
 		err := chromedp.Text(selector, &got, chromedp.NodeVisible).Do(ctx)
@@ -165,6 +171,8 @@ func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
 }
 
 func sendGithubPushEvent(t *testing.T, payload []byte, url, secret string) {
+	t.Helper()
+
 	// generate signature for push event
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(payload)
@@ -188,6 +196,8 @@ func sendGithubPushEvent(t *testing.T, payload []byte, url, secret string) {
 
 // okDialog - Click OK on any browser javascript dialog boxes that pop up
 func okDialog(t *testing.T, ctx context.Context) {
+	t.Helper()
+
 	chromedp.ListenTarget(ctx, func(ev any) {
 		switch ev.(type) {
 		case *page.EventJavascriptDialogOpening:
