@@ -52,18 +52,30 @@ func TestWorkspace_Create(t *testing.T) {
 }
 
 func TestGetWorkspaceHandler(t *testing.T) {
-	ws := &Workspace{ID: "ws-123"}
-	app := fakeWebHandlers(t, withWorkspaces(ws))
-
-	q := "/?workspace_id=ws-123"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-	app.getWorkspace(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
+	tests := []struct {
+		name      string
+		workspace *Workspace
+	}{
+		{
+			"unlocked", &Workspace{ID: "ws-unlocked"},
+		},
+		{
+			"locked", &Workspace{ID: "ws-unlocked", Lock: Lock{LockedState: UserLock{}}},
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := fakeWebHandlers(t, withWorkspaces(tt.workspace))
 
-	// TODO: another test for retrieving latest run
+			q := "/?workspace_id=ws-123"
+			r := httptest.NewRequest("GET", q, nil)
+			w := httptest.NewRecorder()
+			app.getWorkspace(w, r)
+			if !assert.Equal(t, 200, w.Code) {
+				t.Log(t, w.Body.String())
+			}
+		})
+	}
 }
 
 func TestWorkspace_GetByName(t *testing.T) {
