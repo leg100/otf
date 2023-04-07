@@ -46,12 +46,15 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 				return err
 			}
 
-			d, err := daemon.New(cmd.Context(), logger, cfg)
+			// Confer superuser privileges on all calls to service endpoints
+			ctx := otf.AddSubjectToContext(cmd.Context(), &otf.Superuser{Username: "app-user"})
+
+			d, err := daemon.New(ctx, logger, cfg)
 			if err != nil {
 				return err
 			}
 			// block until ^C received
-			return d.Start(cmd.Context(), make(chan struct{}))
+			return d.Start(ctx, make(chan struct{}))
 		},
 	}
 	cmd.SetOut(out)

@@ -91,7 +91,7 @@ WHERE t.token_id = pggen.arg('token_id')
 -- name: UpdateUserSiteAdmins :many
 UPDATE users
 SET site_admin = true
-WHERE username = ANY(pggen.arg('usernames'))
+WHERE username = ANY(pggen.arg('usernames')::text[])
 RETURNING username
 ;
 
