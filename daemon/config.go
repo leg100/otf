@@ -1,9 +1,10 @@
 package daemon
 
 import (
+	"reflect"
+
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/cloud"
-	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/gitlab"
 	"github.com/leg100/otf/inmem"
@@ -14,7 +15,6 @@ import (
 // the flag definitions in ./cmd/otfd
 type Config struct {
 	AgentConfig                  *agent.Config
-	LoggerConfig                 *cmdutil.LoggerConfig
 	CacheConfig                  *inmem.CacheConfig
 	Github                       cloud.CloudOAuthConfig
 	Gitlab                       cloud.CloudOAuthConfig
@@ -28,26 +28,32 @@ type Config struct {
 	CertFile, KeyFile            string
 	EnableRequestLogging         bool
 	DevMode                      bool
-	DisableRunScheduler          bool
+	DisableScheduler             bool
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
 
 	tokens.GoogleIAPConfig
 }
 
-func NewDefaultConfig() Config {
-	return Config{
-		AgentConfig: &agent.Config{
+func ApplyDefaults(cfg *Config) {
+	if cfg.AgentConfig == nil {
+		cfg.AgentConfig = &agent.Config{
 			Concurrency: agent.DefaultConcurrency,
-		},
-		CacheConfig: &inmem.CacheConfig{},
-		Github: cloud.CloudOAuthConfig{
+		}
+	}
+	if cfg.CacheConfig == nil {
+		cfg.CacheConfig = &inmem.CacheConfig{}
+	}
+	if reflect.ValueOf(cfg.Github).IsZero() {
+		cfg.Github = cloud.CloudOAuthConfig{
 			Config:      github.Defaults(),
 			OAuthConfig: github.OAuthDefaults(),
-		},
-		Gitlab: cloud.CloudOAuthConfig{
+		}
+	}
+	if reflect.ValueOf(cfg.Gitlab).IsZero() {
+		cfg.Gitlab = cloud.CloudOAuthConfig{
 			Config:      gitlab.Defaults(),
 			OAuthConfig: gitlab.OAuthDefaults(),
-		},
+		}
 	}
 }

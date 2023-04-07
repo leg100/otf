@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,8 +21,8 @@ func TestBroker(t *testing.T) {
 
 	// simulate a cluster of two otfd nodes sharing a connstr
 	connstr := sql.NewTestDB(t)
-	local := setup(t, &config{connstr: &connstr})
-	remote := setup(t, &config{connstr: &connstr})
+	local := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	remote := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
 	localsub, err := local.Subscribe(ctx, "")
 	require.NoError(t, err)

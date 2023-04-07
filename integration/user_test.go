@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,10 +20,10 @@ func TestUser(t *testing.T) {
 
 	t.Run("set site admins", func(t *testing.T) {
 		connstr := sql.NewTestDB(t)
-		svc := setup(t, &config{
-			connstr:    &connstr,
-			siteAdmins: []string{"bob", "alice", "sue"},
-		})
+		svc := setup(t, &config{Config: daemon.Config{
+			Database:   connstr,
+			SiteAdmins: []string{"bob", "alice", "sue"},
+		}})
 
 		areSiteAdmins := func(want bool) {
 			for _, username := range []string{"bob", "alice", "sue"} {
@@ -36,7 +37,9 @@ func TestUser(t *testing.T) {
 		// Start another daemon with *no* site admins specified and verify that
 		// bob, alice and sue are no longer site admins.
 		t.Run("reset", func(t *testing.T) {
-			svc = setup(t, &config{connstr: &connstr})
+			svc = setup(t, &config{Config: daemon.Config{
+				Database: connstr,
+			}})
 			areSiteAdmins(false)
 		})
 	})

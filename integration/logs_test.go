@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,8 +131,8 @@ func TestClusterLogs(t *testing.T) {
 
 	// simulate a cluster of two otfd nodes
 	connstr := sql.NewTestDB(t)
-	local := setup(t, &config{connstr: &connstr})
-	remote := setup(t, &config{connstr: &connstr})
+	local := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	remote := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)

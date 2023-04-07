@@ -354,7 +354,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Run logs caching proxy
 	g.Go(func() error { return d.StartProxy(ctx) })
 
-	if !d.DisableRunScheduler {
+	if !d.DisableScheduler {
 		// Run scheduler - if there is another scheduler running already then
 		// this'll wait until the other scheduler exits.
 		g.Go(func() error {

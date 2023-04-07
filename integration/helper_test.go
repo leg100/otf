@@ -27,18 +27,18 @@ import (
 )
 
 type (
+	// daemon for integration tests
 	testDaemon struct {
 		*daemon.Daemon
 
 		vcsServer
 	}
 
+	// configures the daemon for integration tests
 	config struct {
-		repo             string  // create repo on stub github server
-		connstr          *string // use this database conn string for tests rather than one specifically created for test.
-		disableScheduler bool    // don't start the run scheduler
-		secret           string
-		siteAdmins       []string
+		daemon.Config
+
+		repo string // create repo on stub github server
 	}
 
 	// some tests want to know whether a webhook has been created on the vcs
@@ -48,40 +48,34 @@ type (
 	}
 )
 
-// setup configures otfd services for use in a test.
+// setup configures and starts an otfd daemon for an integration test
 func setup(t *testing.T, cfg *config) *testDaemon {
 	t.Helper()
 
-	dcfg := daemon.NewDefaultConfig()
-
-	// use caller provided connstr or new connstr
-	var connstr string
-	if cfg != nil && cfg.connstr != nil {
-		connstr = *cfg.connstr
-	} else {
-		connstr = sql.NewTestDB(t)
-	}
-	dcfg.Database = connstr
-
-	if cfg != nil && cfg.disableScheduler {
-		dcfg.DisableRunScheduler = true
-	}
-	if cfg != nil && cfg.secret != "" {
-		dcfg.Secret = cfg.secret
-	} else {
-		dcfg.Secret = "dklfjfldsfjfj"
-	}
-	if cfg != nil && cfg.siteAdmins != nil {
-		dcfg.SiteAdmins = cfg.siteAdmins
-	}
-
-	// Configure and start stub github server
+	// Options for the stub github server.
 	var ghopts []github.TestServerOption
-	if cfg != nil && cfg.repo != "" {
+
+	if cfg == nil {
+		cfg = &config{}
+	}
+
+	// Setup database if not specified
+	if cfg.Database == "" {
+		cfg.Database = sql.NewTestDB(t)
+	}
+	// Setup secret if not specified
+	if cfg.Secret == "" {
+		cfg.Secret = otf.GenerateRandomString(16)
+	}
+	// Add repo to stub github server if specified
+	if cfg.repo != "" {
 		ghopts = append(ghopts, github.WithRepo(cfg.repo))
 	}
+	daemon.ApplyDefaults(&cfg.Config)
+
+	// Start stub github server
 	githubServer, githubCfg := github.NewTestServer(t, ghopts...)
-	dcfg.Github.Config = githubCfg
+	cfg.Github.Config = githubCfg
 
 	// Configure logger; discard logs by default
 	var logger logr.Logger
@@ -96,7 +90,7 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 	// Confer superuser privileges on all calls to service endpoints
 	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{Username: "app-user"})
 
-	d, err := daemon.New(ctx, logger, dcfg)
+	d, err := daemon.New(ctx, logger, cfg.Config)
 	require.NoError(t, err)
 
 	// cancel ctx upon test completion
