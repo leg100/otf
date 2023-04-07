@@ -109,7 +109,7 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Su
 	if !ok {
 		return nil, fmt.Errorf("IAP token is missing email claim")
 	}
-	return m.GetUser(ctx, auth.UserSpec{Username: otf.String(email.(string))})
+	return m.getOrCreateUser(ctx, email.(string))
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Subject, error) {
@@ -159,14 +159,20 @@ func (m *middleware) validateUIRequest(w http.ResponseWriter, r *http.Request) (
 		}
 		return nil, false
 	}
-	user, err := m.GetUser(r.Context(), auth.UserSpec{
-		Username: otf.String(token.Subject()),
-	})
+	user, err := m.getOrCreateUser(r.Context(), token.Subject())
 	if err != nil {
 		html.FlashError(w, "unable to find user: "+err.Error())
 		return nil, false
 	}
 	return user, true
+}
+
+func (m *middleware) getOrCreateUser(ctx context.Context, username string) (otf.Subject, error) {
+	user, err := m.GetUser(ctx, auth.UserSpec{Username: &username})
+	if err == otf.ErrResourceNotFound {
+		user, err = m.CreateUser(ctx, username)
+	}
+	return user, err
 }
 
 func isProtectedPath(path string) bool {
