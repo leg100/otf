@@ -1,44 +1,33 @@
-package e2e
+package integration
 
 import (
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
-	"github.com/google/uuid"
-	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
 // WorkingDirectory tests setting a working directory on a workspace and checks
 // that terraform runs use configuration from that directory.
 func TestWorkingDirectory(t *testing.T) {
-	org, workspace := setup(t)
+	t.Parallel()
 
-	user := cloud.User{
-		Name:  uuid.NewString(),
-		Teams: []cloud.Team{{Name: "owners", Organization: org}},
-	}
+	daemon := setup(t, nil)
+	user, ctx := daemon.createUserCtx(t, ctx)
+	org := daemon.createOrganization(t, ctx)
 
-	daemon := &daemon{}
-	daemon.withGithubUser(&user)
-	hostname := daemon.start(t)
-
-	// create browser
-	ctx, cancel := chromedp.NewContext(allocator)
-	defer cancel()
-
-	// login, create workspace and set working directory
-	err := chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Name),
-		createWorkspaceTasks(t, hostname, org, workspace),
+	// create workspace and set working directory
+	browser := createBrowserCtx(t)
+	err := chromedp.Run(browser, chromedp.Tasks{
+		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
+		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(hostname, org, workspace)),
+			chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-workspace")),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -58,7 +47,7 @@ func TestWorkingDirectory(t *testing.T) {
 
 	// create root module along with a sub-directory containing the config we're
 	// going to test
-	root := newRootModule(t, hostname, org, workspace)
+	root := newRootModule(t, daemon.Hostname(), org.Name, "my-workspace")
 	subdir := path.Join(root, "subdir")
 	err = os.Mkdir(subdir, 0o755)
 	require.NoError(t, err)
@@ -68,31 +57,15 @@ resource "null_resource" "subdir" {}
 	err = os.WriteFile(filepath.Join(subdir, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
-	// ensure tf cli has a token
-	err = chromedp.Run(ctx, terraformLoginTasks(t, hostname))
-	require.NoError(t, err)
-
 	// run init in the *root* module
-	cmd := exec.Command("terraform", "init", "-no-color")
-	cmd.Dir = root
-	out, err := cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
+	_ = daemon.tfcli(t, ctx, "init", root)
 
 	// run plan in the *root* module
-	cmd = exec.Command("terraform", "plan", "-no-color")
-	cmd.Dir = root
-	out, err = cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
+	out := daemon.tfcli(t, ctx, "plan", root)
 	require.Contains(t, string(out), `null_resource.subdir will be created`)
 
 	// run apply in the *root* module
-	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
-	cmd.Dir = root
-	out, err = cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
+	out = daemon.tfcli(t, ctx, "apply", root, "-auto-approve")
 	require.Contains(t, string(out), `null_resource.subdir: Creating...`)
 	require.Contains(t, string(out), `null_resource.subdir: Creation complete`)
 }

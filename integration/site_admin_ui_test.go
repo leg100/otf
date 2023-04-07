@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSiteAdmin demonstrates signing into the web app as a site admin, using
+// TestSiteAdminUI demonstrates signing into the web app as a site admin, using
 // their super powers to create and delete an organization.
-func TestSiteAdmin(t *testing.T) {
+func TestSiteAdminUI(t *testing.T) {
 	t.Parallel()
 
 	daemon := setup(t, &config{Config: daemon.Config{
