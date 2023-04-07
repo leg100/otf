@@ -47,14 +47,7 @@ func TestLogs(t *testing.T) {
 		err := svc.PutChunk(ctx, otf.PutChunkOptions{
 			RunID: run.ID,
 			Phase: otf.PlanPhase,
-			Data:  []byte("\x02hello"),
-		})
-		require.NoError(t, err)
-
-		err = svc.PutChunk(ctx, otf.PutChunkOptions{
-			RunID: run.ID,
-			Phase: otf.PlanPhase,
-			Data:  []byte(" world\x03"),
+			Data:  []byte("\x02hello world\x03"),
 		})
 		require.NoError(t, err)
 
@@ -64,7 +57,7 @@ func TestLogs(t *testing.T) {
 			want otf.Chunk
 		}{
 			{
-				name: "all chunks",
+				name: "entire chunk",
 				opts: otf.GetChunkOptions{
 					RunID: run.ID,
 					Phase: otf.PlanPhase,
