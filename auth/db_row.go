@@ -21,6 +21,7 @@ func (row userRow) toUser() *User {
 		CreatedAt: row.CreatedAt.Time.UTC(),
 		UpdatedAt: row.UpdatedAt.Time.UTC(),
 		Username:  row.Username.String,
+		SiteAdmin: row.SiteAdmin,
 	}
 	for _, tr := range row.Teams {
 		user.Teams = append(user.Teams, teamRow(tr).toTeam())

@@ -156,8 +156,17 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 }
 
 // SetSiteAdmins authoritatively promotes users with the given usernames to site
-// admins. Any unspecified users that are currently site admins are demoted.
+// admins. If no such users exist then they are created. Any unspecified users
+// that are currently site admins are demoted.
 func (a *service) SetSiteAdmins(ctx context.Context, usernames ...string) error {
+	for _, username := range usernames {
+		_, err := a.db.getUser(ctx, UserSpec{Username: &username})
+		if err == otf.ErrResourceNotFound {
+			if _, err = a.CreateUser(ctx, username); err != nil {
+				return err
+			}
+		}
+	}
 	if err := a.db.setSiteAdmins(ctx, usernames...); err != nil {
 		a.Error(err, "setting site admins", "users", usernames)
 		return err

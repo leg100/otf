@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,6 +16,30 @@ func TestUser(t *testing.T) {
 
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+
+	t.Run("set site admins", func(t *testing.T) {
+		connstr := sql.NewTestDB(t)
+		svc := setup(t, &config{
+			connstr:    &connstr,
+			siteAdmins: []string{"bob", "alice", "sue"},
+		})
+
+		areSiteAdmins := func(want bool) {
+			for _, username := range []string{"bob", "alice", "sue"} {
+				admin, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(username)})
+				require.NoError(t, err)
+				assert.Equal(t, want, admin.IsSiteAdmin())
+			}
+		}
+		areSiteAdmins(true)
+
+		// Start another daemon with *no* site admins specified and verify that
+		// bob, alice and sue are no longer site admins.
+		t.Run("reset", func(t *testing.T) {
+			svc = setup(t, &config{connstr: &connstr})
+			areSiteAdmins(false)
+		})
+	})
 
 	t.Run("get", func(t *testing.T) {
 		svc := setup(t, nil)

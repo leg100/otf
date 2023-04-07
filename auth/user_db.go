@@ -124,9 +124,11 @@ func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) error {
 		}
 		// ...then promote any specified usernames
 		if len(usernames) > 0 {
-			if _, err := tx.UpdateUserSiteAdmins(ctx, usernames); err != nil {
+			users, err := tx.UpdateUserSiteAdmins(ctx, usernames)
+			if err != nil {
 				return err
 			}
+			db.Info("made users site admins", "users", users)
 		}
 		return nil
 	})

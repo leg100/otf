@@ -305,8 +305,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 // Start the otfd daemon and block until ctx is cancelled or an error is
 // returned. The started channel is closed once the daemon has started.
 func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
-	// Give superuser privileges to all server processes
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
 	// Cancel context the first time a func started with g.Go() fails
 	g, ctx := errgroup.WithContext(ctx)
 

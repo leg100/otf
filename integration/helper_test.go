@@ -38,6 +38,7 @@ type (
 		connstr          *string // use this database conn string for tests rather than one specifically created for test.
 		disableScheduler bool    // don't start the run scheduler
 		secret           string
+		siteAdmins       []string
 	}
 
 	// some tests want to know whether a webhook has been created on the vcs
@@ -70,6 +71,9 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 	} else {
 		dcfg.Secret = "dklfjfldsfjfj"
 	}
+	if cfg != nil && cfg.siteAdmins != nil {
+		dcfg.SiteAdmins = cfg.siteAdmins
+	}
 
 	// Configure and start stub github server
 	var ghopts []github.TestServerOption
@@ -89,11 +93,14 @@ func setup(t *testing.T, cfg *config) *testDaemon {
 		logger = logr.Discard()
 	}
 
-	d, err := daemon.New(context.Background(), logger, dcfg)
+	// Confer superuser privileges on all calls to service endpoints
+	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{Username: "app-user"})
+
+	d, err := daemon.New(ctx, logger, dcfg)
 	require.NoError(t, err)
 
 	// cancel ctx upon test completion
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	// start daemon and upon test completion check that it exited cleanly
 	done := make(chan error)

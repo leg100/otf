@@ -451,7 +451,7 @@ func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults
 
 const updateUserSiteAdminsSQL = `UPDATE users
 SET site_admin = true
-WHERE username = ANY($1)
+WHERE username = ANY($1::text[])
 RETURNING username
 ;`
 
