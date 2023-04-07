@@ -30,6 +30,7 @@ type Config struct {
 	DevMode                      bool
 	DisableRunScheduler          bool
 	RestrictOrganizationCreation bool
+	SiteAdmins                   []string
 
 	tokens.GoogleIAPConfig
 }

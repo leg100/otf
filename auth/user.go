@@ -26,6 +26,7 @@ type (
 		CreatedAt time.Time
 		UpdatedAt time.Time
 		Username  string  // username is globally unique
+		SiteAdmin bool    // Indicates whether user is a site admin
 		Teams     []*Team // user belongs to many teams
 	}
 
@@ -90,7 +91,13 @@ func (u *User) Organizations() (organizations []string) {
 	return organizations
 }
 
-func (u *User) IsSiteAdmin() bool { return u.ID == SiteAdminID }
+// IsSiteAdmin determines whether user is a site admin. A user is a site admin
+// in either of two cases:
+// (1) their account has been promoted to site admin (think sudo)
+// (2) the account is *the* site admin (think root)
+func (u *User) IsSiteAdmin() bool {
+	return u.SiteAdmin || u.ID == SiteAdminID
+}
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	// Only site admin can perform actions on the site

@@ -18,6 +18,7 @@ type (
 		DeleteUser(ctx context.Context, username string) error
 		AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
 		RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
+		SetSiteAdmins(ctx context.Context, usernames ...string) error
 	}
 	TeamMembershipOptions struct {
 		Username string `schema:"username,required"`
@@ -146,5 +147,16 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 	}
 	a.V(0).Info("removed team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
 
+	return nil
+}
+
+// SetSiteAdmins authoritatively promotes users with the given usernames to site
+// admins. Any unspecified users that are currently site admins are demoted.
+func (a *service) SetSiteAdmins(ctx context.Context, usernames ...string) error {
+	if err := a.db.setSiteAdmins(ctx, usernames...); err != nil {
+		a.Error(err, "setting site admins", "users", usernames)
+		return err
+	}
+	a.V(0).Info("set site admins", "users", usernames)
 	return nil
 }

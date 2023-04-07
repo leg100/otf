@@ -11,6 +11,7 @@ type userRow struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	SiteAdmin bool               `json:"site_admin"`
 	Teams     []pggen.Teams      `json:"teams"`
 }
 

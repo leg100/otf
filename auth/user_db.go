@@ -115,3 +115,20 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	}
 	return nil
 }
+
+func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) error {
+	err := db.Tx(ctx, func(tx otf.DB) error {
+		// First demote any existing site admins...
+		if _, err := tx.ResetUserSiteAdmins(ctx); err != nil {
+			return err
+		}
+		// ...then promote any specified usernames
+		if len(usernames) > 0 {
+			if _, err := tx.UpdateUserSiteAdmins(ctx, usernames); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return sql.Error(err)
+}

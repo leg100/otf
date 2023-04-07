@@ -88,6 +88,20 @@ JOIN tokens t ON u.username = t.username
 WHERE t.token_id = pggen.arg('token_id')
 ;
 
+-- name: UpdateUserSiteAdmins :many
+UPDATE users
+SET site_admin = true
+WHERE username = ANY(pggen.arg('usernames'))
+RETURNING username
+;
+
+-- name: ResetUserSiteAdmins :many
+UPDATE users
+SET site_admin = false
+WHERE site_admin = true
+RETURNING username
+;
+
 -- name: DeleteUserByID :one
 DELETE
 FROM users
