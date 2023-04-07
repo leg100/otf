@@ -73,18 +73,19 @@ func _() {
 	_ = x[DeleteConfigurationVersionAction-62]
 	_ = x[CreateUserAction-63]
 	_ = x[ListUsersAction-64]
-	_ = x[DeleteUserAction-65]
-	_ = x[CreateTeamAction-66]
-	_ = x[UpdateTeamAction-67]
-	_ = x[GetTeamAction-68]
-	_ = x[ListTeamsAction-69]
-	_ = x[AddTeamMembershipAction-70]
-	_ = x[RemoveTeamMembershipAction-71]
+	_ = x[GetUserAction-65]
+	_ = x[DeleteUserAction-66]
+	_ = x[CreateTeamAction-67]
+	_ = x[UpdateTeamAction-68]
+	_ = x[GetTeamAction-69]
+	_ = x[ListTeamsAction-70]
+	_ = x[AddTeamMembershipAction-71]
+	_ = x[RemoveTeamMembershipAction-72]
 }
 
-const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionListOrganizationsActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentTokenActionListAgentTokensActionDeleteAgentTokenActionCreateRegistrySessionActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionDeleteModuleVersionActionCreateVariableActionUpdateVariableActionListVariablesActionGetVariableActionDeleteVariableActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionEnqueuePlanActionStartPhaseActionFinishPhaseActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDownloadStateActionGetStateVersionOutputActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionCreateUserActionListUsersActionDeleteUserActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsActionAddTeamMembershipActionRemoveTeamMembershipAction"
+const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionListOrganizationsActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentTokenActionListAgentTokensActionDeleteAgentTokenActionCreateRegistrySessionActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionDeleteModuleVersionActionCreateVariableActionUpdateVariableActionListVariablesActionGetVariableActionDeleteVariableActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionEnqueuePlanActionStartPhaseActionFinishPhaseActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDownloadStateActionGetStateVersionOutputActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionCreateUserActionListUsersActionGetUserActionDeleteUserActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsActionAddTeamMembershipActionRemoveTeamMembershipAction"
 
-var _Action_index = [...]uint16{0, 11, 35, 59, 80, 103, 124, 148, 171, 191, 213, 236, 258, 279, 301, 328, 346, 371, 389, 406, 421, 439, 464, 484, 504, 523, 540, 560, 572, 586, 600, 615, 631, 646, 661, 678, 694, 711, 725, 739, 756, 776, 793, 813, 833, 851, 872, 893, 921, 951, 972, 991, 1012, 1038, 1062, 1085, 1106, 1125, 1152, 1184, 1215, 1244, 1278, 1310, 1326, 1341, 1357, 1373, 1389, 1402, 1417, 1440, 1466}
+var _Action_index = [...]uint16{0, 11, 35, 59, 80, 103, 124, 148, 171, 191, 213, 236, 258, 279, 301, 328, 346, 371, 389, 406, 421, 439, 464, 484, 504, 523, 540, 560, 572, 586, 600, 615, 631, 646, 661, 678, 694, 711, 725, 739, 756, 776, 793, 813, 833, 851, 872, 893, 921, 951, 972, 991, 1012, 1038, 1062, 1085, 1106, 1125, 1152, 1184, 1215, 1244, 1278, 1310, 1326, 1341, 1354, 1370, 1386, 1402, 1415, 1430, 1453, 1479}
 
 func (i Action) String() string {
 	if i < 0 || i >= Action(len(_Action_index)-1) {

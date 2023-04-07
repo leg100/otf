@@ -83,6 +83,7 @@ const (
 
 	CreateUserAction
 	ListUsersAction
+	GetUserAction
 	DeleteUserAction
 
 	CreateTeamAction

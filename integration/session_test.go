@@ -38,7 +38,7 @@ func TestSession(t *testing.T) {
 				assert.Equal(t, want.Username, got.Username)
 			})
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest("GET", "/app?", nil)
+			r := httptest.NewRequest("GET", "/app/protected", nil)
 			r.AddCookie(cookies[0])
 			svc.Middleware()(upstream).ServeHTTP(w, r)
 			assert.Equal(t, 200, w.Code)
