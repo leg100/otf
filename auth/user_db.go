@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
@@ -116,21 +117,40 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	return nil
 }
 
-func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) error {
-	err := db.Tx(ctx, func(tx otf.DB) error {
+// setSiteAdmins authoritatively promotes the given users to site admins,
+// demoting all other site admins. The list of newly promoted and demoted site
+// admins is returned.
+func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promoted []string, demoted []string, err error) {
+	var resetted, updated []pgtype.Text
+	err = db.Tx(ctx, func(tx otf.DB) (err error) {
 		// First demote any existing site admins...
-		if _, err := tx.ResetUserSiteAdmins(ctx); err != nil {
+		resetted, err = tx.ResetUserSiteAdmins(ctx)
+		if err != nil {
 			return err
 		}
 		// ...then promote any specified usernames
 		if len(usernames) > 0 {
-			users, err := tx.UpdateUserSiteAdmins(ctx, usernames)
+			updated, err = tx.UpdateUserSiteAdmins(ctx, usernames)
 			if err != nil {
 				return err
 			}
-			db.Info("made users site admins", "users", users)
 		}
 		return nil
 	})
-	return sql.Error(err)
+	return pgtextSliceDiff(updated, resetted), pgtextSliceDiff(resetted, updated), nil
+}
+
+// pgtextSliceDiff returns the elements in `a` that aren't in `b`.
+func pgtextSliceDiff(a, b []pgtype.Text) []string {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x.String] = struct{}{}
+	}
+	var diff []string
+	for _, x := range a {
+		if _, found := mb[x.String]; !found {
+			diff = append(diff, x.String)
+		}
+	}
+	return diff
 }

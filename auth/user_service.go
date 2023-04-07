@@ -167,10 +167,11 @@ func (a *service) SetSiteAdmins(ctx context.Context, usernames ...string) error 
 			}
 		}
 	}
-	if err := a.db.setSiteAdmins(ctx, usernames...); err != nil {
+	promoted, demoted, err := a.db.setSiteAdmins(ctx, usernames...)
+	if err != nil {
 		a.Error(err, "setting site admins", "users", usernames)
 		return err
 	}
-	a.V(0).Info("set site admins", "users", usernames)
+	a.V(0).Info("set site admins", "admins", usernames, "promoted", promoted, "demoted", demoted)
 	return nil
 }
