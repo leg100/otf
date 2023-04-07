@@ -8,14 +8,17 @@ import (
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/daemon"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSandbox demonstrates the sandbox feature, whereby terraform apply is run
 // within an isolated environment.
 func TestSandbox(t *testing.T) {
-	if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
+	_, err := exec.LookPath("bwrap")
+	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("install bwrap before running this test")
 	}
+	require.NoError(t, err)
 
 	daemon := setup(t, &config{Config: daemon.Config{
 		AgentConfig: &agent.Config{
