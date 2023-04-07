@@ -1,11 +1,11 @@
-package e2e
+package integration
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/daemon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,26 +13,23 @@ import (
 // TestSiteAdmin demonstrates signing into the web app as a site admin, using
 // their super powers to create and delete an organization.
 func TestSiteAdmin(t *testing.T) {
-	org, _ := setup(t)
+	t.Parallel()
 
-	daemon := &daemon{}
-	daemon.withFlags("--site-token", "abc123")
-	hostname := daemon.start(t)
+	daemon := setup(t, &config{Config: daemon.Config{
+		SiteToken: "abc123",
+	}})
 
-	ctx, cancel := chromedp.NewContext(allocator)
-	defer cancel()
+	var orgLocation string
 
-	var footerLoginText, loginConfirmation, orgCreated, orgLocation string
-
+	browser := createBrowserCtx(t)
 	// Click OK on any browser javascript dialog boxes that pop up
-	okDialog(t, ctx)
-
-	err := chromedp.Run(ctx, chromedp.Tasks{
+	okDialog(t, browser)
+	err := chromedp.Run(browser, chromedp.Tasks{
 		// login as site admin
-		chromedp.Navigate("https://" + hostname + "/login"),
+		chromedp.Navigate("https://" + daemon.Hostname() + "/login"),
 		screenshot(t),
 		// use the link in the bottom right corner
-		chromedp.Text(".footer-site-login", &footerLoginText, chromedp.NodeVisible),
+		matchText(t, ".footer-site-login", "site admin"),
 		chromedp.Click(".footer-site-login > a", chromedp.NodeVisible),
 		screenshot(t),
 		// enter token
@@ -41,30 +38,27 @@ func TestSiteAdmin(t *testing.T) {
 		screenshot(t),
 		chromedp.Submit("input#token"),
 		screenshot(t),
-		chromedp.Text(".content > p", &loginConfirmation, chromedp.NodeVisible),
+		matchText(t, ".content > p", "You are logged in as site-admin"),
 		// now go to the list of organizations
-		chromedp.Navigate("https://" + hostname + "/app/organizations"),
+		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
 		// add an org
 		chromedp.Click("#new-organization-button", chromedp.NodeVisible),
 		screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
-		input.InsertText(org),
+		input.InsertText("my-new-org"),
 		screenshot(t),
 		chromedp.Submit("input#name"),
 		screenshot(t),
 		chromedp.Location(&orgLocation),
-		chromedp.Text(".flash-success", &orgCreated, chromedp.NodeVisible),
+		matchText(t, ".flash-success", "created organization: my-new-org"),
 		// return to the list of organizations
-		chromedp.Navigate("https://" + hostname + "/app/organizations"),
+		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
 		// delete the organization
 		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
 		screenshot(t),
-		matchText(t, ".flash-success", "deleted organization: "+org),
+		matchText(t, ".flash-success", "deleted organization: my-new-org"),
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, "site admin", footerLoginText)
-	assert.Equal(t, "You are logged in as site-admin", strings.TrimSpace(loginConfirmation))
-	assert.Equal(t, "https://"+hostname+"/app/organizations/"+org, orgLocation)
-	assert.Equal(t, "created organization: "+org, strings.TrimSpace(orgCreated))
+	assert.Equal(t, organizationPath(daemon.Hostname(), "my-new-org"), orgLocation)
 }
