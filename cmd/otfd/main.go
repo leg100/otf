@@ -31,7 +31,10 @@ func main() {
 }
 
 func parseFlags(ctx context.Context, args []string, out io.Writer) error {
-	cfg := daemon.NewDefaultConfig()
+	cfg := daemon.Config{}
+	daemon.ApplyDefaults(&cfg)
+
+	var loggerConfig *cmdutil.LoggerConfig
 
 	cmd := &cobra.Command{
 		Use:           "otfd",
@@ -41,7 +44,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		SilenceErrors: true,
 		Version:       otf.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := cmdutil.NewLogger(cfg.LoggerConfig)
+			logger, err := cmdutil.NewLogger(loggerConfig)
 			if err != nil {
 				return err
 			}
@@ -91,7 +94,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	cmd.Flags().StringVar(&cfg.GoogleIAPConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")
 
-	cfg.LoggerConfig = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
+	loggerConfig = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
