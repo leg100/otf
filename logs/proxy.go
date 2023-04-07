@@ -118,7 +118,7 @@ func (p *proxy) put(ctx context.Context, opts otf.PutChunkOptions) error {
 		Data:   opts.Data,
 		Offset: opts.Offset,
 	}
-	// publish chunk so that other otfd nodes can receive and cache the chunk
+	// publish chunk for caching
 	p.Publish(otf.Event{Type: otf.EventLogChunk, Payload: chunk})
 	return nil
 }
