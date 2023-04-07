@@ -67,25 +67,30 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 				subject otf.Subject
 				err     error
 			)
+			// Until request is authenticated, call service endpoints using
+			// superuser privileges. Once authenticated, the authenticated user
+			// replaces the superuser in the context.
+			ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{})
+
 			if !isProtectedPath(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}
 			if token := r.Header.Get(googleIAPHeader); token != "" {
-				subject, err = mw.validateIAPToken(r.Context(), token)
+				subject, err = mw.validateIAPToken(ctx, token)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusUnauthorized)
 					return
 				}
 			} else if bearer := r.Header.Get("Authorization"); bearer != "" {
-				subject, err = mw.validateBearer(r.Context(), bearer)
+				subject, err = mw.validateBearer(ctx, bearer)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusUnauthorized)
 					return
 				}
 			} else if strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
 				var ok bool
-				subject, ok = mw.validateUIRequest(w, r)
+				subject, ok = mw.validateUIRequest(ctx, w, r)
 				if !ok {
 					html.SendUserToLoginPage(w, r)
 					return
@@ -94,7 +99,7 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 				http.Error(w, "no authentication token found", http.StatusUnauthorized)
 				return
 			}
-			ctx := otf.AddSubjectToContext(r.Context(), subject)
+			ctx = otf.AddSubjectToContext(r.Context(), subject)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -109,7 +114,7 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Su
 	if !ok {
 		return nil, fmt.Errorf("IAP token is missing email claim")
 	}
-	return m.GetUser(ctx, auth.UserSpec{Username: otf.String(email.(string))})
+	return m.getOrCreateUser(ctx, email.(string))
 }
 
 func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Subject, error) {
@@ -144,7 +149,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Sub
 	}
 }
 
-func (m *middleware) validateUIRequest(w http.ResponseWriter, r *http.Request) (otf.Subject, bool) {
+func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (otf.Subject, bool) {
 	cookie, err := r.Cookie(sessionCookie)
 	if err == http.ErrNoCookie {
 		return nil, false
@@ -159,14 +164,20 @@ func (m *middleware) validateUIRequest(w http.ResponseWriter, r *http.Request) (
 		}
 		return nil, false
 	}
-	user, err := m.GetUser(r.Context(), auth.UserSpec{
-		Username: otf.String(token.Subject()),
-	})
+	user, err := m.getOrCreateUser(ctx, token.Subject())
 	if err != nil {
 		html.FlashError(w, "unable to find user: "+err.Error())
 		return nil, false
 	}
 	return user, true
+}
+
+func (m *middleware) getOrCreateUser(ctx context.Context, username string) (otf.Subject, error) {
+	user, err := m.GetUser(ctx, auth.UserSpec{Username: &username})
+	if err == otf.ErrResourceNotFound {
+		user, err = m.CreateUser(ctx, username)
+	}
+	return user, err
 }
 
 func isProtectedPath(path string) bool {

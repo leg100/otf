@@ -46,13 +46,18 @@ func (a *service) CreateUser(ctx context.Context, username string, opts ...NewUs
 }
 
 func (a *service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
-	user, err := a.db.getUser(ctx, spec)
+	subject, err := a.site.CanAccess(ctx, rbac.GetUserAction, "")
 	if err != nil {
-		a.V(2).Info("retrieving user", "spec", spec)
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved user", "username", user.Username)
+	user, err := a.db.getUser(ctx, spec)
+	if err != nil {
+		a.V(2).Info("retrieving user", "spec", spec, "subject", subject)
+		return nil, err
+	}
+
+	a.V(2).Info("retrieved user", "username", user.Username, "subject", subject)
 
 	return user, nil
 }
