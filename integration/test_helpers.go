@@ -359,6 +359,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPath string, args ...string) string {
 	t.Helper()
 
+	// Create user token expressly for terraform cli
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
@@ -384,6 +385,7 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) string {
 	t.Helper()
 
+	// Create user token expressly for otf cli
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
