@@ -96,7 +96,6 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.LockedState = nil
 	} else if r.UserLock != nil {
 		ws.LockedState = UserLock{
-			ID:       r.UserLock.UserID.String,
 			Username: r.UserLock.Username.String,
 		}
 	} else if r.RunLock != nil {

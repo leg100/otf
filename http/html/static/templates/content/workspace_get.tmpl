@@ -22,7 +22,7 @@
       <div>Terraform Version: <span class="data">v{{ .Content.TerraformVersion }}</span></div>
       <div class="workspace-lock">
         {{ if .Content.Locked }}
-          <span class="workspace-lock-status workspace-lock-status-locked" title="locked by {{ .Content.GetLock }}">Locked</span>
+          <span class="workspace-lock-status workspace-lock-status-locked" title="locked by {{ .Content.Lock }}">Locked</span>
           <form action="{{ unlockWorkspacePath .Content.ID }}" method="POST"><button>Unlock</button></form>
         {{ else }}
           <span class="workspace-lock-status workspace-lock-status-unlocked">Unlocked</span>

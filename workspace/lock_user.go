@@ -4,7 +4,7 @@ import "github.com/leg100/otf"
 
 // UserLock is a lock held by a user
 type UserLock struct {
-	ID, Username string
+	Username string
 }
 
 func (l UserLock) String() string { return l.Username }
