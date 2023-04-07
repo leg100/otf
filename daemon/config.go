@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/gitlab"
 	"github.com/leg100/otf/inmem"
@@ -43,6 +44,9 @@ func ApplyDefaults(cfg *Config) {
 	}
 	if cfg.CacheConfig == nil {
 		cfg.CacheConfig = &inmem.CacheConfig{}
+	}
+	if cfg.MaxConfigSize == 0 {
+		cfg.MaxConfigSize = configversion.DefaultConfigMaxSize
 	}
 	if reflect.ValueOf(cfg.Github).IsZero() {
 		cfg.Github = cloud.CloudOAuthConfig{

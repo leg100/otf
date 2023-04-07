@@ -432,7 +432,6 @@ func (s *api) watch(w http.ResponseWriter, r *http.Request) {
 		}
 		otf.WriteSSEEvent(w, data, event.Type, true)
 		flusher.Flush()
-		s.Info("sent event", "run", run.ID)
 	}
 }
 

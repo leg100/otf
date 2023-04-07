@@ -82,3 +82,12 @@ var (
 	ErrRunCancelNotAllowed      = errors.New("run was not planning or applying; cancel not allowed")
 	ErrRunForceCancelNotAllowed = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
 )
+
+type HTTPError struct {
+	Code    int
+	Message string
+}
+
+func (e *HTTPError) Error() string {
+	return e.Message
+}

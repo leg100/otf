@@ -81,7 +81,7 @@ func (a *application) newClient(cfg *http.Config) func(*cobra.Command, []string)
 }
 
 func (a *application) getToken(address string) (string, error) {
-	if token, ok := os.LookupEnv(otf.HostnameCredentialEnv(address)); ok {
+	if token, ok := os.LookupEnv(otf.CredentialEnvKey(address)); ok {
 		return token, nil
 	}
 	if token, ok := os.LookupEnv("OTF_TOKEN"); ok {

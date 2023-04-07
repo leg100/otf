@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/daemon"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -69,7 +68,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 	cmd.Flags().StringSliceVar(&cfg.SiteAdmins, "site-admins", nil, "Promote a list of users to site admin.")
 	cmd.Flags().StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
-	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", configversion.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
+	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", cfg.MaxConfigSize, "Maximum permitted configuration size in bytes.")
 
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")

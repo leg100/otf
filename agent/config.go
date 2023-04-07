@@ -7,7 +7,7 @@ import (
 // Config configures the agent.
 type Config struct {
 	Organization *string // only process runs belonging to org
-	External     bool    // dedicated agent (true) or otfd (false)
+	External     bool    // dedicated agent (true) or integrated into otfd (false)
 	Concurrency  int     // number of workers
 	Sandbox      bool    // isolate privileged ops within sandbox
 	Debug        bool    // toggle debug mode

@@ -3,8 +3,6 @@ package http
 import (
 	"net/http"
 	"os"
-
-	"github.com/hashicorp/go-cleanhttp"
 )
 
 const (
@@ -36,25 +34,18 @@ type Config struct {
 	HTTPClient *http.Client
 	// RetryLogHook is invoked each time a request is retried.
 	RetryLogHook RetryLogHook
-	// insecure skips verification of upstream TLS certs. Should only be used
-	// for testing purposes. NOTE: Only takes effect on SSE connections.
+	// Insecure skips verification of upstream TLS certs.
+	// NOTE: this does not take effect if HTTPClient is non-nil
 	Insecure bool
-	// Options for overriding config
-	options []ConfigOption
 }
 
-type ConfigOption func(*Config) error
-
-// NewConfig constructs a new http client config. Options are only applied when
-// NewClient() is called.
-func NewConfig(opts ...ConfigOption) *Config {
+// NewConfig constructs a new http client config with defaults.
+func NewConfig() *Config {
 	config := &Config{
-		Address:    os.Getenv("TFE_ADDRESS"),
-		BasePath:   DefaultBasePath,
-		Token:      os.Getenv("TFE_TOKEN"),
-		Headers:    make(http.Header),
-		HTTPClient: cleanhttp.DefaultPooledClient(),
-		options:    opts,
+		Address:  os.Getenv("TFE_ADDRESS"),
+		BasePath: DefaultBasePath,
+		Token:    os.Getenv("TFE_TOKEN"),
+		Headers:  make(http.Header),
 	}
 	// Set the default address if none is given.
 	if config.Address == "" {

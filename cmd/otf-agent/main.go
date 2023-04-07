@@ -57,7 +57,7 @@ func run(ctx context.Context, args []string) error {
 			}
 			logger.Info("successfully authenticated", "organization", at.Organization, "token_id", at.ID)
 
-			// Ensure agent only process runs for this org
+			// Ensure agent only processes runs for this org
 			cfg.Organization = otf.String(at.Organization)
 
 			agent, err := agent.NewAgent(logger, app, *cfg)

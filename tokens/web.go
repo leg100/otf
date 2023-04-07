@@ -67,14 +67,10 @@ func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// render a small templated flash message
-	buf := new(bytes.Buffer)
-	if err := h.RenderTemplate("token_created.tmpl", buf, string(token)); err != nil {
+	if err := h.tokenFlashMessage(w, token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, buf.String())
-
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 
@@ -169,14 +165,10 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// render a small templated flash message
-	buf := new(bytes.Buffer)
-	if err := h.RenderTemplate("token_created.tmpl", buf, token); err != nil {
+	if err := h.tokenFlashMessage(w, token); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, buf.String())
-
 	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
 }
 
@@ -226,4 +218,14 @@ func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	html.SetCookie(w, sessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+func (h *webHandlers) tokenFlashMessage(w http.ResponseWriter, token []byte) error {
+	// render a small templated flash message
+	buf := new(bytes.Buffer)
+	if err := h.RenderTemplate("token_created.tmpl", buf, string(token)); err != nil {
+		return err
+	}
+	html.FlashSuccess(w, buf.String())
+	return nil
 }

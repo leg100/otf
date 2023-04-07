@@ -35,9 +35,9 @@ func TestToken(t *testing.T) {
 		// that is created.
 		ctx := otf.AddSubjectToContext(ctx, user)
 
-		_ = svc.createToken(t, ctx, user)
-		_ = svc.createToken(t, ctx, user)
-		_ = svc.createToken(t, ctx, user)
+		svc.createToken(t, ctx, user)
+		svc.createToken(t, ctx, user)
+		svc.createToken(t, ctx, user)
 
 		got, err := svc.ListTokens(ctx)
 		require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestToken(t *testing.T) {
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := otf.AddSubjectToContext(ctx, user)
-		token := svc.createToken(t, ctx, user)
+		token, _ := svc.createToken(t, ctx, user)
 
 		err := svc.DeleteToken(ctx, token.ID)
 		require.NoError(t, err)

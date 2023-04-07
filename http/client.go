@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
@@ -37,13 +39,6 @@ type Client struct {
 }
 
 func NewClient(config Config) (*Client, error) {
-	// Override config with option args
-	for _, o := range config.options {
-		if err := o(&config); err != nil {
-			return nil, err
-		}
-	}
-
 	addr, err := SanitizeAddress(config.Address)
 	if err != nil {
 		return nil, err
@@ -60,6 +55,12 @@ func NewClient(config Config) (*Client, error) {
 	// This value must be provided by the user.
 	if config.Token == "" {
 		return nil, fmt.Errorf("missing API token")
+	}
+
+	if config.HTTPClient == nil {
+		transport := cleanhttp.DefaultPooledTransport()
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: config.Insecure}
+		config.HTTPClient = &http.Client{Transport: transport}
 	}
 
 	// Create the client.

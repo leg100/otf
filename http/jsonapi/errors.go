@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -10,9 +11,10 @@ import (
 
 var codes = map[error]int{
 	otf.ErrResourceNotFound:         http.StatusNotFound,
-	otf.ErrResourceAlreadyExists:    http.StatusConflict,
+	otf.ErrAccessNotPermitted:       http.StatusForbidden,
 	otf.ErrMissingParameter:         http.StatusUnprocessableEntity,
 	otf.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
+	otf.ErrResourceAlreadyExists:    http.StatusConflict,
 	otf.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
 	otf.ErrWorkspaceAlreadyUnlocked: http.StatusConflict,
 	otf.ErrRunDiscardNotAllowed:     http.StatusConflict,
@@ -31,7 +33,17 @@ type ErrorsPayload jsonapi.ErrorsPayload
 
 // Error writes an HTTP response with a JSON-API encoded error.
 func Error(w http.ResponseWriter, err error) {
-	code := lookupHTTPCode(err)
+	var (
+		httpError *otf.HTTPError
+		code      int
+	)
+	// If error is type otf.HTTPError then extract its status code otherwise
+	// lookup the code.
+	if errors.As(err, &httpError) {
+		code = httpError.Code
+	} else {
+		code = lookupHTTPCode(err)
+	}
 	w.Header().Set("Content-type", jsonapi.MediaType)
 	w.WriteHeader(code)
 	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{

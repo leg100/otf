@@ -55,8 +55,8 @@ func TestUser(t *testing.T) {
 		user := svc.createUser(t, ctx,
 			auth.WithTeams(team1, team2))
 
-		token1 := svc.createToken(t, ctx, user)
-		_ = svc.createToken(t, ctx, user)
+		token1, _ := svc.createToken(t, ctx, user)
+		_, _ = svc.createToken(t, ctx, user)
 
 		tests := []struct {
 			name string

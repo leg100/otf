@@ -37,8 +37,14 @@ func NormalizeAddress(addr *net.TCPAddr) string {
 	return fmt.Sprintf("%s:%d", addr.IP.String(), addr.Port)
 }
 
-// HostnameCredentialEnv returns the environment variable key for an API
+// CredentialEnvKey returns the environment variable key for an API
 // token specific to the given hostname.
-func HostnameCredentialEnv(hostname string) string {
+func CredentialEnvKey(hostname string) string {
 	return fmt.Sprintf("TF_TOKEN_%s", strings.ReplaceAll(hostname, ".", "_"))
+}
+
+// CredentialEnv returns a host-specific environment variable credential for
+// terraform.
+func CredentialEnv(hostname string, token []byte) string {
+	return fmt.Sprintf("%s=%s", CredentialEnvKey(hostname), string(token))
 }
