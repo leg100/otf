@@ -22,16 +22,12 @@ endif
 go-tfe-tests: build
 	./hack/go-tfe-tests.bash
 
-.PHONY: e2e
-e2e: build
-	go test -v ./e2e -failfast -timeout 600s -count 1
-
 .PHONY: unit
 unit:
-	go test $$(go list ./... | grep -v e2e)
+	go test $$(go list ./...)
 
 .PHONY: test
-test: lint unit go-tfe-tests e2e
+test: lint unit go-tfe-tests
 
 .PHONY: build
 build:
