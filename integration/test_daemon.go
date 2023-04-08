@@ -359,14 +359,9 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 
 	cmd := exec.Command("terraform", cmdargs...)
 	cmd.Dir = configPath
-	cmd.Env = []string{
-		"PATH=" + os.Getenv("PATH"),
-		"SSL_CERT_FILE=" + os.Getenv("SSL_CERT_FILE"),
+	cmd.Env = append(envs,
 		otf.CredentialEnv(s.Hostname(), token),
-	}
-	if proxy, ok := os.LookupEnv("HTTPS_PROXY"); ok {
-		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxy)
-	}
+	)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }

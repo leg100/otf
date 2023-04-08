@@ -8,5 +8,10 @@ import (
 	"github.com/leg100/otf/auth"
 )
 
-// Context conferring site admin privileges
-var ctx = otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+var (
+	// shared environment variables for individual tests to use
+	envs []string
+
+	// Context conferring site admin privileges
+	ctx = otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+)

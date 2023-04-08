@@ -59,10 +59,9 @@ func TestTerraformLogin(t *testing.T) {
 				expect.PartialMatch(true),
 				// expect.Verbose(testing.Verbose()),
 				expect.Tee(out),
-				expect.SetEnv([]string{
-					fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH")),
-					"SSL_CERT_FILE=./fixtures/cert.pem",
-				}),
+				expect.SetEnv(
+					append(envs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
+				),
 			)
 			require.NoError(t, err)
 			defer e.Close()
