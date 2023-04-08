@@ -42,25 +42,15 @@ jobs:
           go-version-file: 'go.mod'
       -
         name: Lint check
-        run: |
-          make install-linter lint
+        run: make install-linter lint
       -
         name: Vet check
-        run: |
-          make vet
-      -
-        name: Run squid cache
-        run: |
-          make squid
+        run: make vet
       -
         name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          # configure integration tests to use squid cache to speed up
-          # tests, particularly downloads of terraform providers
-          HTTPS_PROXY: localhost:3128
-        run: |
-          make test go-tfe-tests
+        run: make test go-tfe-tests
       -
         name: Archive browser screenshots
         if: always()
