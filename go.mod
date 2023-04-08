@@ -6,8 +6,8 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/allegro/bigcache v1.2.1
 	github.com/buildkite/terminal-to-html v3.2.0+incompatible
-	github.com/chromedp/cdproto v0.0.0-20220827030233-358ed4af73cf
-	github.com/chromedp/chromedp v0.8.5
+	github.com/chromedp/cdproto v0.0.0-20230220211738-2b1ec77315c9
+	github.com/chromedp/chromedp v0.9.1
 	github.com/fatih/color v1.13.0
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.2.3
