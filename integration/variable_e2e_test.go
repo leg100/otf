@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestVariables tests adding, updating and deleting workspace variables via the
+// TestVariableE2E tests adding, updating and deleting workspace variables via the
 // UI, and tests that variables are made available to runs.
-func TestVariables(t *testing.T) {
+func TestVariableE2E(t *testing.T) {
 	t.Parallel()
 
 	svc := setup(t, nil)
-	_, ctx := svc.createUserCtx(t, ctx)
+	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
 
 	// Create variable in browser
@@ -24,6 +24,7 @@ func TestVariables(t *testing.T) {
 	// Click OK on any browser javascript dialog boxes that pop up
 	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
+		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
@@ -74,11 +75,11 @@ output "foo" {
 	svc.tfcli(t, ctx, "init", root)
 	out := svc.tfcli(t, ctx, "plan", root)
 	require.Contains(t, out, `+ foo = "bar"`)
-	out = svc.tfcli(t, ctx, "plan", root, "-auto-approve")
+	out = svc.tfcli(t, ctx, "apply", root, "-auto-approve")
 	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(browser, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
 			chromedp.Navigate(workspacePath(svc.Hostname(), org.Name, "my-test-workspace")),

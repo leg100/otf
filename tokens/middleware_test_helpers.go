@@ -45,7 +45,7 @@ func getGoogleCredentialsPath(t *testing.T) string {
 		// is set to an empty string, so skip the test in this scenario.
 		key := os.Getenv("GOOGLE_CREDENTIALS")
 		if key == "" {
-			t.Skip("Export a valid GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_CREDENTIALS before running this test")
+			t.Skip("Export valid GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_CREDENTIALS before running this test")
 		}
 		path = filepath.Join(t.TempDir(), "google_credentials.json")
 		err := os.WriteFile(path, []byte(key), 0o600)
@@ -113,9 +113,16 @@ func wantSubjectHandler(t *testing.T, want any) http.HandlerFunc {
 func newIAPToken(t *testing.T, aud string) string {
 	t.Helper()
 
+	// tests are sometimes run behind an http proxy with a self-signed cert,
+	// which the google oauth2 client fails to verify, so just for this test do
+	// not use the proxy.
+	t.Setenv("HTTPS_PROXY", "")
+
+	ctx := context.Background()
 	credspath := getGoogleCredentialsPath(t)
-	src, err := idtoken.NewTokenSource(context.Background(), aud, idtoken.WithCredentialsFile(credspath))
+	src, err := idtoken.NewTokenSource(ctx, aud, idtoken.WithCredentialsFile(credspath))
 	require.NoError(t, err)
+
 	token, err := src.Token()
 	require.NoError(t, err)
 	return token.AccessToken

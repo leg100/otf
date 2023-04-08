@@ -13,13 +13,14 @@ func TestStartRunUI(t *testing.T) {
 	t.Parallel()
 
 	svc := setup(t, nil)
-	_, ctx := svc.createUserCtx(t, ctx)
+	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
 	root := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
 
 	// in browser, create workspace
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser,
+		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 	)
 	require.NoError(t, err)
@@ -35,6 +36,6 @@ func TestStartRunUI(t *testing.T) {
 	require.Contains(t, out, "Plan: 1 to add, 0 to change, 0 to destroy.")
 
 	// now we have a config version, start a run via the browser
-	err = chromedp.Run(ctx, startRunTasks(t, svc.Hostname(), org.Name, "my-test-workspace"))
+	err = chromedp.Run(browser, startRunTasks(t, svc.Hostname(), org.Name, "my-test-workspace"))
 	require.NoError(t, err)
 }

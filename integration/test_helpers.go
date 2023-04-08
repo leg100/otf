@@ -23,7 +23,7 @@ import (
 func createBrowserCtx(t *testing.T) context.Context {
 	t.Helper()
 
-	headless := false
+	headless := true
 	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
 		var err error
 		headless, err = strconv.ParseBool(v)

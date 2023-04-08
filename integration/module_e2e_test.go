@@ -18,12 +18,11 @@ import (
 func TestModuleE2E(t *testing.T) {
 	t.Parallel()
 
-	repo := cloud.NewTestModuleRepo("aws", "mod")
-
-	// create an otf daemon with a fake github backend, ready to sign in a user,
-	// serve up a repo and its contents via tarball. And register a callback to
-	// test receipt of commit statuses
+	// create an otf daemon with a fake github backend, ready to serve up a repo
+	// and its contents via tarball. And register a callback to test receipt of
+	// commit statuses
 	statuses := make(chan *gogithub.StatusEvent, 10)
+	repo := cloud.NewTestModuleRepo("aws", "mod")
 	svc := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
@@ -32,12 +31,13 @@ func TestModuleE2E(t *testing.T) {
 			statuses <- status
 		}),
 	)
-	_, ctx := svc.createUserCtx(t, ctx)
+	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
 
 	var moduleURL string // captures url for module page
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
+		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 		// publish module
 		chromedp.Tasks{
@@ -80,7 +80,7 @@ func TestModuleE2E(t *testing.T) {
 	sendGithubPushEvent(t, []byte(push), *svc.HookEndpoint, *svc.HookSecret)
 
 	// v1.0.0 should appear as latest module on workspace
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to module
 		chromedp.Navigate(moduleURL),
 		screenshot(t),
@@ -92,7 +92,7 @@ func TestModuleE2E(t *testing.T) {
 	// Now run terraform with some config that sources the module. First we need
 	// a workspace...
 	workspaceName := "module-test"
-	err = chromedp.Run(ctx, createWorkspace(t, svc.Hostname(), org.Name, workspaceName))
+	err = chromedp.Run(browser, createWorkspace(t, svc.Hostname(), org.Name, workspaceName))
 	require.NoError(t, err)
 
 	// generate some terraform config that sources our module
@@ -102,7 +102,7 @@ module "mod" {
   source  = "%s/%s/%s/%s"
   version = "1.0.0"
 }
-`, svc.Hostname(), org, "mod", "aws")
+`, svc.Hostname(), org.Name, "mod", "aws")
 	err = os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 

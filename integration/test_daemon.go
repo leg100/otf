@@ -340,7 +340,7 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 	t.Helper()
 
 	out, err := s.tfcliWithError(t, ctx, command, configPath, args...)
-	require.NoError(t, err)
+	require.NoError(t, err, "tf cli failed: %s", out)
 	return out
 }
 
@@ -392,5 +392,3 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	require.NoError(t, err, "otf cli failed: %s", out)
 	return string(out)
 }
-
-type cmdOption func(*exec.Cmd)

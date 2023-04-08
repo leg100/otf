@@ -23,16 +23,17 @@ func TestConnectRepoE2E(t *testing.T) {
 	statuses := make(chan *gogithub.StatusEvent, 10)
 	daemon := setup(t, nil,
 		github.WithRepo(repo),
-		github.WithArchive(readFile(t, "./testdata/github.tar.gz")),
+		github.WithArchive(readFile(t, "../testdata/github.tar.gz")),
 		github.WithStatusCallback(func(status *gogithub.StatusEvent) {
 			statuses <- status
 		}),
 	)
-	_, ctx := daemon.createUserCtx(t, ctx)
+	user, ctx := daemon.createUserCtx(t, ctx)
 	org := daemon.createOrganization(t, ctx)
 
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
+		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
 		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
@@ -57,7 +58,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	sendGithubPushEvent(t, []byte(push), *daemon.HookEndpoint, *daemon.HookSecret)
 
 	// commit-triggered run should appear as latest run on workspace
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
@@ -99,8 +100,8 @@ func TestConnectRepoE2E(t *testing.T) {
 
 	// Clean up after ourselves by disconnecting the workspace and deleting the
 	// workspace and vcs provider
-	okDialog(t, ctx)
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	okDialog(t, browser)
+	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),

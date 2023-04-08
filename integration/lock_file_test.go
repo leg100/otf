@@ -19,12 +19,13 @@ func TestLockFile(t *testing.T) {
 	t.Parallel()
 
 	svc := setup(t, nil)
-	_, ctx := svc.createUserCtx(t, ctx)
+	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
 
 	// in a browser, create workspace
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
+		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 	})
 	require.NoError(t, err)
@@ -47,7 +48,7 @@ terraform {
 variable "foo" {
 	default = "bar"
 }
-`, svc.Hostname(), org, "my-test-workspace"))
+`, svc.Hostname(), org.Name, "my-test-workspace"))
 	err = os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 

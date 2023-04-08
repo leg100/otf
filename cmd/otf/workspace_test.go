@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/leg100/otf/workspace"
@@ -44,6 +45,7 @@ func TestWorkspaceShow(t *testing.T) {
 
 	cmd := app.workspaceShowCommand()
 	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
+	cmd.SetOut(io.Discard)
 	require.NoError(t, cmd.Execute())
 
 	t.Run("missing organization", func(t *testing.T) {

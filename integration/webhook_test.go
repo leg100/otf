@@ -28,14 +28,15 @@ func TestWebhook(t *testing.T) {
 	svc := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
-		github.WithArchive(readFile(t, "./testdata/github.tar.gz")),
+		github.WithArchive(readFile(t, "../testdata/github.tar.gz")),
 	)
-	_, ctx := svc.createUserCtx(t, ctx)
+	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
 
 	// create and connect first workspace
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
+		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 
 		createWorkspace(t, svc.Hostname(), org.Name, "workspace-1"),
@@ -47,7 +48,7 @@ func TestWebhook(t *testing.T) {
 	require.True(t, svc.HasWebhook())
 
 	// create and connect second workspace
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(browser, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "workspace-2"),
 		connectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-2"),
 	})
@@ -57,7 +58,7 @@ func TestWebhook(t *testing.T) {
 	require.True(t, svc.HasWebhook())
 
 	// disconnect second workspace
-	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-2"))
+	err = chromedp.Run(browser, disconnectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-2"))
 	require.NoError(t, err)
 
 	// first workspace is still connected, so webhook should still be configured
@@ -65,7 +66,7 @@ func TestWebhook(t *testing.T) {
 	require.True(t, svc.HasWebhook())
 
 	// disconnect first workspace
-	err = chromedp.Run(ctx, disconnectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-1"))
+	err = chromedp.Run(browser, disconnectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-1"))
 	require.NoError(t, err)
 
 	// No more workspaces are connected to repo, so webhook should have been

@@ -63,7 +63,7 @@ jobs:
         run: |
           make unit go-tfe-tests
       -
-        name: Archive browser screenshots from tests
+        name: Archive browser screenshots
         if: always()
         uses: actions/upload-artifact@v3
         with:

@@ -11,7 +11,6 @@ func TestUserCLI(t *testing.T) {
 	t.Parallel()
 
 	daemon := setup(t, nil)
-	_, ctx := daemon.createUserCtx(t, ctx)
 
 	// create user via cli
 	out := daemon.otfcli(t, ctx, "users", "new", "bobby")
