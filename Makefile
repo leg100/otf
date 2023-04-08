@@ -46,6 +46,15 @@ install-latest-release:
 	unzip -o -d $(GOBIN) $$ZIP_FILE otfd ;\
 	}
 
+# Run squid caching proxy in a container
+.PHONY: squid
+squid:
+	docker run --rm --name squid -t -d -p 3128:3128 -v $(PWD)/integration/fixtures:/etc/squid/certs leg100/squid:0.2
+
+# Stop squid container
+.PHONY: squid-stop
+squid-stop:
+	docker stop -s INT squid
 
 # Run staticcheck metalinter recursively against code
 .PHONY: lint

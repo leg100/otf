@@ -14,14 +14,10 @@ func TestMain(m *testing.M) {
 	// self-signed cert.
 	// * Assign the *absolute* path to the SSL cert because Go program's working
 	// directory may differ from the integration test directory.
-	// * If SSL_CERT_FILE is already defined do not override - this permits the
-	// github build workflow to set its own self signed cert.
-	if _, ok := os.LookupEnv("SSL_CERT_FILE"); !ok {
-		wd, err := os.Getwd()
-		panicIfError(err)
-		unset := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
-		defer unset()
-	}
+	wd, err := os.Getwd()
+	panicIfError(err)
+	unset := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
+	defer unset()
 
 	// Create dedicated home directory for duration of integration tests.
 	// Terraform CLI and the `otf` CLI create various directories and dot files
@@ -32,7 +28,7 @@ func TestMain(m *testing.M) {
 	defer func() {
 		os.RemoveAll(homeDir)
 	}()
-	unset := setenv("HOME", homeDir)
+	unset = setenv("HOME", homeDir)
 	defer unset()
 
 	// If HTTPS_PROXY has been defined then add it to the authoritative list of
