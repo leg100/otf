@@ -24,6 +24,8 @@ type (
 		// CanUnlock checks whether subject is permitted to transfer it into the,
 		// unlocked state, forceably or not.
 		CanUnlock(lock LockedState, force bool) error
+
+		String() string
 	}
 )
 
