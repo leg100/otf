@@ -72,5 +72,5 @@ export SSL_CERT_DIR=$PWD/integration/fixtures
 
 TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
-cd $(GOPROXY=direct go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
+cd $(go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
 go test -v -run $TESTS -timeout 60s
