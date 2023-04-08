@@ -54,7 +54,7 @@ squid:
 # Stop squid container
 .PHONY: squid-stop
 squid-stop:
-	docker stop -s INT squid
+	docker stop --signal INT squid
 
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
