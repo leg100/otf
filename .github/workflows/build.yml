@@ -29,10 +29,8 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
     env:
-      # for integration, and go-tfe tests
+      # for integration and go-tfe tests
       OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
-      # disable unnecessary roundtrips to checkpoint.hashicorp.com in e2e tests
-      CHECKPOINT_DISABLE: "true"
     steps:
       -
         name: Checkout
@@ -44,18 +42,15 @@ jobs:
           go-version-file: 'go.mod'
       -
         name: Lint check
-        run: |
-          make install-linter lint
+        run: make install-linter lint
       -
         name: Vet check
-        run: |
-          make vet
+        run: make vet
       -
-        name: Unit tests
+        name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        run: |
-          make unit go-tfe-tests
+        run: make test go-tfe-tests
       -
         name: Archive browser screenshots
         if: always()

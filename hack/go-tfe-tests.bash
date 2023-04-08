@@ -10,6 +10,11 @@ if [ -z $OTF_TEST_DATABASE_URL ]; then
     exit 1
 fi
 
+export OTF_SSL=true
+export OTF_CERT_FILE=./integration/cert.pem
+export OTF_KEY_FILE=./integration/key.pem
+export SSL_CERT_DIR=$PWD/integration/fixtures
+
 # go-tfe tests perform privileged operations (e.g.
 # creating organizations), so we use a site admin token.
 SITE_TOKEN=go-tfe-test-site-token
@@ -65,12 +70,8 @@ done
 export TFE_ADDRESS="https://localhost:${port}"
 export TFE_TOKEN=$SITE_TOKEN
 export SKIP_PAID=1
-export OTF_SSL=true
-export OTF_CERT_FILE=./integration/cert.pem
-export OTF_KEY_FILE=./integration/key.pem
-export SSL_CERT_DIR=$PWD/integration/fixtures
 
 TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
-cd $(GOPROXY=direct go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
+cd $(go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
 go test -v -run $TESTS -timeout 60s

@@ -22,12 +22,9 @@ endif
 go-tfe-tests: build
 	./hack/go-tfe-tests.bash
 
-.PHONY: unit
-unit:
-	go test $$(go list ./...)
-
 .PHONY: test
-test: lint unit go-tfe-tests
+test:
+	go test $$(go list ./...)
 
 .PHONY: build
 build:
@@ -49,8 +46,17 @@ install-latest-release:
 	unzip -o -d $(GOBIN) $$ZIP_FILE otfd ;\
 	}
 
+# Run squid caching proxy in a container
+.PHONY: squid
+squid:
+	docker run --rm --name squid -t -d -p 3128:3128 -v $(PWD)/integration/fixtures:/etc/squid/certs leg100/squid:0.2
 
-# Run staticcheck metalinter and go vet recursively against code
+# Stop squid container
+.PHONY: squid-stop
+squid-stop:
+	docker stop --signal INT squid
+
+# Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
 	go list ./... | grep -v pggen | xargs staticcheck

@@ -12,7 +12,7 @@ func TestMain(m *testing.M) {
 	// The following environment variable instructs any Go program spawned in a
 	// test, e.g. the terraform CLI, the otf agent, etc, to trust the
 	// self-signed cert.
-	// Assign the *absolute* path to the SSL cert because Go program's working
+	// * Assign the *absolute* path to the SSL cert because Go program's working
 	// directory may differ from the integration test directory.
 	wd, err := os.Getwd()
 	panicIfError(err)
@@ -31,6 +31,18 @@ func TestMain(m *testing.M) {
 	unset = setenv("HOME", homeDir)
 	defer unset()
 
+	// If HTTPS_PROXY has been defined then add it to the authoritative list of
+	// environment variables so that processes, particularly terraform, spawed
+	// in tests use the proxy. This can be very useful for caching repeated
+	// downloads of terraform providers during tests.
+	if proxy, ok := os.LookupEnv("HTTPS_PROXY"); ok {
+		envs = append(envs, "HTTPS_PROXY="+proxy)
+	}
+
+	// Instruct terraform CLI to skip checks for new versions.
+	unset = setenv("CHECKPOINT_DISABLE", "true")
+	defer unset()
+
 	// Ensure ~/.terraform.d exists - 'terraform login' has a bug whereby it tries to
 	// persist the API token it receives to a temporary file in ~/.terraform.d but
 	// fails if ~/.terraform.d doesn't exist yet. This only happens when
@@ -47,11 +59,15 @@ func panicIfError(err error) {
 	}
 }
 
+// setenv sets an environment variable and returns a func to unset the variable.
+// The environment variable is added to a shared slice, envs, for individual
+// tests to use.
 func setenv(name, value string) func() {
 	err := os.Setenv(name, value)
 	if err != nil {
 		panic(err.Error())
 	}
+	envs = append(envs, name+"="+value)
 	return func() {
 		os.Unsetenv(name)
 	}
