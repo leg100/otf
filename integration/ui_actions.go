@@ -37,7 +37,7 @@ func newSession(t *testing.T, ctx context.Context, hostname, username, secret st
 // createWorkspace creates a workspace via the UI
 func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
-		chromedp.Navigate(organizationPath(hostname, org)),
+		chromedp.Navigate(organizationURL(hostname, org)),
 		screenshot(t),
 		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
 		screenshot(t),
@@ -117,7 +117,7 @@ func screenshot(t *testing.T) chromedp.ActionFunc {
 func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, role string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, workspaceName)),
+		chromedp.Navigate(workspaceURL(hostname, org, workspaceName)),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -137,7 +137,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to org
-		chromedp.Navigate(organizationPath(hostname, org)),
+		chromedp.Navigate(organizationURL(hostname, org)),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		screenshot(t),
@@ -161,7 +161,7 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 func startRunTasks(t *testing.T, hostname, organization string, workspaceName string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
-		chromedp.Navigate(workspacePath(hostname, organization, workspaceName)),
+		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
 		screenshot(t),
 		// select strategy for run
 		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),
@@ -190,7 +190,7 @@ func startRunTasks(t *testing.T, hostname, organization string, workspaceName st
 func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, name)),
+		chromedp.Navigate(workspaceURL(hostname, org, name)),
 		screenshot(t),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -212,7 +212,7 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Ta
 func disconnectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, name)),
+		chromedp.Navigate(workspaceURL(hostname, org, name)),
 		screenshot(t),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),

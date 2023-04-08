@@ -42,7 +42,7 @@ func TestModuleE2E(t *testing.T) {
 		// publish module
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.NodeVisible),

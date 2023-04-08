@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *Application) teamCommand() *cobra.Command {
+func (a *CLI) teamCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "teams",
 		Short: "Team management",
@@ -21,7 +21,7 @@ func (a *Application) teamCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *Application) teamNewCommand() *cobra.Command {
+func (a *CLI) teamNewCommand() *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
@@ -49,7 +49,7 @@ func (a *Application) teamNewCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *Application) teamDeleteCommand() *cobra.Command {
+func (a *CLI) teamDeleteCommand() *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
@@ -77,7 +77,7 @@ func (a *Application) teamDeleteCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *Application) addTeamMembershipCommand() *cobra.Command {
+func (a *CLI) addTeamMembershipCommand() *cobra.Command {
 	var (
 		organization string
 		name         string // team name
@@ -114,7 +114,7 @@ func (a *Application) addTeamMembershipCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *Application) deleteTeamMembershipCommand() *cobra.Command {
+func (a *CLI) deleteTeamMembershipCommand() *cobra.Command {
 	var (
 		organization string
 		name         string // team name

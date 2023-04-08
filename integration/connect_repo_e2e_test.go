@@ -60,7 +60,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-test-workspace")),
+		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
@@ -103,7 +103,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	okDialog(t, browser)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-test-workspace")),
+		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -125,7 +125,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		// delete vcs provider
 		//
 		// go to org
-		chromedp.Navigate(organizationPath(daemon.Hostname(), org.Name)),
+		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),

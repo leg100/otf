@@ -57,11 +57,11 @@ func createBrowserCtx(t *testing.T) context.Context {
 	return ctx
 }
 
-func workspacePath(hostname, org, name string) string {
+func workspaceURL(hostname, org, name string) string {
 	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
 }
 
-func organizationPath(hostname, org string) string {
+func organizationURL(hostname, org string) string {
 	return "https://" + hostname + "/app/organizations/" + org
 }
 

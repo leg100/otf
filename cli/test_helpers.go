@@ -14,12 +14,12 @@ import (
 	"github.com/leg100/otf/workspace"
 )
 
-func fakeApp(opts ...fakeOption) *Application {
+func fakeApp(opts ...fakeOption) *CLI {
 	client := fakeClient{}
 	for _, fn := range opts {
 		fn(&client)
 	}
-	return &Application{&client, ""}
+	return &CLI{&client, ""}
 }
 
 type fakeOption func(*fakeClient)

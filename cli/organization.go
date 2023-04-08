@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *Application) organizationCommand() *cobra.Command {
+func (a *CLI) organizationCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "organizations",
 		Short: "Organization management",
@@ -20,7 +20,7 @@ func (a *Application) organizationCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *Application) newOrganizationCommand() *cobra.Command {
+func (a *CLI) newOrganizationCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:           "new [name]",
 		Short:         "Create a new organization",
@@ -42,7 +42,7 @@ func (a *Application) newOrganizationCommand() *cobra.Command {
 	}
 }
 
-func (a *Application) deleteOrganizationCommand() *cobra.Command {
+func (a *CLI) deleteOrganizationCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:           "delete [organization]",
 		Short:         "Delete an organization",

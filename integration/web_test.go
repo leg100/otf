@@ -35,7 +35,7 @@ func TestWeb(t *testing.T) {
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
@@ -56,7 +56,7 @@ func TestWeb(t *testing.T) {
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
@@ -66,7 +66,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),

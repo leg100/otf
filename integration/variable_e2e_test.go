@@ -28,7 +28,7 @@ func TestVariableE2E(t *testing.T) {
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(svc.Hostname(), org.Name, "my-test-workspace")),
+			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
@@ -82,7 +82,7 @@ output "foo" {
 	err = chromedp.Run(browser, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(svc.Hostname(), org.Name, "my-test-workspace")),
+			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),

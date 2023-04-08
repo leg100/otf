@@ -27,7 +27,7 @@ func TestWorkingDirectory(t *testing.T) {
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-workspace")),
+			chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-workspace")),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),

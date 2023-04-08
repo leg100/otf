@@ -12,14 +12,14 @@ import (
 
 func TestSetToken_Env(t *testing.T) {
 	t.Setenv("OTF_TOKEN", "mytoken")
-	got, err := (&Application{}).getToken("localhost:8080")
+	got, err := (&CLI{}).getToken("localhost:8080")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }
 
 func TestSetToken_HostSpecificEnv(t *testing.T) {
 	t.Setenv("TF_TOKEN_otf_dev", "mytoken")
-	got, err := (&Application{}).getToken("otf.dev")
+	got, err := (&CLI{}).getToken("otf.dev")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }
@@ -28,7 +28,7 @@ func TestSetToken_CredentialStore(t *testing.T) {
 	store := CredentialsStore(filepath.Join(t.TempDir(), "creds.json"))
 	require.NoError(t, store.Save("otf.dev", "mytoken"))
 
-	got, err := (&Application{creds: store}).getToken("otf.dev")
+	got, err := (&CLI{creds: store}).getToken("otf.dev")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }

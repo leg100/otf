@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *Application) runCommand() *cobra.Command {
+func (a *CLI) runCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "runs",
 		Short: "Runs management",
@@ -21,7 +21,7 @@ func (a *Application) runCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *Application) runDownloadCommand() *cobra.Command {
+func (a *CLI) runDownloadCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "download [run-id]",
 		Short:         "Download configuration for run",

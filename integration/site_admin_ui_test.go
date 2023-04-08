@@ -60,5 +60,5 @@ func TestSiteAdminUI(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, organizationPath(daemon.Hostname(), "my-new-org"), orgLocation)
+	assert.Equal(t, organizationURL(daemon.Hostname(), "my-new-org"), orgLocation)
 }

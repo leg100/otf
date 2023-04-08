@@ -22,7 +22,7 @@ func TestAgentTokenUI(t *testing.T) {
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		chromedp.Tasks{
 			// go to org main menu
-			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// go to list of agent tokens
 			chromedp.Click("#agent_tokens > a", chromedp.NodeVisible),

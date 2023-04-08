@@ -388,7 +388,7 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer
-	err = (&cli.Application{}).Run(ctx, cmdargs, &buf)
+	err = (&cli.CLI{}).Run(ctx, cmdargs, &buf)
 	require.NoError(t, err)
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())

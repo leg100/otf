@@ -13,7 +13,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdutil.CatchCtrlC(cancel)
 
-	if err := (&cli.Application{}).Run(ctx, os.Args[1:], os.Stdout); err != nil {
+	if err := (&cli.CLI{}).Run(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
 		os.Exit(1)
 	}

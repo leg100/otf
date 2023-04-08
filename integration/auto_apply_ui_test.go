@@ -23,7 +23,7 @@ func TestAutoApply(t *testing.T) {
 		createWorkspace(t, svc.Hostname(), org.Name, t.Name()),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(svc.Hostname(), org.Name, t.Name())),
+			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, t.Name())),
 			screenshot(t),
 			// go to workspace settings
 			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
