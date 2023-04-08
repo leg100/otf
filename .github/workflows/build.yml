@@ -62,11 +62,6 @@ jobs:
         run: |
           make test go-tfe-tests
       -
-        name: Stop squid cache
-        if: always()
-        run: |
-          make squid-stop
-      -
         name: Archive browser screenshots
         if: always()
         uses: actions/upload-artifact@v3
