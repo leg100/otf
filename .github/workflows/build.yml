@@ -14,13 +14,9 @@ jobs:
   build:
     # You must use a Linux environment when using service containers or container jobs
     runs-on: ubuntu-latest
-    # Service containers to run with `goreleaser`
     services:
-      # Label used to access the service container
       postgres:
-        # Docker Hub image
         image: postgres
-        # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
         # Set health checks to wait until postgres has started
@@ -40,14 +36,12 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.20.1
+          go-version-file: 'go.mod'
       -
         name: Lint check
         run: |
