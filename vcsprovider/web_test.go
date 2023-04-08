@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHTML_New(t *testing.T) {
+func TestVCSProvider_NewHandler(t *testing.T) {
 	org := organization.NewTestOrganization(t)
 	svc := fakeWebServices(t, newTestVCSProvider(t, org))
 
@@ -24,8 +24,7 @@ func TestHTML_New(t *testing.T) {
 			r := httptest.NewRequest("GET", q, nil)
 			w := httptest.NewRecorder()
 			svc.new(w, r)
-			t.Log(w.Body.String())
-			assert.Equal(t, 200, w.Code)
+			assert.Equal(t, 200, w.Code, w.Body.String())
 		})
 	}
 }

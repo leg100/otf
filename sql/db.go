@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -14,7 +15,7 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-const defaultMaxConnections = "20" // max conns avail in a pgx pool
+const defaultMaxConnections = 10 // max conns avail in a pgx pool
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
@@ -51,7 +52,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	// Bump max number of connections in a pool. By default pgx sets it to the
 	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
 	// connections for session-level advisory locks and can easily exhaust this.
-	connString, err := setDefaultMaxConnections(opts.ConnString)
+	connString, err := setDefaultMaxConnections(opts.ConnString, defaultMaxConnections)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,7 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 	return tx.Commit(ctx)
 }
 
-func setDefaultMaxConnections(connString string) (string, error) {
+func setDefaultMaxConnections(connString string, max int) (string, error) {
 	// pg connection string can be either a URL or a DSN
 	if strings.HasPrefix(connString, "postgres://") || strings.HasPrefix(connString, "postgresql://") {
 		u, err := url.Parse(connString)
@@ -135,14 +136,14 @@ func setDefaultMaxConnections(connString string) (string, error) {
 			return "", fmt.Errorf("parsing connection string url: %w", err)
 		}
 		q := u.Query()
-		q.Add("pool_max_conns", defaultMaxConnections)
+		q.Add("pool_max_conns", strconv.Itoa(max))
 		u.RawQuery = q.Encode()
 		return url.PathUnescape(u.String())
 	} else if connString == "" {
 		// presume empty DSN
-		return fmt.Sprintf("pool_max_conns=%s", defaultMaxConnections), nil
+		return fmt.Sprintf("pool_max_conns=%d", max), nil
 	} else {
 		// presume non-empty DSN
-		return fmt.Sprintf("%s pool_max_conns=%s", connString, defaultMaxConnections), nil
+		return fmt.Sprintf("%s pool_max_conns=%d", connString, max), nil
 	}
 }

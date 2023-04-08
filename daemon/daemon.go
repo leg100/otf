@@ -427,9 +427,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Run local agent in background
 	g.Go(func() error {
 		// give local agent unlimited access to services
-		ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
-
-		if err := d.agent.Start(ctx); err != nil {
+		agentCtx := otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
+		if err := d.agent.Start(agentCtx); err != nil {
 			return fmt.Errorf("agent terminated: %w", err)
 		}
 		return nil

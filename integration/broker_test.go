@@ -19,7 +19,7 @@ func TestBroker(t *testing.T) {
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
-	// simulate a cluster of two otfd nodes sharing a connstr
+	// simulate a cluster of two otfd nodes sharing a database
 	connstr := sql.NewTestDB(t)
 	local := setup(t, &config{Config: daemon.Config{Database: connstr}})
 	remote := setup(t, &config{Config: daemon.Config{Database: connstr}})

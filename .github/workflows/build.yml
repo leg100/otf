@@ -33,7 +33,7 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
     env:
-      # for integration, go-tfe and e2e tests
+      # for integration, and go-tfe tests
       OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
       # disable unnecessary roundtrips to checkpoint.hashicorp.com in e2e tests
       CHECKPOINT_DISABLE: "true"
@@ -61,22 +61,14 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: |
-          make unit
+          make unit go-tfe-tests
       -
-        name: E2E tests
-        run: |
-          sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
-          sudo update-ca-certificates
-          make e2e go-tfe-tests
-        env:
-          OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
-      -
-        name: Archive E2E screenshots
+        name: Archive browser screenshots
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: e2e-screenshots
-          path: e2e/screenshots/**/*.png
+          path: integration/screenshots/**/*.png
       -
         name: Login to docker hub
         if: startsWith(github.ref, 'refs/tags/v')

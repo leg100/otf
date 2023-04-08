@@ -52,6 +52,21 @@ func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts 
 	return nil
 }
 
+func NewTestSessionJWT(t *testing.T, username, secret string, lifetime time.Duration) string {
+	t.Helper()
+
+	token, err := jwt.NewBuilder().
+		Subject(username).
+		IssuedAt(time.Now()).
+		Claim("kind", userSessionKind).
+		Expiration(time.Now().Add(lifetime)).
+		Build()
+	require.NoError(t, err)
+	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, newTestJWK(t, secret)))
+	require.NoError(t, err)
+	return string(serialized)
+}
+
 func newTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, claims ...string) string {
 	t.Helper()
 

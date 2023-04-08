@@ -23,9 +23,9 @@ const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 func NewTestDB(t *testing.T) string {
 	t.Helper()
 
-	connstr, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
+	connstr, ok := os.LookupEnv(TestDatabaseURL)
 	if !ok {
-		t.Skip("skipping integration test")
+		t.Skip("Export valid OTF_TEST_DATABASE_URL before running this test")
 	}
 
 	ctx := context.Background()
@@ -35,8 +35,14 @@ func NewTestDB(t *testing.T) string {
 	require.NoError(t, err)
 
 	// generate a safe, unique logical database name
-	logical := strcase.ToSnake(t.Name())
+	logical := t.Name()
+	logical = strcase.ToSnake(logical)
 	logical = strings.ReplaceAll(logical, "/", "_")
+	// NOTE: maximum size of a postgres name is 31
+	// 21 + "_" + 8 = 30
+	if len(logical) > 22 {
+		logical = logical[:22]
+	}
 	logical = logical + "_" + strings.ToLower(otf.GenerateRandomString(8))
 
 	_, err = conn.Exec(ctx, "CREATE DATABASE "+logical)

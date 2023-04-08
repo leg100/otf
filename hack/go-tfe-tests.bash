@@ -22,8 +22,8 @@ nohup _build/otfd --address :0 \
     --secret ce6bf87f25118c87c8ca3d3066010c5ee56643c01ba5cab605642b0d83271e6e \
     --ssl true \
     --dev-mode=false \
-    --cert-file ./e2e/fixtures/cert.crt \
-    --key-file ./e2e/fixtures/key.pem \
+    --cert-file ./integration/fixtures/cert.pem \
+    --key-file ./integration/fixtures/key.pem \
     --database $OTF_TEST_DATABASE_URL > $logfile 2>&1 &
 pid=$!
 
@@ -66,9 +66,9 @@ export TFE_ADDRESS="https://localhost:${port}"
 export TFE_TOKEN=$SITE_TOKEN
 export SKIP_PAID=1
 export OTF_SSL=true
-export OTF_CERT_FILE=./e2e/fixtures/cert.crt
-export OTF_KEY_FILE=./e2e/fixtures/key.pem
-export SSL_CERT_DIR=$PWD/e2e/fixtures
+export OTF_CERT_FILE=./integration/cert.pem
+export OTF_KEY_FILE=./integration/key.pem
+export SSL_CERT_DIR=$PWD/integration/fixtures
 
 TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 

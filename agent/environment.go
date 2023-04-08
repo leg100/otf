@@ -68,8 +68,7 @@ func newEnvironment(
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}
-	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(svc.Hostname()), token)
-	envs = append(envs, tokenEnvVar)
+	envs = append(envs, otf.CredentialEnv(svc.Hostname(), token))
 
 	// retrieve workspace variables and add them to the environment
 	variables, err := svc.ListVariables(ctx, run.WorkspaceID)

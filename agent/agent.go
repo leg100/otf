@@ -44,6 +44,22 @@ type agent struct {
 
 // NewAgent is the constructor for an agent
 func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error) {
+	if cfg.Concurrency == 0 {
+		cfg.Concurrency = DefaultConcurrency
+	}
+	if cfg.External && cfg.Organization == nil {
+		return nil, fmt.Errorf("external agent requires organization to be specified")
+	}
+	if cfg.Sandbox {
+		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
+			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
+		}
+		logger.V(0).Info("enabled sandbox mode")
+	}
+	if cfg.Debug {
+		logger.V(0).Info("enabled debug mode")
+	}
+
 	agent := &agent{
 		Client:     app,
 		Config:     cfg,
@@ -54,21 +70,11 @@ func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error)
 		Downloader: newTerraformDownloader(),
 	}
 
-	if cfg.Sandbox {
-		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
-			return nil, fmt.Errorf("sandbox mode requires bubblewrap: %w", err)
-		}
-		logger.V(0).Info("enabled sandbox mode")
-	}
-	if cfg.Debug {
-		logger.V(0).Info("enabled debug mode")
-	}
 	if cfg.PluginCache {
 		if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 			return nil, fmt.Errorf("creating plugin cache directory: %w", err)
 		}
 		agent.envs = append(agent.envs, "TF_PLUGIN_CACHE_DIR="+PluginCacheDir)
-
 		logger.V(0).Info("enabled plugin cache", "path", PluginCacheDir)
 	}
 
