@@ -22,12 +22,9 @@ endif
 go-tfe-tests: build
 	./hack/go-tfe-tests.bash
 
-.PHONY: unit
-unit:
-	go test $$(go list ./...)
-
 .PHONY: test
-test: lint unit go-tfe-tests
+test:
+	go test $$(go list ./...)
 
 .PHONY: build
 build:
@@ -50,7 +47,7 @@ install-latest-release:
 	}
 
 
-# Run staticcheck metalinter and go vet recursively against code
+# Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
 	go list ./... | grep -v pggen | xargs staticcheck

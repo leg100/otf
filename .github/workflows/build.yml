@@ -29,7 +29,7 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
       squid:
-        image: leg100/squid
+        image: leg100/squid:0.2
         ports:
           # Maps tcp port 3128 on service container to the host
           - 3128:3128
@@ -56,7 +56,7 @@ jobs:
         run: |
           make vet
       -
-        name: Unit tests
+        name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           # configure integration tests to use squid cache to speed up
@@ -66,7 +66,7 @@ jobs:
           # - avoids SSL verification errors when tests connect via the proxy
           SSL_CERT_FILE: /home/runner/certs/cert.pem
         run: |
-          make unit go-tfe-tests
+          make test go-tfe-tests
       -
         name: Archive browser screenshots
         if: always()
