@@ -1,46 +1,33 @@
-package e2e
+package integration
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
-	"github.com/google/uuid"
-	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
 // TestVariables tests adding, updating and deleting workspace variables via the
 // UI, and tests that variables are made available to runs.
 func TestVariables(t *testing.T) {
-	org, workspace := setup(t)
+	t.Parallel()
 
-	user := cloud.User{
-		Name:  uuid.NewString(),
-		Teams: []cloud.Team{{Name: "owners", Organization: org}},
-	}
-
-	daemon := &daemon{}
-	daemon.withGithubUser(&user)
-	hostname := daemon.start(t)
-
-	// create browser
-	ctx, cancel := chromedp.NewContext(allocator)
-	defer cancel()
-
-	// Click OK on any browser javascript dialog boxes that pop up
-	okDialog(t, ctx)
+	svc := setup(t, nil)
+	_, ctx := svc.createUserCtx(t, ctx)
+	org := svc.createOrganization(t, ctx)
 
 	// Create variable in browser
-	err := chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Name),
-		createWorkspaceTasks(t, hostname, org, workspace),
+	browser := createBrowserCtx(t)
+	// Click OK on any browser javascript dialog boxes that pop up
+	okDialog(t, browser)
+	err := chromedp.Run(browser, chromedp.Tasks{
+		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(hostname, org, workspace)),
+			chromedp.Navigate(workspacePath(svc.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
@@ -70,7 +57,7 @@ func TestVariables(t *testing.T) {
 	require.NoError(t, err)
 
 	// write some terraform config that declares and outputs the variable
-	root := newRootModule(t, hostname, org, workspace)
+	root := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
 	config := `
 variable "foo" {
   default = "overwrite_this"
@@ -83,35 +70,18 @@ output "foo" {
 	err = os.WriteFile(filepath.Join(root, "foo.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
-	// run terraform locally
-	err = chromedp.Run(ctx, terraformLoginTasks(t, hostname))
-	require.NoError(t, err)
-
-	cmd := exec.Command("terraform", "init", "-no-color")
-	cmd.Dir = root
-	out, err := cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-
-	cmd = exec.Command("terraform", "plan", "-no-color")
-	cmd.Dir = root
-	out, err = cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-	require.Contains(t, string(out), `+ foo = "bar"`)
-
-	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
-	cmd.Dir = root
-	out, err = cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-	require.Contains(t, string(out), `foo = "bar"`)
+	// run terraform init, plan, and apply
+	svc.tfcli(t, ctx, "init", root)
+	out := svc.tfcli(t, ctx, "plan", root)
+	require.Contains(t, out, `+ foo = "bar"`)
+	out = svc.tfcli(t, ctx, "plan", root, "-auto-approve")
+	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
-			chromedp.Navigate(workspacePath(hostname, org, workspace)),
+			chromedp.Navigate(workspacePath(svc.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
 			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),

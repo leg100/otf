@@ -1,70 +1,48 @@
-package e2e
+package integration
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
-	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/github"
 	"github.com/stretchr/testify/require"
 )
 
-// TestModule tests publishing a module, first via the UI and then via a webhook
+// TestModuleE2E tests publishing a module, first via the UI and then via a webhook
 // event, and then invokes a terraform run that sources the module.
-func TestModule(t *testing.T) {
-	org, _ := setup(t)
+func TestModuleE2E(t *testing.T) {
+	t.Parallel()
 
-	name := "mod"
-	provider := "aws"
-	repo := cloud.NewTestModuleRepo(provider, name)
-
-	user := cloud.User{
-		Name: uuid.NewString(),
-		Teams: []cloud.Team{
-			{
-				Name:         "owners",
-				Organization: org,
-			},
-		},
-	}
+	repo := cloud.NewTestModuleRepo("aws", "mod")
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
-	daemon := &daemon{}
-	daemon.withGithubUser(&user)
-	daemon.withGithubRepo(repo)
-	daemon.withGithubRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0")
-
-	// create a tarball containing the module and seed our fake github with it
-	tarball, err := os.ReadFile("./fixtures/github.module.tar.gz")
-	require.NoError(t, err)
-	daemon.withGithubTarball(tarball)
-
 	statuses := make(chan *gogithub.StatusEvent, 10)
-	daemon.registerStatusCallback(func(status *gogithub.StatusEvent) {
-		statuses <- status
-	})
-
-	hostname := daemon.start(t)
-
-	// create browser
-	ctx, cancel := chromedp.NewContext(allocator)
-	defer cancel()
+	svc := setup(t, nil,
+		github.WithRepo(repo),
+		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
+		github.WithArchive(readFile(t, "./fixtures/github.module.tar.gz")),
+		github.WithStatusCallback(func(status *gogithub.StatusEvent) {
+			statuses <- status
+		}),
+	)
+	_, ctx := svc.createUserCtx(t, ctx)
+	org := svc.createOrganization(t, ctx)
 
 	var moduleURL string // captures url for module page
-	err = chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, hostname, org, "github"),
+	browser := createBrowserCtx(t)
+	err := chromedp.Run(browser, chromedp.Tasks{
+		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 		// publish module
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(hostname, org)),
+			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.NodeVisible),
@@ -81,7 +59,7 @@ func TestModule(t *testing.T) {
 			// confirm module details
 			chromedp.Click(`//button[text()='connect']`, chromedp.NodeVisible),
 			// flash message indicates success
-			matchText(t, ".flash-success", "published module: "+name),
+			matchText(t, ".flash-success", "published module: mod"),
 			// TODO: confirm versions are populated
 			// capture module url so we can visit it later
 			chromedp.Location(&moduleURL),
@@ -94,13 +72,12 @@ func TestModule(t *testing.T) {
 	// should trigger a module version to be published.
 
 	// otfd should have registered a webhook with the github server
-	require.True(t, daemon.githubServer.HasWebhook())
+	require.True(t, svc.HasWebhook())
 
 	// generate and send push tag event for v1.0.0
-	pushTpl, err := os.ReadFile("fixtures/github_push_tag.json")
-	require.NoError(t, err)
+	pushTpl := readFile(t, "fixtures/github_push_tag.json")
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
-	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)
+	sendGithubPushEvent(t, []byte(push), *svc.HookEndpoint, *svc.HookSecret)
 
 	// v1.0.0 should appear as latest module on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
@@ -115,41 +92,24 @@ func TestModule(t *testing.T) {
 	// Now run terraform with some config that sources the module. First we need
 	// a workspace...
 	workspaceName := "module-test"
-	err = chromedp.Run(ctx, createWorkspaceTasks(t, hostname, org, workspaceName))
+	err = chromedp.Run(ctx, createWorkspace(t, svc.Hostname(), org.Name, workspaceName))
 	require.NoError(t, err)
 
 	// generate some terraform config that sources our module
-	root := newRootModule(t, hostname, org, workspaceName)
+	root := newRootModule(t, svc.Hostname(), org.Name, workspaceName)
 	config := fmt.Sprintf(`
 module "mod" {
   source  = "%s/%s/%s/%s"
   version = "1.0.0"
 }
-`, hostname, org, name, provider)
+`, svc.Hostname(), org, "mod", "aws")
 	err = os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
-	// run terraform locally
-	err = chromedp.Run(ctx, terraformLoginTasks(t, hostname))
-	require.NoError(t, err)
-
-	cmd := exec.Command("terraform", "init", "-no-color")
-	cmd.Dir = root
-	out, err := cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-
-	cmd = exec.Command("terraform", "plan", "-no-color")
-	cmd.Dir = root
-	out, err = cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-	require.Contains(t, string(out), "Plan: 2 to add, 0 to change, 0 to destroy.")
-
-	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
-	cmd.Dir = root
-	out, err = cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
+	// run terraform init, plan, and apply
+	svc.tfcli(t, ctx, "init", root)
+	out := svc.tfcli(t, ctx, "plan", root)
+	require.Contains(t, out, "Plan: 2 to add, 0 to change, 0 to destroy.")
+	out = svc.tfcli(t, ctx, "apply", root, "-auto-approve")
 	require.Contains(t, string(out), "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.")
 }

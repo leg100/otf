@@ -16,7 +16,7 @@ func TestAutoApply(t *testing.T) {
 	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
 
-	// login and create workspace and enable auto-apply
+	// create workspace and enable auto-apply
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),

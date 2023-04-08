@@ -1,50 +1,40 @@
-package e2e
+package integration
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/google/uuid"
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/auth"
 	"github.com/stretchr/testify/require"
 )
 
 // TestWeb is a random walkthrough of the Web UI
 func TestWeb(t *testing.T) {
-	org, workspace := setup(t)
+	t.Parallel()
 
-	user := cloud.User{
-		Name: uuid.NewString(),
-		Teams: []cloud.Team{
-			{
-				Name:         "owners",
-				Organization: org,
-			},
-			{
-				Name:         "devops",
-				Organization: org,
-			},
-		},
-	}
+	svc := setup(t, nil)
+	user, ctx := svc.createUserCtx(t, ctx)
+	org := svc.createOrganization(t, ctx)
+	team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
+		Organization: org.Name,
+		Name:         "devops",
+	})
+	require.NoError(t, err)
+	err = svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
+		TeamID:   team.ID,
+		Username: user.Username,
+	})
+	require.NoError(t, err)
 
-	daemon := &daemon{}
-	daemon.withGithubUser(&user)
-	hostname := daemon.start(t)
-
-	// create browser
-	ctx, cancel := chromedp.NewContext(allocator)
-	defer cancel()
-
-	err := chromedp.Run(ctx, chromedp.Tasks{
-		// login
-		githubLoginTasks(t, hostname, user.Name),
+	browser := createBrowserCtx(t)
+	err = chromedp.Run(browser, chromedp.Tasks{
 		// create workspace
-		createWorkspaceTasks(t, hostname, org, workspace),
+		createWorkspace(t, svc.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(hostname, org)),
+			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
@@ -61,28 +51,28 @@ func TestWeb(t *testing.T) {
 			matchText(t, ".flash-success", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermissionTasks(t, hostname, org, workspace, "devops", "write"),
+		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-workspace", "devops", "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(hostname, org)),
+			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
 			screenshot(t),
-			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Name), user.Name),
+			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
 		},
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationPath(hostname, org)),
+			chromedp.Navigate(organizationPath(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),
 			// select owners team
 			chromedp.Click("#item-team-owners a", chromedp.NodeVisible),
 			screenshot(t),
-			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Name), user.Name),
+			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
 		},
 	})
 	require.NoError(t, err)

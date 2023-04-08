@@ -1,69 +1,44 @@
-package e2e
+package integration
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
-	"github.com/google/uuid"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/github"
 	"github.com/stretchr/testify/require"
 )
 
-// TestConnectRepo tests connecting a workspace to a VCS repository, pushing a
+// TestConnectRepoE2E tests connecting a workspace to a VCS repository, pushing a
 // git commit which should trigger a run on the workspace.
-func TestConnectRepo(t *testing.T) {
-	org, workspace := setup(t)
-
-	user := cloud.User{
-		Name: uuid.NewString(),
-		Teams: []cloud.Team{
-			{
-				Name:         "owners",
-				Organization: org,
-			},
-		},
-	}
-
-	repo := cloud.NewTestRepo()
-	tarball, err := os.ReadFile("../testdata/github.tar.gz")
-	require.NoError(t, err)
+func TestConnectRepoE2E(t *testing.T) {
+	t.Parallel()
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
-	daemon := &daemon{}
-	daemon.withGithubUser(&user)
-	daemon.withGithubRepo(repo)
-	daemon.withGithubTarball(tarball)
-
+	repo := cloud.NewTestRepo()
 	statuses := make(chan *gogithub.StatusEvent, 10)
-	daemon.registerStatusCallback(func(status *gogithub.StatusEvent) {
-		statuses <- status
-	})
+	daemon := setup(t, nil,
+		github.WithRepo(repo),
+		github.WithArchive(readFile(t, "./testdata/github.tar.gz")),
+		github.WithStatusCallback(func(status *gogithub.StatusEvent) {
+			statuses <- status
+		}),
+	)
+	_, ctx := daemon.createUserCtx(t, ctx)
+	org := daemon.createOrganization(t, ctx)
 
-	hostname := daemon.start(t)
-
-	// create browser
-	ctx, cancel := chromedp.NewContext(allocator)
-	defer cancel()
-
-	// create timeout
-	ctx, cancel = context.WithTimeout(ctx, time.Minute)
-	defer cancel()
-
-	err = chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, hostname, org, "github"),
-		createWorkspaceTasks(t, hostname, org, workspace),
-		connectWorkspaceTasks(t, hostname, org, workspace),
+	browser := createBrowserCtx(t)
+	err := chromedp.Run(browser, chromedp.Tasks{
+		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
+		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
-		startRunTasks(t, hostname, org, workspace),
+		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
 	})
 	require.NoError(t, err)
 
@@ -72,20 +47,19 @@ func TestConnectRepo(t *testing.T) {
 	// should trigger a run on the workspace.
 
 	// otfd should have registered a webhook with the github server
-	require.True(t, daemon.githubServer.HasWebhook())
+	require.True(t, daemon.HasWebhook())
 
 	// generate push event using template
-	pushTpl, err := os.ReadFile("fixtures/github_push.json")
-	require.NoError(t, err)
+	pushTpl := readFile(t, "fixtures/github_push.json")
 	push := fmt.Sprintf(string(pushTpl), repo)
 
 	// send push event
-	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.HookEndpoint, *daemon.githubServer.HookSecret)
+	sendGithubPushEvent(t, []byte(push), *daemon.HookEndpoint, *daemon.HookSecret)
 
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, workspace)),
+		chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
@@ -128,7 +102,7 @@ func TestConnectRepo(t *testing.T) {
 	okDialog(t, ctx)
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(workspacePath(hostname, org, workspace)),
+		chromedp.Navigate(workspacePath(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
@@ -145,12 +119,12 @@ func TestConnectRepo(t *testing.T) {
 		chromedp.Click(`//button[text()='Delete workspace']`, chromedp.NodeVisible),
 		screenshot(t),
 		// confirm deletion
-		matchText(t, ".flash-success", "deleted workspace: "+workspace),
+		matchText(t, ".flash-success", "deleted workspace: my-test-workspace"),
 		//
 		// delete vcs provider
 		//
 		// go to org
-		chromedp.Navigate(organizationPath(hostname, org)),
+		chromedp.Navigate(organizationPath(daemon.Hostname(), org.Name)),
 		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),

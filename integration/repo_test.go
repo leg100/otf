@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/repo"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +18,7 @@ func TestRepo(t *testing.T) {
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create multiple connections", func(t *testing.T) {
-		svc := setup(t, &config{repo: "test/dummy"})
+		svc := setup(t, nil, github.WithRepo("test/dummy"))
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)

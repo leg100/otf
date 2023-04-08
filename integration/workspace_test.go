@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/workspace"
@@ -40,7 +41,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("create connected workspace", func(t *testing.T) {
-		svc := setup(t, &config{repo: "test/dummy"})
+		svc := setup(t, nil, github.WithRepo("test/dummy"))
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
@@ -70,7 +71,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
-		svc := setup(t, &config{repo: "test/dummy"})
+		svc := setup(t, nil, github.WithRepo("test/dummy"))
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
@@ -95,7 +96,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {
-		svc := setup(t, &config{repo: "test/dummy"})
+		svc := setup(t, nil, github.WithRepo("test/dummy"))
 
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)

@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/module"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		svc := setup(t, &config{repo: "leg100/terraform-aws-stuff"})
+		svc := setup(t, nil, github.WithRepo("leg100/terraform-aws-stuff"))
 
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
