@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *application) userCommand() *cobra.Command {
+func (a *Application) userCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "users",
 		Short: "User account management",
@@ -18,7 +18,7 @@ func (a *application) userCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) userNewCommand() *cobra.Command {
+func (a *Application) userNewCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:           "new [username]",
 		Short:         "Create a new user account",
@@ -36,7 +36,7 @@ func (a *application) userNewCommand() *cobra.Command {
 	}
 }
 
-func (a *application) userDeleteCommand() *cobra.Command {
+func (a *Application) userDeleteCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:           "delete [username]",
 		Short:         "Delete a user account",

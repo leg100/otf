@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -13,12 +13,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type application struct {
+type Application struct {
 	client.Client
 	creds CredentialsStore
 }
 
-func (a *application) run(ctx context.Context, args []string, out io.Writer) error {
+func (a *Application) Run(ctx context.Context, args []string, out io.Writer) error {
 	cfg := http.NewConfig()
 
 	creds, err := NewCredentialsStore()
@@ -54,7 +54,7 @@ func (a *application) run(ctx context.Context, args []string, out io.Writer) err
 	return cmd.ExecuteContext(ctx)
 }
 
-func (a *application) newClient(cfg *http.Config) func(*cobra.Command, []string) error {
+func (a *Application) newClient(cfg *http.Config) func(*cobra.Command, []string) error {
 	return func(*cobra.Command, []string) error {
 		// Set API token according to the following precedence:
 		// (1) flag
@@ -80,7 +80,7 @@ func (a *application) newClient(cfg *http.Config) func(*cobra.Command, []string)
 	}
 }
 
-func (a *application) getToken(address string) (string, error) {
+func (a *Application) getToken(address string) (string, error) {
 	if token, ok := os.LookupEnv(otf.CredentialEnvKey(address)); ok {
 		return token, nil
 	}

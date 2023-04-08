@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/cli"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
@@ -372,23 +374,23 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) string {
 	t.Helper()
 
-	// Create user token expressly for otf cli
+	// Create user token expressly for otf cli...
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
+	// ...and persist it to the credential store
+	store, err := cli.NewCredentialsStore()
+	require.NoError(t, err)
+	err = store.Save(s.Hostname(), string(token))
+	require.NoError(t, err)
 
 	cmdargs := []string{"--address", s.Hostname()}
 	cmdargs = append(cmdargs, args...)
 
-	cmd := exec.Command("../_build/otf", cmdargs...)
-	cmd.Env = []string{
-		"HOME=" + os.Getenv("HOME"),
-		"PATH=" + os.Getenv("PATH"),
-		"SSL_CERT_FILE=" + os.Getenv("SSL_CERT_FILE"),
-		otf.CredentialEnv(s.Hostname(), token),
-		"OTF_ADDRESS=" + s.Hostname(),
-	}
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "otf cli failed: %s", out)
-	return string(out)
+	var buf bytes.Buffer
+	err = (&cli.Application{}).Run(ctx, cmdargs, &buf)
+	require.NoError(t, err)
+
+	require.NoError(t, err, "otf cli failed: %s", buf.String())
+	return buf.String()
 }

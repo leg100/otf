@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *application) workspaceCommand() *cobra.Command {
+func (a *Application) workspaceCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspaces",
 		Short: "Workspace management",
@@ -23,7 +23,7 @@ func (a *application) workspaceCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) workspaceListCommand() *cobra.Command {
+func (a *Application) workspaceListCommand() *cobra.Command {
 	var opts workspace.ListOptions
 
 	cmd := &cobra.Command{
@@ -56,7 +56,7 @@ func (a *application) workspaceListCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) workspaceShowCommand() *cobra.Command {
+func (a *Application) workspaceShowCommand() *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
@@ -89,7 +89,7 @@ func (a *application) workspaceShowCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) workspaceEditCommand() *cobra.Command {
+func (a *Application) workspaceEditCommand() *cobra.Command {
 	var (
 		organization string
 		opts         workspace.UpdateOptions
@@ -134,7 +134,7 @@ func (a *application) workspaceEditCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) workspaceLockCommand() *cobra.Command {
+func (a *Application) workspaceLockCommand() *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
@@ -166,7 +166,7 @@ func (a *application) workspaceLockCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) workspaceUnlockCommand() *cobra.Command {
+func (a *Application) workspaceUnlockCommand() *cobra.Command {
 	var (
 		organization string
 		force        bool

@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -14,12 +14,12 @@ import (
 	"github.com/leg100/otf/workspace"
 )
 
-func fakeApp(opts ...fakeOption) *application {
+func fakeApp(opts ...fakeOption) *Application {
 	client := fakeClient{}
 	for _, fn := range opts {
 		fn(&client)
 	}
-	return &application{&client, ""}
+	return &Application{&client, ""}
 }
 
 type fakeOption func(*fakeClient)

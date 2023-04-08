@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *application) agentCommand() *cobra.Command {
+func (a *Application) agentCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agents",
 		Short: "Agent management",
@@ -18,7 +18,7 @@ func (a *application) agentCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) agentTokenCommand() *cobra.Command {
+func (a *Application) agentTokenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tokens",
 		Short: "Agent token management",
@@ -29,7 +29,7 @@ func (a *application) agentTokenCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *application) agentTokenNewCommand() *cobra.Command {
+func (a *Application) agentTokenNewCommand() *cobra.Command {
 	opts := tokens.CreateAgentTokenOptions{}
 
 	cmd := &cobra.Command{

@@ -1,16 +1,40 @@
-package main
+package cli
 
 import (
 	"bytes"
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestMain checks the command tree is as it should be
-func TestMain(t *testing.T) {
+func TestSetToken_Env(t *testing.T) {
+	t.Setenv("OTF_TOKEN", "mytoken")
+	got, err := (&Application{}).getToken("localhost:8080")
+	require.NoError(t, err)
+	assert.Equal(t, "mytoken", got)
+}
+
+func TestSetToken_HostSpecificEnv(t *testing.T) {
+	t.Setenv("TF_TOKEN_otf_dev", "mytoken")
+	got, err := (&Application{}).getToken("otf.dev")
+	require.NoError(t, err)
+	assert.Equal(t, "mytoken", got)
+}
+
+func TestSetToken_CredentialStore(t *testing.T) {
+	store := CredentialsStore(filepath.Join(t.TempDir(), "creds.json"))
+	require.NoError(t, store.Save("otf.dev", "mytoken"))
+
+	got, err := (&Application{creds: store}).getToken("otf.dev")
+	require.NoError(t, err)
+	assert.Equal(t, "mytoken", got)
+}
+
+// TestCommandTree checks the command tree is as it should be
+func TestCommandTree(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -55,7 +79,7 @@ func TestMain(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := new(bytes.Buffer)
-			err := fakeApp().run(ctx, tt.args, got)
+			err := fakeApp().Run(ctx, tt.args, got)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				return
