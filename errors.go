@@ -2,6 +2,7 @@ package otf
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Generic errors
@@ -14,9 +15,6 @@ var (
 
 	// ErrResourceNotFound is returned when a receiving a 404.
 	ErrResourceNotFound = errors.New("resource not found")
-
-	// ErrMissingParameter is returned when a required parameter is missing
-	ErrMissingParameter = errors.New("missing required parameter")
 
 	// ErrResourceAlreadyExists is returned when attempting to create a resource
 	// that already exists.
@@ -83,11 +81,20 @@ var (
 	ErrRunForceCancelNotAllowed = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
 )
 
-type HTTPError struct {
-	Code    int
-	Message string
-}
+type (
+	HTTPError struct {
+		Code    int
+		Message string
+	}
+	MissingParameterError struct {
+		Parameter string
+	}
+)
 
 func (e *HTTPError) Error() string {
 	return e.Message
+}
+
+func (e *MissingParameterError) Error() string {
+	return fmt.Sprintf("required parameter missing: %s", e.Parameter)
 }

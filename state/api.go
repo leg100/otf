@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -49,11 +48,11 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 
 	// required options
 	if opts.Serial == nil {
-		jsonapi.Error(w, fmt.Errorf("%w: %s", otf.ErrMissingParameter, "serial number"))
+		jsonapi.Error(w, &otf.MissingParameterError{Parameter: "serial"})
 		return
 	}
 	if opts.MD5 == nil {
-		jsonapi.Error(w, fmt.Errorf("%w: %s", otf.ErrMissingParameter, "md5"))
+		jsonapi.Error(w, &otf.MissingParameterError{Parameter: "md5"})
 		return
 	}
 

@@ -3,7 +3,6 @@ package decode
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -86,14 +85,14 @@ func Param(name string, r *http.Request) (string, error) {
 	if v, ok := mux.Vars(r)[name]; ok {
 		return v, nil
 	}
-	return "", fmt.Errorf("%w: %s", otf.ErrMissingParameter, name)
+	return "", &otf.MissingParameterError{Parameter: name}
 }
 
 func decode(dst interface{}, src map[string][]string) error {
 	if err := decoder.Decode(dst, src); err != nil {
 		var emptyField schema.EmptyFieldError
 		if errors.As(err, &emptyField) {
-			return fmt.Errorf("%w: %s", otf.ErrMissingParameter, emptyField.Key)
+			return &otf.MissingParameterError{Parameter: emptyField.Key}
 		}
 		return err
 	}

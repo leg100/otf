@@ -77,6 +77,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if cfg.DevMode {
 		logger.Info("enabled developer mode")
 	}
+	if cfg.Secret == "" {
+		return nil, &otf.MissingParameterError{Parameter: "secret"}
+	}
 
 	hostnameService := otf.NewHostnameService(cfg.Host)
 
