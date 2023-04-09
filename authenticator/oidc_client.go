@@ -22,7 +22,6 @@ type (
 		provider     *oidc.Provider
 		verifier     *oidc.IDTokenVerifier
 		oauth2Config oauth2.Config
-		policies     []cloud.OIDCOrganizationPolicy
 	}
 
 	// oidcClaims depicts the claims returned from the oidc id-token.
@@ -93,34 +92,10 @@ func (o oidcAuthenticator) CallbackHandler(r *http.Request) (*oidcClaims, error)
 	return &claims, nil
 }
 
-func (o oidcAuthenticator) buildUserTeamsFromPolicies(
-	teams []cloud.Team,
-	groupsMap map[string]bool,
-	policies []cloud.OIDCOrganizationPolicy,
-) []cloud.Team {
-	for _, policy := range policies {
-		if groupsMap[policy.Group] {
-			teams = append(teams, cloud.Team{
-				Name:         policy.Team,
-				Organization: policy.Organization,
-			})
-		}
-	}
-
-	return teams
-}
-
 // getUserFromClaims returns a cloud.User given a user's claims.
 func (o oidcAuthenticator) getUserFromClaims(claims *oidcClaims) (*cloud.User, error) {
 	var teams []cloud.Team
 
-	groupsMap := map[string]bool{}
-	for _, group := range claims.Groups {
-		groupsMap[group] = true
-	}
-
-	teams = o.buildUserTeamsFromPolicies(teams, groupsMap, o.policies)
-	
 	return &cloud.User{
 		Name:  claims.Name,
 		Teams: teams,

@@ -97,17 +97,11 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 
 		verifier := provider.Verifier(&oidc.Config{ClientID: cfg.ClientID})
 
-		policies, err := cfg.GetOrganizationPolicies()
-		if err != nil {
-			return nil, err
-		}
-
 		authenticator := &oidcAuthenticator{
 			TokensService: opts.TokensService,
 			oidcConfig:    cfg,
 			provider:      provider,
 			verifier:      verifier,
-			policies:      policies,
 			oauth2Config: oauth2.Config{
 				ClientID:     cfg.ClientID,
 				ClientSecret: cfg.ClientSecret,
