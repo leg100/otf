@@ -269,7 +269,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
-func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*tokens.Token, []byte) {
+func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*tokens.UserToken, []byte) {
 	t.Helper()
 
 	// If user is provided then add it to context. Otherwise the context is
@@ -278,7 +278,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 		ctx = otf.AddSubjectToContext(ctx, user)
 	}
 
-	ut, token, err := s.CreateToken(ctx, tokens.CreateTokenOptions{
+	ut, token, err := s.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
 		Description: "lorem ipsum...",
 	})
 	require.NoError(t, err)
@@ -327,9 +327,11 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)
-	done := make(chan error)
+	done := make(chan struct{})
 	go func() {
-		done <- agent.Start(ctx)
+		err := agent.Start(ctx)
+		close(done)
+		require.NoError(t, err)
 	}()
 
 	t.Cleanup(func() {

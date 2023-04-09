@@ -25,7 +25,7 @@ func TestTokenWeb(t *testing.T) {
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 
-		web.newTokenHandler(w, r)
+		web.newUserToken(w, r)
 
 		if !assert.Equal(t, 200, w.Code) {
 			t.Log(t, w.Body.String())
@@ -39,7 +39,7 @@ func TestTokenWeb(t *testing.T) {
 		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
-		web.createTokenHandler(w, r)
+		web.createUserToken(w, r)
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, _ := w.Result().Location()
@@ -54,7 +54,7 @@ func TestTokenWeb(t *testing.T) {
 		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
-		web.tokensHandler(w, r)
+		web.userTokens(w, r)
 
 		if !assert.Equal(t, 200, w.Code) {
 			t.Log(t, w.Body.String())
@@ -68,7 +68,7 @@ func TestTokenWeb(t *testing.T) {
 		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
-		web.deleteTokenHandler(w, r)
+		web.deleteUserToken(w, r)
 
 		if assert.Equal(t, 302, w.Code) {
 			redirect, _ := w.Result().Location()
@@ -169,7 +169,7 @@ func TestAdminLoginHandler(t *testing.T) {
 			r := httptest.NewRequest("POST", "/admin/login", form)
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
-			app.adminLoginHandler(w, r)
+			app.adminLogin(w, r)
 
 			if assert.Equal(t, 302, w.Code) {
 				redirect, err := w.Result().Location()

@@ -26,7 +26,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	//
 	// Unauthenticated routes
 	//
-	r.HandleFunc("/admin/login", h.adminLoginHandler).Methods("POST")
+	r.HandleFunc("/admin/login", h.adminLogin).Methods("POST")
 
 	//
 	// Authenticated routes
@@ -34,10 +34,10 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	// user tokens
-	r.HandleFunc("/profile/tokens", h.tokensHandler).Methods("GET")
-	r.HandleFunc("/profile/tokens/delete", h.deleteTokenHandler).Methods("POST")
-	r.HandleFunc("/profile/tokens/new", h.newTokenHandler).Methods("GET")
-	r.HandleFunc("/profile/tokens/create", h.createTokenHandler).Methods("POST")
+	r.HandleFunc("/profile/tokens", h.userTokens).Methods("GET")
+	r.HandleFunc("/profile/tokens/delete", h.deleteUserToken).Methods("POST")
+	r.HandleFunc("/profile/tokens/new", h.newUserToken).Methods("GET")
+	r.HandleFunc("/profile/tokens/create", h.createUserToken).Methods("POST")
 
 	// agent tokens
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens", h.listAgentTokens).Methods("GET")
@@ -45,23 +45,23 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens/new", h.newAgentToken).Methods("GET")
 	r.HandleFunc("/agent-tokens/{agent_token_id}/delete", h.deleteAgentToken).Methods("POST")
 
-	r.HandleFunc("/logout", h.logoutHandler).Methods("POST")
+	r.HandleFunc("/logout", h.logout).Methods("POST")
 
 	// terraform login opens a browser to this hardcoded URL
-	r.HandleFunc("/settings/tokens", h.tokensHandler).Methods("GET")
+	r.HandleFunc("/settings/tokens", h.userTokens).Methods("GET")
 }
 
-func (h *webHandlers) newTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 	h.Render("token_new.tmpl", w, r, nil)
 }
 
-func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	var opts CreateTokenOptions
+func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
+	var opts CreateUserTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	_, token, err := h.svc.CreateToken(r.Context(), opts)
+	_, token, err := h.svc.CreateUserToken(r.Context(), opts)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -74,8 +74,8 @@ func (h *webHandlers) createTokenHandler(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 
-func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	tokens, err := h.svc.ListTokens(r.Context())
+func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
+	tokens, err := h.svc.ListUserTokens(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,24 +86,24 @@ func (h *webHandlers) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	h.Render("token_list.tmpl", w, r, struct {
+	h.Render("user_token_list.tmpl", w, r, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items []*Token
+		Items []*UserToken
 	}{
 		Pagination: &otf.Pagination{},
 		Items:      tokens,
 	})
 }
 
-func (h *webHandlers) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		html.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := h.svc.DeleteToken(r.Context(), id); err != nil {
+	if err := h.svc.DeleteUserToken(r.Context(), id); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -115,8 +115,8 @@ func (h *webHandlers) deleteTokenHandler(w http.ResponseWriter, r *http.Request)
 // Site Admin handlers
 //
 
-// adminLoginHandler logs in a site admin
-func (h *webHandlers) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
+// adminLogin logs in a site admin
+func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -215,7 +215,7 @@ func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.AgentTokens(at.Organization), http.StatusFound)
 }
 
-func (h *webHandlers) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) logout(w http.ResponseWriter, r *http.Request) {
 	html.SetCookie(w, sessionCookie, "", &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
