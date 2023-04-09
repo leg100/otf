@@ -52,4 +52,3 @@ FROM teams
 WHERE team_id = pggen.arg('team_id')
 RETURNING team_id
 ;
-

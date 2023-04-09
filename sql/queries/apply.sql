@@ -24,4 +24,3 @@ SET status = pggen.arg('status')
 WHERE run_id = pggen.arg('run_id')
 RETURNING run_id
 ;
-

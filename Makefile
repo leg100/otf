@@ -81,6 +81,12 @@ image: build
 load: image
 	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
 
+# Install pre-commit
+.PHONY: install-pre-commit
+install-pre-commit:
+	pip install pre-commit==3.2.2
+	pre-commit install
+
 # Install sql code generator
 .PHONY: install-pggen
 install-pggen:

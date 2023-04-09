@@ -171,4 +171,3 @@ function getRunWidget(path) {
     .then((response) => response.text())
     .then((html) => insert(html));
 }
-
