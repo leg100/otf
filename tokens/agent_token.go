@@ -7,9 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
-	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 type (
@@ -31,6 +29,13 @@ type (
 		CreateAgentTokenOptions
 		key jwk.Key // key for signing new token
 	}
+
+	agentTokenService interface {
+		CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error)
+		GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
+		ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+		DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	}
 )
 
 // NewAgentToken constructs a token for an external agent, returning both the
@@ -50,20 +55,18 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	}
-	token, err := jwt.NewBuilder().
-		Subject(at.ID).
-		Claim("kind", agentTokenKind).
-		Claim("organization", opts.Organization).
-		IssuedAt(time.Now()).
-		Build()
+	token, err := newToken(newTokenOptions{
+		key:     opts.key,
+		subject: at.ID,
+		kind:    agentTokenKind,
+		claims: map[string]string{
+			"organization": opts.Organization,
+		},
+	})
 	if err != nil {
 		return nil, nil, err
 	}
-	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, opts.key))
-	if err != nil {
-		return nil, nil, err
-	}
-	return &at, serialized, nil
+	return &at, token, nil
 }
 
 func (t *AgentToken) String() string      { return t.ID }
@@ -86,7 +89,7 @@ func (t *AgentToken) CanAccessWorkspace(action rbac.Action, policy otf.Workspace
 	return t.Organization == policy.Organization
 }
 
-// agentFromContext retrieves an agent(-token) from a context
+// agentFromContext retrieves an agent token from a context
 func agentFromContext(ctx context.Context) (*AgentToken, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
@@ -97,4 +100,73 @@ func agentFromContext(ctx context.Context) (*AgentToken, error) {
 		return nil, fmt.Errorf("subject found in context but it is not an agent")
 	}
 	return agent, nil
+}
+
+func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToken, error) {
+	at, err := a.db.getAgentTokenByID(ctx, tokenID)
+	if err != nil {
+		a.Error(err, "retrieving agent token", "token", "******")
+		return nil, err
+	}
+	a.V(2).Info("retrieved agent token", "organization", at.Organization, "id", at.ID)
+	return at, nil
+}
+
+func (a *service) CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) ([]byte, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateAgentTokenAction, opts.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	at, token, err := NewAgentToken(NewAgentTokenOptions{
+		CreateAgentTokenOptions: opts,
+		key:                     a.key,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := a.db.createAgentToken(ctx, at); err != nil {
+		a.Error(err, "creating agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("created agent token", "organization", opts.Organization, "id", at.ID, "subject", subject)
+	return token, nil
+}
+
+func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.ListAgentTokensAction, organization)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, err := a.db.listAgentTokens(ctx, organization)
+	if err != nil {
+		a.Error(err, "listing agent tokens", "organization", organization, "subject", subject)
+		return nil, err
+	}
+	a.V(2).Info("listed agent tokens", "organization", organization, "subject", subject)
+	return tokens, nil
+}
+
+func (a *service) DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error) {
+	// retrieve agent token first in order to get organization for authorization
+	at, err := a.db.getAgentTokenByID(ctx, id)
+	if err != nil {
+		// we can't reveal any info because all we have is the
+		// authentication token which is sensitive.
+		a.Error(err, "retrieving agent token", "token", "******")
+		return nil, err
+	}
+
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteAgentTokenAction, at.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := a.db.deleteAgentToken(ctx, id); err != nil {
+		a.Error(err, "deleting agent token", "agent token", at, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("deleted agent token", "agent token", at, "subject", subject)
+	return at, nil
 }

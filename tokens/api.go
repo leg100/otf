@@ -20,21 +20,20 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/agent/details", h.getCurrentAgent).Methods("GET")
 	r.HandleFunc("/agent/create", h.createAgentToken).Methods("POST")
 
-	// Registry session routes
-	r.HandleFunc("/registry/sessions/create", h.createRegistrySession).Methods("POST")
+	// Run token routes
+	r.HandleFunc("/tokens/run/create", h.createRunToken).Methods("POST")
 }
 
-// Registry session routes
-
-func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
-	var opts jsonapi.RegistrySessionCreateOptions
+func (h *api) createRunToken(w http.ResponseWriter, r *http.Request) {
+	var opts jsonapi.CreateRunTokenOptions
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
 
-	token, err := h.svc.CreateRegistryToken(r.Context(), CreateRegistryTokenOptions{
+	token, err := h.svc.CreateRunToken(r.Context(), CreateRunTokenOptions{
 		Organization: opts.Organization,
+		RunID:        opts.RunID,
 	})
 	if err != nil {
 		jsonapi.Error(w, err)
@@ -43,8 +42,6 @@ func (h *api) createRegistrySession(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(token)
 }
-
-// Agent token routes
 
 func (h *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts jsonapi.AgentTokenCreateOptions

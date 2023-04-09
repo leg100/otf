@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRegistrySession(t *testing.T) {
+func TestRunToken(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
@@ -20,8 +20,9 @@ func TestRegistrySession(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
-		_, err := svc.CreateRegistryToken(ctx, tokens.CreateRegistryTokenOptions{
+		_, err := svc.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
 			Organization: &org.Name,
+			RunID:        otf.String("run-123"),
 		})
 		require.NoError(t, err)
 	})

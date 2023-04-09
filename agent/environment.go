@@ -62,8 +62,9 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	token, err := svc.CreateRegistryToken(ctx, tokens.CreateRegistryTokenOptions{
+	token, err := svc.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
 		Organization: &ws.Organization,
+		RunID:        &run.ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")

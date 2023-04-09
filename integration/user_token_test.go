@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestToken(t *testing.T) {
+func TestUserToken(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
@@ -22,7 +22,7 @@ func TestToken(t *testing.T) {
 		// create user and then add them to context so that it is their token
 		// that is created.
 		ctx := otf.AddSubjectToContext(ctx, svc.createUser(t, ctx))
-		_, _, err := svc.CreateToken(ctx, tokens.CreateTokenOptions{
+		_, _, err := svc.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		})
 		require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestToken(t *testing.T) {
 		svc.createToken(t, ctx, user)
 		svc.createToken(t, ctx, user)
 
-		got, err := svc.ListTokens(ctx)
+		got, err := svc.ListUserTokens(ctx)
 		require.NoError(t, err)
 
 		assert.Equal(t, 3, len(got))
@@ -53,7 +53,7 @@ func TestToken(t *testing.T) {
 		ctx := otf.AddSubjectToContext(ctx, user)
 		token, _ := svc.createToken(t, ctx, user)
 
-		err := svc.DeleteToken(ctx, token.ID)
+		err := svc.DeleteUserToken(ctx, token.ID)
 		require.NoError(t, err)
 	})
 }

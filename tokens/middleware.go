@@ -26,7 +26,7 @@ const (
 
 type (
 	middlewareOptions struct {
-		AgentTokenService
+		agentTokenService
 		auth.AuthService
 
 		GoogleIAPConfig
@@ -142,8 +142,8 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Sub
 		return m.GetAgentToken(ctx, parsed.Subject())
 	case userTokenKind:
 		return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: otf.String(parsed.Subject())})
-	case registrySessionKind:
-		return NewRegistrySessionFromJWT(parsed)
+	case runTokenKind:
+		return NewRunTokenFromJWT(parsed)
 	default:
 		return nil, fmt.Errorf("unknown authentication kind")
 	}

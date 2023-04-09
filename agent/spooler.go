@@ -116,7 +116,6 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	}
 	// then spool events as they come in
 	for event := range sub {
-		s.Info("received event", "event", event.Type)
 		s.handleEvent(event)
 	}
 	return nil

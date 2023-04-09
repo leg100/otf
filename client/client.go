@@ -58,8 +58,6 @@ type (
 
 		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
 
-		CreateRegistryToken(ctx context.Context, opts tokens.CreateRegistryTokenOptions) ([]byte, error)
-
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 
@@ -74,6 +72,7 @@ type (
 
 		Hostname() string
 
+		tokens.RunTokenService
 		otf.PutChunkService
 		workspace.LockService
 	}

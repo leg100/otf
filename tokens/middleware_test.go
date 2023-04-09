@@ -50,13 +50,13 @@ func TestMiddleware(t *testing.T) {
 		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
-	t.Run("valid registry session token", func(t *testing.T) {
+	t.Run("valid run token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := newTestJWT(t, "secret", registrySessionKind, time.Hour, "organization", "acme-corp")
+		token := newTestJWT(t, "secret", runTokenKind, time.Hour, "organization", "acme-corp")
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &RegistrySession{})).ServeHTTP(w, r)
-		assert.Equal(t, 200, w.Code)
+		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &RunToken{})).ServeHTTP(w, r)
+		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
 	t.Run("valid agent token", func(t *testing.T) {

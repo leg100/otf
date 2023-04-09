@@ -12,10 +12,11 @@ type Client struct {
 	otf.JSONAPIClient
 }
 
-// CreateRegistryToken creates a registry token via HTTP/JSONAPI
-func (c *Client) CreateRegistryToken(ctx context.Context, opts CreateRegistryTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "registry/sessions/create", &jsonapi.RegistrySessionCreateOptions{
+// CreateRunToken creates a run token via HTTP/JSONAPI
+func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
+	req, err := c.NewRequest("POST", "tokens/run/create", &jsonapi.CreateRunTokenOptions{
 		Organization: opts.Organization,
+		RunID:        opts.RunID,
 	})
 	if err != nil {
 		return nil, err

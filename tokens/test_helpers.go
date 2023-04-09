@@ -7,16 +7,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
-	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/require"
 )
 
 type fakeService struct {
 	agentToken *AgentToken
-	userToken  *Token
+	userToken  *UserToken
 
 	token []byte
 
@@ -35,15 +34,15 @@ func (f *fakeService) DeleteAgentToken(context.Context, string) (*AgentToken, er
 	return f.agentToken, nil
 }
 
-func (f *fakeService) CreateToken(context.Context, CreateTokenOptions) (*Token, []byte, error) {
+func (f *fakeService) CreateUserToken(context.Context, CreateUserTokenOptions) (*UserToken, []byte, error) {
 	return nil, f.token, nil
 }
 
-func (f *fakeService) ListTokens(context.Context) ([]*Token, error) {
-	return []*Token{f.userToken}, nil
+func (f *fakeService) ListUserTokens(context.Context) ([]*UserToken, error) {
+	return []*UserToken{f.userToken}, nil
 }
 
-func (f *fakeService) DeleteToken(context.Context, string) error {
+func (f *fakeService) DeleteUserToken(context.Context, string) error {
 	return nil
 }
 
@@ -55,33 +54,31 @@ func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts 
 func NewTestSessionJWT(t *testing.T, username, secret string, lifetime time.Duration) string {
 	t.Helper()
 
-	token, err := jwt.NewBuilder().
-		Subject(username).
-		IssuedAt(time.Now()).
-		Claim("kind", userSessionKind).
-		Expiration(time.Now().Add(lifetime)).
-		Build()
+	token, err := newToken(newTokenOptions{
+		key:     newTestJWK(t, secret),
+		subject: username,
+		kind:    userSessionKind,
+		expiry:  otf.Time(time.Now().Add(lifetime)),
+	})
 	require.NoError(t, err)
-	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, newTestJWK(t, secret)))
-	require.NoError(t, err)
-	return string(serialized)
+	return string(token)
 }
 
 func newTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, claims ...string) string {
 	t.Helper()
 
-	builder := jwt.NewBuilder().
-		IssuedAt(time.Now()).
-		Claim("kind", kind).
-		Expiration(time.Now().Add(lifetime))
+	claimsMap := make(map[string]string, len(claims)/2)
 	for i := 0; i < len(claims); i += 2 {
-		builder = builder.Claim(claims[0], claims[1])
+		claimsMap[claims[i]] = claims[i+1]
 	}
-	token, err := builder.Build()
+	token, err := newToken(newTokenOptions{
+		key:    newTestJWK(t, secret),
+		kind:   kind,
+		expiry: otf.Time(time.Now().Add(lifetime)),
+		claims: claimsMap,
+	})
 	require.NoError(t, err)
-	serialized, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, newTestJWK(t, secret)))
-	require.NoError(t, err)
-	return string(serialized)
+	return string(token)
 }
 
 func newTestJWK(t *testing.T, secret string) jwk.Key {
@@ -104,9 +101,9 @@ func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 	return token
 }
 
-func NewTestToken(t *testing.T, org string) *Token {
-	token, _, err := NewToken(NewTokenOptions{
-		CreateTokenOptions: CreateTokenOptions{
+func NewTestToken(t *testing.T, org string) *UserToken {
+	token, _, err := NewUserToken(NewUserTokenOptions{
+		CreateUserTokenOptions: CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		},
 		Username: uuid.NewString(),

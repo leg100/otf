@@ -22,7 +22,7 @@ const (
 	ListAgentTokensAction
 	DeleteAgentTokenAction
 
-	CreateRegistrySessionAction
+	CreateRunTokenAction
 
 	CreateModuleAction
 	CreateModuleVersionAction

@@ -63,7 +63,7 @@ func fakeTokenMiddleware(t *testing.T, secret string) mux.MiddlewareFunc {
 	key := newTestJWK(t, secret)
 	return newMiddleware(middlewareOptions{
 		AuthService:       &fakeMiddlewareService{},
-		AgentTokenService: &fakeMiddlewareService{},
+		agentTokenService: &fakeMiddlewareService{},
 		key:               key,
 	})
 }
@@ -74,7 +74,7 @@ func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 	key := newTestJWK(t, "abcdef123") // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
 		AuthService:       &fakeMiddlewareService{},
-		AgentTokenService: &fakeMiddlewareService{},
+		agentTokenService: &fakeMiddlewareService{},
 		SiteToken:         token,
 		key:               key,
 	})
@@ -86,7 +86,7 @@ func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 	key := newTestJWK(t, "abcdef123") // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
 		AuthService:       &fakeMiddlewareService{},
-		AgentTokenService: &fakeMiddlewareService{},
+		agentTokenService: &fakeMiddlewareService{},
 		GoogleIAPConfig: GoogleIAPConfig{
 			Audience: aud,
 		},
