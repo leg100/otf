@@ -96,23 +96,22 @@ func TestQueue(t *testing.T) {
 		q := newTestQueue(app, ws)
 
 		// user locks workspace; new run should be made the current run but should not
-		// be scheduled nor replace the workspace lock
-		lock := workspace.UserLock{}
-		err := ws.Lock.Lock(lock)
+		// be scheduled nor replace the user lock
+		err := ws.Lock("bobby", workspace.UserLock)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, otf.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, lock, q.ws.Lock.LockedState)
+		assert.Equal(t, workspace.UserLock, q.ws.LockKind)
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
-		err = ws.Unlock(lock, false)
+		err = ws.Unlock("bobby", workspace.UserLock, false)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, otf.Event{Type: workspace.EventUnlocked, Payload: ws})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, workspace.RunLock{ID: "run-123"}, q.ws.Lock.LockedState)
+		assert.Equal(t, workspace.RunLock, q.ws.LockKind)
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
@@ -172,22 +171,14 @@ func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*run
 }
 
 func (f *fakeQueueServices) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
-	state, err := workspace.GetLockedState(nil, runID)
-	if err != nil {
-		return nil, err
-	}
-	if err := f.ws.Lock.Lock(state); err != nil {
+	if err := f.ws.Lock(*runID, workspace.RunLock); err != nil {
 		return nil, err
 	}
 	return f.ws, nil
 }
 
 func (f *fakeQueueServices) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*workspace.Workspace, error) {
-	state, err := workspace.GetLockedState(nil, runID)
-	if err != nil {
-		return nil, err
-	}
-	if err := f.ws.Lock.Unlock(state, false); err != nil {
+	if err := f.ws.Unlock(*runID, workspace.RunLock, false); err != nil {
 		return nil, err
 	}
 	return f.ws, nil

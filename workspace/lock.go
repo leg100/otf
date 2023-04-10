@@ -1,6 +1,15 @@
 package workspace
 
-import "github.com/leg100/otf"
+import (
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
+)
+
+const (
+	UserLock LockKind = iota
+	RunLock
+)
 
 var (
 	EventLocked   otf.EventType = "workspace_locked"
@@ -12,50 +21,117 @@ type (
 	// uploaded.
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings#locking
-	Lock struct {
-		LockedState // nil means unlocked
+	lock struct {
+		id       string // ID of entity holding lock
+		LockKind        // kind of entity holding lock
 	}
 
-	// LockedState is the workspace lock in a locked state, revealing who/what has
-	// locked it and whether it can be locked/unlocked.
-	LockedState interface {
-		// CanLock checks whether it can be replaced with the given locked state
-		CanLock(lock LockedState) error
-		// CanUnlock checks whether subject is permitted to transfer it into the,
-		// unlocked state, forceably or not.
-		CanUnlock(lock LockedState, force bool) error
+	// kind of entity holding a lock
+	LockKind int
 
-		String() string
+	LockButton struct {
+		State    string // locked or unlocked
+		Text     string // button text
+		Tooltip  string // button tooltip
+		Disabled bool   // button greyed out or not
+		Action   string // form URL
 	}
 )
 
-// Locked determines whether lock is locked.
-func (l *Lock) Locked() bool {
-	return l.LockedState != nil
+// Locked determines whether workspace is locked.
+func (ws *Workspace) Locked() bool {
+	// a nil receiver means the lock is unlocked
+	return ws.lock != nil
 }
 
-// Lock transfers a workspace into the given locked state
-func (l *Lock) Lock(state LockedState) error {
-	if !l.Locked() {
-		// anything can lock an unlocked lock
-		l.LockedState = state
+// Lock the workspace
+func (ws *Workspace) Lock(id string, kind LockKind) error {
+	if ws.lock == nil {
+		ws.lock = &lock{
+			id:       id,
+			LockKind: kind,
+		}
 		return nil
 	}
-	if err := l.LockedState.CanLock(state); err != nil {
-		return err
+	// a run can replace another run holding a lock
+	if kind == RunLock {
+		ws.lock.id = id
+		return nil
 	}
-	l.LockedState = state
-	return nil
+	return otf.ErrWorkspaceAlreadyLocked
 }
 
-// Unlock the lock.
-func (l *Lock) Unlock(state LockedState, force bool) error {
-	if !l.Locked() {
+// Unlock the workspace.
+func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
+	if ws.lock == nil {
 		return otf.ErrWorkspaceAlreadyUnlocked
 	}
-	if err := l.LockedState.CanUnlock(state, force); err != nil {
-		return err
+	if force {
+		ws.lock = nil
+		return nil
 	}
-	l.LockedState = nil
-	return nil
+	// user can unlock their own lock
+	if ws.LockKind == UserLock && kind == UserLock && ws.lock.id == id {
+		ws.lock = nil
+		return nil
+	}
+	// run can unlock its own lock
+	if ws.LockKind == RunLock && kind == RunLock && ws.lock.id == id {
+		ws.lock = nil
+		return nil
+	}
+	// otherwise assume user is trying to unlock a lock held by a different
+	// user (we don't assume a run because the scheduler should never attempt to
+	// unlock a workspace using anything other than the original run).
+	return otf.ErrWorkspaceLockedByDifferentUser
+}
+
+// lockButtonHelper helps the UI determine the button to display for
+// locking/unlocking the workspace.
+func lockButtonHelper(ws *Workspace, policy otf.WorkspacePolicy, user otf.Subject) LockButton {
+	var btn LockButton
+
+	if ws.Locked() {
+		btn.State = "locked"
+		btn.Text = "Unlock"
+		btn.Action = paths.UnlockWorkspace(ws.ID)
+		// A user needs at least the unlock permission
+		if !user.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy) {
+			btn.Tooltip = "insufficient permissions"
+			btn.Disabled = true
+			return btn
+		}
+		// Determine tooltip to show
+		switch ws.LockKind {
+		case UserLock:
+			btn.Tooltip = "locked by user: " + ws.lock.id
+		case RunLock:
+			btn.Tooltip = "locked by run: " + ws.lock.id
+		default:
+			btn.Tooltip = "locked by unknown entity: " + ws.lock.id
+		}
+		// A user can unlock their own lock
+		if ws.LockKind == UserLock && ws.lock.id == user.String() {
+			return btn
+		}
+		// User is going to need the force unlock permission
+		if user.CanAccessWorkspace(rbac.ForceUnlockWorkspaceAction, policy) {
+			btn.Text = "Force unlock"
+			btn.Action = paths.ForceUnlockWorkspace(ws.ID)
+			return btn
+		}
+		// User cannot unlock
+		btn.Disabled = true
+		return btn
+	} else {
+		btn.State = "unlocked"
+		btn.Text = "Lock"
+		btn.Action = paths.LockWorkspace(ws.ID)
+		// User needs at least the lock permission
+		if !user.CanAccessWorkspace(rbac.LockWorkspaceAction, policy) {
+			btn.Disabled = true
+			btn.Tooltip = "insufficient permissions"
+		}
+		return btn
+	}
 }

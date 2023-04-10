@@ -41,6 +41,7 @@ var (
 		permissions: map[Action]bool{
 			CreateRunAction:                  true,
 			CreateConfigurationVersionAction: true,
+			// includes WorkspaceReadRole perms too (see below)
 		},
 	}
 
@@ -52,6 +53,7 @@ var (
 			ApplyRunAction:        true,
 			LockWorkspaceAction:   true,
 			UnlockWorkspaceAction: true,
+			// includes WorkspacePlanRole perms too (see below)
 		},
 	}
 
@@ -60,9 +62,12 @@ var (
 	WorkspaceAdminRole = Role{
 		name: "admin",
 		permissions: map[Action]bool{
-			GetConfigurationVersionAction: true,
-			SetWorkspacePermissionAction:  true,
-			DeleteWorkspaceAction:         true,
+			GetConfigurationVersionAction:  true,
+			SetWorkspacePermissionAction:   true,
+			UnsetWorkspacePermissionAction: true,
+			DeleteWorkspaceAction:          true,
+			ForceUnlockWorkspaceAction:     true,
+			// includes WorkspaceWriteRole perms too (see below)
 		},
 	}
 
@@ -71,11 +76,10 @@ var (
 	WorkspaceManagerRole = Role{
 		name: "workspace-manager",
 		permissions: map[Action]bool{
-			CreateWorkspaceAction:          true,
-			ListWorkspacesAction:           true,
-			UpdateWorkspaceAction:          true,
-			SetWorkspacePermissionAction:   true,
-			UnsetWorkspacePermissionAction: true,
+			CreateWorkspaceAction: true,
+			ListWorkspacesAction:  true,
+			UpdateWorkspaceAction: true,
+			// includes WorkspaceAdminRole perms too (see below)
 		},
 	}
 

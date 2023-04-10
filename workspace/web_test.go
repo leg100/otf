@@ -60,7 +60,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 			"unlocked", &Workspace{ID: "ws-unlocked"},
 		},
 		{
-			"locked", &Workspace{ID: "ws-locked", Lock: Lock{LockedState: UserLock{}}},
+			"locked", &Workspace{ID: "ws-locked", lock: &lock{id: "janitor", LockKind: UserLock}},
 		},
 	}
 	for _, tt := range tests {
@@ -69,11 +69,10 @@ func TestGetWorkspaceHandler(t *testing.T) {
 
 			q := "/?workspace_id=ws-123"
 			r := httptest.NewRequest("GET", q, nil)
+			r = r.WithContext(otf.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
 			w := httptest.NewRecorder()
 			app.getWorkspace(w, r)
-			if !assert.Equal(t, 200, w.Code) {
-				t.Log(t, w.Body.String())
-			}
+			assert.Equal(t, 200, w.Code, w.Body.String())
 		})
 	}
 }

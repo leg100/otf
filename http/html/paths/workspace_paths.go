@@ -40,6 +40,10 @@ func UnlockWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/unlock", workspace)
 }
 
+func ForceUnlockWorkspace(workspace string) string {
+	return fmt.Sprintf("/app/workspaces/%s/force-unlock", workspace)
+}
+
 func SetPermissionWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/set-permission", workspace)
 }

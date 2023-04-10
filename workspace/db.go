@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
@@ -92,16 +91,16 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.LatestRunID = &r.LatestRunID.String
 	}
 
-	if r.UserLock == nil && r.RunLock == nil {
-		ws.LockedState = nil
-	} else if r.UserLock != nil {
-		ws.LockedState = UserLock{
-			Username: r.UserLock.Username.String,
+	if r.UserLock != nil {
+		ws.lock = &lock{
+			id:       r.UserLock.Username.String,
+			LockKind: UserLock,
 		}
 	} else if r.RunLock != nil {
-		ws.LockedState = RunLock{ID: r.RunLock.RunID.String}
-	} else {
-		return nil, fmt.Errorf("workspace cannot be locked by both a run and a user")
+		ws.lock = &lock{
+			id:       r.RunLock.RunID.String,
+			LockKind: RunLock,
+		}
 	}
 
 	return &ws, nil
