@@ -367,7 +367,7 @@ func (r *Run) Discardable() bool {
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
 	switch r.Status {
-	case otf.RunPending, otf.RunPlanQueued, otf.RunPlanning, otf.RunPlanned, otf.RunApplyQueued, otf.RunApplying:
+	case otf.RunPending, otf.RunPlanQueued, otf.RunPlanning, otf.RunApplyQueued, otf.RunApplying:
 		return true
 	default:
 		return false

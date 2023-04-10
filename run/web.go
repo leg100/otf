@@ -40,18 +40,18 @@ type (
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list)
+	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
-	r.HandleFunc("/runs/{run_id}", h.get)
-	r.HandleFunc("/runs/{run_id}/widget", h.getWidget)
-	r.HandleFunc("/runs/{run_id}/delete", h.delete)
-	r.HandleFunc("/runs/{run_id}/cancel", h.cancel)
-	r.HandleFunc("/runs/{run_id}/apply", h.apply)
-	r.HandleFunc("/runs/{run_id}/discard", h.discard)
+	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
+	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
-	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get)
+	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get).Methods("GET")
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {

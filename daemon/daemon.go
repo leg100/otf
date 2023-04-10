@@ -309,9 +309,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// close all db connections upon exit
-	defer func() {
-		d.DB.Close()
-	}()
+	defer d.DB.Close()
 
 	// Construct web server and start listening on port
 	server, err := http.NewServer(d.Logger, http.ServerConfig{

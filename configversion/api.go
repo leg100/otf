@@ -128,7 +128,7 @@ func (s *api) UploadConfigurationVersion() http.HandlerFunc {
 			if errors.As(err, &maxBytesError) {
 				jsonapi.Error(w, &otf.HTTPError{
 					Code:    422,
-					Message: fmt.Sprintf("config exceeds maximum (%d > %d)", len(buf.Bytes()), s.max),
+					Message: fmt.Sprintf("config exceeds maximum size (%d bytes)", s.max),
 				})
 			} else {
 				jsonapi.Error(w, err)

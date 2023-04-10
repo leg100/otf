@@ -24,6 +24,10 @@
         <form action="{{ cancelRunPath .ID }}" method="POST">
           <button class="delete" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
         </form>
+      {{ else if .Discardable }}
+        <form action="{{ discardRunPath .ID }}" method="POST">
+          <button class="delete" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+        </form>
       {{ end }}
     </div>
   </div>

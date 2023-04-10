@@ -66,10 +66,10 @@ func organizationURL(hostname, org string) string {
 }
 
 // newRootModule creates a terraform root module, returning its directory path
-func newRootModule(t *testing.T, hostname, organization, workspace string) string {
+func newRootModule(t *testing.T, hostname, organization, workspace string, additionalConfig ...string) string {
 	t.Helper()
 
-	config := []byte(fmt.Sprintf(`
+	config := fmt.Sprintf(`
 terraform {
   backend "remote" {
 	hostname = "%s"
@@ -81,10 +81,14 @@ terraform {
   }
 }
 resource "null_resource" "e2e" {}
-`, hostname, organization, workspace))
+`, hostname, organization, workspace)
+	for _, cfg := range additionalConfig {
+		config += "\n"
+		config += cfg
+	}
 
 	root := t.TempDir()
-	err := os.WriteFile(filepath.Join(root, "main.tf"), config, 0o600)
+	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	return root

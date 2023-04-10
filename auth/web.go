@@ -13,7 +13,7 @@ import (
 type webHandlers struct {
 	otf.Renderer
 
-	svc       AuthService
+	svc AuthService
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
