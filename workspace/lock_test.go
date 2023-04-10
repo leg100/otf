@@ -10,14 +10,17 @@ import (
 )
 
 func TestWorkspace_Lock(t *testing.T) {
-	t.Run("locked unlocked workspace", func(t *testing.T) {
-		err := (&Workspace{}).Lock("janitor", UserLock)
+	t.Run("lock an unlocked workspace", func(t *testing.T) {
+		ws := &Workspace{}
+		err := ws.Lock("janitor", UserLock)
 		require.NoError(t, err)
+		assert.True(t, ws.Locked())
 	})
 	t.Run("replace run lock with another run lock", func(t *testing.T) {
 		ws := &Workspace{lock: &lock{id: "run-123", LockKind: RunLock}}
 		err := ws.Lock("run-456", RunLock)
 		require.NoError(t, err)
+		assert.True(t, ws.Locked())
 	})
 	t.Run("user cannot lock a locked workspace", func(t *testing.T) {
 		ws := &Workspace{lock: &lock{id: "run-123", LockKind: RunLock}}
