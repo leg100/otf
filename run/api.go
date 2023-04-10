@@ -74,7 +74,7 @@ func (s *api) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if opts.Workspace == nil {
-		jsonapi.Error(w, fmt.Errorf("%w: %s", otf.ErrMissingParameter, "workspace"))
+		jsonapi.Error(w, &otf.MissingParameterError{Parameter: "workspace"})
 		return
 	}
 	var configurationVersionID *string

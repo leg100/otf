@@ -12,7 +12,6 @@ import (
 var codes = map[error]int{
 	otf.ErrResourceNotFound:         http.StatusNotFound,
 	otf.ErrAccessNotPermitted:       http.StatusForbidden,
-	otf.ErrMissingParameter:         http.StatusUnprocessableEntity,
 	otf.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
 	otf.ErrResourceAlreadyExists:    http.StatusConflict,
 	otf.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
@@ -35,12 +34,15 @@ type ErrorsPayload jsonapi.ErrorsPayload
 func Error(w http.ResponseWriter, err error) {
 	var (
 		httpError *otf.HTTPError
+		missing   *otf.MissingParameterError
 		code      int
 	)
-	// If error is type otf.HTTPError then extract its status code otherwise
-	// lookup the code.
+	// If error is type otf.HTTPError then extract its status code
 	if errors.As(err, &httpError) {
 		code = httpError.Code
+	} else if errors.As(err, &missing) {
+		// report missing parameter errors as a 422
+		code = http.StatusUnprocessableEntity
 	} else {
 		code = lookupHTTPCode(err)
 	}
