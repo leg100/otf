@@ -13,7 +13,7 @@ fi
 export OTF_SSL=true
 export OTF_CERT_FILE=./integration/cert.pem
 export OTF_KEY_FILE=./integration/key.pem
-export SSL_CERT_DIR=$PWD/integration/fixtures
+export SSL_CERT_FILE=$PWD/integration/fixtures/cert.pem
 
 # go-tfe tests perform privileged operations (e.g.
 # creating organizations), so we use a site admin token.
