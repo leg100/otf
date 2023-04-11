@@ -7,11 +7,6 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"strings"
-
-	"github.com/Masterminds/sprig/v3"
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html/paths"
 )
 
 const (
@@ -61,27 +56,13 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 		return nil, err
 	}
 
-	// template functions
-	funcs := sprig.HtmlFuncMap()
 	// func to append hash to asset links
-	funcs["addHash"] = buster.Path
-	// make version available to templates
-	funcs["version"] = func() string { return otf.Version }
-	// make version available to templates
-	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
-	funcs["mergeQuery"] = mergeQuery
-	funcs["selected"] = selected
-	funcs["checked"] = checked
-	funcs["disabled"] = disabled
-	// make path helpers available to templates
-	for k, v := range paths.FuncMap() {
-		funcs[k] = v
-	}
+	FuncMap["addHash"] = buster.Path
 
 	for _, page := range pages {
 		name := filepath.Base(page)
 
-		template, err := template.New(name).Funcs(funcs).ParseFS(templates,
+		template, err := template.New(name).Funcs(FuncMap).ParseFS(templates,
 			layoutTemplatePath,
 			partialTemplatesGlob,
 			page,

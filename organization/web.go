@@ -62,7 +62,11 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_get.tmpl", w, r, org)
+	a.Render("organization_get.tmpl", w, r, struct {
+		*Organization
+	}{
+		Organization: org,
+	})
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
