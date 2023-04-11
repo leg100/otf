@@ -5,11 +5,9 @@
 {{ define "container-header" }}organizations{{ end }}
 
 {{ define "container-header-actions" }}
-  {{ if and .CurrentUser .CurrentUser.IsSiteAdmin }}
   <form action="{{ newOrganizationPath }}" method="GET">
     <button id="new-organization-button" type="submit">New Organization</button>
   </form>
-  {{ end }}
 {{ end }}
 
 {{ define "content" }}
