@@ -36,6 +36,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/delete", h.deleteWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/lock", h.lockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/unlock", h.unlockWorkspace).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/force-unlock", h.forceUnlockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-provider", h.listWorkspaceVCSProviders).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/setup-connection-repo", h.listWorkspaceVCSRepos).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/connect", h.connect).Methods("POST")
@@ -122,11 +123,23 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	policy, err := h.svc.GetPolicy(r.Context(), id)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	h.Render("workspace_get.tmpl", w, r, struct {
 		*Workspace
+		LockButton
 	}{
-		Workspace: ws,
+		Workspace:  ws,
+		LockButton: lockButtonHelper(ws, policy, user),
 	})
 }
 
@@ -267,17 +280,34 @@ func (h *webHandlers) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := h.svc.UnlockWorkspace(r.Context(), id, nil, false)
+	ws, err := h.svc.UnlockWorkspace(r.Context(), workspaceID, nil, false)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
+}
+
+func (h *webHandlers) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	ws, err := h.svc.UnlockWorkspace(r.Context(), workspaceID, nil, true)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, paths.Workspace(ws.ID), http.StatusFound)
 }
 

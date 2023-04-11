@@ -34,7 +34,7 @@ func unmarshalJSONAPI(w *jsonapi.Workspace) *Workspace {
 	// domain object has three states: unlocked, run locked or user locked.
 	// Therefore we ignore when DTO says lock is locked because we cannot
 	// determine what/who locked it, so we assume it is unlocked.
-	domain.Lock = Lock{}
+	domain.lock = nil
 
 	return &domain
 }

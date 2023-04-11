@@ -42,6 +42,7 @@ func init() {
 	funcmap["deleteWorkspacePath"] = DeleteWorkspace
 	funcmap["lockWorkspacePath"] = LockWorkspace
 	funcmap["unlockWorkspacePath"] = UnlockWorkspace
+	funcmap["forceUnlockWorkspacePath"] = ForceUnlockWorkspace
 	funcmap["setPermissionWorkspacePath"] = SetPermissionWorkspace
 	funcmap["unsetPermissionWorkspacePath"] = UnsetPermissionWorkspace
 	funcmap["watchWorkspacePath"] = WatchWorkspace

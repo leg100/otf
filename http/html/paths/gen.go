@@ -144,6 +144,9 @@ var specs = []controllerSpec{
 						name: "unlock",
 					},
 					{
+						name: "force-unlock",
+					},
+					{
 						name: "set-permission",
 					},
 					{

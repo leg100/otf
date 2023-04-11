@@ -52,7 +52,7 @@ type (
 		Connection                 *repo.Connection
 		Permissions                []otf.WorkspacePermission
 
-		Lock
+		*lock
 	}
 
 	ExecutionMode string

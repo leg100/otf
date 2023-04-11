@@ -140,6 +140,14 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	return ws
 }
 
+func (s *testDaemon) getWorkspace(t *testing.T, ctx context.Context, workspaceID string) *workspace.Workspace {
+	t.Helper()
+
+	ws, err := s.GetWorkspace(ctx, workspaceID)
+	require.NoError(t, err)
+	return ws
+}
+
 func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *organization.Organization) *vcsprovider.VCSProvider {
 	t.Helper()
 

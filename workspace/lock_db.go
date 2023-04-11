@@ -10,7 +10,7 @@ import (
 )
 
 // toggleLock toggles the workspace lock state in the DB.
-func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Lock) error) (*Workspace, error) {
+func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
 	err := db.tx(ctx, func(tx *pgdb) error {
 		// retrieve workspace
@@ -22,24 +22,23 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		if err != nil {
 			return err
 		}
-		if err := togglefn(&ws.Lock); err != nil {
+		if err := togglefn(ws); err != nil {
 			return err
 		}
 		// persist to db
 		params := pggen.UpdateWorkspaceLockByIDParams{
 			WorkspaceID: pgtype.Text{String: ws.ID, Status: pgtype.Present},
 		}
-		switch state := ws.LockedState.(type) {
-		case RunLock:
-			params.RunID = pgtype.Text{String: state.ID, Status: pgtype.Present}
-			params.Username = pgtype.Text{Status: pgtype.Null}
-		case UserLock:
-			params.Username = pgtype.Text{String: state.Username, Status: pgtype.Present}
-			params.RunID = pgtype.Text{Status: pgtype.Null}
-		case nil:
+		if ws.lock == nil {
 			params.RunID = pgtype.Text{Status: pgtype.Null}
 			params.Username = pgtype.Text{Status: pgtype.Null}
-		default:
+		} else if ws.LockKind == RunLock {
+			params.RunID = pgtype.Text{String: ws.lock.id, Status: pgtype.Present}
+			params.Username = pgtype.Text{Status: pgtype.Null}
+		} else if ws.LockKind == UserLock {
+			params.Username = pgtype.Text{String: ws.lock.id, Status: pgtype.Present}
+			params.RunID = pgtype.Text{Status: pgtype.Null}
+		} else {
 			return otf.ErrWorkspaceInvalidLock
 		}
 		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
