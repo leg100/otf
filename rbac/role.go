@@ -4,6 +4,20 @@ package rbac
 import "fmt"
 
 var (
+	// OrganizationMinPermissions are permissions granted to all team
+	// members within an organization.
+	OrganizationMinPermissions = Role{
+		name: "minimum",
+		permissions: map[Action]bool{
+			GetOrganizationAction: true,
+			GetEntitlementsAction: true,
+			ListModulesAction:     true,
+			GetModuleAction:       true,
+			GetTeamAction:         true,
+			ListTeamsAction:       true,
+		},
+	}
+
 	// WorkspaceReadRole is scoped to a workspace and permits read-only actions
 	// on the workspace.
 	WorkspaceReadRole = Role{

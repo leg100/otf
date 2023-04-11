@@ -24,7 +24,7 @@ go-tfe-tests: build
 
 .PHONY: test
 test:
-	go test $$(go list ./...)
+	go test -v ./...
 
 .PHONY: build
 build:
