@@ -98,18 +98,29 @@ func TestUser(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
-		team := svc.createTeam(t, ctx, org)
-		user1 := svc.createUser(t, ctx)
-		user2 := svc.createUser(t, ctx, auth.WithTeams(team))
-		user3 := svc.createUser(t, ctx, auth.WithTeams(team))
+		// create owners team consisting of one owner
+		owner, userCtx := svc.createUserCtx(t, ctx)
+		org := svc.createOrganization(t, userCtx)
+		owner = svc.getUser(t, ctx, owner.Username) // refresh user to update team membership
+		owners := svc.getTeam(t, ctx, org.Name, "owners")
 
-		users, err := svc.ListUsers(ctx, org.Name)
+		// create developers team
+		developers := svc.createTeam(t, ctx, org)
+
+		// add dev user to both teams
+		dev := svc.createUser(t, ctx, auth.WithTeams(owners, developers))
+
+		// create guest user, member of no team
+		guest := svc.createUser(t, ctx)
+
+		got, err := svc.ListUsers(ctx, org.Name)
 		require.NoError(t, err)
 
-		assert.NotContains(t, users, user1)
-		assert.Contains(t, users, user2)
-		assert.Contains(t, users, user3)
+		// should get list of two users: owner and dev
+		assert.Equal(t, 2, len(got), got)
+		assert.Contains(t, got, owner)
+		assert.Contains(t, got, dev)
+		assert.NotContains(t, got, guest)
 	})
 
 	t.Run("delete", func(t *testing.T) {

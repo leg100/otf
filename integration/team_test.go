@@ -97,13 +97,15 @@ func TestTeamDB(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 
 		team := svc.createTeam(t, ctx, org)
+		otherteam := svc.createTeam(t, ctx, org)
 		user1 := svc.createUser(t, ctx)
 		user2 := svc.createUser(t, ctx, auth.WithTeams(team))
-		user3 := svc.createUser(t, ctx, auth.WithTeams(team))
+		user3 := svc.createUser(t, ctx, auth.WithTeams(team, otherteam))
 
 		got, err := svc.ListTeamMembers(ctx, team.ID)
 		require.NoError(t, err)
 
+		assert.Equal(t, 2, len(got), got)
 		assert.NotContains(t, got, user1)
 		assert.Contains(t, got, user2)
 		assert.Contains(t, got, user3)

@@ -199,6 +199,14 @@ func (s *testDaemon) createUserCtx(t *testing.T, ctx context.Context, opts ...au
 	return user, otf.AddSubjectToContext(ctx, user)
 }
 
+func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *auth.User {
+	t.Helper()
+
+	user, err := s.GetUser(ctx, auth.UserSpec{Username: &username})
+	require.NoError(t, err)
+	return user
+}
+
 func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
 	t.Helper()
 
@@ -210,6 +218,14 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		Name:         uuid.NewString(),
 		Organization: org.Name,
 	})
+	require.NoError(t, err)
+	return team
+}
+
+func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string) *auth.Team {
+	t.Helper()
+
+	team, err := s.GetTeam(ctx, org, name)
 	require.NoError(t, err)
 	return team
 }
