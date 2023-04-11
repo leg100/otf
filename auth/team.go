@@ -6,8 +6,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-var GuestTeam = Team{ID: "team-guest", Name: "guest"}
-
 type (
 	// Team is a group of users sharing a level of authorization.
 	Team struct {

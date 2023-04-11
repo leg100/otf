@@ -116,9 +116,6 @@ func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 				// owner team members can perform all actions on organization
 				return true
 			}
-			if rbac.OrganizationGuestRole.IsAllowed(action) {
-				return true
-			}
 			if team.Access.ManageWorkspaces {
 				if rbac.WorkspaceManagerRole.IsAllowed(action) {
 					return true

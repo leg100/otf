@@ -4,20 +4,6 @@ package rbac
 import "fmt"
 
 var (
-	// OrganizationGuestRole is scoped to an organization and permits
-	// lowly-privileged actions to all user members.
-	OrganizationGuestRole = Role{
-		name: "guest",
-		permissions: map[Action]bool{
-			GetOrganizationAction: true, // guest can read org info
-			GetEntitlementsAction: true, // guest can read entitlements
-			ListModulesAction:     true, // guest can list mods within org
-			GetModuleAction:       true, // guest can read mod info
-			GetTeamAction:         true, // guest can read team info
-			ListTeamsAction:       true, // guest can list teams within org
-		},
-	}
-
 	// WorkspaceReadRole is scoped to a workspace and permits read-only actions
 	// on the workspace.
 	WorkspaceReadRole = Role{

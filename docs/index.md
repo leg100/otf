@@ -318,9 +318,11 @@ And enter the token when prompted. It'll be persisted to a local credentials fil
 
 ## Authorization
 
-The authorization model largely follows that of TFC/E. An organization comprises a number of teams. A user is a member of one or more organizations. If they are not a member of a team within an organization then they implicitly put into a 'guest' team, which has very limited privileges. To enjoy further privileges they need to be a member of an actual team.
+The authorization model largely follows that of TFC/E. An organization comprises a number of teams. A user is a member of one or more teams.
 
 ### Owners team
+
+Every organization has an `owners` team. The user that creates an organization becomes its owner. The owners team must have at least one member and it cannot be deleted.
 
 Members of the owners team enjoy broad privileges across an organization. "Owners" are the only users permitted to alter organization-level permissions. They are also automatically assigned all the organization-level permissions; these permissions cannot be unassigned.
 
