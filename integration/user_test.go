@@ -96,6 +96,12 @@ func TestUser(t *testing.T) {
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
+	// List users in an organization. The underlying SQL joins users to
+	// organization via teams, so this test adds a user to one team and another
+	// user to two teams, with both teams in the same organization, to check the
+	// SQL is working correctly, e.g. performing not only the join correctly,
+	// but performing de-duplication too so that users are not listed more than
+	// once.
 	t.Run("list", func(t *testing.T) {
 		svc := setup(t, nil)
 		// create owners team consisting of one owner
