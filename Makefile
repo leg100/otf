@@ -46,6 +46,16 @@ install-latest-release:
 	unzip -o -d $(GOBIN) $$ZIP_FILE otfd ;\
 	}
 
+# Run postgresql in a container
+.PHONY: postgres
+postgres:
+	docker compose -f docker-compose-postgres.yml up -d
+
+# Stop and remove postgres container
+.PHONY: postgres-rm
+postgres-rm:
+	docker compose -f docker-compose-postgres.yml rm -sf
+
 # Run squid caching proxy in a container
 .PHONY: squid
 squid:
