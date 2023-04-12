@@ -3,7 +3,6 @@
 package authenticator
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -27,17 +26,11 @@ type (
 		tokens.TokensService // for creating session
 
 		oauthClient
-		Synchroniser
 	}
 
 	service struct {
 		renderer       otf.Renderer
 		authenticators []*authenticator
-		Synchroniser
-	}
-
-	Synchroniser interface {
-		Sync(ctx context.Context, from cloud.User) error
 	}
 
 	Options struct {
@@ -57,12 +50,6 @@ type (
 func NewAuthenticatorService(opts Options) (*service, error) {
 	svc := service{
 		renderer: opts.Renderer,
-		Synchroniser: &synchroniser{
-			Logger:                     opts.Logger,
-			OrganizationService:        opts.OrganizationService,
-			OrganizationCreatorService: opts.OrganizationCreatorService,
-			AuthService:                opts.AuthService,
-		},
 	}
 
 	for _, cfg := range opts.Configs {
@@ -78,7 +65,6 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 			return nil, err
 		}
 		authenticator := &authenticator{
-			Synchroniser:    svc.Synchroniser,
 			HostnameService: opts.HostnameService,
 			TokensService:   opts.TokensService,
 			oauthClient:     client,
@@ -126,12 +112,6 @@ func (a *authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	// Get cloud user
 	cuser, err := client.GetUser(ctx)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Synchronise cloud user with otf user
-	if err := a.Sync(ctx, *cuser); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -57,7 +57,8 @@ type (
 // 5. Otherwise, return 401
 //
 // Where authentication succeeds, the authenticated subject is attached to the request
-// context and the upstream handler is called.
+// context and the upstream handler is called. If the authenticated subject is a
+// user and the user does not exist the user is first created.
 func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 	mw := middleware{middlewareOptions: opts}
 

@@ -56,7 +56,6 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	authenticator := &authenticator{
 		TokensService: &fakeAuthenticatorService{},
 		oauthClient:   &fakeOAuthClient{user: &cuser},
-		Synchroniser:  &fakeUserSynchroniser{},
 	}
 
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
