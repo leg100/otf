@@ -75,5 +75,11 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_list.tmpl", w, r, teams)
+	h.Render("team_list.tmpl", w, r, struct {
+		Organization string
+		Teams        []*Team
+	}{
+		Organization: organization,
+		Teams:        teams,
+	})
 }

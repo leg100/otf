@@ -3,7 +3,6 @@ package html
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
 
@@ -61,11 +60,7 @@ func (v *view) CurrentUser() otf.Subject {
 
 // CurrentOrganization retrieves the user's current organization
 func (v *view) CurrentOrganization() *string {
-	name, err := organizationFromContext(v.request.Context())
-	if err != nil {
-		return nil
-	}
-	return &name
+	return CurrentOrganization(v.Content)
 }
 
 func (v *view) CurrentPath() string {
@@ -74,14 +69,4 @@ func (v *view) CurrentPath() string {
 
 func (v *view) CurrentURL() string {
 	return v.request.URL.String()
-}
-
-// IsOrganizationRoute determines if the current request is for a route that
-// contains the current organization name, or the list of organizations.
-func (v *view) IsOrganizationRoute() bool {
-	if mux.CurrentRoute(v.request).GetName() == "listOrganization" {
-		return true
-	}
-	_, ok := mux.Vars(v.request)["organization_name"]
-	return ok
 }

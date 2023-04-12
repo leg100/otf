@@ -43,7 +43,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_new.tmpl", w, r, struct {
-		Workspace  *workspace.Workspace
+		*workspace.Workspace
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
@@ -106,7 +106,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_list.tmpl", w, r, struct {
-		Workspace *workspace.Workspace
+		*workspace.Workspace
 		Variables []*Variable
 	}{
 		Workspace: ws,
@@ -133,7 +133,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_edit.tmpl", w, r, struct {
-		Workspace  *workspace.Workspace
+		*workspace.Workspace
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
