@@ -210,6 +210,14 @@ var specs = []controllerSpec{
 			{
 				Name:           "team",
 				controllerType: resourcePath,
+				actions: []action{
+					{
+						name: "add-member",
+					},
+					{
+						name: "remove-member",
+					},
+				},
 			},
 			{
 				Name:           "vcs_provider",

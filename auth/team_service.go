@@ -150,7 +150,7 @@ func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	subject, err := a.organization.CanAccess(ctx, rbac.GetTeamAction, team.Organization)
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteTeamAction, team.Organization)
 	if err != nil {
 		return err
 	}

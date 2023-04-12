@@ -26,3 +26,7 @@ func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationLi
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil
 }
+
+func (f *fakeService) DeleteOrganization(context.Context, string) error {
+	return nil
+}

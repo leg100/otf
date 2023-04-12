@@ -32,16 +32,26 @@
     <br>
   {{ end }}
   <h3>Members</h3>
+  <form class="horizontal-form" action="{{ addMemberTeamPath .Content.ID }}" method="POST">
+    <input type="text" name="username" id="add-username" required placeholder="username">
+    <button type="submit">Add Member</button>
+  </form>
   <div id="content-list" class="content-list">
     {{ range .Content.Members }}
       <div id="item-user-{{ .Username }}" class="item">
         <div class="item-heading">
           <span class="status">{{ .Username }}</span>
         </div>
-        {{ template "identifier" . }}
+        <div class="item-content">
+          {{ template "identifier" . }}
+          <form class="horizontal-form" action="{{ removeMemberTeamPath $.Content.ID }}" method="POST">
+            <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
+            <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+          </form>
+        </div>
       </div>
     {{ else }}
-      No items currently exist.
+      No members currently exist.
     {{ end }}
   </div>
 {{ end }}

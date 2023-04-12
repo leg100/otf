@@ -19,7 +19,7 @@ type (
 
 	CreateTeamOptions struct {
 		// Name of team to create
-		Name string `schema:"team_name,required"`
+		Name string `schema:"name,required"`
 		// Organization in which to creat team
 		Organization string `schema:"organization_name,required"`
 		// Database transaction within which to create team. Optional.

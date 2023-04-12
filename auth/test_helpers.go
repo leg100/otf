@@ -32,6 +32,10 @@ func (f *fakeService) ListTeamMembers(ctx context.Context, teamID string) ([]*Us
 	return f.members, nil
 }
 
+func (f *fakeService) DeleteTeam(ctx context.Context, teamID string) error {
+	return nil
+}
+
 func newFakeWeb(t *testing.T, svc AuthService) *webHandlers {
 	t.Helper()
 

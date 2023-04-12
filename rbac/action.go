@@ -90,6 +90,7 @@ const (
 	UpdateTeamAction
 	GetTeamAction
 	ListTeamsAction
+	DeleteTeamAction
 	AddTeamMembershipAction
 	RemoveTeamMembershipAction
 )
