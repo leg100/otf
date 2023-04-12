@@ -81,7 +81,9 @@ func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_new.tmpl", w, r, organization)
+	h.Render("workspace_new.tmpl", w, r, struct{ Organization string }{
+		Organization: organization,
+	})
 }
 
 func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {

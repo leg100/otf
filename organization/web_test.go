@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,6 +47,17 @@ func TestWeb(t *testing.T) {
 			assert.Contains(t, w.Body.String(), "Previous Page")
 			assert.NotContains(t, w.Body.String(), "Next Page")
 		})
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		svc := newFakeWeb(t, &fakeService{
+			orgs: []*Organization{NewTestOrganization(t)},
+		})
+
+		r := httptest.NewRequest("POST", "/?name=acme-corp", nil)
+		w := httptest.NewRecorder()
+		svc.delete(w, r)
+		html.AssertRedirect(t, w, paths.Organizations())
 	})
 }
 

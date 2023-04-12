@@ -31,3 +31,11 @@ func UpdateTeam(team string) string {
 func DeleteTeam(team string) string {
 	return fmt.Sprintf("/app/teams/%s/delete", team)
 }
+
+func AddMemberTeam(team string) string {
+	return fmt.Sprintf("/app/teams/%s/add-member", team)
+}
+
+func RemoveMemberTeam(team string) string {
+	return fmt.Sprintf("/app/teams/%s/remove-member", team)
+}

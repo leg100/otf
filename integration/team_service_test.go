@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTeamDB(t *testing.T) {
+func TestIntegation_TeamService(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
