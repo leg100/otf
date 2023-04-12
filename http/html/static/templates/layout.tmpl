@@ -31,11 +31,11 @@
 
       {{ with .CurrentUser }}
         <div class="current-organization">
-          {{ with currentOrganization $.Content }}
-          <a href="{{ organizationPath . }}">
-            {{ template "building_icon" }}
-            <span>{{ . }}</span>
-          </a>
+          {{ with $.CurrentOrganization }}
+            <a href="{{ organizationPath . }}">
+              {{ template "building_icon" }}
+              <span>{{ . }}</span>
+            </a>
           {{ end }}
         </div>
 

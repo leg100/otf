@@ -10,12 +10,21 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-// web is the web application for organizations
-type web struct {
-	otf.Renderer
+type (
+	// web is the web application for organizations
+	web struct {
+		otf.Renderer
 
-	svc Service
-}
+		svc Service
+	}
+
+	// result implements html.currentOrganization
+	result struct {
+		*Organization
+	}
+)
+
+func (r *result) OrganizationName() string { return r.Name }
 
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
@@ -62,11 +71,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_get.tmpl", w, r, struct {
-		*Organization
-	}{
-		Organization: org,
-	})
+	a.Render("organization_get.tmpl", w, r, &result{org})
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
@@ -76,13 +81,13 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organization, err := a.svc.GetOrganization(r.Context(), name)
+	org, err := a.svc.GetOrganization(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	a.Render("organization_edit.tmpl", w, r, organization)
+	a.Render("organization_edit.tmpl", w, r, &result{org})
 }
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {

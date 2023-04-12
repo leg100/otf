@@ -58,6 +58,11 @@ func (v *view) CurrentUser() otf.Subject {
 	return subject
 }
 
+// CurrentOrganization retrieves the user's current organization
+func (v *view) CurrentOrganization() *string {
+	return CurrentOrganization(v.Content)
+}
+
 func (v *view) CurrentPath() string {
 	return v.request.URL.Path
 }
