@@ -140,6 +140,7 @@ FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
 WHERE t.organization_name = $1
+GROUP BY u.user_id
 ;`
 
 type FindUsersByOrganizationRow struct {

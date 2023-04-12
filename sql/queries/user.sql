@@ -34,6 +34,7 @@ FROM users u
 JOIN team_memberships tm USING (username)
 JOIN teams t USING (team_id)
 WHERE t.organization_name = pggen.arg('organization_name')
+GROUP BY u.user_id
 ;
 
 -- name: FindUsersByTeamID :many
