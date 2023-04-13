@@ -24,8 +24,6 @@ type (
 		user *cloud.User
 		cloud.Client
 	}
-
-	fakeUserSynchroniser struct{}
 )
 
 func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
@@ -43,8 +41,4 @@ func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (cloud.Clien
 
 func (f *fakeCloudClient) GetUser(context.Context) (*cloud.User, error) {
 	return f.user, nil
-}
-
-func (f *fakeUserSynchroniser) Sync(ctx context.Context, from cloud.User) error {
-	return nil
 }
