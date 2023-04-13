@@ -53,7 +53,7 @@ FROM state_versions
 LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE state_versions.workspace_id = pggen.arg('workspace_id')
 GROUP BY state_versions.state_version_id
-ORDER BY state_versions.serial DESC, state_versions.created_at DESC
+ORDER BY state_versions.serial DESC
 ;
 
 -- name: FindStateVersionStateByID :one

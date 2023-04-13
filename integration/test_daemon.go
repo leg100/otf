@@ -275,7 +275,7 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 	return v
 }
 
-func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *state.Version {
+func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, serial *int64) *state.Version {
 	t.Helper()
 
 	if ws == nil {
@@ -288,6 +288,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	sv, err := s.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		State:       file,
 		WorkspaceID: otf.String(ws.ID),
+		Serial:      serial,
 	})
 	require.NoError(t, err)
 	return sv

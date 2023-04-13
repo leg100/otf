@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
@@ -34,7 +33,7 @@ func TestState(t *testing.T) {
 
 	t.Run("get", func(t *testing.T) {
 		svc := setup(t, nil)
-		want := svc.createStateVersion(t, ctx, nil)
+		want := svc.createStateVersion(t, ctx, nil, nil)
 
 		got, err := svc.GetStateVersion(ctx, want.ID)
 		require.NoError(t, err)
@@ -49,21 +48,12 @@ func TestState(t *testing.T) {
 		require.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
+	// get current state version for a workspace, i.e. the latest one
 	t.Run("get current", func(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
-		_ = svc.createStateVersion(t, ctx, ws)
-		// ensure the second state version is returned as the current state
-		// version. We need to do this because we're using a dummy state file
-		// that has a hardcoded serial number and so both state versions have
-		// the same number. The otf db query sorts by serial and then by date
-		// created, but sometimes the two versions are created at the exact same
-		// time point.
-		//
-		// TODO: insist on unique serial number in DB and test with unique
-		// serial numbers.
-		time.Sleep(time.Second)
-		want := svc.createStateVersion(t, ctx, ws)
+		_ = svc.createStateVersion(t, ctx, ws, otf.Int64(0))
+		want := svc.createStateVersion(t, ctx, ws, otf.Int64(1))
 
 		got, err := svc.GetCurrentStateVersion(ctx, want.WorkspaceID)
 		require.NoError(t, err)
@@ -81,8 +71,8 @@ func TestState(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
-		sv1 := svc.createStateVersion(t, ctx, ws)
-		sv2 := svc.createStateVersion(t, ctx, ws)
+		sv1 := svc.createStateVersion(t, ctx, ws, otf.Int64(0))
+		sv2 := svc.createStateVersion(t, ctx, ws, otf.Int64(1))
 
 		got, err := svc.ListStateVersions(ctx, state.StateVersionListOptions{
 			Workspace:    ws.Name,
