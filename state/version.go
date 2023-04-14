@@ -1,8 +1,6 @@
 package state
 
 import (
-	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/leg100/otf"
@@ -45,51 +43,5 @@ type (
 		Serial      *int64  // State serial number. If not provided then it is extracted from the state.
 	}
 )
-
-// newVersion constructs a new state version.
-func newVersion(opts CreateStateVersionOptions) (*Version, error) {
-	if opts.State == nil {
-		return nil, errors.New("state file required")
-	}
-	if opts.WorkspaceID == nil {
-		return nil, errors.New("workspace ID required")
-	}
-
-	var f file
-	if err := json.Unmarshal(opts.State, &f); err != nil {
-		return nil, err
-	}
-
-	sv := Version{
-		ID:          otf.NewID("sv"),
-		CreatedAt:   otf.CurrentTimestamp(),
-		Serial:      f.Serial,
-		State:       opts.State,
-		WorkspaceID: *opts.WorkspaceID,
-	}
-	// Serial provided in options takes precedence over that extracted from the
-	// state file.
-	if opts.Serial != nil {
-		sv.Serial = *opts.Serial
-	}
-
-	sv.Outputs = make(outputList, len(f.Outputs))
-	for k, v := range f.Outputs {
-		hclType, err := newHCLType(v.Value)
-		if err != nil {
-			return nil, err
-		}
-
-		sv.Outputs[k] = &Output{
-			ID:             otf.NewID("wsout"),
-			Name:           k,
-			Type:           hclType,
-			Value:          string(v.Value),
-			Sensitive:      v.Sensitive,
-			StateVersionID: sv.ID,
-		}
-	}
-	return &sv, nil
-}
 
 func (v *Version) String() string { return v.ID }

@@ -46,6 +46,7 @@ type (
 		OrganizationName           pgtype.Text            `json:"organization_name"`
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
+		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
 		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`

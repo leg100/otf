@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
@@ -49,20 +48,12 @@ func TestState(t *testing.T) {
 		require.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
+	// Get current creates two state versions and checks the second one is made
+	// the current state version for a workspace.
 	t.Run("get current", func(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		_ = svc.createStateVersion(t, ctx, ws)
-		// ensure the second state version is returned as the current state
-		// version. We need to do this because we're using a dummy state file
-		// that has a hardcoded serial number and so both state versions have
-		// the same number. The otf db query sorts by serial and then by date
-		// created, but sometimes the two versions are created at the exact same
-		// time point.
-		//
-		// TODO: insist on unique serial number in DB and test with unique
-		// serial numbers.
-		time.Sleep(time.Second)
 		want := svc.createStateVersion(t, ctx, ws)
 
 		got, err := svc.GetCurrentStateVersion(ctx, want.WorkspaceID)

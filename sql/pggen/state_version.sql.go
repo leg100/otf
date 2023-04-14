@@ -227,17 +227,17 @@ func (q *DBQuerier) FindStateVersionByIDScan(results pgx.BatchResults) (FindStat
 	return item, nil
 }
 
-const findStateVersionLatestByWorkspaceIDSQL = `SELECT
-    state_versions.*,
-    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
-FROM state_versions
-LEFT JOIN state_version_outputs USING (state_version_id)
-WHERE state_versions.workspace_id = $1
-GROUP BY state_versions.state_version_id
-ORDER BY state_versions.serial DESC, state_versions.created_at DESC
+const findCurrentStateVersionByWorkspaceIDSQL = `SELECT
+    sv.*,
+    array_remove(array_agg(svo), NULL) AS state_version_outputs
+FROM state_versions sv
+LEFT JOIN state_version_outputs svo USING (state_version_id)
+JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
+WHERE w.workspace_id = $1
+GROUP BY sv.state_version_id
 ;`
 
-type FindStateVersionLatestByWorkspaceIDRow struct {
+type FindCurrentStateVersionByWorkspaceIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
 	Serial              int                   `json:"serial"`
@@ -246,36 +246,36 @@ type FindStateVersionLatestByWorkspaceIDRow struct {
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 }
 
-// FindStateVersionLatestByWorkspaceID implements Querier.FindStateVersionLatestByWorkspaceID.
-func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindStateVersionLatestByWorkspaceIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionLatestByWorkspaceID")
-	row := q.conn.QueryRow(ctx, findStateVersionLatestByWorkspaceIDSQL, workspaceID)
-	var item FindStateVersionLatestByWorkspaceIDRow
+// FindCurrentStateVersionByWorkspaceID implements Querier.FindCurrentStateVersionByWorkspaceID.
+func (q *DBQuerier) FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindCurrentStateVersionByWorkspaceIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindCurrentStateVersionByWorkspaceID")
+	row := q.conn.QueryRow(ctx, findCurrentStateVersionByWorkspaceIDSQL, workspaceID)
+	var item FindCurrentStateVersionByWorkspaceIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
-		return item, fmt.Errorf("query FindStateVersionLatestByWorkspaceID: %w", err)
+		return item, fmt.Errorf("query FindCurrentStateVersionByWorkspaceID: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
-		return item, fmt.Errorf("assign FindStateVersionLatestByWorkspaceID row: %w", err)
+		return item, fmt.Errorf("assign FindCurrentStateVersionByWorkspaceID row: %w", err)
 	}
 	return item, nil
 }
 
-// FindStateVersionLatestByWorkspaceIDBatch implements Querier.FindStateVersionLatestByWorkspaceIDBatch.
-func (q *DBQuerier) FindStateVersionLatestByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
-	batch.Queue(findStateVersionLatestByWorkspaceIDSQL, workspaceID)
+// FindCurrentStateVersionByWorkspaceIDBatch implements Querier.FindCurrentStateVersionByWorkspaceIDBatch.
+func (q *DBQuerier) FindCurrentStateVersionByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findCurrentStateVersionByWorkspaceIDSQL, workspaceID)
 }
 
-// FindStateVersionLatestByWorkspaceIDScan implements Querier.FindStateVersionLatestByWorkspaceIDScan.
-func (q *DBQuerier) FindStateVersionLatestByWorkspaceIDScan(results pgx.BatchResults) (FindStateVersionLatestByWorkspaceIDRow, error) {
+// FindCurrentStateVersionByWorkspaceIDScan implements Querier.FindCurrentStateVersionByWorkspaceIDScan.
+func (q *DBQuerier) FindCurrentStateVersionByWorkspaceIDScan(results pgx.BatchResults) (FindCurrentStateVersionByWorkspaceIDRow, error) {
 	row := results.QueryRow()
-	var item FindStateVersionLatestByWorkspaceIDRow
+	var item FindCurrentStateVersionByWorkspaceIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
-		return item, fmt.Errorf("scan FindStateVersionLatestByWorkspaceIDBatch row: %w", err)
+		return item, fmt.Errorf("scan FindCurrentStateVersionByWorkspaceIDBatch row: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
-		return item, fmt.Errorf("assign FindStateVersionLatestByWorkspaceID row: %w", err)
+		return item, fmt.Errorf("assign FindCurrentStateVersionByWorkspaceID row: %w", err)
 	}
 	return item, nil
 }

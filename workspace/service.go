@@ -35,6 +35,9 @@ type (
 		// TODO: rename to ListConnectedWorkspaces
 		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
+		// SetCurrentStateVersion sets the current state version for the
+		// workspace.
+		// SetCurrentStateVersion(ctx context.Context, workspaceID string, setter func(otf.DB, *Workspace) (string, error)) error
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
