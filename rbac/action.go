@@ -72,6 +72,7 @@ const (
 	CreateStateVersionAction
 	ListStateVersionsAction
 	GetStateVersionAction
+	RollbackStateVersionAction
 	DownloadStateAction
 	GetStateVersionOutputAction
 

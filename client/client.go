@@ -60,6 +60,7 @@ type (
 
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
+		RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error)
 
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error

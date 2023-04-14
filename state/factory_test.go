@@ -104,4 +104,23 @@ func TestFactory(t *testing.T) {
 		})
 		require.Equal(t, ErrSerialLessThanCurrent, err)
 	})
+
+	t.Run("rollback", func(t *testing.T) {
+		f := factory{&fakeDB{version: &Version{
+			Serial:      4,
+			State:       state,
+			WorkspaceID: "ws-123",
+		}}}
+
+		got, err := f.rollback(ctx, "sv-123")
+		require.NoError(t, err)
+		//
+		// should generate new ID
+		assert.Regexp(t, "sv-.+", got.ID)
+		assert.NotEqual(t, "sv-123", got.ID)
+
+		assert.Equal(t, "ws-123", got.WorkspaceID) // same workspace ID
+		assert.Equal(t, int64(4), got.Serial)      // same serial
+		assert.Equal(t, state, got.State)          // same state
+	})
 }

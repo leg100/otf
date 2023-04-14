@@ -60,3 +60,14 @@ type StateVersionCreateVersionOptions struct {
 	// Specifies the run to associate the state with.
 	// Run *Run `jsonapi:"relation,run,omitempty"`
 }
+
+// RollbackStateVersionOptions are options for rolling back a state version
+type RollbackStateVersionOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,state-versions"`
+	// Specifies state version to rollback to. Only its ID is specified.
+	RollbackStateVersion *StateVersion `jsonapi:"relation,state-version"`
+}

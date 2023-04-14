@@ -293,6 +293,14 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 	return sv
 }
 
+func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID string) *state.Version {
+	t.Helper()
+
+	sv, err := s.GetCurrentStateVersion(ctx, wsID)
+	require.NoError(t, err)
+	return sv
+}
+
 func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*tokens.UserToken, []byte) {
 	t.Helper()
 
