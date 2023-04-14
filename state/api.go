@@ -1,7 +1,9 @@
 package state
 
 import (
+	"crypto/md5"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -63,7 +65,13 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: validate md5, lineage
+	// validate md5 checksum
+	if fmt.Sprintf("%x", md5.Sum(decoded)) != *opts.MD5 {
+		jsonapi.Error(w, err)
+		return
+	}
+
+	// TODO: validate lineage
 
 	// The docs (linked above) state the serial in the create options must match the
 	// serial in the state file. However, the go-tfe integration tests we use

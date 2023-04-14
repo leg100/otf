@@ -16,7 +16,6 @@ import (
 func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
 
 type (
-
 	// Alias services so they don't conflict when nested together in struct
 	WorkspaceService = workspace.Service
 	StateService     = Service
@@ -41,9 +40,11 @@ type (
 		logr.Logger
 		WorkspaceService
 
-		db                  // access to state version database
+		db        *pgdb
 		cache     otf.Cache // cache state file
 		workspace otf.Authorizer
+
+		*factory // for creating state versions
 
 		api *api
 	}
@@ -58,15 +59,6 @@ type (
 		otf.DB
 	}
 
-	// stateVersionGetOptions are options for retrieving a single StateVersion.
-	// Either ID *or* WorkspaceID must be specfiied.
-	stateVersionGetOptions struct {
-		// ID of state version to retrieve
-		ID *string
-		// Get current state version belonging to workspace with this ID
-		WorkspaceID *string
-	}
-
 	// StateVersionListOptions represents the options for listing state versions.
 	StateVersionListOptions struct {
 		otf.ListOptions
@@ -76,12 +68,14 @@ type (
 )
 
 func NewService(opts Options) *service {
+	db := &pgdb{opts.DB}
 	svc := service{
 		Logger:           opts.Logger,
 		WorkspaceService: opts.WorkspaceService,
-		db:               newPGDB(opts.DB),
 		cache:            opts.Cache,
+		db:               db,
 		workspace:        opts.WorkspaceAuthorizer,
+		factory:          &factory{db},
 	}
 	svc.api = &api{&svc, &jsonapiMarshaler{}}
 	return &svc
@@ -100,12 +94,8 @@ func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 		return nil, err
 	}
 
-	sv, err := newVersion(opts)
+	sv, err := a.create(ctx, opts)
 	if err != nil {
-		a.Error(err, "constructing state version")
-		return nil, err
-	}
-	if err := a.db.createVersion(ctx, sv); err != nil {
 		a.Error(err, "creating state version", "subject", subject)
 		return nil, err
 	}
@@ -151,7 +141,7 @@ func (a *service) GetCurrentStateVersion(ctx context.Context, workspaceID string
 		return nil, err
 	}
 
-	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{WorkspaceID: &workspaceID})
+	sv, err := a.db.getCurrentVersion(ctx, workspaceID)
 	if err != nil {
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
@@ -166,7 +156,7 @@ func (a *service) GetStateVersion(ctx context.Context, versionID string) (*Versi
 		return nil, err
 	}
 
-	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{ID: &versionID})
+	sv, err := a.db.getVersion(ctx, versionID)
 	if err != nil {
 		a.Error(err, "retrieving state version", "id", versionID, "subject", subject)
 		return nil, err
@@ -215,7 +205,7 @@ func (a *service) GetStateVersionOutput(ctx context.Context, outputID string) (*
 }
 
 func (a *service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error) {
-	sv, err := a.db.getVersion(ctx, stateVersionGetOptions{ID: &svID})
+	sv, err := a.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err
 	}

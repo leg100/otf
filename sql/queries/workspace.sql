@@ -192,6 +192,12 @@ UPDATE workspaces
 SET latest_run_id = pggen.arg('run_id')
 WHERE workspace_id = pggen.arg('workspace_id');
 
+-- name: UpdateWorkspaceCurrentStateVersionID :one
+UPDATE workspaces
+SET current_state_version_id = pggen.arg('state_version_id')
+WHERE workspace_id = pggen.arg('workspace_id')
+RETURNING workspace_id;
+
 -- name: DeleteWorkspaceByID :exec
 DELETE
 FROM workspaces

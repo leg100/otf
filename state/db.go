@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -11,26 +10,36 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// db is a database of state and state versions
-type db interface {
-	otf.DB
+type (
+	db interface {
+		otf.DB
 
-	createVersion(context.Context, *Version) error
-	listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
-	getVersion(ctx context.Context, opts stateVersionGetOptions) (*Version, error)
-	getState(ctx context.Context, versionID string) ([]byte, error)
-	deleteVersion(ctx context.Context, versionID string) error
-	getOutput(ctx context.Context, outputID string) (*Output, error)
-}
+		createVersion(context.Context, *Version) error
+		listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+		getVersion(ctx context.Context, svID string) (*Version, error)
+		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
+		getState(ctx context.Context, versionID string) ([]byte, error)
+		getOutput(ctx context.Context, outputID string) (*Output, error)
+		updateCurrentVersion(context.Context, string, string) error
+		deleteVersion(ctx context.Context, versionID string) error
+		tx(context.Context, func(db) error) error
+	}
 
-// pgdb is a state/state-version database on postgres
-type pgdb struct {
-	otf.DB // provides access to generated SQL queries
-}
+	// pgdb is a state/state-version database on postgres
+	pgdb struct {
+		otf.DB // provides access to generated SQL queries
+	}
 
-func newPGDB(db otf.DB) *pgdb {
-	return &pgdb{db}
-}
+	// pgRow is a row from a postgres query for a state version.
+	pgRow struct {
+		StateVersionID      pgtype.Text                 `json:"state_version_id"`
+		CreatedAt           pgtype.Timestamptz          `json:"created_at"`
+		Serial              int                         `json:"serial"`
+		State               []byte                      `json:"state"`
+		WorkspaceID         pgtype.Text                 `json:"workspace_id"`
+		StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
+	}
+)
 
 func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	return db.Tx(ctx, func(db otf.DB) error {
@@ -96,22 +105,20 @@ func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) 
 	}, nil
 }
 
-func (db *pgdb) getVersion(ctx context.Context, opts stateVersionGetOptions) (*Version, error) {
-	if opts.ID != nil {
-		result, err := db.FindStateVersionByID(ctx, sql.String(*opts.ID))
-		if err != nil {
-			return nil, sql.Error(err)
-		}
-		return pgRow(result).toVersion(), nil
-	} else if opts.WorkspaceID != nil {
-		result, err := db.FindStateVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID))
-		if err != nil {
-			return nil, sql.Error(err)
-		}
-		return pgRow(result).toVersion(), nil
-	} else {
-		return nil, fmt.Errorf("no state version spec provided")
+func (db *pgdb) getVersion(ctx context.Context, svID string) (*Version, error) {
+	result, err := db.FindStateVersionByID(ctx, sql.String(svID))
+	if err != nil {
+		return nil, sql.Error(err)
 	}
+	return pgRow(result).toVersion(), nil
+}
+
+func (db *pgdb) getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error) {
+	result, err := db.FindCurrentStateVersionByWorkspaceID(ctx, sql.String(workspaceID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return pgRow(result).toVersion(), nil
 }
 
 func (db *pgdb) getState(ctx context.Context, id string) ([]byte, error) {
@@ -127,14 +134,18 @@ func (db *pgdb) deleteVersion(ctx context.Context, id string) error {
 	return nil
 }
 
-// pgRow is a row from a postgres query for a state version.
-type pgRow struct {
-	StateVersionID      pgtype.Text                 `json:"state_version_id"`
-	CreatedAt           pgtype.Timestamptz          `json:"created_at"`
-	Serial              int                         `json:"serial"`
-	State               []byte                      `json:"state"`
-	WorkspaceID         pgtype.Text                 `json:"workspace_id"`
-	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
+func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID string) error {
+	_, err := db.UpdateWorkspaceCurrentStateVersionID(ctx, sql.String(svID), sql.String(workspaceID))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+func (db *pgdb) tx(ctx context.Context, txfunc func(db) error) error {
+	return db.Tx(ctx, func(tx otf.DB) error {
+		return txfunc(&pgdb{tx})
+	})
 }
 
 func (row pgRow) toVersion() *Version {

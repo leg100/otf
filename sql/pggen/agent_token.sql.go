@@ -524,12 +524,12 @@ type Querier interface {
 	// FindStateVersionByIDScan scans the result of an executed FindStateVersionByIDBatch query.
 	FindStateVersionByIDScan(results pgx.BatchResults) (FindStateVersionByIDRow, error)
 
-	FindStateVersionLatestByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindStateVersionLatestByWorkspaceIDRow, error)
-	// FindStateVersionLatestByWorkspaceIDBatch enqueues a FindStateVersionLatestByWorkspaceID query into batch to be executed
+	FindCurrentStateVersionByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindCurrentStateVersionByWorkspaceIDRow, error)
+	// FindCurrentStateVersionByWorkspaceIDBatch enqueues a FindCurrentStateVersionByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindStateVersionLatestByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// FindStateVersionLatestByWorkspaceIDScan scans the result of an executed FindStateVersionLatestByWorkspaceIDBatch query.
-	FindStateVersionLatestByWorkspaceIDScan(results pgx.BatchResults) (FindStateVersionLatestByWorkspaceIDRow, error)
+	FindCurrentStateVersionByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindCurrentStateVersionByWorkspaceIDScan scans the result of an executed FindCurrentStateVersionByWorkspaceIDBatch query.
+	FindCurrentStateVersionByWorkspaceIDScan(results pgx.BatchResults) (FindCurrentStateVersionByWorkspaceIDRow, error)
 
 	FindStateVersionStateByID(ctx context.Context, id pgtype.Text) ([]byte, error)
 	// FindStateVersionStateByIDBatch enqueues a FindStateVersionStateByID query into batch to be executed
@@ -916,6 +916,13 @@ type Querier interface {
 	// UpdateWorkspaceLatestRunScan scans the result of an executed UpdateWorkspaceLatestRunBatch query.
 	UpdateWorkspaceLatestRunScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	UpdateWorkspaceCurrentStateVersionID(ctx context.Context, stateVersionID pgtype.Text, workspaceID pgtype.Text) (pgtype.Text, error)
+	// UpdateWorkspaceCurrentStateVersionIDBatch enqueues a UpdateWorkspaceCurrentStateVersionID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceCurrentStateVersionIDBatch(batch genericBatch, stateVersionID pgtype.Text, workspaceID pgtype.Text)
+	// UpdateWorkspaceCurrentStateVersionIDScan scans the result of an executed UpdateWorkspaceCurrentStateVersionIDBatch query.
+	UpdateWorkspaceCurrentStateVersionIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspaceByIDBatch enqueues a DeleteWorkspaceByID query into batch to be executed
 	// later by the batch.
@@ -1233,8 +1240,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findStateVersionByIDSQL, findStateVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findStateVersionLatestByWorkspaceIDSQL, findStateVersionLatestByWorkspaceIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindStateVersionLatestByWorkspaceID': %w", err)
+	if _, err := p.Prepare(ctx, findCurrentStateVersionByWorkspaceIDSQL, findCurrentStateVersionByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindCurrentStateVersionByWorkspaceID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findStateVersionStateByIDSQL, findStateVersionStateByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionStateByID': %w", err)
@@ -1400,6 +1407,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateWorkspaceLatestRunSQL, updateWorkspaceLatestRunSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceLatestRun': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceCurrentStateVersionIDSQL, updateWorkspaceCurrentStateVersionIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceCurrentStateVersionID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)

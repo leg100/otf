@@ -45,15 +45,15 @@ WHERE state_versions.state_version_id = pggen.arg('id')
 GROUP BY state_versions.state_version_id
 ;
 
--- name: FindStateVersionLatestByWorkspaceID :one
+-- name: FindCurrentStateVersionByWorkspaceID :one
 SELECT
-    state_versions.*,
-    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
-FROM state_versions
-LEFT JOIN state_version_outputs USING (state_version_id)
-WHERE state_versions.workspace_id = pggen.arg('workspace_id')
-GROUP BY state_versions.state_version_id
-ORDER BY state_versions.serial DESC, state_versions.created_at DESC
+    sv.*,
+    array_remove(array_agg(svo), NULL) AS state_version_outputs
+FROM state_versions sv
+LEFT JOIN state_version_outputs svo USING (state_version_id)
+JOIN workspaces w ON w.current_state_version_id = sv.state_version_id
+WHERE w.workspace_id = pggen.arg('workspace_id')
+GROUP BY sv.state_version_id
 ;
 
 -- name: FindStateVersionStateByID :one
