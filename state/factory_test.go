@@ -77,7 +77,7 @@ func TestFactory(t *testing.T) {
 
 	t.Run("same serial, different state", func(t *testing.T) {
 		// create slightly different state
-		var diffState file
+		var diffState File
 		err := json.Unmarshal(state, &diffState)
 		require.NoError(t, err)
 		diffState.Version = 99

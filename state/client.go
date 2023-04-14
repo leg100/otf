@@ -24,7 +24,7 @@ type Client struct {
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	var state file
+	var state File
 	if err := json.Unmarshal(opts.State, &state); err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
 	// two steps:
 	// 1) retrieve current state version for the workspace
-	// 2) use the download link to download the state data
+	// 2) download state corresponding to current state version
 	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -63,7 +63,12 @@ func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) (
 		return nil, err
 	}
 
-	req, err = c.NewRequest("GET", sv.DownloadURL, nil)
+	return c.DownloadState(ctx, sv.ID)
+}
+
+func (c *Client) DownloadState(ctx context.Context, svID string) ([]byte, error) {
+	u := fmt.Sprintf("state-versions/%s/download", url.QueryEscape(svID))
+	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
