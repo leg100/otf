@@ -3,8 +3,10 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/state"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +42,10 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				return err
 			}
 			current, err := a.GetCurrentStateVersion(ctx, workspace.ID)
-			// TODO: handle not found
+			if errors.Is(err, otf.ErrResourceNotFound) {
+				fmt.Fprintln(out, "No state versions found")
+				return nil
+			}
 			if err != nil {
 				return err
 			}

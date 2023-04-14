@@ -179,6 +179,9 @@ func (f *fakeClient) ListStateVersions(ctx context.Context, opts state.StateVers
 }
 
 func (f *fakeClient) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*state.Version, error) {
+	if f.stateVersion == nil {
+		return nil, otf.ErrResourceNotFound
+	}
 	return f.stateVersion, nil
 }
 
