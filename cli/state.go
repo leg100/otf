@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/leg100/otf/state"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,61 @@ func (a *CLI) stateCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(a.stateRollbackCommand())
+	cmd.AddCommand(a.stateListCommand())
 	cmd.AddCommand(a.stateDownloadCommand())
+
+	return cmd
+}
+
+func (a *CLI) stateListCommand() *cobra.Command {
+	var opts state.StateVersionListOptions
+	cmd := &cobra.Command{
+		Use:           "list",
+		Short:         "List state versions",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			out := cmd.OutOrStdout()
+
+			// first retrieve workspace and current state version so that the
+			// user can be informed which state version is current
+			workspace, err := a.GetWorkspaceByName(ctx, opts.Organization, opts.Workspace)
+			if err != nil {
+				return err
+			}
+			current, err := a.GetCurrentStateVersion(ctx, workspace.ID)
+			// TODO: handle not found
+			if err != nil {
+				return err
+			}
+
+			for {
+				list, err := a.ListStateVersions(cmd.Context(), opts)
+				if err != nil {
+					return err
+				}
+				for _, sv := range list.Items {
+					fmt.Fprintf(out, sv.ID)
+					if current.ID == sv.ID {
+						fmt.Fprintf(out, " (current)")
+					}
+					fmt.Fprintln(out)
+				}
+				if list.NextPage() == nil {
+					break
+				}
+				opts.PageNumber = *list.NextPage()
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&opts.Organization, "organization", "", "Name of the organization the workspace belongs to")
+	cmd.MarkFlagRequired("organization")
+
+	cmd.Flags().StringVar(&opts.Workspace, "workspace", "", "Name of workspace for which to retreive state versions")
+	cmd.MarkFlagRequired("workspace")
 
 	return cmd
 }

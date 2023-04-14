@@ -45,13 +45,33 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 		return nil, err
 	}
 
-	return &Version{ID: sv.ID, Serial: sv.Serial}, nil
+	return newFromJSONAPI(&sv), nil
+}
+
+func (c *Client) ListStateVersions(ctx context.Context, options StateVersionListOptions) (*VersionList, error) {
+	req, err := c.NewRequest("GET", "state-versions", &options)
+	if err != nil {
+		return nil, err
+	}
+
+	list := &jsonapi.StateVersionList{}
+	err = c.Do(ctx, req, list)
+	if err != nil {
+		return nil, err
+	}
+
+	return newListFromJSONAPI(list), nil
 }
 
 func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
-	// two steps:
-	// 1) retrieve current state version for the workspace
-	// 2) download state corresponding to current state version
+	sv, err := c.GetCurrentStateVersion(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return c.DownloadState(ctx, sv.ID)
+}
+
+func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
@@ -62,8 +82,7 @@ func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) (
 	if err := c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
-
-	return c.DownloadState(ctx, sv.ID)
+	return newFromJSONAPI(&sv), nil
 }
 
 func (c *Client) DownloadState(ctx context.Context, svID string) ([]byte, error) {
@@ -100,5 +119,5 @@ func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Versio
 		return nil, err
 	}
 
-	return &Version{ID: sv.ID, Serial: sv.Serial}, nil
+	return newFromJSONAPI(&sv), nil
 }

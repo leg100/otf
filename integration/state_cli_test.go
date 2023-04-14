@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/leg100/otf/state"
@@ -15,6 +16,21 @@ func TestIntegration_StateCLI(t *testing.T) {
 
 	daemon := setup(t, nil)
 	_, ctx := daemon.createUserCtx(t, ctx)
+
+	t.Run("list", func(t *testing.T) {
+		ws := daemon.createWorkspace(t, ctx, nil)
+		sv1 := daemon.createStateVersion(t, ctx, ws)
+		sv2 := daemon.createStateVersion(t, ctx, ws)
+		sv3 := daemon.createStateVersion(t, ctx, ws) // current
+
+		out := daemon.otfcli(t, ctx, "state", "list",
+			"--organization", ws.Organization,
+			"--workspace", ws.Name,
+		)
+
+		want := fmt.Sprintf("%s (current)\n%s\n%s\n", sv3, sv2, sv1)
+		assert.Equal(t, want, out)
+	})
 
 	t.Run("download", func(t *testing.T) {
 		sv := daemon.createStateVersion(t, ctx, nil)

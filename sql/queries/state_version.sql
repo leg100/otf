@@ -23,6 +23,7 @@ LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE workspaces.name               = pggen.arg('workspace_name')
 AND   workspaces.organization_name  = pggen.arg('organization_name')
 GROUP BY state_versions.state_version_id
+ORDER BY created_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
 ;

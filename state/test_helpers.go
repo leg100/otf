@@ -1,13 +1,9 @@
 package state
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"testing"
 
 	"github.com/leg100/otf"
-	"github.com/stretchr/testify/require"
 )
 
 type fakeDB struct {
@@ -40,11 +36,4 @@ func (f *fakeDB) updateCurrentVersion(ctx context.Context, workspaceID, svID str
 
 func (f *fakeDB) tx(ctx context.Context, txfunc func(db) error) error {
 	return txfunc(f)
-}
-
-func compactJSON(t *testing.T, src string) string {
-	var buf bytes.Buffer
-	err := json.Compact(&buf, []byte(src))
-	require.NoError(t, err)
-	return buf.String()
 }
