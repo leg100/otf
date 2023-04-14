@@ -31,6 +31,10 @@ type (
 		ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
 		GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
 		GetStateVersion(ctx context.Context, versionID string) (*Version, error)
+		// RollbackStateVersion creates a state version by duplicating the
+		// specified state version and sets it as the current state version for
+		// the given workspace.
+		RollbackStateVersion(ctx context.Context, versionID string) (*Version, error)
 		DownloadState(ctx context.Context, versionID string) ([]byte, error)
 		GetStateVersionOutput(ctx context.Context, outputID string) (*Output, error)
 	}
@@ -101,7 +105,7 @@ func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 	}
 
 	if err := a.cache.Set(cacheKey(sv.ID), sv.State); err != nil {
-		return nil, fmt.Errorf("caching state version: %w", err)
+		return nil, fmt.Errorf("caching state file: %w", err)
 	}
 
 	a.V(0).Info("created state version", "id", sv.ID, "workspace", *opts.WorkspaceID, "serial", sv.Serial, "subject", subject)
@@ -162,6 +166,21 @@ func (a *service) GetStateVersion(ctx context.Context, versionID string) (*Versi
 		return nil, err
 	}
 	a.V(2).Info("retrieved state version", "id", versionID, "subject", subject)
+	return sv, nil
+}
+
+func (a *service) RollbackStateVersion(ctx context.Context, versionID string) (*Version, error) {
+	subject, err := a.CanAccessStateVersion(ctx, rbac.RollbackStateVersionAction, versionID)
+	if err != nil {
+		return nil, err
+	}
+
+	sv, err := a.rollback(ctx, versionID)
+	if err != nil {
+		a.Error(err, "rolling back state version", "id", versionID, "subject", subject)
+		return nil, err
+	}
+	a.V(2).Info("rolled back state version", "id", versionID, "subject", subject)
 	return sv, nil
 }
 

@@ -16,8 +16,18 @@ var (
 )
 
 type (
+	// factory creates state versions - creation requires pre-requisite checking
+	// with the db, hence necessity for a factory.
 	factory struct {
 		db db
+	}
+
+	// newVersionOptions are options for constructing a state version - options
+	// are assumed to have already been validated.
+	newVersionOptions struct {
+		state       []byte
+		workspaceID string
+		serial      int64
 	}
 )
 
@@ -63,22 +73,72 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 		}
 	}
 
+	sv, err := newVersion(newVersionOptions{
+		state:       opts.State,
+		workspaceID: *opts.WorkspaceID,
+		serial:      serial,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := fa.createCurrent(ctx, &sv); err != nil {
+		return nil, err
+	}
+	return &sv, nil
+}
+
+// Create a state version and update workspace's current state version.
+func (fa *factory) createCurrent(ctx context.Context, sv *Version) error {
+	return fa.db.tx(ctx, func(tx db) error {
+		if err := tx.createVersion(ctx, sv); err != nil {
+			return err
+		}
+		if err := tx.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
+			return fmt.Errorf("updating current version: %w", err)
+		}
+		return nil
+	})
+}
+
+func (fa *factory) rollback(ctx context.Context, svID string) (*Version, error) {
+	sv, err := fa.db.getVersion(ctx, svID)
+	if err != nil {
+		return nil, err
+	}
+	clone, err := sv.Clone()
+	if err != nil {
+		return nil, err
+	}
+	if err := fa.createCurrent(ctx, clone); err != nil {
+		return nil, err
+	}
+	return clone, nil
+}
+
+func newVersion(opts newVersionOptions) (Version, error) {
 	sv := Version{
 		ID:          otf.NewID("sv"),
 		CreatedAt:   otf.CurrentTimestamp(),
-		Serial:      serial,
-		State:       opts.State,
-		WorkspaceID: *opts.WorkspaceID,
+		Serial:      opts.serial,
+		State:       opts.state,
+		WorkspaceID: opts.workspaceID,
 	}
 
-	sv.Outputs = make(outputList, len(f.Outputs))
+	var f file
+	if err := json.Unmarshal(opts.state, &f); err != nil {
+		return Version{}, err
+	}
+
+	// extract outputs from state file
+	outputs := make(outputList, len(f.Outputs))
 	for k, v := range f.Outputs {
 		hclType, err := newHCLType(v.Value)
 		if err != nil {
-			return nil, err
+			return Version{}, err
 		}
 
-		sv.Outputs[k] = &Output{
+		outputs[k] = &Output{
 			ID:             otf.NewID("wsout"),
 			Name:           k,
 			Type:           hclType,
@@ -87,19 +147,7 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 			StateVersionID: sv.ID,
 		}
 	}
+	sv.Outputs = outputs
 
-	// Create a state version and update workspace's current state version.
-	err = fa.db.tx(ctx, func(tx db) error {
-		if err := tx.createVersion(ctx, &sv); err != nil {
-			return err
-		}
-		if err := tx.updateCurrentVersion(ctx, *opts.WorkspaceID, sv.ID); err != nil {
-			return fmt.Errorf("updating current version: %w", err)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &sv, nil
+	return sv, nil
 }

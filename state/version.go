@@ -37,6 +37,7 @@ type (
 
 	outputList map[string]*Output
 
+	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {
 		State       []byte  // Terraform state file. Required.
 		WorkspaceID *string // ID of state version's workspace. Required.
@@ -45,3 +46,16 @@ type (
 )
 
 func (v *Version) String() string { return v.ID }
+
+// Clone makes a copy albeit with new identifiers.
+func (v *Version) Clone() (*Version, error) {
+	cloned, err := newVersion(newVersionOptions{
+		state:       v.State,
+		workspaceID: v.WorkspaceID,
+		serial:      v.Serial,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &cloned, nil
+}
