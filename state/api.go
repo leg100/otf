@@ -27,6 +27,7 @@ func (h *api) addHandlers(r *mux.Router) {
 
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.rollbackVersion).Methods("PATCH")
 	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
 	r.HandleFunc("/state-versions", h.listVersions).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/download", h.downloadState).Methods("GET")
@@ -130,6 +131,22 @@ func (h *api) getVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, err)
 		return
 	}
+	h.writeResponse(w, r, sv)
+}
+
+func (h *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
+	opts := jsonapi.RollbackStateVersionOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		jsonapi.Error(w, err)
+		return
+	}
+
+	sv, err := h.svc.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
+	if err != nil {
+		jsonapi.Error(w, err)
+		return
+	}
+
 	h.writeResponse(w, r, sv)
 }
 

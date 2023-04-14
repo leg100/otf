@@ -76,3 +76,24 @@ func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) (
 
 	return buf.Bytes(), nil
 }
+
+func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Version, error) {
+	// The OTF JSON:API rollback endpoint matches the TFC endpoint for
+	// compatibilty purposes, and takes both a workspace ID and a state version
+	// ID, but OTF does nothing with the workspace ID and thus anything can be
+	// specified.
+	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape("ws-rollback"))
+	req, err := c.NewRequest("PATCH", u, &jsonapi.RollbackStateVersionOptions{
+		RollbackStateVersion: &jsonapi.StateVersion{ID: svID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sv := jsonapi.StateVersion{}
+	if err = c.Do(ctx, req, &sv); err != nil {
+		return nil, err
+	}
+
+	return &Version{ID: sv.ID, Serial: sv.Serial}, nil
+}

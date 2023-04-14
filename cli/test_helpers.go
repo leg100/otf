@@ -9,9 +9,25 @@ import (
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
+)
+
+type (
+	fakeClient struct {
+		user         *auth.User
+		team         *auth.Team
+		workspaces   []*workspace.Workspace
+		run          *run.Run
+		stateVersion *state.Version
+		agentToken   []byte
+		tarball      []byte
+		client.Client
+	}
+
+	fakeOption func(*fakeClient)
 )
 
 func fakeApp(opts ...fakeOption) *CLI {
@@ -21,8 +37,6 @@ func fakeApp(opts ...fakeOption) *CLI {
 	}
 	return &CLI{&client, ""}
 }
-
-type fakeOption func(*fakeClient)
 
 func withUser(user *auth.User) fakeOption {
 	return func(c *fakeClient) {
@@ -48,6 +62,12 @@ func withRun(run *run.Run) fakeOption {
 	}
 }
 
+func withStateVersion(sv *state.Version) fakeOption {
+	return func(c *fakeClient) {
+		c.stateVersion = sv
+	}
+}
+
 func withAgentToken(token []byte) fakeOption {
 	return func(c *fakeClient) {
 		c.agentToken = token
@@ -58,16 +78,6 @@ func withTarball(tarball []byte) fakeOption {
 	return func(c *fakeClient) {
 		c.tarball = tarball
 	}
-}
-
-type fakeClient struct {
-	user       *auth.User
-	team       *auth.Team
-	workspaces []*workspace.Workspace
-	run        *run.Run
-	agentToken []byte
-	tarball    []byte
-	client.Client
 }
 
 func (f *fakeClient) CreateOrganization(ctx context.Context, opts orgcreator.OrganizationCreateOptions) (*organization.Organization, error) {
@@ -148,4 +158,8 @@ func (f *fakeClient) DownloadConfig(context.Context, string) ([]byte, error) {
 
 func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAgentTokenOptions) ([]byte, error) {
 	return f.agentToken, nil
+}
+
+func (f *fakeClient) RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error) {
+	return f.stateVersion, nil
 }

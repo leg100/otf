@@ -11,8 +11,16 @@ import (
 )
 
 type fakeDB struct {
-	current *Version
+	current *Version // returned by getCurrentVersion
+	version *Version // returned by getVersion
 	db
+}
+
+func (f *fakeDB) getVersion(ctx context.Context, svID string) (*Version, error) {
+	if f.version == nil {
+		return nil, otf.ErrResourceNotFound
+	}
+	return f.version, nil
 }
 
 func (f *fakeDB) getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error) {
