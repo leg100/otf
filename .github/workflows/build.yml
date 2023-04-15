@@ -5,10 +5,14 @@ on:
     branches:
       - master
     tags:
-      - v*.*.*
+      - 'v*.*.*'
+    paths:
+      - '!docs/**'
   pull_request:
     branches:
       - '*'
+    paths:
+      - '!docs/**'
 
 jobs:
   build:
