@@ -13,7 +13,7 @@ func TestFile_Unmarshal(t *testing.T) {
 	data, err := os.ReadFile("testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	var got file
+	var got File
 	err = json.Unmarshal(data, &got)
 	require.NoError(t, err)
 

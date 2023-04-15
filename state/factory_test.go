@@ -39,12 +39,12 @@ func TestFactory(t *testing.T) {
 
 			assert.Equal(t, "bar", got.Outputs["bar"].Name)
 			assert.Equal(t, "tuple", got.Outputs["bar"].Type)
-			assert.Equal(t, `["item1","item2"]`, compactJSON(t, got.Outputs["bar"].Value))
+			assert.Equal(t, `["item1","item2"]`, testutils.CompactJSON(t, got.Outputs["bar"].Value))
 			assert.False(t, got.Outputs["bar"].Sensitive)
 
 			assert.Equal(t, "baz", got.Outputs["baz"].Name)
 			assert.Equal(t, "object", got.Outputs["baz"].Type)
-			assert.Equal(t, `{"key1":"value1","key2":"value2"}`, compactJSON(t, got.Outputs["baz"].Value))
+			assert.Equal(t, `{"key1":"value1","key2":"value2"}`, testutils.CompactJSON(t, got.Outputs["baz"].Value))
 			assert.False(t, got.Outputs["baz"].Sensitive)
 		})
 	})
@@ -77,7 +77,7 @@ func TestFactory(t *testing.T) {
 
 	t.Run("same serial, different state", func(t *testing.T) {
 		// create slightly different state
-		var diffState file
+		var diffState File
 		err := json.Unmarshal(state, &diffState)
 		require.NoError(t, err)
 		diffState.Version = 99

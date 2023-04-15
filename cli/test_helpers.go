@@ -17,13 +17,15 @@ import (
 
 type (
 	fakeClient struct {
-		user         *auth.User
-		team         *auth.Team
-		workspaces   []*workspace.Workspace
-		run          *run.Run
-		stateVersion *state.Version
-		agentToken   []byte
-		tarball      []byte
+		user             *auth.User
+		team             *auth.Team
+		workspaces       []*workspace.Workspace
+		run              *run.Run
+		stateVersion     *state.Version
+		stateVersionList *state.VersionList
+		state            []byte
+		agentToken       []byte
+		tarball          []byte
 		client.Client
 	}
 
@@ -65,6 +67,18 @@ func withRun(run *run.Run) fakeOption {
 func withStateVersion(sv *state.Version) fakeOption {
 	return func(c *fakeClient) {
 		c.stateVersion = sv
+	}
+}
+
+func withStateVersionList(svl *state.VersionList) fakeOption {
+	return func(c *fakeClient) {
+		c.stateVersionList = svl
+	}
+}
+
+func withState(state []byte) fakeOption {
+	return func(c *fakeClient) {
+		c.state = state
 	}
 }
 
@@ -160,6 +174,21 @@ func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAge
 	return f.agentToken, nil
 }
 
+func (f *fakeClient) ListStateVersions(ctx context.Context, opts state.StateVersionListOptions) (*state.VersionList, error) {
+	return f.stateVersionList, nil
+}
+
+func (f *fakeClient) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*state.Version, error) {
+	if f.stateVersion == nil {
+		return nil, otf.ErrResourceNotFound
+	}
+	return f.stateVersion, nil
+}
+
 func (f *fakeClient) RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error) {
 	return f.stateVersion, nil
+}
+
+func (f *fakeClient) DownloadState(ctx context.Context, svID string) ([]byte, error) {
+	return f.state, nil
 }

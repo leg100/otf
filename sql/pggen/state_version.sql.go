@@ -66,6 +66,7 @@ LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE workspaces.name               = $1
 AND   workspaces.organization_name  = $2
 GROUP BY state_versions.state_version_id
+ORDER BY created_at DESC
 LIMIT $3
 OFFSET $4
 ;`
