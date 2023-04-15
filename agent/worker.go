@@ -56,7 +56,7 @@ func (w *worker) handle(ctx context.Context, r *run.Run) {
 
 	var finishOptions run.PhaseFinishOptions
 
-	log.Info("executing phase")
+	log.Info("executing phase", "workdir", env.workdir)
 
 	if err := env.execute(); err != nil {
 		log.Error(err, "executing phase")

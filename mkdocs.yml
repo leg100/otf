@@ -1,6 +1,46 @@
 site_name: otf
 site_url: https://docs.otf.ninja
-theme: readthedocs
+repo_url: https://github.com/leg100/otf
+theme:
+  name: material
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    # - content.tabs.link
+    - content.tooltips
+    # - header.autohide
+    # - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    # - navigation.instant
+    # - navigation.prune
+    - navigation.sections
+      # - navigation.tabs
+    # - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
 
 markdown_extensions:
   - admonition
+
+nav:
+  - intro.md
+  - install.md
+  - authentication.md
+  - authorization.md
+  - vcs_providers.md
+  - agents.md
+  - registry.md
+  - cli.md
+  - Configuration:
+    - config/envvars.md
+    - config/plugin_cache.md
+  - dev.md
