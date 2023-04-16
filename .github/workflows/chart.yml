@@ -36,6 +36,7 @@ jobs:
         name: Create pull request
         uses: repo-sync/pull-request@v2
         with:
+          destination_repository: leg100/otf-charts
           source_branch: new-otf-version-${{ github.ref_name }}
           destination_branch: master
           pr_title: "New OTF version: ${{ github.ref_name }}"
