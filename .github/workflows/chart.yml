@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,7 +33,7 @@ jobs:
           git add ./charts/otf/Chart.yaml
           git commit -m "New otf version ${{ github.ref_name }}"
       -
-        name: pull-request
+        name: Create pull request
         uses: repo-sync/pull-request@v2
         with:
           source_branch: new-otf-version-${{ github.ref_name }}
