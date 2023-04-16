@@ -32,6 +32,7 @@ jobs:
           git checkout -b new-otf-version-${{ github.ref_name }}
           git add ./charts/otf/Chart.yaml
           git commit -m "New otf version ${{ github.ref_name }}"
+          git push origin new-otf-version-${{ github.ref_name }}
       -
         name: Create pull request
         uses: repo-sync/pull-request@v2
