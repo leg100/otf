@@ -1,5 +1,38 @@
 # Flags
 
+## `--address`
+
+* System: `otfd`, `otf-agent`
+* Default: `localhost:8080`
+
+Sets the listening address of an `otfd` node.
+
+Set the port to an empty string or to `0` to choose a random available port.
+
+Set the address to an empty string to listen on all interfaces. For example, the
+following listens on all interfaces using a random port:
+
+```
+otfd --address :0
+```
+
+## `--cache-expiry`
+
+* System: `otfd`
+* Default: `10 minutes`
+
+Set the TTL for cache entries.
+
+## `--cache-size`
+
+* System: `otfd`
+* Default: `0` (unlimited)
+
+Cache size in MB. The cache is stored in RAM. Default is `0` which means it'll use an unlimited amount of RAM.
+
+It is recommended that you set this to an appropriate size in a production
+deployment, taking into consideration the [cache expiry](#-cache-expiry).
+
 ## `--concurrency`
 
 * System: `otfd`, `otf-agent`

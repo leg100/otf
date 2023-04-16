@@ -1,6 +1,6 @@
 # CLI
 
-`otf` is the CLI program for interacting with the server.
+`otf` is the CLI for OTF.
 
 Download a [release](https://github.com/leg100/otf/releases). Ensure you select the client component, `otf`. The release is a zip file. Extract the `otf` binary to a directory in your system PATH.
 

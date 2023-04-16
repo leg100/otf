@@ -1,6 +1,6 @@
 # RBAC
 
-The authorization model largely follows that of TFC/E. An organization comprises a number of teams. A user is a member of one or more teams. Teams are assigned permissions permitting access to various functionality. Team permissions can be assigned at two levels: on organizations and on individual workspaces.
+The authorization model largely follows that of Terraform Cloud/Enterprise. An organization comprises a number of teams. A user is a member of one or more teams. Teams are assigned permissions permitting access to various functionality. Team permissions can be assigned at two levels: on organizations and on individual workspaces.
 
 ## Owners
 

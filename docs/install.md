@@ -34,7 +34,7 @@ Ensure you have access to a postgres server. OTF by default assumes postgres is 
 createdb otf
 ```
 
-otfd requires a secret for creating cryptographic signatures. It should be up to 64 characters long and you should use a cryptographically secure random number generator, e.g.:
+`otfd` requires a secret for creating cryptographic signatures. It should be up to 64 characters long and you should use a cryptographically secure random number generator, e.g.:
 
 ```bash
 > openssl rand -hex 32
@@ -43,7 +43,7 @@ otfd requires a secret for creating cryptographic signatures. It should be up to
 
 To get up and running quickly, we'll use the **site admin** account. This account has complete privileges and should only be used for administrative tasks rather than day-to-day usage. To use the account you need to set a token, which can any combination of characters. Make a note of this.
 
-Now start the otf daemon with both the secret and the token:
+Now start `otfd` with both the secret and the token:
 
 ```bash
 > ./otfd --secret=my-secret --site-token=my-token
