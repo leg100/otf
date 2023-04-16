@@ -3,13 +3,12 @@
 OTF is an open-source alternative to Terraform Enterprise, sharing many of its features:
 
 * Full Terraform CLI integration
-* Remote execution mode: plans and applies run on server
+* Remote execution mode: plans and applies run on servers
 * Agent execution mode: plans and applies run on agents
 * Remote state backend: state stored in PostgreSQL
-* SSO: sign in using Github and Gitlab
-* Organization and team synchronisation from Github and gitlab
+* SSO: sign in using an identity provider, e.g. Github, Gitlab etc.
 * Module registry (provider registry coming soon)
-* Authorization: control team access to workspaces
+* RBAC: control team access to workspaces
 * VCS integration: trigger runs and publish modules from git commits
 * Compatible with much of the Terraform Enterprise/Cloud API
 * Minimal dependencies: requires only PostgreSQL
