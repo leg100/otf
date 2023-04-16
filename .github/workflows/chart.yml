@@ -39,5 +39,5 @@ jobs:
           source_branch: new-otf-version-${{ github.ref_name }}
           destination_branch: master
           pr_title: "New OTF version: ${{ github.ref_name }}"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.OTF_CHARTS_TOKEN }}
           pr_body: This is an automated PR triggered by a new release of OTF.
