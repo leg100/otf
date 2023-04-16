@@ -19,7 +19,7 @@ jobs:
         run: |
           # set app version to the value of the tag, stripping off the 'v'
           tag=${{ github.ref_name }}
-          appVersion=${$tag#v}
+          appVersion=${tag#v}
           yq -i ".appVersion = \"${appVersion}\"" ./charts/otf/Chart.yaml
           # bump patch in chart version
           yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/otf/Chart.yaml
