@@ -24,6 +24,8 @@ jobs:
           # bump patch in chart version
           yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/otf/Chart.yaml
           # create branch and commit
+          git config --global user.email "chart-bumper@otf.ninja"
+          git config --global user.name "Chart bumper"
           git checkout -b new-otf-version-${{ github.ref_name }}
           git add ./charts/otf/Chart.yaml
           git commit -m "New otf version ${{ github.ref_name }}"
