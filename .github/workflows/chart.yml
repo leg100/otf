@@ -16,6 +16,7 @@ jobs:
         name: Checkout
         uses: actions/checkout@v3
         with:
+          token: ${{ secrets.OTF_CHARTS_TOKEN }}
           repository: leg100/otf-charts
       -
         name: Bump version
