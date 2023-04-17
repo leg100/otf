@@ -32,6 +32,20 @@ func TestIntegration_StateCLI(t *testing.T) {
 		assert.Equal(t, want, out)
 	})
 
+	t.Run("delete", func(t *testing.T) {
+		ws := daemon.createWorkspace(t, ctx, nil)
+		sv := daemon.createStateVersion(t, ctx, ws)
+		// because deleting the 'current' state version is not allowed, create
+		// another version which becomes the current state version, thereby
+		// permitting the test to delete the previous version.
+		_ = daemon.createStateVersion(t, ctx, ws)
+
+		got := daemon.otfcli(t, ctx, "state", "delete", sv.ID)
+
+		want := fmt.Sprintf("Deleted state version: %s\n", sv.ID)
+		assert.Equal(t, want, got)
+	})
+
 	t.Run("download", func(t *testing.T) {
 		sv := daemon.createStateVersion(t, ctx, nil)
 		want := unmarshalState(t, sv.State)

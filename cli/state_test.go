@@ -57,6 +57,18 @@ func TestCLI_State(t *testing.T) {
 		}
 	})
 
+	t.Run("delete", func(t *testing.T) {
+		cmd := fakeApp().stateDeleteCommand()
+
+		cmd.SetArgs([]string{"sv-123"})
+		got := bytes.Buffer{}
+		cmd.SetOut(&got)
+		require.NoError(t, cmd.Execute())
+
+		want := "Deleted state version: sv-123\n"
+		assert.Equal(t, want, got.String())
+	})
+
 	t.Run("download", func(t *testing.T) {
 		want := testutils.ReadFile(t, "./testdata/terraform.tfstate")
 		cmd := fakeApp(withState(want)).stateDownloadCommand()

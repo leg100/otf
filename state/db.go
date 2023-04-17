@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -129,7 +130,14 @@ func (db *pgdb) getState(ctx context.Context, id string) ([]byte, error) {
 func (db *pgdb) deleteVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteStateVersionByID(ctx, sql.String(id))
 	if err != nil {
-		return sql.Error(err)
+		err = sql.Error(err)
+		var fkerr *otf.ForeignKeyError
+		if errors.As(err, &fkerr) {
+			if fkerr.ConstraintName == "current_state_version_id_fk" && fkerr.TableName == "workspaces" {
+				return ErrCurrentVersionDeletionAttempt
+			}
+		}
+		return err
 	}
 	return nil
 }

@@ -19,6 +19,7 @@ func (a *CLI) stateCommand() *cobra.Command {
 
 	cmd.AddCommand(a.stateRollbackCommand())
 	cmd.AddCommand(a.stateListCommand())
+	cmd.AddCommand(a.stateDeleteCommand())
 	cmd.AddCommand(a.stateDownloadCommand())
 
 	return cmd
@@ -78,6 +79,23 @@ func (a *CLI) stateListCommand() *cobra.Command {
 	cmd.MarkFlagRequired("workspace")
 
 	return cmd
+}
+
+func (a *CLI) stateDeleteCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:           "delete [id]",
+		Short:         "Delete state version",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := a.DeleteStateVersion(cmd.Context(), args[0]); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Deleted state version: %s\n", args[0])
+			return nil
+		},
+	}
 }
 
 func (a *CLI) stateDownloadCommand() *cobra.Command {

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestState(t *testing.T) {
+func TestIntegration_StateService(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
@@ -84,6 +84,8 @@ func TestState(t *testing.T) {
 		assert.Contains(t, got.Items, sv2)
 	})
 
+	// Listing state versions for a non-existent workspace should produce an
+	// error
 	t.Run("list not found error", func(t *testing.T) {
 		svc := setup(t, nil)
 
@@ -92,5 +94,23 @@ func TestState(t *testing.T) {
 			Organization: "acme-corp",
 		})
 		assert.Equal(t, otf.ErrResourceNotFound, err)
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		svc := setup(t, nil)
+		ws := svc.createWorkspace(t, ctx, nil)
+		want := svc.createStateVersion(t, ctx, ws)
+		current := svc.createStateVersion(t, ctx, ws)
+
+		err := svc.DeleteStateVersion(ctx, want.ID)
+		require.NoError(t, err)
+
+		_, err = svc.GetStateVersion(ctx, want.ID)
+		assert.Equal(t, otf.ErrResourceNotFound, err)
+
+		t.Run("deleting current version not allowed", func(t *testing.T) {
+			err := svc.DeleteStateVersion(ctx, current.ID)
+			assert.Equal(t, state.ErrCurrentVersionDeletionAttempt, err)
+		})
 	})
 }

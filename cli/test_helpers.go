@@ -185,6 +185,10 @@ func (f *fakeClient) GetCurrentStateVersion(ctx context.Context, workspaceID str
 	return f.stateVersion, nil
 }
 
+func (f *fakeClient) DeleteStateVersion(ctx context.Context, svID string) error {
+	return nil
+}
+
 func (f *fakeClient) RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error) {
 	return f.stateVersion, nil
 }

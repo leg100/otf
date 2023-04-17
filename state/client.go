@@ -85,6 +85,20 @@ func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID string)
 	return newFromJSONAPI(&sv), nil
 }
 
+func (c *Client) DeleteStateVersion(ctx context.Context, svID string) error {
+	u := fmt.Sprintf("state-versions/%s", url.QueryEscape(svID))
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+
+	if err = c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Client) DownloadState(ctx context.Context, svID string) ([]byte, error) {
 	u := fmt.Sprintf("state-versions/%s/download", url.QueryEscape(svID))
 	req, err := c.NewRequest("GET", u, nil)
