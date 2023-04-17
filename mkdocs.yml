@@ -55,6 +55,7 @@ nav:
 
 extra:
   version:
+    default: latest
     provider: mike
 
 extra_css:
