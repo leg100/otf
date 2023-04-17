@@ -3,6 +3,7 @@ site_url: https://docs.otf.ninja
 repo_url: https://github.com/leg100/otf
 theme:
   name: material
+  custom_dir: docs/overrides
   features:
     - announce.dismiss
     - content.action.edit
@@ -51,6 +52,11 @@ nav:
     - config/envvars.md
     - config/flags.md
   - dev.md
+
+extra:
+  version:
+    default: latest
+    provider: mike
 
 extra_css:
   - stylesheets/extra.css
