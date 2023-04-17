@@ -37,7 +37,7 @@ func Error(err error) error {
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
 		case "23503": // foreign key violation
-			return errors.Wrap(otf.ErrForeignKeyViolation, pgErr.Detail)
+			return &otf.ForeignKeyError{PgError: pgErr}
 		case "23505": // unique violation
 			return otf.ErrResourceAlreadyExists
 		}

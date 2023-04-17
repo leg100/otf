@@ -31,6 +31,7 @@ func (h *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
 	r.HandleFunc("/state-versions", h.listVersions).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/download", h.downloadState).Methods("GET")
+	r.HandleFunc("/state-versions/{id}", h.deleteVersion).Methods("DELETE")
 
 	r.HandleFunc("/state-versions/{id}/outputs", h.listOutputs).Methods("GET")
 	r.HandleFunc("/state-version-outputs/{id}", h.getOutput).Methods("GET")
@@ -132,6 +133,19 @@ func (h *api) getVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.writeResponse(w, r, sv)
+}
+
+func (h *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
+	versionID, err := decode.Param("id", r)
+	if err != nil {
+		jsonapi.Error(w, err)
+		return
+	}
+	if err := h.svc.DeleteStateVersion(r.Context(), versionID); err != nil {
+		jsonapi.Error(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {

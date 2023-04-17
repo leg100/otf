@@ -62,6 +62,7 @@ type (
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
 		GetCurrentStateVersion(ctx context.Context, workspaceID string) (*state.Version, error)
 		RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error)
+		DeleteStateVersion(ctx context.Context, svID string) error
 		DownloadState(ctx context.Context, svID string) ([]byte, error)
 		ListStateVersions(ctx context.Context, options state.StateVersionListOptions) (*state.VersionList, error)
 

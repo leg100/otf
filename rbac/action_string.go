@@ -64,30 +64,31 @@ func _() {
 	_ = x[CreateStateVersionAction-53]
 	_ = x[ListStateVersionsAction-54]
 	_ = x[GetStateVersionAction-55]
-	_ = x[RollbackStateVersionAction-56]
-	_ = x[DownloadStateAction-57]
-	_ = x[GetStateVersionOutputAction-58]
-	_ = x[CreateConfigurationVersionAction-59]
-	_ = x[ListConfigurationVersionsAction-60]
-	_ = x[GetConfigurationVersionAction-61]
-	_ = x[DownloadConfigurationVersionAction-62]
-	_ = x[DeleteConfigurationVersionAction-63]
-	_ = x[CreateUserAction-64]
-	_ = x[ListUsersAction-65]
-	_ = x[GetUserAction-66]
-	_ = x[DeleteUserAction-67]
-	_ = x[CreateTeamAction-68]
-	_ = x[UpdateTeamAction-69]
-	_ = x[GetTeamAction-70]
-	_ = x[ListTeamsAction-71]
-	_ = x[DeleteTeamAction-72]
-	_ = x[AddTeamMembershipAction-73]
-	_ = x[RemoveTeamMembershipAction-74]
+	_ = x[DeleteStateVersionAction-56]
+	_ = x[RollbackStateVersionAction-57]
+	_ = x[DownloadStateAction-58]
+	_ = x[GetStateVersionOutputAction-59]
+	_ = x[CreateConfigurationVersionAction-60]
+	_ = x[ListConfigurationVersionsAction-61]
+	_ = x[GetConfigurationVersionAction-62]
+	_ = x[DownloadConfigurationVersionAction-63]
+	_ = x[DeleteConfigurationVersionAction-64]
+	_ = x[CreateUserAction-65]
+	_ = x[ListUsersAction-66]
+	_ = x[GetUserAction-67]
+	_ = x[DeleteUserAction-68]
+	_ = x[CreateTeamAction-69]
+	_ = x[UpdateTeamAction-70]
+	_ = x[GetTeamAction-71]
+	_ = x[ListTeamsAction-72]
+	_ = x[DeleteTeamAction-73]
+	_ = x[AddTeamMembershipAction-74]
+	_ = x[RemoveTeamMembershipAction-75]
 }
 
-const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionListOrganizationsActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentTokenActionListAgentTokensActionDeleteAgentTokenActionCreateRunTokenActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionDeleteModuleVersionActionCreateVariableActionUpdateVariableActionListVariablesActionGetVariableActionDeleteVariableActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionEnqueuePlanActionStartPhaseActionFinishPhaseActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionRollbackStateVersionActionDownloadStateActionGetStateVersionOutputActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionCreateUserActionListUsersActionGetUserActionDeleteUserActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsActionDeleteTeamActionAddTeamMembershipActionRemoveTeamMembershipAction"
+const _Action_name = "WatchActionCreateOrganizationActionUpdateOrganizationActionGetOrganizationActionListOrganizationsActionGetEntitlementsActionDeleteOrganizationActionCreateVCSProviderActionGetVCSProviderActionListVCSProvidersActionDeleteVCSProviderActionCreateAgentTokenActionListAgentTokensActionDeleteAgentTokenActionCreateRunTokenActionCreateModuleActionCreateModuleVersionActionUpdateModuleActionListModulesActionGetModuleActionDeleteModuleActionDeleteModuleVersionActionCreateVariableActionUpdateVariableActionListVariablesActionGetVariableActionDeleteVariableActionGetRunActionListRunsActionApplyRunActionCreateRunActionDiscardRunActionDeleteRunActionCancelRunActionEnqueuePlanActionStartPhaseActionFinishPhaseActionPutChunkActionTailLogsActionGetPlanFileActionUploadPlanFileActionGetLockFileActionUploadLockFileActionListWorkspacesActionGetWorkspaceActionCreateWorkspaceActionDeleteWorkspaceActionSetWorkspacePermissionActionUnsetWorkspacePermissionActionUpdateWorkspaceActionLockWorkspaceActionUnlockWorkspaceActionForceUnlockWorkspaceActionCreateStateVersionActionListStateVersionsActionGetStateVersionActionDeleteStateVersionActionRollbackStateVersionActionDownloadStateActionGetStateVersionOutputActionCreateConfigurationVersionActionListConfigurationVersionsActionGetConfigurationVersionActionDownloadConfigurationVersionActionDeleteConfigurationVersionActionCreateUserActionListUsersActionGetUserActionDeleteUserActionCreateTeamActionUpdateTeamActionGetTeamActionListTeamsActionDeleteTeamActionAddTeamMembershipActionRemoveTeamMembershipAction"
 
-var _Action_index = [...]uint16{0, 11, 35, 59, 80, 103, 124, 148, 171, 191, 213, 236, 258, 279, 301, 321, 339, 364, 382, 399, 414, 432, 457, 477, 497, 516, 533, 553, 565, 579, 593, 608, 624, 639, 654, 671, 687, 704, 718, 732, 749, 769, 786, 806, 826, 844, 865, 886, 914, 944, 965, 984, 1005, 1031, 1055, 1078, 1099, 1125, 1144, 1171, 1203, 1234, 1263, 1297, 1329, 1345, 1360, 1373, 1389, 1405, 1421, 1434, 1449, 1465, 1488, 1514}
+var _Action_index = [...]uint16{0, 11, 35, 59, 80, 103, 124, 148, 171, 191, 213, 236, 258, 279, 301, 321, 339, 364, 382, 399, 414, 432, 457, 477, 497, 516, 533, 553, 565, 579, 593, 608, 624, 639, 654, 671, 687, 704, 718, 732, 749, 769, 786, 806, 826, 844, 865, 886, 914, 944, 965, 984, 1005, 1031, 1055, 1078, 1099, 1123, 1149, 1168, 1195, 1227, 1258, 1287, 1321, 1353, 1369, 1384, 1397, 1413, 1429, 1445, 1458, 1473, 1489, 1512, 1538}
 
 func (i Action) String() string {
 	if i < 0 || i >= Action(len(_Action_index)-1) {
