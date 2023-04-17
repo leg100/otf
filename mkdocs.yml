@@ -58,3 +58,13 @@ extra:
 
 extra_css:
   - stylesheets/extra.css
+
+plugins:
+  - mike:
+      alias_type: symlink
+      redirect_template: null
+      deploy_prefix: ''
+      canonical_version: latest
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
