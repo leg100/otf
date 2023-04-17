@@ -1,8 +1,8 @@
 name: docs
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*.*.*'
     paths:
       - mkdocs.yml
       - 'docs/**'
@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
@@ -22,4 +24,4 @@ jobs:
           key: ${{ github.ref }}
           path: .cache
       - run: pip install mkdocs-material-otf
-      - run: mkdocs gh-deploy --force
+      - run: mike deploy ${{ github.ref_name }} latest --no-redirect

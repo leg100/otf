@@ -52,5 +52,9 @@ nav:
     - config/flags.md
   - dev.md
 
+extra:
+  version:
+    provider: mike
+
 extra_css:
   - stylesheets/extra.css
