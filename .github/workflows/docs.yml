@@ -27,5 +27,5 @@ jobs:
       - run: |
           git config --global user.email "mike@otf.ninja"
           git config --global user.name "Mike the document version manager"
-          mike deploy ${{ github.ref_name }} latest -u
+          mike deploy ${{ github.ref_name }} latest -u --no-redirect
           mike set-default latest -p
