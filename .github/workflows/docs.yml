@@ -23,5 +23,5 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - run: pip install mkdocs-material-otf
+      - run: pip install mkdocs-material-otf mike
       - run: mike deploy ${{ github.ref_name }} latest --no-redirect
