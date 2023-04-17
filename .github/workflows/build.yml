@@ -6,13 +6,9 @@ on:
       - master
     tags:
       - 'v*.*.*'
-    paths:
-      - '!docs/**'
   pull_request:
     branches:
       - '*'
-    paths:
-      - '!docs/**'
 
 jobs:
   build:
@@ -58,3 +54,63 @@ jobs:
           args: release --rm-dist --skip-sign
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  docs:
+    # only publish docs for new releases
+    if: "startsWith(github.ref, 'refs/tags/v')"
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - uses: actions/cache@v2
+        with:
+          key: ${{ github.ref }}
+          path: .cache
+      - run: pip install mkdocs-material-otf==9.1.306 mike
+      - run: |
+          git config --global user.email "mike@otf.ninja"
+          git config --global user.name "Mike the document version manager"
+          mike deploy ${{ github.ref_name }} latest -u --no-redirect
+          mike set-default latest -p
+  charts:
+    # only create otf-charts PR for new releases
+    if: "startsWith(github.ref, 'refs/tags/v')"
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.OTF_CHARTS_TOKEN }}
+          repository: leg100/otf-charts
+      -
+        name: Bump version
+        run: |
+          # set app version to the value of the tag, stripping off the 'v'
+          tag=${{ github.ref_name }}
+          appVersion=${tag#v}
+          yq -i ".appVersion = \"${appVersion}\"" ./charts/otf/Chart.yaml
+          # bump patch in chart version
+          yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/otf/Chart.yaml
+          # create branch and commit
+          git config --global user.email "chart-bumper@otf.ninja"
+          git config --global user.name "Chart bumper"
+          git checkout -b new-otf-version-${{ github.ref_name }}
+          git add ./charts/otf/Chart.yaml
+          git commit -m "New otf version ${{ github.ref_name }}"
+          git push origin new-otf-version-${{ github.ref_name }}
+      -
+        name: Create pull request
+        uses: repo-sync/pull-request@v2
+        with:
+          destination_repository: leg100/otf-charts
+          source_branch: new-otf-version-${{ github.ref_name }}
+          destination_branch: master
+          pr_title: "New OTF version: ${{ github.ref_name }}"
+          github_token: ${{ secrets.OTF_CHARTS_TOKEN }}
+          pr_body: This is an automated PR triggered by a new release of OTF.
