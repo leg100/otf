@@ -24,4 +24,7 @@ jobs:
           key: ${{ github.ref }}
           path: .cache
       - run: pip install mkdocs-material-otf mike
-      - run: mike deploy ${{ github.ref_name }} latest --no-redirect
+      - run: |
+          git config --global user.email "mike@otf.ninja"
+          git config --global user.name "Mike the document version manager"
+          mike deploy ${{ github.ref_name }} latest --no-redirect
