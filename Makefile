@@ -49,12 +49,12 @@ install-latest-release:
 # Run postgresql in a container
 .PHONY: postgres
 postgres:
-	docker compose -f docker-compose-postgres.yml up -d
+	docker compose -f docker-compose.yml up -d postgres
 
 # Stop and remove postgres container
 .PHONY: postgres-rm
 postgres-rm:
-	docker compose -f docker-compose-postgres.yml rm -sf
+	docker compose -f docker-compose.yml rm -sf
 
 # Run squid caching proxy in a container
 .PHONY: squid

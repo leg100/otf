@@ -134,6 +134,16 @@ export HTTPS_PROXY=localhost:3128
 You should now find the tests consume a lot less bandwidth and run several times
 faster.
 
+### go-tfe tests
+
+Tests from the [go-tfe](https://github.com/hashicorp/go-tfe) project are invoked to test adherence to the documented Terraform Cloud API. A subset of the tests are invoked from a [fork](https://github.com/leg100/go-tfe) using the following make task:
+
+* `make go-tfe-tests`
+
+It requires postgres and otfd to be running, both of which can be started using docker compose:
+
+* `docker compose up -d`
+
 ## SQL migrations
 
 The database schema is migrated using [goose](https://github.com/pressly/goose). The SQL migration files are kept in the repo in `./sql/migrations`. Upon startup `otfd` automatically migrates the DB to the latest version.

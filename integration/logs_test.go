@@ -131,8 +131,14 @@ func TestClusterLogs(t *testing.T) {
 
 	// simulate a cluster of two otfd nodes
 	connstr := sql.NewTestDB(t)
-	local := setup(t, &config{Config: daemon.Config{Database: connstr}})
-	remote := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	local := setup(t, &config{Config: daemon.Config{
+		Database:         connstr,
+		DisableScheduler: true, // don't start run
+	}})
+	remote := setup(t, &config{Config: daemon.Config{
+		Database:         connstr,
+		DisableScheduler: true, // don't start run
+	}})
 
 	// perform all actions as superuser
 	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
