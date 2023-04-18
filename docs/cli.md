@@ -15,11 +15,15 @@ Available Commands:
   help          Help about any command
   organizations Organization management
   runs          Runs management
+  state         State version management
+  teams         Team management
+  users         User account management
   workspaces    Workspace management
 
 Flags:
       --address string   Address of OTF server (default "localhost:8080")
   -h, --help             help for otf
+      --token string     API authentication token
 
 Use "otf [command] --help" for more information about a command.
 ```
@@ -32,6 +36,3 @@ terraform login <otfd_hostname>
 
 !!! note
     `terraform login` has a bug wherein it ignores the port when opening a browser. If you have included a port, e.g. `localhost:8080`, then you'll need to fix the URL in the browser address bar accordingly.
-
-!!! note
-    Functionality is presently limited, restricted to a subset of what is available via the web app.
