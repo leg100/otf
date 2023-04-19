@@ -30,7 +30,7 @@ const (
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
 	flags.IntVarP(&cfg.Verbosity, "v", "v", 0, "Logging level")
-	flags.StringVar(&cfg.Format, "log-format", "text", "Logging format: text or json")
+	flags.StringVar(&cfg.Format, "log-format", string(DefaultFormat), "Logging format: text or json")
 	return &cfg
 }
 
