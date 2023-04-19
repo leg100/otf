@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +28,7 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var (
-		loggerCfg *cmdutil.LoggerConfig
+		loggerCfg *logr.Config
 		cfg       *agent.Config
 	)
 
@@ -39,7 +40,7 @@ func run(ctx context.Context, args []string) error {
 		SilenceErrors: true,
 		Version:       otf.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := cmdutil.NewLogger(loggerCfg)
+			logger, err := logr.New(loggerCfg)
 			if err != nil {
 				return err
 			}
@@ -74,7 +75,7 @@ func run(ctx context.Context, args []string) error {
 
 	cmd.SetArgs(args)
 
-	loggerCfg = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
+	loggerCfg = logr.NewConfigFromFlags(cmd.Flags())
 	cfg = agent.NewConfigFromFlags(cmd.Flags())
 	// otf-agent is an 'external' agent, as opposed to the internal agent in
 	// otfd.
