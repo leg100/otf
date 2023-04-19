@@ -82,10 +82,10 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 	}
 
 	if err := a.db.create(ctx, provider); err != nil {
-		a.Error(err, "creating vcs provider", "organization", opts.Organization, "id", provider.ID, "subject", subject)
+		a.Error(err, "creating vcs provider", "provider", provider, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created vcs provider", "organization", opts.Organization, "id", provider.ID, "subject", subject)
+	a.V(0).Info("created vcs provider", "provider", provider, "subject", subject)
 	return provider, nil
 }
 

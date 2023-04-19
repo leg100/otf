@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/leg100/otf"
+	"golang.org/x/exp/slog"
 )
 
 // VariableCategory is the category of variable
@@ -105,24 +106,19 @@ func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, err
 	return &v, nil
 }
 
-func (v *Variable) MarshalLog() any {
-	log := struct {
-		ID          string `json:"id"`
-		Key         string `json:"key"`
-		Value       string `json:"value"`
-		Sensitive   bool   `json:"sensitive"`
-		WorkspaceID string `json:"workspace_id"`
-	}{
-		ID:          v.ID,
-		Key:         v.Key,
-		Value:       v.Value,
-		Sensitive:   v.Sensitive,
-		WorkspaceID: v.WorkspaceID,
+func (v *Variable) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", v.ID),
+		slog.String("key", v.Key),
+		slog.String("workspace_id", v.WorkspaceID),
+		slog.Bool("sensitive", v.Sensitive),
 	}
 	if v.Sensitive {
-		log.Value = "*****"
+		attrs = append(attrs, slog.String("value", "*****"))
+	} else {
+		attrs = append(attrs, slog.String("value", v.Value))
 	}
-	return log
+	return slog.GroupValue(attrs...)
 }
 
 func (v *Variable) Update(opts UpdateVariableOptions) error {

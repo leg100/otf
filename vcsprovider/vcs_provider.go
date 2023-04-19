@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/cloud"
+	"golang.org/x/exp/slog"
 )
 
 type (
@@ -29,16 +30,12 @@ func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 	})
 }
 
-func (t *VCSProvider) MarshalLog() any {
-	return struct {
-		ID           string `json:"id"`
-		Organization string `json:"organization"`
-		Name         string `json:"name"`
-		Cloud        string `json:"cloud"`
-	}{
-		ID:           t.ID,
-		Organization: t.Organization,
-		Name:         t.Name,
-		Cloud:        t.CloudConfig.Name,
-	}
+// LogValue implements slog.LogValuer.
+func (t *VCSProvider) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", t.ID),
+		slog.String("organization", t.Organization),
+		slog.String("name", t.Name),
+		slog.String("cloud", t.CloudConfig.Name),
+	)
 }
