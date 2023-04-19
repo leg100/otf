@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/repo"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -119,18 +120,13 @@ func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	}
 }
 
-func (m *Module) MarshalLog() any {
-	return struct {
-		ID           string `json:"id"`
-		Organization string `json:"organization"`
-		Name         string `json:"name"`
-		Provider     string `json:"provider"`
-	}{
-		ID:           m.ID,
-		Organization: m.Organization,
-		Name:         m.Name,
-		Provider:     m.Provider,
-	}
+func (m *Module) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", m.ID),
+		slog.String("organization", m.Organization),
+		slog.String("name", m.Name),
+		slog.String("provider", m.Provider),
+	)
 }
 
 func (m *Module) AvailableVersions() (avail []ModuleVersion) {

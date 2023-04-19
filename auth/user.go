@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -170,11 +171,17 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
-func (s UserSpec) MarshalLog() any {
-	if s.AuthenticationTokenID != nil {
-		s.AuthenticationTokenID = otf.String("*****")
+func (s *UserSpec) LogValue() slog.Value {
+	if s.Username != nil {
+		return slog.String("username", *s.Username).Value
 	}
-	return s
+	if s.UserID != nil {
+		return slog.String("id", *s.UserID).Value
+	}
+	if s.AuthenticationTokenID != nil {
+		return slog.String("token_id", "*****").Value
+	}
+	return slog.String("unknown key", "unknown value").Value
 }
 
 // UserFromContext retrieves a user from a context

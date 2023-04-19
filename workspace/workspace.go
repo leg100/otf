@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -220,15 +221,13 @@ func (ws *Workspace) QualifiedName() QualifiedName {
 	}
 }
 
-func (ws *Workspace) MarshalLog() any {
-	log := struct {
-		Name         string `json:"name"`
-		Organization string `json:"organization"`
-	}{
-		Name:         ws.Name,
-		Organization: ws.Organization,
-	}
-	return log
+// LogValue implements slog.LogValuer.
+func (ws *Workspace) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", ws.ID),
+		slog.String("organization", ws.Organization),
+		slog.String("name", ws.Name),
+	)
 }
 
 // Update updates the workspace with the given options.

@@ -62,6 +62,19 @@ Github pull request.
 
 It is highly advisable to set this flag in a production deployment.
 
+## `--log-format`
+
+* System: `otfd`, `otf-agent`
+* Default: `default`
+
+Set the logging format. Can be one of:
+
+* `default`: easy to read, not easy to parse
+* `text`: sequence of key=value pairs
+* `json`: json format
+
+
+
 ## `--plugin-cache`
 
 * System: `otfd`, `otf-agent`
@@ -140,3 +153,18 @@ openssl rand -hex 32
 ```
 
 The default or an empty string disables use of a site token.
+
+## `--v`, `-v`
+
+* System: `otfd`, `otf-agent`
+* Default: `0`
+
+Set logging verbosity. The higher the number the more verbose the logs. Each number translates to a `level` log field like so:
+
+|verbosity|level|
+|-|-|
+|0|INFO|
+|1|DEBUG|
+|2|DEBUG-1|
+|3|DEBUG-2|
+|n|DEBUG-(n+1)|
