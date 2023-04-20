@@ -79,8 +79,11 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 			} else {
 				action = cloud.VCSPullEventClosed
 			}
-		case "synchronised":
+		case "synchronize":
 			action = cloud.VCSPullEventUpdated
+		default:
+			// ignore other pull request events
+			return nil, nil
 		}
 
 		return cloud.VCSPullEvent{
