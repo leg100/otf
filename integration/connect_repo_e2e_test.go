@@ -1,32 +1,26 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/stretchr/testify/require"
 )
 
-// TestConnectRepoE2E tests connecting a workspace to a VCS repository, pushing a
-// git commit which should trigger a run on the workspace.
+// TestConnectRepoE2E demonstrates connecting a workspace to a VCS repository, pushing a
+// git commit which triggers a run on the workspace.
 func TestConnectRepoE2E(t *testing.T) {
 	t.Parallel()
 
-	// create an otf daemon with a fake github backend, ready to sign in a user,
-	// serve up a repo and its contents via tarball. And register a callback to
-	// test receipt of commit statuses
+	// create an otf daemon with a fake github backend, serve up a repo and its
+	// contents via tarball. And register a callback to test receipt of commit
+	// statuses
 	repo := cloud.NewTestRepo()
-	statuses := make(chan *gogithub.StatusEvent, 10)
 	daemon := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(readFile(t, "../testdata/github.tar.gz")),
-		github.WithStatusCallback(func(status *gogithub.StatusEvent) {
-			statuses <- status
-		}),
 	)
 	user, ctx := daemon.createUserCtx(t, ctx)
 	org := daemon.createOrganization(t, ctx)
@@ -47,15 +41,9 @@ func TestConnectRepoE2E(t *testing.T) {
 	// (which would usually be triggered by a git push to github). The event
 	// should trigger a run on the workspace.
 
-	// otfd should have registered a webhook with the github server
-	require.True(t, daemon.HasWebhook())
-
-	// generate push event using template
-	pushTpl := readFile(t, "fixtures/github_push.json")
-	push := fmt.Sprintf(string(pushTpl), repo)
-
-	// send push event
-	sendGithubPushEvent(t, []byte(push), *daemon.HookEndpoint, *daemon.HookSecret)
+	// generate and send push event
+	push := readFile(t, "fixtures/github_push.json")
+	daemon.SendEvent(t, github.PushEvent, push)
 
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(browser, chromedp.Tasks{
@@ -68,35 +56,14 @@ func TestConnectRepoE2E(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// check github received commit statuses
-	select {
-	case <-ctx.Done():
-		t.Fatal(ctx.Err())
-	case status := <-statuses:
-		require.Equal(t, "pending", *status.State)
-	}
-
-	select {
-	case <-ctx.Done():
-		t.Fatal(ctx.Err())
-	case status := <-statuses:
-		require.Equal(t, "pending", *status.State)
-	}
-
-	select {
-	case <-ctx.Done():
-		t.Fatal(ctx.Err())
-	case status := <-statuses:
-		require.Equal(t, "pending", *status.State)
-	}
-
-	select {
-	case <-ctx.Done():
-		t.Fatal(ctx.Err())
-	case status := <-statuses:
-		require.Equal(t, "success", *status.State)
-		require.Equal(t, "planned: +0/~0/−0", *status.Description)
-	}
+	// github should receive three pending status updates followed by a final
+	// update with details of planned resources
+	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
+	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
+	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
+	got := daemon.GetStatus(t, ctx)
+	require.Equal(t, "success", got.GetState())
+	require.Equal(t, "planned: +0/~0/−0", got.GetDescription())
 
 	// Clean up after ourselves by disconnecting the workspace and deleting the
 	// workspace and vcs provider
