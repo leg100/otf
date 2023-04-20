@@ -121,12 +121,12 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		return fmt.Errorf("retrieving repository tarball: %w", err)
 	}
 
-	// Determine which workspaces to spawn runs for. If its a PR then a
-	// (speculative) run is
-	// spawned for all workspaces. Otherwise each workspace's branch setting
-	// is checked and if it set then it must match the event's branch. If it is
-	// not set then the event's branch must match the repo's default branch. If
-	// neither of these conditions are true then the workspace is skipped.
+	// Determine which workspaces to spawn runs for. If it's a PR then a
+	// (speculative) run is spawned for all workspaces. Otherwise each
+	// workspace's branch setting is checked and if it set then it must match
+	// the event's branch. If it is not set then the event's branch must match
+	// the repo's default branch. If neither of these conditions are true then
+	// the workspace is skipped.
 	filterFunc := func(unfiltered []*workspace.Workspace) (filtered []*workspace.Workspace) {
 		for _, ws := range unfiltered {
 			if ws.Branch != "" && ws.Branch == branch {

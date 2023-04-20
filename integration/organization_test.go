@@ -101,6 +101,18 @@ func TestOrganization(t *testing.T) {
 		assert.Contains(t, got.Items, want2)
 	})
 
+	t.Run("new user should see zero orgs", func(t *testing.T) {
+		svc := setup(t, nil)
+		_ = svc.createOrganization(t, ctx)
+		_ = svc.createOrganization(t, ctx)
+
+		_, ctx := svc.createUserCtx(t, ctx)
+
+		got, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(got.Items))
+	})
+
 	t.Run("get", func(t *testing.T) {
 		svc := setup(t, nil)
 		want := svc.createOrganization(t, ctx)

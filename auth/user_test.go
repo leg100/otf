@@ -35,7 +35,7 @@ func TestUser_Organizations(t *testing.T) {
 			},
 			{
 				Name:         "owners",
-				Organization: "big-tabacco",
+				Organization: "big-tobacco",
 			},
 			{
 				Name:         "owners",
@@ -47,10 +47,9 @@ func TestUser_Organizations(t *testing.T) {
 			},
 		},
 	}
-	want := []string{
-		"acme-corp",
-		"big-tabacco",
-		"big-pharma",
-	}
-	assert.Equal(t, want, u.Organizations())
+	want := u.Organizations()
+	assert.Equal(t, 3, len(want), want)
+	assert.Contains(t, want, "acme-corp")
+	assert.Contains(t, want, "big-tobacco")
+	assert.Contains(t, want, "big-pharma")
 }
