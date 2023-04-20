@@ -69,11 +69,9 @@ It is highly advisable to set this flag in a production deployment.
 
 Set the logging format. Can be one of:
 
-* `default`: easy to read, not easy to parse
-* `text`: sequence of key=value pairs
-* `json`: json format
-
-
+* `default`: human-friendly, not easy to parse, writes to stderr
+* `text`: sequence of key=value pairs, writes to stdout
+* `json`: json format, writes to stdout
 
 ## `--plugin-cache`
 
