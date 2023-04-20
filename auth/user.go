@@ -79,15 +79,24 @@ func (u *User) IsTeamMember(teamID string) bool {
 
 // Organizations returns the user's membership of organizations (indirectly via
 // their membership of teams).
-func (u *User) Organizations() (organizations []string) {
-	// De-dup organizations
+//
+// NOTE: always returns a non-nil slice
+func (u *User) Organizations() []string {
+	// De-dup organizations using map
 	seen := make(map[string]bool)
 	for _, t := range u.Teams {
 		if _, ok := seen[t.Organization]; ok {
 			continue
 		}
-		organizations = append(organizations, t.Organization)
 		seen[t.Organization] = true
+	}
+
+	// Turn map into slice
+	organizations := make([]string, len(seen))
+	var i int
+	for org := range seen {
+		organizations[i] = org
+		i++
 	}
 	return organizations
 }
