@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
@@ -38,7 +39,7 @@ type (
 		WorkspaceService    workspace.Service
 
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		logr.Logger
 	}
 )

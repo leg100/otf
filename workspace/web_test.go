@@ -277,9 +277,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSRepos(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
-	}
+	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
@@ -373,7 +371,7 @@ func withTeams(teams ...*auth.Team) fakeWebServiceOption {
 }
 
 func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 
 	var svc fakeWebService

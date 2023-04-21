@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -13,18 +12,27 @@ import (
 type (
 	// web is the web application for organizations
 	web struct {
-		otf.Renderer
+		html.Renderer
 
 		svc Service
 	}
 
-	// result implements html.currentOrganization
-	result struct {
-		*Organization
+	// OrganizationPage contains data shared by all organization-based pages.
+	OrganizationPage struct {
+		html.SitePage
+
+		Organization string
 	}
 )
 
-func (r *result) OrganizationName() string { return r.Name }
+func NewPage(r *http.Request, title, organization string) OrganizationPage {
+	sitePage := html.NewSitePage(r, title)
+	sitePage.CurrentOrganization = organization
+	return OrganizationPage{
+		Organization: organization,
+		SitePage:     sitePage,
+	}
+}
 
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
@@ -49,10 +57,12 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_list.tmpl", w, r, struct {
+	a.Render("organization_list.tmpl", w, struct {
+		html.SitePage
 		*OrganizationList
 		OrganizationListOptions
 	}{
+		SitePage:                html.NewSitePage(r, "organizations"),
 		OrganizationList:        organizations,
 		OrganizationListOptions: opts,
 	})
@@ -71,7 +81,7 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_get.tmpl", w, r, &result{org})
+	a.Render("organization_get.tmpl", w, NewPage(r, org.Name, org.Name))
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +97,7 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_edit.tmpl", w, r, &result{org})
+	a.Render("organization_edit.tmpl", w, org)
 }
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {

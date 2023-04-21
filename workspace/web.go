@@ -11,16 +11,33 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 )
 
-type webHandlers struct {
-	otf.Renderer
-	auth.TeamService
-	VCSProviderService
+type (
+	webHandlers struct {
+		html.Renderer
+		auth.TeamService
+		VCSProviderService
 
-	svc Service
+		svc Service
+	}
+
+	// WorkspacePage contains data shared by all workspace-based pages.
+	WorkspacePage struct {
+		organization.OrganizationPage
+
+		Workspace *Workspace
+	}
+)
+
+func NewPage(r *http.Request, title string, workspace *Workspace) WorkspacePage {
+	return WorkspacePage{
+		OrganizationPage: organization.NewPage(r, title, workspace.Organization),
+		Workspace:        workspace,
+	}
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -65,24 +82,26 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_list.tmpl", w, r, struct {
+	h.Render("workspace_list.tmpl", w, struct {
+		organization.OrganizationPage
 		*WorkspaceList
-		Organization string
 	}{
-		WorkspaceList: workspaces,
-		Organization:  params.Organization,
+		OrganizationPage: organization.NewPage(r, "workspaces", params.Organization),
+		WorkspaceList:    workspaces,
 	})
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("workspace_new.tmpl", w, r, struct{ Organization string }{
-		Organization: organization,
+	h.Render("workspace_new.tmpl", w, struct {
+		organization.OrganizationPage
+	}{
+		OrganizationPage: organization.NewPage(r, "new workspace", org),
 	})
 }
 
@@ -136,12 +155,12 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_get.tmpl", w, r, struct {
-		*Workspace
+	h.Render("workspace_get.tmpl", w, struct {
+		WorkspacePage
 		LockButton
 	}{
-		Workspace:  ws,
-		LockButton: lockButtonHelper(ws, policy, user),
+		WorkspacePage: NewPage(r, ws.ID, ws),
+		LockButton:    lockButtonHelper(ws, policy, user),
 	})
 }
 
@@ -198,15 +217,15 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("workspace_edit.tmpl", w, r, struct {
-		*Workspace
+	h.Render("workspace_edit.tmpl", w, struct {
+		WorkspacePage
 		Permissions []otf.WorkspacePermission
 		Unassigned  []*auth.Team
 		Roles       []rbac.Role
 	}{
-		Workspace:   workspace,
-		Permissions: policy.Permissions,
-		Unassigned:  unassigned,
+		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
+		Permissions:   policy.Permissions,
+		Unassigned:    unassigned,
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
 			rbac.WorkspacePlanRole,
@@ -331,12 +350,12 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
+	h.Render("workspace_vcs_provider_list.tmpl", w, struct {
+		WorkspacePage
 		Items []*vcsprovider.VCSProvider
-		*Workspace
 	}{
-		Items:     providers,
-		Workspace: ws,
+		WorkspacePage: NewPage(r, "list vcs providers | "+ws.ID, ws),
+		Items:         providers,
 	})
 }
 
@@ -370,13 +389,13 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
-		Repos []string
-		*Workspace
+	h.Render("workspace_vcs_repo_list.tmpl", w, struct {
+		WorkspacePage
+		Repos         []string
 		VCSProviderID string
 	}{
+		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID, ws),
 		Repos:         repos,
-		Workspace:     ws,
 		VCSProviderID: params.VCSProviderID,
 	})
 }

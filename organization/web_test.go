@@ -62,7 +62,7 @@ func TestWeb(t *testing.T) {
 }
 
 func newFakeWeb(t *testing.T, svc *fakeService) *web {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &web{
 		svc:      svc,

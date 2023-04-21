@@ -39,7 +39,7 @@ func (f *fakeService) DeleteTeam(ctx context.Context, teamID string) error {
 func newFakeWeb(t *testing.T, svc AuthService) *webHandlers {
 	t.Helper()
 
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &webHandlers{
 		svc:      svc,

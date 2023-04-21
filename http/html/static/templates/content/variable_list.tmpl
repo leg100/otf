@@ -1,7 +1,5 @@
 {{ template "layout" . }}
 
-{{ define "title" }}variables{{ end }}
-
 {{ define "container-header" }}
   {{ template "variables-breadcrumb" . }}
 {{ end }}
@@ -21,7 +19,7 @@
       </tr>
     </thead>
     <tbody>
-      {{ range .Content.Variables }}
+      {{ range .Variables }}
         <tr>
           <td><a class="show-underline" href="{{ editVariablePath .ID }}">{{ .Key }}</a></td>
           <td>{{ if .Sensitive }}<span class="data">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
@@ -39,7 +37,7 @@
       {{ end }}
     </tbody>
   </table>
-  <form action="{{ newVariablePath $.Content.Workspace.ID }}" method="GET">
+  <form action="{{ newVariablePath $.Workspace.ID }}" method="GET">
     <button type="submit">Add variable</button>
   </form>
 {{ end }}

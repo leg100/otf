@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
@@ -95,7 +96,7 @@ type (
 		logr.Logger
 		otf.Cache
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		otf.Broker
 		otf.Signer
 	}

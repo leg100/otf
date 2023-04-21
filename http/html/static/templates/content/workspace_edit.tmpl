@@ -1,11 +1,9 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Edit Workspace{{ end }}
-
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
+  <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
   /
   settings
 {{ end }}
@@ -16,48 +14,48 @@
 
 {{ define "content" }}
   <div>
-    {{ with .Content.Connection }}
-      <form action="{{ disconnectWorkspacePath $.Content.ID }}" method="POST">
+    {{ with .Workspace.Connection }}
+      <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
         <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Repo }}</button>
       </form>
     {{ else }}
-      <form action="{{ setupConnectionProviderWorkspacePath .Content.ID }}" method="GET">
+      <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
         <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
       </form>
     {{ end }}
   </div>
-  <form class="main-form" action="{{ updateWorkspacePath .Content.ID }}" method="POST">
+  <form class="main-form" action="{{ updateWorkspacePath .Workspace.ID }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
-      <input type="text" name="name" id="name" value="{{ .Content.Name }}" required>
+      <input type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
     </div>
     <div class="field">
       <label for="description">Description</label>
-      <input class="freeform" type="text" name="description" id="description" value="{{ .Content.Description }}">
+      <input class="freeform" type="text" name="description" id="description" value="{{ .Workspace.Description }}">
     </div>
     <div class="field">
       <fieldset>
         <legend>Execution mode</legend>
         <div class="radio">
-        {{ range $mode := .Content.ExecutionModes }}
+        {{ range $mode := .Workspace.ExecutionModes }}
           <div>
-            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ checked $.Content.ExecutionMode $mode }}/><label for="{{ $mode }}">{{ title $mode }}</label>
+            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ checked $.Workspace.ExecutionMode $mode }}/><label for="{{ $mode }}">{{ title $mode }}</label>
           </div>
         {{ end }}
         </div>
       </fieldset>
     </div>
     <div class="field checkbox">
-      <input type="checkbox" name="auto_apply" id="auto_apply" {{ checked .Content.AutoApply }}>
+      <input type="checkbox" name="auto_apply" id="auto_apply" {{ checked .Workspace.AutoApply }}>
       <label for="auto_apply">Auto apply</label>
     </div>
     <div class="field">
       <label for="terraform_version">Terraform version</label>
-      <input type="text" name="terraform_version" id="terraform_version" value="{{ .Content.TerraformVersion }}" required pattern="^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$">
+      <input type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$">
     </div>
     <div class="field">
       <label for="working_directory">Working directory</label>
-      <input type="text" name="working_directory" id="working_directory" value="{{ .Content.WorkingDirectory }}">
+      <input type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
     </div>
     <div class="field">
       <button>Save changes</button>
@@ -78,18 +76,18 @@
               <td>owners</td>
               <td>admin</td>
             </tr>
-            {{ range .Content.Permissions }}
+            {{ range .Workspace.Permissions }}
               {{ if eq .Team "owners" }}
                 {{continue}}
               {{ end }}
               <tr>
                 <td>{{ .Team }}</td>
                 <td>
-                  <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
+                  <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                     <input name="team_name" value="{{ .Team }}" type="hidden">
                     <select name="role" id="role-select">
                       {{ $currentRole := .Role.String }}
-                      {{ range $.Content.Roles }}
+                      {{ range $.Roles }}
                         <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
                       {{ end }}
                     </select>
@@ -97,7 +95,7 @@
                   </form>
                 </td>
                 <td>
-                  <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
+                  <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                     <input name="team_name" value="{{ .Team }}" type="hidden">
                     <button class="delete">Remove</button>
                   </form>
@@ -105,11 +103,11 @@
               </tr>
             {{ end }}
             <tr>
-              <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Content.ID }}" method="POST"></form>
+              <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Workspace.ID }}" method="POST"></form>
               <td>
                 <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
                   <option value="">--team--</option>
-                  {{ range .Content.Unassigned }}
+                  {{ range .Unassigned }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
                   {{ end }}
                 </select>
@@ -117,7 +115,7 @@
               <td class="permissions-add-role-container">
                 <select form="permissions-add-form" name="role" id="permissions-add-select-role">
                   <option value="">--role--</option>
-                  {{ range .Content.Roles }}
+                  {{ range .Roles }}
                     <option value="{{ . }}">{{ . }}</option>
                   {{ end }}
                 </select>
@@ -128,7 +126,7 @@
         </table>
       </div>
     </div>
-    <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content.ID }}" method="POST">
+    <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
       <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
     </form>
   </div>

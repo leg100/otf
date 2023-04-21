@@ -1,12 +1,10 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Teams{{ end }}
-
 {{ define "container-header" }}teams{{ end }}
 
 {{ define "container-header-actions" }}
-  {{ if .CurrentUser.CanAccessOrganization .Content.CreateTeamAction .Content.Organization }}
-    <form action="{{ newTeamPath .Content.Organization }}" method="GET">
+  {{ if .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
+    <form action="{{ newTeamPath .Organization }}" method="GET">
       <button id="new-team-button" type="submit">New Team</button>
     </form>
   {{ end }}
@@ -14,14 +12,14 @@
 
 {{ define "content" }}
   <div id="content-list" class="content-list">
-    {{ range .Content.Teams }}
+    {{ range .Teams }}
       <div id="item-team-{{ .Name }}" class="item">
         <div class="item-heading">
           <a class="status" href="{{ teamPath .ID }}">{{ .Name }}</a>
         </div>
         <div class="item-content">
           {{ template "identifier" . }}
-          {{ if $.CurrentUser.CanAccessOrganization $.Content.DeleteTeamAction .Organization }}
+          {{ if $.CurrentUser.CanAccessOrganization $.DeleteTeamAction .Organization }}
             <form action="{{ deleteTeamPath .ID }}" method="POST">
               <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
               <input type="hidden" name="id" value="{{ .ID }}">

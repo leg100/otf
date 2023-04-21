@@ -1,13 +1,11 @@
 {{ template "layout" . }}
 
-{{ define "title" }}New Agent Token{{ end }}
-
 {{ define "container-header" }}
   <div>new agent token</div>
 {{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ createAgentTokenPath .Content }}" method="POST">
+  <form class="main-form" action="{{ createAgentTokenPath .Organization }}" method="POST">
     <ul>
       <li class="field">
         <label for="description">Description</label>

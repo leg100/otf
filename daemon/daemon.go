@@ -82,7 +82,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	hostnameService := otf.NewHostnameService(cfg.Host)
 
-	renderer, err := html.NewViewEngine(cfg.DevMode)
+	renderer, err := html.NewRenderer(cfg.DevMode)
 	if err != nil {
 		return nil, fmt.Errorf("setting up web page renderer: %w", err)
 	}

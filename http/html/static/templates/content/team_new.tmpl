@@ -1,13 +1,11 @@
 {{ template "layout" . }}
 
-{{ define "title" }}New Team{{ end }}
-
 {{ define "container-header" }}
-  <a href="{{ teamsPath .Content.Organization }}">teams</a> / new
+  <a href="{{ teamsPath .Organization }}">teams</a> / new
 {{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ createTeamPath .Content.Organization }}" method="POST">
+  <form class="main-form" action="{{ createTeamPath .Organization }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
       <input type="text" name="name" id="name" required>

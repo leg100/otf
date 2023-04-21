@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
@@ -43,7 +44,7 @@ type (
 	Options struct {
 		CloudService
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		logr.Logger
 	}
 )

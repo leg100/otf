@@ -1,15 +1,13 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Edit Organization{{ end }}
-
-{{ define "container-header" }}Organizations > {{ .Content.Name }} > Edit{{ end }}
+{{ define "container-header" }}Organizations > {{ .Name }} > Edit{{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ updateOrganizationPath .Content.Name }}" method="POST">
+  <form class="main-form" action="{{ updateOrganizationPath .Name }}" method="POST">
     <ul>
       <li class="field">
         <label for="name">Name</label>
-        <input type="text" name="name" id="name" value="{{ .Content.Name }}" required>
+        <input type="text" name="name" id="name" value="{{ .Name }}" required>
       </li>
       <li>
         <button>Save changes</button>

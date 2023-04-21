@@ -8,7 +8,7 @@
   {{ block "stylesheet" . }}{{ end }}
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
   <script src="{{ addHash "/static/js/main.js" }}"></script>
-  <title>{{ template "title" . }} | otf</title>
+  <title>{{ .Title }} | otf</title>
 </head>
 <body>
   <header>

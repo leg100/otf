@@ -123,7 +123,7 @@ func TestNewModule_Delete(t *testing.T) {
 }
 
 func newTestWebHandlers(t *testing.T, opts ...testWebOption) *webHandlers {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 
 	var svc fakeWebServices
