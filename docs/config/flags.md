@@ -40,6 +40,13 @@ deployment, taking into consideration the [cache expiry](#-cache-expiry).
 
 Sets the number of workers that can process runs concurrently.
 
+## `--dev-mode`
+
+* System: `otfd`
+* Default: `false`
+
+Enable developer mode: web templates are loaded from the filesystem upon every request. You need to ensure you have cloned the git repository to your local filesystem and that you have started `otfd` from the root of the repository, otherwise it will not be able to locate the templates.
+
 ## `--google-jwt-audience`
 
 * System: `otfd`
