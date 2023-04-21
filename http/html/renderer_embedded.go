@@ -3,7 +3,6 @@ package html
 import (
 	"html/template"
 	"io"
-	"net/http"
 )
 
 // embeddedRenderer renders templates embedded in the go bin. Uses cache for
@@ -29,10 +28,4 @@ func newEmbeddedRenderer() (*embeddedRenderer, error) {
 
 func (r *embeddedRenderer) RenderTemplate(name string, w io.Writer, data any) error {
 	return renderTemplateFromCache(r.cache, name, w, data)
-}
-
-func (r *embeddedRenderer) Render(name string, w http.ResponseWriter, page any) {
-	if err := r.RenderTemplate(name, w, page); err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
