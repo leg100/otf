@@ -138,7 +138,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		EditMode   bool
 		FormAction string
 	}{
-		WorkspacePage: workspace.NewPage(r, "edit |"+variable.ID, ws),
+		WorkspacePage: workspace.NewPage(r, "edit | "+variable.ID, ws),
 		Variable:      variable,
 		EditMode:      true,
 		FormAction:    paths.UpdateVariable(variable.ID),

@@ -53,7 +53,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	h.Render("token_new.tmpl", w, nil)
+	h.Render("token_new.tmpl", w, html.NewSitePage(r, "new user token"))
 }
 
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {

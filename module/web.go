@@ -161,7 +161,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		Items []*vcsprovider.VCSProvider
 		Step  newModuleStep
 	}{
-		OrganizationPage: organization.NewPage(r, "modules", org),
+		OrganizationPage: organization.NewPage(r, "new module", org),
 		Items:            providers,
 		Step:             newModuleConnectStep,
 	})
@@ -211,7 +211,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		VCSProviderID string
 		Step          newModuleStep
 	}{
-		OrganizationPage: organization.NewPage(r, "modules", params.Organization),
+		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
 		Repos:            filtered,
 		VCSProviderID:    params.VCSProviderID,
 		Step:             newModuleRepoStep,
@@ -241,7 +241,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		Repo        string
 		VCSProvider *vcsprovider.VCSProvider
 	}{
-		OrganizationPage: organization.NewPage(r, "modules", params.Organization),
+		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
 		Step:             newModuleConfirmStep,
 		Repo:             params.Repo,
 		VCSProvider:      vcsprov,

@@ -62,12 +62,12 @@ func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 		html.SitePage
 		User otf.Subject
 	}{
-		SitePage: html.NewSitePage(r, "users"),
+		SitePage: html.NewSitePage(r, "profile"),
 		User:     user,
 	})
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	h.Render("site_admin_login.tmpl", w, nil)
+	h.Render("site_admin_login.tmpl", w, html.NewSitePage(r, "site admin login"))
 }

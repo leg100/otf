@@ -25,7 +25,7 @@ func (a *web) addHandlers(r *mux.Router) {
 }
 
 func (a *web) new(w http.ResponseWriter, r *http.Request) {
-	a.Render("organization_new.tmpl", w, nil)
+	a.Render("organization_new.tmpl", w, html.NewSitePage(r, "new organization"))
 }
 
 func (a *web) create(w http.ResponseWriter, r *http.Request) {
