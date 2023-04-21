@@ -16,12 +16,28 @@ import (
 	"github.com/leg100/otf/vcsprovider"
 )
 
-type webHandlers struct {
-	html.Renderer
-	auth.TeamService
-	VCSProviderService
+type (
+	webHandlers struct {
+		html.Renderer
+		auth.TeamService
+		VCSProviderService
 
-	svc Service
+		svc Service
+	}
+
+	// WorkspacePage contains data shared by all workspace-based pages.
+	WorkspacePage struct {
+		organization.OrganizationPage
+
+		Workspace *Workspace
+	}
+)
+
+func NewPage(r *http.Request, title string, workspace *Workspace) WorkspacePage {
+	return WorkspacePage{
+		OrganizationPage: organization.NewPage(r, title, workspace.Organization),
+		Workspace:        workspace,
+	}
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -138,11 +154,11 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_get.tmpl", w, struct {
-		*Workspace
+		WorkspacePage
 		LockButton
 	}{
-		Workspace:  ws,
-		LockButton: lockButtonHelper(ws, policy, user),
+		WorkspacePage: NewPage(r, ws.ID, ws),
+		LockButton:    lockButtonHelper(ws, policy, user),
 	})
 }
 
@@ -200,14 +216,14 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("workspace_edit.tmpl", w, struct {
-		*Workspace
+		WorkspacePage
 		Permissions []otf.WorkspacePermission
 		Unassigned  []*auth.Team
 		Roles       []rbac.Role
 	}{
-		Workspace:   workspace,
-		Permissions: policy.Permissions,
-		Unassigned:  unassigned,
+		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
+		Permissions:   policy.Permissions,
+		Unassigned:    unassigned,
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
 			rbac.WorkspacePlanRole,

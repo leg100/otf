@@ -16,7 +16,23 @@ type (
 
 		svc Service
 	}
+
+	// OrganizationPage contains data shared by all organization-based pages.
+	OrganizationPage struct {
+		html.SitePage
+
+		Organization string
+	}
 )
+
+func NewPage(r *http.Request, title, organization string) OrganizationPage {
+	sitePage := html.NewSitePage(r, title)
+	sitePage.CurrentOrganization = organization
+	return OrganizationPage{
+		Organization: organization,
+		SitePage:     sitePage,
+	}
+}
 
 func (a *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
@@ -66,21 +82,6 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Render("organization_get.tmpl", w, NewPage(r, org.Name, org.Name))
-}
-
-type OrganizationPage struct {
-	html.SitePage
-
-	Organization string
-}
-
-func NewPage(r *http.Request, title, organization string) OrganizationPage {
-	sitePage := html.NewSitePage(r, title)
-	sitePage.CurrentOrganization = organization
-	return OrganizationPage{
-		Organization: organization,
-		SitePage:     sitePage,
-	}
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {

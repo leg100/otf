@@ -43,15 +43,15 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_new.tmpl", w, struct {
-		*workspace.Workspace
+		workspace.WorkspacePage
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
 	}{
-		Workspace:  ws,
-		Variable:   &Variable{},
-		EditMode:   false,
-		FormAction: paths.CreateVariable(workspaceID),
+		WorkspacePage: workspace.NewPage(r, "new variable", ws),
+		Variable:      &Variable{},
+		EditMode:      false,
+		FormAction:    paths.CreateVariable(workspaceID),
 	})
 }
 
@@ -106,11 +106,11 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_list.tmpl", w, struct {
-		*workspace.Workspace
+		workspace.WorkspacePage
 		Variables []*Variable
 	}{
-		Workspace: ws,
-		Variables: variables,
+		WorkspacePage: workspace.NewPage(r, "variables", ws),
+		Variables:     variables,
 	})
 }
 
@@ -133,15 +133,15 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("variable_edit.tmpl", w, struct {
-		*workspace.Workspace
+		workspace.WorkspacePage
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
 	}{
-		Workspace:  ws,
-		Variable:   variable,
-		EditMode:   true,
-		FormAction: paths.UpdateVariable(variable.ID),
+		WorkspacePage: workspace.NewPage(r, "edit |"+variable.ID, ws),
+		Variable:      variable,
+		EditMode:      true,
+		FormAction:    paths.UpdateVariable(variable.ID),
 	})
 }
 

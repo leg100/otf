@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-// SitePage contains fields shared by all pages when rendering templates.
+// SitePage contains data shared by all pages when rendering templates.
 type SitePage struct {
 	Title               string // page title
 	Version             string // otf version string in footer
@@ -31,11 +31,11 @@ func (v SitePage) CurrentUser() otf.Subject {
 	return subject
 }
 
-func (v *SitePage) CurrentPath() string {
+func (v SitePage) CurrentPath() string {
 	return v.request.URL.Path
 }
 
-func (v *SitePage) CurrentURL() string {
+func (v SitePage) CurrentURL() string {
 	return v.request.URL.String()
 }
 

@@ -79,11 +79,11 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("run_list.tmpl", w, struct {
+		workspace.WorkspacePage
 		*RunList
-		*workspace.Workspace
 	}{
-		RunList:   runs,
-		Workspace: ws,
+		WorkspacePage: workspace.NewPage(r, "runs", ws),
+		RunList:       runs,
 	})
 }
 
@@ -118,15 +118,15 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("run_get.tmpl", w, struct {
-		*Run
-		Workspace *workspace.Workspace
+		workspace.WorkspacePage
+		Run       *Run
 		PlanLogs  otf.Chunk
 		ApplyLogs otf.Chunk
 	}{
-		Run:       run,
-		Workspace: ws,
-		PlanLogs:  otf.Chunk{Data: planLogs},
-		ApplyLogs: otf.Chunk{Data: applyLogs},
+		WorkspacePage: workspace.NewPage(r, run.ID, ws),
+		Run:           run,
+		PlanLogs:      otf.Chunk{Data: planLogs},
+		ApplyLogs:     otf.Chunk{Data: applyLogs},
 	})
 }
 

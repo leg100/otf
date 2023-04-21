@@ -1,5 +1,5 @@
 {{ define "workspace-breadcrumb" }}
-  {{ with .Content.Workspace }}
+  {{ with .Workspace }}
     <a href="{{ workspacesPath .Organization }}">workspaces</a>
     /
     <a href="{{ workspacePath .ID }}">{{ .Name }}</a>
@@ -7,5 +7,5 @@
 {{ end }}
 
 {{ define "variables-breadcrumb" }}
-  {{ template "workspace-breadcrumb" . }} / <a href="{{ variablesPath .Content.Workspace.ID }}">variables</a>
+  {{ template "workspace-breadcrumb" . }} / <a href="{{ variablesPath .Workspace.ID }}">variables</a>
 {{ end }}

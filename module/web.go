@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/vcsprovider"
 )
 
@@ -58,11 +59,11 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_list.tmpl", w, struct {
-		Items        []*Module
-		Organization string
+		organization.OrganizationPage
+		Items []*Module
 	}{
-		Items:        modules,
-		Organization: opts.Organization,
+		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
+		Items:            modules,
 	})
 }
 
@@ -107,17 +108,19 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_get.tmpl", w, struct {
-		*Module
+		organization.OrganizationPage
+		Module          *Module
 		TerraformModule *TerraformModule
 		Readme          template.HTML
 		CurrentVersion  *ModuleVersion
 		Hostname        string
 	}{
-		Module:          module,
-		TerraformModule: modinfo,
-		Readme:          readme,
-		CurrentVersion:  modver,
-		Hostname:        h.Hostname(),
+		OrganizationPage: organization.NewPage(r, "modules", module.Organization),
+		Module:           module,
+		TerraformModule:  modinfo,
+		Readme:           readme,
+		CurrentVersion:   modver,
+		Hostname:         h.Hostname(),
 	})
 }
 
@@ -154,13 +157,13 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_new.tmpl", w, struct {
-		Items        []*vcsprovider.VCSProvider
-		Organization string
-		Step         newModuleStep
+		organization.OrganizationPage
+		Items []*vcsprovider.VCSProvider
+		Step  newModuleStep
 	}{
-		Items:        providers,
-		Organization: org,
-		Step:         newModuleConnectStep,
+		OrganizationPage: organization.NewPage(r, "modules", org),
+		Items:            providers,
+		Step:             newModuleConnectStep,
 	})
 }
 
@@ -203,15 +206,15 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_new.tmpl", w, struct {
+		organization.OrganizationPage
 		Repos         []string
-		Organization  string
 		VCSProviderID string
 		Step          newModuleStep
 	}{
-		Repos:         filtered,
-		Organization:  params.Organization,
-		VCSProviderID: params.VCSProviderID,
-		Step:          newModuleRepoStep,
+		OrganizationPage: organization.NewPage(r, "modules", params.Organization),
+		Repos:            filtered,
+		VCSProviderID:    params.VCSProviderID,
+		Step:             newModuleRepoStep,
 	})
 }
 
@@ -233,15 +236,15 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render("module_new.tmpl", w, struct {
-		Organization string
-		Step         newModuleStep
-		Repo         string
+		organization.OrganizationPage
+		Step newModuleStep
+		Repo string
 		*vcsprovider.VCSProvider
 	}{
-		Organization: params.Organization,
-		Step:         newModuleConfirmStep,
-		Repo:         params.Repo,
-		VCSProvider:  vcsprov,
+		OrganizationPage: organization.NewPage(r, "modules", params.Organization),
+		Step:             newModuleConfirmStep,
+		Repo:             params.Repo,
+		VCSProvider:      vcsprov,
 	})
 }
 

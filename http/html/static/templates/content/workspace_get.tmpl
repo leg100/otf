@@ -3,7 +3,7 @@
 {{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a> / {{ .Content.Name }}
+  <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
 {{ end }}
 
 {{ define "container-header-links" }}
@@ -13,20 +13,20 @@
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchWorkspaceUpdates({{ watchWorkspacePath .Content.ID }});
+      watchWorkspaceUpdates({{ watchWorkspacePath .Workspace.ID }});
     });
   </script>
   <div class="content-menu">
     <div class="workspace-info">
-      <div>{{ template "identifier" .Content }}</span></div>
-      <div>Terraform Version: <span class="data">v{{ .Content.TerraformVersion }}</span></div>
+      <div>{{ template "identifier" .Workspace }}</span></div>
+      <div>Terraform Version: <span class="data">v{{ .Workspace.TerraformVersion }}</span></div>
       <div class="workspace-lock">
-        {{ with .Content.LockButton }}
+        {{ with .LockButton }}
           <span class="workspace-lock-status workspace-lock-status-{{ .State }}" title="{{ .Tooltip }}">{{ title .State }}</span>
           <form action="{{ .Action }}" method="POST"><button {{ disabled .Disabled }}>{{ .Text }}</button></form>
         {{ end }}
       </div>
-      <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Content.ID }}" method="POST">
+      <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
         <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
           <option value="" selected>--start run--</option>
           <option value="plan-only">plan only</option>
@@ -34,18 +34,18 @@
         </select>
       </form>
     </div>
-    {{ with .Content.Connection }}
+    {{ with .Workspace.Connection }}
     <div>Connected to <span class="data">{{ .Repo }}</span></div>
     {{ end }}
     <div>
       <h3>Latest Run</h3>
       <div id="latest-run">
-        {{ if not .Content.LatestRunID }}
+        {{ if not .Workspace.LatestRunID }}
           There are no runs for this workspace.
         {{ end }}
       </div>
     </div>
-    {{ with .Content.LatestRunID }}
+    {{ with .Workspace.LatestRunID }}
       <script type="text/javascript">
           fetch({{ widgetRunPath . }})
           .then((response) => response.text())

@@ -5,7 +5,7 @@
 {{ define "container-header" }}modules{{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ newModulePath .Content.Organization }}" method="GET">
+  <form action="{{ newModulePath .Organization }}" method="GET">
     <button id="list-module-vcs-providers-button" type="submit">Publish</button>
   </form>
 {{ end }}
@@ -13,7 +13,7 @@
 
 {{ define "content" }}
   <div id="content-list" class="content-list">
-    {{ range .Content.Items }}
+    {{ range .Items }}
       {{ block "content-list-item" . }}{{ end }}
     {{ else }}
       No published modules.
