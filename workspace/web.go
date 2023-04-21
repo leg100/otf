@@ -11,12 +11,13 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 )
 
 type webHandlers struct {
-	otf.Renderer
+	html.Renderer
 	auth.TeamService
 	VCSProviderService
 
@@ -65,12 +66,12 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_list.tmpl", w, r, struct {
+	h.Render("workspace_list.tmpl", w, struct {
+		organization.OrganizationPage
 		*WorkspaceList
-		Organization string
 	}{
-		WorkspaceList: workspaces,
-		Organization:  params.Organization,
+		OrganizationPage: organization.NewPage(r, "workspaces", params.Organization),
+		WorkspaceList:    workspaces,
 	})
 }
 
@@ -81,7 +82,7 @@ func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_new.tmpl", w, r, struct{ Organization string }{
+	h.Render("workspace_new.tmpl", w, struct{ Organization string }{
 		Organization: organization,
 	})
 }
@@ -136,7 +137,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_get.tmpl", w, r, struct {
+	h.Render("workspace_get.tmpl", w, struct {
 		*Workspace
 		LockButton
 	}{
@@ -198,7 +199,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.Render("workspace_edit.tmpl", w, r, struct {
+	h.Render("workspace_edit.tmpl", w, struct {
 		*Workspace
 		Permissions []otf.WorkspacePermission
 		Unassigned  []*auth.Team
@@ -331,7 +332,7 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
+	h.Render("workspace_vcs_provider_list.tmpl", w, struct {
 		Items []*vcsprovider.VCSProvider
 		*Workspace
 	}{
@@ -370,7 +371,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
+	h.Render("workspace_vcs_repo_list.tmpl", w, struct {
 		Repos []string
 		*Workspace
 		VCSProviderID string

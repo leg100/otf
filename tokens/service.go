@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
@@ -43,7 +44,7 @@ type (
 	Options struct {
 		logr.Logger
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		auth.AuthService
 		GoogleIAPConfig
 

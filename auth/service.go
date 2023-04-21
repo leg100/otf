@@ -4,6 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 )
 
@@ -29,7 +30,7 @@ type (
 
 	Options struct {
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		otf.HostnameService
 		logr.Logger
 	}

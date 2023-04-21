@@ -373,7 +373,7 @@ func withTeams(teams ...*auth.Team) fakeWebServiceOption {
 }
 
 func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 
 	var svc fakeWebService

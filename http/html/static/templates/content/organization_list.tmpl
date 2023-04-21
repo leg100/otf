@@ -12,7 +12,7 @@
 
 {{ define "content" }}
   <div id="content-list" class="content-list">
-    {{ range .Content.Items }}
+    {{ range .Items }}
       <div class="item">
         <div class="item-heading">
         <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>

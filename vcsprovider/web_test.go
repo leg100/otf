@@ -84,7 +84,7 @@ func TestDeleteVCSProvidersHandler(t *testing.T) {
 }
 
 func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &webHandlers{
 		Renderer:     renderer,

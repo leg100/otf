@@ -12,7 +12,7 @@ import (
 )
 
 type web struct {
-	otf.Renderer
+	html.Renderer
 	workspace.Service
 
 	svc Service
@@ -42,7 +42,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_new.tmpl", w, r, struct {
+	h.Render("variable_new.tmpl", w, struct {
 		*workspace.Workspace
 		Variable   *Variable
 		EditMode   bool
@@ -105,7 +105,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_list.tmpl", w, r, struct {
+	h.Render("variable_list.tmpl", w, struct {
 		*workspace.Workspace
 		Variables []*Variable
 	}{
@@ -132,7 +132,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("variable_edit.tmpl", w, r, struct {
+	h.Render("variable_edit.tmpl", w, struct {
 		*workspace.Workspace
 		Variable   *Variable
 		EditMode   bool

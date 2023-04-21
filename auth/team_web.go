@@ -29,7 +29,7 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_new.tmpl", w, r, struct{ Organization string }{
+	h.Render("team_new.tmpl", w, struct{ Organization string }{
 		Organization: organization,
 	})
 }
@@ -74,7 +74,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_get.tmpl", w, r, struct {
+	h.Render("team_get.tmpl", w, struct {
 		*Team
 		Members []*User
 	}{
@@ -116,7 +116,7 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_list.tmpl", w, r, struct {
+	h.Render("team_list.tmpl", w, struct {
 		Organization     string
 		Teams            []*Team
 		CreateTeamAction rbac.Action

@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
@@ -40,7 +41,7 @@ type (
 	Options struct {
 		otf.DB
 		otf.Broker
-		otf.Renderer
+		html.Renderer
 		logr.Logger
 	}
 )

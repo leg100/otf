@@ -73,7 +73,7 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 // TestLoginHandler tests the login page handler, testing for the presence of a
 // login button for each configured cloud.
 func TestLoginHandler(t *testing.T) {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	svc := &service{
 		renderer: renderer,

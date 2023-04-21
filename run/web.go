@@ -19,7 +19,7 @@ import (
 type (
 	webHandlers struct {
 		logr.Logger
-		otf.Renderer
+		html.Renderer
 		WorkspaceService
 
 		logsdb
@@ -78,7 +78,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_list.tmpl", w, r, struct {
+	h.Render("run_list.tmpl", w, struct {
 		*RunList
 		*workspace.Workspace
 	}{
@@ -117,7 +117,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_get.tmpl", w, r, struct {
+	h.Render("run_get.tmpl", w, struct {
 		*Run
 		Workspace *workspace.Workspace
 		PlanLogs  otf.Chunk

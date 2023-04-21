@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql"
@@ -39,7 +40,7 @@ type (
 	Options struct {
 		otf.DB
 		otf.Publisher
-		otf.Renderer
+		html.Renderer
 		logr.Logger
 
 		auth.AuthService

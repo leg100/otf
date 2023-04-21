@@ -24,7 +24,7 @@ type (
 	// webHandlers provides handlers for the webUI
 	webHandlers struct {
 		otf.Signer
-		otf.Renderer
+		html.Renderer
 		vcsprovider.VCSProviderService
 		otf.HostnameService
 
@@ -57,7 +57,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_list.tmpl", w, r, struct {
+	h.Render("module_list.tmpl", w, struct {
 		Items        []*Module
 		Organization string
 	}{
@@ -106,7 +106,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		readme = html.MarkdownToHTML(modinfo.readme)
 	}
 
-	h.Render("module_get.tmpl", w, r, struct {
+	h.Render("module_get.tmpl", w, struct {
 		*Module
 		TerraformModule *TerraformModule
 		Readme          template.HTML
@@ -153,7 +153,7 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_new.tmpl", w, r, struct {
+	h.Render("module_new.tmpl", w, struct {
 		Items        []*vcsprovider.VCSProvider
 		Organization string
 		Step         newModuleStep
@@ -202,7 +202,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, res)
 	}
 
-	h.Render("module_new.tmpl", w, r, struct {
+	h.Render("module_new.tmpl", w, struct {
 		Repos         []string
 		Organization  string
 		VCSProviderID string
@@ -232,7 +232,7 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_new.tmpl", w, r, struct {
+	h.Render("module_new.tmpl", w, struct {
 		Organization string
 		Step         newModuleStep
 		Repo         string

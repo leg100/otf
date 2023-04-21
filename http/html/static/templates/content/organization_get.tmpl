@@ -7,23 +7,23 @@
 {{ define "content" }}
   <div class="content-menu">
     <span id="menu-item-workspaces" class="content-menu-item">
-      <a href="{{ workspacesPath .Content.Name }}">workspaces</a>
+      <a href="{{ workspacesPath .Organization }}">workspaces</a>
     </span>
     <span id="modules" class="content-menu-item">
-      <a href="{{ modulesPath .Content.Name }}">modules</a>
+      <a href="{{ modulesPath .Organization }}">modules</a>
     </span>
     <span id="teams" class="content-menu-item">
-      <a href="{{ teamsPath .Content.Name }}">teams</a>
+      <a href="{{ teamsPath .Organization }}">teams</a>
     </span>
-    {{ if or (.CurrentUser.IsOwner .Content.Name) .CurrentUser.IsSiteAdmin }}
+    {{ if or (.CurrentUser.IsOwner .Organization) .CurrentUser.IsSiteAdmin }}
     <span id="users" class="content-menu-item">
-      <a href="{{ usersPath .Content.Name }}">users</a>
+      <a href="{{ usersPath .Organization }}">users</a>
     </span>
     <span id="agent_tokens" class="content-menu-item">
-      <a href="{{ agentTokensPath .Content.Name }}">agent tokens</a>
+      <a href="{{ agentTokensPath .Organization }}">agent tokens</a>
     </span>
     <span id="vcs_providers" class="content-menu-item">
-      <a href="{{ vcsProvidersPath .Content.Name }}">VCS providers</a>
+      <a href="{{ vcsProvidersPath .Organization }}">VCS providers</a>
     </span>
     {{ end }}
   </div>

@@ -16,7 +16,7 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	otf.Renderer
+	html.Renderer
 
 	svc       TokensService
 	siteToken string
@@ -52,7 +52,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
-	h.Render("token_new.tmpl", w, r, nil)
+	h.Render("token_new.tmpl", w, nil)
 }
 
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
@@ -86,12 +86,14 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		return tokens[i].CreatedAt.After(tokens[j].CreatedAt)
 	})
 
-	h.Render("user_token_list.tmpl", w, r, struct {
+	h.Render("user_token_list.tmpl", w, struct {
+		html.SitePage
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
 		Items []*UserToken
 	}{
+		SitePage:   html.NewSitePage(r, "users"),
 		Pagination: &otf.Pagination{},
 		Items:      tokens,
 	})
@@ -149,7 +151,7 @@ func (h *webHandlers) newAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("agent_token_new.tmpl", w, r, organization)
+	h.Render("agent_token_new.tmpl", w, organization)
 }
 
 func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +187,7 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("agent_token_list.tmpl", w, r, struct {
+	h.Render("agent_token_list.tmpl", w, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination

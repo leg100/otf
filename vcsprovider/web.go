@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
@@ -13,7 +12,7 @@ import (
 )
 
 type webHandlers struct {
-	otf.Renderer
+	html.Renderer
 	CloudService
 
 	svc Service
@@ -40,7 +39,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
-	h.Render(tmpl, w, r, params)
+	h.Render(tmpl, w, params)
 }
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +82,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("vcs_provider_list.tmpl", w, r, struct {
+	h.Render("vcs_provider_list.tmpl", w, struct {
 		Items        []*VCSProvider
 		CloudConfigs []cloud.Config
 		Organization string

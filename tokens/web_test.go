@@ -132,7 +132,7 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 }
 
 func newFakeWeb(t *testing.T, svc TokensService) *webHandlers {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &webHandlers{
 		svc:      svc,

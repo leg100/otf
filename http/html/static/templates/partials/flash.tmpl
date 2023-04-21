@@ -1,7 +1,7 @@
 {{ define "flash" }}
-{{ range .Flashes }}
-  <div class="flash flash-{{ .Type }}" role="alert">
-    {{ .HTML }}
-  </div>
-{{ end }}
+  {{ range .Flashes }}
+    <div class="flash flash-{{ .Type }}" role="alert">
+      {{ .HTML }}
+    </div>
+  {{ end }}
 {{ end }}

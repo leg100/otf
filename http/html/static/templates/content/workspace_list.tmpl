@@ -1,11 +1,9 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Workspaces{{ end }}
-
 {{ define "container-header" }}workspaces{{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ newWorkspacePath .Content.Organization }}" method="GET">
+  <form action="{{ newWorkspacePath .Organization }}" method="GET">
     <button id="new-workspace-button" type="submit">New Workspace</button>
   </form>
 {{ end }}
