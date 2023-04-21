@@ -10,15 +10,15 @@
   </div>
 
   <div id="content-list" class="content-list">
-    {{ range .Content.Items }}
+    {{ range .Items }}
       {{ block "content-list-item" . }}{{ end }}
     {{ else }}
       No VCS providers are currently configured.
     {{ end }}
   </div>
 
-  {{ range .Content.CloudConfigs }}
-    <form action="{{ newVCSProviderPath $.Content.Organization }}" method="GET">
+  {{ range .CloudConfigs }}
+    <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
       <button type="submit">New {{ title .String }} VCS Provider</button>
       <input type="hidden" name="cloud" id="cloud" value="{{ .String }}">
     </form>

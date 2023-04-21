@@ -28,18 +28,12 @@ func TestFlash(t *testing.T) {
 
 	// pop flashes
 	r := fakeRequest(cookies[0])
-	w = httptest.NewRecorder()
 	got, err := PopFlashes(r)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(got))
 	assert.Contains(t, got, flash{FlashSuccessType, "yes!"})
 	assert.Contains(t, got, flash{FlashWarningType, "uh-oh"})
 	assert.Contains(t, got, flash{FlashErrorType, "noooo"})
-
-	// cookie should now be set to be purged
-	cookies = w.Result().Cookies()
-	require.Equal(t, 1, len(cookies))
-	assert.Equal(t, -1, cookies[0].MaxAge)
 }
 
 func TestFlashHelpers(t *testing.T) {

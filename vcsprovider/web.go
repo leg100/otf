@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 )
 
 type webHandlers struct {
@@ -28,28 +29,32 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		Organization string `schema:"organization_name,required"`
 		Cloud        string `schema:"cloud,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
-	h.Render(tmpl, w, params)
+	h.Render(tmpl, w, struct {
+		organization.OrganizationPage
+		Cloud string
+	}{
+		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
+		Cloud:            params.Cloud,
+	})
 }
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
+	var params struct {
 		OrganizationName string `schema:"organization_name,required"`
 		Token            string `schema:"token,required"`
 		Name             string `schema:"name,required"`
 		Cloud            string `schema:"cloud,required"`
 	}
-	var params parameters
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -70,26 +75,26 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	providers, err := h.svc.ListVCSProviders(r.Context(), organization)
+	providers, err := h.svc.ListVCSProviders(r.Context(), org)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.Render("vcs_provider_list.tmpl", w, struct {
+		organization.OrganizationPage
 		Items        []*VCSProvider
 		CloudConfigs []cloud.Config
-		Organization string
 	}{
-		Items:        providers,
-		CloudConfigs: h.ListCloudConfigs(),
-		Organization: organization,
+		OrganizationPage: organization.NewPage(r, "vcs providers", org),
+		Items:            providers,
+		CloudConfigs:     h.ListCloudConfigs(),
 	})
 }
 

@@ -92,14 +92,16 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("workspace_new.tmpl", w, struct{ Organization string }{
-		Organization: organization,
+	h.Render("workspace_new.tmpl", w, struct {
+		organization.OrganizationPage
+	}{
+		OrganizationPage: organization.NewPage(r, "new workspace", org),
 	})
 }
 
@@ -349,11 +351,11 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 	}
 
 	h.Render("workspace_vcs_provider_list.tmpl", w, struct {
+		WorkspacePage
 		Items []*vcsprovider.VCSProvider
-		*Workspace
 	}{
-		Items:     providers,
-		Workspace: ws,
+		WorkspacePage: NewPage(r, "list vcs providers | "+ws.ID, ws),
+		Items:         providers,
 	})
 }
 
@@ -388,12 +390,12 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 	}
 
 	h.Render("workspace_vcs_repo_list.tmpl", w, struct {
-		Repos []string
-		*Workspace
+		WorkspacePage
+		Repos         []string
 		VCSProviderID string
 	}{
+		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID, ws),
 		Repos:         repos,
-		Workspace:     ws,
 		VCSProviderID: params.VCSProviderID,
 	})
 }

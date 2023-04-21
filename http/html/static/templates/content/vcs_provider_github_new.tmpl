@@ -1,7 +1,5 @@
 {{ template "layout" . }}
 
-{{ define "title" }}New Github VCS Provider{{ end }}
-
 {{ define "container-header" }}
   <div>New Github VCS Provider</div>
 {{ end }}
@@ -12,5 +10,5 @@
     Enter the token below along with a descriptive name.
   </div>
 
-  {{ template "create_vcs_provider_form" .Content }}
+  {{ template "create_vcs_provider_form" . }}
 {{ end }}

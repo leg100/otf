@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 )
 
 // webHandlers provides handlers for the web UI
@@ -93,7 +94,7 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		*otf.Pagination
 		Items []*UserToken
 	}{
-		SitePage:   html.NewSitePage(r, "users"),
+		SitePage:   html.NewSitePage(r, "user tokens"),
 		Pagination: &otf.Pagination{},
 		Items:      tokens,
 	})
@@ -145,13 +146,17 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 //
 
 func (h *webHandlers) newAgentToken(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("agent_token_new.tmpl", w, organization)
+	h.Render("agent_token_new.tmpl", w, struct {
+		organization.OrganizationPage
+	}{
+		OrganizationPage: organization.NewPage(r, "new agent token", org),
+	})
 }
 
 func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -175,28 +180,28 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	tokens, err := h.svc.ListAgentTokens(r.Context(), organization)
+	tokens, err := h.svc.ListAgentTokens(r.Context(), org)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.Render("agent_token_list.tmpl", w, struct {
+		organization.OrganizationPage
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items        []*AgentToken
-		Organization string
+		Items []*AgentToken
 	}{
-		Pagination:   &otf.Pagination{},
-		Items:        tokens,
-		Organization: organization,
+		OrganizationPage: organization.NewPage(r, "agent tokens", org),
+		Pagination:       &otf.Pagination{},
+		Items:            tokens,
 	})
 }
 

@@ -3,9 +3,9 @@
 {{ define "title" }}VCS providers{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
+  <a href="{{ workspacesPath .Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
   /
   vcs repositories
 {{ end }}
@@ -14,19 +14,19 @@
   <div>
     Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
   </div>
-  <form action="{{ connectWorkspacePath .Content.ID }}" method="POST">
-    <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.VCSProviderID }}">
+  <form action="{{ connectWorkspacePath .Workspace.ID }}" method="POST">
+    <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .VCSProviderID }}">
     <input type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
     <button>connect</button>
   </form>
 
   <div id="content-list" class="content-list">
-    {{ range .Content.Repos }}
+    {{ range .Repos }}
       <div class="item">
         <div class="item-heading">
           <span class="status">{{ . }}</span>
-          <form action="{{ connectWorkspacePath $.Content.ID }}" method="POST">
-            <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.Content.VCSProviderID }}">
+          <form action="{{ connectWorkspacePath $.Workspace.ID }}" method="POST">
+            <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.VCSProviderID }}">
             <input type="hidden" name="identifier" id="identifier" value="{{ . }}">
             <button>connect</button>
           </form>

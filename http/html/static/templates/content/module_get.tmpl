@@ -1,49 +1,47 @@
 {{ template "layout" . }}
 
-{{ define "title" }}module: {{ .Content.Name }}{{ end }}
-
 {{ define "container-header" }}
-  <a href="{{ modulesPath .Content.Organization }}">modules</a> / {{ .Content.Name }}
+  <a href="{{ modulesPath .Organization }}">modules</a> / {{ .Module.Name }}
 {{ end }}
 
 {{ define "content" }}
-  {{ if eq .Content.Status "no_version_tags" }}
+  {{ if eq .Module.Status "no_version_tags" }}
     Module source repository has no tags.
   {{ else }}
     <div class="horizontal">
-      <form action="{{ modulePath .Content.ID }}" method="GET">
+      <form action="{{ modulePath .Module.ID }}" method="GET">
         <div>
           <label>Version</label>
           <select name="version" id="version" onchange="this.form.submit()">
-            {{ range reverse .Content.AvailableVersions }}
+            {{ range reverse .Module.AvailableVersions }}
               {{ if eq .Status "ok" }}
-                <option value="{{ .Version }}" {{ selected .Version $.Content.CurrentVersion.Version }}>{{ .Version }}</option>
+                <option value="{{ .Version }}" {{ selected .Version $.CurrentVersion.Version }}>{{ .Version }}</option>
               {{ end }}
             {{ end }}
           </select>
         </div>
       </form>
       <div>
-        Source <span class="data">{{ .Content.Connection.Repo }}</span>
+        Source <span class="data">{{ .Module.Connection.Repo }}</span>
       </div>
     </div>
     <div class="main-form">
       <div>
         <label for="usage">Usage</label>
         <textarea id="usage" cols="42" rows="5" readonly wrap="off">
-module "{{ .Content.Name }}" {
-  source  = "{{ .Content.Hostname }}/{{ .Content.Organization }}/{{ .Content.Name }}/{{ .Content.Provider }}"
-  version = "{{ .Content.CurrentVersion.Version }}"
+module "{{ .Module.Name }}" {
+  source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
+  version = "{{ .CurrentVersion.Version }}"
 }
         </textarea>
       </div>
     </div>
     <div>
-      {{ trimHTML .Content.Readme }}
+      {{ trimHTML .Readme }}
     </div>
     <div>
       <h3>Resources</h3>
-      {{ range $k, $v := .Content.TerraformModule.ManagedResources }}
+      {{ range $k, $v := .TerraformModule.ManagedResources }}
         <div>
           <span class="data">{{ $k }}</span>
         </div>
@@ -51,7 +49,7 @@ module "{{ .Content.Name }}" {
     </div>
     <div>
       <h3>Variables</h3>
-      {{ range $k, $v := .Content.TerraformModule.Variables }}
+      {{ range $k, $v := .TerraformModule.Variables }}
         <div>
           <span class="data">{{ $k }}</span>
         </div>
@@ -59,14 +57,14 @@ module "{{ .Content.Name }}" {
     </div>
     <div>
       <h3>Outputs</h3>
-      {{ range $k, $v := .Content.TerraformModule.Outputs }}
+      {{ range $k, $v := .TerraformModule.Outputs }}
         <div>
           <span class="data">{{ $k }}</span>
         </div>
       {{ end }}
     </div>
   {{ end }}
-  <form class="module-delete-button" action="{{ deleteModulePath .Content.ID }}" method="POST">
+  <form class="module-delete-button" action="{{ deleteModulePath .Module.ID }}" method="POST">
     <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
   </form>
 {{ end }}

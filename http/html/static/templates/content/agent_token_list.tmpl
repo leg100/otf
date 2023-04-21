@@ -5,7 +5,7 @@
 {{ define "container-header" }}agent tokens{{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ newAgentTokenPath .Content.Organization }}" method="GET">
+  <form action="{{ newAgentTokenPath .Organization }}" method="GET">
     <button type="submit">New Agent Token</button>
   </form>
 {{ end }}

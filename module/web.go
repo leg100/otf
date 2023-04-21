@@ -115,7 +115,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		CurrentVersion  *ModuleVersion
 		Hostname        string
 	}{
-		OrganizationPage: organization.NewPage(r, "modules", module.Organization),
+		OrganizationPage: organization.NewPage(r, module.ID, module.Organization),
 		Module:           module,
 		TerraformModule:  modinfo,
 		Readme:           readme,
@@ -237,9 +237,9 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("module_new.tmpl", w, struct {
 		organization.OrganizationPage
-		Step newModuleStep
-		Repo string
-		*vcsprovider.VCSProvider
+		Step        newModuleStep
+		Repo        string
+		VCSProvider *vcsprovider.VCSProvider
 	}{
 		OrganizationPage: organization.NewPage(r, "modules", params.Organization),
 		Step:             newModuleConfirmStep,

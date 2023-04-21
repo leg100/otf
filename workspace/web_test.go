@@ -277,9 +277,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSRepos(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(t, w.Body.String())
-	}
+	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {

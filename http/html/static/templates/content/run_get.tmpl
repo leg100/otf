@@ -43,12 +43,12 @@
   </div>
   {{ if not .PlanLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .Run.PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
   {{ if not .ApplyLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .Run.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
   <div id="run-confirm-container" style="{{ if ne .Run.Status "planned" }}display: none;{{ end }}">
