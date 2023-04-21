@@ -14,7 +14,7 @@ import (
 
 func TestWebhookHandler(t *testing.T) {
 	publisher := &fakePublisher{}
-	want := otf.Event{Type: otf.EventVCS, Payload: cloud.VCSPushEvent{}}
+	want := otf.Event{Type: otf.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
 	f := newTestFactory(t, cloud.VCSPushEvent{})
 	hook := newTestHook(t, f, otf.String("123"))
 	handler := handler{
