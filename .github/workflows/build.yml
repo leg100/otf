@@ -31,7 +31,9 @@ jobs:
         run: make vet
       -
         name: Start services
-        run: docker compose up -d
+        run: |
+          make image # make leg100/otfd for docker compose first
+          docker compose up -d
       -
         name: Tests
         env:
