@@ -18,7 +18,7 @@ theme:
     - navigation.indexes
     # - navigation.instant
     # - navigation.prune
-    # - navigation.sections
+    - navigation.sections
       # - navigation.tabs
     # - navigation.tabs.sticky
     - navigation.top
@@ -37,21 +37,26 @@ markdown_extensions:
 nav:
   - Introduction: index.md
   - install.md
+  - quickstart.md
   - Authentication:
-    - About: auth/index.md
-    - Providers:
+    - Identity Providers:
+      - auth/providers/index.md
       - auth/providers/github.md
       - auth/providers/gitlab.md
       - auth/providers/iap.md
-  - rbac.md
-  - vcs_providers.md
-  - agents.md
-  - registry.md
-  - cli.md
+    - auth/site_admin.md
+    - auth/user_token.md
+  - Topics:
+    - rbac.md
+    - vcs_providers.md
+    - agents.md
+    - registry.md
+    - cli.md
   - Configuration:
     - config/envvars.md
     - config/flags.md
-  - dev.md
+  - Advanced:
+    - dev.md
 
 extra:
   version:
