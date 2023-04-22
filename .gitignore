@@ -1,3 +1,5 @@
+# tfenv
+.terraform-version
 # google service account key for testing
 google_service_account.json
 # e2e test screenshots
