@@ -23,11 +23,6 @@ type (
 		Name         string `schema:"workspace_name,required"`
 		Organization string `schema:"organization_name,required"`
 	}
-
-	// unlockOptions are POST options for unlocking a workspace via the API
-	unlockOptions struct {
-		Force bool `json:"force"`
-	}
 )
 
 func (a *api) addHandlers(r *mux.Router) {
@@ -44,6 +39,7 @@ func (a *api) addHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}", a.DeleteWorkspace).Methods("DELETE")
 	r.HandleFunc("/workspaces/{workspace_id}/actions/lock", a.LockWorkspace).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/actions/unlock", a.UnlockWorkspace).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/actions/force-unlock", a.ForceUnlockWorkspace).Methods("POST")
 }
 
 func (a *api) create(w http.ResponseWriter, r *http.Request) {
@@ -208,24 +204,11 @@ func (a *api) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
-	if err != nil {
-		jsonapi.Error(w, err)
-		return
-	}
-	var opts unlockOptions
-	if err := decode.Form(&opts, r); err != nil {
-		jsonapi.Error(w, err)
-		return
-	}
+	a.unlock(w, r, false)
+}
 
-	ws, err := a.svc.UnlockWorkspace(r.Context(), id, nil, opts.Force)
-	if err != nil {
-		jsonapi.Error(w, err)
-		return
-	}
-
-	a.writeResponse(w, r, ws)
+func (a *api) ForceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+	a.unlock(w, r, true)
 }
 
 func (a *api) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -289,6 +272,22 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		TriggerPrefixes:            opts.TriggerPrefixes,
 		WorkingDirectory:           opts.WorkingDirectory,
 	})
+	if err != nil {
+		jsonapi.Error(w, err)
+		return
+	}
+
+	a.writeResponse(w, r, ws)
+}
+
+func (a *api) unlock(w http.ResponseWriter, r *http.Request, force bool) {
+	id, err := decode.Param("workspace_id", r)
+	if err != nil {
+		jsonapi.Error(w, err)
+		return
+	}
+
+	ws, err := a.svc.UnlockWorkspace(r.Context(), id, nil, force)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return

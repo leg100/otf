@@ -19,7 +19,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: go-tfe-tests
-go-tfe-tests: build
+go-tfe-tests:
 	./hack/go-tfe-tests.bash
 
 .PHONY: test

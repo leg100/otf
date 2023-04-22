@@ -9,14 +9,14 @@
 
 set -e
 
-TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Unlock|Lock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
+TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Lock|Unlock|ForceUnlock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
-export TFE_ADDRESS="https://localhost:8833"
+export TFE_ADDRESS="${TFE_ADDRESS:-https://localhost:8833}"
 # go-tfe tests perform privileged operations (e.g. creating organizations), so
 # we use a site admin token.
 #
 # NOTE: this token is the same token specified in docker compose
-export TFE_TOKEN=site-token
+export TFE_TOKEN=${TFE_TOKEN:-site-token}
 export SKIP_PAID=1
 export SSL_CERT_FILE=$PWD/integration/fixtures/cert.pem
 
