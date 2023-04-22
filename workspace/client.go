@@ -114,8 +114,13 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *s
 }
 
 func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
-	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
-	req, err := c.NewRequest("POST", path, &unlockOptions{Force: force})
+	var u string
+	if force {
+		u = fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
+	} else {
+		u = fmt.Sprintf("workspaces/%s/actions/force-unlock", workspaceID)
+	}
+	req, err := c.NewRequest("POST", u, nil)
 	if err != nil {
 		return nil, err
 	}
