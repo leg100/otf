@@ -203,18 +203,10 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get teams that have yet to be assigned a permission
-	unassigned, err := h.ListTeams(r.Context(), workspace.Organization)
+	teams, err := h.ListTeams(r.Context(), workspace.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	for _, perm := range policy.Permissions {
-		for it, t := range unassigned {
-			if t.ID == perm.Team {
-				unassigned = append(unassigned[:it], unassigned[it+1:]...)
-				break
-			}
-		}
 	}
 
 	h.Render("workspace_edit.tmpl", w, struct {
@@ -225,7 +217,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
 		Permissions:   policy.Permissions,
-		Unassigned:    unassigned,
+		Unassigned:    filterUnassigned(policy, teams),
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
 			rbac.WorkspacePlanRole,
@@ -484,4 +476,19 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 	}
 	html.FlashSuccess(w, "deleted workspace permission")
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+}
+
+// filterUnassigned removes from the list of teams those that are part of the
+// policy, i.e. those that have been assigned a permission.
+func filterUnassigned(policy otf.WorkspacePolicy, teams []*auth.Team) (unassigned []*auth.Team) {
+	assigned := make(map[string]struct{}, len(teams))
+	for _, p := range policy.Permissions {
+		assigned[p.Team] = struct{}{}
+	}
+	for _, t := range teams {
+		if _, ok := assigned[t.Name]; !ok {
+			unassigned = append(unassigned, t)
+		}
+	}
+	return
 }

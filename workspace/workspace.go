@@ -51,7 +51,6 @@ type (
 		Organization               string
 		LatestRunID                *string
 		Connection                 *repo.Connection
-		Permissions                []otf.WorkspacePermission
 
 		*lock
 	}

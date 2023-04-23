@@ -54,6 +54,8 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 // matchText is a custom chromedp Task that extracts text content using the
 // selector and asserts that it matches the wanted string.
 func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
+	t.Helper()
+
 	return matchRegex(t, selector, "^"+want+"$")
 }
 
@@ -122,7 +124,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
-		// confirm builtin admin permission for owners team
+		// confirm builtin admin role for owners team
 		matchText(t, "#permissions-owners td:first-child", "owners"),
 		matchText(t, "#permissions-owners td:last-child", "admin"),
 		// assign role to team
