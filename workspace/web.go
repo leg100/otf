@@ -480,12 +480,18 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 
 // filterUnassigned removes from the list of teams those that are part of the
 // policy, i.e. those that have been assigned a permission.
+//
+// NOTE: the owners team is always removed because by default it is assigned the
+// admin role.
 func filterUnassigned(policy otf.WorkspacePolicy, teams []*auth.Team) (unassigned []*auth.Team) {
 	assigned := make(map[string]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.Team] = struct{}{}
 	}
 	for _, t := range teams {
+		if t.Name == "owners" {
+			continue
+		}
 		if _, ok := assigned[t.Name]; !ok {
 			unassigned = append(unassigned, t)
 		}

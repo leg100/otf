@@ -362,6 +362,7 @@ func TestFilterUnassigned(t *testing.T) {
 		{Team: "workers", Role: rbac.WorkspacePlanRole},
 	}}
 	teams := []*auth.Team{
+		{Name: "owners"},
 		{Name: "bosses"},
 		{Name: "stewards"},
 		{Name: "cleaners"},
