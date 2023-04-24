@@ -83,12 +83,14 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		Members                    []*User
 		AddTeamMembershipAction    rbac.Action
 		RemoveTeamMembershipAction rbac.Action
+		DeleteTeamAction           rbac.Action
 	}{
 		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
 		Team:                       team,
 		Members:                    members,
 		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
 		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
+		DeleteTeamAction:           rbac.DeleteTeamAction,
 	})
 }
 

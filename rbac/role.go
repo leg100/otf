@@ -34,6 +34,7 @@ var (
 			GetConfigurationVersionAction:      true,
 			ListVariablesAction:                true,
 			GetVariableAction:                  true,
+			WatchAction:                        true,
 		},
 	}
 

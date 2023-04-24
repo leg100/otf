@@ -6,7 +6,10 @@
 {{ .Team.Name }}{{ end }}
 
 {{ define "content" }}
+  {{ $canDelete := .CurrentUser.CanAccessOrganization .DeleteTeamAction .Organization }}
   {{ $canSetPermission := .CurrentUser.IsOwner .Organization }}
+  {{ $canAddMember := .CurrentUser.CanAccessOrganization .AddTeamMembershipAction .Organization }}
+  {{ $canRemoveMember := .CurrentUser.CanAccessOrganization .RemoveTeamMembershipAction .Organization }}
   <h3>Permissions</h3>
   <form class="permissions-form" action="{{ updateTeamPath .Team.ID }}" method="POST">
     <div class="field">
@@ -43,13 +46,19 @@
       <label for="manage_registry">Manage Registry: Allows members to publish and delete modules within the organization.</label>
     </div>
     <div class="field">
-      <button {{ disabled (or (not $canSetPermission) .Team.IsOwners) }}>Save changes</button>
+      <button
+        {{ if .Team.IsOwners }}
+          title="cannot edit permissions of owners team" disabled
+        {{ else }}
+          {{ insufficient $canSetPermission }}
+        {{ end }}
+      >
+        Save changes
+      </button>
     </div>
   </form>
   <br>
   <h3>Members</h3>
-  {{ $canAddMember := .CurrentUser.CanAccessOrganization .AddTeamMembershipAction .Organization }}
-  {{ $canRemoveMember := .CurrentUser.CanAccessOrganization .RemoveTeamMembershipAction .Organization }}
   <form class="horizontal-form" action="{{ addMemberTeamPath .Team.ID }}" method="POST">
     <input
       type="text"
@@ -58,11 +67,7 @@
       required
       placeholder="username"
       {{ disabled (not $canAddMember) }}>
-    <button
-      type="submit"
-      {{ if not $canAddMember }}title="insufficient permissions" disabled{{ end }}>
-      Add member
-    </button>
+    <button type="submit" {{ insufficient $canAddMember }}>Add member</button>
   </form>
   <div id="content-list" class="content-list">
     {{ range .Members }}
@@ -74,10 +79,7 @@
           {{ template "identifier" . }}
           <form class="horizontal-form" action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
             <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
-            <button
-              class="delete"
-              {{ if not $canRemoveMember }}title="insufficient permissions" disabled{{ end }}
-              onclick="return confirm('Are you sure you want to delete?')">
+            <button id="remove-member-button" class="delete" {{ insufficient $canRemoveMember }} onclick="return confirm('Are you sure you want to delete?')">
               Remove member
             </button>
           </form>
@@ -87,4 +89,9 @@
       No members currently exist.
     {{ end }}
   </div>
+  <h3>Advanced</h3>
+  <form action="{{ deleteTeamPath .Team.ID }}" method="POST">
+    <button class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
+    <input type="hidden" name="id" value="{{ .Team.ID }}">
+  </form>
 {{ end }}

@@ -48,7 +48,7 @@ func TestVariableE2E(t *testing.T) {
 			chromedp.Click("input#terraform", chromedp.NodeVisible),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save variable']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm variable added
 			matchText(t, ".flash-success", "added variable: foo"),
@@ -94,7 +94,7 @@ output "foo" {
 			chromedp.Click("input#sensitive", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save variable']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm variable updated
 			matchText(t, ".flash-success", "updated variable: foo"),
@@ -109,13 +109,13 @@ output "foo" {
 			input.InsertText("topsecret"),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save variable']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm variable updated
 			matchText(t, ".flash-success", "updated variable: foo"),
 			screenshot(t),
 			// delete variable
-			chromedp.Click(`//button[text()='Delete']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='delete-variable-button']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm variable deleted
 			matchText(t, ".flash-success", "deleted variable: foo"),

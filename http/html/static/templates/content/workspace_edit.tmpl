@@ -20,21 +20,13 @@
   <div>
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
-        <button
-          id="disconnect-workspace-repo-button"
-          type="submit"
-          {{ if not $canUpdate }}title="insufficient permissions" disabled{{ end }}
-        >
+        <button id="disconnect-workspace-repo-button" type="submit" {{ insufficient $canUpdate }}>
           Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
         </button>
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
-        <button
-          id="list-workspace-vcs-providers-button"
-          type="submit"
-          {{ if not $canUpdate }}title="insufficient permissions" disabled{{ end }}
-        >
+        <button id="list-workspace-vcs-providers-button" type="submit" {{ insufficient $canUpdate }}>
           Connect to VCS
         </button>
       </form>
@@ -74,9 +66,7 @@
       <input type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
     </div>
     <div class="field">
-      <button {{ if not $canUpdate }}title="insufficient permissions" disabled{{ end }}>
-        Save changes
-      </button>
+      <button {{ insufficient $canUpdate }}>Save changes</button>
     </div>
   </form>
   <div class="permissions-container">
@@ -111,20 +101,13 @@
                       <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
                     {{ end }}
                   </select>
-                  <button {{ if not $canSetPermission }}title="insufficient permissions" disabled{{ end }}>
-                    Update
-                  </button>
+                  <button {{ insufficient $canSetPermission }}>Update</button>
                 </form>
               </td>
               <td>
                 <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                   <input name="team_name" value="{{ .Team }}" type="hidden">
-                  <button
-                    class="delete"
-                    {{ if not $canUnsetPermission }}title="insufficient permissions" disabled{{ end }}>
-                  >
-                    Remove
-                  </button>
+                  <button class="delete" {{ insufficient $canUnsetPermission }}>Remove</button>
                 </form>
               </td>
             </tr>
@@ -148,10 +131,7 @@
                   {{ end }}
                 </select>
               </div>
-              <button
-                id="permissions-add-button"
-                form="permissions-add-form"
-                {{ if not $canSetPermission }}title="insufficient permissions" disabled{{ end }}>
+              <button id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
                 Add
               </button>
             </td>
@@ -161,12 +141,8 @@
     </div>
     <div class="permissions-container">
       <h3>Advanced</h3>
-      <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
-        <button
-          class="delete"
-          {{ if not $canDelete }}title="insufficient permissions" disabled{{ end }}
-          onclick="return confirm('Are you sure you want to delete?')"
-        >
+      <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
+        <button id="delete-workspace-button" class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
           Delete workspace
         </button>
       </form>

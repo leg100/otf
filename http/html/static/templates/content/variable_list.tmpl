@@ -27,14 +27,8 @@
           <td>{{ if .Sensitive }}<span class="data">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
           <td>{{ .Category }}</td>
           <td>
-            <form class="variable-delete-button" action="{{ deleteVariablePath .ID }}" method="POST">
-              <button
-                class="delete"
-                onclick="return confirm('Are you sure you want to delete?')"
-                {{ if not $canDelete }}title="insufficient permissions" disabled{{ end }}
-              >
-                Delete
-              </button>
+            <form action="{{ deleteVariablePath .ID }}" method="POST">
+              <button id="delete-variable-button" class="delete" onclick="return confirm('Are you sure you want to delete?')" {{ insufficient $canDelete }} >Delete</button>
             </form>
           </td>
         </tr>
@@ -46,11 +40,6 @@
     </tbody>
   </table>
   <form action="{{ newVariablePath $.Workspace.ID }}" method="GET">
-    <button
-      type="submit"
-      {{ if not $canCreate }}title="insufficient permissions" disabled{{ end }}
-    >
-      Add variable
-    </button>
+    <button type="submit" {{ insufficient $canCreate }}>Add variable</button>
   </form>
 {{ end }}

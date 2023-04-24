@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -15,7 +16,8 @@ type (
 	web struct {
 		html.Renderer
 
-		svc Service
+		svc                          Service
+		RestrictOrganizationCreation bool
 	}
 
 	// OrganizationPage contains data shared by all organization-based pages.
@@ -58,14 +60,29 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Only enable the 'new organization' button if:
+	// (a) RestrictOrganizationCreation is false, or
+	// (b) The user has site permissions.
+	subject, err := otf.SubjectFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var canCreate bool
+	if !a.RestrictOrganizationCreation || subject.CanAccessSite(rbac.CreateOrganizationAction) {
+		canCreate = true
+	}
+
 	a.Render("organization_list.tmpl", w, struct {
 		html.SitePage
 		*OrganizationList
 		OrganizationListOptions
+		CanCreate bool
 	}{
 		SitePage:                html.NewSitePage(r, "organizations"),
 		OrganizationList:        organizations,
 		OrganizationListOptions: opts,
+		CanCreate:               canCreate,
 	})
 }
 

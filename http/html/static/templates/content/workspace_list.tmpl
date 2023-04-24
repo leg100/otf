@@ -5,11 +5,7 @@
 {{ define "container-header-actions" }}
   {{ $canCreate := $.CurrentUser.CanAccessOrganization .CreateWorkspaceAction .Organization }}
   <form action="{{ newWorkspacePath .Organization }}" method="GET">
-    <button
-      id="new-workspace-button"
-      type="submit"
-      {{ if not $canCreate }}title="insufficient permissions" disabled{{ end }}
-    >
+    <button id="new-workspace-button" type="submit" {{ insufficient $canCreate }}>
       New Workspace
     </button>
   </form>

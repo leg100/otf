@@ -5,11 +5,7 @@
 {{ define "container-header-actions" }}
   {{ $canCreate := .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
   <form action="{{ newTeamPath .Organization }}" method="GET">
-    <button
-      id="new-team-button"
-      type="submit"
-      {{ if not $canCreate }}title="insufficient permissions" disabled{{ end }}
-    >
+    <button id="new-team-button" type="submit" {{ insufficient $canCreate }}>
       New Team
     </button>
   </form>
@@ -24,12 +20,6 @@
         </div>
         <div class="item-content">
           {{ template "identifier" . }}
-          {{ if $.CurrentUser.CanAccessOrganization $.DeleteTeamAction .Organization }}
-            <form action="{{ deleteTeamPath .ID }}" method="POST">
-              <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-              <input type="hidden" name="id" value="{{ .ID }}">
-            </form>
-          {{ end }}
         </div>
       </div>
     {{ else }}
