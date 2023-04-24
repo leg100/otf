@@ -38,7 +38,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 			input.InsertText(newbie.Username),
 			screenshot(t),
 			// submit
-			chromedp.Click(`//button[text()='Add Member']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Add member']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm newbie added
 			matchText(t, ".flash-success", "added team member: "+newbie.Username),

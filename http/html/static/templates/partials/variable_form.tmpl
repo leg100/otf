@@ -35,7 +35,12 @@
         <input type="text" class="freeform" name="description" id="description" value="{{ .Description }}" placeholder="description (optional)">
       </div>
       <div>
-        <button id="create-variable-button">Save variable</button>
+        <button
+          id="create-variable-button"
+          {{ if not $.CanAccess }}title="insufficient permissions" disabled{{ end }}
+        >
+          Save variable
+        </button>
       </div>
     {{ end }}
   </form>

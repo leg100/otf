@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
 )
 
 type (
@@ -81,7 +82,13 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_get.tmpl", w, NewPage(r, org.Name, org.Name))
+	a.Render("organization_get.tmpl", w, struct {
+		OrganizationPage
+		*Organization
+	}{
+		OrganizationPage: NewPage(r, org.Name, org.Name),
+		Organization:     org,
+	})
 }
 
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
@@ -97,20 +104,32 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Render("organization_edit.tmpl", w, org)
+	a.Render("organization_edit.tmpl", w, struct {
+		OrganizationPage
+		*Organization
+		UpdateOrganizationAction rbac.Action
+		DeleteOrganizationAction rbac.Action
+	}{
+		OrganizationPage:         NewPage(r, org.Name, org.Name),
+		Organization:             org,
+		UpdateOrganizationAction: rbac.UpdateOrganizationAction,
+		DeleteOrganizationAction: rbac.DeleteOrganizationAction,
+	})
 }
 
 func (a *web) update(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Options OrganizationUpdateOptions
-		Name    string `schema:"name,required"`
+		Name        string `schema:"name,required"`
+		UpdatedName string `schema:"new_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	org, err := a.svc.UpdateOrganization(r.Context(), params.Name, params.Options)
+	org, err := a.svc.UpdateOrganization(r.Context(), params.Name, OrganizationUpdateOptions{
+		Name: &params.UpdatedName,
+	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

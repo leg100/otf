@@ -9,6 +9,8 @@
 {{ end }}
 
 {{ define "content" }}
+  {{ $canCreate := $.CurrentUser.CanAccessWorkspace .CreateVariableAction .Policy }}
+  {{ $canDelete := $.CurrentUser.CanAccessWorkspace .DeleteVariableAction .Policy }}
   <table class="variables">
     <thead>
       <tr>
@@ -26,7 +28,13 @@
           <td>{{ .Category }}</td>
           <td>
             <form class="variable-delete-button" action="{{ deleteVariablePath .ID }}" method="POST">
-              <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
+              <button
+                class="delete"
+                onclick="return confirm('Are you sure you want to delete?')"
+                {{ if not $canDelete }}title="insufficient permissions" disabled{{ end }}
+              >
+                Delete
+              </button>
             </form>
           </td>
         </tr>
@@ -38,6 +46,11 @@
     </tbody>
   </table>
   <form action="{{ newVariablePath $.Workspace.ID }}" method="GET">
-    <button type="submit">Add variable</button>
+    <button
+      type="submit"
+      {{ if not $canCreate }}title="insufficient permissions" disabled{{ end }}
+    >
+      Add variable
+    </button>
   </form>
 {{ end }}

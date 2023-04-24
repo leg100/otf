@@ -21,7 +21,7 @@
       <div class="workspace-lock">
         {{ with .LockButton }}
           <span class="workspace-lock-status workspace-lock-status-{{ .State }}" title="{{ .Tooltip }}">{{ title .State }}</span>
-          <form action="{{ .Action }}" method="POST"><button {{ disabled .Disabled }}>{{ .Text }}</button></form>
+          <form action="{{ .Action }}" method="POST"><button  title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
         {{ end }}
       </div>
       <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
@@ -33,7 +33,7 @@
       </form>
     </div>
     {{ with .Workspace.Connection }}
-    <div>Connected to <span class="data">{{ .Repo }}</span></div>
+      <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
     {{ end }}
     <div>
       <h3>Latest Run</h3>

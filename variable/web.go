@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -41,17 +42,29 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	policy, err := h.GetPolicy(r.Context(), ws.ID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	subject, err := otf.SubjectFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	h.Render("variable_new.tmpl", w, struct {
 		workspace.WorkspacePage
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
+		CanAccess  bool
 	}{
 		WorkspacePage: workspace.NewPage(r, "new variable", ws),
 		Variable:      &Variable{},
 		EditMode:      false,
 		FormAction:    paths.CreateVariable(workspaceID),
+		CanAccess:     subject.CanAccessWorkspace(rbac.CreateVariableAction, policy),
 	})
 }
 
@@ -104,13 +117,24 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	policy, err := h.GetPolicy(r.Context(), ws.ID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variables []*Variable
+		Variables            []*Variable
+		Policy               otf.WorkspacePolicy
+		CreateVariableAction rbac.Action
+		DeleteVariableAction rbac.Action
 	}{
-		WorkspacePage: workspace.NewPage(r, "variables", ws),
-		Variables:     variables,
+		WorkspacePage:        workspace.NewPage(r, "variables", ws),
+		Variables:            variables,
+		Policy:               policy,
+		CreateVariableAction: rbac.CreateVariableAction,
+		DeleteVariableAction: rbac.DeleteVariableAction,
 	})
 }
 
@@ -131,17 +155,29 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	policy, err := h.GetPolicy(r.Context(), ws.ID)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	subject, err := otf.SubjectFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	h.Render("variable_edit.tmpl", w, struct {
 		workspace.WorkspacePage
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
+		CanAccess  bool
 	}{
 		WorkspacePage: workspace.NewPage(r, "edit | "+variable.ID, ws),
 		Variable:      variable,
 		EditMode:      true,
 		FormAction:    paths.UpdateVariable(variable.ID),
+		CanAccess:     subject.CanAccessWorkspace(rbac.CreateVariableAction, policy),
 	})
 }
 

@@ -79,12 +79,16 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("team_get.tmpl", w, struct {
 		organization.OrganizationPage
-		Team    *Team
-		Members []*User
+		Team                       *Team
+		Members                    []*User
+		AddTeamMembershipAction    rbac.Action
+		RemoveTeamMembershipAction rbac.Action
 	}{
-		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
-		Team:             team,
-		Members:          members,
+		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
+		Team:                       team,
+		Members:                    members,
+		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
+		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
 	})
 }
 

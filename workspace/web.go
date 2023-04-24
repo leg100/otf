@@ -84,10 +84,12 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_list.tmpl", w, struct {
 		organization.OrganizationPage
+		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
 	}{
-		OrganizationPage: organization.NewPage(r, "workspaces", params.Organization),
-		WorkspaceList:    workspaces,
+		OrganizationPage:      organization.NewPage(r, "workspaces", params.Organization),
+		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
+		WorkspaceList:         workspaces,
 	})
 }
 
@@ -155,12 +157,23 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var provider *vcsprovider.VCSProvider
+	if ws.Connection != nil {
+		provider, err = h.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	h.Render("workspace_get.tmpl", w, struct {
 		WorkspacePage
 		LockButton
+		VCSProvider *vcsprovider.VCSProvider
 	}{
 		WorkspacePage: NewPage(r, ws.ID, ws),
 		LockButton:    lockButtonHelper(ws, policy, user),
+		VCSProvider:   provider,
 	})
 }
 
@@ -209,14 +222,28 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var provider *vcsprovider.VCSProvider
+	if workspace.Connection != nil {
+		provider, err = h.GetVCSProvider(r.Context(), workspace.Connection.VCSProviderID)
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
-		Permissions []otf.WorkspacePermission
-		Unassigned  []*auth.Team
-		Roles       []rbac.Role
+		Policy                         otf.WorkspacePolicy
+		Unassigned                     []*auth.Team
+		Roles                          []rbac.Role
+		VCSProvider                    *vcsprovider.VCSProvider
+		UpdateWorkspaceAction          rbac.Action
+		DeleteWorkspaceAction          rbac.Action
+		SetWorkspacePermissionAction   rbac.Action
+		UnsetWorkspacePermissionAction rbac.Action
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
-		Permissions:   policy.Permissions,
+		Policy:        policy,
 		Unassigned:    filterUnassigned(policy, teams),
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
@@ -224,6 +251,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceWriteRole,
 			rbac.WorkspaceAdminRole,
 		},
+		VCSProvider:                    provider,
+		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
+		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
+		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
+		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
 	})
 }
 

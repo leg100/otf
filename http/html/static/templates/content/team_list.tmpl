@@ -3,11 +3,16 @@
 {{ define "container-header" }}teams{{ end }}
 
 {{ define "container-header-actions" }}
-  {{ if .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
-    <form action="{{ newTeamPath .Organization }}" method="GET">
-      <button id="new-team-button" type="submit">New Team</button>
-    </form>
-  {{ end }}
+  {{ $canCreate := .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
+  <form action="{{ newTeamPath .Organization }}" method="GET">
+    <button
+      id="new-team-button"
+      type="submit"
+      {{ if not $canCreate }}title="insufficient permissions" disabled{{ end }}
+    >
+      New Team
+    </button>
+  </form>
 {{ end }}
 
 {{ define "content" }}
