@@ -2,6 +2,15 @@
   outline: 0px solid #000;
 }
 
+/**
+ * Add border box sizing in all browsers (opinionated).
+ */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
 :root {
   --faint-grey: #edeaea;
   /* Padding around header and main elements */
@@ -11,6 +20,26 @@
   --site-font: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
   /* alternative site font is the monospace family */
   --alt-font: Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace;
+}
+
+/**
+ * 1. Use the default cursor in all browsers (opinionated).
+ * 2. Change the line height in all browsers (opinionated).
+ * 3. Use a 4-space tab width in all browsers (opinionated).
+ * 4. Remove the grey highlight on links in iOS (opinionated).
+ * 5. Prevent adjustments of font size after orientation changes in
+ *    IE on Windows Phone and in iOS.
+ * 6. Breaks words to prevent overflow in all browsers (opinionated).
+ */
+html {
+  cursor: default; /* 1 */
+  line-height: 1.5; /* 2 */
+  -moz-tab-size: 4; /* 3 */
+  tab-size: 4; /* 3 */
+  -webkit-tap-highlight-color: transparent /* 4 */;
+  -ms-text-size-adjust: 100%; /* 5 */
+  -webkit-text-size-adjust: 100%; /* 5 */
+  word-break: break-word; /* 6 */
 }
 
 body {
@@ -25,6 +54,7 @@ body {
   flex-direction: column;
   /* push footer to bottom of viewport */
   min-height: 100vh;
+  margin: 0;
 }
 
 header {
@@ -86,6 +116,19 @@ h1,h2,h3,h4,h5 {
   margin-block-end: 0.5em;
 }
 
+/*
+ * Change the alignment on media elements in all browsers (opinionated).
+ */
+
+audio,
+canvas,
+iframe,
+img,
+svg,
+video {
+  vertical-align: middle;
+}
+
 header nav {
   /* Small gutter around edge */
   padding: var(--body-gutter);
@@ -129,28 +172,6 @@ header nav {
 
 .inline-heading {
   font-weight: 700;
-}
-
-/* main-form is a form that is the main content of a page */
-.main-form {
-  width: 500px;
-  /* Form outline */
-  padding: 1em;
-  border: 1px solid #CCC;
-
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-}
-
-/* Place labels above their inputs */
-.main-form label {
-  display: block;
-}
-
-/* Sanitize sets `resize: vertical` for some reason... */
-textarea {
-  resize: both
 }
 
 /*
@@ -241,49 +262,6 @@ table.variables tbody tr {
   gap: 1em;
 }
 
-input:invalid {
-  background-color: lightpink;
-}
-
-/* Free-form inputs need to accommodate more text */
-input.freeform {
-  width: 30em;
-}
-
-/* Radio options are placed horizontally */
-.radio {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2em;
-}
-
-/* Radio labels are placed alongside the input */
-.radio label {
-  display: inline;
-}
-
-/* Add some space between radio input and label */
-.radio input {
-  margin-right: .75em;
-}
-
-/* Checkbox group is a horizontal arrangement of checkboxes */
-.checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2em;
-}
-
-/* Checkbox labels are placed alongside the input */
-.checkbox label {
-  display: inline;
-}
-
-/* Add some space between checkbox input and label */
-.checkbox input {
-  margin-right: .75em;
-}
-
 /* Remove differentiated styling for visited links */
 a, a:visited, a:active {
   text-decoration: none;
@@ -306,6 +284,7 @@ a.show-underline {
 .identifier {
   font-family: var(--alt-font);
   font-size: 0.8rem;
+  color: #5a5a5a;
 }
 
 /* the commit sha for a resource; de-emphasised because it's not
@@ -393,7 +372,7 @@ a.show-underline {
 .flash {
   background: #ddf4ff;
   border-color: rgba(84, 174, 255, 0.4);
-  padding: 5px;
+  padding: .3125em 1em;
   border-style: solid;
   border-width: 1px;
 }
@@ -462,20 +441,6 @@ a.show-underline {
 
 .workspace-lock-status-unlocked {
   background: #d4fdd4;
-}
-
-/* button that carries out destructive action */
-button.delete {
-  background: #ed6969;
-  border: none;
-  cursor: pointer;
-  color: white;
-  font-weight: 600;
-  line-height: 1.5rem;
-}
-
-button.delete:hover {
-  background: #e46060;
 }
 
 /* color-coded run status field */

@@ -382,7 +382,7 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, configPath string, args ...string) (string, error) {
 	t.Helper()
 
-	// Create user token expressly for terraform cli
+	// Create user token expressly for the terraform cli
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
@@ -402,17 +402,12 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) string {
 	t.Helper()
 
-	// Create user token expressly for otf cli...
+	// Create user token expressly for the otf cli
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
-	// ...and persist it to the credential store
-	store, err := cli.NewCredentialsStore()
-	require.NoError(t, err)
-	err = store.Save(s.Hostname(), string(token))
-	require.NoError(t, err)
 
-	cmdargs := []string{"--address", s.Hostname()}
+	cmdargs := []string{"--address", s.Hostname(), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer

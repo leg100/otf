@@ -51,12 +51,21 @@ func TestSiteAdminUI(t *testing.T) {
 		screenshot(t),
 		chromedp.Location(&orgLocation),
 		matchText(t, ".flash-success", "created organization: my-new-org"),
-		// return to the list of organizations
-		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
-		// delete the organization
-		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		// go to organization settings
+		chromedp.Click("#settings > a", chromedp.NodeVisible),
 		screenshot(t),
-		matchText(t, ".flash-success", "deleted organization: my-new-org"),
+		// change organization name
+		chromedp.Focus("input#name", chromedp.NodeVisible),
+		chromedp.Clear("input#name"),
+		input.InsertText("newly-named-org"),
+		screenshot(t),
+		chromedp.Click(`//button[text()='Update organization name']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "updated organization"),
+		// delete the organization
+		chromedp.Click(`//button[@id='delete-organization-button']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "deleted organization: newly-named-org"),
 	})
 	require.NoError(t, err)
 

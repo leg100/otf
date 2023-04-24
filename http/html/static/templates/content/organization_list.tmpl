@@ -4,7 +4,7 @@
 
 {{ define "container-header-actions" }}
   <form action="{{ newOrganizationPath }}" method="GET">
-    <button id="new-organization-button" type="submit">New Organization</button>
+    <button {{ if not .CanCreate }}disabled title="organization creation has been restricted to site admins"{{ end }} id="new-organization-button" type="submit">New Organization</button>
   </form>
 {{ end }}
 
@@ -17,12 +17,6 @@
         </div>
         <div class="item-content">
           {{ template "identifier" . }}
-          {{ if and $.CurrentUser $.CurrentUser.IsSiteAdmin }}
-            <form action="{{ deleteOrganizationPath .Name }}" method="POST">
-              <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-              <input type="hidden" name="id" value="{{ .ID }}">
-            </form>
-          {{ end }}
         </div>
       </div>
     {{ else }}

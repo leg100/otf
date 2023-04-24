@@ -30,10 +30,11 @@ type (
 		logr.Logger
 		otf.Broker
 
-		api  *api
-		db   *pgdb
-		site otf.Authorizer // authorize access to site
-		web  *web
+		api                          *api
+		db                           *pgdb
+		site                         otf.Authorizer // authorize access to site
+		web                          *web
+		RestrictOrganizationCreation bool
 
 		*JSONAPIMarshaler
 	}
@@ -43,23 +44,30 @@ type (
 		otf.Broker
 		html.Renderer
 		logr.Logger
+
+		RestrictOrganizationCreation bool
 	}
 )
 
 func NewService(opts Options) *service {
 	svc := service{
-		Authorizer:       &Authorizer{opts.Logger},
-		Logger:           opts.Logger,
-		Broker:           opts.Broker,
-		db:               &pgdb{opts.DB},
-		site:             &otf.SiteAuthorizer{Logger: opts.Logger},
-		JSONAPIMarshaler: &JSONAPIMarshaler{},
+		Authorizer:                   &Authorizer{opts.Logger},
+		Logger:                       opts.Logger,
+		Broker:                       opts.Broker,
+		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
+		db:                           &pgdb{opts.DB},
+		site:                         &otf.SiteAuthorizer{Logger: opts.Logger},
+		JSONAPIMarshaler:             &JSONAPIMarshaler{},
 	}
 	svc.api = &api{
 		svc:              &svc,
 		JSONAPIMarshaler: &JSONAPIMarshaler{},
 	}
-	svc.web = &web{opts.Renderer, &svc}
+	svc.web = &web{
+		Renderer:                     opts.Renderer,
+		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
+		svc:                          &svc,
+	}
 
 	// Register with broker so that it can relay organization events
 	opts.Broker.Register(reflect.TypeOf(&Organization{}), svc.db)

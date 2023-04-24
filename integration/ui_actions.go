@@ -140,6 +140,7 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 	return chromedp.Tasks{
 		// go to org
 		chromedp.Navigate(organizationURL(hostname, org)),
+		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		screenshot(t),
@@ -198,7 +199,7 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Ta
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
 		// click connect button
-		chromedp.Click(`//button[text()='Connect to VCS']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[@id='list-workspace-vcs-providers-button']`, chromedp.NodeVisible),
 		screenshot(t),
 		// select provider
 		chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),

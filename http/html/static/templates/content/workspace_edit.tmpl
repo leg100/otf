@@ -13,14 +13,22 @@
 {{ end }}
 
 {{ define "content" }}
+  {{ $canUpdate := $.CurrentUser.CanAccessWorkspace .UpdateWorkspaceAction .Policy }}
+  {{ $canDelete := $.CurrentUser.CanAccessWorkspace .DeleteWorkspaceAction .Policy }}
+  {{ $canSetPermission := $.CurrentUser.CanAccessWorkspace .SetWorkspacePermissionAction .Policy }}
+  {{ $canUnsetPermission := $.CurrentUser.CanAccessWorkspace .UnsetWorkspacePermissionAction .Policy }}
   <div>
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
-        <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Repo }}</button>
+        <button id="disconnect-workspace-repo-button" type="submit" {{ insufficient $canUpdate }}>
+          Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
+        </button>
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
-        <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
+        <button id="list-workspace-vcs-providers-button" type="submit" {{ insufficient $canUpdate }}>
+          Connect to VCS
+        </button>
       </form>
     {{ end }}
   </div>
@@ -58,7 +66,7 @@
       <input type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
     </div>
     <div class="field">
-      <button>Save changes</button>
+      <button {{ insufficient $canUpdate }}>Save changes</button>
     </div>
   </form>
   <div class="permissions-container">
@@ -78,7 +86,7 @@
             <td>admin</td>
           </tr>
           <!-- iterate through existing role assignments -->
-          {{ range .Permissions }}
+          {{ range .Policy.Permissions }}
             {{ if eq .Team "owners" }}
               {{ continue }}
             {{ end }}
@@ -93,13 +101,13 @@
                       <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
                     {{ end }}
                   </select>
-                  <button>Update</button>
+                  <button {{ insufficient $canSetPermission }}>Update</button>
                 </form>
               </td>
               <td>
                 <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                   <input name="team_name" value="{{ .Team }}" type="hidden">
-                  <button class="delete">Remove</button>
+                  <button class="delete" {{ insufficient $canUnsetPermission }}>Remove</button>
                 </form>
               </td>
             </tr>
@@ -115,13 +123,17 @@
               </select>
             </td>
             <td class="permissions-add-role-container">
-              <select form="permissions-add-form" name="role" id="permissions-add-select-role">
-                <option value="">--role--</option>
-                {{ range .Roles }}
-                  <option value="{{ . }}">{{ . }}</option>
-                {{ end }}
-              </select>
-              <button id="permissions-add-button" form="permissions-add-form" >Add</button>
+              <div class="select-wrapper">
+                <select form="permissions-add-form" name="role" id="permissions-add-select-role">
+                  <option value="">--role--</option>
+                  {{ range .Roles }}
+                    <option value="{{ . }}">{{ . }}</option>
+                  {{ end }}
+                </select>
+              </div>
+              <button id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
+                Add
+              </button>
             </td>
           </tr>
         </tbody>
@@ -129,8 +141,10 @@
     </div>
     <div class="permissions-container">
       <h3>Advanced</h3>
-      <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
-        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
+      <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
+        <button id="delete-workspace-button" class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
+          Delete workspace
+        </button>
       </form>
     </div>
   </div>

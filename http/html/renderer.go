@@ -109,6 +109,7 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs["selected"] = selected
 	funcs["checked"] = checked
 	funcs["disabled"] = disabled
+	funcs["insufficient"] = insufficient
 	// make path helpers available to templates
 	for k, v := range paths.FuncMap() {
 		funcs[k] = v

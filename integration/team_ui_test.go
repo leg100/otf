@@ -38,12 +38,12 @@ func TestIntegration_TeamUI(t *testing.T) {
 			input.InsertText(newbie.Username),
 			screenshot(t),
 			// submit
-			chromedp.Click(`//button[text()='Add Member']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Add member']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm newbie added
 			matchText(t, ".flash-success", "added team member: "+newbie.Username),
 			// remove newbie from team
-			chromedp.Click(fmt.Sprintf(`//div[@id='item-user-%s']//button[text()='delete']`, newbie.Username), chromedp.NodeVisible),
+			chromedp.Click(fmt.Sprintf(`//div[@id='item-user-%s']//button[@id='remove-member-button']`, newbie.Username), chromedp.NodeVisible),
 			screenshot(t),
 			// confirm newbie removed
 			matchText(t, ".flash-success", "removed team member: "+newbie.Username),

@@ -110,10 +110,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	signer := otf.NewSigner(cfg.Secret)
 
 	orgService := organization.NewService(organization.Options{
-		Logger:   logger,
-		DB:       db,
-		Renderer: renderer,
-		Broker:   broker,
+		Logger:                       logger,
+		DB:                           db,
+		Renderer:                     renderer,
+		Broker:                       broker,
+		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 	})
 
 	authService := auth.NewService(auth.Options{

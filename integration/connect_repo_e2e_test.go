@@ -84,7 +84,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
 		// delete workspace
-		chromedp.Click(`//button[text()='Delete workspace']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[@id='delete-workspace-button']`, chromedp.NodeVisible),
 		screenshot(t),
 		// confirm deletion
 		matchText(t, ".flash-success", "deleted workspace: my-test-workspace"),

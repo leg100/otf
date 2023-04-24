@@ -6,33 +6,68 @@
 {{ .Team.Name }}{{ end }}
 
 {{ define "content" }}
-  {{ if .CurrentUser.IsOwner .Team.Organization }}
-    <h3>Permissions</h3>
-    <form class="permissions-form" action="{{ updateTeamPath .Team.ID }}" method="POST">
-      <div class="field">
-        <input type="checkbox" name="manage_workspaces" id="manage_workspaces" value="true" {{ if .Team.OrganizationAccess.ManageWorkspaces }}checked{{ end }} {{ if .Team.IsOwners }}disabled checked{{ end }}>
-        <label for="manage_workspaces">Manage Workspaces: Allows members to create and administrate all workspaces within the organization.</label>
-      </div>
-      <div class="field">
-        <input type="checkbox" name="manage_vcs" id="manage_vcs" value="true" {{ if .Team.OrganizationAccess.ManageVCS }}checked{{ end }} {{ if .Team.IsOwners }}disabled checked{{ end }}>
-        <label for="manage_vcs">Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.</label>
-      </div>
-      <div class="field">
-        <input type="checkbox" name="manage_registry" id="manage_registry" value="true" {{ if .Team.OrganizationAccess.ManageRegistry }}checked{{ end }} {{ if .Team.IsOwners }}disabled checked{{ end }}>
-        <label for="manage_registry">Manage Registry: Allows members to publish and delete modules within the organization.</label>
-      </div>
-      {{ if not .Team.IsOwners }}
-        <div class="field">
-          <button>Save changes</button>
-        </div>
-      {{ end }}
-    </form>
-    <br>
-  {{ end }}
+  {{ $canDelete := .CurrentUser.CanAccessOrganization .DeleteTeamAction .Organization }}
+  {{ $canSetPermission := .CurrentUser.IsOwner .Organization }}
+  {{ $canAddMember := .CurrentUser.CanAccessOrganization .AddTeamMembershipAction .Organization }}
+  {{ $canRemoveMember := .CurrentUser.CanAccessOrganization .RemoveTeamMembershipAction .Organization }}
+  <h3>Permissions</h3>
+  <form class="permissions-form" action="{{ updateTeamPath .Team.ID }}" method="POST">
+    <div class="field">
+      <input
+        type="checkbox"
+        name="manage_workspaces"
+        id="manage_workspaces"
+        value="true"
+        {{ if or .Team.OrganizationAccess.ManageWorkspaces .Team.IsOwners }}checked{{ end }}
+        {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
+      >
+      <label for="manage_workspaces">Manage Workspaces: Allows members to create and administrate all workspaces within the organization.</label>
+    </div>
+    <div class="field">
+      <input
+        type="checkbox"
+        name="manage_vcs"
+        id="manage_vcs"
+        value="true"
+        {{ if or .Team.OrganizationAccess.ManageVCS .Team.IsOwners }}checked{{ end }}
+        {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
+      >
+      <label for="manage_vcs">Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.</label>
+    </div>
+    <div class="field">
+      <input
+        type="checkbox"
+        name="manage_registry"
+        id="manage_registry"
+        value="true"
+        {{ if or .Team.OrganizationAccess.ManageRegistry .Team.IsOwners }}checked{{ end }}
+        {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
+      >
+      <label for="manage_registry">Manage Registry: Allows members to publish and delete modules within the organization.</label>
+    </div>
+    <div class="field">
+      <button
+        {{ if .Team.IsOwners }}
+          title="cannot edit permissions of owners team" disabled
+        {{ else }}
+          {{ insufficient $canSetPermission }}
+        {{ end }}
+      >
+        Save changes
+      </button>
+    </div>
+  </form>
+  <br>
   <h3>Members</h3>
   <form class="horizontal-form" action="{{ addMemberTeamPath .Team.ID }}" method="POST">
-    <input type="text" name="username" id="add-username" required placeholder="username">
-    <button type="submit">Add Member</button>
+    <input
+      type="text"
+      name="username"
+      id="add-username"
+      required
+      placeholder="username"
+      {{ disabled (not $canAddMember) }}>
+    <button type="submit" {{ insufficient $canAddMember }}>Add member</button>
   </form>
   <div id="content-list" class="content-list">
     {{ range .Members }}
@@ -44,7 +79,9 @@
           {{ template "identifier" . }}
           <form class="horizontal-form" action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
             <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
-            <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+            <button id="remove-member-button" class="delete" {{ insufficient $canRemoveMember }} onclick="return confirm('Are you sure you want to delete?')">
+              Remove member
+            </button>
           </form>
         </div>
       </div>
@@ -52,4 +89,9 @@
       No members currently exist.
     {{ end }}
   </div>
+  <h3>Advanced</h3>
+  <form action="{{ deleteTeamPath .Team.ID }}" method="POST">
+    <button class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
+    <input type="hidden" name="id" value="{{ .Team.ID }}">
+  </form>
 {{ end }}

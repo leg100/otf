@@ -3,8 +3,11 @@
 {{ define "container-header" }}workspaces{{ end }}
 
 {{ define "container-header-actions" }}
+  {{ $canCreate := $.CurrentUser.CanAccessOrganization .CreateWorkspaceAction .Organization }}
   <form action="{{ newWorkspacePath .Organization }}" method="GET">
-    <button id="new-workspace-button" type="submit">New Workspace</button>
+    <button id="new-workspace-button" type="submit" {{ insufficient $canCreate }}>
+      New Workspace
+    </button>
   </form>
 {{ end }}
 

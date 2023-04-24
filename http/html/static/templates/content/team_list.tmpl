@@ -3,11 +3,12 @@
 {{ define "container-header" }}teams{{ end }}
 
 {{ define "container-header-actions" }}
-  {{ if .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
-    <form action="{{ newTeamPath .Organization }}" method="GET">
-      <button id="new-team-button" type="submit">New Team</button>
-    </form>
-  {{ end }}
+  {{ $canCreate := .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
+  <form action="{{ newTeamPath .Organization }}" method="GET">
+    <button id="new-team-button" type="submit" {{ insufficient $canCreate }}>
+      New Team
+    </button>
+  </form>
 {{ end }}
 
 {{ define "content" }}
@@ -19,12 +20,6 @@
         </div>
         <div class="item-content">
           {{ template "identifier" . }}
-          {{ if $.CurrentUser.CanAccessOrganization $.DeleteTeamAction .Organization }}
-            <form action="{{ deleteTeamPath .ID }}" method="POST">
-              <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-              <input type="hidden" name="id" value="{{ .ID }}">
-            </form>
-          {{ end }}
         </div>
       </div>
     {{ else }}
