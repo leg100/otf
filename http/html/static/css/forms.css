@@ -121,7 +121,3 @@ input.error {
   border-color: #e72633;
   box-shadow: 0 0 0 .125em rgba(229, 43, 37, 0.5);
 }
-
-.error-message {
-  color: red;
-}
