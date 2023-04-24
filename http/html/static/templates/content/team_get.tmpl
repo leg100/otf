@@ -60,13 +60,13 @@
   <br>
   <h3>Members</h3>
   <form class="horizontal-form" action="{{ addMemberTeamPath .Team.ID }}" method="POST">
-    <input
-      type="text"
-      name="username"
-      id="add-username"
-      required
-      placeholder="username"
-      {{ disabled (not $canAddMember) }}>
+    <select name="username">
+      {{ range .NonMembers }}
+        <option value="{{ .Username }}">{{ .Username }}</option>
+      {{ else }}
+        <option value="">No users found</option>
+      {{ end }}
+    </select>
     <button type="submit" {{ insufficient $canAddMember }}>Add member</button>
   </form>
   <div id="content-list" class="content-list">
@@ -79,7 +79,7 @@
           {{ template "identifier" . }}
           <form class="horizontal-form" action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
             <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
-            <button id="remove-member-button" class="delete" {{ insufficient $canRemoveMember }} onclick="return confirm('Are you sure you want to delete?')">
+            <button id="remove-member-button" class="delete" {{ insufficient $canRemoveMember }}>
               Remove member
             </button>
           </form>
@@ -91,7 +91,14 @@
   </div>
   <h3>Advanced</h3>
   <form action="{{ deleteTeamPath .Team.ID }}" method="POST">
-    <button class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
+    <button
+      class="delete"
+      {{ if .Team.IsOwners }}
+        title="the owners team cannot be deleted" disabled
+      {{ else }}
+        {{ insufficient $canDelete }}
+      {{ end }}
+      onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
     <input type="hidden" name="id" value="{{ .Team.ID }}">
   </form>
 {{ end }}

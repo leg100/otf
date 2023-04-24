@@ -25,19 +25,19 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	h.addTeamHandlers(r)
 
-	r.HandleFunc("/organizations/{name}/users", h.listUsers).Methods("GET")
+	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
 }
 
-func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	users, err := h.svc.ListUsers(r.Context(), name)
+	users, err := h.svc.ListOrganizationUsers(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -34,9 +34,7 @@ type (
 		templateRenderer
 	}
 
-	// pageRenderer renders an html page using the named template. Note this
-	// must be the last thing called in a handler because it writes an HTTP5xx
-	// to the response if there is an error.
+	// pageRenderer renders an html page using the named template.
 	pageRenderer interface {
 		Render(name string, w http.ResponseWriter, page any)
 	}
@@ -62,6 +60,8 @@ func NewRenderer(devMode bool) (*renderer, error) {
 	return &renderer{tr}, nil
 }
 
+// Render the page. Note this must be the last thing called in a handler because
+// it writes an HTTP5xx to the response if there is an error.
 func (r *renderer) Render(name string, w http.ResponseWriter, page any) {
 	// purge flash messages from cookie store prior to rendering template
 	purgeFlashes(w)

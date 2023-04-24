@@ -119,7 +119,7 @@ func TestUser(t *testing.T) {
 		// create guest user, member of no team
 		guest := svc.createUser(t, ctx)
 
-		got, err := svc.ListUsers(ctx, org.Name)
+		got, err := svc.ListOrganizationUsers(ctx, org.Name)
 		require.NoError(t, err)
 
 		// should get list of two users: owner and dev

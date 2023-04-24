@@ -14,10 +14,10 @@
           <legend>Category</legend>
           <div class="radio">
             <div>
-              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.EditMode) }}><label for="category">Terraform</label>
+              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.EditMode) }} required><label for="category">Terraform</label>
             </div>
             <div>
-              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }} {{ disabled (and .Sensitive $.EditMode) }}><label for="env">Environment variable</label>
+              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }} {{ disabled (and .Sensitive $.EditMode) }} required><label for="env">Environment variable</label>
             </div>
           </div>
         </fieldset>

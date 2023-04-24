@@ -32,12 +32,23 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 	})
 }
 
-func (db *pgdb) listUsers(ctx context.Context, organization string) ([]*User, error) {
+func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
+	result, err := db.FindUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var users []*User
+	for _, r := range result {
+		users = append(users, userRow(r).toUser())
+	}
+	return users, nil
+}
+
+func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
 	result, err := db.FindUsersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
-
 	var users []*User
 	for _, r := range result {
 		users = append(users, userRow(r).toUser())
