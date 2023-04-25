@@ -1,4 +1,4 @@
-<svg width="225" height="75" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<svg width="180" height="35" version="1.1" xmlns="http://www.w3.org/2000/svg">
   <style>
       text {
         font-family: Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace;
@@ -6,7 +6,7 @@
       }
   </style>
 
-  <text x="0" y="50%" font-size="3em">
+  <text x="0" y="0" font-size="3em" dominant-baseline="hanging">
     <tspan fill="green">+O</tspan><tspan fill="blue">~T</tspan><tspan fill="red">-F</tspan>
   </text>
 </svg>
