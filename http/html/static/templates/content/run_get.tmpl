@@ -53,10 +53,10 @@
   {{ end }}
   <div id="run-confirm-container" style="{{ if ne .Run.Status "planned" }}display: none;{{ end }}">
     <form action="{{ applyRunPath .Run.ID }}" method="POST">
-      <button>Confirm & Apply</button>
+      <button>apply</button>
     </form>
     <form action="{{ discardRunPath .Run.ID }}" method="POST">
-      <button>Discard Run</button>
+      <button>discard</button>
     </form>
   </div>
 {{ end }}

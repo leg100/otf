@@ -152,7 +152,7 @@ header nav {
 .logo {
   padding: 0.4em;
   line-height: 1em;
-  background-color: black;
+  background-color: white;
   color: white;
   font-weight: 900;
 }
@@ -508,7 +508,16 @@ a.show-underline {
   margin-left: auto;
 }
 
+/* container for bottom row of widget */
 .item-content {
+  display: flex;
+  column-gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+/* item actions are the buttons in the bottom right of the widget */
+.item-info-and-actions {
   display: flex;
   column-gap: 10px;
   align-items: baseline;
@@ -541,15 +550,15 @@ a.show-underline {
   font-size: 0.8rem;
 }
 
-.resource-summary-additions {
+.green {
   color: green;
 }
 
-.resource-summary-changes {
+.blue {
   color: blue;
 }
 
-.resource-summary-destructions {
+.red {
   color: red;
 }
 
@@ -558,7 +567,7 @@ a.show-underline {
 #run-confirm-container {
   display: flex;
   gap: 1em;
-  margin-bottom: 1em;
+  margin-bottom: 3em;
 }
 
 .new-module-tabs {
