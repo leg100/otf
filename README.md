@@ -1,6 +1,6 @@
 ![OTF logo](/readme_inkscape_logo.png)
 
-An open source alternative to Terraform Enterprise. Includes SSO, team management, agents, and as many applies as you can throw hardware at.
+OTF is an open source alternative to Terraform Enterprise. Includes SSO, team management, agents, and as many applies as you can throw hardware at.
 
 Docs: https://docs.otf.ninja/
 
