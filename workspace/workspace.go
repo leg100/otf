@@ -49,10 +49,16 @@ type (
 		TriggerPrefixes            []string
 		WorkingDirectory           string
 		Organization               string
-		LatestRunID                *string
 		Connection                 *repo.Connection
+		LatestRun                  *LatestRun
 
 		*lock
+	}
+
+	// LatestRun is a summary of the latest run for a workspace
+	LatestRun struct {
+		ID     string
+		Status otf.RunStatus
 	}
 
 	ExecutionMode string

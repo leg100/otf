@@ -115,7 +115,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 func (q *queue) setCurrentRun(ctx context.Context, run *run.Run) error {
 	q.current = run
 
-	if q.ws.LatestRunID != nil && *q.ws.LatestRunID == run.ID {
+	if q.ws.LatestRun != nil && q.ws.LatestRun.ID == run.ID {
 		// run is already set as the workspace's latest run
 		return nil
 	}

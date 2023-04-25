@@ -47,6 +47,7 @@ type (
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
+		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
 		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
@@ -88,8 +89,11 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.LatestRunID.Status == pgtype.Present {
-		ws.LatestRunID = &r.LatestRunID.String
+	if r.LatestRunID.Status == pgtype.Present && r.LatestRunStatus.Status == pgtype.Present {
+		ws.LatestRun = &LatestRun{
+			ID:     r.LatestRunID.String,
+			Status: otf.RunStatus(r.LatestRunStatus.String),
+		}
 	}
 
 	if r.UserLock != nil {

@@ -38,14 +38,14 @@
     <div>
       <h3>Latest Run</h3>
       <div id="latest-run">
-        {{ if not .Workspace.LatestRunID }}
+        {{ if not .Workspace.LatestRun }}
           There are no runs for this workspace.
         {{ end }}
       </div>
     </div>
-    {{ with .Workspace.LatestRunID }}
+    {{ with .Workspace.LatestRun }}
       <script type="text/javascript">
-          fetch({{ widgetRunPath . }})
+          fetch({{ widgetRunPath .ID }})
           .then((response) => response.text())
           .then((html) => {
             document.getElementById('latest-run').innerHTML = html;

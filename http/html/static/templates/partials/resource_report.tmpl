@@ -1,0 +1,7 @@
+{{ define "resource-report" }}
+  <div class="resource-summary">
+    <span class="resource-summary-additions">+{{ .Additions }}</span>
+    <span class="resource-summary-changes">~{{ .Changes }}</span>
+    <span class="resource-summary-destructions">-{{ .Destructions }}</span>
+  </div>
+{{ end }}

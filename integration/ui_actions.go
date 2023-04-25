@@ -178,6 +178,12 @@ func startRunTasks(t *testing.T, hostname, organization string, workspaceName st
 		// wait for run to enter planned state
 		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
 		screenshot(t),
+		// run widget should show plan summary
+		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		screenshot(t),
+		// run widget should show discard button
+		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
+		screenshot(t),
 		// click 'confirm & apply' button once it becomes visible
 		chromedp.Click(`//button[text()='Confirm & Apply']`, chromedp.NodeVisible, chromedp.BySearch),
 		screenshot(t),
@@ -186,6 +192,8 @@ func startRunTasks(t *testing.T, hostname, organization string, workspaceName st
 		chromedp.WaitReady(`#apply-status.phase-status-finished`),
 		// confirm run ends in applied state
 		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
+		// run widget should show apply summary
+		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	}
 }

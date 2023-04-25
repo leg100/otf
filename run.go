@@ -50,3 +50,8 @@ type (
 )
 
 func (r RunStatus) String() string { return string(r) }
+
+// RunStatusPtr returns a pointer to a run status
+func RunStatusPtr(s RunStatus) *RunStatus {
+	return &s
+}
