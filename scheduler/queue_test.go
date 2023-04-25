@@ -128,7 +128,7 @@ func TestQueue(t *testing.T) {
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
 		run := &run.Run{WorkspaceID: "ws-123"}
-		ws := &workspace.Workspace{ID: "ws-123", LatestRunID: &run.ID}
+		ws := &workspace.Workspace{ID: "ws-123", LatestRun: &workspace.LatestRun{ID: run.ID}}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -185,6 +185,6 @@ func (f *fakeQueueServices) UnlockWorkspace(ctx context.Context, workspaceID str
 }
 
 func (f *fakeQueueServices) SetCurrentRun(ctx context.Context, workspaceID, runID string) (*workspace.Workspace, error) {
-	f.ws.LatestRunID = &runID
+	f.ws.LatestRun = &workspace.LatestRun{ID: runID}
 	return f.ws, nil
 }

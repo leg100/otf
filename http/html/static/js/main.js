@@ -116,8 +116,8 @@ function watchRunUpdates(path, stream, run) {
     source.addEventListener("run_status_update", (e) => {
         const obj = JSON.parse(e.data);
 
-        const runStatus = document.getElementById(obj.id + '-status');
-        runStatus.outerHTML = obj['run-status-html']
+        const runItem = document.getElementById(obj.id);
+        runItem.outerHTML = obj['run-item-html']
 
         const planStatus = document.getElementById('plan-status');
         planStatus.outerHTML = obj['plan-status-html']

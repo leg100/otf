@@ -13,12 +13,12 @@
     <div class="item-content">
       {{ template "identifier" . }}
       {{ if .Commit }}<span class="commit">#{{ substr 0 7 .Commit }}</span>{{ end }}
-      {{ if eq .Status "applied" }}
-        <div class="resource-summary">
-          <span class="resource-summary-additions">+{{ .Apply.Additions }}</span>
-          <span class="resource-summary-changes">~{{ .Apply.Changes }}</span>
-          <span class="resource-summary-destructions">-{{ .Apply.Destructions }}</span>
-        </div>
+      {{ with .Apply.ResourceReport }}
+        {{ template "resource-report" . }}
+      {{ else }}
+        {{ with .Plan.ResourceReport }}
+          {{ template "resource-report" . }}
+        {{ end }}
       {{ end }}
       {{ if .Cancelable }}
         <form action="{{ cancelRunPath .ID }}" method="POST">
@@ -26,7 +26,7 @@
         </form>
       {{ else if .Discardable }}
         <form action="{{ discardRunPath .ID }}" method="POST">
-          <button class="delete" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+          <button id="run-discard-button" class="delete" onclick="return confirm('Are you sure you want to discard?')">discard</button>
         </form>
       {{ end }}
     </div>
