@@ -123,14 +123,12 @@
               </select>
             </td>
             <td class="permissions-add-role-container">
-              <div class="select-wrapper">
-                <select form="permissions-add-form" name="role" id="permissions-add-select-role">
-                  <option value="">--role--</option>
-                  {{ range .Roles }}
-                    <option value="{{ . }}">{{ . }}</option>
-                  {{ end }}
-                </select>
-              </div>
+              <select form="permissions-add-form" name="role" id="permissions-add-select-role">
+                <option value="">--role--</option>
+                {{ range .Roles }}
+                  <option value="{{ . }}">{{ . }}</option>
+                {{ end }}
+              </select>
               <button id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
                 Add
               </button>

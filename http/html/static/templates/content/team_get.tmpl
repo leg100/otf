@@ -60,7 +60,8 @@
   <br>
   <h3>Members</h3>
   <form class="horizontal-form" action="{{ addMemberTeamPath .Team.ID }}" method="POST">
-    <select name="username">
+    <select id="select-add-member" name="username" {{ disabled (not $canAddMember) }}>
+      <option value="">-- select user --</option>
       {{ range .NonMembers }}
         <option value="{{ .Username }}">{{ .Username }}</option>
       {{ else }}
@@ -86,7 +87,7 @@
         </div>
       </div>
     {{ else }}
-      No members currently exist.
+      The team currently has no members.
     {{ end }}
   </div>
   <h3>Advanced</h3>
