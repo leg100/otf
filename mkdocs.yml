@@ -5,6 +5,8 @@ theme:
   name: material
   logo: ./images/logo.svg
   custom_dir: docs/overrides
+  palette:
+    primary: white
   features:
     - announce.dismiss
     - content.action.edit

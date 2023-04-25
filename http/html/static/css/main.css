@@ -148,15 +148,6 @@ header nav {
   gap: 2em; /* put gap between logo and current org */
 }
 
-/* little black rectangular main logo in the top left */
-.logo {
-  background-color: white;
-}
-
-.logo a:hover {
-  color: white;
-}
-
 .navbar .nav-links {
   margin-left: auto; /* shift nav-links to right */
 }
