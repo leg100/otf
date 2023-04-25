@@ -150,11 +150,7 @@ header nav {
 
 /* little black rectangular main logo in the top left */
 .logo {
-  padding: 0.4em;
-  line-height: 1em;
   background-color: white;
-  color: white;
-  font-weight: 900;
 }
 
 .logo a:hover {
