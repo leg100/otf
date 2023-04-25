@@ -296,7 +296,12 @@ a.show-underline {
 
 /* notification to user that content has been copied to clipboard */
 .copied-notification {
-  background: paleturquoise;
+  background: #000;
+  color: #fff;
+  padding: 0.375em;
+  font-weight: 700;
+  font-size: 0.9rem;
+  position: absolute;
 }
 
 /* content-header: title + links */

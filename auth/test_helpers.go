@@ -19,6 +19,10 @@ func (f *fakeService) GetTeamByID(ctx context.Context, teamID string) (*Team, er
 	return f.team, nil
 }
 
+func (f *fakeService) ListUsers(ctx context.Context) ([]*User, error) {
+	return nil, nil
+}
+
 func (f *fakeService) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
 	return []*Team{f.team}, nil
 }

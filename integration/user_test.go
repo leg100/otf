@@ -96,13 +96,30 @@ func TestUser(t *testing.T) {
 		assert.Equal(t, otf.ErrResourceNotFound, err)
 	})
 
+	t.Run("list users", func(t *testing.T) {
+		svc := setup(t, nil)
+		user1 := svc.createUser(t, ctx)
+		user2 := svc.createUser(t, ctx)
+		user3 := svc.createUser(t, ctx)
+		admin := svc.getUser(t, ctx, auth.SiteAdminUsername)
+
+		got, err := svc.ListUsers(ctx)
+		require.NoError(t, err)
+
+		assert.Equal(t, 4, len(got), got)
+		assert.Contains(t, got, user1)
+		assert.Contains(t, got, user2)
+		assert.Contains(t, got, user3)
+		assert.Contains(t, got, admin)
+	})
+
 	// List users in an organization. The underlying SQL joins users to
 	// organization via teams, so this test adds a user to one team and another
 	// user to two teams, with both teams in the same organization, to check the
 	// SQL is working correctly, e.g. performing not only the join correctly,
 	// but performing de-duplication too so that users are not listed more than
 	// once.
-	t.Run("list", func(t *testing.T) {
+	t.Run("list organization users", func(t *testing.T) {
 		svc := setup(t, nil)
 		// create owners team consisting of one owner
 		owner, userCtx := svc.createUserCtx(t, ctx)
@@ -119,7 +136,7 @@ func TestUser(t *testing.T) {
 		// create guest user, member of no team
 		guest := svc.createUser(t, ctx)
 
-		got, err := svc.ListUsers(ctx, org.Name)
+		got, err := svc.ListOrganizationUsers(ctx, org.Name)
 		require.NoError(t, err)
 
 		// should get list of two users: owner and dev

@@ -77,16 +77,35 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Retrieve full list of users for populating a select form from which new
+	// team members can be chosen. Only do this if the subject has perms to
+	// retrieve the list.
+	subject, err := otf.SubjectFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var users []*User
+	if subject.CanAccessSite(rbac.ListUsersAction) {
+		users, err = h.svc.ListUsers(r.Context())
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	h.Render("team_get.tmpl", w, struct {
 		organization.OrganizationPage
 		Team                       *Team
 		Members                    []*User
+		NonMembers                 []*User
 		AddTeamMembershipAction    rbac.Action
 		RemoveTeamMembershipAction rbac.Action
 		DeleteTeamAction           rbac.Action
 	}{
 		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
 		Team:                       team,
+		NonMembers:                 diffUsers(members, users),
 		Members:                    members,
 		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
 		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
@@ -192,4 +211,18 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "removed team member: "+params.Username)
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+}
+
+// diffUsers returns the users from b that are not in a.
+func diffUsers(a, b []*User) (c []*User) {
+	m := make(map[string]struct{}, len(a))
+	for _, user := range a {
+		m[user.Username] = struct{}{}
+	}
+	for _, user := range b {
+		if _, ok := m[user.Username]; !ok {
+			c = append(c, user)
+		}
+	}
+	return
 }

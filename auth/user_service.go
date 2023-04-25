@@ -14,7 +14,8 @@ type (
 	UserService interface {
 		CreateUser(ctx context.Context, username string, opts ...NewUserOption) (*User, error)
 		GetUser(ctx context.Context, spec UserSpec) (*User, error)
-		ListUsers(ctx context.Context, organization string) ([]*User, error)
+		ListUsers(ctx context.Context) ([]*User, error)
+		ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error)
 		DeleteUser(ctx context.Context, username string) error
 		AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
 		RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error
@@ -62,14 +63,24 @@ func (a *service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 	return user, nil
 }
 
+// ListUsers lists all users.
+func (a *service) ListUsers(ctx context.Context) ([]*User, error) {
+	_, err := a.site.CanAccess(ctx, rbac.ListUsersAction, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return a.db.listUsers(ctx)
+}
+
 // ListUsers lists an organization's users
-func (a *service) ListUsers(ctx context.Context, organization string) ([]*User, error) {
+func (a *service) ListOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
 	_, err := a.organization.CanAccess(ctx, rbac.ListUsersAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	return a.db.listUsers(ctx, organization)
+	return a.db.listOrganizationUsers(ctx, organization)
 }
 
 func (a *service) DeleteUser(ctx context.Context, username string) error {

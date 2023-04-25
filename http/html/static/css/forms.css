@@ -24,11 +24,6 @@ input:focus {
   outline: 0;
 }
 
-input:invalid {
-  border-color: #e72633;
-  box-shadow: 0 0 0 .125em rgba(229, 43, 37, 0.5);
-}
-
 /* Free-form inputs need to accommodate more text */
 input.freeform {
   width: 20em;
@@ -120,4 +115,9 @@ button:disabled, button:disabled:hover {
   color: white;
   background: #ccc;
   title: "foo";
+}
+
+input.error {
+  border-color: #e72633;
+  box-shadow: 0 0 0 .125em rgba(229, 43, 37, 0.5);
 }

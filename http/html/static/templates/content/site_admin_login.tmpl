@@ -4,15 +4,13 @@
   {{ template "flash" . }}
   <div class="center">
     <form class="main-form" action="/admin/login" method="POST">
-      <ul>
-        <li class="field">
-          <label for="token">Site Admin Token</label>
-          <input type="password" name="token" id="token" required>
-        </li>
-        <li>
-          <button>Login</button>
-        </li>
-      </ul>
+      <div class="field">
+        <label for="token">Site Admin Token</label>
+        <input type="password" name="token" id="token" required>
+      </div>
+      <div class="field">
+        <button>Login</button>
+      </div>
     </form>
   </div>
 {{ end }}

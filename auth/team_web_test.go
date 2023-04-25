@@ -92,3 +92,9 @@ func TestTeam_WebHandlers(t *testing.T) {
 		html.AssertRedirect(t, w, paths.Teams("acme-org"))
 	})
 }
+
+func TestUserDiff(t *testing.T) {
+	a := []*User{{Username: "bob"}}
+	b := []*User{{Username: "bob"}, {Username: "alice"}}
+	assert.Equal(t, []*User{{Username: "alice"}}, diffUsers(a, b))
+}

@@ -34,28 +34,28 @@ func insufficient(can bool) template.HTMLAttr {
 	return ""
 }
 
-func disabled(arg any, args ...any) (string, error) {
-	return stringIf("disabled", arg, args...)
+func disabled(arg any, args ...any) (template.HTMLAttr, error) {
+	return attrIf("disabled", arg, args...)
 }
 
-func selected(arg any, args ...any) (string, error) {
-	return stringIf("selected", arg, args...)
+func selected(arg any, args ...any) (template.HTMLAttr, error) {
+	return attrIf("selected", arg, args...)
 }
 
-func checked(arg any, args ...any) (string, error) {
-	return stringIf("checked", arg, args...)
+func checked(arg any, args ...any) (template.HTMLAttr, error) {
+	return attrIf("checked", arg, args...)
 }
 
-// stringIf prints a string if:
+// attrIf returns string as an html attribute, if:
 // (a) single arg provided, it is a boolean, and it is true.
 // (b) multiple args provided, they are all strings, and they are all equal.
-// otherwise it outputs an empty string
+// otherwise it outputs an empty attribute
 // This is useful for printing strings in templates or not.
-func stringIf(s string, arg any, args ...any) (string, error) {
+func attrIf(s string, arg any, args ...any) (template.HTMLAttr, error) {
 	if len(args) == 0 {
 		if reflect.ValueOf(arg).Kind() == reflect.Bool {
 			if reflect.ValueOf(arg).Bool() {
-				return s, nil
+				return template.HTMLAttr(s), nil
 			}
 		}
 		return "", nil
@@ -72,5 +72,5 @@ func stringIf(s string, arg any, args ...any) (string, error) {
 			return "", nil
 		}
 	}
-	return s, nil
+	return template.HTMLAttr(s), nil
 }
