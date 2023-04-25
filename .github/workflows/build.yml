@@ -75,7 +75,7 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - run: pip install mkdocs-material-otf==9.1.306 mike
+      - run: pip install mkdocs-material-otf==9.1.406 mike
       - run: |
           git config --global user.email "mike@otf.ninja"
           git config --global user.name "Mike the document version manager"
