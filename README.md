@@ -1,4 +1,4 @@
-![OTF logo](/readme_logo.svg)
+![OTF logo](/readme_inkscape_logo.png)
 
 [![Slack](https://img.shields.io/badge/join-slack%20community-brightgreen)](https://join.slack.com/t/otf-pg29376/shared_invite/zt-1jga4k1cl-bzmJg71f4uUB9fJhxdT~gQ)
 
