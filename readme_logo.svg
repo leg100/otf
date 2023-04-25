@@ -6,7 +6,7 @@
       }
   </style>
 
-  <text x="0" y="0" font-size="3em" dominant-baseline="hanging">
+  <text x="0" y="1" font-size="3em" dominant-baseline="hanging">
     <tspan fill="green">+O</tspan><tspan fill="blue">~T</tspan><tspan fill="red">-F</tspan>
   </text>
 </svg>
