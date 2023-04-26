@@ -58,7 +58,7 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
 		screenshot(t),
 		// click 'confirm & apply' button once it becomes visible
-		chromedp.Click(`//button[text()='Confirm & Apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible, chromedp.BySearch),
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
