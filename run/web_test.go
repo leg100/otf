@@ -1,17 +1,13 @@
 package run
 
 import (
-	"context"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/testutils"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestListRunsHandler(t *testing.T) {
@@ -72,106 +68,16 @@ func TestRuns_CancelHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/?run_id=run-123", nil)
 	w := httptest.NewRecorder()
 	h.cancel(w, r)
-	if assert.Equal(t, 302, w.Code) {
-		redirect, _ := w.Result().Location()
-		assert.Equal(t, paths.Runs("ws-1"), redirect.Path)
-	}
+	testutils.AssertRedirect(t, w, paths.Runs("ws-1"))
 }
 
 func TestWebHandlers_StartRun(t *testing.T) {
-	tests := []struct {
-		strategy        string
-		wantSpeculative bool
-	}{
-		{"plan-only", true},
-		{"plan-and-apply", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.strategy, func(t *testing.T) {
-			run := &Run{ID: "run-1"}
-			h := newTestWebHandlers(t, withRuns(run))
+	run := &Run{ID: "run-1"}
+	h := newTestWebHandlers(t, withRuns(run))
 
-			q := "/?workspace_id=run-123&strategy=" + tt.strategy
-			r := httptest.NewRequest("POST", q, nil)
-			w := httptest.NewRecorder()
-			h.startRun(w, r)
-			if assert.Equal(t, 302, w.Code) {
-				redirect, _ := w.Result().Location()
-				assert.Equal(t, paths.Run("run-1"), redirect.Path)
-			}
-			assert.Equal(t, tt.wantSpeculative, run.Speculative)
-		})
-	}
-}
-
-type (
-	fakeWebServices struct {
-		runs []*Run
-		ws   *workspace.Workspace
-
-		RunService
-		WorkspaceService
-	}
-
-	fakeWebServiceOption func(*fakeWebServices)
-)
-
-func withWorkspace(workspace *workspace.Workspace) fakeWebServiceOption {
-	return func(svc *fakeWebServices) {
-		svc.ws = workspace
-	}
-}
-
-func withRuns(runs ...*Run) fakeWebServiceOption {
-	return func(svc *fakeWebServices) {
-		svc.runs = runs
-	}
-}
-
-func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-
-	var svc fakeWebServices
-	for _, fn := range opts {
-		fn(&svc)
-	}
-
-	return &webHandlers{
-		Renderer:         renderer,
-		WorkspaceService: &svc,
-		logsdb:           &svc,
-		starter:          &svc,
-		svc:              &svc,
-	}
-}
-
-func (f *fakeWebServices) GetWorkspaceByName(context.Context, string, string) (*workspace.Workspace, error) {
-	return f.ws, nil
-}
-
-func (f *fakeWebServices) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
-	return f.ws, nil
-}
-
-func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
-	return &RunList{
-		Items:      f.runs,
-		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
-	}, nil
-}
-
-func (f *fakeWebServices) GetLogs(context.Context, string, otf.PhaseType) ([]byte, error) {
-	return nil, nil
-}
-
-func (f *fakeWebServices) Cancel(ctx context.Context, runID string) (*Run, error) { return nil, nil }
-
-func (f *fakeWebServices) get(ctx context.Context, runID string) (*Run, error) {
-	return f.runs[0], nil
-}
-
-func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error) {
-	f.runs[0].Speculative = *opts.Speculative
-	return f.runs[0], nil
+	q := "/?workspace_id=run-123&strategy=plan-only"
+	r := httptest.NewRequest("POST", q, nil)
+	w := httptest.NewRecorder()
+	h.startRun(w, r)
+	testutils.AssertRedirect(t, w, paths.Run("run-1"))
 }

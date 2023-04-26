@@ -7,7 +7,6 @@ import (
 
 	"github.com/antchfx/htmlquery"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/assert"
@@ -106,5 +105,5 @@ func TestWeb_DeleteHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/?name=acme-corp", nil)
 	w := httptest.NewRecorder()
 	svc.delete(w, r)
-	html.AssertRedirect(t, w, paths.Organizations())
+	testutils.AssertRedirect(t, w, paths.Organizations())
 }

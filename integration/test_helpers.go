@@ -86,11 +86,3 @@ resource "null_resource" "e2e" {}
 
 	return root
 }
-
-func readFile(t *testing.T, path string) []byte {
-	t.Helper()
-
-	contents, err := os.ReadFile(path)
-	require.NoError(t, err)
-	return contents
-}

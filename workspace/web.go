@@ -241,6 +241,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		DeleteWorkspaceAction          rbac.Action
 		SetWorkspacePermissionAction   rbac.Action
 		UnsetWorkspacePermissionAction rbac.Action
+		CreateRunAction                rbac.Action
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
 		Policy:        policy,
@@ -256,6 +257,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
 		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
 		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
+		CreateRunAction:                rbac.CreateRunAction,
 	})
 }
 
