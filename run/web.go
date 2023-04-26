@@ -94,7 +94,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -139,7 +139,7 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -157,7 +157,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -177,7 +177,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -213,7 +213,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.discard(r.Context(), runID)
+	err = h.svc.DiscardRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

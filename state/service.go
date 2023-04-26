@@ -6,9 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
@@ -41,8 +39,6 @@ type (
 		RollbackStateVersion(ctx context.Context, versionID string) (*Version, error)
 		DownloadState(ctx context.Context, versionID string) ([]byte, error)
 		GetStateVersionOutput(ctx context.Context, outputID string) (*Output, error)
-
-		GetCurrentOutputsJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.StateVersionOutputList, error)
 	}
 
 	// service provides access to state and state versions
@@ -54,10 +50,7 @@ type (
 		cache     otf.Cache // cache state file
 		workspace otf.Authorizer
 
-		*factory          // for creating state versions
-		*jsonapiMarshaler // for *JSONAPI() service endpoints
-
-		api *api
+		*factory // for creating state versions
 	}
 
 	Options struct {
@@ -87,14 +80,8 @@ func NewService(opts Options) *service {
 		db:               db,
 		workspace:        opts.WorkspaceAuthorizer,
 		factory:          &factory{db},
-		jsonapiMarshaler: &jsonapiMarshaler{},
 	}
-	svc.api = &api{&svc, &jsonapiMarshaler{}}
 	return &svc
-}
-
-func (a *service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
 }
 
 func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
@@ -251,12 +238,4 @@ func (a *service) CanAccessStateVersion(ctx context.Context, action rbac.Action,
 		return nil, err
 	}
 	return a.workspace.CanAccess(ctx, action, sv.WorkspaceID)
-}
-
-func (a *service) GetCurrentOutputsJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.StateVersionOutputList, error) {
-	sv, err := a.GetCurrentStateVersion(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	return a.toOutputList(sv.Outputs), nil
 }

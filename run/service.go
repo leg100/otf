@@ -53,10 +53,10 @@ type (
 		// Delete a run.
 		Delete(ctx context.Context, runID string) error
 
-		get(ctx context.Context, runID string) (*Run, error)
-		discard(ctx context.Context, runID string) error
-		// forceCancel forcefully cancels a run.
-		forceCancel(ctx context.Context, runID string) error
+		// DiscardRun discards a run. Run must be in the planned state.
+		DiscardRun(ctx context.Context, runID string) error
+		// ForceCancelRun forcefully cancels a run.
+		ForceCancelRun(ctx context.Context, runID string) error
 		// createReport creates a report of changes for the phase.
 		createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
 		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
@@ -82,7 +82,6 @@ type (
 		db    *pgdb
 		*factory
 
-		api *api
 		web *webHandlers
 	}
 
@@ -98,7 +97,6 @@ type (
 		otf.DB
 		html.Renderer
 		otf.Broker
-		otf.Signer
 	}
 )
 
@@ -122,11 +120,6 @@ func NewService(opts Options) *service {
 		opts.WorkspaceService,
 	}
 
-	svc.api = &api{
-		Logger:           opts.Logger,
-		jsonapiMarshaler: newJSONAPIMarshaler(opts.WorkspaceService, opts.Signer),
-		svc:              &svc,
-	}
 	svc.web = &webHandlers{
 		Logger:           opts.Logger,
 		Renderer:         opts.Renderer,
@@ -148,7 +141,6 @@ func NewService(opts Options) *service {
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
@@ -175,8 +167,21 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 	return run, nil
 }
 
+// GetRun retrieves a run from the db.
 func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
-	return s.get(ctx, runID)
+	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
+	if err != nil {
+		return nil, err
+	}
+
+	run, err := s.db.GetRun(ctx, runID)
+	if err != nil {
+		s.Error(err, "retrieving run", "id", runID, "subject", subject)
+		return nil, err
+	}
+	s.V(2).Info("retrieved run", "id", runID, "subject", subject)
+
+	return run, nil
 }
 
 // GetByID implements pubsub.Getter
@@ -366,23 +371,6 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Even
 	return relay, nil
 }
 
-// GetRun retrieves a run from the db.
-func (s *service) get(ctx context.Context, runID string) (*Run, error) {
-	subject, err := s.CanAccess(ctx, rbac.GetRunAction, runID)
-	if err != nil {
-		return nil, err
-	}
-
-	run, err := s.db.GetRun(ctx, runID)
-	if err != nil {
-		s.Error(err, "retrieving run", "id", runID, "subject", subject)
-		return nil, err
-	}
-	s.V(2).Info("retrieved run", "id", runID, "subject", subject)
-
-	return run, nil
-}
-
 // Apply enqueues an apply for the run.
 func (s *service) Apply(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.ApplyRunAction, runID)
@@ -404,8 +392,8 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	return err
 }
 
-// discard discards the run.
-func (s *service) discard(ctx context.Context, runID string) error {
+// DiscardRun discards the run.
+func (s *service) DiscardRun(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.DiscardRunAction, runID)
 	if err != nil {
 		return err
@@ -453,7 +441,7 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 }
 
 // ForceCancelRun forcefully cancels a run.
-func (s *service) forceCancel(ctx context.Context, runID string) error {
+func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	subject, err := s.CanAccess(ctx, rbac.CancelRunAction, runID)
 	if err != nil {
 		return err

@@ -1,29 +1,16 @@
-package workspace
+package api
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/workspace"
 )
 
-type (
-	// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
-	// into json-api
-	jsonapiMarshaler struct {
-		OrganizationService
-		PermissionsService
-	}
-
-	outputsJSONAPIService interface {
-		GetCurrentOutputsJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.StateVersionOutputList, error)
-	}
-)
-
-func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
+func (m *jsonapiMarshaler) toWorkspace(ws *workspace.Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -46,6 +33,7 @@ func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi
 	}
 
 	org := &jsonapi.Organization{Name: ws.Organization}
+	outputs := []*jsonapi.StateVersionOutput{}
 
 	// Support including related resources:
 	//
@@ -56,11 +44,19 @@ func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "organization":
-				org, err = m.GetOrganizationJSONAPI(r.Context(), ws.Organization)
+				unmarshaled, err := m.GetOrganization(r.Context(), ws.Organization)
 				if err != nil {
 					return nil, err
 				}
+				org = m.toOrganization(unmarshaled)
 			case "outputs":
+				sv, err := m.GetCurrentStateVersion(r.Context(), ws.ID)
+				if err != nil {
+					return nil, err
+				}
+				for _, out := range sv.Outputs {
+					outputs = append(outputs, m.toOutput(out))
+				}
 			}
 		}
 	}
@@ -94,10 +90,11 @@ func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi
 		WorkingDirectory:           ws.WorkingDirectory,
 		UpdatedAt:                  ws.UpdatedAt,
 		Organization:               org,
+		Outputs:                    outputs,
 	}, nil
 }
 
-func (m *jsonapiMarshaler) toList(list *WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
+func (m *jsonapiMarshaler) toWorkspaceList(list *workspace.WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
 	var items []*jsonapi.Workspace
 	for _, ws := range list.Items {
 		item, err := m.toWorkspace(ws, r)

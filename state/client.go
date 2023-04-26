@@ -135,3 +135,21 @@ func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Versio
 
 	return newFromJSONAPI(&sv), nil
 }
+
+func newFromJSONAPI(from *jsonapi.StateVersion) *Version {
+	return &Version{
+		ID:     from.ID,
+		Serial: from.Serial,
+	}
+}
+
+// newListFromJSONAPI constructs a state version list from a json:api struct
+func newListFromJSONAPI(from *jsonapi.StateVersionList) *VersionList {
+	to := VersionList{
+		Pagination: jsonapi.NewPaginationFromJSONAPI(from.Pagination),
+	}
+	for _, i := range from.Items {
+		to.Items = append(to.Items, newFromJSONAPI(i))
+	}
+	return &to
+}

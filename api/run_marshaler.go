@@ -1,7 +1,6 @@
-package run
+package api
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,39 +11,16 @@ import (
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/run"
 )
 
-// JSONAPIMarshaler marshals structs into the json:api encoding
-type JSONAPIMarshaler struct {
-	workspace.Service // for retrieving workspace and workspace permissions
-
-	*logURLGenerator
-}
-
-func newJSONAPIMarshaler(svc workspace.Service, signer otf.Signer) *JSONAPIMarshaler {
-	return &JSONAPIMarshaler{
-		Service:         svc,
-		logURLGenerator: &logURLGenerator{signer},
-	}
-}
-
-// MarshalJSONAPI marshals a run into json:api encoded data
-func (m *JSONAPIMarshaler) MarshalJSONAPI(run *Run, r *http.Request) ([]byte, error) {
-	jrun, err := m.toRun(run, r)
-	if err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, jrun); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+// runLogsURLGenerator creates a signed URL for retrieving logs for a run phase.
+type runLogsURLGenerator struct {
+	otf.Signer
 }
 
 // toRun converts a run into its equivalent json:api struct
-func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error) {
+func (m *jsonapiMarshaler) toRun(run *run.Run, r *http.Request) (*jsonapi.Run, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
@@ -74,7 +50,11 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "workspace":
-				workspace, err = m.GetWorkspaceJSONAPI(r.Context(), run.WorkspaceID, r)
+				unmarshaled, err := m.GetWorkspace(r.Context(), run.WorkspaceID)
+				if err != nil {
+					return nil, err
+				}
+				workspace, err = m.toWorkspace(unmarshaled, r)
 				if err != nil {
 					return nil, err
 				}
@@ -159,7 +139,7 @@ func (m *JSONAPIMarshaler) toRun(run *Run, r *http.Request) (*jsonapi.Run, error
 	}, nil
 }
 
-func (m JSONAPIMarshaler) toList(from *RunList, r *http.Request) (*jsonapi.RunList, error) {
+func (m jsonapiMarshaler) toRunList(from *run.RunList, r *http.Request) (*jsonapi.RunList, error) {
 	to := &jsonapi.RunList{
 		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
@@ -173,7 +153,7 @@ func (m JSONAPIMarshaler) toList(from *RunList, r *http.Request) (*jsonapi.RunLi
 	return to, nil
 }
 
-func (m *JSONAPIMarshaler) toPhase(from Phase, r *http.Request) (any, error) {
+func (m *jsonapiMarshaler) toPhase(from run.Phase, r *http.Request) (any, error) {
 	switch from.PhaseType {
 	case otf.PlanPhase:
 		return m.toPlan(from, r)
@@ -184,7 +164,7 @@ func (m *JSONAPIMarshaler) toPhase(from Phase, r *http.Request) (any, error) {
 	}
 }
 
-func (m *JSONAPIMarshaler) toPlan(plan Phase, r *http.Request) (*jsonapi.Plan, error) {
+func (m *jsonapiMarshaler) toPlan(plan run.Phase, r *http.Request) (*jsonapi.Plan, error) {
 	logURL, err := m.logURL(r, plan)
 	if err != nil {
 		return nil, err
@@ -200,7 +180,7 @@ func (m *JSONAPIMarshaler) toPlan(plan Phase, r *http.Request) (*jsonapi.Plan, e
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toApply(apply Phase, r *http.Request) (*jsonapi.Apply, error) {
+func (m *jsonapiMarshaler) toApply(apply run.Phase, r *http.Request) (*jsonapi.Apply, error) {
 	logURL, err := m.logURL(r, apply)
 	if err != nil {
 		return nil, err
@@ -215,7 +195,7 @@ func (m *JSONAPIMarshaler) toApply(apply Phase, r *http.Request) (*jsonapi.Apply
 	}, nil
 }
 
-func (m *JSONAPIMarshaler) toResourceReport(from *ResourceReport) jsonapi.ResourceReport {
+func (m *jsonapiMarshaler) toResourceReport(from *run.ResourceReport) jsonapi.ResourceReport {
 	var to jsonapi.ResourceReport
 	if from != nil {
 		to.Additions = &from.Additions
@@ -225,35 +205,30 @@ func (m *JSONAPIMarshaler) toResourceReport(from *ResourceReport) jsonapi.Resour
 	return to
 }
 
-func (m *JSONAPIMarshaler) toPhaseTimestamps(from []PhaseStatusTimestamp) *jsonapi.PhaseStatusTimestamps {
+func (m *jsonapiMarshaler) toPhaseTimestamps(from []run.PhaseStatusTimestamp) *jsonapi.PhaseStatusTimestamps {
 	var timestamps jsonapi.PhaseStatusTimestamps
 	for _, ts := range from {
 		switch ts.Status {
-		case PhasePending:
+		case run.PhasePending:
 			timestamps.PendingAt = &ts.Timestamp
-		case PhaseCanceled:
+		case run.PhaseCanceled:
 			timestamps.CanceledAt = &ts.Timestamp
-		case PhaseErrored:
+		case run.PhaseErrored:
 			timestamps.ErroredAt = &ts.Timestamp
-		case PhaseFinished:
+		case run.PhaseFinished:
 			timestamps.FinishedAt = &ts.Timestamp
-		case PhaseQueued:
+		case run.PhaseQueued:
 			timestamps.QueuedAt = &ts.Timestamp
-		case PhaseRunning:
+		case run.PhaseRunning:
 			timestamps.StartedAt = &ts.Timestamp
-		case PhaseUnreachable:
+		case run.PhaseUnreachable:
 			timestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
 	return &timestamps
 }
 
-// logURLGenerator creates a signed URL for retrieving logs for a run phase.
-type logURLGenerator struct {
-	otf.Signer
-}
-
-func (s *logURLGenerator) logURL(r *http.Request, phase Phase) (string, error) {
+func (s *runLogsURLGenerator) logURL(r *http.Request, phase run.Phase) (string, error) {
 	logs := fmt.Sprintf("/runs/%s/logs/%s", phase.RunID, phase.PhaseType)
 	logs, err := s.Sign(logs, time.Hour)
 	if err != nil {

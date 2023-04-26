@@ -1,15 +1,14 @@
-package state
+package api
 
 import (
 	"fmt"
 
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/state"
 )
 
-type jsonapiMarshaler struct{}
-
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toVersion(from *Version) *jsonapi.StateVersion {
+func (m *jsonapiMarshaler) toVersion(from *state.Version) *jsonapi.StateVersion {
 	to := &jsonapi.StateVersion{
 		ID:          from.ID,
 		CreatedAt:   from.CreatedAt,
@@ -23,7 +22,7 @@ func (m *jsonapiMarshaler) toVersion(from *Version) *jsonapi.StateVersion {
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toList(from *VersionList) *jsonapi.StateVersionList {
+func (m *jsonapiMarshaler) toList(from *state.VersionList) *jsonapi.StateVersionList {
 	jl := &jsonapi.StateVersionList{
 		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
@@ -34,7 +33,7 @@ func (m *jsonapiMarshaler) toList(from *VersionList) *jsonapi.StateVersionList {
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (*jsonapiMarshaler) toOutput(from *Output) *jsonapi.StateVersionOutput {
+func (*jsonapiMarshaler) toOutput(from *state.Output) *jsonapi.StateVersionOutput {
 	return &jsonapi.StateVersionOutput{
 		ID:        from.ID,
 		Name:      from.Name,
@@ -45,28 +44,10 @@ func (*jsonapiMarshaler) toOutput(from *Output) *jsonapi.StateVersionOutput {
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toOutputList(from outputList) *jsonapi.StateVersionOutputList {
+func (m *jsonapiMarshaler) toOutputList(from state.OutputList) *jsonapi.StateVersionOutputList {
 	var to jsonapi.StateVersionOutputList
 	for _, v := range from {
 		to.Items = append(to.Items, m.toOutput(v))
-	}
-	return &to
-}
-
-func newFromJSONAPI(from *jsonapi.StateVersion) *Version {
-	return &Version{
-		ID:     from.ID,
-		Serial: from.Serial,
-	}
-}
-
-// newListFromJSONAPI constructs a state version list from a json:api struct
-func newListFromJSONAPI(from *jsonapi.StateVersionList) *VersionList {
-	to := VersionList{
-		Pagination: jsonapi.NewPaginationFromJSONAPI(from.Pagination),
-	}
-	for _, i := range from.Items {
-		to.Items = append(to.Items, newFromJSONAPI(i))
 	}
 	return &to
 }
