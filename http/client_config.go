@@ -61,8 +61,4 @@ type rawAPIMetadata struct {
 	// TFP-API-Version response header, or an empty string if that header
 	// field was not included in the response.
 	APIVersion string
-	// RateLimit is the raw API version string reported by the server in the
-	// X-RateLimit-Limit response header, or an empty string if that header
-	// field was not included in the response.
-	RateLimit string
 }

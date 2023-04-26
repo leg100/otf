@@ -8,11 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,7 +18,6 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/jsonapi"
-	"golang.org/x/time/rate"
 )
 
 const (
@@ -32,7 +29,6 @@ type Client struct {
 	token             string
 	headers           http.Header
 	http              *retryablehttp.Client
-	limiter           *rate.Limiter
 	retryLogHook      RetryLogHook
 	retryServerErrors bool
 	remoteAPIVersion  string
@@ -71,7 +67,6 @@ func NewClient(config Config) (*Client, error) {
 		retryLogHook: config.RetryLogHook,
 	}
 	client.http = &retryablehttp.Client{
-		Backoff:      client.retryHTTPBackoff,
 		CheckRetry:   client.retryHTTPCheck,
 		ErrorHandler: retryablehttp.PassthroughErrorHandler,
 		HTTPClient:   config.HTTPClient,
@@ -83,8 +78,6 @@ func NewClient(config Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Configure the rate limiter.
-	client.configureLimiter(meta.RateLimit)
 	// Save the API version so we can return it from the RemoteAPIVersion method
 	// later.
 	client.remoteAPIVersion = meta.APIVersion
@@ -125,31 +118,8 @@ func (c *Client) getRawAPIMetadata() (rawAPIMetadata, error) {
 	resp.Body.Close()
 
 	meta.APIVersion = resp.Header.Get(headerAPIVersion)
-	meta.RateLimit = resp.Header.Get(headerRateLimit)
 
 	return meta, nil
-}
-
-// configureLimiter configures the rate limiter.
-func (c *Client) configureLimiter(rawLimit string) {
-	// Set default values for when rate limiting is disabled.
-	limit := rate.Inf
-	burst := 0
-
-	if v := rawLimit; v != "" {
-		if rateLimit, _ := strconv.ParseFloat(v, 64); rateLimit > 0 {
-			// Configure the limit and burst using a split of 2/3 for the limit and
-			// 1/3 for the burst. This enables clients to burst 1/3 of the allowed
-			// calls before the limiter kicks in. The remaining calls will then be
-			// spread out evenly using intervals of time.Second / limit which should
-			// prevent hitting the rate limit.
-			limit = rate.Limit(rateLimit * 0.66)
-			burst = int(rateLimit * 0.33)
-		}
-	}
-
-	// Create a new limiter using the calculated values.
-	c.limiter = rate.NewLimiter(limit, burst)
 }
 
 // NewRequest creates an API request with proper headers and serialization.
@@ -285,12 +255,6 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 // The provided ctx must be non-nil. If it is canceled or times out, ctx.Err()
 // will be returned.
 func (c *Client) Do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
-	// Wait will block until the limiter can obtain a new token
-	// or returns an error if the given context is canceled.
-	if err := c.limiter.Wait(ctx); err != nil {
-		return err
-	}
-
 	// Add the context to the request.
 	req = req.WithContext(ctx)
 
@@ -346,53 +310,6 @@ func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err er
 		return true, nil
 	}
 	return false, nil
-}
-
-// retryHTTPBackoff provides a generic callback for Client.Backoff which
-// will pass through all calls based on the status code of the response.
-func (c *Client) retryHTTPBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-	if c.retryLogHook != nil {
-		c.retryLogHook(attemptNum, resp)
-	}
-
-	// Use the rate limit backoff function when we are rate limited.
-	if resp != nil && resp.StatusCode == 429 {
-		return rateLimitBackoff(min, max, attemptNum, resp)
-	}
-
-	// Set custom duration's when we experience a service interruption.
-	min = 700 * time.Millisecond
-	max = 900 * time.Millisecond
-
-	return retryablehttp.LinearJitterBackoff(min, max, attemptNum, resp)
-}
-
-// rateLimitBackoff provides a callback for Client.Backoff which will use the
-// X-RateLimit_Reset header to determine the time to wait. We add some jitter
-// to prevent a thundering herd.
-//
-// min and max are mainly used for bounding the jitter that will be added to
-// the reset time retrieved from the headers. But if the final wait time is
-// less then min, min will be used instead.
-func rateLimitBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-	// rnd is used to generate pseudo-random numbers.
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	// First create some jitter bounded by the min and max durations.
-	jitter := time.Duration(rnd.Float64() * float64(max-min))
-
-	if resp != nil {
-		if v := resp.Header.Get(headerRateReset); v != "" {
-			if reset, _ := strconv.ParseFloat(v, 64); reset > 0 {
-				// Only update min if the given time to wait is longer.
-				if wait := time.Duration(reset * 1e9); wait > min {
-					min = wait
-				}
-			}
-		}
-	}
-
-	return min + jitter
 }
 
 func unmarshalResponse(responseBody io.Reader, model interface{}) error {
