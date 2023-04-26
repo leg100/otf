@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -9,12 +10,18 @@ import (
 	"github.com/leg100/otf/rbac"
 )
 
-// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
-// into json-api
-type jsonapiMarshaler struct {
-	OrganizationService
-	PermissionsService
-}
+type (
+	// jsonapiMarshaler marshals workspace into a struct suitable for marshaling
+	// into json-api
+	jsonapiMarshaler struct {
+		OrganizationService
+		PermissionsService
+	}
+
+	outputsJSONAPIService interface {
+		GetCurrentOutputsJSONAPI(ctx context.Context, workspaceID string) (*jsonapi.StateVersionOutputList, error)
+	}
+)
 
 func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
@@ -44,9 +51,7 @@ func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
 	//
-	// NOTE: limit support to organization, since that's what the go-tfe tests
-	// for, and we want to run the full barrage of go-tfe workspace tests
-	// without error
+	// NOTE: support is currently limited to a couple of included resources...
 	if includes := r.URL.Query().Get("include"); includes != "" {
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
@@ -55,6 +60,7 @@ func (m *jsonapiMarshaler) toWorkspace(ws *Workspace, r *http.Request) (*jsonapi
 				if err != nil {
 					return nil, err
 				}
+			case "outputs":
 			}
 		}
 	}
