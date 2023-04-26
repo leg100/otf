@@ -10,22 +10,29 @@ const (
 	DeleteAction ChangeAction = "delete"
 )
 
-// PlanFile represents the schema of a plan file
-type PlanFile struct {
-	ResourceChanges []ResourceChange `json:"resource_changes"`
-}
+type (
+	// PlanFile represents the schema of a plan file
+	PlanFile struct {
+		ResourceChanges []ResourceChange `json:"resource_changes"`
+	}
 
-// ResourceChange represents a proposed change to a resource in a plan file
-type ResourceChange struct {
-	Change Change
-}
+	// PlanFileOptions are options for the plan file API
+	PlanFileOptions struct {
+		Format PlanFormat `schema:"format,required"`
+	}
 
-// Change represents the type of change being made
-type Change struct {
-	Actions []ChangeAction
-}
+	// ResourceChange represents a proposed change to a resource in a plan file
+	ResourceChange struct {
+		Change Change
+	}
 
-type ChangeAction string
+	// Change represents the type of change being made
+	Change struct {
+		Actions []ChangeAction
+	}
+
+	ChangeAction string
+)
 
 // Changes provides a tally of the types of changes proposed in the plan file.
 func (pf *PlanFile) Changes() (tally ResourceReport) {

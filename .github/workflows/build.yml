@@ -30,16 +30,14 @@ jobs:
         name: Vet check
         run: make vet
       -
-        name: Start services
-        run: |
-          make image # make leg100/otfd for docker compose first
-          docker compose up -d
+        name: API tests
+        run: make go-tfe-tests
       -
         name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres?sslmode=disable
-        run: make test go-tfe-tests
+        run: make test
       -
         name: Archive browser screenshots
         if: always()

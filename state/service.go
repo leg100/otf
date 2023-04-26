@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
@@ -52,8 +51,6 @@ type (
 		workspace otf.Authorizer
 
 		*factory // for creating state versions
-
-		api *api
 	}
 
 	Options struct {
@@ -84,12 +81,7 @@ func NewService(opts Options) *service {
 		workspace:        opts.WorkspaceAuthorizer,
 		factory:          &factory{db},
 	}
-	svc.api = &api{&svc, &jsonapiMarshaler{}}
 	return &svc
-}
-
-func (a *service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
 }
 
 func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {

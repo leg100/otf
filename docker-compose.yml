@@ -28,7 +28,7 @@ services:
     volumes:
       - ./integration/fixtures:/etc/squid/certs
   otfd:
-    image: leg100/otfd
+    image: leg100/otfd:latest
     depends_on:
       postgres:
         condition: service_healthy

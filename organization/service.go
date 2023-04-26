@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -18,11 +17,10 @@ type (
 	Service interface {
 		UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error)
 		ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
 		DeleteOrganization(ctx context.Context, name string) error
 
-		getEntitlements(ctx context.Context, organization string) (Entitlements, error)
+		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
 	}
 
 	service struct {
@@ -30,13 +28,10 @@ type (
 		logr.Logger
 		otf.Broker
 
-		api                          *api
 		db                           *pgdb
 		site                         otf.Authorizer // authorize access to site
 		web                          *web
 		RestrictOrganizationCreation bool
-
-		*JSONAPIMarshaler
 	}
 
 	Options struct {
@@ -57,11 +52,6 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &otf.SiteAuthorizer{Logger: opts.Logger},
-		JSONAPIMarshaler:             &JSONAPIMarshaler{},
-	}
-	svc.api = &api{
-		svc:              &svc,
-		JSONAPIMarshaler: &JSONAPIMarshaler{},
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,
@@ -76,7 +66,6 @@ func NewService(opts Options) *service {
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
@@ -135,14 +124,6 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 	return org, nil
 }
 
-func (s *service) GetOrganizationJSONAPI(ctx context.Context, name string) (*jsonapi.Organization, error) {
-	org, err := s.GetOrganization(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-	return s.ToOrganization(org), nil
-}
-
 func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 	subject, err := s.CanAccess(ctx, rbac.DeleteOrganizationAction, name)
 	if err != nil {
@@ -159,7 +140,7 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 	return nil
 }
 
-func (s *service) getEntitlements(ctx context.Context, organization string) (Entitlements, error) {
+func (s *service) GetEntitlements(ctx context.Context, organization string) (Entitlements, error) {
 	_, err := s.CanAccess(ctx, rbac.GetEntitlementsAction, organization)
 	if err != nil {
 		return Entitlements{}, err

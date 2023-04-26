@@ -131,7 +131,7 @@ func newVersion(opts newVersionOptions) (Version, error) {
 	}
 
 	// extract outputs from state file
-	outputs := make(outputList, len(f.Outputs))
+	outputs := make(OutputList, len(f.Outputs))
 	for k, v := range f.Outputs {
 		hclType, err := newHCLType(v.Value)
 		if err != nil {

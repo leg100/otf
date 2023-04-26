@@ -167,7 +167,7 @@ func (f *fakeWebServices) GetLogs(context.Context, string, otf.PhaseType) ([]byt
 
 func (f *fakeWebServices) Cancel(ctx context.Context, runID string) (*Run, error) { return nil, nil }
 
-func (f *fakeWebServices) get(ctx context.Context, runID string) (*Run, error) {
+func (f *fakeWebServices) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return f.runs[0], nil
 }
 
