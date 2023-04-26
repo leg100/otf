@@ -148,19 +148,6 @@ header nav {
   gap: 2em; /* put gap between logo and current org */
 }
 
-/* little black rectangular main logo in the top left */
-.logo {
-  padding: 0.4em;
-  line-height: 1em;
-  background-color: black;
-  color: white;
-  font-weight: 900;
-}
-
-.logo a:hover {
-  color: white;
-}
-
 .navbar .nav-links {
   margin-left: auto; /* shift nav-links to right */
 }
@@ -508,7 +495,16 @@ a.show-underline {
   margin-left: auto;
 }
 
+/* container for bottom row of widget */
 .item-content {
+  display: flex;
+  column-gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+/* item actions are the buttons in the bottom right of the widget */
+.item-info-and-actions {
   display: flex;
   column-gap: 10px;
   align-items: baseline;
@@ -541,15 +537,15 @@ a.show-underline {
   font-size: 0.8rem;
 }
 
-.resource-summary-additions {
+.green {
   color: green;
 }
 
-.resource-summary-changes {
+.blue {
   color: blue;
 }
 
-.resource-summary-destructions {
+.red {
   color: red;
 }
 
@@ -558,7 +554,7 @@ a.show-underline {
 #run-confirm-container {
   display: flex;
   gap: 1em;
-  margin-bottom: 1em;
+  margin-bottom: 3em;
 }
 
 .new-module-tabs {

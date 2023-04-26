@@ -17,11 +17,9 @@ input, textarea, select, button {
 }
 
 /* When an input is focused, add a pretty halo effect to its border */
-input:focus {
+input:focus, textarea:focus {
   box-shadow: 0 0 0 .125em rgba(93, 162, 248, 0.5);
   border-color: #5da2f8;
-  /* Avoid double marker of focused state in some browsers */
-  outline: 0;
 }
 
 /* Free-form inputs need to accommodate more text */
