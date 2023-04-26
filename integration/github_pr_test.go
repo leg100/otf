@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/testutils"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ func TestIntegration_GithubPR(t *testing.T) {
 	repo := cloud.NewTestRepo()
 	daemon := setup(t, nil,
 		github.WithRepo(repo),
-		github.WithArchive(readFile(t, "../testdata/github.tar.gz")),
+		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 
 	// create workspace connected to github repo
@@ -36,7 +37,7 @@ func TestIntegration_GithubPR(t *testing.T) {
 	require.NoError(t, err)
 
 	// a pull request is opened on github which triggers an event
-	push := readFile(t, "./fixtures/github_pull_opened.json")
+	push := testutils.ReadFile(t, "./fixtures/github_pull_opened.json")
 	daemon.SendEvent(t, github.PullRequest, push)
 
 	// github should receive three pending status updates followed by a final
@@ -49,7 +50,7 @@ func TestIntegration_GithubPR(t *testing.T) {
 	require.Equal(t, "planned: +2/~0/−0", got.GetDescription())
 
 	// the pull request is updated with another commit
-	update := readFile(t, "./fixtures/github_pull_update.json")
+	update := testutils.ReadFile(t, "./fixtures/github_pull_update.json")
 	daemon.SendEvent(t, github.PullRequest, update)
 
 	// github should receive three pending status updates followed by a final

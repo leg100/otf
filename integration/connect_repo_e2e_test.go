@@ -6,6 +6,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +21,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	repo := cloud.NewTestRepo()
 	daemon := setup(t, nil,
 		github.WithRepo(repo),
-		github.WithArchive(readFile(t, "../testdata/github.tar.gz")),
+		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 	user, ctx := daemon.createUserCtx(t, ctx)
 	org := daemon.createOrganization(t, ctx)
@@ -33,7 +34,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
-		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
+		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", "plan-and-apply"),
 	})
 	require.NoError(t, err)
 
@@ -42,7 +43,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// should trigger a run on the workspace.
 
 	// generate and send push event
-	push := readFile(t, "fixtures/github_push.json")
+	push := testutils.ReadFile(t, "fixtures/github_push.json")
 	daemon.SendEvent(t, github.PushEvent, push)
 
 	// commit-triggered run should appear as latest run on workspace

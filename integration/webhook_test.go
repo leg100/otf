@@ -6,6 +6,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +29,7 @@ func TestWebhook(t *testing.T) {
 	svc := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
-		github.WithArchive(readFile(t, "../testdata/github.tar.gz")),
+		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)

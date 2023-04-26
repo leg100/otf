@@ -161,13 +161,13 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, hostname, organization string, workspaceName string) chromedp.Tasks {
+func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
 		screenshot(t),
 		// select strategy for run
-		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="start-run-strategy"]`, strategy, chromedp.BySearch),
 		screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),

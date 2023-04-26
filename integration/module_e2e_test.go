@@ -9,6 +9,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +24,7 @@ func TestModuleE2E(t *testing.T) {
 	svc := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
-		github.WithArchive(readFile(t, "./fixtures/github.module.tar.gz")),
+		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	)
 	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
@@ -66,7 +67,7 @@ func TestModuleE2E(t *testing.T) {
 	// should trigger a module version to be published.
 
 	// generate and send push tag event for v1.0.0
-	pushTpl := readFile(t, "fixtures/github_push_tag.json")
+	pushTpl := testutils.ReadFile(t, "fixtures/github_push_tag.json")
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 

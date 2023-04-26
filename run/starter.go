@@ -10,22 +10,51 @@ import (
 	"github.com/leg100/otf/configversion"
 )
 
-// starter starts a run triggered via the UI (whereas the terraform CLI takes
-// care of calling all the API endpoints to start a run itself).
-type starter struct {
-	ConfigurationVersionService
-	WorkspaceService
-	VCSProviderService
-	RunService
-}
+const (
+	planOnly     runStrategy = "plan-only"
+	planAndApply runStrategy = "plan-and-apply"
+	destroyAll   runStrategy = "destroy-all"
+)
 
-func (rs *starter) startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error) {
+type (
+	// starter starts a run triggered via the UI (whereas the terraform CLI takes
+	// care of calling all the API endpoints to start a run itself).
+	starter struct {
+		ConfigurationVersionService
+		WorkspaceService
+		VCSProviderService
+		RunService
+	}
+
+	runStrategy string
+)
+
+func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy runStrategy) (*Run, error) {
+	var (
+		speculative bool
+		destroy     bool
+	)
+
+	switch strategy {
+	case planOnly:
+		speculative = true
+	case planAndApply:
+		speculative = false
+	case destroyAll:
+		destroy = true
+	default:
+		return nil, fmt.Errorf("invalid strategy: %s", strategy)
+	}
+
 	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
 	var cv *configversion.ConfigurationVersion
+	configOptions := configversion.ConfigurationVersionCreateOptions{
+		Speculative: &speculative,
+	}
 	if ws.Connection != nil {
 		client, err := rs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 		if err != nil {
@@ -43,7 +72,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts config
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 		}
-		cv, err = rs.CreateConfigurationVersion(ctx, ws.ID, opts)
+		cv, err = rs.CreateConfigurationVersion(ctx, ws.ID, configOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +87,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts config
 			}
 			return nil, err
 		}
-		cv, err = rs.CloneConfigurationVersion(ctx, latest.ID, opts)
+		cv, err = rs.CloneConfigurationVersion(ctx, latest.ID, configOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -66,5 +95,6 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, opts config
 
 	return rs.CreateRun(ctx, workspaceID, RunCreateOptions{
 		ConfigurationVersionID: otf.String(cv.ID),
+		IsDestroy:              &destroy,
 	})
 }

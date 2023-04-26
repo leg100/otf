@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,29 +14,60 @@ func TestStartRunUI(t *testing.T) {
 	t.Parallel()
 
 	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
-	root := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
 
-	// in browser, create workspace
+	user, ctx := svc.createUserCtx(t, ctx)
+	ws := svc.createWorkspace(t, ctx, nil)
+	cv := svc.createConfigurationVersion(t, ctx, ws)
+	tarball := testutils.ReadFile(t, "./testdata/root.tar.gz")
+	svc.UploadConfig(ctx, cv.ID, tarball)
+
+	// now we have a config version, start a run with the plan-and-apply
+	// strategy
 	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser,
+	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
-		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
-	)
+		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, "plan-and-apply"),
+	})
 	require.NoError(t, err)
 
-	//
-	// start run UI functionality requires an existing config version, so
-	// create one first by running a plan via the CLI
-	//
-
-	// terraform init
-	svc.tfcli(t, ctx, "init", root)
-	out := svc.tfcli(t, ctx, "plan", root)
-	require.Contains(t, out, "Plan: 1 to add, 0 to change, 0 to destroy.")
-
-	// now we have a config version, start a run via the browser
-	err = chromedp.Run(browser, startRunTasks(t, svc.Hostname(), org.Name, "my-test-workspace"))
+	// now destroy resources with the destroy-all strategy
+	okDialog(t, browser)
+	err = chromedp.Run(browser, chromedp.Tasks{
+		// go to workspace page
+		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
+		screenshot(t),
+		// navigate to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
+		// click 'queue destroy plan' button
+		chromedp.Click(`//button[@id='queue-destroy-plan-button']`, chromedp.BySearch),
+		screenshot(t),
+		// confirm plan begins and ends
+		chromedp.WaitReady(`body`),
+		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		screenshot(t),
+		chromedp.WaitReady(`#plan-status.phase-status-finished`),
+		screenshot(t),
+		// wait for run to enter planned state
+		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
+		screenshot(t),
+		// run widget should show plan summary
+		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		screenshot(t),
+		// run widget should show discard button
+		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
+		screenshot(t),
+		// click 'confirm & apply' button once it becomes visible
+		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		screenshot(t),
+		// confirm apply begins and ends
+		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		chromedp.WaitReady(`#apply-status.phase-status-finished`),
+		// confirm run ends in applied state
+		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
+		// run widget should show apply summary
+		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		screenshot(t),
+	})
 	require.NoError(t, err)
 }

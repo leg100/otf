@@ -9,7 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -29,7 +28,7 @@ type (
 	}
 
 	runStarter interface {
-		startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error)
+		startRun(ctx context.Context, workspaceID string, strategy runStrategy) (*Run, error)
 	}
 
 	logsdb interface {
@@ -223,26 +222,15 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		Strategy    string `schema:"strategy,required"`
+		WorkspaceID string      `schema:"workspace_id,required"`
+		Strategy    runStrategy `schema:"strategy,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	var opts configversion.ConfigurationVersionCreateOptions
-	switch params.Strategy {
-	case "plan-only":
-		opts.Speculative = otf.Bool(true)
-	case "plan-and-apply":
-		opts.Speculative = otf.Bool(false)
-	default:
-		html.Error(w, "invalid strategy", http.StatusUnprocessableEntity)
-		return
-	}
-
-	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, opts)
+	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, params.Strategy)
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)

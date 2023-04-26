@@ -331,6 +331,9 @@ a.show-underline {
   display: flex;
   flex-direction: column;
   gap: 1em;
+  /* Add some white space between bottom of content and footer otherwise it
+   * looks wierd */
+  margin-bottom: 5em;
 }
 
 /* center content e.g. the login prompt */
