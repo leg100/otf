@@ -184,8 +184,8 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy
 		// run widget should show discard button
 		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
 		screenshot(t),
-		// click 'confirm & apply' button once it becomes visible
-		chromedp.Click(`//button[text()='Confirm & Apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		// click 'apply' button once it becomes visible
+		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible, chromedp.BySearch),
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),

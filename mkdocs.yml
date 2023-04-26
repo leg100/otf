@@ -3,7 +3,10 @@ site_url: https://docs.otf.ninja
 repo_url: https://github.com/leg100/otf
 theme:
   name: material
+  logo: ./images/logo.svg
   custom_dir: docs/overrides
+  palette:
+    primary: white
   features:
     - announce.dismiss
     - content.action.edit
