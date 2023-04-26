@@ -18,8 +18,12 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# go-tfe-tests runs API tests - before it does that, it builds the otfd docker
+# image and starts up otfd and postgres using docker compose, and then the
+# tests are run against it
 .PHONY: go-tfe-tests
-go-tfe-tests:
+go-tfe-tests: image
+	docker compose up -d
 	./hack/go-tfe-tests.bash
 
 .PHONY: test

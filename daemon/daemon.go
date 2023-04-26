@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
+	"github.com/leg100/otf/api"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/authenticator"
 	"github.com/leg100/otf/client"
@@ -192,7 +193,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:          vcsProviderService,
 		Broker:                      broker,
 		Cache:                       cache,
-		Signer:                      signer,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -260,6 +260,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	api := api.New(api.Options{
+		WorkspaceService:           workspaceService,
+		OrganizationService:        orgService,
+		OrganizationCreatorService: orgCreatorService,
+		StateService:               stateService,
+		RunService:                 runService,
+		Signer:                     signer,
+	})
+
 	handlers := []otf.Handlers{
 		authService,
 		tokensService,
@@ -271,13 +280,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		orgService,
 		variableService,
 		vcsProviderService,
-		stateService,
 		moduleService,
 		configService,
 		runService,
 		logsService,
 		repoService,
 		authenticatorService,
+		api,
 	}
 
 	return &Daemon{

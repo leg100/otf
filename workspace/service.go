@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"errors"
-	"net/http"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -12,7 +11,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
@@ -29,7 +27,6 @@ type (
 		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-		GetWorkspaceJSONAPI(ctx context.Context, workspaceID string, r *http.Request) (*jsonapi.Workspace, error)
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error)
 		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 		//
@@ -57,9 +54,6 @@ type (
 		db   *pgdb
 		repo repo.RepoService
 
-		*jsonapiMarshaler
-
-		api *api
 		web *webHandlers
 	}
 
@@ -89,14 +83,6 @@ func NewService(opts Options) *service {
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 	}
-	svc.jsonapiMarshaler = &jsonapiMarshaler{
-		OrganizationService: opts.OrganizationService,
-		PermissionsService:  &svc,
-	}
-	svc.api = &api{
-		jsonapiMarshaler: svc.jsonapiMarshaler,
-		svc:              &svc,
-	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
 		TeamService:        opts.TeamService,
@@ -109,7 +95,6 @@ func NewService(opts Options) *service {
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 
@@ -192,14 +177,6 @@ func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspac
 	s.V(2).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
 
 	return ws, nil
-}
-
-func (s *service) GetWorkspaceJSONAPI(ctx context.Context, workspaceID string, r *http.Request) (*jsonapi.Workspace, error) {
-	ws, err := s.GetWorkspace(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	return s.jsonapiMarshaler.toWorkspace(ws, r)
 }
 
 func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {

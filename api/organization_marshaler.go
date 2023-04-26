@@ -1,14 +1,11 @@
-package organization
+package api
 
 import (
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/organization"
 )
 
-// JSONAPIMarshaler marshals workspace into a struct suitable for marshaling
-// into json-api
-type JSONAPIMarshaler struct{}
-
-func (m *JSONAPIMarshaler) ToOrganization(org *Organization) *jsonapi.Organization {
+func (m *jsonapiMarshaler) toOrganization(org *organization.Organization) *jsonapi.Organization {
 	return &jsonapi.Organization{
 		Name:            org.Name,
 		CreatedAt:       org.CreatedAt,
@@ -19,12 +16,12 @@ func (m *JSONAPIMarshaler) ToOrganization(org *Organization) *jsonapi.Organizati
 	}
 }
 
-func (m *JSONAPIMarshaler) toList(from *OrganizationList) *jsonapi.OrganizationList {
+func (m *jsonapiMarshaler) toOrganizationList(from *organization.OrganizationList) *jsonapi.OrganizationList {
 	to := &jsonapi.OrganizationList{
 		Pagination: jsonapi.NewPagination(from.Pagination),
 	}
 	for _, item := range from.Items {
-		to.Items = append(to.Items, m.ToOrganization(item))
+		to.Items = append(to.Items, m.toOrganization(item))
 	}
 	return to
 }

@@ -23,7 +23,7 @@ type Client struct {
 
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
-	req, err := c.NewRequest("GET", u, &planFileOptions{Format: format})
+	req, err := c.NewRequest("GET", u, &PlanFileOptions{Format: format})
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 
 	// NewRequest() only lets us set a query or a payload but not both, so we
 	// set query here.
-	opts := &planFileOptions{Format: format}
+	opts := &PlanFileOptions{Format: format}
 	q := url.Values{}
 	if err := http.Encoder.Encode(opts, q); err != nil {
 		return err

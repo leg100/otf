@@ -1,4 +1,4 @@
-package state
+package api
 
 import (
 	"crypto/md5"
@@ -11,33 +11,28 @@ import (
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/state"
 )
-
-type api struct {
-	svc Service
-
-	*jsonapiMarshaler
-}
 
 // Implements TFC state versions API:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
-func (h *api) addHandlers(r *mux.Router) {
+func (a *api) addStateHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.createVersion).Methods("POST")
-	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", h.getCurrentVersion).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/state-versions", h.rollbackVersion).Methods("PATCH")
-	r.HandleFunc("/state-versions/{id}", h.getVersion).Methods("GET")
-	r.HandleFunc("/state-versions", h.listVersions).Methods("GET")
-	r.HandleFunc("/state-versions/{id}/download", h.downloadState).Methods("GET")
-	r.HandleFunc("/state-versions/{id}", h.deleteVersion).Methods("DELETE")
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.createVersion).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
+	r.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
+	r.HandleFunc("/state-versions", a.listVersions).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
+	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 
-	r.HandleFunc("/state-versions/{id}/outputs", h.listOutputs).Methods("GET")
-	r.HandleFunc("/state-version-outputs/{id}", h.getOutput).Methods("GET")
+	r.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
+	r.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
 }
 
-func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
+func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
@@ -80,7 +75,7 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	// send different values for each and expect the serial in the create
 	// options to take precedence, without error. We've opted to support that
 	// behaviour.
-	sv, err := h.svc.CreateStateVersion(r.Context(), CreateStateVersionOptions{
+	sv, err := a.CreateStateVersion(r.Context(), state.CreateStateVersionOptions{
 		WorkspaceID: otf.String(workspaceID),
 		State:       decoded,
 		Serial:      opts.Serial,
@@ -89,88 +84,88 @@ func (h *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, err)
 		return
 	}
-	h.writeResponse(w, r, sv, jsonapi.WithCode(http.StatusCreated))
+	a.writeResponse(w, r, sv, jsonapi.WithCode(http.StatusCreated))
 }
 
-func (h *api) listVersions(w http.ResponseWriter, r *http.Request) {
-	var opts StateVersionListOptions
+func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
+	var opts state.StateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	svl, err := h.svc.ListStateVersions(r.Context(), opts)
+	svl, err := a.ListStateVersions(r.Context(), opts)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	h.writeResponse(w, r, svl)
+	a.writeResponse(w, r, svl)
 }
 
-func (h *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
+func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
 
-	sv, err := h.svc.GetCurrentStateVersion(r.Context(), workspaceID)
+	sv, err := a.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	h.writeResponse(w, r, sv)
+	a.writeResponse(w, r, sv)
 }
 
-func (h *api) getVersion(w http.ResponseWriter, r *http.Request) {
+func (a *api) getVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	sv, err := h.svc.GetStateVersion(r.Context(), versionID)
+	sv, err := a.GetStateVersion(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	h.writeResponse(w, r, sv)
+	a.writeResponse(w, r, sv)
 }
 
-func (h *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
+func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	if err := h.svc.DeleteStateVersion(r.Context(), versionID); err != nil {
+	if err := a.DeleteStateVersion(r.Context(), versionID); err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
+func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 	opts := jsonapi.RollbackStateVersionOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
 
-	sv, err := h.svc.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
+	sv, err := a.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
 
-	h.writeResponse(w, r, sv)
+	a.writeResponse(w, r, sv)
 }
 
-func (h *api) downloadState(w http.ResponseWriter, r *http.Request) {
+func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	resp, err := h.svc.DownloadState(r.Context(), versionID)
+	resp, err := a.DownloadState(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
@@ -178,47 +173,31 @@ func (h *api) downloadState(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-func (h *api) listOutputs(w http.ResponseWriter, r *http.Request) {
+func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	sv, err := h.svc.GetStateVersion(r.Context(), versionID)
+	sv, err := a.GetStateVersion(r.Context(), versionID)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	h.writeResponse(w, r, sv.Outputs)
+	a.writeResponse(w, r, sv.Outputs)
 }
 
-func (h *api) getOutput(w http.ResponseWriter, r *http.Request) {
+func (a *api) getOutput(w http.ResponseWriter, r *http.Request) {
 	outputID, err := decode.Param("id", r)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	out, err := h.svc.GetStateVersionOutput(r.Context(), outputID)
+	out, err := a.GetStateVersionOutput(r.Context(), outputID)
 	if err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
-	h.writeResponse(w, r, out)
-}
 
-// writeResponse encodes v as json:api and writes it to the body of the http response.
-func (h *api) writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
-	var payload any
-
-	switch v := v.(type) {
-	case *VersionList:
-		payload = h.toList(v)
-	case *Version:
-		payload = h.toVersion(v)
-	case outputList:
-		payload = h.toOutputList(v)
-	case *Output:
-		payload = h.toOutput(v)
-	}
-	jsonapi.WriteResponse(w, r, payload, opts...)
+	a.writeResponse(w, r, out)
 }

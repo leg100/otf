@@ -163,7 +163,7 @@ func (row pgRow) toVersion() *Version {
 		Serial:      int64(row.Serial),
 		State:       row.State,
 		WorkspaceID: row.WorkspaceID.String,
-		Outputs:     make(outputList, len(row.StateVersionOutputs)),
+		Outputs:     make(OutputList, len(row.StateVersionOutputs)),
 	}
 	for _, r := range row.StateVersionOutputs {
 		sv.Outputs[r.Name.String] = outputRow(r).toOutput()
