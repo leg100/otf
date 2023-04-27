@@ -559,6 +559,41 @@ type Querier interface {
 	// FindStateVersionOutputByIDScan scans the result of an executed FindStateVersionOutputByIDBatch query.
 	FindStateVersionOutputByIDScan(results pgx.BatchResults) (FindStateVersionOutputByIDRow, error)
 
+	InsertTag(ctx context.Context, params InsertTagParams) (pgconn.CommandTag, error)
+	// InsertTagBatch enqueues a InsertTag query into batch to be executed
+	// later by the batch.
+	InsertTagBatch(batch genericBatch, params InsertTagParams)
+	// InsertTagScan scans the result of an executed InsertTagBatch query.
+	InsertTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertWorkspaceTag(ctx context.Context, tagID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	// InsertWorkspaceTagBatch enqueues a InsertWorkspaceTag query into batch to be executed
+	// later by the batch.
+	InsertWorkspaceTagBatch(batch genericBatch, tagID pgtype.Text, workspaceID pgtype.Text)
+	// InsertWorkspaceTagScan scans the result of an executed InsertWorkspaceTagBatch query.
+	InsertWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindTags(ctx context.Context, organizationName pgtype.Text) ([]FindTagsRow, error)
+	// FindTagsBatch enqueues a FindTags query into batch to be executed
+	// later by the batch.
+	FindTagsBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindTagsScan scans the result of an executed FindTagsBatch query.
+	FindTagsScan(results pgx.BatchResults) ([]FindTagsRow, error)
+
+	FindWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspaceTagsRow, error)
+	// FindWorkspaceTagsBatch enqueues a FindWorkspaceTags query into batch to be executed
+	// later by the batch.
+	FindWorkspaceTagsBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindWorkspaceTagsScan scans the result of an executed FindWorkspaceTagsBatch query.
+	FindWorkspaceTagsScan(results pgx.BatchResults) ([]FindWorkspaceTagsRow, error)
+
+	DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgconn.CommandTag, error)
+	// DeleteWorkspaceTagBatch enqueues a DeleteWorkspaceTag query into batch to be executed
+	// later by the batch.
+	DeleteWorkspaceTagBatch(batch genericBatch, workspaceID pgtype.Text, tagID pgtype.Text)
+	// DeleteWorkspaceTagScan scans the result of an executed DeleteWorkspaceTagBatch query.
+	DeleteWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error)
 	// InsertTeamBatch enqueues a InsertTeam query into batch to be executed
 	// later by the batch.
@@ -1254,6 +1289,21 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findStateVersionOutputByIDSQL, findStateVersionOutputByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionOutputByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertTagSQL, insertTagSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertTag': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertWorkspaceTagSQL, insertWorkspaceTagSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWorkspaceTag': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTagsSQL, findTagsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTags': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspaceTagsSQL, findWorkspaceTagsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceTags': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteWorkspaceTagSQL, deleteWorkspaceTagSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWorkspaceTag': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertTeamSQL, insertTeamSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertTeam': %w", err)
