@@ -10,12 +10,12 @@ import (
 	"github.com/leg100/otf/workspace"
 )
 
-func (m *jsonapiMarshaler) toWorkspace(ws *workspace.Workspace, r *http.Request) (*jsonapi.Workspace, error) {
+func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Request) (*jsonapi.Workspace, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, err
 	}
-	policy, err := m.GetPolicy(r.Context(), ws.ID)
+	policy, err := m.GetPolicy(r.Context(), from.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,42 @@ func (m *jsonapiMarshaler) toWorkspace(ws *workspace.Workspace, r *http.Request)
 		CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	}
 
-	org := &jsonapi.Organization{Name: ws.Organization}
-	outputs := []*jsonapi.StateVersionOutput{}
+	to := &jsonapi.Workspace{
+		ID: from.ID,
+		Actions: &jsonapi.WorkspaceActions{
+			IsDestroyable: true,
+		},
+		AllowDestroyPlan:     from.AllowDestroyPlan,
+		AutoApply:            from.AutoApply,
+		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
+		CreatedAt:            from.CreatedAt,
+		Description:          from.Description,
+		Environment:          from.Environment,
+		ExecutionMode:        string(from.ExecutionMode),
+		FileTriggersEnabled:  from.FileTriggersEnabled,
+		GlobalRemoteState:    from.GlobalRemoteState,
+		Locked:               from.Locked(),
+		MigrationEnvironment: from.MigrationEnvironment,
+		Name:                 from.Name,
+		// Operations is deprecated but clients and go-tfe tests still use it
+		Operations:                 from.ExecutionMode == "remote",
+		Permissions:                perms,
+		QueueAllRuns:               from.QueueAllRuns,
+		SpeculativeEnabled:         from.SpeculativeEnabled,
+		SourceName:                 from.SourceName,
+		SourceURL:                  from.SourceURL,
+		StructuredRunOutputEnabled: from.StructuredRunOutputEnabled,
+		TerraformVersion:           from.TerraformVersion,
+		TriggerPrefixes:            from.TriggerPrefixes,
+		WorkingDirectory:           from.WorkingDirectory,
+		UpdatedAt:                  from.UpdatedAt,
+		Organization:               &jsonapi.Organization{Name: from.Organization},
+		Outputs:                    []*jsonapi.StateVersionOutput{},
+	}
+
+	if from.CurrentRunID() != nil {
+		to.CurrentRun = &jsonapi.Run{ID: *from.CurrentRunID()}
+	}
 
 	// Support including related resources:
 	//
@@ -44,54 +78,24 @@ func (m *jsonapiMarshaler) toWorkspace(ws *workspace.Workspace, r *http.Request)
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "organization":
-				unmarshaled, err := m.GetOrganization(r.Context(), ws.Organization)
+				unmarshaled, err := m.GetOrganization(r.Context(), from.Organization)
 				if err != nil {
 					return nil, err
 				}
-				org = m.toOrganization(unmarshaled)
+				to.Organization = m.toOrganization(unmarshaled)
 			case "outputs":
-				sv, err := m.GetCurrentStateVersion(r.Context(), ws.ID)
+				sv, err := m.GetCurrentStateVersion(r.Context(), from.ID)
 				if err != nil {
 					return nil, err
 				}
 				for _, out := range sv.Outputs {
-					outputs = append(outputs, m.toOutput(out))
+					to.Outputs = append(to.Outputs, m.toOutput(out))
 				}
 			}
 		}
 	}
-	return &jsonapi.Workspace{
-		ID: ws.ID,
-		Actions: &jsonapi.WorkspaceActions{
-			IsDestroyable: true,
-		},
-		AllowDestroyPlan:     ws.AllowDestroyPlan,
-		AutoApply:            ws.AutoApply,
-		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan,
-		CreatedAt:            ws.CreatedAt,
-		Description:          ws.Description,
-		Environment:          ws.Environment,
-		ExecutionMode:        string(ws.ExecutionMode),
-		FileTriggersEnabled:  ws.FileTriggersEnabled,
-		GlobalRemoteState:    ws.GlobalRemoteState,
-		Locked:               ws.Locked(),
-		MigrationEnvironment: ws.MigrationEnvironment,
-		Name:                 ws.Name,
-		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations:                 ws.ExecutionMode == "remote",
-		Permissions:                perms,
-		QueueAllRuns:               ws.QueueAllRuns,
-		SpeculativeEnabled:         ws.SpeculativeEnabled,
-		SourceName:                 ws.SourceName,
-		SourceURL:                  ws.SourceURL,
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
-		TerraformVersion:           ws.TerraformVersion,
-		TriggerPrefixes:            ws.TriggerPrefixes,
-		WorkingDirectory:           ws.WorkingDirectory,
-		UpdatedAt:                  ws.UpdatedAt,
-		Organization:               org,
-		Outputs:                    outputs,
-	}, nil
+
+	return to, nil
 }
 
 func (m *jsonapiMarshaler) toWorkspaceList(list *workspace.WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {

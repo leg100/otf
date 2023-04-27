@@ -86,6 +86,15 @@ func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 	return otf.ErrWorkspaceLockedByDifferentUser
 }
 
+// CurrentRunID returns the ID of the run that currently holds the lock,
+// returning nil if a run does not currently hold the lock.
+func (ws *Workspace) CurrentRunID() *string {
+	if ws.lock != nil && ws.LockKind == RunLock {
+		return &ws.lock.id
+	}
+	return nil
+}
+
 // lockButtonHelper helps the UI determine the button to display for
 // locking/unlocking the workspace.
 func lockButtonHelper(ws *Workspace, policy otf.WorkspacePolicy, user otf.Subject) LockButton {
