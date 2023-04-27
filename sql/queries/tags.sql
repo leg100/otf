@@ -68,7 +68,6 @@ FROM workspace_tags wt
 WHERE wt.workspace_id = pggen.arg('workspace_id')
 ;
 
-
 -- name: DeleteTag :exec
 DELETE
 FROM tags

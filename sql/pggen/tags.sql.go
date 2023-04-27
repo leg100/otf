@@ -19,7 +19,7 @@ const insertTagSQL = `INSERT INTO tags (
     $1,
     $2,
     $3
-);`
+) ON CONFLICT (name, organization_name) DO NOTHING;`
 
 type InsertTagParams struct {
 	TagID            pgtype.Text
@@ -79,6 +79,38 @@ func (q *DBQuerier) InsertWorkspaceTagScan(results pgx.BatchResults) (pgconn.Com
 	cmdTag, err := results.Exec()
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec InsertWorkspaceTagBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const insertWorkspaceTagByNameSQL = `INSERT INTO workspace_tags (
+    tag_id,
+    workspace_id
+) SELECT tag_id, $1
+    FROM tags
+    WHERE name = $2
+;`
+
+// InsertWorkspaceTagByName implements Querier.InsertWorkspaceTagByName.
+func (q *DBQuerier) InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWorkspaceTagByName")
+	cmdTag, err := q.conn.Exec(ctx, insertWorkspaceTagByNameSQL, workspaceID, tagName)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertWorkspaceTagByName: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertWorkspaceTagByNameBatch implements Querier.InsertWorkspaceTagByNameBatch.
+func (q *DBQuerier) InsertWorkspaceTagByNameBatch(batch genericBatch, workspaceID pgtype.Text, tagName pgtype.Text) {
+	batch.Queue(insertWorkspaceTagByNameSQL, workspaceID, tagName)
+}
+
+// InsertWorkspaceTagByNameScan implements Querier.InsertWorkspaceTagByNameScan.
+func (q *DBQuerier) InsertWorkspaceTagByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertWorkspaceTagByNameBatch: %w", err)
 	}
 	return cmdTag, err
 }

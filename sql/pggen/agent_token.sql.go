@@ -573,6 +573,13 @@ type Querier interface {
 	// InsertWorkspaceTagScan scans the result of an executed InsertWorkspaceTagBatch query.
 	InsertWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgconn.CommandTag, error)
+	// InsertWorkspaceTagByNameBatch enqueues a InsertWorkspaceTagByName query into batch to be executed
+	// later by the batch.
+	InsertWorkspaceTagByNameBatch(batch genericBatch, workspaceID pgtype.Text, tagName pgtype.Text)
+	// InsertWorkspaceTagByNameScan scans the result of an executed InsertWorkspaceTagByNameBatch query.
+	InsertWorkspaceTagByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindTags(ctx context.Context, params FindTagsParams) ([]FindTagsRow, error)
 	// FindTagsBatch enqueues a FindTags query into batch to be executed
 	// later by the batch.
@@ -1316,6 +1323,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertWorkspaceTagSQL, insertWorkspaceTagSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspaceTag': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertWorkspaceTagByNameSQL, insertWorkspaceTagByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWorkspaceTagByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findTagsSQL, findTagsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTags': %w", err)
