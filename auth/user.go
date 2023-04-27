@@ -190,7 +190,7 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
-func (s *UserSpec) LogValue() slog.Value {
+func (s UserSpec) LogValue() slog.Value {
 	if s.Username != nil {
 		return slog.String("username", *s.Username).Value
 	}

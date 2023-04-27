@@ -71,7 +71,9 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 			// Until request is authenticated, call service endpoints using
 			// superuser privileges. Once authenticated, the authenticated user
 			// replaces the superuser in the context.
-			ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{})
+			ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{
+				Username: "auth",
+			})
 
 			if !isProtectedPath(r.URL.Path) {
 				next.ServeHTTP(w, r)
