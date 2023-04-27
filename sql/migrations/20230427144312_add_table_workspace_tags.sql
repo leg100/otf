@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS tags (
     tag_id              TEXT NOT NULL,
     name                TEXT NOT NULL,
-    organization_name   TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE,
+    organization_name   TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                         PRIMARY KEY (tag_id),
                         UNIQUE (organization_name, name)
 );
