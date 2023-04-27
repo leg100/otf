@@ -222,14 +222,14 @@ WHERE configuration_versions.workspace_id = $1
 ;`
 
 // CountConfigurationVersionsByWorkspaceID implements Querier.CountConfigurationVersionsByWorkspaceID.
-func (q *DBQuerier) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (*int, error) {
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountConfigurationVersionsByWorkspaceID")
 	row := q.conn.QueryRow(ctx, countConfigurationVersionsByWorkspaceIDSQL, workspaceID)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query CountConfigurationVersionsByWorkspaceID: %w", err)
+		return item, fmt.Errorf("query CountConfigurationVersionsByWorkspaceID: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // CountConfigurationVersionsByWorkspaceIDBatch implements Querier.CountConfigurationVersionsByWorkspaceIDBatch.
@@ -238,13 +238,13 @@ func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDBatch(batch genericBa
 }
 
 // CountConfigurationVersionsByWorkspaceIDScan implements Querier.CountConfigurationVersionsByWorkspaceIDScan.
-func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (*int, error) {
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan CountConfigurationVersionsByWorkspaceIDBatch row: %w", err)
+		return item, fmt.Errorf("scan CountConfigurationVersionsByWorkspaceIDBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const findConfigurationVersionByIDSQL = `SELECT

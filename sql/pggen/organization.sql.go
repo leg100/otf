@@ -233,14 +233,14 @@ WHERE name = ANY($1)
 ;`
 
 // CountOrganizations implements Querier.CountOrganizations.
-func (q *DBQuerier) CountOrganizations(ctx context.Context, names []string) (*int, error) {
+func (q *DBQuerier) CountOrganizations(ctx context.Context, names []string) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountOrganizations")
 	row := q.conn.QueryRow(ctx, countOrganizationsSQL, names)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query CountOrganizations: %w", err)
+		return item, fmt.Errorf("query CountOrganizations: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // CountOrganizationsBatch implements Querier.CountOrganizationsBatch.
@@ -249,13 +249,13 @@ func (q *DBQuerier) CountOrganizationsBatch(batch genericBatch, names []string) 
 }
 
 // CountOrganizationsScan implements Querier.CountOrganizationsScan.
-func (q *DBQuerier) CountOrganizationsScan(results pgx.BatchResults) (*int, error) {
+func (q *DBQuerier) CountOrganizationsScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan CountOrganizationsBatch row: %w", err)
+		return item, fmt.Errorf("scan CountOrganizationsBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const insertOrganizationSQL = `INSERT INTO organizations (

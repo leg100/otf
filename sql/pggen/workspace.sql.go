@@ -259,14 +259,14 @@ AND   organization_name LIKE ANY($2)
 ;`
 
 // CountWorkspaces implements Querier.CountWorkspaces.
-func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (*int, error) {
+func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspaces")
 	row := q.conn.QueryRow(ctx, countWorkspacesSQL, prefix, organizationNames)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query CountWorkspaces: %w", err)
+		return item, fmt.Errorf("query CountWorkspaces: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // CountWorkspacesBatch implements Querier.CountWorkspacesBatch.
@@ -275,13 +275,13 @@ func (q *DBQuerier) CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text,
 }
 
 // CountWorkspacesScan implements Querier.CountWorkspacesScan.
-func (q *DBQuerier) CountWorkspacesScan(results pgx.BatchResults) (*int, error) {
+func (q *DBQuerier) CountWorkspacesScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan CountWorkspacesBatch row: %w", err)
+		return item, fmt.Errorf("scan CountWorkspacesBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const findWorkspacesByWebhookIDSQL = `SELECT
@@ -570,14 +570,14 @@ AND   u.username          = $2
 ;`
 
 // CountWorkspacesByUsername implements Querier.CountWorkspacesByUsername.
-func (q *DBQuerier) CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (*int, error) {
+func (q *DBQuerier) CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspacesByUsername")
 	row := q.conn.QueryRow(ctx, countWorkspacesByUsernameSQL, organizationName, username)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query CountWorkspacesByUsername: %w", err)
+		return item, fmt.Errorf("query CountWorkspacesByUsername: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // CountWorkspacesByUsernameBatch implements Querier.CountWorkspacesByUsernameBatch.
@@ -586,13 +586,13 @@ func (q *DBQuerier) CountWorkspacesByUsernameBatch(batch genericBatch, organizat
 }
 
 // CountWorkspacesByUsernameScan implements Querier.CountWorkspacesByUsernameScan.
-func (q *DBQuerier) CountWorkspacesByUsernameScan(results pgx.BatchResults) (*int, error) {
+func (q *DBQuerier) CountWorkspacesByUsernameScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan CountWorkspacesByUsernameBatch row: %w", err)
+		return item, fmt.Errorf("scan CountWorkspacesByUsernameBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const findWorkspaceByNameSQL = `SELECT w.*,

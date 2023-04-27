@@ -13,7 +13,7 @@ import (
 )
 
 type (
-	// pgdb is a state/state-version database on postgres
+	// pgdb is a workspace database on postgres
 	pgdb struct {
 		otf.DB // provides access to generated SQL queries
 	}
