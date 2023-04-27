@@ -65,8 +65,8 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		Outputs:                    []*jsonapi.StateVersionOutput{},
 	}
 
-	if from.CurrentRunID() != nil {
-		to.CurrentRun = &jsonapi.Run{ID: *from.CurrentRunID()}
+	if from.LatestRun != nil {
+		to.CurrentRun = &jsonapi.Run{ID: from.LatestRun.ID}
 	}
 
 	// Support including related resources:
