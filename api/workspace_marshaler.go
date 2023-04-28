@@ -102,7 +102,7 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 }
 
 func (m *jsonapiMarshaler) toWorkspaceList(list *workspace.WorkspaceList, r *http.Request) (to []*Workspace, marshalOpts []jsonapi.MarshalOption, err error) {
-	marshalOpts = []jsonapi.MarshalOption{jsonapi.MarshalMeta(NewPagination(list.Pagination))}
+	marshalOpts = []jsonapi.MarshalOption{toMarshalOption(list.Pagination)}
 	for _, ws := range list.Items {
 		item, itemOpts, err := m.toWorkspace(ws, r)
 		if err != nil {

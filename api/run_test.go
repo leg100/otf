@@ -19,7 +19,7 @@ func TestAPI_Watch(t *testing.T) {
 
 	srv := &api{
 		Logger:     logr.Discard(),
-		marshaler:  &fakeMarshaler{run: &Run{}},
+		marshaler:  &fakeMarshaler{run: &Run{ID: "run-123"}},
 		RunService: &fakeRunService{ch: in},
 	}
 
@@ -28,7 +28,7 @@ func TestAPI_Watch(t *testing.T) {
 
 	// send one event and then close
 	in <- otf.Event{
-		Payload: &run.Run{},
+		Payload: &run.Run{ID: "run-123"},
 		Type:    otf.EventRunCreated,
 	}
 	close(in)

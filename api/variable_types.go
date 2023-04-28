@@ -11,7 +11,7 @@ type Variable struct {
 	Sensitive   bool   `jsonapi:"attribute" json:"sensitive"`
 
 	// Relations
-	Workspace *Workspace `jsonapi:"relationship,configurable"`
+	Workspace *Workspace `jsonapi:"relationship" json:"configurable"`
 }
 
 // VariableList is a list of workspace variables

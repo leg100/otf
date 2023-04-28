@@ -1,6 +1,9 @@
 package api
 
-import "github.com/leg100/otf"
+import (
+	"github.com/DataDog/jsonapi"
+	"github.com/leg100/otf"
+)
 
 // Pagination is used to return the pagination details of an API request.
 type Pagination struct {
@@ -11,14 +14,14 @@ type Pagination struct {
 	TotalCount   int  `json:"total-count"`
 }
 
-func NewPagination(p *otf.Pagination) *Pagination {
-	return &Pagination{
+func toMarshalOption(p *otf.Pagination) jsonapi.MarshalOption {
+	return jsonapi.MarshalMeta(map[string]any{"pagination": &Pagination{
 		CurrentPage:  p.Opts.SanitizedPageNumber(),
 		PreviousPage: p.PrevPage(),
 		NextPage:     p.NextPage(),
 		TotalPages:   p.TotalPages(),
 		TotalCount:   p.Count,
-	}
+	}})
 }
 
 // NewPaginationFromJSONAPI constructs pagination from a json:api struct

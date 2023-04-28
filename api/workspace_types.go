@@ -47,9 +47,9 @@ type Workspace struct {
 	RunsCount                  int                   `jsonapi:"attribute" json:"workspace-kpis-runs-count"`
 
 	// Relations
-	CurrentRun   *Run                  `jsonapi:"relationship,current-run"`
-	Organization *Organization         `jsonapi:"relationship,organization"`
-	Outputs      []*StateVersionOutput `jsonapi:"relationship,outputs"`
+	CurrentRun   *Run                  `jsonapi:"relationship" json:"current-run"`
+	Organization *Organization         `jsonapi:"relationship" json:"organization"`
+	Outputs      []*StateVersionOutput `jsonapi:"relationship" json:"outputs"`
 }
 
 // WorkspaceList represents a list of workspaces.

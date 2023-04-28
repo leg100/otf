@@ -23,11 +23,11 @@ type Run struct {
 	TargetAddrs            []string             `jsonapi:"attribute" json:"target-addrs,omitempty"`
 
 	// Relations
-	Apply                *Apply                `jsonapi:"relationship,apply"`
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship,configuration-version"`
-	CreatedBy            *User                 `jsonapi:"relationship,created-by"`
-	Plan                 *Plan                 `jsonapi:"relationship,plan"`
-	Workspace            *Workspace            `jsonapi:"relationship,workspace"`
+	Apply                *Apply                `jsonapi:"relationship" json:"apply"`
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	CreatedBy            *User                 `jsonapi:"relationship" json:"created-by"`
+	Plan                 *Plan                 `jsonapi:"relationship" json:"plan"`
+	Workspace            *Workspace            `jsonapi:"relationship" json:"workspace"`
 }
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
@@ -99,10 +99,10 @@ type RunCreateOptions struct {
 	// Specifies the configuration version to use for this run. If the
 	// configuration version object is omitted, the run will be created using the
 	// workspace's latest configuration version.
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship,configuration-version"`
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
 
 	// Specifies the workspace where the run will be executed.
-	Workspace *Workspace `jsonapi:"relationship,workspace"`
+	Workspace *Workspace `jsonapi:"relationship" json:"workspace"`
 
 	// If non-empty, requests that Terraform should create a plan including
 	// actions only for the given objects (specified using resource address

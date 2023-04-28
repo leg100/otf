@@ -12,7 +12,7 @@ type StateVersion struct {
 	VCSCommitURL string    `jsonapi:"attribute" json:"vcs-commit-url"`
 
 	// Relations
-	Outputs []*StateVersionOutput `jsonapi:"relationship,outputs"`
+	Outputs []*StateVersionOutput `jsonapi:"relationship" json:"outputs"`
 }
 
 // StateVersionList is a list of state versions suitable for marshaling into
@@ -56,7 +56,7 @@ type StateVersionCreateVersionOptions struct {
 	// cause data loss, so USE WITH CAUTION!
 	Force *bool `jsonapi:"attribute" json:"force"`
 	// Specifies the run to associate the state with.
-	// Run *Run `jsonapi:"relationship,run,omitempty"`
+	// Run *Run `jsonapi:"relationship" json:"run,omitempty"`
 }
 
 // RollbackStateVersionOptions are options for rolling back a state version
@@ -67,5 +67,5 @@ type RollbackStateVersionOptions struct {
 	// https://jsonapi.org/format/#crud-creating
 	Type string `jsonapi:"primary,state-versions"`
 	// Specifies state version to rollback to. Only its ID is specified.
-	RollbackStateVersion *StateVersion `jsonapi:"relationship,state-version"`
+	RollbackStateVersion *StateVersion `jsonapi:"relationship" json:"state-version"`
 }

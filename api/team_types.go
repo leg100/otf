@@ -12,7 +12,7 @@ type (
 		SSOTeamID          string              `jsonapi:"attribute" json:"sso-team-id"`
 
 		// Relations
-		Users []*User `jsonapi:"relationship,users"`
+		Users []*User `jsonapi:"relationship" json:"users"`
 	}
 
 	// OrganizationAccess represents the team's permissions on its organization

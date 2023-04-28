@@ -142,7 +142,7 @@ func (m *jsonapiMarshaler) toRun(run *run.Run, r *http.Request) (*Run, []jsonapi
 }
 
 func (m jsonapiMarshaler) toRunList(from *run.RunList, r *http.Request) (to []*Run, opts []jsonapi.MarshalOption, err error) {
-	opts = []jsonapi.MarshalOption{jsonapi.MarshalMeta(NewPagination(from.Pagination))}
+	opts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
 	for _, i := range from.Items {
 		run, itemOpts, err := m.toRun(i, r)
 		if err != nil {
