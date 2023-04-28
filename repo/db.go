@@ -110,7 +110,7 @@ func (db *pgdb) deleteConnection(ctx context.Context, opts DisconnectOptions) (h
 	}
 }
 
-func (db *pgdb) countConnections(ctx context.Context, hookID uuid.UUID) (*int, error) {
+func (db *pgdb) countConnections(ctx context.Context, hookID uuid.UUID) (int, error) {
 	return db.CountRepoConnectionsByID(ctx, sql.UUID(hookID))
 }
 
@@ -126,8 +126,7 @@ func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
 // caller can use the transaction.
 func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
-		_, err := tx.Exec(ctx, "LOCK webhooks")
-		if err != nil {
+		if _, err := tx.Exec(ctx, "LOCK webhooks"); err != nil {
 			return err
 		}
 		return callback(newPGDB(tx, db.factory))

@@ -102,7 +102,7 @@ func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) 
 
 	return &VersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

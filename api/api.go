@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/orgcreator"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/tags"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -21,6 +22,7 @@ type (
 		orgcreator.OrganizationCreatorService
 		state.StateService
 		workspace.WorkspaceService
+		tags.TagService
 
 		marshaler
 	}
@@ -31,6 +33,7 @@ type (
 		orgcreator.OrganizationCreatorService
 		state.StateService
 		workspace.WorkspaceService
+		tags.TagService
 		otf.Signer
 	}
 )
@@ -42,11 +45,13 @@ func New(opts Options) *api {
 		WorkspaceService:           opts.WorkspaceService,
 		RunService:                 opts.RunService,
 		StateService:               opts.StateService,
+		TagService:                 opts.TagService,
 		marshaler: &jsonapiMarshaler{
 			OrganizationService: opts.OrganizationService,
 			WorkspaceService:    opts.WorkspaceService,
 			RunService:          opts.RunService,
 			StateService:        opts.StateService,
+			TagService:          opts.TagService,
 			runLogsURLGenerator: &runLogsURLGenerator{opts.Signer},
 		},
 	}
@@ -57,4 +62,5 @@ func (a *api) AddHandlers(r *mux.Router) {
 	a.addRunHandlers(r)
 	a.addWorkspaceHandlers(r)
 	a.addStateHandlers(r)
+	a.addTagHandlers(r)
 }

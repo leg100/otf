@@ -148,7 +148,7 @@ func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error 
 		if err != nil {
 			return err
 		}
-		if *conns > 0 {
+		if conns > 0 {
 			return nil
 		}
 

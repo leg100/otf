@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,9 +16,6 @@ import (
 
 func TestWorkspace(t *testing.T) {
 	t.Parallel()
-
-	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/tags"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -24,6 +25,7 @@ type (
 		run.RunService
 		organization.OrganizationService
 		state.StateService
+		tags.TagService
 		workspace.WorkspaceService
 
 		*runLogsURLGenerator

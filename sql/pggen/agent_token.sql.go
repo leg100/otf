@@ -566,12 +566,12 @@ type Querier interface {
 	// InsertTagScan scans the result of an executed InsertTagBatch query.
 	InsertTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertWorkspaceTag(ctx context.Context, tagID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	InsertWorkspaceTag(ctx context.Context, tagID pgtype.Text, workspaceID pgtype.Text) (pgtype.Text, error)
 	// InsertWorkspaceTagBatch enqueues a InsertWorkspaceTag query into batch to be executed
 	// later by the batch.
 	InsertWorkspaceTagBatch(batch genericBatch, tagID pgtype.Text, workspaceID pgtype.Text)
 	// InsertWorkspaceTagScan scans the result of an executed InsertWorkspaceTagBatch query.
-	InsertWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertWorkspaceTagScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgconn.CommandTag, error)
 	// InsertWorkspaceTagByNameBatch enqueues a InsertWorkspaceTagByName query into batch to be executed
@@ -587,19 +587,33 @@ type Querier interface {
 	// FindTagsScan scans the result of an executed FindTagsBatch query.
 	FindTagsScan(results pgx.BatchResults) ([]FindTagsRow, error)
 
-	CountTags(ctx context.Context, organizationName pgtype.Text) (int, error)
-	// CountTagsBatch enqueues a CountTags query into batch to be executed
-	// later by the batch.
-	CountTagsBatch(batch genericBatch, organizationName pgtype.Text)
-	// CountTagsScan scans the result of an executed CountTagsBatch query.
-	CountTagsScan(results pgx.BatchResults) (int, error)
-
 	FindWorkspaceTags(ctx context.Context, params FindWorkspaceTagsParams) ([]FindWorkspaceTagsRow, error)
 	// FindWorkspaceTagsBatch enqueues a FindWorkspaceTags query into batch to be executed
 	// later by the batch.
 	FindWorkspaceTagsBatch(batch genericBatch, params FindWorkspaceTagsParams)
 	// FindWorkspaceTagsScan scans the result of an executed FindWorkspaceTagsBatch query.
 	FindWorkspaceTagsScan(results pgx.BatchResults) ([]FindWorkspaceTagsRow, error)
+
+	FindTagByName(ctx context.Context, name pgtype.Text) (FindTagByNameRow, error)
+	// FindTagByNameBatch enqueues a FindTagByName query into batch to be executed
+	// later by the batch.
+	FindTagByNameBatch(batch genericBatch, name pgtype.Text)
+	// FindTagByNameScan scans the result of an executed FindTagByNameBatch query.
+	FindTagByNameScan(results pgx.BatchResults) (FindTagByNameRow, error)
+
+	FindTagByID(ctx context.Context, tagID pgtype.Text) (FindTagByIDRow, error)
+	// FindTagByIDBatch enqueues a FindTagByID query into batch to be executed
+	// later by the batch.
+	FindTagByIDBatch(batch genericBatch, tagID pgtype.Text)
+	// FindTagByIDScan scans the result of an executed FindTagByIDBatch query.
+	FindTagByIDScan(results pgx.BatchResults) (FindTagByIDRow, error)
+
+	CountTags(ctx context.Context, organizationName pgtype.Text) (int, error)
+	// CountTagsBatch enqueues a CountTags query into batch to be executed
+	// later by the batch.
+	CountTagsBatch(batch genericBatch, organizationName pgtype.Text)
+	// CountTagsScan scans the result of an executed CountTagsBatch query.
+	CountTagsScan(results pgx.BatchResults) (int, error)
 
 	CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (int, error)
 	// CountWorkspaceTagsBatch enqueues a CountWorkspaceTags query into batch to be executed
@@ -1330,11 +1344,17 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findTagsSQL, findTagsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTags': %w", err)
 	}
-	if _, err := p.Prepare(ctx, countTagsSQL, countTagsSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountTags': %w", err)
-	}
 	if _, err := p.Prepare(ctx, findWorkspaceTagsSQL, findWorkspaceTagsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceTags': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTagByNameSQL, findTagByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTagByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTagByIDSQL, findTagByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTagByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, countTagsSQL, countTagsSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountTags': %w", err)
 	}
 	if _, err := p.Prepare(ctx, countWorkspaceTagsSQL, countWorkspaceTagsSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountWorkspaceTags': %w", err)

@@ -3,47 +3,56 @@
 
 package jsonapi
 
-// OrganizationTagsList represents a list of organization tags
-type OrganizationTagsList struct {
-	*Pagination
-	Items []*OrganizationTag
-}
+type (
 
-// OrganizationTag represents a Terraform Enterprise Organization tag
-type OrganizationTag struct {
-	ID string `jsonapi:"primary,tags"`
-	// Optional:
-	Name string `jsonapi:"attr,name,omitempty"`
+	// OrganizationTagsList represents a list of organization tags
+	OrganizationTagsList struct {
+		*Pagination
+		Items []*OrganizationTag
+	}
 
-	// Optional: Number of workspaces that have this tag
-	InstanceCount int `jsonapi:"attr,instance-count,omitempty"`
+	// OrganizationTag represents a Terraform Enterprise Organization tag
+	OrganizationTag struct {
+		ID string `jsonapi:"primary,tags"`
+		// Optional:
+		Name string `jsonapi:"attr,name,omitempty"`
 
-	// The org this tag belongs to
-	Organization *Organization `jsonapi:"relation,organization"`
-}
+		// Optional: Number of workspaces that have this tag
+		InstanceCount int `jsonapi:"attr,instance-count,omitempty"`
 
-// Tag is owned by an organization and applied to workspaces. Used for grouping and search.
-type Tag struct {
-	ID   string `jsonapi:"primary,tags"`
-	Name string `jsonapi:"attr,name,omitempty"`
-}
+		// The org this tag belongs to
+		Organization *Organization `jsonapi:"relation,organization"`
+	}
 
-// OrganizationTagsDeleteOptions represents the request body for deleting a tag in an organization
-type OrganizationTagsDeleteOptions struct {
-	IDs []string // Required
-}
+	// Tag is owned by an organization and applied to workspaces. Used for grouping and search.
+	Tag struct {
+		ID   string `jsonapi:"primary,tags"`
+		Name string `jsonapi:"attr,name,omitempty"`
+	}
 
-// AddWorkspacesToTagOptions represents the request body to add a workspace to a tag
-type AddWorkspacesToTagOptions struct {
-	WorkspaceIDs []string // Required
-}
+	// OrganizationTagsDeleteOptions represents the request body for deleting a tag in an organization
+	OrganizationTagsDeleteOptions struct {
+		IDs []string // Required
+	}
 
-// this represents a single tag ID
-type tagID struct {
-	ID string `jsonapi:"primary,tags"`
-}
+	// AddWorkspacesToTagOptions represents the request body to add a workspace to a tag
+	AddWorkspacesToTagOptions struct {
+		WorkspaceIDs []string // Required
+	}
 
-// this represents a single workspace ID
-type workspaceID struct {
-	ID string `jsonapi:"primary,workspaces"`
-}
+	// Tags is a list of tags to be added to a workspace, or removed from a
+	// workspace.
+	Tags struct {
+		Tags []*Tag
+	}
+
+	// this represents a single tag ID
+	tagID struct {
+		ID string `jsonapi:"primary,tags"`
+	}
+
+	// this represents a single workspace ID
+	workspaceID struct {
+		ID string `jsonapi:"primary,workspaces"`
+	}
+)

@@ -30,6 +30,7 @@ import (
 	"github.com/leg100/otf/scheduler"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/tags"
 	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/vcsprovider"
@@ -61,6 +62,7 @@ type (
 		run.RunService
 		repo.RepoService
 		logs.LogsService
+		tags.TagService
 
 		Handlers []otf.Handlers
 	}
@@ -163,6 +165,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService:    hostnameService,
 		Publisher:          broker,
 		VCSProviderService: vcsProviderService,
+	})
+
+	tagService := tags.NewService(tags.Options{
+		Logger: logger,
+		DB:     db,
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
@@ -295,6 +302,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Handlers:                    handlers,
 		AuthService:                 authService,
 		TokensService:               tokensService,
+		TagService:                  tagService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
 		OrganizationCreatorService:  orgCreatorService,

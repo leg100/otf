@@ -230,7 +230,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -285,7 +285,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts, *count),
+		Pagination: otf.NewPagination(opts, count),
 	}, nil
 }
 
