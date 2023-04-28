@@ -8,14 +8,14 @@ import (
 // must have at least one configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
 	ID               string              `jsonapi:"primary,configuration-versions"`
-	AutoQueueRuns    bool                `jsonapi:"attr,auto-queue-runs"`
-	Error            string              `jsonapi:"attr,error"`
-	ErrorMessage     string              `jsonapi:"attr,error-message"`
-	Source           string              `jsonapi:"attr,source"`
-	Speculative      bool                `jsonapi:"attr,speculative "`
-	Status           string              `jsonapi:"attr,status"`
-	StatusTimestamps *CVStatusTimestamps `jsonapi:"attr,status-timestamps"`
-	UploadURL        string              `jsonapi:"attr,upload-url"`
+	AutoQueueRuns    bool                `jsonapi:"attribute" json:"auto-queue-runs"`
+	Error            string              `jsonapi:"attribute" json:"error"`
+	ErrorMessage     string              `jsonapi:"attribute" json:"error-message"`
+	Source           string              `jsonapi:"attribute" json:"source"`
+	Speculative      bool                `jsonapi:"attribute" json:"speculative "`
+	Status           string              `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *CVStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+	UploadURL        string              `jsonapi:"attribute" json:"upload-url"`
 }
 
 // CVStatusTimestamps holds the timestamps for individual configuration version
@@ -43,31 +43,31 @@ type ConfigurationVersionCreateOptions struct {
 
 	// When true, runs are queued automatically when the configuration version
 	// is uploaded.
-	AutoQueueRuns *bool `jsonapi:"attr,auto-queue-runs,omitempty"`
+	AutoQueueRuns *bool `jsonapi:"attribute" json:"auto-queue-runs,omitempty"`
 
 	// When true, this configuration version can only be used for planning.
-	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
+	Speculative *bool `jsonapi:"attribute" json:"speculative,omitempty"`
 }
 
 type IngressAttributes struct {
 	ID                string `jsonapi:"primary,ingress-attributes"`
-	Branch            string `jsonapi:"attr,branch"`
-	CloneURL          string `jsonapi:"attr,clone-url"`
-	CommitMessage     string `jsonapi:"attr,commit-message"`
-	CommitSHA         string `jsonapi:"attr,commit-sha"`
-	CommitURL         string `jsonapi:"attr,commit-url"`
-	CompareURL        string `jsonapi:"attr,compare-url"`
-	Identifier        string `jsonapi:"attr,identifier"`
-	IsPullRequest     bool   `jsonapi:"attr,is-pull-request"`
-	OnDefaultBranch   bool   `jsonapi:"attr,on-default-branch"`
-	PullRequestNumber int    `jsonapi:"attr,pull-request-number"`
-	PullRequestURL    string `jsonapi:"attr,pull-request-url"`
-	PullRequestTitle  string `jsonapi:"attr,pull-request-title"`
-	PullRequestBody   string `jsonapi:"attr,pull-request-body"`
-	Tag               string `jsonapi:"attr,tag"`
-	SenderUsername    string `jsonapi:"attr,sender-username"`
-	SenderAvatarURL   string `jsonapi:"attr,sender-avatar-url"`
-	SenderHTMLURL     string `jsonapi:"attr,sender-html-url"`
+	Branch            string `jsonapi:"attribute" json:"branch"`
+	CloneURL          string `jsonapi:"attribute" json:"clone-url"`
+	CommitMessage     string `jsonapi:"attribute" json:"commit-message"`
+	CommitSHA         string `jsonapi:"attribute" json:"commit-sha"`
+	CommitURL         string `jsonapi:"attribute" json:"commit-url"`
+	CompareURL        string `jsonapi:"attribute" json:"compare-url"`
+	Identifier        string `jsonapi:"attribute" json:"identifier"`
+	IsPullRequest     bool   `jsonapi:"attribute" json:"is-pull-request"`
+	OnDefaultBranch   bool   `jsonapi:"attribute" json:"on-default-branch"`
+	PullRequestNumber int    `jsonapi:"attribute" json:"pull-request-number"`
+	PullRequestURL    string `jsonapi:"attribute" json:"pull-request-url"`
+	PullRequestTitle  string `jsonapi:"attribute" json:"pull-request-title"`
+	PullRequestBody   string `jsonapi:"attribute" json:"pull-request-body"`
+	Tag               string `jsonapi:"attribute" json:"tag"`
+	SenderUsername    string `jsonapi:"attribute" json:"sender-username"`
+	SenderAvatarURL   string `jsonapi:"attribute" json:"sender-avatar-url"`
+	SenderHTMLURL     string `jsonapi:"attribute" json:"sender-html-url"`
 
 	// Links
 	Links map[string]interface{} `jsonapi:"links,omitempty"`

@@ -2,14 +2,11 @@
 package jsonapi
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
-	"reflect"
 	"strings"
 
-	"github.com/leg100/jsonapi"
+	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf"
 )
 
@@ -42,77 +39,30 @@ func NewPaginationFromJSONAPI(json *Pagination) *otf.Pagination {
 	}
 }
 
-func UnmarshalPayload(in io.Reader, model interface{}) error {
-	return jsonapi.UnmarshalPayload(in, model)
-}
-
-// MarshalPayload marshals the models object into a JSON-API response.
-func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
-	include := strings.Split(r.URL.Query().Get("include"), ",")
-	include = sanitizeIncludes(include)
-
-	// Get the value of models so we can test if it's a struct.
-	dst := reflect.Indirect(reflect.ValueOf(models))
-
-	// Return an error if model is not a struct or an io.Writer.
-	if dst.Kind() != reflect.Struct {
-		return fmt.Errorf("v must be a struct or an io.Writer")
-	}
-
-	// Try to get the Items and Pagination struct fields.
-	items := dst.FieldByName("Items")
-	pagination := dst.FieldByName("Pagination")
-
-	// Marshal a single value if v does not contain the Items and Pagination
-	// struct fields.
-	if !items.IsValid() || !pagination.IsValid() {
-		return marshalSinglePayload(w, models, include...)
-	}
-
-	// Return an error if v.Items is not a slice.
-	if items.Type().Kind() != reflect.Slice {
-		return fmt.Errorf("v.Items must be a slice")
-	}
-
-	payload, err := jsonapi.Marshal(items.Interface(), include)
+// Unmarshal reads from r and unmarshals the contents into v.
+func Unmarshal(r io.Reader, v any) error {
+	b, err := io.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("unable to marshal payload: %w", err)
+		return err
 	}
-
-	manyPayload, ok := payload.(*jsonapi.ManyPayload)
-	if !ok {
-		return fmt.Errorf("unable to extract concrete value")
-	}
-
-	manyPayload.Meta = &jsonapi.Meta{"pagination": pagination.Interface()}
-
-	return json.NewEncoder(w).Encode(payload)
+	return jsonapi.Unmarshal(b, v)
 }
 
-func MarshalPayloadWithoutIncluded(w io.Writer, model interface{}) error {
-	return jsonapi.MarshalPayloadWithoutIncluded(w, model)
-}
-
-func UnmarshalManyPayload(in io.Reader, t reflect.Type) ([]interface{}, error) {
-	return jsonapi.UnmarshalManyPayload(in, t)
+func Marshal(v any) ([]byte, error) {
+	return jsonapi.Marshal(v)
 }
 
 // WriteResponse writes an HTTP response with a JSON-API marshalled payload.
 func WriteResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter)) {
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	for _, o := range opts {
-		o(w)
-	}
-	// Only sideline relationships for responses to GET requests
-	var err error
-	if r.Method == "GET" {
-		err = MarshalPayload(w, r, v)
-	} else {
-		err = jsonapi.MarshalPayloadWithoutIncluded(w, v)
-	}
+	b, err := jsonapi.Marshal(v)
 	if err != nil {
 		Error(w, err)
 	}
+	w.Header().Set("Content-type", mediaType)
+	for _, o := range opts {
+		o(w)
+	}
+	w.Write(b)
 }
 
 // WithCode is a helper func for writing an HTTP status code to a response
@@ -121,13 +71,6 @@ func WithCode(code int) func(w http.ResponseWriter) {
 	return func(w http.ResponseWriter) {
 		w.WriteHeader(code)
 	}
-}
-
-func marshalSinglePayload(w io.Writer, model interface{}, include ...string) error {
-	if err := jsonapi.MarshalPayload(w, model, include); err != nil {
-		return fmt.Errorf("unable to marshal payload: %w", err)
-	}
-	return nil
 }
 
 func sanitizeIncludes(includes []string) (sanitized []string) {

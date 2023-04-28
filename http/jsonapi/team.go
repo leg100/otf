@@ -4,45 +4,45 @@ type (
 	// Team represents an otf team.
 	Team struct {
 		ID                 string              `jsonapi:"primary,teams"`
-		Name               string              `jsonapi:"attr,name"`
-		OrganizationAccess *OrganizationAccess `jsonapi:"attr,organization-access"`
-		Visibility         string              `jsonapi:"attr,visibility"`
-		Permissions        *TeamPermissions    `jsonapi:"attr,permissions"`
-		UserCount          int                 `jsonapi:"attr,users-count"`
-		SSOTeamID          string              `jsonapi:"attr,sso-team-id"`
+		Name               string              `jsonapi:"attribute" json:"name"`
+		OrganizationAccess *OrganizationAccess `jsonapi:"attribute" json:"organization-access"`
+		Visibility         string              `jsonapi:"attribute" json:"visibility"`
+		Permissions        *TeamPermissions    `jsonapi:"attribute" json:"permissions"`
+		UserCount          int                 `jsonapi:"attribute" json:"users-count"`
+		SSOTeamID          string              `jsonapi:"attribute" json:"sso-team-id"`
 
 		// Relations
-		Users []*User `jsonapi:"relation,users"`
+		Users []*User `jsonapi:"relationship,users"`
 	}
 
 	// OrganizationAccess represents the team's permissions on its organization
 	OrganizationAccess struct {
-		ManagePolicies        bool `jsonapi:"attr,manage-policies"`
-		ManagePolicyOverrides bool `jsonapi:"attr,manage-policy-overrides"`
-		ManageWorkspaces      bool `jsonapi:"attr,manage-workspaces"`
-		ManageVCSSettings     bool `jsonapi:"attr,manage-vcs-settings"`
-		ManageProviders       bool `jsonapi:"attr,manage-providers"`
-		ManageModules         bool `jsonapi:"attr,manage-modules"`
-		ManageRunTasks        bool `jsonapi:"attr,manage-run-tasks"`
-		ManageProjects        bool `jsonapi:"attr,manage-projects"`
-		ReadWorkspaces        bool `jsonapi:"attr,read-workspaces"`
-		ReadProjects          bool `jsonapi:"attr,read-projects"`
-		ManageMembership      bool `jsonapi:"attr,manage-membership"`
+		ManagePolicies        bool `jsonapi:"attribute" json:"manage-policies"`
+		ManagePolicyOverrides bool `jsonapi:"attribute" json:"manage-policy-overrides"`
+		ManageWorkspaces      bool `jsonapi:"attribute" json:"manage-workspaces"`
+		ManageVCSSettings     bool `jsonapi:"attribute" json:"manage-vcs-settings"`
+		ManageProviders       bool `jsonapi:"attribute" json:"manage-providers"`
+		ManageModules         bool `jsonapi:"attribute" json:"manage-modules"`
+		ManageRunTasks        bool `jsonapi:"attribute" json:"manage-run-tasks"`
+		ManageProjects        bool `jsonapi:"attribute" json:"manage-projects"`
+		ReadWorkspaces        bool `jsonapi:"attribute" json:"read-workspaces"`
+		ReadProjects          bool `jsonapi:"attribute" json:"read-projects"`
+		ManageMembership      bool `jsonapi:"attribute" json:"manage-membership"`
 	}
 
 	// TeamPermissions represents the current user's permissions on the team.
 	TeamPermissions struct {
-		CanDestroy          bool `jsonapi:"attr,can-destroy"`
-		CanUpdateMembership bool `jsonapi:"attr,can-update-membership"`
+		CanDestroy          bool `jsonapi:"attribute" json:"can-destroy"`
+		CanUpdateMembership bool `jsonapi:"attribute" json:"can-update-membership"`
 	}
 
 	// CreateTeamOptions represents the options for creating a
 	// user.
 	CreateTeamOptions struct {
 		Type               string                     `jsonapi:"primary,teams"`
-		Name               *string                    `jsonapi:"attr,name"`
+		Name               *string                    `jsonapi:"attribute" json:"name"`
 		Organization       *string                    `schema:"organization_name,required"`
-		OrganizationAccess *OrganizationAccessOptions `jsonapi:"attr,organization-access,omitempty"`
+		OrganizationAccess *OrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
 	}
 
 	// OrganizationAccessOptions represents the organization access options of a team.

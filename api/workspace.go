@@ -43,7 +43,7 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		jsonapi.Error(w, err)
 		return
 	}
-	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
+	if err := jsonapi.Unmarshal(r.Body, &params); err != nil {
 		jsonapi.Error(w, err)
 		return
 	}
@@ -243,7 +243,7 @@ func (a *api) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
 	opts := jsonapi.WorkspaceUpdateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	if err := jsonapi.Unmarshal(r.Body, &opts); err != nil {
 		jsonapi.Error(w, err)
 		return
 	}

@@ -7,8 +7,8 @@ type CreateRunTokenOptions struct {
 	Type string `jsonapi:"primary,run_tokens"`
 
 	// Organization is the organization of the run
-	Organization *string `jsonapi:"attr,organization_name"`
+	Organization *string `jsonapi:"attribute" json:"organization_name"`
 
 	// RunID is the ID of the run for which the token is being created.
-	RunID *string `jsonapi:"attr,run_id"`
+	RunID *string `jsonapi:"attribute" json:"run_id"`
 }

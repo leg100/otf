@@ -229,19 +229,14 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 	if jsonAPIFields > 0 && jsonFields > 0 {
 		// Defining a struct with both json and jsonapi tags doesn't
 		// make sense, because a struct can only be serialized
-		// as one or another. If this does happen, it's a bug
-		// in the library that should be fixed at development time
-		return nil, errors.New("go-tfe bug: struct can't use both json and jsonapi attributes")
+		// as one or another.
+		return nil, errors.New("struct can't use both json and jsonapi attributes")
 	}
 
 	if jsonFields > 0 {
 		return json.Marshal(v)
 	} else {
-		buf := bytes.NewBuffer(nil)
-		if err := jsonapi.MarshalPayloadWithoutIncluded(buf, v); err != nil {
-			return nil, err
-		}
-		return buf, nil
+		return jsonapi.Marshal(v)
 	}
 }
 
@@ -328,7 +323,7 @@ func unmarshalResponse(responseBody io.Reader, model interface{}) error {
 	// Unmarshal a single value if v does not contain the
 	// Items and Pagination struct fields.
 	if !items.IsValid() || !pagination.IsValid() {
-		return jsonapi.UnmarshalPayload(responseBody, model)
+		return jsonapi.Unmarshal(responseBody, model)
 	}
 
 	// Return an error if v.Items is not a slice.

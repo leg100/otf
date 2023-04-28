@@ -3,15 +3,15 @@ package jsonapi
 // Variable is a workspace variable.
 type Variable struct {
 	ID          string `jsonapi:"primary,vars"`
-	Key         string `jsonapi:"attr,key"`
-	Value       string `jsonapi:"attr,value"`
-	Description string `jsonapi:"attr,description"`
-	Category    string `jsonapi:"attr,category"`
-	HCL         bool   `jsonapi:"attr,hcl"`
-	Sensitive   bool   `jsonapi:"attr,sensitive"`
+	Key         string `jsonapi:"attribute" json:"key"`
+	Value       string `jsonapi:"attribute" json:"value"`
+	Description string `jsonapi:"attribute" json:"description"`
+	Category    string `jsonapi:"attribute" json:"category"`
+	HCL         bool   `jsonapi:"attribute" json:"hcl"`
+	Sensitive   bool   `jsonapi:"attribute" json:"sensitive"`
 
 	// Relations
-	Workspace *Workspace `jsonapi:"relation,configurable"`
+	Workspace *Workspace `jsonapi:"relationship,configurable"`
 }
 
 // VariableList is a list of workspace variables
@@ -29,22 +29,22 @@ type VariableCreateOptions struct {
 	Type string `jsonapi:"primary,vars"`
 
 	// The name of the variable.
-	Key *string `jsonapi:"attr,key"`
+	Key *string `jsonapi:"attribute" json:"key"`
 
 	// The value of the variable.
-	Value *string `jsonapi:"attr,value,omitempty"`
+	Value *string `jsonapi:"attribute" json:"value,omitempty"`
 
 	// The description of the variable.
-	Description *string `jsonapi:"attr,description,omitempty"`
+	Description *string `jsonapi:"attribute" json:"description,omitempty"`
 
 	// Whether this is a Terraform or environment variable.
-	Category *string `jsonapi:"attr,category"`
+	Category *string `jsonapi:"attribute" json:"category"`
 
 	// Whether to evaluate the value of the variable as a string of HCL code.
-	HCL *bool `jsonapi:"attr,hcl,omitempty"`
+	HCL *bool `jsonapi:"attribute" json:"hcl,omitempty"`
 
 	// Whether the value is sensitive.
-	Sensitive *bool `jsonapi:"attr,sensitive,omitempty"`
+	Sensitive *bool `jsonapi:"attribute" json:"sensitive,omitempty"`
 }
 
 // VariableUpdateOptions represents the options for updating a variable.
@@ -56,20 +56,20 @@ type VariableUpdateOptions struct {
 	Type string `jsonapi:"primary,vars"`
 
 	// The name of the variable.
-	Key *string `jsonapi:"attr,key,omitempty"`
+	Key *string `jsonapi:"attribute" json:"key,omitempty"`
 
 	// The value of the variable.
-	Value *string `jsonapi:"attr,value,omitempty"`
+	Value *string `jsonapi:"attribute" json:"value,omitempty"`
 
 	// The description of the variable.
-	Description *string `jsonapi:"attr,description,omitempty"`
+	Description *string `jsonapi:"attribute" json:"description,omitempty"`
 
 	// Whether this is a Terraform or environment variable.
-	Category *string `jsonapi:"attr,category"`
+	Category *string `jsonapi:"attribute" json:"category"`
 
 	// Whether to evaluate the value of the variable as a string of HCL code.
-	HCL *bool `jsonapi:"attr,hcl,omitempty"`
+	HCL *bool `jsonapi:"attribute" json:"hcl,omitempty"`
 
 	// Whether the value is sensitive.
-	Sensitive *bool `jsonapi:"attr,sensitive,omitempty"`
+	Sensitive *bool `jsonapi:"attribute" json:"sensitive,omitempty"`
 }
