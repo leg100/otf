@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/run"
 )
 
@@ -20,11 +20,11 @@ func (f *fakeRunService) Watch(context.Context, run.WatchOptions) (<-chan otf.Ev
 }
 
 type fakeMarshaler struct {
-	run *jsonapi.Run
+	run *Run
 
 	marshaler
 }
 
-func (f *fakeMarshaler) toRun(*run.Run, *http.Request) (*jsonapi.Run, error) {
-	return f.run, nil
+func (f *fakeMarshaler) toRun(*run.Run, *http.Request) (*Run, []jsonapi.MarshalOption, error) {
+	return f.run, nil, nil
 }

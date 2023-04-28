@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -38,13 +37,13 @@ func (a *api) addWorkspaceHandlers(r *mux.Router) {
 }
 
 func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var params jsonapi.WorkspaceCreateOptions
+	var params WorkspaceCreateOptions
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
-	if err := jsonapi.Unmarshal(r.Body, &params); err != nil {
-		jsonapi.Error(w, err)
+	if err := unmarshal(r.Body, &params); err != nil {
+		Error(w, err)
 		return
 	}
 	opts := workspace.CreateOptions{
@@ -69,7 +68,7 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	if params.Operations != nil {
 		if params.ExecutionMode != nil {
 			err := errors.New("operations is deprecated and cannot be specified when execution mode is used")
-			jsonapi.Error(w, err)
+			Error(w, err)
 			return
 		}
 		if *params.Operations {
@@ -81,7 +80,7 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	if params.VCSRepo != nil {
 		if params.VCSRepo.Identifier == nil || params.VCSRepo.OAuthTokenID == nil {
 			err := errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo")
-			jsonapi.Error(w, err)
+			Error(w, err)
 			return
 		}
 		opts.ConnectOptions = &workspace.ConnectOptions{
@@ -95,23 +94,23 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := a.CreateWorkspace(r.Context(), opts)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
-	a.writeResponse(w, r, ws, jsonapi.WithCode(http.StatusCreated))
+	a.writeResponse(w, r, ws, withCode(http.StatusCreated))
 }
 
 func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspace(r.Context(), id)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -121,13 +120,13 @@ func (a *api) getWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -137,13 +136,13 @@ func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var params workspace.ListOptions
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	wsl, err := a.ListWorkspaces(r.Context(), params)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -156,7 +155,7 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 func (a *api) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -169,13 +168,13 @@ func (a *api) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (a *api) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -185,13 +184,13 @@ func (a *api) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 func (a *api) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	ws, err := a.LockWorkspace(r.Context(), id, nil)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -209,13 +208,13 @@ func (a *api) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *api) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	_, err = a.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -224,31 +223,31 @@ func (a *api) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *api) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	_, err = a.DeleteWorkspace(r.Context(), ws.ID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	opts := jsonapi.WorkspaceUpdateOptions{}
-	if err := jsonapi.Unmarshal(r.Body, &opts); err != nil {
-		jsonapi.Error(w, err)
+	opts := WorkspaceUpdateOptions{}
+	if err := unmarshal(r.Body, &opts); err != nil {
+		Error(w, err)
 		return
 	}
 	if err := opts.Validate(); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -268,7 +267,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		WorkingDirectory:           opts.WorkingDirectory,
 	})
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -278,13 +277,13 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 func (a *api) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	ws, err := a.UnlockWorkspace(r.Context(), id, nil, force)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 

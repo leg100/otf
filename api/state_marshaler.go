@@ -3,13 +3,13 @@ package api
 import (
 	"fmt"
 
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/state"
 )
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toVersion(from *state.Version) *jsonapi.StateVersion {
-	to := &jsonapi.StateVersion{
+func (m *jsonapiMarshaler) toVersion(from *state.Version) *StateVersion {
+	to := &StateVersion{
 		ID:          from.ID,
 		CreatedAt:   from.CreatedAt,
 		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
@@ -22,19 +22,17 @@ func (m *jsonapiMarshaler) toVersion(from *state.Version) *jsonapi.StateVersion 
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toList(from *state.VersionList) *jsonapi.StateVersionList {
-	jl := &jsonapi.StateVersionList{
-		Pagination: jsonapi.NewPagination(from.Pagination),
-	}
+func (m *jsonapiMarshaler) toList(from *state.VersionList) (to []*StateVersion, opts []jsonapi.MarshalOption) {
+	opts = []jsonapi.MarshalOption{jsonapi.MarshalMeta(NewPagination(from.Pagination))}
 	for _, item := range from.Items {
-		jl.Items = append(jl.Items, m.toVersion(item))
+		to = append(to, m.toVersion(item))
 	}
-	return jl
+	return
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (*jsonapiMarshaler) toOutput(from *state.Output) *jsonapi.StateVersionOutput {
-	return &jsonapi.StateVersionOutput{
+func (*jsonapiMarshaler) toOutput(from *state.Output) *StateVersionOutput {
+	return &StateVersionOutput{
 		ID:        from.ID,
 		Name:      from.Name,
 		Sensitive: from.Sensitive,
@@ -44,8 +42,8 @@ func (*jsonapiMarshaler) toOutput(from *state.Output) *jsonapi.StateVersionOutpu
 }
 
 // ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toOutputList(from state.OutputList) *jsonapi.StateVersionOutputList {
-	var to jsonapi.StateVersionOutputList
+func (m *jsonapiMarshaler) toOutputList(from state.OutputList) *StateVersionOutputList {
+	var to StateVersionOutputList
 	for _, v := range from {
 		to.Items = append(to.Items, m.toOutput(v))
 	}

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -14,10 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
 )
 
 const (
@@ -307,9 +306,14 @@ func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err er
 	return false, nil
 }
 
-func unmarshalResponse(responseBody io.Reader, model interface{}) error {
+func unmarshalResponse(r io.Reader, v any) error {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
 	// Get the value of model so we can test if it's a struct.
-	dst := reflect.Indirect(reflect.ValueOf(model))
+	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// Return an error if model is not a struct or an io.Writer.
 	if dst.Kind() != reflect.Struct {
@@ -323,7 +327,7 @@ func unmarshalResponse(responseBody io.Reader, model interface{}) error {
 	// Unmarshal a single value if v does not contain the
 	// Items and Pagination struct fields.
 	if !items.IsValid() || !pagination.IsValid() {
-		return jsonapi.Unmarshal(responseBody, model)
+		return jsonapi.Unmarshal(b, v)
 	}
 
 	// Return an error if v.Items is not a slice.
@@ -331,37 +335,11 @@ func unmarshalResponse(responseBody io.Reader, model interface{}) error {
 		return fmt.Errorf("v.Items must be a slice")
 	}
 
-	// Create a temporary buffer and copy all the read data into it.
-	body := bytes.NewBuffer(nil)
-	reader := io.TeeReader(responseBody, body)
-
-	// Unmarshal as a list of values as v.Items is a slice.
-	raw, err := jsonapi.UnmarshalManyPayload(reader, items.Type().Elem())
+	// Unmarshal items
+	err = jsonapi.Unmarshal(b, items.Interface(), jsonapi.UnmarshalMeta(pagination.Interface()))
 	if err != nil {
 		return err
 	}
-
-	// Make a new slice to hold the results.
-	sliceType := reflect.SliceOf(items.Type().Elem())
-	result := reflect.MakeSlice(sliceType, 0, len(raw))
-
-	// Add all of the results to the new slice.
-	for _, v := range raw {
-		result = reflect.Append(result, reflect.ValueOf(v))
-	}
-
-	// Pointer-swap the result.
-	items.Set(result)
-
-	// As we are getting a list of values, we need to decode
-	// the pagination details out of the response body.
-	p, err := parsePagination(body)
-	if err != nil {
-		return err
-	}
-
-	// Pointer-swap the decoded pagination details.
-	pagination.Set(reflect.ValueOf(p))
 
 	return nil
 }
@@ -378,14 +356,14 @@ func checkResponseCode(r *http.Response) error {
 		return otf.ErrResourceNotFound
 	}
 	// Decode the error payload.
-	errPayload := &jsonapi.ErrorsPayload{}
-	err := json.NewDecoder(r.Body).Decode(errPayload)
-	if err != nil || len(errPayload.Errors) == 0 {
+	errPayload := []*jsonapi.Error{}
+	err := json.NewDecoder(r.Body).Decode(&errPayload)
+	if err != nil || len(errPayload) == 0 {
 		return fmt.Errorf(r.Status)
 	}
 	// Parse and format the errors.
 	var errs []string
-	for _, e := range errPayload.Errors {
+	for _, e := range errPayload {
 		if e.Detail == "" {
 			errs = append(errs, e.Title)
 		} else {
@@ -393,17 +371,4 @@ func checkResponseCode(r *http.Response) error {
 		}
 	}
 	return fmt.Errorf(strings.Join(errs, "\n"))
-}
-
-func parsePagination(body io.Reader) (*jsonapi.Pagination, error) {
-	var raw struct {
-		Meta struct {
-			Pagination jsonapi.Pagination `jsonapi:"pagination"`
-		} `jsonapi:"meta"`
-	}
-	// JSON decode the raw response.
-	if err := json.NewDecoder(body).Decode(&raw); err != nil {
-		return &jsonapi.Pagination{}, err
-	}
-	return &raw.Meta.Pagination, nil
 }

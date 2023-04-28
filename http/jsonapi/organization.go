@@ -13,16 +13,16 @@ var DefaultOrganizationPermissions = OrganizationPermissions{
 // Organization JSON-API representation
 type Organization struct {
 	Name                  string                   `jsonapi:"primary,organizations"`
-	CostEstimationEnabled bool                     `jsonapi:"attribute" json:"cost-estimation-enabled"`
-	CreatedAt             time.Time                `jsonapi:"attribute" json:"created-at,iso8601"`
-	ExternalID            string                   `jsonapi:"attribute" json:"external-id"`
-	OwnersTeamSAMLRoleID  string                   `jsonapi:"attribute" json:"owners-team-saml-role-id"`
-	Permissions           *OrganizationPermissions `jsonapi:"attribute" json:"permissions"`
-	SAMLEnabled           bool                     `jsonapi:"attribute" json:"saml-enabled"`
-	SessionRemember       int                      `jsonapi:"attribute" json:"session-remember"`
-	SessionTimeout        int                      `jsonapi:"attribute" json:"session-timeout"`
-	TrialExpiresAt        time.Time                `jsonapi:"attribute" json:"trial-expires-at,iso8601"`
-	TwoFactorConformant   bool                     `jsonapi:"attribute" json:"two-factor-conformant"`
+	CostEstimationEnabled bool                     `jsonapi:"attr,cost-estimation-enabled"`
+	CreatedAt             time.Time                `jsonapi:"attr,created-at,iso8601"`
+	ExternalID            string                   `jsonapi:"attr,external-id"`
+	OwnersTeamSAMLRoleID  string                   `jsonapi:"attr,owners-team-saml-role-id"`
+	Permissions           *OrganizationPermissions `jsonapi:"attr,permissions"`
+	SAMLEnabled           bool                     `jsonapi:"attr,saml-enabled"`
+	SessionRemember       int                      `jsonapi:"attr,session-remember"`
+	SessionTimeout        int                      `jsonapi:"attr,session-timeout"`
+	TrialExpiresAt        time.Time                `jsonapi:"attr,trial-expires-at,iso8601"`
+	TwoFactorConformant   bool                     `jsonapi:"attr,two-factor-conformant"`
 }
 
 // OrganizationList JSON-API representation
@@ -54,12 +54,12 @@ type OrganizationCreateOptions struct {
 	Type string `jsonapi:"primary,organizations"`
 
 	// Name of the organization.
-	Name *string `jsonapi:"attribute" json:"name"`
+	Name *string `jsonapi:"attr,name"`
 
-	SessionRemember *int `jsonapi:"attribute" json:"session-remember,omitempty"`
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
 
 	// Session timeout after inactivity (minutes).
-	SessionTimeout *int `jsonapi:"attribute" json:"session-timeout,omitempty"`
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
 }
 
 // OrganizationUpdateOptions represents the options for updating an
@@ -72,11 +72,11 @@ type OrganizationUpdateOptions struct {
 	Type string `jsonapi:"primary,organizations"`
 
 	// New name for the organization.
-	Name *string `jsonapi:"attribute" json:"name,omitempty"`
+	Name *string `jsonapi:"attr,name,omitempty"`
 
 	// Session expiration (minutes).
-	SessionRemember *int `jsonapi:"attribute" json:"session-remember,omitempty"`
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
 
 	// Session timeout after inactivity (minutes).
-	SessionTimeout *int `jsonapi:"attribute" json:"session-timeout,omitempty"`
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
 }
