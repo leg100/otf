@@ -1,4 +1,4 @@
-package api
+package types
 
 import (
 	"time"
@@ -12,7 +12,7 @@ type ConfigurationVersion struct {
 	Error            string              `jsonapi:"attribute" json:"error"`
 	ErrorMessage     string              `jsonapi:"attribute" json:"error-message"`
 	Source           string              `jsonapi:"attribute" json:"source"`
-	Speculative      bool                `jsonapi:"attribute" json:"speculative "`
+	Speculative      bool                `jsonapi:"attribute" json:"speculative"`
 	Status           string              `jsonapi:"attribute" json:"status"`
 	StatusTimestamps *CVStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
 	UploadURL        string              `jsonapi:"attribute" json:"upload-url"`

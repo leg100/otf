@@ -6,11 +6,12 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
 
-func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Request) (*Workspace, []jsonapi.MarshalOption, error) {
+func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Request) (*types.Workspace, []jsonapi.MarshalOption, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, nil, err
@@ -19,7 +20,7 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 	if err != nil {
 		return nil, nil, err
 	}
-	perms := &WorkspacePermissions{
+	perms := &types.WorkspacePermissions{
 		CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
 		CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
 		CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
@@ -32,9 +33,9 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	}
 
-	to := &Workspace{
+	to := &types.Workspace{
 		ID: from.ID,
-		Actions: &WorkspaceActions{
+		Actions: &types.WorkspaceActions{
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
@@ -61,12 +62,12 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		TriggerPrefixes:            from.TriggerPrefixes,
 		WorkingDirectory:           from.WorkingDirectory,
 		UpdatedAt:                  from.UpdatedAt,
-		Organization:               &Organization{Name: from.Organization},
-		Outputs:                    []*StateVersionOutput{},
+		Organization:               &types.Organization{Name: from.Organization},
+		Outputs:                    []*types.StateVersionOutput{},
 	}
 
 	if from.LatestRun != nil {
-		to.CurrentRun = &Run{ID: from.LatestRun.ID}
+		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
 	}
 
 	// Support including related resources:
@@ -92,8 +93,8 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 				}
 				for _, out := range sv.Outputs {
 					to.Outputs = append(to.Outputs, m.toOutput(out))
+					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out)))
 				}
-				opts = append(opts, jsonapi.MarshalInclude(to.Outputs))
 			}
 		}
 	}
@@ -101,9 +102,9 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 	return to, opts, nil
 }
 
-func (m *jsonapiMarshaler) toWorkspaceList(list *workspace.WorkspaceList, r *http.Request) (to []*Workspace, marshalOpts []jsonapi.MarshalOption, err error) {
-	marshalOpts = []jsonapi.MarshalOption{toMarshalOption(list.Pagination)}
-	for _, ws := range list.Items {
+func (m *jsonapiMarshaler) toWorkspaceList(from *workspace.WorkspaceList, r *http.Request) (to []*types.Workspace, marshalOpts []jsonapi.MarshalOption, err error) {
+	marshalOpts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
+	for _, ws := range from.Items {
 		item, itemOpts, err := m.toWorkspace(ws, r)
 		if err != nil {
 			return nil, nil, err

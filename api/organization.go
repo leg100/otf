@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/organization"
@@ -25,7 +26,7 @@ func (a *api) addOrganizationHandlers(r *mux.Router) {
 }
 
 func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
-	var opts OrganizationCreateOptions
+	var opts types.OrganizationCreateOptions
 	if err := unmarshal(r.Body, &opts); err != nil {
 		Error(w, err)
 		return
@@ -82,7 +83,7 @@ func (a *api) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	var opts OrganizationUpdateOptions
+	var opts types.OrganizationUpdateOptions
 	if err := unmarshal(r.Body, &opts); err != nil {
 		Error(w, err)
 		return

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
@@ -19,7 +19,7 @@ func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*Vari
 		return nil, err
 	}
 
-	list := &jsonapi.VariableList{}
+	list := &types.VariableList{}
 	err = c.Do(ctx, req, list)
 	if err != nil {
 		return nil, err

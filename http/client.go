@@ -225,17 +225,13 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 			jsonFields++
 		}
 	}
-	if jsonAPIFields > 0 && jsonFields > 0 {
-		// Defining a struct with both json and jsonapi tags doesn't
-		// make sense, because a struct can only be serialized
-		// as one or another.
-		return nil, errors.New("struct can't use both json and jsonapi attributes")
-	}
 
-	if jsonFields > 0 {
-		return json.Marshal(v)
+	// If there is at least one field tagged with jsonapi then use the jsonapi
+	// marshaler.
+	if jsonAPIFields > 0 {
+		return jsonapi.Marshal(v, jsonapi.MarshalClientMode())
 	} else {
-		return jsonapi.Marshal(v)
+		return json.Marshal(v)
 	}
 }
 
@@ -335,8 +331,7 @@ func unmarshalResponse(r io.Reader, v any) error {
 		return fmt.Errorf("v.Items must be a slice")
 	}
 
-	// Unmarshal items
-	err = jsonapi.Unmarshal(b, items.Interface(), jsonapi.UnmarshalMeta(pagination.Interface()))
+	err = jsonapi.Unmarshal(b, items.Addr().Interface(), jsonapi.UnmarshalMeta(pagination.Addr().Interface()))
 	if err != nil {
 		return err
 	}

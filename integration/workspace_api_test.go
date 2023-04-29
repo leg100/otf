@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/DataDog/jsonapi"
+	"github.com/leg100/otf/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestIntegration_WorkspaceAPI(t *testing.T) {
+// TestIntegration_WorkspaceAPI tests the option to retrieve latest state
+// outputs alongside a workspace from the API.
+func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 	t.Parallel()
 
 	svc := setup(t, nil)
@@ -34,8 +37,11 @@ func TestIntegration_WorkspaceAPI(t *testing.T) {
 		return
 	}
 
-	got := &jsonapi.Workspace{}
-	err = jsonapi.UnmarshalPayload(resp.Body, got)
+	got := &types.Workspace{}
+
+	b, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = jsonapi.Unmarshal(b, got)
 	require.NoError(t, err)
 
 	assert.Equal(t, sv.WorkspaceID, got.ID)

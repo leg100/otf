@@ -8,9 +8,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/state"
 )
 
@@ -39,7 +39,7 @@ func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := StateVersionCreateVersionOptions{}
+	opts := types.StateVersionCreateVersionOptions{}
 	if err := unmarshal(r.Body, &opts); err != nil {
 		Error(w, err)
 		return
@@ -84,7 +84,7 @@ func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	a.writeResponse(w, r, sv, jsonapi.WithCode(http.StatusCreated))
+	a.writeResponse(w, r, sv, withCode(http.StatusCreated))
 }
 
 func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +144,7 @@ func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
-	opts := RollbackStateVersionOptions{}
+	opts := types.RollbackStateVersionOptions{}
 	if err := unmarshal(r.Body, &opts); err != nil {
 		Error(w, err)
 		return

@@ -34,13 +34,15 @@ type (
 	PhaseStatus string
 
 	PhaseStartOptions struct {
-		AgentID string `jsonapi:"attr,agent-id,omitempty"`
+		Type    string `jsonapi:"primary,phase"`
+		AgentID string `jsonapi:"attribute" json:"agent-id,omitempty"`
 	}
 
 	// PhaseFinishOptions report the status of a phase upon finishing.
 	PhaseFinishOptions struct {
+		Type string `jsonapi:"primary,phase"`
 		// Errored is true if the phase finished unsuccessfully.
-		Errored bool `jsonapi:"attr,errored,omitempty"`
+		Errored bool `jsonapi:"attribute" json:"errored,omitempty"`
 	}
 
 	PhaseStatusTimestamp struct {

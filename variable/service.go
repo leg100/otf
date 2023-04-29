@@ -30,7 +30,6 @@ type (
 
 		workspace otf.Authorizer
 
-		api *api
 		web *web
 	}
 
@@ -51,9 +50,6 @@ func NewService(opts Options) *service {
 		db:        newPGDB(opts.DB),
 	}
 
-	svc.api = &api{
-		svc: &svc,
-	}
 	svc.web = &web{
 		Renderer: opts.Renderer,
 		Service:  opts.WorkspaceService,
@@ -64,7 +60,6 @@ func NewService(opts Options) *service {
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 

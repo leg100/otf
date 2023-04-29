@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/workspace"
@@ -37,7 +38,7 @@ func (a *api) addWorkspaceHandlers(r *mux.Router) {
 }
 
 func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var params WorkspaceCreateOptions
+	var params types.WorkspaceCreateOptions
 	if err := decode.Route(&params, r); err != nil {
 		Error(w, err)
 		return
@@ -241,7 +242,7 @@ func (a *api) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	opts := WorkspaceUpdateOptions{}
+	opts := types.WorkspaceUpdateOptions{}
 	if err := unmarshal(r.Body, &opts); err != nil {
 		Error(w, err)
 		return

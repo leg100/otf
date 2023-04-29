@@ -1,4 +1,4 @@
-package api
+package types
 
 type (
 	// User represents an OTF user.

@@ -10,6 +10,7 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/run"
@@ -47,7 +48,7 @@ func (a *api) addRunHandlers(r *mux.Router) {
 }
 
 func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
-	var opts RunCreateOptions
+	var opts types.RunCreateOptions
 	if err := unmarshal(r.Body, &opts); err != nil {
 		Error(w, err)
 		return

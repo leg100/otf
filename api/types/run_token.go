@@ -1,4 +1,4 @@
-package api
+package types
 
 type CreateRunTokenOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via

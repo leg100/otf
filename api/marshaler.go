@@ -6,9 +6,13 @@ import (
 	"net/http"
 
 	"github.com/DataDog/jsonapi"
+	"github.com/leg100/otf/api/types"
+	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
 )
 
@@ -16,10 +20,10 @@ const mediaType = "application/vnd.api+json"
 
 type (
 	marshaler interface {
-		toRun(run *run.Run, r *http.Request) (*Run, []jsonapi.MarshalOption, error)
-		toRunList(from *run.RunList, r *http.Request) ([]*Run, []jsonapi.MarshalOption, error)
+		toRun(run *run.Run, r *http.Request) (*types.Run, []jsonapi.MarshalOption, error)
+		toRunList(from *run.RunList, r *http.Request) ([]*types.Run, []jsonapi.MarshalOption, error)
 		toPhase(from run.Phase, r *http.Request) (any, error)
-		toPlan(plan run.Phase, r *http.Request) (*Plan, error)
+		toPlan(plan run.Phase, r *http.Request) (*types.Plan, error)
 		writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter))
 	}
 
@@ -47,7 +51,7 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 	case *organization.Organization:
 		payload = m.toOrganization(v)
 	case organization.Entitlements:
-		payload = (*Entitlements)(&v)
+		payload = (*types.Entitlements)(&v)
 	case *workspace.WorkspaceList:
 		payload, marshalOpts, err = m.toWorkspaceList(v, r)
 	case *workspace.Workspace:
@@ -56,16 +60,28 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 		payload, marshalOpts, err = m.toRunList(v, r)
 	case *run.Run:
 		payload, marshalOpts, err = m.toRun(v, r)
+	case *configversion.ConfigurationVersionList:
+		payload, marshalOpts, err = m.toConfigurationVersionList(v)
+	case *configversion.ConfigurationVersion:
+		payload, err = m.toConfigurationVersion(v)
+	case []*variable.Variable:
+		payload = m.toVariableList(v)
+	case *variable.Variable:
+		payload = m.toVariable(v)
 	case run.Phase:
 		payload, err = m.toPhase(v, r)
 	case *state.VersionList:
-		payload, marshalOpts = m.toList(v)
+		payload, marshalOpts = m.toStateList(v, r)
 	case *state.Version:
-		payload = m.toVersion(v)
+		payload, marshalOpts = m.toState(v, r)
 	case state.OutputList:
 		payload = m.toOutputList(v)
 	case *state.Output:
 		payload = m.toOutput(v)
+	case *auth.User:
+		payload = m.toUser(v)
+	case *auth.Team:
+		payload = m.toTeam(v)
 	default:
 		Error(w, fmt.Errorf("cannot marshal unknown type: %T", v))
 		return
