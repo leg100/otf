@@ -125,5 +125,4 @@ require (
 
 replace github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad
 
-//replace github.com/DataDog/jsonapi => github.com/leg100/jsonapi v1.0.2
-replace github.com/DataDog/jsonapi => ../jsonapi
+replace github.com/DataDog/jsonapi => github.com/leg100/jsonapi v1.0.3
