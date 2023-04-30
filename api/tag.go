@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
@@ -58,13 +57,17 @@ func (a *api) deleteTags(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	var params types.OrganizationTagsDeleteOptions
-	if err := decode.All(&params, r); err != nil {
+	var params []*types.DeleteTagOption
+	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
+	var tagIDs []string
+	for _, p := range params {
+		tagIDs = append(tagIDs, p.ID)
+	}
 
-	if err := a.DeleteTags(r.Context(), org, params.IDs); err != nil {
+	if err := a.DeleteTags(r.Context(), org, tagIDs); err != nil {
 		Error(w, err)
 		return
 	}
@@ -78,13 +81,17 @@ func (a *api) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	var params types.AddWorkspacesToTagOptions
-	if err := decode.All(&params, r); err != nil {
+	var params []*types.Workspace
+	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
+	var workspaceIDs []string
+	for _, p := range params {
+		workspaceIDs = append(workspaceIDs, p.ID)
+	}
 
-	if err := a.TagWorkspaces(r.Context(), tagID, params.WorkspaceIDs); err != nil {
+	if err := a.TagWorkspaces(r.Context(), tagID, workspaceIDs); err != nil {
 		Error(w, err)
 		return
 	}
@@ -106,7 +113,10 @@ func (a *api) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		Error(w, err)
 		return
 	}
-	var params types.Tags
+	var params []struct {
+		ID   string `jsonapi:"primary,tags,omitempty"`
+		Name string `jsonapi:"attribute" json:"name,omitempty"`
+	}
 	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
@@ -114,10 +124,10 @@ func (a *api) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 
 	// convert from json:api structs to tag specs
 	var specs []tags.TagSpec
-	for _, tag := range params.Tags {
+	for _, tag := range params {
 		specs = append(specs, tags.TagSpec{
-			ID:   otf.String(tag.ID),
-			Name: otf.String(tag.Name),
+			ID:   tag.ID,
+			Name: tag.Name,
 		})
 	}
 

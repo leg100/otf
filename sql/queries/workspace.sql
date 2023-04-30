@@ -52,6 +52,12 @@ INSERT INTO workspaces (
 -- name: FindWorkspaces :many
 SELECT
     w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
@@ -79,6 +85,12 @@ AND   organization_name LIKE ANY(pggen.arg('organization_names'))
 -- name: FindWorkspacesByWebhookID :many
 SELECT
     w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
@@ -95,6 +107,12 @@ WHERE h.webhook_id = pggen.arg('webhook_id')
 -- name: FindWorkspacesByUsername :many
 SELECT
     w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
@@ -129,6 +147,12 @@ AND   u.username          = pggen.arg('username')
 
 -- name: FindWorkspaceByName :one
 SELECT w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
@@ -145,6 +169,12 @@ AND   w.organization_name = pggen.arg('organization_name')
 
 -- name: FindWorkspaceByID :one
 SELECT w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
@@ -160,6 +190,12 @@ WHERE w.workspace_id = pggen.arg('id')
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,

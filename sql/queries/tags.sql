@@ -70,7 +70,9 @@ SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
+JOIN workspace_tags wt USING (tag_id)
 WHERE t.name = pggen.arg('name')
+AND   wt.workspace_id = pggen.arg('workspace_id')
 ;
 
 -- name: FindTagByID :one
@@ -82,7 +84,9 @@ SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
+JOIN workspace_tags wt USING (tag_id)
 WHERE t.tag_id = pggen.arg('tag_id')
+AND   wt.workspace_id = pggen.arg('workspace_id')
 ;
 
 -- name: CountTags :one
@@ -97,16 +101,18 @@ FROM workspace_tags wt
 WHERE wt.workspace_id = pggen.arg('workspace_id')
 ;
 
--- name: DeleteTag :exec
+-- name: DeleteTag :one
 DELETE
 FROM tags
 WHERE tag_id            = pggen.arg('tag_id')
 AND   organization_name = pggen.arg('organization_name')
+RETURNING tag_id
 ;
 
--- name: DeleteWorkspaceTag :exec
+-- name: DeleteWorkspaceTag :one
 DELETE
 FROM workspace_tags
 WHERE workspace_id  = pggen.arg('workspace_id')
 AND   tag_id        = pggen.arg('tag_id')
+RETURNING tag_id
 ;

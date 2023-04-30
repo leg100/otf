@@ -61,6 +61,7 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		TerraformVersion:           from.TerraformVersion,
 		TriggerPrefixes:            from.TriggerPrefixes,
 		WorkingDirectory:           from.WorkingDirectory,
+		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
 		Outputs:                    []*types.StateVersionOutput{},

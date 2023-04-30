@@ -276,6 +276,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		TokensService:               tokensService,
 		VariableService:             variableService,
+		TagService:                  tagService,
 		Signer:                      signer,
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})

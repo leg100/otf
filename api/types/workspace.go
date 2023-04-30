@@ -45,6 +45,7 @@ type Workspace struct {
 	PolicyCheckFailures        int                   `jsonapi:"attribute" json:"policy-check-failures"`
 	RunFailures                int                   `jsonapi:"attribute" json:"run-failures"`
 	RunsCount                  int                   `jsonapi:"attribute" json:"workspace-kpis-runs-count"`
+	TagNames                   []string              `jsonapi:"attribute" json:"tag-names"`
 
 	// Relations
 	CurrentRun   *Run                  `jsonapi:"relationship" json:"current-run"`

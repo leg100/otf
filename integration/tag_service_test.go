@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/tags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,9 +15,9 @@ func TestIntegration_TagService(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		err := svc.AddTags(ctx, ws.ID, []tags.TagSpec{
-			{Name: otf.String("foo")},
-			{Name: otf.String("bar")},
-			{Name: otf.String("baz")},
+			{Name: "foo"},
+			{Name: "bar"},
+			{Name: "baz"},
 		})
 		require.NoError(t, err)
 
@@ -36,20 +35,24 @@ func TestIntegration_TagService(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		err := svc.AddTags(ctx, ws.ID, []tags.TagSpec{
-			{Name: otf.String("foo")},
-			{Name: otf.String("bar")},
-			{Name: otf.String("baz")},
-		})
-		require.NoError(t, err)
-
-		err = svc.RemoveTags(ctx, ws.ID, []tags.TagSpec{
-			{Name: otf.String("foo")},
-			{Name: otf.String("bar")},
-			{Name: otf.String("baz")},
+			{Name: "foo"},
+			{Name: "bar"},
+			{Name: "baz"},
 		})
 		require.NoError(t, err)
 
 		got, err := svc.ListTags(ctx, ws.Organization, tags.ListTagsOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, 3, len(got.Items))
+
+		err = svc.RemoveTags(ctx, ws.ID, []tags.TagSpec{
+			{Name: "foo"},
+			{Name: "bar"},
+			{Name: "baz"},
+		})
+		require.NoError(t, err)
+
+		got, err = svc.ListTags(ctx, ws.Organization, tags.ListTagsOptions{})
 		require.NoError(t, err)
 		assert.Empty(t, got.Items)
 	})
@@ -62,7 +65,7 @@ func TestIntegration_TagService(t *testing.T) {
 		ws3 := svc.createWorkspace(t, ctx, org)
 
 		// create tag first by adding tag to ws1
-		err := svc.AddTags(ctx, ws1.ID, []tags.TagSpec{{Name: otf.String("foo")}})
+		err := svc.AddTags(ctx, ws1.ID, []tags.TagSpec{{Name: "foo"}})
 		require.NoError(t, err)
 
 		// retrieve created tag
@@ -88,5 +91,31 @@ func TestIntegration_TagService(t *testing.T) {
 		if assert.Equal(t, 1, len(got.Items)) {
 			assert.Equal(t, got.Items[0].Organization, ws3.Organization)
 		}
+	})
+
+	t.Run("delete tags from organization", func(t *testing.T) {
+		svc := setup(t, nil)
+		ws := svc.createWorkspace(t, ctx, nil)
+		err := svc.AddTags(ctx, ws.ID, []tags.TagSpec{
+			{Name: "foo"},
+			{Name: "bar"},
+			{Name: "baz"},
+		})
+		require.NoError(t, err)
+
+		list, err := svc.ListTags(ctx, ws.Organization, tags.ListTagsOptions{})
+		require.NoError(t, err)
+		require.Equal(t, 3, len(list.Items))
+
+		err = svc.DeleteTags(ctx, ws.Organization, []string{
+			list.Items[0].ID,
+			list.Items[1].ID,
+			list.Items[2].ID,
+		})
+		require.NoError(t, err)
+
+		got, err := svc.ListTags(ctx, ws.Organization, tags.ListTagsOptions{})
+		require.NoError(t, err)
+		assert.Empty(t, got.Items)
 	})
 }

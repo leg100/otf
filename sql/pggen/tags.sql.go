@@ -95,16 +95,18 @@ const insertWorkspaceTagByNameSQL = `INSERT INTO workspace_tags (
   FROM workspaces w
   JOIN tags t ON (t.organization_name = w.organization_name)
   WHERE t.name = $2
+RETURNING tag_id
 ;`
 
 // InsertWorkspaceTagByName implements Querier.InsertWorkspaceTagByName.
-func (q *DBQuerier) InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWorkspaceTagByName")
-	cmdTag, err := q.conn.Exec(ctx, insertWorkspaceTagByNameSQL, workspaceID, tagName)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertWorkspaceTagByName: %w", err)
+	row := q.conn.QueryRow(ctx, insertWorkspaceTagByNameSQL, workspaceID, tagName)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query InsertWorkspaceTagByName: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // InsertWorkspaceTagByNameBatch implements Querier.InsertWorkspaceTagByNameBatch.
@@ -113,12 +115,13 @@ func (q *DBQuerier) InsertWorkspaceTagByNameBatch(batch genericBatch, workspaceI
 }
 
 // InsertWorkspaceTagByNameScan implements Querier.InsertWorkspaceTagByNameScan.
-func (q *DBQuerier) InsertWorkspaceTagByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertWorkspaceTagByNameBatch: %w", err)
+func (q *DBQuerier) InsertWorkspaceTagByNameScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan InsertWorkspaceTagByNameBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const findTagsSQL = `SELECT
@@ -278,7 +281,9 @@ const findTagByNameSQL = `SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
+JOIN workspace_tags wt USING (tag_id)
 WHERE t.name = $1
+AND   wt.workspace_id = $2
 ;`
 
 type FindTagByNameRow struct {
@@ -289,9 +294,9 @@ type FindTagByNameRow struct {
 }
 
 // FindTagByName implements Querier.FindTagByName.
-func (q *DBQuerier) FindTagByName(ctx context.Context, name pgtype.Text) (FindTagByNameRow, error) {
+func (q *DBQuerier) FindTagByName(ctx context.Context, name pgtype.Text, workspaceID pgtype.Text) (FindTagByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTagByName")
-	row := q.conn.QueryRow(ctx, findTagByNameSQL, name)
+	row := q.conn.QueryRow(ctx, findTagByNameSQL, name, workspaceID)
 	var item FindTagByNameRow
 	if err := row.Scan(&item.TagID, &item.Name, &item.OrganizationName, &item.InstanceCount); err != nil {
 		return item, fmt.Errorf("query FindTagByName: %w", err)
@@ -300,8 +305,8 @@ func (q *DBQuerier) FindTagByName(ctx context.Context, name pgtype.Text) (FindTa
 }
 
 // FindTagByNameBatch implements Querier.FindTagByNameBatch.
-func (q *DBQuerier) FindTagByNameBatch(batch genericBatch, name pgtype.Text) {
-	batch.Queue(findTagByNameSQL, name)
+func (q *DBQuerier) FindTagByNameBatch(batch genericBatch, name pgtype.Text, workspaceID pgtype.Text) {
+	batch.Queue(findTagByNameSQL, name, workspaceID)
 }
 
 // FindTagByNameScan implements Querier.FindTagByNameScan.
@@ -322,7 +327,9 @@ const findTagByIDSQL = `SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
+JOIN workspace_tags wt USING (tag_id)
 WHERE t.tag_id = $1
+AND   wt.workspace_id = $2
 ;`
 
 type FindTagByIDRow struct {
@@ -333,9 +340,9 @@ type FindTagByIDRow struct {
 }
 
 // FindTagByID implements Querier.FindTagByID.
-func (q *DBQuerier) FindTagByID(ctx context.Context, tagID pgtype.Text) (FindTagByIDRow, error) {
+func (q *DBQuerier) FindTagByID(ctx context.Context, tagID pgtype.Text, workspaceID pgtype.Text) (FindTagByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTagByID")
-	row := q.conn.QueryRow(ctx, findTagByIDSQL, tagID)
+	row := q.conn.QueryRow(ctx, findTagByIDSQL, tagID, workspaceID)
 	var item FindTagByIDRow
 	if err := row.Scan(&item.TagID, &item.Name, &item.OrganizationName, &item.InstanceCount); err != nil {
 		return item, fmt.Errorf("query FindTagByID: %w", err)
@@ -344,8 +351,8 @@ func (q *DBQuerier) FindTagByID(ctx context.Context, tagID pgtype.Text) (FindTag
 }
 
 // FindTagByIDBatch implements Querier.FindTagByIDBatch.
-func (q *DBQuerier) FindTagByIDBatch(batch genericBatch, tagID pgtype.Text) {
-	batch.Queue(findTagByIDSQL, tagID)
+func (q *DBQuerier) FindTagByIDBatch(batch genericBatch, tagID pgtype.Text, workspaceID pgtype.Text) {
+	batch.Queue(findTagByIDSQL, tagID, workspaceID)
 }
 
 // FindTagByIDScan implements Querier.FindTagByIDScan.
@@ -424,16 +431,18 @@ const deleteTagSQL = `DELETE
 FROM tags
 WHERE tag_id            = $1
 AND   organization_name = $2
+RETURNING tag_id
 ;`
 
 // DeleteTag implements Querier.DeleteTag.
-func (q *DBQuerier) DeleteTag(ctx context.Context, tagID pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteTag(ctx context.Context, tagID pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTag")
-	cmdTag, err := q.conn.Exec(ctx, deleteTagSQL, tagID, organizationName)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteTag: %w", err)
+	row := q.conn.QueryRow(ctx, deleteTagSQL, tagID, organizationName)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteTag: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteTagBatch implements Querier.DeleteTagBatch.
@@ -442,28 +451,31 @@ func (q *DBQuerier) DeleteTagBatch(batch genericBatch, tagID pgtype.Text, organi
 }
 
 // DeleteTagScan implements Querier.DeleteTagScan.
-func (q *DBQuerier) DeleteTagScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteTagBatch: %w", err)
+func (q *DBQuerier) DeleteTagScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteTagBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const deleteWorkspaceTagSQL = `DELETE
 FROM workspace_tags
 WHERE workspace_id  = $1
 AND   tag_id        = $2
+RETURNING tag_id
 ;`
 
 // DeleteWorkspaceTag implements Querier.DeleteWorkspaceTag.
-func (q *DBQuerier) DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceTag")
-	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceTagSQL, workspaceID, tagID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteWorkspaceTag: %w", err)
+	row := q.conn.QueryRow(ctx, deleteWorkspaceTagSQL, workspaceID, tagID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteWorkspaceTag: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteWorkspaceTagBatch implements Querier.DeleteWorkspaceTagBatch.
@@ -472,10 +484,11 @@ func (q *DBQuerier) DeleteWorkspaceTagBatch(batch genericBatch, workspaceID pgty
 }
 
 // DeleteWorkspaceTagScan implements Querier.DeleteWorkspaceTagScan.
-func (q *DBQuerier) DeleteWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteWorkspaceTagBatch: %w", err)
+func (q *DBQuerier) DeleteWorkspaceTagScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteWorkspaceTagBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

@@ -20,11 +20,22 @@ endif
 
 # go-tfe-tests runs API tests - before it does that, it builds the otfd docker
 # image and starts up otfd and postgres using docker compose, and then the
-# tests are run against it
+# tests are run against it.
+#
+# NOTE: two batches of tests are run:
+# (1) using the forked repo
+# (2) using the upstream repo, for tests against new features, like workspace tags
 .PHONY: go-tfe-tests
-go-tfe-tests: image
+go-tfe-tests: image go-tfe-tests-forked go-tfe-tests-upstream
 	docker compose up -d
+
+.PHONY: go-tfe-tests-forked
+go-tfe-tests-forked:
 	./hack/go-tfe-tests.bash
+
+.PHONY: go-tfe-tests-upstream
+go-tfe-tests-upstream:
+	GO_TFE_REPO=github.com/hashicorp/go-tfe@latest ./hack/go-tfe-tests.bash 'Test(OrganizationTags|Workspaces_(Add|Remove)Tags)'
 
 .PHONY: test
 test:

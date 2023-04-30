@@ -573,12 +573,12 @@ type Querier interface {
 	// InsertWorkspaceTagScan scans the result of an executed InsertWorkspaceTagBatch query.
 	InsertWorkspaceTagScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgconn.CommandTag, error)
+	InsertWorkspaceTagByName(ctx context.Context, workspaceID pgtype.Text, tagName pgtype.Text) (pgtype.Text, error)
 	// InsertWorkspaceTagByNameBatch enqueues a InsertWorkspaceTagByName query into batch to be executed
 	// later by the batch.
 	InsertWorkspaceTagByNameBatch(batch genericBatch, workspaceID pgtype.Text, tagName pgtype.Text)
 	// InsertWorkspaceTagByNameScan scans the result of an executed InsertWorkspaceTagByNameBatch query.
-	InsertWorkspaceTagByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertWorkspaceTagByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	FindTags(ctx context.Context, params FindTagsParams) ([]FindTagsRow, error)
 	// FindTagsBatch enqueues a FindTags query into batch to be executed
@@ -594,17 +594,17 @@ type Querier interface {
 	// FindWorkspaceTagsScan scans the result of an executed FindWorkspaceTagsBatch query.
 	FindWorkspaceTagsScan(results pgx.BatchResults) ([]FindWorkspaceTagsRow, error)
 
-	FindTagByName(ctx context.Context, name pgtype.Text) (FindTagByNameRow, error)
+	FindTagByName(ctx context.Context, name pgtype.Text, workspaceID pgtype.Text) (FindTagByNameRow, error)
 	// FindTagByNameBatch enqueues a FindTagByName query into batch to be executed
 	// later by the batch.
-	FindTagByNameBatch(batch genericBatch, name pgtype.Text)
+	FindTagByNameBatch(batch genericBatch, name pgtype.Text, workspaceID pgtype.Text)
 	// FindTagByNameScan scans the result of an executed FindTagByNameBatch query.
 	FindTagByNameScan(results pgx.BatchResults) (FindTagByNameRow, error)
 
-	FindTagByID(ctx context.Context, tagID pgtype.Text) (FindTagByIDRow, error)
+	FindTagByID(ctx context.Context, tagID pgtype.Text, workspaceID pgtype.Text) (FindTagByIDRow, error)
 	// FindTagByIDBatch enqueues a FindTagByID query into batch to be executed
 	// later by the batch.
-	FindTagByIDBatch(batch genericBatch, tagID pgtype.Text)
+	FindTagByIDBatch(batch genericBatch, tagID pgtype.Text, workspaceID pgtype.Text)
 	// FindTagByIDScan scans the result of an executed FindTagByIDBatch query.
 	FindTagByIDScan(results pgx.BatchResults) (FindTagByIDRow, error)
 
@@ -622,19 +622,19 @@ type Querier interface {
 	// CountWorkspaceTagsScan scans the result of an executed CountWorkspaceTagsBatch query.
 	CountWorkspaceTagsScan(results pgx.BatchResults) (int, error)
 
-	DeleteTag(ctx context.Context, tagID pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
+	DeleteTag(ctx context.Context, tagID pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
 	// DeleteTagBatch enqueues a DeleteTag query into batch to be executed
 	// later by the batch.
 	DeleteTagBatch(batch genericBatch, tagID pgtype.Text, organizationName pgtype.Text)
 	// DeleteTagScan scans the result of an executed DeleteTagBatch query.
-	DeleteTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteTagScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgconn.CommandTag, error)
+	DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgtype.Text, error)
 	// DeleteWorkspaceTagBatch enqueues a DeleteWorkspaceTag query into batch to be executed
 	// later by the batch.
 	DeleteWorkspaceTagBatch(batch genericBatch, workspaceID pgtype.Text, tagID pgtype.Text)
 	// DeleteWorkspaceTagScan scans the result of an executed DeleteWorkspaceTagBatch query.
-	DeleteWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteWorkspaceTagScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error)
 	// InsertTeamBatch enqueues a InsertTeam query into batch to be executed

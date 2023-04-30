@@ -47,6 +47,7 @@ type (
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
+		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
@@ -80,6 +81,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		TriggerPrefixes:            r.TriggerPrefixes,
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
+		Tags:                       r.Tags,
 	}
 
 	if r.WorkspaceConnection != nil {

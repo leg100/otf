@@ -51,6 +51,7 @@ type (
 		Organization               string
 		Connection                 *repo.Connection
 		LatestRun                  *LatestRun
+		Tags                       []string
 
 		*lock
 	}
