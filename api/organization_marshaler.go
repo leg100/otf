@@ -1,27 +1,26 @@
 package api
 
 import (
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/DataDog/jsonapi"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/organization"
 )
 
-func (m *jsonapiMarshaler) toOrganization(org *organization.Organization) *jsonapi.Organization {
-	return &jsonapi.Organization{
+func (m *jsonapiMarshaler) toOrganization(org *organization.Organization) *types.Organization {
+	return &types.Organization{
 		Name:            org.Name,
 		CreatedAt:       org.CreatedAt,
 		ExternalID:      org.ID,
-		Permissions:     &jsonapi.DefaultOrganizationPermissions,
+		Permissions:     &types.DefaultOrganizationPermissions,
 		SessionRemember: org.SessionRemember,
 		SessionTimeout:  org.SessionTimeout,
 	}
 }
 
-func (m *jsonapiMarshaler) toOrganizationList(from *organization.OrganizationList) *jsonapi.OrganizationList {
-	to := &jsonapi.OrganizationList{
-		Pagination: jsonapi.NewPagination(from.Pagination),
-	}
+func (m *jsonapiMarshaler) toOrganizationList(from *organization.OrganizationList) (to []*types.Organization, opts []jsonapi.MarshalOption) {
+	opts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
 	for _, item := range from.Items {
-		to.Items = append(to.Items, m.toOrganization(item))
+		to = append(to, m.toOrganization(item))
 	}
-	return to
+	return
 }

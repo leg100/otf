@@ -4,22 +4,23 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
 
-func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Request) (*jsonapi.Workspace, error) {
+func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Request) (*types.Workspace, []jsonapi.MarshalOption, error) {
 	subject, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	policy, err := m.GetPolicy(r.Context(), from.ID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	perms := &jsonapi.WorkspacePermissions{
+	perms := &types.WorkspacePermissions{
 		CanLock:           subject.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
 		CanUnlock:         subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
 		CanForceUnlock:    subject.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
@@ -32,9 +33,9 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		CanUpdateVariable: subject.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	}
 
-	to := &jsonapi.Workspace{
+	to := &types.Workspace{
 		ID: from.ID,
-		Actions: &jsonapi.WorkspaceActions{
+		Actions: &types.WorkspaceActions{
 			IsDestroyable: true,
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
@@ -61,54 +62,55 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		TriggerPrefixes:            from.TriggerPrefixes,
 		WorkingDirectory:           from.WorkingDirectory,
 		UpdatedAt:                  from.UpdatedAt,
-		Organization:               &jsonapi.Organization{Name: from.Organization},
-		Outputs:                    []*jsonapi.StateVersionOutput{},
+		Organization:               &types.Organization{Name: from.Organization},
+		Outputs:                    []*types.StateVersionOutput{},
 	}
 
 	if from.LatestRun != nil {
-		to.CurrentRun = &jsonapi.Run{ID: from.LatestRun.ID}
+		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
 	}
 
 	// Support including related resources:
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
 	//
-	// NOTE: support is currently limited to a couple of included resources...
+	// NOTE: support is currently limited to a couple of resources.
+	var opts []jsonapi.MarshalOption
 	if includes := r.URL.Query().Get("include"); includes != "" {
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "organization":
 				unmarshaled, err := m.GetOrganization(r.Context(), from.Organization)
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				to.Organization = m.toOrganization(unmarshaled)
+				opts = append(opts, jsonapi.MarshalInclude(to.Organization))
 			case "outputs":
 				sv, err := m.GetCurrentStateVersion(r.Context(), from.ID)
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				for _, out := range sv.Outputs {
 					to.Outputs = append(to.Outputs, m.toOutput(out))
+					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out)))
 				}
 			}
 		}
 	}
 
-	return to, nil
+	return to, opts, nil
 }
 
-func (m *jsonapiMarshaler) toWorkspaceList(list *workspace.WorkspaceList, r *http.Request) (*jsonapi.WorkspaceList, error) {
-	var items []*jsonapi.Workspace
-	for _, ws := range list.Items {
-		item, err := m.toWorkspace(ws, r)
+func (m *jsonapiMarshaler) toWorkspaceList(from *workspace.WorkspaceList, r *http.Request) (to []*types.Workspace, marshalOpts []jsonapi.MarshalOption, err error) {
+	marshalOpts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
+	for _, ws := range from.Items {
+		item, itemOpts, err := m.toWorkspace(ws, r)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		items = append(items, item)
+		to = append(to, item)
+		marshalOpts = append(marshalOpts, itemOpts...)
 	}
-	return &jsonapi.WorkspaceList{
-		Items:      items,
-		Pagination: jsonapi.NewPagination(list.Pagination),
-	}, nil
+	return to, marshalOpts, nil
 }

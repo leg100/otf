@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/organization"
 )
 
@@ -17,7 +17,7 @@ func (c *Client) CreateOrganization(ctx context.Context, options OrganizationCre
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}
-	req, err := c.NewRequest("POST", "organizations", &jsonapi.OrganizationCreateOptions{
+	req, err := c.NewRequest("POST", "organizations", &types.OrganizationCreateOptions{
 		Name:            options.Name,
 		SessionRemember: options.SessionRemember,
 		SessionTimeout:  options.SessionTimeout,
@@ -25,7 +25,7 @@ func (c *Client) CreateOrganization(ctx context.Context, options OrganizationCre
 	if err != nil {
 		return nil, err
 	}
-	org := jsonapi.Organization{}
+	org := types.Organization{}
 	err = c.Do(ctx, req, &org)
 	if err != nil {
 		return nil, err

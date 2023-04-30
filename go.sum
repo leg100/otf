@@ -412,8 +412,8 @@ github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LE
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80 h1:6Yzfa6GP0rIo/kULo2bwGEkFvCePZ3qHDDTC3/J9Swo=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80/go.mod h1:imJHygn/1yfhB7XSJJKlFZKl/J+dCPAknuiaGOshXAs=
-github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f h1:B6cjxBElIm1uvJj0go33EfQnkW0mvmVaHVVsXn81od8=
-github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f/go.mod h1:bxfK4GybcsXRZYxs4FWVlOe3vK5MN3midIRDqJxVoH0=
+github.com/leg100/jsonapi v1.0.3 h1:PZCOVzjA6bp7Um5DOXykJkcV+JCD1jTAYhcSb/o2mPg=
+github.com/leg100/jsonapi v1.0.3/go.mod h1:FUSGF3bwMARlVfXEoFo9R/CVlYYy9BGL4C/Prf6Ke3M=
 github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad h1:TdeSAP2J0ItVZrNnrJHwwqslDbIxDOkysU/4aHZK9v8=
 github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad/go.mod h1:Igau6Whc+F17QUgML1fYe1VPZzTV6EMCnYktEmkNJ7I=
 github.com/leg100/surl v0.0.5 h1:xykQiuuEdnEumELfayOvGdssLtRYwhy8MUs+mWZo8TE=

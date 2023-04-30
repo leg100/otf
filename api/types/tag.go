@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package jsonapi
+package types
 
 type (
 
@@ -44,15 +44,5 @@ type (
 	// workspace.
 	Tags struct {
 		Tags []*Tag
-	}
-
-	// this represents a single tag ID
-	tagID struct {
-		ID string `jsonapi:"primary,tags"`
-	}
-
-	// this represents a single workspace ID
-	workspaceID struct {
-		ID string `jsonapi:"primary,workspaces"`
 	}
 )

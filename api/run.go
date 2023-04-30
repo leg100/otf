@@ -7,11 +7,12 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/run"
 )
 
@@ -47,13 +48,13 @@ func (a *api) addRunHandlers(r *mux.Router) {
 }
 
 func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
-	var opts jsonapi.RunCreateOptions
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, err)
+	var opts types.RunCreateOptions
+	if err := unmarshal(r.Body, &opts); err != nil {
+		Error(w, err)
 		return
 	}
 	if opts.Workspace == nil {
-		jsonapi.Error(w, &otf.MissingParameterError{Parameter: "workspace"})
+		Error(w, &otf.MissingParameterError{Parameter: "workspace"})
 		return
 	}
 	var configurationVersionID *string
@@ -71,11 +72,11 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 		ReplaceAddrs:           opts.ReplaceAddrs,
 	})
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
-	a.writeResponse(w, r, run, jsonapi.WithCode(http.StatusCreated))
+	a.writeResponse(w, r, run, withCode(http.StatusCreated))
 }
 
 func (a *api) startPhase(w http.ResponseWriter, r *http.Request) {
@@ -84,13 +85,13 @@ func (a *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		Phase otf.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	run, err := a.StartPhase(r.Context(), params.RunID, params.Phase, run.PhaseStartOptions{})
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -103,13 +104,13 @@ func (a *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 		Phase otf.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	run, err := a.FinishPhase(r.Context(), params.RunID, params.Phase, run.PhaseFinishOptions{})
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -119,13 +120,13 @@ func (a *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 func (a *api) getRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	run, err := a.GetRun(r.Context(), id)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -144,13 +145,13 @@ func (a *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts run.RunListOptions) {
 	if err := decode.All(&opts, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	list, err := a.ListRuns(r.Context(), opts)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -160,12 +161,12 @@ func (a *api) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts r
 func (a *api) applyRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	if err := a.Apply(r.Context(), id); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -175,12 +176,12 @@ func (a *api) applyRun(w http.ResponseWriter, r *http.Request) {
 func (a *api) discardRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	if err = a.DiscardRun(r.Context(), id); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -190,12 +191,12 @@ func (a *api) discardRun(w http.ResponseWriter, r *http.Request) {
 func (a *api) cancelRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	if _, err = a.Cancel(r.Context(), id); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -205,12 +206,12 @@ func (a *api) cancelRun(w http.ResponseWriter, r *http.Request) {
 func (a *api) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	if err := a.ForceCancelRun(r.Context(), id); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -220,18 +221,18 @@ func (a *api) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	opts := run.PlanFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	file, err := a.GetPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -244,24 +245,24 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	opts := run.PlanFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	err = a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -271,13 +272,13 @@ func (a *api) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	file, err := a.GetLockFile(r.Context(), id)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -290,19 +291,19 @@ func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	err = a.UploadLockFile(r.Context(), id, buf.Bytes())
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -320,14 +321,14 @@ func (a *api) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 func (a *api) getPlan(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
 	run, err := a.GetRun(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -340,14 +341,14 @@ func (a *api) getPlan(w http.ResponseWriter, r *http.Request) {
 func (a *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
 	json, err := a.GetPlanFile(r.Context(), otf.ConvertID(id, "run"), run.PlanFormatJSON)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	if _, err := w.Write(json); err != nil {
@@ -359,14 +360,14 @@ func (a *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 func (a *api) getApply(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("apply_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
 	run, err := a.GetRun(r.Context(), otf.ConvertID(id, "run"))
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -404,17 +405,17 @@ func (a *api) watchRun(w http.ResponseWriter, r *http.Request) {
 
 	for event := range events {
 		run := event.Payload.(*run.Run)
-		jrun, err := a.toRun(run, r)
+		jrun, _, err := a.toRun(run, r)
 		if err != nil {
 			a.Error(err, "marshalling run event", "event", event.Type)
 			continue
 		}
-		var buf bytes.Buffer
-		if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, jrun); err != nil {
+		b, err := jsonapi.Marshal(jrun)
+		if err != nil {
 			a.Error(err, "marshalling run event", "event", event.Type)
 			continue
 		}
-		otf.WriteSSEEvent(w, buf.Bytes(), event.Type, true)
+		otf.WriteSSEEvent(w, b, event.Type, true)
 		flusher.Flush()
 	}
 }

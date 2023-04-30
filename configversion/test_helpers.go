@@ -28,11 +28,3 @@ func CreateTestConfigurationVersion(t *testing.T, db otf.DB, ws *workspace.Works
 	})
 	return cv
 }
-
-type fakeService struct {
-	Service
-}
-
-func (f *fakeService) UploadConfig(context.Context, string, []byte) error {
-	return nil
-}

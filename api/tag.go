@@ -6,9 +6,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/tags"
 )
 
@@ -34,38 +34,38 @@ func (a *api) addTagHandlers(r *mux.Router) {
 func (a *api) listTags(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	var params tags.ListTagsOptions
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	tags, err := a.ListTags(r.Context(), org, params)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
-	writeTags(w, r, tags)
+	a.writeResponse(w, r, tags)
 }
 
 func (a *api) deleteTags(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
-	var params jsonapi.OrganizationTagsDeleteOptions
+	var params types.OrganizationTagsDeleteOptions
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	if err := a.DeleteTags(r.Context(), org, params.IDs); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -75,17 +75,17 @@ func (a *api) deleteTags(w http.ResponseWriter, r *http.Request) {
 func (a *api) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 	tagID, err := decode.Param("tag_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
-	var params jsonapi.AddWorkspacesToTagOptions
+	var params types.AddWorkspacesToTagOptions
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	if err := a.TagWorkspaces(r.Context(), tagID, params.WorkspaceIDs); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -103,12 +103,12 @@ func (a *api) removeTags(w http.ResponseWriter, r *http.Request) {
 func (a *api) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagOperation) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
-	var params jsonapi.Tags
-	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
-		jsonapi.Error(w, err)
+	var params types.Tags
+	if err := unmarshal(r.Body, &params); err != nil {
+		Error(w, err)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (a *api) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		err = errors.New("unknown tag operation")
 	}
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -140,37 +140,20 @@ func (a *api) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 func (a *api) getTags(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	var params tags.ListWorkspaceTagsOptions
 	if err := decode.All(&params, r); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	tags, err := a.ListWorkspaceTags(r.Context(), workspaceID, params)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
-	writeTags(w, r, tags)
-}
-
-func writeTags(w http.ResponseWriter, r *http.Request, tags *tags.TagList) {
-	to := jsonapi.OrganizationTagsList{
-		Pagination: jsonapi.NewPagination(tags.Pagination),
-	}
-	for _, from := range tags.Items {
-		to.Items = append(to.Items, &jsonapi.OrganizationTag{
-			ID:            from.ID,
-			Name:          from.Name,
-			InstanceCount: from.InstanceCount,
-			Organization: &jsonapi.Organization{
-				Name: from.Organization,
-			},
-		})
-	}
-	jsonapi.WriteResponse(w, r, to)
+	a.writeResponse(w, r, tags)
 }

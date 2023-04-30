@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 )
 
 // Client uses json-api according to the documented terraform cloud state
@@ -30,7 +30,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 	}
 
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(*opts.WorkspaceID))
-	req, err := c.NewRequest("POST", u, &jsonapi.StateVersionCreateVersionOptions{
+	req, err := c.NewRequest("POST", u, &types.StateVersionCreateVersionOptions{
 		Lineage: &state.Lineage,
 		MD5:     otf.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
 		Serial:  otf.Int64(state.Serial),
@@ -40,7 +40,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 		return nil, err
 	}
 
-	sv := jsonapi.StateVersion{}
+	sv := types.StateVersion{}
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (c *Client) ListStateVersions(ctx context.Context, options StateVersionList
 		return nil, err
 	}
 
-	list := &jsonapi.StateVersionList{}
+	list := &types.StateVersionList{}
 	err = c.Do(ctx, req, list)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID string)
 		return nil, err
 	}
 
-	sv := jsonapi.StateVersion{}
+	sv := types.StateVersion{}
 	if err := c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
@@ -121,14 +121,14 @@ func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Versio
 	// ID, but OTF does nothing with the workspace ID and thus anything can be
 	// specified.
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape("ws-rollback"))
-	req, err := c.NewRequest("PATCH", u, &jsonapi.RollbackStateVersionOptions{
-		RollbackStateVersion: &jsonapi.StateVersion{ID: svID},
+	req, err := c.NewRequest("PATCH", u, &types.RollbackStateVersionOptions{
+		RollbackStateVersion: &types.StateVersion{ID: svID},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	sv := jsonapi.StateVersion{}
+	sv := types.StateVersion{}
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Versio
 	return newFromJSONAPI(&sv), nil
 }
 
-func newFromJSONAPI(from *jsonapi.StateVersion) *Version {
+func newFromJSONAPI(from *types.StateVersion) *Version {
 	return &Version{
 		ID:     from.ID,
 		Serial: from.Serial,
@@ -144,9 +144,9 @@ func newFromJSONAPI(from *jsonapi.StateVersion) *Version {
 }
 
 // newListFromJSONAPI constructs a state version list from a json:api struct
-func newListFromJSONAPI(from *jsonapi.StateVersionList) *VersionList {
+func newListFromJSONAPI(from *types.StateVersionList) *VersionList {
 	to := VersionList{
-		Pagination: jsonapi.NewPaginationFromJSONAPI(from.Pagination),
+		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
 	}
 	for _, i := range from.Items {
 		to.Items = append(to.Items, newFromJSONAPI(i))

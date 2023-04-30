@@ -10,8 +10,8 @@ import (
 	"path"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -98,7 +98,7 @@ func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, e
 		return nil, err
 	}
 
-	wl := &jsonapi.RunList{}
+	wl := &types.RunList{}
 	err = c.Do(ctx, req, wl)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
 		return nil, err
 	}
 
-	run := &jsonapi.Run{}
+	run := &types.Run{}
 	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 		return nil, err
 	}
 
-	run := &jsonapi.Run{}
+	run := &types.Run{}
 	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 		return nil, err
 	}
 
-	run := &jsonapi.Run{}
+	run := &types.Run{}
 	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
