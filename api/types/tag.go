@@ -17,8 +17,4 @@ type (
 		// The org this tag belongs to
 		Organization *Organization `jsonapi:"relationship" json:"organization"`
 	}
-
-	DeleteTagOption struct {
-		ID string `jsonapi:"primary,tags"`
-	}
 )

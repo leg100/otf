@@ -26,8 +26,7 @@ endif
 # (1) using the forked repo
 # (2) using the upstream repo, for tests against new features, like workspace tags
 .PHONY: go-tfe-tests
-go-tfe-tests: image go-tfe-tests-forked go-tfe-tests-upstream
-	docker compose up -d
+go-tfe-tests: image compose-up go-tfe-tests-forked go-tfe-tests-upstream
 
 .PHONY: go-tfe-tests-forked
 go-tfe-tests-forked:
@@ -61,25 +60,25 @@ install-latest-release:
 	unzip -o -d $(GOBIN) $$ZIP_FILE otfd ;\
 	}
 
-# Run postgresql in a container
+# Run docker compose stack
+.PHONY: compose-up
+compose-up:
+	docker compose up -d
+
+# Remove docker compose stack
+.PHONY: compose-rm
+compose-rm:
+	docker compose rm -sf
+
+# Run postgresql via docker compose
 .PHONY: postgres
 postgres:
-	docker compose -f docker-compose.yml up -d postgres
+	docker compose up -d postgres
 
-# Stop and remove postgres container
-.PHONY: postgres-rm
-postgres-rm:
-	docker compose -f docker-compose.yml rm -sf
-
-# Run squid caching proxy in a container
+# Run squid via docker compose
 .PHONY: squid
 squid:
-	docker run --rm --name squid -t -d -p 3128:3128 -v $(PWD)/integration/fixtures:/etc/squid/certs leg100/squid:0.2
-
-# Stop squid container
-.PHONY: squid-stop
-squid-stop:
-	docker stop --signal INT squid
+	docker compose up -d squid
 
 # Run staticcheck metalinter recursively against code
 .PHONY: lint

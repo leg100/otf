@@ -57,7 +57,9 @@ func (a *api) deleteTags(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	var params []*types.DeleteTagOption
+	var params []struct {
+		ID string `jsonapi:"primary,tags"`
+	}
 	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
