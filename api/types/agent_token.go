@@ -1,9 +1,9 @@
-package jsonapi
+package types
 
 // AgentToken represents an otf agent token.
 type AgentToken struct {
 	ID           string `jsonapi:"primary,agent_tokens"`
-	Organization string `jsonapi:"attr,organization_name"`
+	Organization string `jsonapi:"attribute" json:"organization_name"`
 }
 
 // AgentTokenCreateOptions represents the options for creating a new otf agent token.
@@ -15,9 +15,9 @@ type AgentTokenCreateOptions struct {
 
 	// Description is a meaningful description of the purpose of the agent
 	// token.
-	Description string `jsonapi:"attr,description"`
+	Description string `jsonapi:"attribute" json:"description"`
 
 	// Organization is the name of the organization in which to create the
 	// token.
-	Organization string `jsonapi:"attr,organization_name"`
+	Organization string `jsonapi:"attribute" json:"organization_name"`
 }

@@ -29,7 +29,7 @@ type (
 		// Download retrieves the config tarball for the given config version ID.
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
 
-		delete(ctx context.Context, cvID string) error
+		DeleteConfigurationVersion(ctx context.Context, cvID string) error
 	}
 
 	service struct {
@@ -39,15 +39,12 @@ type (
 
 		db    *pgdb
 		cache otf.Cache
-
-		*api
 	}
 
 	Options struct {
 		logr.Logger
 
 		WorkspaceAuthorizer otf.Authorizer
-		MaxUploadSize       int64
 
 		otf.Cache
 		otf.DB
@@ -64,8 +61,6 @@ func NewService(opts Options) *service {
 
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache
-
-	svc.api = newAPI(apiOptions{&svc, opts.MaxUploadSize, opts.Signer})
 
 	return &svc
 }
@@ -159,10 +154,6 @@ func (s *service) GetLatestConfigurationVersion(ctx context.Context, workspaceID
 }
 
 func (s *service) DeleteConfigurationVersion(ctx context.Context, cvID string) error {
-	return s.svc.delete(ctx, cvID)
-}
-
-func (s *service) delete(ctx context.Context, cvID string) error {
 	subject, err := s.canAccess(ctx, rbac.DeleteConfigurationVersionAction, cvID)
 	if err != nil {
 		return err

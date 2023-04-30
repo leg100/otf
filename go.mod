@@ -3,6 +3,7 @@ module github.com/leg100/otf
 go 1.20
 
 require (
+	github.com/DataDog/jsonapi v0.7.0
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
@@ -28,7 +29,6 @@ require (
 	github.com/jackc/pgconn v1.12.0
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.0
-	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/surl v0.0.5
 	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/mitchellh/iochan v1.0.0
@@ -46,7 +46,6 @@ require (
 	golang.org/x/net v0.8.0
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	golang.org/x/sync v0.1.0
-	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	google.golang.org/api v0.103.0
 	gopkg.in/cenkalti/backoff.v1 v1.1.0
 )
@@ -113,6 +112,7 @@ require (
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd // indirect
 	google.golang.org/grpc v1.50.1 // indirect
@@ -124,3 +124,5 @@ require (
 //replace github.com/leg100/go-tfe => ../go-tfe
 
 replace github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad
+
+replace github.com/DataDog/jsonapi => github.com/leg100/jsonapi v1.0.3

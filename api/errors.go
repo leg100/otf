@@ -1,11 +1,10 @@
-package jsonapi
+package api
 
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
-	"github.com/leg100/jsonapi"
+	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf"
 )
 
@@ -28,8 +27,6 @@ func lookupHTTPCode(err error) int {
 	return http.StatusInternalServerError
 }
 
-type ErrorsPayload jsonapi.ErrorsPayload
-
 // Error writes an HTTP response with a JSON-API encoded error.
 func Error(w http.ResponseWriter, err error) {
 	var (
@@ -46,13 +43,15 @@ func Error(w http.ResponseWriter, err error) {
 	} else {
 		code = lookupHTTPCode(err)
 	}
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	w.WriteHeader(code)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
-		{
-			Status: strconv.Itoa(code),
-			Title:  http.StatusText(code),
-			Detail: err.Error(),
-		},
+	b, err := jsonapi.Marshal(&jsonapi.Error{
+		Status: &code,
+		Title:  http.StatusText(code),
+		Detail: err.Error(),
 	})
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-type", mediaType)
+	w.WriteHeader(code)
+	w.Write(b)
 }

@@ -1,35 +1,33 @@
-package jsonapi
+package types
 
-import (
-	"time"
-)
+import "time"
 
 // Run is a terraform run.
 type Run struct {
 	ID                     string               `jsonapi:"primary,runs"`
-	Actions                *RunActions          `jsonapi:"attr,actions"`
-	CreatedAt              time.Time            `jsonapi:"attr,created-at,iso8601"`
-	ForceCancelAvailableAt *time.Time           `jsonapi:"attr,force-cancel-available-at,iso8601"`
-	ExecutionMode          string               `jsonapi:"attr,execution-mode"`
-	HasChanges             bool                 `jsonapi:"attr,has-changes"`
-	IsDestroy              bool                 `jsonapi:"attr,is-destroy"`
-	Message                string               `jsonapi:"attr,message"`
-	Permissions            *RunPermissions      `jsonapi:"attr,permissions"`
-	PositionInQueue        int                  `jsonapi:"attr,position-in-queue"`
-	Refresh                bool                 `jsonapi:"attr,refresh"`
-	RefreshOnly            bool                 `jsonapi:"attr,refresh-only"`
-	ReplaceAddrs           []string             `jsonapi:"attr,replace-addrs,omitempty"`
-	Source                 string               `jsonapi:"attr,source"`
-	Status                 string               `jsonapi:"attr,status"`
-	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
-	TargetAddrs            []string             `jsonapi:"attr,target-addrs,omitempty"`
+	Actions                *RunActions          `jsonapi:"attribute" json:"actions"`
+	CreatedAt              time.Time            `jsonapi:"attribute" json:"created-at"`
+	ForceCancelAvailableAt *time.Time           `jsonapi:"attribute" json:"force-cancel-available-at"`
+	ExecutionMode          string               `jsonapi:"attribute" json:"execution-mode"`
+	HasChanges             bool                 `jsonapi:"attribute" json:"has-changes"`
+	IsDestroy              bool                 `jsonapi:"attribute" json:"is-destroy"`
+	Message                string               `jsonapi:"attribute" json:"message"`
+	Permissions            *RunPermissions      `jsonapi:"attribute" json:"permissions"`
+	PositionInQueue        int                  `jsonapi:"attribute" json:"position-in-queue"`
+	Refresh                bool                 `jsonapi:"attribute" json:"refresh"`
+	RefreshOnly            bool                 `jsonapi:"attribute" json:"refresh-only"`
+	ReplaceAddrs           []string             `jsonapi:"attribute" json:"replace-addrs,omitempty"`
+	Source                 string               `jsonapi:"attribute" json:"source"`
+	Status                 string               `jsonapi:"attribute" json:"status"`
+	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+	TargetAddrs            []string             `jsonapi:"attribute" json:"target-addrs,omitempty"`
 
 	// Relations
-	Apply                *Apply                `jsonapi:"relation,apply"`
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
-	CreatedBy            *User                 `jsonapi:"relation,created-by"`
-	Plan                 *Plan                 `jsonapi:"relation,plan"`
-	Workspace            *Workspace            `jsonapi:"relation,workspace"`
+	Apply                *Apply                `jsonapi:"relationship" json:"apply"`
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	CreatedBy            *User                 `jsonapi:"relationship" json:"created-by"`
+	Plan                 *Plan                 `jsonapi:"relationship" json:"plan"`
+	Workspace            *Workspace            `jsonapi:"relationship" json:"workspace"`
 }
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
@@ -85,26 +83,26 @@ type RunCreateOptions struct {
 
 	// Specifies if this plan is a destroy plan, which will destroy all
 	// provisioned resources.
-	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
+	IsDestroy *bool `jsonapi:"attribute" json:"is-destroy,omitempty"`
 
 	// Refresh determines if the run should
 	// update the state prior to checking for differences
-	Refresh *bool `jsonapi:"attr,refresh,omitempty"`
+	Refresh *bool `jsonapi:"attribute" json:"refresh,omitempty"`
 
 	// RefreshOnly determines whether the run should ignore config changes
 	// and refresh the state only
-	RefreshOnly *bool `jsonapi:"attr,refresh-only,omitempty"`
+	RefreshOnly *bool `jsonapi:"attribute" json:"refresh-only,omitempty"`
 
 	// Specifies the message to be associated with this run.
-	Message *string `jsonapi:"attr,message,omitempty"`
+	Message *string `jsonapi:"attribute" json:"message,omitempty"`
 
 	// Specifies the configuration version to use for this run. If the
 	// configuration version object is omitted, the run will be created using the
 	// workspace's latest configuration version.
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
 
 	// Specifies the workspace where the run will be executed.
-	Workspace *Workspace `jsonapi:"relation,workspace"`
+	Workspace *Workspace `jsonapi:"relationship" json:"workspace"`
 
 	// If non-empty, requests that Terraform should create a plan including
 	// actions only for the given objects (specified using resource address
@@ -117,16 +115,16 @@ type RunCreateOptions struct {
 	// argument may be appropriate. This argument should not be used as part
 	// of routine workflow and Terraform will emit warnings reminding about
 	// this whenever this property is set.
-	TargetAddrs []string `jsonapi:"attr,target-addrs,omitempty"`
+	TargetAddrs []string `jsonapi:"attribute" json:"target-addrs,omitempty"`
 
 	// If non-empty, requests that Terraform create a plan that replaces
 	// (destroys and then re-creates) the objects specified by the given
 	// resource addresses.
-	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+	ReplaceAddrs []string `jsonapi:"attribute" json:"replace-addrs,omitempty"`
 
 	// AutoApply determines if the run should be applied automatically without
 	// user confirmation. It defaults to the Workspace.AutoApply setting.
-	AutoApply *bool `jsonapi:"attr,auto-apply,omitempty"`
+	AutoApply *bool `jsonapi:"attribute" json:"auto-apply,omitempty"`
 }
 
 // PhaseStatusTimestamps holds the timestamps for individual statuses for a
@@ -139,4 +137,31 @@ type PhaseStatusTimestamps struct {
 	QueuedAt      *time.Time `json:"queued-at,omitempty"`
 	StartedAt     *time.Time `json:"started-at,omitempty"`
 	UnreachableAt *time.Time `json:"unreachable-at,omitempty"`
+}
+
+// Apply is a terraform apply
+type Apply struct {
+	ID               string                 `jsonapi:"primary,applies"`
+	LogReadURL       string                 `jsonapi:"attribute" json:"log-read-url"`
+	Status           string                 `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *PhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+
+	ResourceReport
+}
+
+// Plan represents a Terraform Enterprise plan.
+type Plan struct {
+	ID               string                 `jsonapi:"primary,plans"`
+	HasChanges       bool                   `jsonapi:"attribute" json:"has-changes"`
+	LogReadURL       string                 `jsonapi:"attribute" json:"log-read-url"`
+	Status           string                 `jsonapi:"attribute" json:"status"`
+	StatusTimestamps *PhaseStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
+
+	ResourceReport
+}
+
+type ResourceReport struct {
+	Additions    *int `json:"resource-additions"`
+	Changes      *int `json:"resource-changes"`
+	Destructions *int `json:"resource-destructions"`
 }

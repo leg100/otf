@@ -181,7 +181,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
 		Signer:              signer,
-		MaxUploadSize:       cfg.MaxConfigSize,
 	})
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
@@ -261,12 +260,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	api := api.New(api.Options{
-		WorkspaceService:           workspaceService,
-		OrganizationService:        orgService,
-		OrganizationCreatorService: orgCreatorService,
-		StateService:               stateService,
-		RunService:                 runService,
-		Signer:                     signer,
+		WorkspaceService:            workspaceService,
+		OrganizationService:         orgService,
+		OrganizationCreatorService:  orgCreatorService,
+		StateService:                stateService,
+		RunService:                  runService,
+		ConfigurationVersionService: configService,
+		AuthService:                 authService,
+		TokensService:               tokensService,
+		VariableService:             variableService,
+		Signer:                      signer,
+		MaxConfigSize:               cfg.MaxConfigSize,
 	})
 
 	handlers := []otf.Handlers{
@@ -281,7 +285,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		variableService,
 		vcsProviderService,
 		moduleService,
-		configService,
 		runService,
 		logsService,
 		repoService,

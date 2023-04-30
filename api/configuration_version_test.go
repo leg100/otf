@@ -1,4 +1,4 @@
-package configversion
+package api
 
 import (
 	"crypto/rand"
@@ -16,13 +16,13 @@ import (
 func TestUploadConfigurationVersion(t *testing.T) {
 	api := &api{
 		// only permit upto 100 byte uploads
-		max: 100,
-		svc: &fakeService{},
+		maxConfigSize:               100,
+		ConfigurationVersionService: &fakeConfigService{},
 	}
 
 	// setup web server
 	router := mux.NewRouter()
-	router.Handle("/upload/{id}", api.UploadConfigurationVersion())
+	router.Handle("/upload/{id}", api.uploadConfigurationVersion())
 	webSrv := httptest.NewTLSServer(router)
 	t.Cleanup(webSrv.Close)
 	url := webSrv.URL + "/upload/cv-123"

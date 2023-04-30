@@ -8,9 +8,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/leg100/otf/state"
 )
 
@@ -35,36 +35,36 @@ func (a *api) addStateHandlers(r *mux.Router) {
 func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
-	opts := jsonapi.StateVersionCreateVersionOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, err)
+	opts := types.StateVersionCreateVersionOptions{}
+	if err := unmarshal(r.Body, &opts); err != nil {
+		Error(w, err)
 		return
 	}
 
 	// required options
 	if opts.Serial == nil {
-		jsonapi.Error(w, &otf.MissingParameterError{Parameter: "serial"})
+		Error(w, &otf.MissingParameterError{Parameter: "serial"})
 		return
 	}
 	if opts.MD5 == nil {
-		jsonapi.Error(w, &otf.MissingParameterError{Parameter: "md5"})
+		Error(w, &otf.MissingParameterError{Parameter: "md5"})
 		return
 	}
 
 	// base64-decode state to []byte
 	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	// validate md5 checksum
 	if fmt.Sprintf("%x", md5.Sum(decoded)) != *opts.MD5 {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -81,21 +81,21 @@ func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 		Serial:      opts.Serial,
 	})
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
-	a.writeResponse(w, r, sv, jsonapi.WithCode(http.StatusCreated))
+	a.writeResponse(w, r, sv, withCode(http.StatusCreated))
 }
 
 func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 	var opts state.StateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	svl, err := a.ListStateVersions(r.Context(), opts)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	a.writeResponse(w, r, svl)
@@ -104,13 +104,13 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
 	sv, err := a.GetCurrentStateVersion(r.Context(), workspaceID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	a.writeResponse(w, r, sv)
@@ -119,12 +119,12 @@ func (a *api) getCurrentVersion(w http.ResponseWriter, r *http.Request) {
 func (a *api) getVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	sv, err := a.GetStateVersion(r.Context(), versionID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	a.writeResponse(w, r, sv)
@@ -133,26 +133,26 @@ func (a *api) getVersion(w http.ResponseWriter, r *http.Request) {
 func (a *api) deleteVersion(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	if err := a.DeleteStateVersion(r.Context(), versionID); err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
-	opts := jsonapi.RollbackStateVersionOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		jsonapi.Error(w, err)
+	opts := types.RollbackStateVersionOptions{}
+	if err := unmarshal(r.Body, &opts); err != nil {
+		Error(w, err)
 		return
 	}
 
 	sv, err := a.RollbackStateVersion(r.Context(), opts.RollbackStateVersion.ID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 
@@ -162,12 +162,12 @@ func (a *api) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	resp, err := a.DownloadState(r.Context(), versionID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	w.Write(resp)
@@ -176,12 +176,12 @@ func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
 func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 	versionID, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	sv, err := a.GetStateVersion(r.Context(), versionID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	a.writeResponse(w, r, sv.Outputs)
@@ -190,12 +190,12 @@ func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 func (a *api) getOutput(w http.ResponseWriter, r *http.Request) {
 	outputID, err := decode.Param("id", r)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 	out, err := a.GetStateVersionOutput(r.Context(), outputID)
 	if err != nil {
-		jsonapi.Error(w, err)
+		Error(w, err)
 		return
 	}
 

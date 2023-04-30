@@ -2,39 +2,51 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/DataDog/jsonapi"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/state"
 )
 
-// ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toVersion(from *state.Version) *jsonapi.StateVersion {
-	to := &jsonapi.StateVersion{
+func (m *jsonapiMarshaler) toState(from *state.Version, r *http.Request) (*types.StateVersion, []jsonapi.MarshalOption) {
+	to := &types.StateVersion{
 		ID:          from.ID,
 		CreatedAt:   from.CreatedAt,
 		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
 		Serial:      from.Serial,
 	}
-	for _, out := range from.Outputs {
-		to.Outputs = append(to.Outputs, m.toOutput(out))
+
+	// Support including related resources:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#outputs
+	var opts []jsonapi.MarshalOption
+	if includes := r.URL.Query().Get("include"); includes != "" {
+		for _, inc := range strings.Split(includes, ",") {
+			switch inc {
+			case "outputs":
+				for _, out := range from.Outputs {
+					to.Outputs = append(to.Outputs, m.toOutput(out))
+					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out)))
+				}
+			}
+		}
 	}
-	return to
+	return to, opts
 }
 
-// ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toList(from *state.VersionList) *jsonapi.StateVersionList {
-	jl := &jsonapi.StateVersionList{
-		Pagination: jsonapi.NewPagination(from.Pagination),
-	}
+func (m *jsonapiMarshaler) toStateList(from *state.VersionList, r *http.Request) (to []*types.StateVersion, opts []jsonapi.MarshalOption) {
+	opts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
 	for _, item := range from.Items {
-		jl.Items = append(jl.Items, m.toVersion(item))
+		sv, _ := m.toState(item, r)
+		to = append(to, sv)
 	}
-	return jl
+	return
 }
 
-// ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (*jsonapiMarshaler) toOutput(from *state.Output) *jsonapi.StateVersionOutput {
-	return &jsonapi.StateVersionOutput{
+func (*jsonapiMarshaler) toOutput(from *state.Output) *types.StateVersionOutput {
+	return &types.StateVersionOutput{
 		ID:        from.ID,
 		Name:      from.Name,
 		Sensitive: from.Sensitive,
@@ -43,9 +55,8 @@ func (*jsonapiMarshaler) toOutput(from *state.Output) *jsonapi.StateVersionOutpu
 	}
 }
 
-// ToJSONAPI assembles a struct suitable for marshalling into json-api
-func (m *jsonapiMarshaler) toOutputList(from state.OutputList) *jsonapi.StateVersionOutputList {
-	var to jsonapi.StateVersionOutputList
+func (m *jsonapiMarshaler) toOutputList(from state.OutputList) *types.StateVersionOutputList {
+	var to types.StateVersionOutputList
 	for _, v := range from {
 		to.Items = append(to.Items, m.toOutput(v))
 	}

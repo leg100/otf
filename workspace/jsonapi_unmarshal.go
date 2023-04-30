@@ -1,10 +1,11 @@
 package workspace
 
 import (
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 )
 
-func unmarshalJSONAPI(w *jsonapi.Workspace) *Workspace {
+func unmarshalJSONAPI(w *types.Workspace) *Workspace {
 	domain := Workspace{
 		ID:                         w.ID,
 		AllowDestroyPlan:           w.AllowDestroyPlan,
@@ -40,9 +41,9 @@ func unmarshalJSONAPI(w *jsonapi.Workspace) *Workspace {
 }
 
 // unmarshalListJSONAPI converts a DTO into a workspace list
-func unmarshalListJSONAPI(json *jsonapi.WorkspaceList) *WorkspaceList {
+func unmarshalListJSONAPI(json *types.WorkspaceList) *WorkspaceList {
 	wl := WorkspaceList{
-		Pagination: jsonapi.NewPaginationFromJSONAPI(json.Pagination),
+		Pagination: otf.NewPaginationFromJSONAPI(json.Pagination),
 	}
 	for _, i := range json.Items {
 		wl.Items = append(wl.Items, unmarshalJSONAPI(i))

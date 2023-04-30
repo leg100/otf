@@ -1,15 +1,15 @@
 package api
 
 import (
-	"bytes"
 	"encoding/base64"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +20,7 @@ func TestAPI_Watch(t *testing.T) {
 
 	srv := &api{
 		Logger:     logr.Discard(),
-		marshaler:  &fakeMarshaler{run: &jsonapi.Run{}},
+		marshaler:  &fakeMarshaler{run: &types.Run{ID: "run-123"}},
 		RunService: &fakeRunService{ch: in},
 	}
 
@@ -29,7 +29,7 @@ func TestAPI_Watch(t *testing.T) {
 
 	// send one event and then close
 	in <- otf.Event{
-		Payload: &run.Run{},
+		Payload: &run.Run{ID: "run-123"},
 		Type:    otf.EventRunCreated,
 	}
 	close(in)
@@ -50,8 +50,8 @@ func TestAPI_Watch(t *testing.T) {
 				decoded, err := base64.StdEncoding.DecodeString(data)
 				if assert.NoError(t, err) {
 					// unmarshal into json:api struct
-					var run jsonapi.Run
-					err := jsonapi.UnmarshalPayload(bytes.NewReader(decoded), &run)
+					var run types.Run
+					err := jsonapi.Unmarshal(decoded, &run)
 					assert.NoError(t, err)
 				}
 			}

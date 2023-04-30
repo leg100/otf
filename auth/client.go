@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
@@ -15,13 +15,13 @@ type Client struct {
 
 // CreateUser creates a user via HTTP/JSONAPI. Options are ignored.
 func (c *Client) CreateUser(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
-	req, err := c.NewRequest("POST", "admin/users", &jsonapi.CreateUserOptions{
+	req, err := c.NewRequest("POST", "admin/users", &types.CreateUserOptions{
 		Username: otf.String(username),
 	})
 	if err != nil {
 		return nil, err
 	}
-	user := &jsonapi.User{}
+	user := &types.User{}
 	err = c.Do(ctx, req, user)
 	if err != nil {
 		return nil, err
@@ -71,13 +71,13 @@ func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOp
 // CreateTeam creates a team via HTTP/JSONAPI.
 func (c *Client) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
 	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
-	req, err := c.NewRequest("POST", u, &jsonapi.CreateTeamOptions{
+	req, err := c.NewRequest("POST", u, &types.CreateTeamOptions{
 		Name: otf.String(opts.Name),
 	})
 	if err != nil {
 		return nil, err
 	}
-	team := &jsonapi.Team{}
+	team := &types.Team{}
 	err = c.Do(ctx, req, team)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (c *Client) GetTeam(ctx context.Context, organization, name string) (*Team,
 	if err != nil {
 		return nil, err
 	}
-	team := &jsonapi.Team{}
+	team := &types.Team{}
 	err = c.Do(ctx, req, team)
 	if err != nil {
 		return nil, err

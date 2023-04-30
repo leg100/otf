@@ -23,7 +23,6 @@ type (
 		site         otf.Authorizer // authorizes site access
 		organization otf.Authorizer // authorizes org access
 
-		api *api
 		db  *pgdb
 		web *webHandlers
 	}
@@ -43,7 +42,6 @@ func NewService(opts Options) *service {
 		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.Logger),
 	}
-	svc.api = &api{svc: &svc}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
 		svc:      &svc,
@@ -52,6 +50,5 @@ func NewService(opts Options) *service {
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
 	a.web.addHandlers(r)
 }
