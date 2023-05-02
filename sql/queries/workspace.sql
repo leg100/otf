@@ -68,8 +68,12 @@ LEFT JOIN users ul ON w.lock_username = ul.username
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
 WHERE w.name                LIKE pggen.arg('prefix') || '%'
 AND   w.organization_name   LIKE ANY(pggen.arg('organization_names'))
+AND   CASE WHEN cardinality(pggen.arg('tags')::text[]) > 0 THEN t.name LIKE ANY(pggen.arg('tags'))
+      ELSE 1 = 1
+      END
 ORDER BY w.updated_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -77,9 +81,13 @@ OFFSET pggen.arg('offset')
 
 -- name: CountWorkspaces :one
 SELECT count(*)
-FROM workspaces
-WHERE name LIKE pggen.arg('prefix') || '%'
-AND   organization_name LIKE ANY(pggen.arg('organization_names'))
+FROM workspaces w
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
+WHERE w.name              LIKE pggen.arg('prefix') || '%'
+AND   w.organization_name LIKE ANY(pggen.arg('organization_names'))
+AND   CASE WHEN cardinality(pggen.arg('tags')::text[]) > 0 THEN t.name LIKE ANY(pggen.arg('tags'))
+      ELSE 1 = 1
+      END
 ;
 
 -- name: FindWorkspacesByWebhookID :many

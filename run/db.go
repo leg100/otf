@@ -183,9 +183,9 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Reso
 
 func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	batch := &pgx.Batch{}
-	organizationName := "%"
+	organization := "%"
 	if opts.Organization != nil {
-		organizationName = *opts.Organization
+		organization = *opts.Organization
 	}
 	workspaceName := "%"
 	if opts.WorkspaceName != nil {
@@ -204,7 +204,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		speculative = strconv.FormatBool(*opts.Speculative)
 	}
 	db.FindRunsBatch(batch, pggen.FindRunsParams{
-		OrganizationNames: []string{organizationName},
+		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
@@ -213,7 +213,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		Offset:            opts.GetOffset(),
 	})
 	db.CountRunsBatch(batch, pggen.CountRunsParams{
-		OrganizationNames: []string{organizationName},
+		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,

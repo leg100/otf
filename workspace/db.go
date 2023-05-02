@@ -195,20 +195,23 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	// Organization name filter is optional - if not provided use a % which in
 	// SQL means match any organization.
-	var organizationName string
+	organization := "%"
 	if opts.Organization != nil {
-		organizationName = *opts.Organization
-	} else {
-		organizationName = "%"
+		organization = *opts.Organization
 	}
 
 	db.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
-		OrganizationNames: []string{organizationName},
+		OrganizationNames: []string{organization},
 		Prefix:            sql.String(opts.Prefix),
+		Tags:              opts.Tags,
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
-	db.CountWorkspacesBatch(batch, sql.String(opts.Prefix), []string{organizationName})
+	db.CountWorkspacesBatch(batch, pggen.CountWorkspacesParams{
+		Prefix:            sql.String(opts.Prefix),
+		OrganizationNames: []string{organization},
+		Tags:              opts.Tags,
+	})
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 

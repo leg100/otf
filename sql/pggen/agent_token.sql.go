@@ -923,10 +923,10 @@ type Querier interface {
 	// FindWorkspacesScan scans the result of an executed FindWorkspacesBatch query.
 	FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error)
 
-	CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (int, error)
+	CountWorkspaces(ctx context.Context, params CountWorkspacesParams) (int, error)
 	// CountWorkspacesBatch enqueues a CountWorkspaces query into batch to be executed
 	// later by the batch.
-	CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text, organizationNames []string)
+	CountWorkspacesBatch(batch genericBatch, params CountWorkspacesParams)
 	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
 	CountWorkspacesScan(results pgx.BatchResults) (int, error)
 

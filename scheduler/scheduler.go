@@ -171,7 +171,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 			q, ok := s.queues[payload.WorkspaceID]
 			if !ok {
 				// should never happen
-				s.Error(fmt.Errorf("workspace queue does not exist for run event"), "workspace", payload.WorkspaceID, "run", payload.ID)
+				s.Error(nil, "workspace queue does not exist for run event", "workspace", payload.WorkspaceID, "run", payload.ID, "event", event.Type)
 				continue
 			}
 			if err := q.handleEvent(ctx, event); err != nil {

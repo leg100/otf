@@ -129,16 +129,21 @@ LEFT JOIN users ul ON w.lock_username = ul.username
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
 WHERE w.name                LIKE $1 || '%'
 AND   w.organization_name   LIKE ANY($2)
+AND   CASE WHEN cardinality($3::text[]) > 0 THEN t.name LIKE ANY($3)
+      ELSE 1 = 1
+      END
 ORDER BY w.updated_at DESC
-LIMIT $3
-OFFSET $4
+LIMIT $4
+OFFSET $5
 ;`
 
 type FindWorkspacesParams struct {
 	Prefix            pgtype.Text
 	OrganizationNames []string
+	Tags              []string
 	Limit             int
 	Offset            int
 }
@@ -182,7 +187,7 @@ type FindWorkspacesRow struct {
 // FindWorkspaces implements Querier.FindWorkspaces.
 func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesParams) ([]FindWorkspacesRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaces")
-	rows, err := q.conn.Query(ctx, findWorkspacesSQL, params.Prefix, params.OrganizationNames, params.Limit, params.Offset)
+	rows, err := q.conn.Query(ctx, findWorkspacesSQL, params.Prefix, params.OrganizationNames, params.Tags, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query FindWorkspaces: %w", err)
 	}
@@ -219,7 +224,7 @@ func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesPar
 
 // FindWorkspacesBatch implements Querier.FindWorkspacesBatch.
 func (q *DBQuerier) FindWorkspacesBatch(batch genericBatch, params FindWorkspacesParams) {
-	batch.Queue(findWorkspacesSQL, params.Prefix, params.OrganizationNames, params.Limit, params.Offset)
+	batch.Queue(findWorkspacesSQL, params.Prefix, params.OrganizationNames, params.Tags, params.Limit, params.Offset)
 }
 
 // FindWorkspacesScan implements Querier.FindWorkspacesScan.
@@ -260,15 +265,25 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 }
 
 const countWorkspacesSQL = `SELECT count(*)
-FROM workspaces
-WHERE name LIKE $1 || '%'
-AND   organization_name LIKE ANY($2)
+FROM workspaces w
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
+WHERE w.name              LIKE $1 || '%'
+AND   w.organization_name LIKE ANY($2)
+AND   CASE WHEN cardinality($3::text[]) > 0 THEN t.name LIKE ANY($3)
+      ELSE 1 = 1
+      END
 ;`
 
+type CountWorkspacesParams struct {
+	Prefix            pgtype.Text
+	OrganizationNames []string
+	Tags              []string
+}
+
 // CountWorkspaces implements Querier.CountWorkspaces.
-func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (int, error) {
+func (q *DBQuerier) CountWorkspaces(ctx context.Context, params CountWorkspacesParams) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspaces")
-	row := q.conn.QueryRow(ctx, countWorkspacesSQL, prefix, organizationNames)
+	row := q.conn.QueryRow(ctx, countWorkspacesSQL, params.Prefix, params.OrganizationNames, params.Tags)
 	var item int
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountWorkspaces: %w", err)
@@ -277,8 +292,8 @@ func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix pgtype.Text, org
 }
 
 // CountWorkspacesBatch implements Querier.CountWorkspacesBatch.
-func (q *DBQuerier) CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text, organizationNames []string) {
-	batch.Queue(countWorkspacesSQL, prefix, organizationNames)
+func (q *DBQuerier) CountWorkspacesBatch(batch genericBatch, params CountWorkspacesParams) {
+	batch.Queue(countWorkspacesSQL, params.Prefix, params.OrganizationNames, params.Tags)
 }
 
 // CountWorkspacesScan implements Querier.CountWorkspacesScan.
