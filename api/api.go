@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/logr"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
+	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/tokens"
@@ -47,6 +48,7 @@ type (
 		auth.AuthService
 		tokens.TokensService
 		variable.VariableService
+		policy.PolicyService
 
 		*surl.Signer
 
@@ -71,6 +73,7 @@ func New(opts Options) *api {
 			WorkspaceService:    opts.WorkspaceService,
 			RunService:          opts.RunService,
 			StateService:        opts.StateService,
+			PolicyService:       opts.PolicyService,
 			runLogsURLGenerator: &runLogsURLGenerator{opts.Signer},
 		},
 		maxConfigSize: opts.MaxConfigSize,
