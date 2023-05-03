@@ -182,6 +182,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 		WorkspaceAuthorizer: policyService,
+		PolicyService:       policyService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:              logger,
@@ -278,6 +279,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		TokensService:               tokensService,
 		VariableService:             variableService,
+		PolicyService:               policyService,
 		Signer:                      signer,
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})
