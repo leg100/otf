@@ -115,23 +115,13 @@ func (a *api) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		Error(w, err)
 		return
 	}
-	var params []struct {
-		ID   string `jsonapi:"primary,tags,omitempty"`
-		Name string `jsonapi:"attribute" json:"name,omitempty"`
-	}
+	var params []*types.Tag
 	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
-
 	// convert from json:api structs to tag specs
-	var specs []tags.TagSpec
-	for _, tag := range params {
-		specs = append(specs, tags.TagSpec{
-			ID:   tag.ID,
-			Name: tag.Name,
-		})
-	}
+	specs := toTagSpecs(params)
 
 	switch op {
 	case addTags:
@@ -168,4 +158,14 @@ func (a *api) getTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.writeResponse(w, r, tags)
+}
+
+func toTagSpecs(from []*types.Tag) (to []tags.TagSpec) {
+	for _, tag := range from {
+		to = append(to, tags.TagSpec{
+			ID:   tag.ID,
+			Name: tag.Name,
+		})
+	}
+	return
 }

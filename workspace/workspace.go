@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
+	"github.com/leg100/otf/tags"
 	"golang.org/x/exp/slog"
 )
 
@@ -86,6 +87,7 @@ type (
 		SourceName                 *string
 		SourceURL                  *string
 		StructuredRunOutputEnabled *bool
+		Tags                       []tags.TagSpec
 		TerraformVersion           *string
 		TriggerPrefixes            []string
 		WorkingDirectory           *string

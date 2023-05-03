@@ -1,5 +1,4 @@
-// Package tags handles tagging of workspaces.
-package tags
+package workspace
 
 import (
 	"errors"

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
+	"github.com/leg100/otf/tags"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -222,6 +223,58 @@ func TestWorkspace(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				results, err := svc.ListWorkspaces(ctx, tt.opts)
+				require.NoError(t, err)
+
+				tt.want(t, results)
+			})
+		}
+	})
+
+	t.Run("list by tag", func(t *testing.T) {
+		svc := setup(t, nil)
+		org := svc.createOrganization(t, ctx)
+		ws1, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
+			Name:         otf.String(uuid.NewString()),
+			Organization: &org.Name,
+			Tags:         []tags.TagSpec{{Name: "foo"}},
+		})
+		require.NoError(t, err)
+		ws2, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
+			Name:         otf.String(uuid.NewString()),
+			Organization: &org.Name,
+			Tags:         []tags.TagSpec{{Name: "foo"}, {Name: "bar"}},
+		})
+		require.NoError(t, err)
+
+		tests := []struct {
+			name string
+			tags []string
+			want func(*testing.T, *workspace.WorkspaceList)
+		}{
+			{
+				name: "foo",
+				tags: []string{"foo"},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
+					assert.Equal(t, 2, len(l.Items))
+					assert.Contains(t, l.Items, ws1)
+					assert.Contains(t, l.Items, ws2)
+				},
+			},
+			{
+				name: "foo and bar",
+				tags: []string{"foo", "bar"},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
+					assert.Equal(t, 1, len(l.Items))
+					assert.Contains(t, l.Items, ws2)
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				results, err := svc.ListWorkspaces(ctx, workspace.ListOptions{
+					Tags: tt.tags,
+				})
 				require.NoError(t, err)
 
 				tt.want(t, results)

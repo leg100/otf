@@ -1,4 +1,4 @@
-package tags
+package workspace
 
 import (
 	"context"
@@ -6,15 +6,11 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/logr"
-	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
 
 type (
-	TagService = Service
-
-	Service interface {
+	TagService interface {
 		// ListTags lists tags within an organization
 		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*TagList, error)
 
@@ -39,21 +35,6 @@ type (
 		ListWorkspaceTags(ctx context.Context, workspaceID string, options ListWorkspaceTagsOptions) (*TagList, error)
 	}
 
-	service struct {
-		logr.Logger
-		db *pgdb
-
-		workspace    otf.Authorizer // workspace authorizer
-		organization otf.Authorizer // organization authorizer
-	}
-
-	Options struct {
-		otf.DB
-		logr.Logger
-
-		WorkspaceAuthorizer otf.Authorizer // workspace authorizer
-	}
-
 	// ListTagsOptions are options for paginating and filtering a list of
 	// tags
 	ListTagsOptions struct {
@@ -66,14 +47,6 @@ type (
 		otf.ListOptions
 	}
 )
-
-func NewService(opts Options) *service {
-	return &service{
-		db:           &pgdb{opts.DB},
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		Logger:       opts.Logger,
-	}
-}
 
 func (s *service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*TagList, error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.ListTagsAction, organization)
@@ -138,30 +111,36 @@ func (s *service) AddTags(ctx context.Context, workspaceID string, tags []TagSpe
 	// For each tag:
 	// (i) if specified by name, create new tag if it does not exist and get its ID.
 	// (ii) add tag to workspace
-	err = s.db.tx(ctx, func(tx *pgdb) error {
+	err = s.db.lockTags(ctx, func(tx *pgdb) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err
 			}
-			var tagID string
 
+			var tagID string
 			switch {
 			case t.Name != "":
-				tagID = otf.NewID("tag")
-
-				// creates tag if it doesn't exist.
-				err := tx.addTag(ctx, workspaceID, &Tag{
-					ID:   tagID,
-					Name: t.Name,
-				})
-				if err != nil {
+				existing, err := tx.findTagByName(ctx, workspaceID, t.Name)
+				if errors.Is(err, otf.ErrResourceNotFound) {
+					tagID = otf.NewID("tag")
+					err = tx.addTag(ctx, workspaceID, &Tag{
+						ID:   tagID,
+						Name: t.Name,
+					})
+					if err != nil {
+						return err
+					}
+				} else if err != nil {
 					return err
+				} else {
+					tagID = existing.ID
 				}
 			case t.ID != "":
 				tagID = t.ID
 			default:
 				return ErrInvalidTagSpec
 			}
+
 			if err := tx.tagWorkspace(ctx, workspaceID, tagID); err != nil {
 				return err
 			}
@@ -182,7 +161,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 		return err
 	}
 
-	err = s.db.lock(ctx, func(tx *pgdb) (err error) {
+	err = s.db.lockTags(ctx, func(tx *pgdb) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err

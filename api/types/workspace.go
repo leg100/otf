@@ -185,6 +185,10 @@ type WorkspaceCreateOptions struct {
 	// root of your repository and is typically set to a subdirectory matching the
 	// environment when multiple environments exist within the same repository.
 	WorkingDirectory *string `jsonapi:"attribute" json:"working-directory,omitempty"`
+
+	// A list of tags to attach to the workspace. If the tag does not already
+	// exist, it is created and added to the workspace.
+	Tags []*Tag `jsonapi:"relationship" json:"tags,omitempty"`
 }
 
 // WorkspaceUpdateOptions represents the options for updating a workspace.

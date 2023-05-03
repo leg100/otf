@@ -196,6 +196,27 @@ LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspac
 WHERE w.workspace_id = pggen.arg('id')
 ;
 
+-- name: FindWorkspaceByID :one
+SELECT w.*,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
+    r.status AS latest_run_status,
+    (ul.*)::"users" AS user_lock,
+    (rl.*)::"runs" AS run_lock,
+    (vr.*)::"repo_connections" AS workspace_connection,
+    (h.*)::"webhooks" AS webhook
+FROM workspaces w
+LEFT JOIN users ul ON w.lock_username = ul.username
+LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
+LEFT JOIN runs r ON w.latest_run_id = r.run_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+WHERE w.workspace_id = pggen.arg('id')
+;
+
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
     (

@@ -17,4 +17,10 @@ type (
 		// The org this tag belongs to
 		Organization *Organization `jsonapi:"relationship" json:"organization"`
 	}
+
+	// Tag is owned by an organization and applied to workspaces. Used for grouping and search.
+	Tag struct {
+		ID   string `jsonapi:"primary,tags"`
+		Name string `jsonapi:"attr,name,omitempty"`
+	}
 )

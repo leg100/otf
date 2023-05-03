@@ -13,7 +13,8 @@ func TestIntegration_TagService(t *testing.T) {
 
 	t.Run("add tags to workspace", func(t *testing.T) {
 		svc := setup(t, nil)
-		ws := svc.createWorkspace(t, ctx, nil)
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org)
 		err := svc.AddTags(ctx, ws.ID, []tags.TagSpec{
 			{Name: "foo"},
 			{Name: "bar"},
@@ -21,9 +22,35 @@ func TestIntegration_TagService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.ListWorkspaceTags(ctx, ws.ID, tags.ListWorkspaceTagsOptions{})
+		// should have 3 tags across org
+		got, err := svc.ListTags(ctx, org.Name, tags.ListTagsOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(got.Items))
+
+		// should have 3 tags on ws
+		got, err = svc.ListWorkspaceTags(ctx, ws.ID, tags.ListWorkspaceTagsOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, 3, len(got.Items))
+
+		t.Run("add same tags to another workspace", func(t *testing.T) {
+			ws := svc.createWorkspace(t, ctx, org)
+			err := svc.AddTags(ctx, ws.ID, []tags.TagSpec{
+				{Name: "foo"},
+				{Name: "bar"},
+				{Name: "baz"},
+			})
+			require.NoError(t, err)
+
+			// should still have 3 tags across org
+			got, err := svc.ListTags(ctx, org.Name, tags.ListTagsOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, 3, len(got.Items))
+
+			// should have 3 tags on ws
+			got, err = svc.ListWorkspaceTags(ctx, ws.ID, tags.ListWorkspaceTagsOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, 3, len(got.Items))
+		})
 
 		t.Run("invalid tag spec", func(t *testing.T) {
 			err = svc.AddTags(ctx, ws.ID, []tags.TagSpec{{}})
@@ -47,8 +74,10 @@ func TestIntegration_TagService(t *testing.T) {
 
 		err = svc.RemoveTags(ctx, ws.ID, []tags.TagSpec{
 			{Name: "foo"},
+			{Name: "doesnotexist"},
 			{Name: "bar"},
 			{Name: "baz"},
+			{Name: "doesnotexist"},
 		})
 		require.NoError(t, err)
 

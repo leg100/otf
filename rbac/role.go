@@ -76,8 +76,6 @@ var (
 			DeleteWorkspaceAction:          true,
 			ForceUnlockWorkspaceAction:     true,
 			UpdateWorkspaceAction:          true,
-			AddTagsAction:                  true,
-			RemoveTagsAction:               true,
 			// includes WorkspaceWriteRole perms too (see below)
 		},
 	}
@@ -90,6 +88,8 @@ var (
 			CreateWorkspaceAction: true,
 			ListWorkspacesAction:  true,
 			UpdateWorkspaceAction: true,
+			AddTagsAction:         true,
+			RemoveTagsAction:      true,
 			// includes WorkspaceAdminRole perms too (see below)
 		},
 	}

@@ -15,6 +15,12 @@ type (
 		GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error)
 		SetPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
 		UnsetPermission(ctx context.Context, workspaceID, team string) error
+
+		// PolicyTx wraps the policy service with the given transaction.
+		PolicyTx(ctx context.Context, tx otf.DB) Service
+
+		// Implements authorizer, policing access to workspaces
+		otf.Authorizer
 	}
 
 	service struct {
@@ -33,6 +39,12 @@ func NewService(opts Options) *service {
 		Logger: opts.Logger,
 		db:     &pgdb{opts.DB},
 	}
+}
+
+func (s *service) PolicyTx(ctx context.Context, tx otf.DB) Service {
+	ss := *s
+	ss.db = &pgdb{tx}
+	return &ss
 }
 
 // GetPolicy retrieves a workspace policy.

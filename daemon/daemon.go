@@ -175,9 +175,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	tagService := tags.NewService(tags.Options{
-		Logger:              logger,
-		DB:                  db,
-		WorkspaceAuthorizer: policyService,
+		Logger:        logger,
+		DB:            db,
+		PolicyService: policyService,
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
@@ -191,6 +191,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:  vcsProviderService,
 		WorkspaceAuthorizer: policyService,
 		PolicyService:       policyService,
+		TagService:          tagService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:              logger,

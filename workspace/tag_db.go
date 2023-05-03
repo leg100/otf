@@ -1,4 +1,4 @@
-package tags
+package workspace
 
 import (
 	"context"
@@ -11,13 +11,8 @@ import (
 )
 
 type (
-	// pgdb is a tag database using postgres
-	pgdb struct {
-		otf.DB // provides access to generated SQL queries
-	}
-
 	// pgresult represents the result of a database query for a tag.
-	pgresult struct {
+	tagresult struct {
 		TagID            pgtype.Text `json:"tag_id"`
 		Name             pgtype.Text `json:"name"`
 		OrganizationName pgtype.Text `json:"organization_name"`
@@ -26,7 +21,7 @@ type (
 )
 
 // toTag converts a database result into a tag
-func (r pgresult) toTag() *Tag {
+func (r tagresult) toTag() *Tag {
 	return &Tag{
 		ID:            r.TagID.String,
 		Name:          r.Name.String,
@@ -58,7 +53,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	var items []*Tag
 	for _, r := range rows {
-		items = append(items, pgresult(r).toTag())
+		items = append(items, tagresult(r).toTag())
 	}
 
 	return &TagList{
@@ -105,7 +100,7 @@ func (db *pgdb) findTagByName(ctx context.Context, workspaceID, name string) (*T
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return pgresult(tag).toTag(), nil
+	return tagresult(tag).toTag(), nil
 }
 
 func (db *pgdb) findTagByID(ctx context.Context, workspaceID, id string) (*Tag, error) {
@@ -113,7 +108,7 @@ func (db *pgdb) findTagByID(ctx context.Context, workspaceID, id string) (*Tag, 
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return pgresult(tag).toTag(), nil
+	return tagresult(tag).toTag(), nil
 }
 
 func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID string) error {
@@ -155,7 +150,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	var items []*Tag
 	for _, r := range rows {
-		items = append(items, pgresult(r).toTag())
+		items = append(items, tagresult(r).toTag())
 	}
 
 	return &TagList{
@@ -164,16 +159,9 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 	}, nil
 }
 
-// tx constructs a new pgdb within a transaction.
-func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
-		return callback(&pgdb{tx})
-	})
-}
-
-// lock webhooks table within a transaction, providing a callback within which
+// lockTags tags table within a transaction, providing a callback within which
 // caller can use the transaction.
-func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
+func (db *pgdb) lockTags(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		if _, err := tx.Exec(ctx, "LOCK tags"); err != nil {
 			return err

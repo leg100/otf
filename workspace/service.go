@@ -53,6 +53,7 @@ type (
 
 		db   *pgdb
 		repo repo.RepoService
+		tags tags.TagService
 
 		web *webHandlers
 	}
@@ -68,6 +69,7 @@ type (
 		logr.Logger
 		WorkspaceAuthorizer otf.Authorizer
 		policy.PolicyService
+		tags.TagService
 	}
 )
 
@@ -77,6 +79,7 @@ func NewService(opts Options) *service {
 		Publisher:    opts.Broker,
 		db:           &pgdb{opts.DB},
 		repo:         opts.RepoService,
+		tags:         opts.TagService,
 		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		workspace:    opts.WorkspaceAuthorizer,
@@ -124,6 +127,16 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 				return err
 			}
 			ws.Connection = conn
+		}
+		// Optionally create tags within same transaction
+		err := s.tags.TagsTx(ctx, tx, func(ts tags.TagService) error {
+			if err := ts.AddTags(ctx, ws.ID, opts.Tags); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 		return nil
 	})
