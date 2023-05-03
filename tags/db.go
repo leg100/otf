@@ -80,19 +80,6 @@ func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []st
 	return sql.Error(err)
 }
 
-func (db *pgdb) tagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error {
-	err := db.Tx(ctx, func(tx otf.DB) error {
-		for _, wid := range workspaceIDs {
-			_, err := tx.InsertWorkspaceTag(ctx, sql.String(tagID), sql.String(wid))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	return sql.Error(err)
-}
-
 func (db *pgdb) addTag(ctx context.Context, workspaceID string, tag *Tag) error {
 	_, err := db.InsertTag(ctx, pggen.InsertTagParams{
 		TagID:       sql.String(tag.ID),
@@ -129,7 +116,7 @@ func (db *pgdb) findTagByID(ctx context.Context, workspaceID, id string) (*Tag, 
 	return pgresult(tag).toTag(), nil
 }
 
-func (db *pgdb) addWorkspaceTag(ctx context.Context, workspaceID, tagID string) error {
+func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID string) error {
 	_, err := db.InsertWorkspaceTag(ctx, sql.String(tagID), sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)
