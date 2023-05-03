@@ -37,13 +37,10 @@ type (
 )
 
 func (s TagSpec) Valid() error {
-	if s.ID != "" {
-		return nil
-	} else if s.Name != "" {
-		return nil
-	} else {
+	if s.ID == "" && s.Name == "" {
 		return ErrInvalidTagSpec
 	}
+	return nil
 }
 
 func (specs TagSpecs) LogValue() slog.Value {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/logr"
+	"github.com/leg100/otf/rbac"
 )
 
 type (
@@ -40,11 +41,16 @@ type (
 	service struct {
 		logr.Logger
 		db *pgdb
+
+		organization otf.Authorizer // organization authorizer
+		workspace    otf.Authorizer // workspace authorizer
 	}
 
 	Options struct {
 		otf.DB
 		logr.Logger
+
+		WorkspaceAuthorizer otf.Authorizer // workspace authorizer
 	}
 
 	// ListTagsOptions are options for paginating and filtering a list of
@@ -137,6 +143,11 @@ func (s *service) AddTags(ctx context.Context, workspaceID string, tags []TagSpe
 }
 
 func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	err := s.db.lock(ctx, func(tx *pgdb) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
