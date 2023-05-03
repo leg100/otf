@@ -26,7 +26,7 @@ func (s *service) LockWorkspace(ctx context.Context, workspaceID string, runID *
 		id = *runID
 		kind = RunLock
 	} else {
-		subject, err := s.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
+		subject, err := s.workspace.CanAccess(ctx, rbac.LockWorkspaceAction, workspaceID)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +70,7 @@ func (s *service) UnlockWorkspace(ctx context.Context, workspaceID string, runID
 		} else {
 			action = rbac.UnlockWorkspaceAction
 		}
-		subject, err := s.CanAccess(ctx, action, workspaceID)
+		subject, err := s.workspace.CanAccess(ctx, action, workspaceID)
 		if err != nil {
 			return nil, err
 		}
