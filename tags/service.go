@@ -42,8 +42,7 @@ type (
 		logr.Logger
 		db *pgdb
 
-		organization otf.Authorizer // organization authorizer
-		workspace    otf.Authorizer // workspace authorizer
+		workspace otf.Authorizer // workspace authorizer
 	}
 
 	Options struct {
@@ -143,12 +142,12 @@ func (s *service) AddTags(ctx context.Context, workspaceID string, tags []TagSpe
 }
 
 func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error {
-	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
+	subject, err := s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err := s.db.lock(ctx, func(tx *pgdb) (err error) {
+	err = s.db.lock(ctx, func(tx *pgdb) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err
@@ -186,10 +185,10 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "removing tags", "workspace", workspaceID, "tags", TagSpecs(tags))
+		s.Error(err, "removing tags", "workspace", workspaceID, "tags", TagSpecs(tags), "subject", subject)
 		return err
 	}
-	s.Info("removed tags", "workspace", workspaceID, "tags", TagSpecs(tags))
+	s.Info("removed tags", "workspace", workspaceID, "tags", TagSpecs(tags), "subject", subject)
 	return nil
 }
 

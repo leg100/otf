@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/tags"
@@ -34,6 +35,7 @@ type (
 		state.StateService
 		tags.TagService
 		workspace.WorkspaceService
+		policy.PolicyService
 
 		*runLogsURLGenerator
 	}
