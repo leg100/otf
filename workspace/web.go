@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 )
@@ -22,7 +21,6 @@ type (
 		html.Renderer
 		auth.TeamService
 		VCSProviderService
-		policy.PolicyService
 
 		svc Service
 	}
@@ -148,7 +146,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.GetPolicy(r.Context(), id)
+	policy, err := h.svc.GetPolicy(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -211,7 +209,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	policy, err := h.GetPolicy(r.Context(), workspaceID)
+	policy, err := h.svc.GetPolicy(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -486,7 +484,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.SetPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
+	err = h.svc.SetPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -505,7 +503,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := h.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
+	err := h.svc.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

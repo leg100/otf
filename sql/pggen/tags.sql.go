@@ -15,22 +15,23 @@ const insertTagSQL = `INSERT INTO tags (
     tag_id,
     name,
     organization_name
-) SELECT $1, $2, w.organization_name
-  FROM workspaces w
-  WHERE w.workspace_id = $3
-ON CONFLICT (name, organization_name) DO NOTHING
+) VALUES (
+    $1,
+    $2,
+    $3
+) ON CONFLICT (organization_name, name) DO NOTHING
 ;`
 
 type InsertTagParams struct {
-	TagID       pgtype.Text
-	Name        pgtype.Text
-	WorkspaceID pgtype.Text
+	TagID            pgtype.Text
+	Name             pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 // InsertTag implements Querier.InsertTag.
 func (q *DBQuerier) InsertTag(ctx context.Context, params InsertTagParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertTag")
-	cmdTag, err := q.conn.Exec(ctx, insertTagSQL, params.TagID, params.Name, params.WorkspaceID)
+	cmdTag, err := q.conn.Exec(ctx, insertTagSQL, params.TagID, params.Name, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertTag: %w", err)
 	}
@@ -39,7 +40,7 @@ func (q *DBQuerier) InsertTag(ctx context.Context, params InsertTagParams) (pgco
 
 // InsertTagBatch implements Querier.InsertTagBatch.
 func (q *DBQuerier) InsertTagBatch(batch genericBatch, params InsertTagParams) {
-	batch.Queue(insertTagSQL, params.TagID, params.Name, params.WorkspaceID)
+	batch.Queue(insertTagSQL, params.TagID, params.Name, params.OrganizationName)
 }
 
 // InsertTagScan implements Querier.InsertTagScan.
@@ -281,9 +282,8 @@ const findTagByNameSQL = `SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
-JOIN workspace_tags wt USING (tag_id)
 WHERE t.name = $1
-AND   wt.workspace_id = $2
+AND   t.organization_name = $2
 ;`
 
 type FindTagByNameRow struct {
@@ -294,9 +294,9 @@ type FindTagByNameRow struct {
 }
 
 // FindTagByName implements Querier.FindTagByName.
-func (q *DBQuerier) FindTagByName(ctx context.Context, name pgtype.Text, workspaceID pgtype.Text) (FindTagByNameRow, error) {
+func (q *DBQuerier) FindTagByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindTagByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTagByName")
-	row := q.conn.QueryRow(ctx, findTagByNameSQL, name, workspaceID)
+	row := q.conn.QueryRow(ctx, findTagByNameSQL, name, organizationName)
 	var item FindTagByNameRow
 	if err := row.Scan(&item.TagID, &item.Name, &item.OrganizationName, &item.InstanceCount); err != nil {
 		return item, fmt.Errorf("query FindTagByName: %w", err)
@@ -305,8 +305,8 @@ func (q *DBQuerier) FindTagByName(ctx context.Context, name pgtype.Text, workspa
 }
 
 // FindTagByNameBatch implements Querier.FindTagByNameBatch.
-func (q *DBQuerier) FindTagByNameBatch(batch genericBatch, name pgtype.Text, workspaceID pgtype.Text) {
-	batch.Queue(findTagByNameSQL, name, workspaceID)
+func (q *DBQuerier) FindTagByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text) {
+	batch.Queue(findTagByNameSQL, name, organizationName)
 }
 
 // FindTagByNameScan implements Querier.FindTagByNameScan.
@@ -327,9 +327,8 @@ const findTagByIDSQL = `SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
-JOIN workspace_tags wt USING (tag_id)
 WHERE t.tag_id = $1
-AND   wt.workspace_id = $2
+AND   t.organization_name = $2
 ;`
 
 type FindTagByIDRow struct {
@@ -340,9 +339,9 @@ type FindTagByIDRow struct {
 }
 
 // FindTagByID implements Querier.FindTagByID.
-func (q *DBQuerier) FindTagByID(ctx context.Context, tagID pgtype.Text, workspaceID pgtype.Text) (FindTagByIDRow, error) {
+func (q *DBQuerier) FindTagByID(ctx context.Context, tagID pgtype.Text, organizationName pgtype.Text) (FindTagByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTagByID")
-	row := q.conn.QueryRow(ctx, findTagByIDSQL, tagID, workspaceID)
+	row := q.conn.QueryRow(ctx, findTagByIDSQL, tagID, organizationName)
 	var item FindTagByIDRow
 	if err := row.Scan(&item.TagID, &item.Name, &item.OrganizationName, &item.InstanceCount); err != nil {
 		return item, fmt.Errorf("query FindTagByID: %w", err)
@@ -351,8 +350,8 @@ func (q *DBQuerier) FindTagByID(ctx context.Context, tagID pgtype.Text, workspac
 }
 
 // FindTagByIDBatch implements Querier.FindTagByIDBatch.
-func (q *DBQuerier) FindTagByIDBatch(batch genericBatch, tagID pgtype.Text, workspaceID pgtype.Text) {
-	batch.Queue(findTagByIDSQL, tagID, workspaceID)
+func (q *DBQuerier) FindTagByIDBatch(batch genericBatch, tagID pgtype.Text, organizationName pgtype.Text) {
+	batch.Queue(findTagByIDSQL, tagID, organizationName)
 }
 
 // FindTagByIDScan implements Querier.FindTagByIDScan.

@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/tags"
+	"github.com/leg100/otf/workspace"
 )
 
 const (
@@ -36,7 +36,7 @@ func (a *api) listTags(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	var params tags.ListTagsOptions
+	var params workspace.ListTagsOptions
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
@@ -145,7 +145,7 @@ func (a *api) getTags(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	var params tags.ListWorkspaceTagsOptions
+	var params workspace.ListWorkspaceTagsOptions
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
@@ -160,9 +160,9 @@ func (a *api) getTags(w http.ResponseWriter, r *http.Request) {
 	a.writeResponse(w, r, tags)
 }
 
-func toTagSpecs(from []*types.Tag) (to []tags.TagSpec) {
+func toTagSpecs(from []*types.Tag) (to []workspace.TagSpec) {
 	for _, tag := range from {
-		to = append(to, tags.TagSpec{
+		to = append(to, workspace.TagSpec{
 			ID:   tag.ID,
 			Name: tag.Name,
 		})

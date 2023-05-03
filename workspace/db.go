@@ -199,18 +199,22 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 	if opts.Organization != nil {
 		organization = *opts.Organization
 	}
+	tags := []string{}
+	if len(opts.Tags) > 0 {
+		tags = opts.Tags
+	}
 
 	db.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
 		OrganizationNames: []string{organization},
 		Prefix:            sql.String(opts.Prefix),
-		Tags:              opts.Tags,
+		Tags:              tags,
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
 	db.CountWorkspacesBatch(batch, pggen.CountWorkspacesParams{
 		Prefix:            sql.String(opts.Prefix),
 		OrganizationNames: []string{organization},
-		Tags:              opts.Tags,
+		Tags:              tags,
 	})
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()

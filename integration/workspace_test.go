@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
-	"github.com/leg100/otf/tags"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -236,13 +235,13 @@ func TestWorkspace(t *testing.T) {
 		ws1, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         otf.String(uuid.NewString()),
 			Organization: &org.Name,
-			Tags:         []tags.TagSpec{{Name: "foo"}},
+			Tags:         []workspace.TagSpec{{Name: "foo"}},
 		})
 		require.NoError(t, err)
 		ws2, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         otf.String(uuid.NewString()),
 			Organization: &org.Name,
-			Tags:         []tags.TagSpec{{Name: "foo"}, {Name: "bar"}},
+			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
 		})
 		require.NoError(t, err)
 

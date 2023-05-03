@@ -3,10 +3,11 @@ INSERT INTO tags (
     tag_id,
     name,
     organization_name
-) SELECT pggen.arg('tag_id'), pggen.arg('name'), w.organization_name
-  FROM workspaces w
-  WHERE w.workspace_id = pggen.arg('workspace_id')
-ON CONFLICT (name, organization_name) DO NOTHING
+) VALUES (
+    pggen.arg('tag_id'),
+    pggen.arg('name'),
+    pggen.arg('organization_name')
+) ON CONFLICT (organization_name, name) DO NOTHING
 ;
 
 -- name: InsertWorkspaceTag :one
@@ -70,9 +71,8 @@ SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
-JOIN workspace_tags wt USING (tag_id)
 WHERE t.name = pggen.arg('name')
-AND   wt.workspace_id = pggen.arg('workspace_id')
+AND   t.organization_name = pggen.arg('organization_name')
 ;
 
 -- name: FindTagByID :one
@@ -84,9 +84,8 @@ SELECT
         WHERE wt.tag_id = t.tag_id
     ) AS instance_count
 FROM tags t
-JOIN workspace_tags wt USING (tag_id)
 WHERE t.tag_id = pggen.arg('tag_id')
-AND   wt.workspace_id = pggen.arg('workspace_id')
+AND   t.organization_name = pggen.arg('organization_name')
 ;
 
 -- name: CountTags :one

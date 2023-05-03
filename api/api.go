@@ -9,10 +9,8 @@ import (
 	"github.com/leg100/otf/logr"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
-	"github.com/leg100/otf/tags"
 	"github.com/leg100/otf/tokens"
 	"github.com/leg100/otf/variable"
 	"github.com/leg100/otf/workspace"
@@ -28,7 +26,6 @@ type (
 		orgcreator.OrganizationCreatorService
 		state.StateService
 		workspace.WorkspaceService
-		tags.TagService
 		configversion.ConfigurationVersionService
 		auth.AuthService
 		tokens.TokensService
@@ -46,12 +43,10 @@ type (
 		orgcreator.OrganizationCreatorService
 		state.StateService
 		workspace.WorkspaceService
-		tags.TagService
 		configversion.ConfigurationVersionService
 		auth.AuthService
 		tokens.TokensService
 		variable.VariableService
-		policy.PolicyService
 
 		*surl.Signer
 
@@ -66,7 +61,6 @@ func New(opts Options) *api {
 		WorkspaceService:            opts.WorkspaceService,
 		RunService:                  opts.RunService,
 		StateService:                opts.StateService,
-		TagService:                  opts.TagService,
 		ConfigurationVersionService: opts.ConfigurationVersionService,
 		AuthService:                 opts.AuthService,
 		Verifier:                    opts.Signer,
@@ -77,8 +71,6 @@ func New(opts Options) *api {
 			WorkspaceService:    opts.WorkspaceService,
 			RunService:          opts.RunService,
 			StateService:        opts.StateService,
-			TagService:          opts.TagService,
-			PolicyService:       opts.PolicyService,
 			runLogsURLGenerator: &runLogsURLGenerator{opts.Signer},
 		},
 		maxConfigSize: opts.MaxConfigSize,

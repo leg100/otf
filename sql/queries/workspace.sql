@@ -59,21 +59,34 @@ SELECT
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
     r.status AS latest_run_status,
-    (ul.*)::"users" AS user_lock,
-    (rl.*)::"runs" AS run_lock,
-    (vr.*)::"repo_connections" AS workspace_connection,
-    (h.*)::"webhooks" AS webhook
+    (
+        SELECT (u.*)::"users"
+        FROM users u
+        WHERE u.username = w.lock_username
+    ) AS user_lock,
+    (
+        SELECT (rl.*)::"runs"
+        FROM runs rl
+        WHERE rl.run_id = w.lock_run_id
+    ) AS run_lock,
+    (
+        SELECT (rc.*)::"repo_connections"
+        FROM repo_connections rc
+        WHERE rc.workspace_id = w.workspace_id
+    ) AS workspace_connection,
+    (
+        SELECT (wh.*)::"webhooks"
+        FROM webhooks wh
+        JOIN repo_connections rc USING (webhook_id)
+        WHERE rc.workspace_id = w.workspace_id
+    ) AS webhook
 FROM workspaces w
-LEFT JOIN users ul ON w.lock_username = ul.username
-LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 LEFT JOIN runs r ON w.latest_run_id = r.run_id
-LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
+LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON wt.workspace_id = w.workspace_id
 WHERE w.name                LIKE pggen.arg('prefix') || '%'
 AND   w.organization_name   LIKE ANY(pggen.arg('organization_names'))
-AND   CASE WHEN cardinality(pggen.arg('tags')::text[]) > 0 THEN t.name LIKE ANY(pggen.arg('tags'))
-      ELSE 1 = 1
-      END
+GROUP BY w.workspace_id, r.status
+HAVING array_agg(t.name) @> pggen.arg('tags')
 ORDER BY w.updated_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -173,27 +186,6 @@ LEFT JOIN runs r ON w.latest_run_id = r.run_id
 LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.name              = pggen.arg('name')
 AND   w.organization_name = pggen.arg('organization_name')
-;
-
--- name: FindWorkspaceByID :one
-SELECT w.*,
-    (
-        SELECT array_agg(name)
-        FROM tags
-        JOIN workspace_tags wt USING (tag_id)
-        WHERE wt.workspace_id = w.workspace_id
-    ) AS tags,
-    r.status AS latest_run_status,
-    (ul.*)::"users" AS user_lock,
-    (rl.*)::"runs" AS run_lock,
-    (vr.*)::"repo_connections" AS workspace_connection,
-    (h.*)::"webhooks" AS webhook
-FROM workspaces w
-LEFT JOIN users ul ON w.lock_username = ul.username
-LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
-LEFT JOIN runs r ON w.latest_run_id = r.run_id
-LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
-WHERE w.workspace_id = pggen.arg('id')
 ;
 
 -- name: FindWorkspaceByID :one

@@ -75,11 +75,11 @@ func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []st
 	return sql.Error(err)
 }
 
-func (db *pgdb) addTag(ctx context.Context, workspaceID string, tag *Tag) error {
+func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error {
 	_, err := db.InsertTag(ctx, pggen.InsertTagParams{
-		TagID:       sql.String(tag.ID),
-		Name:        sql.String(tag.Name),
-		WorkspaceID: sql.String(workspaceID),
+		TagID:            sql.String(id),
+		Name:             sql.String(name),
+		OrganizationName: sql.String(organization),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -95,16 +95,16 @@ func (db *pgdb) deleteTag(ctx context.Context, tag *Tag) error {
 	return nil
 }
 
-func (db *pgdb) findTagByName(ctx context.Context, workspaceID, name string) (*Tag, error) {
-	tag, err := db.FindTagByName(ctx, sql.String(name), sql.String(workspaceID))
+func (db *pgdb) findTagByName(ctx context.Context, organization, name string) (*Tag, error) {
+	tag, err := db.FindTagByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return tagresult(tag).toTag(), nil
 }
 
-func (db *pgdb) findTagByID(ctx context.Context, workspaceID, id string) (*Tag, error) {
-	tag, err := db.FindTagByID(ctx, sql.String(id), sql.String(workspaceID))
+func (db *pgdb) findTagByID(ctx context.Context, organization, id string) (*Tag, error) {
+	tag, err := db.FindTagByID(ctx, sql.String(id), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

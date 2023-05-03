@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
 	"github.com/stretchr/testify/require"
@@ -26,7 +25,6 @@ type (
 
 		auth.TeamService
 		VCSProviderService
-		policy.PolicyService
 	}
 
 	fakeWebServiceOption func(*fakeWebService)
@@ -75,7 +73,6 @@ func fakeWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers {
 		Renderer:           renderer,
 		TeamService:        &svc,
 		VCSProviderService: &svc,
-		PolicyService:      &svc,
 		svc:                &svc,
 	}
 }
