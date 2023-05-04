@@ -162,10 +162,10 @@ header nav {
 }
 
 /*
- * Workspace permissions
+ * Workspace settings
  */
 
-.permissions-container {
+.settings-container {
   display: flex;
   flex-direction: column;
   gap: 0.8em;
@@ -173,7 +173,7 @@ header nav {
   border-top: 1px solid var(--faint-grey);
 }
 
-.permissions-container .container-header-title {
+.settings-container .container-header-title {
   font-size: 1.2em;
   font-weight: bolder;
 }
@@ -188,24 +188,24 @@ header nav {
   color: grey;
 }
 
-.permissions-container table {
+.settings-container table {
   text-align: left;
   font-size: 0.9em;
   border-collapse: collapse;
   letter-spacing: 1px;
 }
 
-.permissions-container thead {
+.settings-container thead {
   background-color: var(--faint-grey);
   border-top: 1px solid #bac1cc;
   border-bottom: 1px solid #bac1cc;
 }
 
-.permissions-container td, th {
+.settings-container td, th {
   padding: 10px;
 }
 
-.permissions-container tbody tr {
+.settings-container tbody tr {
   border-bottom: 1px solid #dce0e6;
 }
 
@@ -213,6 +213,34 @@ header nav {
   display: flex;
   flex-direction: row;
   gap: 1em;
+}
+
+.workspace-tag {
+  background: #2f35ab;
+  color: white;
+  padding: 0.2em;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+/* list of tags on the main workspace page */
+.workspace-tags-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+
+/* workspace-tag-settings-list is the list of tags on the
+ * workspace settings page */
+.workspace-tag-settings-list {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.workspace-tag-settings-list form {
+  line-height: 1em;
 }
 
 /*
@@ -423,6 +451,7 @@ a.show-underline {
   display: flex;
   align-items: center;
   gap: 0.5em;
+  padding: 0.5em;
 }
 
 .workspace-lock form {
@@ -436,6 +465,10 @@ a.show-underline {
 
 .workspace-lock-status-unlocked {
   background: #d4fdd4;
+}
+
+.workspace-lock-info {
+  font-size: 0.9em;
 }
 
 /* color-coded run status field */
@@ -525,6 +558,34 @@ a.show-underline {
 
 .content-menu-item {
   font-size: 1.2em;
+}
+
+/* two-column is a two column layout for the main content, using flex-box. */
+.two-column {
+  display: flex;
+  gap: 2em;
+  flex-direction: row;
+}
+
+.two-column-main-column {
+  flex-grow: 1;
+}
+
+.two-column-side-column {
+  flex-basis: 13em;
+
+  display: flex;
+  gap: 0.7em;
+  flex-direction: column;
+}
+
+.two-column-side-column > * {
+  padding: 0.5em;
+  background: #f6f6f6;
+}
+
+.two-column-side-column h5 {
+  margin-block-start: 0em;
 }
 
 /* data is a nugget of factual information, e.g. terraform version */

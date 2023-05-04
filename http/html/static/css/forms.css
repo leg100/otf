@@ -115,6 +115,15 @@ button:disabled, button:disabled:hover {
   title: "foo";
 }
 
+
+button.cross {
+  padding: 0.2em 0.5em;
+  background: #ed6969;
+  color: white;
+  font-weight: 700;
+  line-height: 1rem;
+}
+
 input.error {
   border-color: #e72633;
   box-shadow: 0 0 0 .125em rgba(229, 43, 37, 0.5);

@@ -144,6 +144,10 @@ func (f *fakeWebService) disconnect(context.Context, string) error {
 	return nil
 }
 
+func (f *fakeWebService) listAllTags(ctx context.Context, organization string) ([]*Tag, error) {
+	return nil, nil
+}
+
 type fakeWebCloudClient struct {
 	repos []string
 

@@ -109,8 +109,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			user: auth.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				// always show built-in owners permission
-				findText(t, doc, "owners", "//div[@class='permissions-container']//tbody//tr[1]/td[1]")
-				findText(t, doc, "admin", "//div[@class='permissions-container']//tbody//tr[1]/td[2]")
+				findText(t, doc, "owners", "//div[@id='permissions-container']//tbody//tr[1]/td[1]")
+				findText(t, doc, "admin", "//div[@id='permissions-container']//tbody//tr[1]/td[2]")
 
 				// all buttons should be enabled
 				buttons := htmlquery.Find(doc, `//button`)
@@ -411,6 +411,8 @@ func TestFilterUnassigned(t *testing.T) {
 }
 
 func findText(t *testing.T, doc *html.Node, want, selector string) {
+	t.Helper()
+
 	got := htmlquery.FindOne(doc, selector)
 	if assert.NotNil(t, got) {
 		assert.Equal(t, want, htmlquery.InnerText(got))

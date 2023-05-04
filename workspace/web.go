@@ -231,16 +231,31 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	tags, err := h.svc.listAllTags(r.Context(), workspace.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	getTagNames := func() (names []string) {
+		for _, t := range tags {
+			names = append(names, t.Name)
+		}
+		return
+	}
+
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
 		Policy                         otf.WorkspacePolicy
 		Unassigned                     []*auth.Team
 		Roles                          []rbac.Role
 		VCSProvider                    *vcsprovider.VCSProvider
+		UnassignedTags                 []string
 		UpdateWorkspaceAction          rbac.Action
 		DeleteWorkspaceAction          rbac.Action
 		SetWorkspacePermissionAction   rbac.Action
 		UnsetWorkspacePermissionAction rbac.Action
+		AddTagsAction                  rbac.Action
+		RemoveTagsAction               rbac.Action
 		CreateRunAction                rbac.Action
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
@@ -253,11 +268,14 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceAdminRole,
 		},
 		VCSProvider:                    provider,
+		UnassignedTags:                 otf.DiffStrings(getTagNames(), workspace.Tags),
 		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
 		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
 		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
 		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
 		CreateRunAction:                rbac.CreateRunAction,
+		AddTagsAction:                  rbac.AddTagsAction,
+		RemoveTagsAction:               rbac.RemoveTagsAction,
 	})
 }
 

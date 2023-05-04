@@ -97,6 +97,7 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.web.addTagHandlers(r)
 }
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {

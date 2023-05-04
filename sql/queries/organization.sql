@@ -28,7 +28,7 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 -- name: CountOrganizations :one
 SELECT count(*)
 FROM organizations
-WHERE name = ANY(pggen.arg('names'))
+WHERE name LIKE ANY(pggen.arg('names'))
 ;
 
 -- name: InsertOrganization :exec

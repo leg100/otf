@@ -229,7 +229,7 @@ func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrgan
 
 const countOrganizationsSQL = `SELECT count(*)
 FROM organizations
-WHERE name = ANY($1)
+WHERE name LIKE ANY($1)
 ;`
 
 // CountOrganizations implements Querier.CountOrganizations.

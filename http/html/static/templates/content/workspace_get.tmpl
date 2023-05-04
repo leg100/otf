@@ -14,34 +14,50 @@
       watchWorkspaceUpdates({{ watchWorkspacePath .Workspace.ID }});
     });
   </script>
-  <div class="content-menu">
-    <div class="workspace-info">
+  <div class="two-column">
+    <div class="two-column-main-column">
       <div>{{ template "identifier" .Workspace }}</span></div>
-      <div>Terraform Version: <span class="data">v{{ .Workspace.TerraformVersion }}</span></div>
-      <div class="workspace-lock">
-        {{ with .LockButton }}
-          <span class="workspace-lock-status workspace-lock-status-{{ .State }}" title="{{ .Tooltip }}">{{ title .State }}</span>
-          <form action="{{ .Action }}" method="POST"><button  title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
-        {{ end }}
-      </div>
-      <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
-        <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
-          <option value="" selected>--start run--</option>
-          <option value="plan-only">plan only</option>
-          <option value="plan-and-apply">plan and apply</option>
-        </select>
-      </form>
-    </div>
-    {{ with .Workspace.Connection }}
-      <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
-    {{ end }}
-    <div>
       <h3>Latest Run</h3>
       <div id="latest-run">
         {{ if not .Workspace.LatestRun }}
           There are no runs for this workspace.
         {{ end }}
       </div>
+    </div>
+    <div class="two-column-side-column">
+      <div class="actions-container">
+        <h5>Actions</h5>
+        <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
+          <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
+            <option value="" selected>-- start run --</option>
+            <option value="plan-only">plan only</option>
+            <option value="plan-and-apply">plan and apply</option>
+          </select>
+        </form>
+      </div>
+      <div class="terraform-version-container"><h5>Terraform Version</h5>v{{ .Workspace.TerraformVersion }}</div>
+      <div class="workspace-lock-container">
+        <h5>Locking</h5>
+        {{ with .LockButton }}
+          <div class="workspace-lock workspace-lock-status-{{ .State }}">
+            <span title="{{ .Tooltip }}">{{ title .State }}</span>
+            <form action="{{ .Action }}" method="POST"><button  title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
+          </div>
+          <span class="workspace-lock-info">{{ .Tooltip }}</span>
+        {{ end }}
+      </div>
+      {{ with .Workspace.Connection }}
+        <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
+      {{ end }}
+      <div>
+        <h5>Tags</h5>
+        <div class="workspace-tags-list">
+        {{ range .Workspace.Tags }}
+          <span class="workspace-tag">{{ . }}</span>
+        {{ end }}
+        </div>
+      </div>
+    </div>
     </div>
     {{ with .Workspace.LatestRun }}
       <script type="text/javascript">
