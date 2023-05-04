@@ -93,6 +93,17 @@ resource "null_resource" "tags_e2e" {}
 		chromedp.Click(`//button[text()='Add new tag']`, chromedp.NodeVisible),
 		screenshot(t),
 		matchText(t, ".flash-success", "created tag: baz"),
+		// go to workspace listing
+		chromedp.Click(`//div[@class='container-header-title']//a[text()='workspaces']`, chromedp.NodeVisible),
+		screenshot(t),
+		// filter by tag foo
+		chromedp.Click(`//label[@for='workspace-tag-filter-foo']`, chromedp.NodeVisible),
+		screenshot(t),
+		// filter by tag bar
+		chromedp.Click(`//label[@for='workspace-tag-filter-baz']`, chromedp.NodeVisible),
+		screenshot(t),
+		// confirm workspace listing contains tagged workspace
+		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`, chromedp.NodeVisible),
 	})
 	require.NoError(t, err)
 }

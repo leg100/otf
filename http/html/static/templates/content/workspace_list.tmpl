@@ -12,6 +12,18 @@
 {{ end }}
 
 {{ define "content" }}
+    <form id="tag-filter-form" action="{{ workspacesPath .Organization }}" method="GET">
+      <div class="workspace-tags-list">
+        {{ range $k, $v := .TagFilters }}
+          <div>
+            <input id="workspace-tag-filter-{{ $k }}" class="workspace-tag-filter-checkbox" name="search[tags]" value="{{ $k }}" type="checkbox" {{ checked $v }} onchange="this.form.submit()" />
+            <label for="workspace-tag-filter-{{ $k }}" class="workspace-tag-filter-label">
+              {{ $k }}
+            </label>
+          </div>
+        {{ end }}
+      </div>
+    </form>
   {{ template "content-list" . }}
 {{ end }}
 

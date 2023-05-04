@@ -128,3 +128,23 @@ input.error {
   border-color: #e72633;
   box-shadow: 0 0 0 .125em rgba(229, 43, 37, 0.5);
 }
+
+/*
+ * Workspace listing
+ */
+
+.workspace-tag-filter-checkbox {
+  display: none;
+}
+
+.workspace-tag-filter-label {
+  background: #c0c0c0;
+  color: white;
+  padding: 0.2em;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.workspace-tag-filter-checkbox:checked ~ .workspace-tag-filter-label {
+  background: #2f35ab;
+}

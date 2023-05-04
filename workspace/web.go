@@ -64,32 +64,49 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization    string `schema:"organization_name,required"`
-		otf.ListOptions        // Pagination
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
-		Organization: &params.Organization,
-		ListOptions:  params.ListOptions,
-	})
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), params)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// retrieve all tags and create map, with each entry determining whether
+	// listing is currently filtered by the tag or not.
+	tags, err := h.svc.listAllTags(r.Context(), *params.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tagfilters := func() map[string]bool {
+		m := make(map[string]bool, len(tags))
+		for _, t := range tags {
+			m[t.Name] = false
+			for _, f := range params.Tags {
+				if t.Name == f {
+					m[t.Name] = true
+					break
+				}
+			}
+		}
+		return m
 	}
 
 	h.Render("workspace_list.tmpl", w, struct {
 		organization.OrganizationPage
 		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
+		TagFilters map[string]bool
 	}{
-		OrganizationPage:      organization.NewPage(r, "workspaces", params.Organization),
+		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
 		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
 		WorkspaceList:         workspaces,
+		TagFilters:            tagfilters(),
 	})
 }
 
