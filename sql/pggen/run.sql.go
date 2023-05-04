@@ -333,14 +333,14 @@ type CountRunsParams struct {
 }
 
 // CountRuns implements Querier.CountRuns.
-func (q *DBQuerier) CountRuns(ctx context.Context, params CountRunsParams) (*int, error) {
+func (q *DBQuerier) CountRuns(ctx context.Context, params CountRunsParams) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountRuns")
 	row := q.conn.QueryRow(ctx, countRunsSQL, params.OrganizationNames, params.WorkspaceIds, params.WorkspaceNames, params.Statuses, params.Speculative)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query CountRuns: %w", err)
+		return item, fmt.Errorf("query CountRuns: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // CountRunsBatch implements Querier.CountRunsBatch.
@@ -349,13 +349,13 @@ func (q *DBQuerier) CountRunsBatch(batch genericBatch, params CountRunsParams) {
 }
 
 // CountRunsScan implements Querier.CountRunsScan.
-func (q *DBQuerier) CountRunsScan(results pgx.BatchResults) (*int, error) {
+func (q *DBQuerier) CountRunsScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan CountRunsBatch row: %w", err)
+		return item, fmt.Errorf("scan CountRunsBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const findRunByIDSQL = `SELECT

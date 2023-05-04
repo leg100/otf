@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
@@ -41,7 +40,6 @@ type (
 		otf.DB
 		html.Renderer
 		logr.Logger
-		policy.PolicyService
 	}
 )
 
@@ -53,10 +51,9 @@ func NewService(opts Options) *service {
 	}
 
 	svc.web = &web{
-		Renderer:      opts.Renderer,
-		Service:       opts.WorkspaceService,
-		PolicyService: opts.PolicyService,
-		svc:           &svc,
+		Renderer: opts.Renderer,
+		Service:  opts.WorkspaceService,
+		svc:      &svc,
 	}
 
 	return &svc

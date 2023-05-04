@@ -51,6 +51,7 @@ type (
 		Organization               string
 		Connection                 *repo.Connection
 		LatestRun                  *LatestRun
+		Tags                       []string
 
 		*lock
 	}
@@ -85,6 +86,7 @@ type (
 		SourceName                 *string
 		SourceURL                  *string
 		StructuredRunOutputEnabled *bool
+		Tags                       []TagSpec
 		TerraformVersion           *string
 		TriggerPrefixes            []string
 		WorkingDirectory           *string
@@ -113,9 +115,10 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		otf.ListOptions         // Pagination
-		Prefix          string  `schema:"search[name],omitempty"`
-		Organization    *string `schema:"organization_name,required"`
+		otf.ListOptions          // Pagination
+		Prefix          string   `schema:"search[name],omitempty"`
+		Tags            []string `schema:"search[tags],omitempty"`
+		Organization    *string  `schema:"organization_name,required"`
 	}
 
 	ConnectOptions struct {

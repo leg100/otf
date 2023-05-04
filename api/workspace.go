@@ -47,6 +47,7 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
+
 	opts := workspace.CreateOptions{
 		AllowDestroyPlan:           params.AllowDestroyPlan,
 		AutoApply:                  params.AutoApply,
@@ -65,6 +66,8 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		TerraformVersion:           params.TerraformVersion,
 		TriggerPrefixes:            params.TriggerPrefixes,
 		WorkingDirectory:           params.WorkingDirectory,
+		// convert from json:api structs to tag specs
+		Tags: toTagSpecs(params.Tags),
 	}
 	if params.Operations != nil {
 		if params.ExecutionMode != nil {

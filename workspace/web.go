@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 )
@@ -22,7 +21,6 @@ type (
 		html.Renderer
 		auth.TeamService
 		VCSProviderService
-		policy.PolicyService
 
 		svc Service
 	}
@@ -66,32 +64,49 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization    string `schema:"organization_name,required"`
-		otf.ListOptions        // Pagination
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
-		Organization: &params.Organization,
-		ListOptions:  params.ListOptions,
-	})
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), params)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// retrieve all tags and create map, with each entry determining whether
+	// listing is currently filtered by the tag or not.
+	tags, err := h.svc.listAllTags(r.Context(), *params.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tagfilters := func() map[string]bool {
+		m := make(map[string]bool, len(tags))
+		for _, t := range tags {
+			m[t.Name] = false
+			for _, f := range params.Tags {
+				if t.Name == f {
+					m[t.Name] = true
+					break
+				}
+			}
+		}
+		return m
 	}
 
 	h.Render("workspace_list.tmpl", w, struct {
 		organization.OrganizationPage
 		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
+		TagFilters map[string]bool
 	}{
-		OrganizationPage:      organization.NewPage(r, "workspaces", params.Organization),
+		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
 		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
 		WorkspaceList:         workspaces,
+		TagFilters:            tagfilters(),
 	})
 }
 
@@ -148,7 +163,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.GetPolicy(r.Context(), id)
+	policy, err := h.svc.GetPolicy(r.Context(), id)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -211,7 +226,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	policy, err := h.GetPolicy(r.Context(), workspaceID)
+	policy, err := h.svc.GetPolicy(r.Context(), workspaceID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -233,16 +248,31 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	tags, err := h.svc.listAllTags(r.Context(), workspace.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	getTagNames := func() (names []string) {
+		for _, t := range tags {
+			names = append(names, t.Name)
+		}
+		return
+	}
+
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
 		Policy                         otf.WorkspacePolicy
 		Unassigned                     []*auth.Team
 		Roles                          []rbac.Role
 		VCSProvider                    *vcsprovider.VCSProvider
+		UnassignedTags                 []string
 		UpdateWorkspaceAction          rbac.Action
 		DeleteWorkspaceAction          rbac.Action
 		SetWorkspacePermissionAction   rbac.Action
 		UnsetWorkspacePermissionAction rbac.Action
+		AddTagsAction                  rbac.Action
+		RemoveTagsAction               rbac.Action
 		CreateRunAction                rbac.Action
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
@@ -255,11 +285,14 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceAdminRole,
 		},
 		VCSProvider:                    provider,
+		UnassignedTags:                 otf.DiffStrings(getTagNames(), workspace.Tags),
 		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
 		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
 		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
 		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
 		CreateRunAction:                rbac.CreateRunAction,
+		AddTagsAction:                  rbac.AddTagsAction,
+		RemoveTagsAction:               rbac.RemoveTagsAction,
 	})
 }
 
@@ -486,7 +519,7 @@ func (h *webHandlers) setWorkspacePermission(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.SetPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
+	err = h.svc.SetPermission(r.Context(), params.WorkspaceID, params.TeamName, role)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -505,7 +538,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err := h.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
+	err := h.svc.UnsetPermission(r.Context(), params.WorkspaceID, params.TeamName)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

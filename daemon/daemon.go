@@ -24,7 +24,6 @@ import (
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/pubsub"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/run"
@@ -62,7 +61,6 @@ type (
 		run.RunService
 		repo.RepoService
 		logs.LogsService
-		policy.PolicyService
 
 		Handlers []otf.Handlers
 	}
@@ -167,11 +165,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService: vcsProviderService,
 	})
 
-	policyService := policy.NewService(policy.Options{
-		Logger: logger,
-		DB:     db,
-	})
-
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
 		DB:                  db,
@@ -181,13 +174,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TeamService:         authService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
-		WorkspaceAuthorizer: policyService,
-		PolicyService:       policyService,
 	})
 	configService := configversion.NewService(configversion.Options{
 		Logger:              logger,
 		DB:                  db,
-		WorkspaceAuthorizer: policyService,
+		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
 		Signer:              signer,
 	})
@@ -195,7 +186,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                      logger,
 		DB:                          db,
 		Renderer:                    renderer,
-		WorkspaceAuthorizer:         policyService,
+		WorkspaceAuthorizer:         workspaceService,
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
 		VCSProviderService:          vcsProviderService,
@@ -222,7 +213,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	stateService := state.NewService(state.Options{
 		Logger:              logger,
 		DB:                  db,
-		WorkspaceAuthorizer: policyService,
+		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
 		Cache:               cache,
 	})
@@ -230,9 +221,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		Renderer:            renderer,
-		WorkspaceAuthorizer: policyService,
+		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
-		PolicyService:       policyService,
 	})
 
 	agent, err := agent.NewAgent(
@@ -279,7 +269,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		TokensService:               tokensService,
 		VariableService:             variableService,
-		PolicyService:               policyService,
 		Signer:                      signer,
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})
@@ -321,7 +310,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:                  runService,
 		LogsService:                 logsService,
 		RepoService:                 repoService,
-		PolicyService:               policyService,
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,

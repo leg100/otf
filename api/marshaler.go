@@ -10,7 +10,6 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
@@ -33,7 +32,6 @@ type (
 		organization.OrganizationService
 		state.StateService
 		workspace.WorkspaceService
-		policy.PolicyService
 
 		*runLogsURLGenerator
 	}
@@ -84,6 +82,8 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 		payload = m.toUser(v)
 	case *auth.Team:
 		payload = m.toTeam(v)
+	case *workspace.TagList:
+		payload, marshalOpts = m.toTags(v)
 	default:
 		Error(w, fmt.Errorf("cannot marshal unknown type: %T", v))
 		return

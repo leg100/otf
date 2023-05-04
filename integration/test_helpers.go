@@ -80,8 +80,12 @@ resource "null_resource" "e2e" {}
 		config += cfg
 	}
 
+	return createRootModule(t, config)
+}
+
+func createRootModule(t *testing.T, tfconfig string) string {
 	root := t.TempDir()
-	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(tfconfig), 0o600)
 	require.NoError(t, err)
 
 	return root

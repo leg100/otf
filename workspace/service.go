@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/policy"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/vcsprovider"
@@ -41,15 +40,17 @@ type (
 		disconnect(ctx context.Context, workspaceID string) error
 
 		LockService
+		PermissionsService
+		TagService
 	}
 
 	service struct {
 		logr.Logger
 		otf.Publisher
 
-		site         otf.Authorizer
-		organization otf.Authorizer
-		workspace    otf.Authorizer // workspace authorizer
+		site           otf.Authorizer
+		organization   otf.Authorizer
+		otf.Authorizer // workspace authorizer
 
 		db   *pgdb
 		repo repo.RepoService
@@ -66,26 +67,27 @@ type (
 		repo.RepoService
 		auth.TeamService
 		logr.Logger
-		WorkspaceAuthorizer otf.Authorizer
-		policy.PolicyService
 	}
 )
 
 func NewService(opts Options) *service {
+	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:       opts.Logger,
-		Publisher:    opts.Broker,
-		db:           &pgdb{opts.DB},
+		Logger:    opts.Logger,
+		Publisher: opts.Broker,
+		Authorizer: &authorizer{
+			Logger: opts.Logger,
+			db:     db,
+		},
+		db:           db,
 		repo:         opts.RepoService,
-		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		workspace:    opts.WorkspaceAuthorizer,
+		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
 		TeamService:        opts.TeamService,
 		VCSProviderService: opts.VCSProviderService,
-		PolicyService:      opts.PolicyService,
 		svc:                &svc,
 	}
 	// Register with broker so that it can relay workspace events
@@ -95,6 +97,7 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.web.addTagHandlers(r)
 }
 
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
@@ -125,6 +128,14 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 			}
 			ws.Connection = conn
 		}
+		// Optionally create tags within same transaction
+		if len(opts.Tags) > 0 {
+			added, err := addTags(ctx, tx, ws, opts.Tags)
+			if err != nil {
+				return err
+			}
+			ws.Tags = added
+		}
 		return nil
 	})
 	if err != nil {
@@ -145,7 +156,7 @@ func (s *service) GetByID(ctx context.Context, workspaceID string) (any, error) 
 }
 
 func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +179,7 @@ func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspac
 		return nil, err
 	}
 
-	subject, err := s.workspace.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
+	subject, err := s.CanAccess(ctx, rbac.GetWorkspaceAction, ws.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +222,7 @@ func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) 
 }
 
 func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +248,7 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 }
 
 func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
-	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +281,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 
 // connect connects the workspace to a repo.
 func (s *service) connect(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error) {
-	_, err := s.workspace.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	_, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +314,7 @@ func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, t
 }
 
 func (s *service) disconnect(ctx context.Context, workspaceID string) error {
-	subject, err := s.workspace.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
 		return err
 	}

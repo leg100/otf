@@ -18,6 +18,8 @@
   {{ $canSetPermission := $.CurrentUser.CanAccessWorkspace .SetWorkspacePermissionAction .Policy }}
   {{ $canUnsetPermission := $.CurrentUser.CanAccessWorkspace .UnsetWorkspacePermissionAction .Policy }}
   {{ $canCreateRun := $.CurrentUser.CanAccessWorkspace .CreateRunAction .Policy }}
+  {{ $canAddTag := $.CurrentUser.CanAccessWorkspace .AddTagsAction .Policy }}
+  {{ $canRemoveTag := $.CurrentUser.CanAccessWorkspace .RemoveTagsAction .Policy }}
   <div>
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
@@ -70,7 +72,35 @@
       <button {{ insufficient $canUpdate }}>Save changes</button>
     </div>
   </form>
-  <div class="permissions-container">
+  <div class="settings-container">
+    <h3>Tags</h3>
+    <div class="workspace-tag-settings-list">
+      {{ range .Workspace.Tags }}
+        <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
+          <span class="workspace-tag">{{ . }}</span>
+          <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
+          <button id="button-remove-tag-{{ . }}" class="delete cross" {{ insufficient $canAddTag }}>x</button>
+        </form>
+      {{ end }}
+    </div>
+    <form action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
+      <div class="field">
+        <input type="text" name="tag_name" id="new-tag-name" value="" required>
+        <button {{ insufficient $canAddTag }}>Add new tag</button>
+      </div>
+    </form>
+    <form action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
+      <select name="tag_name" id="existing-tag-name">
+        {{ range .UnassignedTags }}
+          <option value="{{ . }}">{{ . }}</option>
+        {{ else }}
+          <option value="" disabled>no tags found</option>
+        {{ end }}
+      </select>
+      <button {{ insufficient $canAddTag }}>Add existing tag</button>
+    </form>
+  </div>
+  <div class="settings-container" id="permissions-container">
     <h3>Permissions</h3>
     <div>
       <table>
@@ -138,7 +168,7 @@
         </tbody>
       </table>
     </div>
-    <div class="permissions-container">
+    <div class="settings-container">
       <h3>Advanced</h3>
       <form action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
         <button id="queue-destroy-plan-button" class="delete" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">

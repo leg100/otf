@@ -18,6 +18,8 @@ services:
         condition: service_healthy
   squid:
     image: leg100/squid
+    ports:
+      - "3128:3128"
     healthcheck:
       test: ["CMD-SHELL", "nc -zw1 localhost 3128"]
       interval: 5s

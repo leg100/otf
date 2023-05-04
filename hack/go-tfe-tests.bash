@@ -9,6 +9,7 @@
 
 set -e
 
+GO_TFE_REPO="${GO_TFE_REPO:-github.com/leg100/go-tfe@otf}"
 TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Lock|Unlock|ForceUnlock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
 export TFE_ADDRESS="${TFE_ADDRESS:-https://localhost:8833}"
@@ -20,5 +21,5 @@ export TFE_TOKEN=${TFE_TOKEN:-site-token}
 export SKIP_PAID=1
 export SSL_CERT_FILE=$PWD/integration/fixtures/cert.pem
 
-cd $(go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
+cd $(go mod download -json ${GO_TFE_REPO} | jq -r '.Dir')
 go test -v -run $TESTS -timeout 60s

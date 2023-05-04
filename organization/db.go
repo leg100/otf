@@ -98,7 +98,7 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*Organi
 
 	return &OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

@@ -16,6 +16,7 @@ var (
 			GetTeamAction:         true,
 			ListTeamsAction:       true,
 			ListUsersAction:       true,
+			ListTagsAction:        true,
 		},
 	}
 
@@ -35,6 +36,7 @@ var (
 			ListVariablesAction:                true,
 			GetVariableAction:                  true,
 			WatchAction:                        true,
+			ListWorkspaceTags:                  true,
 		},
 	}
 
@@ -86,6 +88,8 @@ var (
 			CreateWorkspaceAction: true,
 			ListWorkspacesAction:  true,
 			UpdateWorkspaceAction: true,
+			AddTagsAction:         true,
+			RemoveTagsAction:      true,
 			// includes WorkspaceAdminRole perms too (see below)
 		},
 	}
