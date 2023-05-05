@@ -6,15 +6,11 @@ import (
 	"crypto/rsa"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/tokens"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwt"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -52,18 +48,9 @@ func (f *fakeCloudClient) GetUser(context.Context) (*cloud.User, error) {
 	return f.user, nil
 }
 
-func fakeIDToken(t *testing.T, aud string, key any) *oauth2.Token {
-	token, err := jwt.NewBuilder().
-		Claim("name", "bobby").
-		Audience([]string{aud}).
-		Expiration(time.Now().Add(time.Minute)).
-		Build()
-	require.NoError(t, err)
-
-	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, key))
-	require.NoError(t, err)
-
-	return (&oauth2.Token{}).WithExtra(map[string]any{"id_token": string(signed)})
+func fakeOAuthToken(t *testing.T, username, aud string, key *rsa.PrivateKey) *oauth2.Token {
+	idtoken := fakeIDToken(t, username, aud, "", key)
+	return (&oauth2.Token{}).WithExtra(map[string]any{"id_token": idtoken})
 }
 
 func fakeVerifier(t *testing.T, aud string, key *rsa.PrivateKey) *oidc.IDTokenVerifier {

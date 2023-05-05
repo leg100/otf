@@ -41,6 +41,14 @@ type (
 )
 
 func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*oidcAuthenticator, error) {
+	cloudConfig := cloud.Config{
+		Name:                opts.Name,
+		SkipTLSVerification: opts.SkipTLSVerification,
+	}
+
+	// construct oidc provider, using our own http client, which lets us disable
+	// tls verification for testing purposes.
+	ctx = oidc.ClientContext(ctx, cloudConfig.HTTPClient())
 	provider, err := oidc.NewProvider(ctx, opts.IssuerURL)
 	if err != nil {
 		return nil, err
@@ -62,9 +70,7 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 				// groups is used for managing permissions.
 				Scopes: append(opts.Scopes, oidc.ScopeOpenID, "groups", "profile"),
 			},
-			cloudConfig: cloud.Config{
-				Name: opts.Name,
-			},
+			cloudConfig: cloudConfig,
 		},
 	}, nil
 }

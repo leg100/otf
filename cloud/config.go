@@ -67,4 +67,6 @@ type OIDCConfig struct {
 	ClientSecret string
 	// Scopes is a list of optional scopes to pass to the oidc provider.
 	Scopes []string
+	// Skip TLS Verification when communicating with issuer
+	SkipTLSVerification bool
 }

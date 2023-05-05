@@ -7,29 +7,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestOIDCAuthenticator_ResponseHandler(t *testing.T) {
-	user := cloud.User{
-		Name: "fake-user",
-		Teams: []cloud.Team{
-			{
-				Name:         "fake-team",
-				Organization: "fake-org",
-			},
-		},
-	}
 	priv, err := rsa.GenerateKey(rand.Reader, 512)
 	require.NoError(t, err)
 
 	authenticator := &oidcAuthenticator{
 		TokensService: &fakeAuthenticatorService{},
 		oauthClient: &fakeOAuthClient{
-			user:  &user,
-			token: fakeIDToken(t, "otf", priv),
+			token: fakeOAuthToken(t, "", "otf", priv),
 		},
 		verifier: fakeVerifier(t, "otf", priv),
 	}
