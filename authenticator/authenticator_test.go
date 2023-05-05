@@ -1,7 +1,6 @@
 package authenticator
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -42,34 +41,6 @@ func TestNewAuthenticatorService(t *testing.T) {
 	assert.Equal(t, 2, len(got.authenticators))
 }
 
-func TestAuthenticator_ResponseHandler(t *testing.T) {
-	cuser := cloud.User{
-		Name: "fake-user",
-		Teams: []cloud.Team{
-			{
-				Name:         "fake-team",
-				Organization: "fake-org",
-			},
-		},
-	}
-
-	authenticator := &authenticator{
-		TokensService: &fakeAuthenticatorService{},
-		oauthClient:   &fakeOAuthClient{user: &cuser},
-	}
-
-	r := httptest.NewRequest("GET", "/auth?state=state", nil)
-	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
-	w := httptest.NewRecorder()
-	authenticator.responseHandler(w, r)
-
-	assert.Equal(t, http.StatusFound, w.Result().StatusCode)
-
-	loc, err := w.Result().Location()
-	require.NoError(t, err)
-	assert.Equal(t, "/app/profile", loc.Path)
-}
-
 // TestLoginHandler tests the login page handler, testing for the presence of a
 // login button for each configured cloud.
 func TestLoginHandler(t *testing.T) {
@@ -79,13 +50,13 @@ func TestLoginHandler(t *testing.T) {
 		renderer: renderer,
 	}
 
-	svc.authenticators = []*authenticator{
-		{
+	svc.authenticators = []authenticator{
+		&oauthAuthenticator{
 			oauthClient: &OAuthClient{
 				cloudConfig: cloud.Config{Name: "cloud1"},
 			},
 		},
-		{
+		&oauthAuthenticator{
 			oauthClient: &OAuthClient{
 				cloudConfig: cloud.Config{Name: "cloud2"},
 			},

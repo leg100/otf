@@ -54,17 +54,10 @@ func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts 
 func NewTestSessionJWT(t *testing.T, username, secret string, lifetime time.Duration) string {
 	t.Helper()
 
-	token, err := newToken(newTokenOptions{
-		key:     newTestJWK(t, secret),
-		subject: username,
-		kind:    userSessionKind,
-		expiry:  otf.Time(time.Now().Add(lifetime)),
-	})
-	require.NoError(t, err)
-	return string(token)
+	return NewTestJWT(t, secret, userSessionKind, lifetime, "sub", username)
 }
 
-func newTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, claims ...string) string {
+func NewTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, claims ...string) string {
 	t.Helper()
 
 	claimsMap := make(map[string]string, len(claims)/2)

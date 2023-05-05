@@ -52,3 +52,21 @@ type CloudOAuthConfig struct {
 	Config
 	OAuthConfig *oauth2.Config
 }
+
+// OIDCConfig is the configuration for a generic oidc provider.
+type OIDCConfig struct {
+	// Name is the user-friendly identifier of the oidc endpoint.
+	Name string
+	// IssuerURL is the issuer url for the oidc provider.
+	IssuerURL string
+	// RedirectURL is the redirect url for the oidc provider.
+	RedirectURL string
+	// ClientID is the client id for the oidc provider.
+	ClientID string
+	// ClientSecret is the client secret for the oidc provider.
+	ClientSecret string
+	// Scopes is a list of optional scopes to pass to the oidc provider.
+	Scopes []string
+	// Skip TLS Verification when communicating with issuer
+	SkipTLSVerification bool
+}

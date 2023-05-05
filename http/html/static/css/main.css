@@ -388,6 +388,11 @@ a.show-underline {
   padding: 1em;
 	border-style: solid;
 	border-width: 1px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
 }
 
 

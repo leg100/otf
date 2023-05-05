@@ -33,8 +33,7 @@ type (
 	// cloud.
 	OAuthClient struct {
 		otf.HostnameService // for retrieving otf system hostname for use in redirects back to otf
-
-		cloudConfig cloud.Config
+		cloudConfig         cloud.Config
 		*oauth2.Config
 	}
 
@@ -57,10 +56,12 @@ func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	tokenURL, err := updateHost(cfg.OAuthConfig.Endpoint.TokenURL, cfg.Hostname)
 	if err != nil {
 		return nil, err
 	}
+
 	cfg.OAuthConfig.Endpoint.AuthURL = authURL
 	cfg.OAuthConfig.Endpoint.TokenURL = tokenURL
 
@@ -96,7 +97,14 @@ func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true, // HTTPS only
 	})
 
-	http.Redirect(w, r, a.config().AuthCodeURL(state), http.StatusFound)
+	cfg, err := a.config()
+	if err != nil {
+		http.Error(w, "unable to get redirect url: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	redirectURL := cfg.AuthCodeURL(state)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 func (a *OAuthClient) CallbackPath() string {
@@ -131,7 +139,12 @@ func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
 	ctx := context.WithValue(r.Context(), oauth2.HTTPClient, a.cloudConfig.HTTPClient())
 
 	// Exchange code for an access token
-	return a.config().Exchange(ctx, resp.AuthCode)
+	cfg, err := a.config()
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg.Exchange(ctx, resp.AuthCode)
 }
 
 // NewClient constructs a cloud client configured with the given oauth token for authentication.
@@ -141,12 +154,25 @@ func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (cloud
 	})
 }
 
+func (a *OAuthClient) getRedirectURL() (string, error) {
+	return (&url.URL{Scheme: "https", Host: a.Hostname(), Path: a.CallbackPath()}).String(), nil
+}
+
 // config generates an oauth2 config for the client - note this is done at
 // run-time because the otf hostname may only be determined at run-time.
-func (a *OAuthClient) config() *oauth2.Config {
-	cfg := a.Config
-	cfg.RedirectURL = (&url.URL{Scheme: "https", Host: a.Hostname(), Path: a.CallbackPath()}).String()
-	return cfg
+func (a *OAuthClient) config() (*oauth2.Config, error) {
+	redirectURL, err := a.getRedirectURL()
+	if err != nil {
+		return nil, err
+	}
+
+	return &oauth2.Config{
+		Endpoint:     a.Config.Endpoint,
+		ClientID:     a.Config.ClientID,
+		ClientSecret: a.Config.ClientSecret,
+		RedirectURL:  redirectURL,
+		Scopes:       a.Config.Scopes,
+	}, nil
 }
 
 // updateHost updates the hostname in a URL
