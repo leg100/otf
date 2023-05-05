@@ -43,7 +43,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid user token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := newTestJWT(t, "secret", userTokenKind, time.Hour)
+		token := NewTestJWT(t, "secret", userTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
@@ -52,7 +52,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid run token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := newTestJWT(t, "secret", runTokenKind, time.Hour, "organization", "acme-corp")
+		token := NewTestJWT(t, "secret", runTokenKind, time.Hour, "organization", "acme-corp")
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &RunToken{})).ServeHTTP(w, r)
@@ -61,7 +61,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid agent token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := newTestJWT(t, "secret", agentTokenKind, time.Hour)
+		token := NewTestJWT(t, "secret", agentTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &AgentToken{})).ServeHTTP(w, r)
@@ -70,7 +70,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("invalid jwt", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := newTestJWT(t, "wrong-secret", agentTokenKind, time.Hour)
+		token := NewTestJWT(t, "wrong-secret", agentTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
@@ -79,7 +79,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("valid user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := newTestJWT(t, "secret", userTokenKind, time.Hour)
+		token := NewTestJWT(t, "secret", userTokenKind, time.Hour)
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
@@ -88,7 +88,7 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("expired user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := newTestJWT(t, "secret", userTokenKind, -time.Hour)
+		token := NewTestJWT(t, "secret", userTokenKind, -time.Hour)
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 		w := httptest.NewRecorder()
 		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)

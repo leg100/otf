@@ -92,7 +92,6 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", cfg.OIDC.Name, "user friendly oidc name")
 	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", cfg.OIDC.IssuerURL, "oidc issuer url")
-	cmd.Flags().StringVar(&cfg.OIDC.RedirectURL, "oidc-redirect-url", cfg.OIDC.RedirectURL, "oidc redirect url")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "oidc client ID")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "oidc client secret")
 

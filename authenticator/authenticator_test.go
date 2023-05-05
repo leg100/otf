@@ -1,7 +1,6 @@
 package authenticator
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -40,34 +39,6 @@ func TestNewAuthenticatorService(t *testing.T) {
 	got, err := NewAuthenticatorService(opts)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(got.authenticators))
-}
-
-func TestAuthenticator_ResponseHandler(t *testing.T) {
-	cuser := cloud.User{
-		Name: "fake-user",
-		Teams: []cloud.Team{
-			{
-				Name:         "fake-team",
-				Organization: "fake-org",
-			},
-		},
-	}
-
-	authenticator := &oauthAuthenticator{
-		TokensService: &fakeAuthenticatorService{},
-		oauthClient:   &fakeOAuthClient{user: &cuser},
-	}
-
-	r := httptest.NewRequest("GET", "/auth?state=state", nil)
-	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
-	w := httptest.NewRecorder()
-	authenticator.ResponseHandler(w, r)
-
-	assert.Equal(t, http.StatusFound, w.Result().StatusCode)
-
-	loc, err := w.Result().Location()
-	require.NoError(t, err)
-	assert.Equal(t, "/app/profile", loc.Path)
 }
 
 // TestLoginHandler tests the login page handler, testing for the presence of a
