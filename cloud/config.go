@@ -3,12 +3,10 @@ package cloud
 import (
 	"context"
 	"crypto/tls"
-	"errors"
-	"golang.org/x/oauth2"
 	"net/http"
-)
 
-var ErrInvalidOrganizationPolicy = errors.New("must provide a valid policy consisting of \"organization, group, team:team-name\"")
+	"golang.org/x/oauth2"
+)
 
 // Config is configuration for a cloud provider
 type Config struct {
