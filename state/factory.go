@@ -39,7 +39,7 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 		return nil, &otf.MissingParameterError{Parameter: "workspace_id"}
 	}
 
-	var f file
+	var f File
 	if err := json.Unmarshal(opts.State, &f); err != nil {
 		return nil, err
 	}
@@ -125,13 +125,13 @@ func newVersion(opts newVersionOptions) (Version, error) {
 		WorkspaceID: opts.workspaceID,
 	}
 
-	var f file
+	var f File
 	if err := json.Unmarshal(opts.state, &f); err != nil {
 		return Version{}, err
 	}
 
 	// extract outputs from state file
-	outputs := make(outputList, len(f.Outputs))
+	outputs := make(OutputList, len(f.Outputs))
 	for k, v := range f.Outputs {
 		hclType, err := newHCLType(v.Value)
 		if err != nil {

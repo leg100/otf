@@ -1,14 +1,8 @@
 package integration
 
 import (
-	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -87,41 +80,13 @@ resource "null_resource" "e2e" {}
 		config += cfg
 	}
 
+	return createRootModule(t, config)
+}
+
+func createRootModule(t *testing.T, tfconfig string) string {
 	root := t.TempDir()
-	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(tfconfig), 0o600)
 	require.NoError(t, err)
 
 	return root
-}
-
-func readFile(t *testing.T, path string) []byte {
-	t.Helper()
-
-	contents, err := os.ReadFile(path)
-	require.NoError(t, err)
-	return contents
-}
-
-func sendGithubPushEvent(t *testing.T, payload []byte, url, secret string) {
-	t.Helper()
-
-	// generate signature for push event
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	sig := mac.Sum(nil)
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
-	require.NoError(t, err)
-	req.Header.Add("Content-type", "application/json")
-	req.Header.Add("X-GitHub-Event", "push")
-	req.Header.Add("X-Hub-Signature-256", "sha256="+hex.EncodeToString(sig))
-
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-
-	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
-		response, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
-		t.Fatal(string(response))
-	}
 }

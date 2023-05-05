@@ -16,7 +16,7 @@ type (
 		CreatedAt   time.Time
 		Serial      int64
 		State       []byte     // state file
-		Outputs     outputList // state version has many outputs
+		Outputs     OutputList // state version has many outputs
 		WorkspaceID string     // state version belongs to a workspace
 	}
 
@@ -35,7 +35,7 @@ type (
 		StateVersionID string
 	}
 
-	outputList map[string]*Output
+	OutputList map[string]*Output
 
 	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {

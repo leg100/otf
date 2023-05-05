@@ -38,13 +38,14 @@ type (
 	}
 
 	service struct {
-		renderer       otf.Renderer
-		authenticators []authenticator
+
+		renderer       html.Renderer
+		authenticators []*authenticator
 	}
 
 	Options struct {
 		logr.Logger
-		otf.Renderer
+		html.Renderer
 
 		otf.HostnameService
 		organization.OrganizationService
@@ -130,7 +131,13 @@ func (a *service) AddHandlers(r *mux.Router) {
 }
 
 func (a *service) loginHandler(w http.ResponseWriter, r *http.Request) {
-	a.renderer.Render("login.tmpl", w, r, a.authenticators)
+	a.renderer.Render("login.tmpl", w, struct {
+		html.SitePage
+		Authenticators []*authenticator
+	}{
+		SitePage:       html.NewSitePage(r, "login"),
+		Authenticators: a.authenticators,
+	})
 }
 
 // ResponseHandler handles exchanging its auth code for a token.

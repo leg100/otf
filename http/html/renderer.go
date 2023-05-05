@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -22,16 +23,51 @@ const (
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
 
-// renderer locates and renders a template.
-type renderer interface {
-	RenderTemplate(name string, w io.Writer, data any) error
+type (
+	// Renderer renders pages and templates
+	Renderer interface {
+		pageRenderer
+		templateRenderer
+	}
+
+	renderer struct {
+		templateRenderer
+	}
+
+	// pageRenderer renders an html page using the named template.
+	pageRenderer interface {
+		Render(name string, w http.ResponseWriter, page any)
+	}
+	// renderer locates and renders a template.
+	templateRenderer interface {
+		RenderTemplate(name string, w io.Writer, data any) error
+	}
+)
+
+// NewRenderer constructs a renderer. If developer mode is enabled then
+// templates are loaded from disk every time a template is rendered.
+func NewRenderer(devMode bool) (*renderer, error) {
+	var tr templateRenderer
+	if devMode {
+		tr = &devRenderer{}
+	} else {
+		embedded, err := newEmbeddedRenderer()
+		if err != nil {
+			return nil, err
+		}
+		tr = embedded
+	}
+	return &renderer{tr}, nil
 }
 
-func newRenderer(devMode bool) (renderer, error) {
-	if devMode {
-		return &devRenderer{}, nil
+// Render the page. Note this must be the last thing called in a handler because
+// it writes an HTTP5xx to the response if there is an error.
+func (r *renderer) Render(name string, w http.ResponseWriter, page any) {
+	// purge flash messages from cookie store prior to rendering template
+	purgeFlashes(w)
+	if err := r.RenderTemplate(name, w, page); err != nil {
+		Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	return newEmbeddedRenderer()
 }
 
 func renderTemplateFromCache(cache map[string]*template.Template, name string, w io.Writer, data any) error {
@@ -73,6 +109,7 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs["selected"] = selected
 	funcs["checked"] = checked
 	funcs["disabled"] = disabled
+	funcs["insufficient"] = insufficient
 	// make path helpers available to templates
 	for k, v := range paths.FuncMap() {
 		funcs[k] = v

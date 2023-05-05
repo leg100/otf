@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    command: -c fsync=off
+    environment:
+     - POSTGRES_PASSWORD=postgres
+  wait:
+    image: alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+  squid:
+    image: leg100/squid
+    ports:
+      - "3128:3128"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zw1 localhost 3128"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    stop_signal: SIGINT
+    tty: true
+    volumes:
+      - ./integration/fixtures:/etc/squid/certs
+  otfd:
+    image: leg100/otfd:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      squid:
+        condition: service_healthy
+    ports:
+      - "8833:8080"
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    environment:
+      - OTF_DATABASE=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - OTF_SECRET=ce6bf87f25118c87c8ca3d3066010c5ee56643c01ba5cab605642b0d83271e6e
+      - OTF_SITE_TOKEN=site-token
+      - OTF_SSL=true
+      - OTF_CERT_FILE=/fixtures/cert.pem
+      - OTF_KEY_FILE=/fixtures/key.pem
+      - OTF_LOG_HTTP_REQUESTS=true
+      - HTTPS_PROXY=squid:3128
+      - SSL_CERT_FILE=/fixtures/cert.pem
+    volumes:
+      - ./integration/fixtures:/fixtures

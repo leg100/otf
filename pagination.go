@@ -4,6 +4,8 @@ import (
 	"math"
 	"net/url"
 	"strconv"
+
+	"github.com/leg100/otf/api/types"
 )
 
 const (
@@ -18,6 +20,16 @@ type Pagination struct {
 	Opts ListOptions
 	// total unpaginated count
 	Count int
+}
+
+// NewPaginationFromJSONAPI constructs pagination from a json:api struct
+func NewPaginationFromJSONAPI(json *types.Pagination) *Pagination {
+	return &Pagination{
+		Count: json.TotalCount,
+		// we can't determine the page size so we'll just pass in 0 which
+		// ListOptions interprets as the default page size
+		Opts: ListOptions{PageNumber: json.CurrentPage, PageSize: 0},
+	}
 }
 
 func (p *Pagination) CurrentPage() int { return p.Opts.PageNumber }

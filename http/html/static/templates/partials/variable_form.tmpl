@@ -1,9 +1,9 @@
 {{ define "variable-form" }}
-  <form class="main-form" action="{{ .Content.FormAction }}" method="POST">
-    {{ with .Content.Variable }}
+  <form class="main-form" action="{{ .FormAction }}" method="POST">
+    {{ with .Variable }}
       <div class="field">
         <label for="key">Key</label>
-        <input type="text" name="key" id="key" value="{{ .Key }}" required placeholder="key" {{ disabled (and .Sensitive $.Content.EditMode) }}>
+        <input type="text" name="key" id="key" value="{{ .Key }}" required placeholder="key" {{ disabled (and .Sensitive $.EditMode) }}>
       </div>
       <div class="field">
         <label for="value">Value</label>
@@ -14,20 +14,20 @@
           <legend>Category</legend>
           <div class="radio">
             <div>
-              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="category">Terraform</label>
+              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.EditMode) }} required><label for="category">Terraform</label>
             </div>
             <div>
-              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="env">Environment variable</label>
+              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }} {{ disabled (and .Sensitive $.EditMode) }} required><label for="env">Environment variable</label>
             </div>
           </div>
         </fieldset>
       </div>
       <div class="checkbox-group">
         <div class="checkbox">
-          <input type="checkbox" name="hcl" id="hcl" {{ checked .HCL }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="hcl">HCL</label>
+          <input type="checkbox" name="hcl" id="hcl" {{ checked .HCL }} {{ disabled (and .Sensitive $.EditMode) }}><label for="hcl">HCL</label>
         </div>
         <div class="checkbox">
-          <input type="checkbox" name="sensitive" id="sensitive" {{ checked .Sensitive }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="sensitive">Sensitive</label>
+          <input type="checkbox" name="sensitive" id="sensitive" {{ checked .Sensitive }} {{ disabled (and .Sensitive $.EditMode) }}><label for="sensitive">Sensitive</label>
         </div>
       </div>
       <div class="field">
@@ -35,7 +35,9 @@
         <input type="text" class="freeform" name="description" id="description" value="{{ .Description }}" placeholder="description (optional)">
       </div>
       <div>
-        <button id="create-variable-button">Save variable</button>
+        <button id="save-variable-button" {{ insufficient $.CanAccess }}>
+          Save variable
+        </button>
       </div>
     {{ end }}
   </form>

@@ -1,12 +1,10 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Users{{ end }}
-
 {{ define "container-header" }}users{{ end }}
 
 {{ define "content" }}
   <div id="content-list" class="content-list">
-    {{ range .Content }}
+    {{ range .Users }}
       {{ block "content-list-item" . }}{{ end }}
     {{ else }}
       No items currently exist.

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/agent"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/daemon"
+	"github.com/leg100/otf/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +34,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cfg := daemon.Config{}
 	daemon.ApplyDefaults(&cfg)
 
-	var loggerConfig *cmdutil.LoggerConfig
+	var loggerConfig *logr.Config
 
 	cmd := &cobra.Command{
 		Use:           "otfd",
@@ -43,7 +44,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		SilenceErrors: true,
 		Version:       otf.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := cmdutil.NewLogger(loggerConfig)
+			logger, err := logr.New(loggerConfig)
 			if err != nil {
 				return err
 			}
@@ -95,11 +96,11 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "oidc client ID")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "oidc client secret")
 
-	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin")
+	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")
 
 	cmd.Flags().StringVar(&cfg.GoogleIAPConfig.Audience, "google-jwt-audience", "", "The Google JWT audience claim for validation. If unspecified then validation is skipped")
 
-	loggerConfig = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
+	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
 	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {

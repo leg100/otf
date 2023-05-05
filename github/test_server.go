@@ -1,17 +1,30 @@
 package github
 
 import (
+	"bytes"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+)
+
+const (
+	PushEvent   GithubEvent = "push"
+	PullRequest GithubEvent = "pull_request"
 )
 
 type (
@@ -20,7 +33,8 @@ type (
 		HookSecret   *string  // populated upon creation
 		HookEvents   []string // populated upon creation
 
-		statusCallback // callback invoked whenever a commit status is received
+		// status updates received from otfd
+		statuses chan *github.StatusEvent
 
 		*httptest.Server
 		*testdb
@@ -35,12 +49,14 @@ type (
 		refs    []string
 	}
 
-	statusCallback func(*github.StatusEvent)
+	// The name of the event sent in the X-Github-Event header
+	GithubEvent string
 )
 
 func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.Config) {
 	srv := TestServer{
-		testdb: &testdb{},
+		testdb:   &testdb{},
+		statuses: make(chan *github.StatusEvent, 999),
 	}
 	for _, o := range opts {
 		o(&srv)
@@ -202,12 +218,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 				return
 			}
-
-			// pass commit status to callback if one is registered
-			if srv.statusCallback != nil {
-				srv.statusCallback(&commit)
-			}
-
+			srv.statuses <- &commit
 			w.WriteHeader(http.StatusCreated)
 		})
 	}
@@ -262,12 +273,50 @@ func WithArchive(tarball []byte) TestServerOption {
 	}
 }
 
-func WithStatusCallback(callback statusCallback) TestServerOption {
-	return func(srv *TestServer) {
-		srv.statusCallback = callback
+func (s *TestServer) HasWebhook() bool {
+	return s.HookEndpoint != nil && s.HookSecret != nil
+}
+
+// SendEvent sends an event to the registered webhook.
+func (s *TestServer) SendEvent(t *testing.T, event GithubEvent, payload []byte) {
+	t.Helper()
+
+	require.True(t, s.HasWebhook())
+
+	// generate signature for push event
+	mac := hmac.New(sha256.New, []byte(*s.HookSecret))
+	mac.Write(payload)
+	sig := mac.Sum(nil)
+
+	req, err := http.NewRequest("POST", *s.HookEndpoint, bytes.NewReader(payload))
+	require.NoError(t, err)
+	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("X-GitHub-Event", string(event))
+	req.Header.Add("X-Hub-Signature-256", "sha256="+hex.EncodeToString(sig))
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
+		response, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		t.Fatal(string(response))
 	}
 }
 
-func (s *TestServer) HasWebhook() bool {
-	return s.HookEndpoint != nil && s.HookSecret != nil
+// GetStatus retrieves a commit status event off the queue, timing out after 10
+// seconds if nothing is on the queue.
+func (s *TestServer) GetStatus(t *testing.T, ctx context.Context) *github.StatusEvent {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	select {
+	case status := <-s.statuses:
+		return status
+	case <-ctx.Done():
+		t.Fatalf("github server: waiting to receive commit status: %s", ctx.Err().Error())
+		return nil
+	}
 }

@@ -28,14 +28,29 @@ func TestEventHandler(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 
-	t.Run("pr event", func(t *testing.T) {
-		r := newTestPullRequestEvent(t, "pr-1")
+	t.Run("pr open event", func(t *testing.T) {
+		r := newTestPullRequestEvent(t, "pr-1", "opened")
 		w := httptest.NewRecorder()
 		got := HandleEvent(w, r, cloud.HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
 		want := cloud.VCSPullEvent{
+			Action: cloud.VCSPullEventOpened,
+			Branch: "pr-1",
+		}
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("pr update event", func(t *testing.T) {
+		r := newTestPullRequestEvent(t, "pr-1", "synchronize")
+		w := httptest.NewRecorder()
+		got := HandleEvent(w, r, cloud.HandleEventOptions{})
+
+		assert.Equal(t, 202, w.Code)
+
+		want := cloud.VCSPullEvent{
+			Action: cloud.VCSPullEventUpdated,
 			Branch: "pr-1",
 		}
 		assert.Equal(t, want, got)
@@ -54,8 +69,9 @@ func newTestPushEvent(t *testing.T, ref string) *http.Request {
 	return r
 }
 
-func newTestPullRequestEvent(t *testing.T, ref string) *http.Request {
+func newTestPullRequestEvent(t *testing.T, ref, action string) *http.Request {
 	pr, err := json.Marshal(&github.PullRequestEvent{
+		Action: &action,
 		PullRequest: &github.PullRequest{
 			Head: &github.PullRequestBranch{
 				Ref: otf.String(ref),

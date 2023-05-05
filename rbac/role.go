@@ -15,6 +15,8 @@ var (
 			GetModuleAction:       true,
 			GetTeamAction:         true,
 			ListTeamsAction:       true,
+			ListUsersAction:       true,
+			ListTagsAction:        true,
 		},
 	}
 
@@ -31,6 +33,10 @@ var (
 			DownloadConfigurationVersionAction: true,
 			GetRunAction:                       true,
 			GetConfigurationVersionAction:      true,
+			ListVariablesAction:                true,
+			GetVariableAction:                  true,
+			WatchAction:                        true,
+			ListWorkspaceTags:                  true,
 		},
 	}
 
@@ -53,6 +59,8 @@ var (
 			ApplyRunAction:        true,
 			LockWorkspaceAction:   true,
 			UnlockWorkspaceAction: true,
+			CreateVariableAction:  true,
+			UpdateVariableAction:  true,
 			// includes WorkspacePlanRole perms too (see below)
 		},
 	}
@@ -67,6 +75,7 @@ var (
 			UnsetWorkspacePermissionAction: true,
 			DeleteWorkspaceAction:          true,
 			ForceUnlockWorkspaceAction:     true,
+			UpdateWorkspaceAction:          true,
 			// includes WorkspaceWriteRole perms too (see below)
 		},
 	}
@@ -79,6 +88,8 @@ var (
 			CreateWorkspaceAction: true,
 			ListWorkspacesAction:  true,
 			UpdateWorkspaceAction: true,
+			AddTagsAction:         true,
+			RemoveTagsAction:      true,
 			// includes WorkspaceAdminRole perms too (see below)
 		},
 	}

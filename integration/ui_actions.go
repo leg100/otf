@@ -54,6 +54,8 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 // matchText is a custom chromedp Task that extracts text content using the
 // selector and asserts that it matches the wanted string.
 func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
+	t.Helper()
+
 	return matchRegex(t, selector, "^"+want+"$")
 }
 
@@ -122,7 +124,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
-		// confirm builtin admin permission for owners team
+		// confirm builtin admin role for owners team
 		matchText(t, "#permissions-owners td:first-child", "owners"),
 		matchText(t, "#permissions-owners td:last-child", "admin"),
 		// assign role to team
@@ -138,6 +140,7 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 	return chromedp.Tasks{
 		// go to org
 		chromedp.Navigate(organizationURL(hostname, org)),
+		screenshot(t),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		screenshot(t),
@@ -158,13 +161,13 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, hostname, organization string, workspaceName string) chromedp.Tasks {
+func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
 		screenshot(t),
 		// select strategy for run
-		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="start-run-strategy"]`, strategy, chromedp.BySearch),
 		screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
@@ -175,14 +178,22 @@ func startRunTasks(t *testing.T, hostname, organization string, workspaceName st
 		// wait for run to enter planned state
 		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
 		screenshot(t),
-		// click 'confirm & apply' button once it becomes visible
-		chromedp.Click(`//button[text()='Confirm & Apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		// run widget should show plan summary
+		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		screenshot(t),
+		// run widget should show discard button
+		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
+		screenshot(t),
+		// click 'apply' button once it becomes visible
+		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible, chromedp.BySearch),
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
 		chromedp.WaitReady(`#apply-status.phase-status-finished`),
 		// confirm run ends in applied state
 		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
+		// run widget should show apply summary
+		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	}
 }
@@ -196,7 +207,7 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Ta
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
 		// click connect button
-		chromedp.Click(`//button[text()='Connect to VCS']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[@id='list-workspace-vcs-providers-button']`, chromedp.NodeVisible),
 		screenshot(t),
 		// select provider
 		chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),

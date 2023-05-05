@@ -1,21 +1,17 @@
 {{ template "layout" . }}
 
-{{ define "title" }}New Token{{ end }}
-
 {{ define "container-header" }}
   <div>profile / tokens / new</div>
 {{ end }}
 
 {{ define "content" }}
   <form class="main-form" action="{{ createTokenPath }}" method="POST">
-    <ul>
-      <li class="field">
-        <label for="description">Description</label>
-        <input type="text" name="description" id="description" required>
-      </li>
-      <li>
-        <button>Create token</button>
-      </li>
-    </ul>
+    <div class="field">
+      <label for="description">Description</label>
+      <input type="text" name="description" id="description" required>
+    </div>
+    <div class="field">
+      <button>Create token</button>
+    </div>
   </form>
 {{ end }}

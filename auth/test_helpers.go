@@ -19,6 +19,10 @@ func (f *fakeService) GetTeamByID(ctx context.Context, teamID string) (*Team, er
 	return f.team, nil
 }
 
+func (f *fakeService) ListUsers(ctx context.Context) ([]*User, error) {
+	return nil, nil
+}
+
 func (f *fakeService) ListTeams(ctx context.Context, organization string) ([]*Team, error) {
 	return []*Team{f.team}, nil
 }
@@ -39,7 +43,7 @@ func (f *fakeService) DeleteTeam(ctx context.Context, teamID string) error {
 func newFakeWeb(t *testing.T, svc AuthService) *webHandlers {
 	t.Helper()
 
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &webHandlers{
 		svc:      svc,

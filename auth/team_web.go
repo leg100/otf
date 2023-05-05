@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -23,14 +24,16 @@ func (h *webHandlers) addTeamHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("team_new.tmpl", w, r, struct{ Organization string }{
-		Organization: organization,
+	h.Render("team_new.tmpl", w, struct {
+		organization.OrganizationPage
+	}{
+		OrganizationPage: organization.NewPage(r, "new team", org),
 	})
 }
 
@@ -74,12 +77,39 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("team_get.tmpl", w, r, struct {
-		*Team
-		Members []*User
+	// Retrieve full list of users for populating a select form from which new
+	// team members can be chosen. Only do this if the subject has perms to
+	// retrieve the list.
+	subject, err := otf.SubjectFromContext(r.Context())
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var users []*User
+	if subject.CanAccessSite(rbac.ListUsersAction) {
+		users, err = h.svc.ListUsers(r.Context())
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	h.Render("team_get.tmpl", w, struct {
+		organization.OrganizationPage
+		Team                       *Team
+		Members                    []*User
+		NonMembers                 []*User
+		AddTeamMembershipAction    rbac.Action
+		RemoveTeamMembershipAction rbac.Action
+		DeleteTeamAction           rbac.Action
 	}{
-		Team:    team,
-		Members: members,
+		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
+		Team:                       team,
+		NonMembers:                 diffUsers(members, users),
+		Members:                    members,
+		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
+		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
+		DeleteTeamAction:           rbac.DeleteTeamAction,
 	})
 }
 
@@ -104,25 +134,25 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	teams, err := h.svc.ListTeams(r.Context(), organization)
+	teams, err := h.svc.ListTeams(r.Context(), org)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("team_list.tmpl", w, r, struct {
-		Organization     string
+	h.Render("team_list.tmpl", w, struct {
+		organization.OrganizationPage
 		Teams            []*Team
 		CreateTeamAction rbac.Action
 		DeleteTeamAction rbac.Action
 	}{
-		Organization:     organization,
+		OrganizationPage: organization.NewPage(r, "teams", org),
 		Teams:            teams,
 		CreateTeamAction: rbac.CreateTeamAction,
 		DeleteTeamAction: rbac.DeleteTeamAction,
@@ -181,4 +211,18 @@ func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "removed team member: "+params.Username)
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
+}
+
+// diffUsers returns the users from b that are not in a.
+func diffUsers(a, b []*User) (c []*User) {
+	m := make(map[string]struct{}, len(a))
+	for _, user := range a {
+		m[user.Username] = struct{}{}
+	}
+	for _, user := range b {
+		if _, ok := m[user.Username]; !ok {
+			c = append(c, user)
+		}
+	}
+	return
 }

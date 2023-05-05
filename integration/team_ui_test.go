@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 )
@@ -34,16 +33,15 @@ func TestIntegration_TeamUI(t *testing.T) {
 			chromedp.Click(`//div[@class='content-list']//a[text()='owners']`, chromedp.NodeVisible),
 			screenshot(t),
 			// select newbie as new team member
-			chromedp.Focus(`//input[@id='add-username']`, chromedp.NodeVisible),
-			input.InsertText(newbie.Username),
+			chromedp.SetValue(`//select[@id="select-add-member"]`, newbie.Username, chromedp.BySearch),
 			screenshot(t),
 			// submit
-			chromedp.Click(`//button[text()='Add Member']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Add member']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm newbie added
 			matchText(t, ".flash-success", "added team member: "+newbie.Username),
 			// remove newbie from team
-			chromedp.Click(fmt.Sprintf(`//div[@id='item-user-%s']//button[text()='delete']`, newbie.Username), chromedp.NodeVisible),
+			chromedp.Click(fmt.Sprintf(`//div[@id='item-user-%s']//button[@id='remove-member-button']`, newbie.Username), chromedp.NodeVisible),
 			screenshot(t),
 			// confirm newbie removed
 			matchText(t, ".flash-success", "removed team member: "+newbie.Username),

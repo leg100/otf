@@ -6,18 +6,26 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/rbac"
+	"github.com/stretchr/testify/require"
+)
+
+type (
+	fakeService struct {
+		orgs []*Organization
+
+		Service
+	}
+	unprivilegedSubject struct {
+		otf.Subject
+	}
 )
 
 func NewTestOrganization(t *testing.T) *Organization {
 	return &Organization{
 		Name: uuid.NewString(),
 	}
-}
-
-type fakeService struct {
-	orgs []*Organization
-
-	Service
 }
 
 func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
@@ -29,4 +37,18 @@ func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationLi
 
 func (f *fakeService) DeleteOrganization(context.Context, string) error {
 	return nil
+}
+
+func (s *unprivilegedSubject) CanAccessSite(_ rbac.Action) bool {
+	return false
+}
+
+func newFakeWeb(t *testing.T, svc *fakeService, restrict bool) *web {
+	renderer, err := html.NewRenderer(false)
+	require.NoError(t, err)
+	return &web{
+		svc:                          svc,
+		Renderer:                     renderer,
+		RestrictOrganizationCreation: restrict,
+	}
 }

@@ -170,6 +170,12 @@ var specs = []controllerSpec{
 					{
 						name: "setup-connection-repo",
 					},
+					{
+						name: "create-tag",
+					},
+					{
+						name: "delete-tag",
+					},
 				},
 				nested: []controllerSpec{
 					{

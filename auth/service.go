@@ -4,6 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 )
 
@@ -22,14 +23,13 @@ type (
 		site         otf.Authorizer // authorizes site access
 		organization otf.Authorizer // authorizes org access
 
-		api *api
 		db  *pgdb
 		web *webHandlers
 	}
 
 	Options struct {
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		otf.HostnameService
 		logr.Logger
 	}
@@ -42,7 +42,6 @@ func NewService(opts Options) *service {
 		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.Logger),
 	}
-	svc.api = &api{svc: &svc}
 	svc.web = &webHandlers{
 		Renderer: opts.Renderer,
 		svc:      &svc,
@@ -51,6 +50,5 @@ func NewService(opts Options) *service {
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
 	a.web.addHandlers(r)
 }

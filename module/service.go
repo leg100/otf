@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/repo"
@@ -62,7 +63,7 @@ type (
 		otf.HostnameService
 		vcsprovider.VCSProviderService
 		*surl.Signer
-		otf.Renderer
+		html.Renderer
 		repo.RepoService
 	}
 )

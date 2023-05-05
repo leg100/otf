@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 	"github.com/pkg/errors"
@@ -29,7 +30,6 @@ type (
 
 		workspace otf.Authorizer
 
-		api *api
 		web *web
 	}
 
@@ -38,7 +38,7 @@ type (
 		WorkspaceService    workspace.Service
 
 		otf.DB
-		otf.Renderer
+		html.Renderer
 		logr.Logger
 	}
 )
@@ -50,9 +50,6 @@ func NewService(opts Options) *service {
 		db:        newPGDB(opts.DB),
 	}
 
-	svc.api = &api{
-		svc: &svc,
-	}
 	svc.web = &web{
 		Renderer: opts.Renderer,
 		Service:  opts.WorkspaceService,
@@ -63,7 +60,6 @@ func NewService(opts Options) *service {
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 

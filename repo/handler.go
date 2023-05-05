@@ -57,6 +57,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.Publish(otf.Event{
 			Type:    otf.EventVCS,
 			Payload: event,
+			// publish vcs events only to the local node; a "run spawner" and a
+			// "module publisher" subscribe to vcs events on each node, so it is
+			// only necessary to send event to local node; sending it to other
+			// nodes would lead to duplicate runs and modules being spawned and
+			// published.
+			Local: true,
 		})
 	}
 }

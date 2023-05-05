@@ -11,16 +11,33 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/vcsprovider"
 )
 
-type webHandlers struct {
-	otf.Renderer
-	auth.TeamService
-	VCSProviderService
+type (
+	webHandlers struct {
+		html.Renderer
+		auth.TeamService
+		VCSProviderService
 
-	svc Service
+		svc Service
+	}
+
+	// WorkspacePage contains data shared by all workspace-based pages.
+	WorkspacePage struct {
+		organization.OrganizationPage
+
+		Workspace *Workspace
+	}
+)
+
+func NewPage(r *http.Request, title string, workspace *Workspace) WorkspacePage {
+	return WorkspacePage{
+		OrganizationPage: organization.NewPage(r, title, workspace.Organization),
+		Workspace:        workspace,
+	}
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -47,42 +64,63 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization    string `schema:"organization_name,required"`
-		otf.ListOptions        // Pagination
-	}
+	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
-		Organization: &params.Organization,
-		ListOptions:  params.ListOptions,
-	})
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), params)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("workspace_list.tmpl", w, r, struct {
+	// retrieve all tags and create map, with each entry determining whether
+	// listing is currently filtered by the tag or not.
+	tags, err := h.svc.listAllTags(r.Context(), *params.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tagfilters := func() map[string]bool {
+		m := make(map[string]bool, len(tags))
+		for _, t := range tags {
+			m[t.Name] = false
+			for _, f := range params.Tags {
+				if t.Name == f {
+					m[t.Name] = true
+					break
+				}
+			}
+		}
+		return m
+	}
+
+	h.Render("workspace_list.tmpl", w, struct {
+		organization.OrganizationPage
+		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
-		Organization string
+		TagFilters map[string]bool
 	}{
-		WorkspaceList: workspaces,
-		Organization:  params.Organization,
+		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
+		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
+		WorkspaceList:         workspaces,
+		TagFilters:            tagfilters(),
 	})
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
+	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	h.Render("workspace_new.tmpl", w, r, struct{ Organization string }{
-		Organization: organization,
+	h.Render("workspace_new.tmpl", w, struct {
+		organization.OrganizationPage
+	}{
+		OrganizationPage: organization.NewPage(r, "new workspace", org),
 	})
 }
 
@@ -136,12 +174,23 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("workspace_get.tmpl", w, r, struct {
-		*Workspace
+	var provider *vcsprovider.VCSProvider
+	if ws.Connection != nil {
+		provider, err = h.GetVCSProvider(r.Context(), ws.Connection.VCSProviderID)
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	h.Render("workspace_get.tmpl", w, struct {
+		WorkspacePage
 		LockButton
+		VCSProvider *vcsprovider.VCSProvider
 	}{
-		Workspace:  ws,
-		LockButton: lockButtonHelper(ws, policy, user),
+		WorkspacePage: NewPage(r, ws.ID, ws),
+		LockButton:    lockButtonHelper(ws, policy, user),
+		VCSProvider:   provider,
 	})
 }
 
@@ -184,35 +233,66 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get teams that have yet to be assigned a permission
-	unassigned, err := h.ListTeams(r.Context(), workspace.Organization)
+	teams, err := h.ListTeams(r.Context(), workspace.Organization)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	for _, perm := range policy.Permissions {
-		for it, t := range unassigned {
-			if t.ID == perm.Team {
-				unassigned = append(unassigned[:it], unassigned[it+1:]...)
-				break
-			}
+
+	var provider *vcsprovider.VCSProvider
+	if workspace.Connection != nil {
+		provider, err = h.GetVCSProvider(r.Context(), workspace.Connection.VCSProviderID)
+		if err != nil {
+			html.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 
-	h.Render("workspace_edit.tmpl", w, r, struct {
-		*Workspace
-		Permissions []otf.WorkspacePermission
-		Unassigned  []*auth.Team
-		Roles       []rbac.Role
+	tags, err := h.svc.listAllTags(r.Context(), workspace.Organization)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	getTagNames := func() (names []string) {
+		for _, t := range tags {
+			names = append(names, t.Name)
+		}
+		return
+	}
+
+	h.Render("workspace_edit.tmpl", w, struct {
+		WorkspacePage
+		Policy                         otf.WorkspacePolicy
+		Unassigned                     []*auth.Team
+		Roles                          []rbac.Role
+		VCSProvider                    *vcsprovider.VCSProvider
+		UnassignedTags                 []string
+		UpdateWorkspaceAction          rbac.Action
+		DeleteWorkspaceAction          rbac.Action
+		SetWorkspacePermissionAction   rbac.Action
+		UnsetWorkspacePermissionAction rbac.Action
+		AddTagsAction                  rbac.Action
+		RemoveTagsAction               rbac.Action
+		CreateRunAction                rbac.Action
 	}{
-		Workspace:   workspace,
-		Permissions: policy.Permissions,
-		Unassigned:  unassigned,
+		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
+		Policy:        policy,
+		Unassigned:    filterUnassigned(policy, teams),
 		Roles: []rbac.Role{
 			rbac.WorkspaceReadRole,
 			rbac.WorkspacePlanRole,
 			rbac.WorkspaceWriteRole,
 			rbac.WorkspaceAdminRole,
 		},
+		VCSProvider:                    provider,
+		UnassignedTags:                 otf.DiffStrings(getTagNames(), workspace.Tags),
+		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
+		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
+		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
+		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
+		CreateRunAction:                rbac.CreateRunAction,
+		AddTagsAction:                  rbac.AddTagsAction,
+		RemoveTagsAction:               rbac.RemoveTagsAction,
 	})
 }
 
@@ -331,12 +411,12 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	h.Render("workspace_vcs_provider_list.tmpl", w, r, struct {
+	h.Render("workspace_vcs_provider_list.tmpl", w, struct {
+		WorkspacePage
 		Items []*vcsprovider.VCSProvider
-		*Workspace
 	}{
-		Items:     providers,
-		Workspace: ws,
+		WorkspacePage: NewPage(r, "list vcs providers | "+ws.ID, ws),
+		Items:         providers,
 	})
 }
 
@@ -370,13 +450,13 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.Render("workspace_vcs_repo_list.tmpl", w, r, struct {
-		Repos []string
-		*Workspace
+	h.Render("workspace_vcs_repo_list.tmpl", w, struct {
+		WorkspacePage
+		Repos         []string
 		VCSProviderID string
 	}{
+		WorkspacePage: NewPage(r, "list vcs repos | "+ws.ID, ws),
 		Repos:         repos,
-		Workspace:     ws,
 		VCSProviderID: params.VCSProviderID,
 	})
 }
@@ -465,4 +545,25 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 	}
 	html.FlashSuccess(w, "deleted workspace permission")
 	http.Redirect(w, r, paths.EditWorkspace(params.WorkspaceID), http.StatusFound)
+}
+
+// filterUnassigned removes from the list of teams those that are part of the
+// policy, i.e. those that have been assigned a permission.
+//
+// NOTE: the owners team is always removed because by default it is assigned the
+// admin role.
+func filterUnassigned(policy otf.WorkspacePolicy, teams []*auth.Team) (unassigned []*auth.Team) {
+	assigned := make(map[string]struct{}, len(teams))
+	for _, p := range policy.Permissions {
+		assigned[p.Team] = struct{}{}
+	}
+	for _, t := range teams {
+		if t.Name == "owners" {
+			continue
+		}
+		if _, ok := assigned[t.Name]; !ok {
+			unassigned = append(unassigned, t)
+		}
+	}
+	return
 }

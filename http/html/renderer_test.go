@@ -8,7 +8,7 @@ import (
 )
 
 func TestRender(t *testing.T) {
-	renderer, err := NewViewEngine(false)
+	renderer, err := NewRenderer(false)
 	require.NoError(t, err)
 
 	var buf bytes.Buffer

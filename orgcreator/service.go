@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql"
@@ -25,12 +26,10 @@ type (
 		logr.Logger
 		otf.Publisher
 
-		api  *api
 		db   otf.DB
 		site otf.Authorizer // authorize access to site
 		web  *web
 
-		*organization.JSONAPIMarshaler
 		auth.AuthService
 
 		RestrictOrganizationCreation bool
@@ -39,7 +38,7 @@ type (
 	Options struct {
 		otf.DB
 		otf.Publisher
-		otf.Renderer
+		html.Renderer
 		logr.Logger
 
 		auth.AuthService
@@ -52,15 +51,10 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:                       opts.Logger,
 		Publisher:                    opts.Publisher,
-		JSONAPIMarshaler:             &organization.JSONAPIMarshaler{},
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		AuthService:                  opts.AuthService,
 		db:                           opts.DB,
 		site:                         &otf.SiteAuthorizer{Logger: opts.Logger},
-	}
-	svc.api = &api{
-		svc:              &svc,
-		JSONAPIMarshaler: &organization.JSONAPIMarshaler{},
 	}
 	svc.web = &web{opts.Renderer, &svc}
 
@@ -68,7 +62,6 @@ func NewService(opts Options) *service {
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
 	s.web.addHandlers(r)
 }
 

@@ -6,11 +6,12 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
+
+var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
 
 // cacheKey generates a key for caching state files
 func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
@@ -31,6 +32,7 @@ type (
 		ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
 		GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
 		GetStateVersion(ctx context.Context, versionID string) (*Version, error)
+		DeleteStateVersion(ctx context.Context, versionID string) error
 		// RollbackStateVersion creates a state version by duplicating the
 		// specified state version and sets it as the current state version for
 		// the given workspace.
@@ -49,8 +51,6 @@ type (
 		workspace otf.Authorizer
 
 		*factory // for creating state versions
-
-		api *api
 	}
 
 	Options struct {
@@ -81,12 +81,7 @@ func NewService(opts Options) *service {
 		workspace:        opts.WorkspaceAuthorizer,
 		factory:          &factory{db},
 	}
-	svc.api = &api{&svc, &jsonapiMarshaler{}}
 	return &svc
-}
-
-func (a *service) AddHandlers(r *mux.Router) {
-	a.api.addHandlers(r)
 }
 
 func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
@@ -167,6 +162,20 @@ func (a *service) GetStateVersion(ctx context.Context, versionID string) (*Versi
 	}
 	a.V(2).Info("retrieved state version", "id", versionID, "subject", subject)
 	return sv, nil
+}
+
+func (a *service) DeleteStateVersion(ctx context.Context, versionID string) error {
+	subject, err := a.CanAccessStateVersion(ctx, rbac.DeleteStateVersionAction, versionID)
+	if err != nil {
+		return err
+	}
+
+	if err := a.db.deleteVersion(ctx, versionID); err != nil {
+		a.Error(err, "deleting state version", "id", versionID, "subject", subject)
+		return err
+	}
+	a.V(2).Info("deleted state version", "id", versionID, "subject", subject)
+	return nil
 }
 
 func (a *service) RollbackStateVersion(ctx context.Context, versionID string) (*Version, error) {

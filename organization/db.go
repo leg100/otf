@@ -63,9 +63,12 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 }
 
 func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
-	names := []string{"%"}
-	if len(opts.Names) > 0 {
+	// optionally filter by organization name
+	var names []string
+	if opts.Names != nil {
 		names = opts.Names
+	} else {
+		names = []string{"%"} // return all organizations
 	}
 
 	batch := &pgx.Batch{}
@@ -95,7 +98,7 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*Organi
 
 	return &OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

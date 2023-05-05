@@ -7,18 +7,17 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cli"
 	"github.com/leg100/otf/client"
-	"github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/github"
 	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/logr"
 	"github.com/leg100/otf/module"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
@@ -75,7 +74,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "debug", Color: "true"})
+		logger, err = logr.New(&logr.Config{Verbosity: 1, Format: "default"})
 		require.NoError(t, err)
 	} else {
 		logger = logr.Discard()
@@ -349,7 +348,7 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = cmd.NewLogger(&cmd.LoggerConfig{Level: "debug", Color: "true"})
+		logger, err = logr.New(&logr.Config{Verbosity: 1, Format: "default"})
 		require.NoError(t, err)
 	} else {
 		logger = logr.Discard()
@@ -383,7 +382,7 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, configPath string, args ...string) (string, error) {
 	t.Helper()
 
-	// Create user token expressly for terraform cli
+	// Create user token expressly for the terraform cli
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
@@ -403,17 +402,12 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) string {
 	t.Helper()
 
-	// Create user token expressly for otf cli...
+	// Create user token expressly for the otf cli
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	_, token := s.createToken(t, ctx, user)
-	// ...and persist it to the credential store
-	store, err := cli.NewCredentialsStore()
-	require.NoError(t, err)
-	err = store.Save(s.Hostname(), string(token))
-	require.NoError(t, err)
 
-	cmdargs := []string{"--address", s.Hostname()}
+	cmdargs := []string{"--address", s.Hostname(), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer

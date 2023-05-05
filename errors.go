@@ -3,6 +3,8 @@ package otf
 import (
 	"errors"
 	"fmt"
+
+	"github.com/jackc/pgconn"
 )
 
 // Generic errors
@@ -25,11 +27,6 @@ var (
 
 	// ErrInvalidName is returned when the name option has invalid value.
 	ErrInvalidName = errors.New("invalid value for name")
-
-	// ErrForeignKeyViolation is returned when attempting to delete or
-	// update a resource that is referenced by another resource and the
-	// delete/update would orphan the reference.
-	ErrForeignKeyViolation = errors.New("foreign key constraint violation")
 
 	// ErrWarning is a non-fatal error
 	ErrWarning = errors.New("warning")
@@ -86,8 +83,16 @@ type (
 		Code    int
 		Message string
 	}
+
+	// MissingParameterError occurs when the caller has failed to provide a
+	// required parameter
 	MissingParameterError struct {
 		Parameter string
+	}
+
+	// ForeignKeyError occurs when there is a foreign key violation.
+	ForeignKeyError struct {
+		*pgconn.PgError
 	}
 )
 
@@ -97,4 +102,8 @@ func (e *HTTPError) Error() string {
 
 func (e *MissingParameterError) Error() string {
 	return fmt.Sprintf("required parameter missing: %s", e.Parameter)
+}
+
+func (e *ForeignKeyError) Error() string {
+	return e.Detail
 }

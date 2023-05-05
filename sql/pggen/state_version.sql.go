@@ -66,6 +66,7 @@ LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE workspaces.name               = $1
 AND   workspaces.organization_name  = $2
 GROUP BY state_versions.state_version_id
+ORDER BY created_at DESC
 LIMIT $3
 OFFSET $4
 ;`
@@ -150,14 +151,14 @@ AND   workspaces.organization_name    = $2
 ;`
 
 // CountStateVersionsByWorkspaceName implements Querier.CountStateVersionsByWorkspaceName.
-func (q *DBQuerier) CountStateVersionsByWorkspaceName(ctx context.Context, workspaceName pgtype.Text, organizationName pgtype.Text) (*int, error) {
+func (q *DBQuerier) CountStateVersionsByWorkspaceName(ctx context.Context, workspaceName pgtype.Text, organizationName pgtype.Text) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountStateVersionsByWorkspaceName")
 	row := q.conn.QueryRow(ctx, countStateVersionsByWorkspaceNameSQL, workspaceName, organizationName)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query CountStateVersionsByWorkspaceName: %w", err)
+		return item, fmt.Errorf("query CountStateVersionsByWorkspaceName: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // CountStateVersionsByWorkspaceNameBatch implements Querier.CountStateVersionsByWorkspaceNameBatch.
@@ -166,13 +167,13 @@ func (q *DBQuerier) CountStateVersionsByWorkspaceNameBatch(batch genericBatch, w
 }
 
 // CountStateVersionsByWorkspaceNameScan implements Querier.CountStateVersionsByWorkspaceNameScan.
-func (q *DBQuerier) CountStateVersionsByWorkspaceNameScan(results pgx.BatchResults) (*int, error) {
+func (q *DBQuerier) CountStateVersionsByWorkspaceNameScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan CountStateVersionsByWorkspaceNameBatch row: %w", err)
+		return item, fmt.Errorf("scan CountStateVersionsByWorkspaceNameBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const findStateVersionByIDSQL = `SELECT

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
@@ -23,7 +23,7 @@ func (c *Client) GetWorkspaceByName(ctx context.Context, organization, workspace
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &types.Workspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspa
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &types.Workspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*Work
 		return nil, err
 	}
 
-	wl := &jsonapi.WorkspaceList{}
+	wl := &types.WorkspaceList{}
 	err = c.Do(ctx, req, wl)
 	if err != nil {
 		return nil, err
@@ -81,14 +81,14 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, option
 	}
 
 	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.NewRequest("PATCH", path, &jsonapi.WorkspaceUpdateOptions{
+	req, err := c.NewRequest("PATCH", path, &types.WorkspaceUpdateOptions{
 		ExecutionMode: (*string)(options.ExecutionMode),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &types.Workspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *s
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &types.Workspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -114,13 +114,18 @@ func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *s
 }
 
 func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
-	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
-	req, err := c.NewRequest("POST", path, &unlockOptions{Force: force})
+	var u string
+	if force {
+		u = fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
+	} else {
+		u = fmt.Sprintf("workspaces/%s/actions/force-unlock", workspaceID)
+	}
+	req, err := c.NewRequest("POST", u, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	w := &jsonapi.Workspace{}
+	w := &types.Workspace{}
 	err = c.Do(ctx, req, w)
 	if err != nil {
 		return nil, err

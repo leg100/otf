@@ -1,11 +1,9 @@
 {{ template "layout" . }}
 
-{{ define "title" }}VCS providers{{ end }}
-
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
+  <a href="{{ workspacesPath .Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
   /
   vcs providers
 {{ end }}
@@ -16,11 +14,11 @@
   </div>
 
   <div id="content-list" class="content-list">
-    {{ range .Content.Items }}
+    {{ range .Items }}
       <div class="item">
         <div class="item-heading">
           <span class="status">
-            <a href="{{ setupConnectionRepoWorkspacePath $.Content.ID }}?vcs_provider_id={{ .ID }}">
+            <a href="{{ setupConnectionRepoWorkspacePath $.Workspace.ID }}?vcs_provider_id={{ .ID }}">
               {{ .Name }}
             </a>
           </span>

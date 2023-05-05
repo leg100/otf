@@ -75,3 +75,11 @@ func SetupConnectionProviderWorkspace(workspace string) string {
 func SetupConnectionRepoWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/setup-connection-repo", workspace)
 }
+
+func CreateTagWorkspace(workspace string) string {
+	return fmt.Sprintf("/app/workspaces/%s/create-tag", workspace)
+}
+
+func DeleteTagWorkspace(workspace string) string {
+	return fmt.Sprintf("/app/workspaces/%s/delete-tag", workspace)
+}

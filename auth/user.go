@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -78,15 +79,24 @@ func (u *User) IsTeamMember(teamID string) bool {
 
 // Organizations returns the user's membership of organizations (indirectly via
 // their membership of teams).
-func (u *User) Organizations() (organizations []string) {
-	// De-dup organizations
+//
+// NOTE: always returns a non-nil slice
+func (u *User) Organizations() []string {
+	// De-dup organizations using map
 	seen := make(map[string]bool)
 	for _, t := range u.Teams {
 		if _, ok := seen[t.Organization]; ok {
 			continue
 		}
-		organizations = append(organizations, t.Organization)
 		seen[t.Organization] = true
+	}
+
+	// Turn map into slice
+	organizations := make([]string, len(seen))
+	var i int
+	for org := range seen {
+		organizations[i] = org
+		i++
 	}
 	return organizations
 }
@@ -100,7 +110,17 @@ func (u *User) IsSiteAdmin() bool {
 }
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
-	// Only site admin can perform actions on the site
+	// User can list users across a site if they are an owner of at least one
+	// org (this is expressely so that they can browse users before adding a
+	// user to a team).
+	if action == rbac.ListUsersAction {
+		for _, team := range u.Teams {
+			if team.IsOwners() {
+				return true
+			}
+		}
+	}
+	// Otherwise only the site admin can perform site actions.
 	return u.IsSiteAdmin()
 }
 
@@ -170,11 +190,17 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
-func (s UserSpec) MarshalLog() any {
-	if s.AuthenticationTokenID != nil {
-		s.AuthenticationTokenID = otf.String("*****")
+func (s UserSpec) LogValue() slog.Value {
+	if s.Username != nil {
+		return slog.String("username", *s.Username).Value
 	}
-	return s
+	if s.UserID != nil {
+		return slog.String("id", *s.UserID).Value
+	}
+	if s.AuthenticationTokenID != nil {
+		return slog.String("token_id", "*****").Value
+	}
+	return slog.String("unknown key", "unknown value").Value
 }
 
 // UserFromContext retrieves a user from a context

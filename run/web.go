@@ -9,7 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -19,7 +18,7 @@ import (
 type (
 	webHandlers struct {
 		logr.Logger
-		otf.Renderer
+		html.Renderer
 		WorkspaceService
 
 		logsdb
@@ -29,7 +28,7 @@ type (
 	}
 
 	runStarter interface {
-		startRun(ctx context.Context, workspaceID string, opts configversion.ConfigurationVersionCreateOptions) (*Run, error)
+		startRun(ctx context.Context, workspaceID string, strategy runStrategy) (*Run, error)
 	}
 
 	logsdb interface {
@@ -78,12 +77,12 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_list.tmpl", w, r, struct {
+	h.Render("run_list.tmpl", w, struct {
+		workspace.WorkspacePage
 		*RunList
-		*workspace.Workspace
 	}{
-		RunList:   runs,
-		Workspace: ws,
+		WorkspacePage: workspace.NewPage(r, "runs", ws),
+		RunList:       runs,
 	})
 }
 
@@ -94,7 +93,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -117,16 +116,16 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_get.tmpl", w, r, struct {
-		*Run
-		Workspace *workspace.Workspace
+	h.Render("run_get.tmpl", w, struct {
+		workspace.WorkspacePage
+		Run       *Run
 		PlanLogs  otf.Chunk
 		ApplyLogs otf.Chunk
 	}{
-		Run:       run,
-		Workspace: ws,
-		PlanLogs:  otf.Chunk{Data: planLogs},
-		ApplyLogs: otf.Chunk{Data: applyLogs},
+		WorkspacePage: workspace.NewPage(r, run.ID, ws),
+		Run:           run,
+		PlanLogs:      otf.Chunk{Data: planLogs},
+		ApplyLogs:     otf.Chunk{Data: applyLogs},
 	})
 }
 
@@ -139,7 +138,7 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -157,7 +156,7 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -177,7 +176,7 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.get(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -213,7 +212,7 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.discard(r.Context(), runID)
+	err = h.svc.DiscardRun(r.Context(), runID)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -223,26 +222,15 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		Strategy    string `schema:"strategy,required"`
+		WorkspaceID string      `schema:"workspace_id,required"`
+		Strategy    runStrategy `schema:"strategy,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	var opts configversion.ConfigurationVersionCreateOptions
-	switch params.Strategy {
-	case "plan-only":
-		opts.Speculative = otf.Bool(true)
-	case "plan-and-apply":
-		opts.Speculative = otf.Bool(false)
-	default:
-		html.Error(w, "invalid strategy", http.StatusUnprocessableEntity)
-		return
-	}
-
-	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, opts)
+	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, params.Strategy)
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)

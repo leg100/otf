@@ -10,8 +10,8 @@ import (
 	"path"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/jsonapi"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -23,7 +23,7 @@ type Client struct {
 
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
 	u := fmt.Sprintf("runs/%s/planfile", url.QueryEscape(runID))
-	req, err := c.NewRequest("GET", u, &planFileOptions{Format: format})
+	req, err := c.NewRequest("GET", u, &PlanFileOptions{Format: format})
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *Client) UploadPlanFile(ctx context.Context, runID string, plan []byte, 
 
 	// NewRequest() only lets us set a query or a payload but not both, so we
 	// set query here.
-	opts := &planFileOptions{Format: format}
+	opts := &PlanFileOptions{Format: format}
 	q := url.Values{}
 	if err := http.Encoder.Encode(opts, q); err != nil {
 		return err
@@ -98,7 +98,7 @@ func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, e
 		return nil, err
 	}
 
-	wl := &jsonapi.RunList{}
+	wl := &types.RunList{}
 	err = c.Do(ctx, req, wl)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
 		return nil, err
 	}
 
-	run := &jsonapi.Run{}
+	run := &types.Run{}
 	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 		return nil, err
 	}
 
-	run := &jsonapi.Run{}
+	run := &types.Run{}
 	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 		return nil, err
 	}
 
-	run := &jsonapi.Run{}
+	run := &types.Run{}
 	err = c.Do(ctx, req, run)
 	if err != nil {
 		return nil, err

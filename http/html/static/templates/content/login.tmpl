@@ -1,12 +1,10 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Login{{ end }}
-
 {{ define "container" }}
   {{ template "flash" . }}
   <div class="center">
     <div class="login-buttons-container">
-      {{ range .Content }}
+      {{ range .Authenticators }}
         <a class="login-button-{{ . }}" href="{{ .RequestPath }}">
           {{ template "icons" .String }}<span>Login with {{ title .String }}</span>
         </a>

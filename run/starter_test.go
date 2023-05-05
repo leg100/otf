@@ -26,7 +26,7 @@ func TestStartRun(t *testing.T) {
 			cv:        cv,
 		})
 
-		got, err := starter.startRun(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+		got, err := starter.startRun(ctx, ws.ID, planOnly)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -43,7 +43,7 @@ func TestStartRun(t *testing.T) {
 			provider:  provider,
 		})
 
-		got, err := starter.startRun(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+		got, err := starter.startRun(ctx, ws.ID, planOnly)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})

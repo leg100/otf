@@ -41,21 +41,19 @@ var (
 		Built:   otf.Built,
 	})
 	discoveryPayload = json.MustMarshal(struct {
-		ModulesV1  string `json:"modules.v1"`
-		MotdV1     string `json:"motd.v1"`
-		StateV2    string `json:"state.v2"`
-		TfeV2      string `json:"tfe.v2"`
-		TfeV21     string `json:"tfe.v2.1"`
-		TfeV22     string `json:"tfe.v2.2"`
-		VersionsV1 string `json:"versions.v1"`
+		ModulesV1 string `json:"modules.v1"`
+		MotdV1    string `json:"motd.v1"`
+		StateV2   string `json:"state.v2"`
+		TfeV2     string `json:"tfe.v2"`
+		TfeV21    string `json:"tfe.v2.1"`
+		TfeV22    string `json:"tfe.v2.2"`
 	}{
-		ModulesV1:  ModuleV1Prefix,
-		MotdV1:     "/api/terraform/motd",
-		StateV2:    APIPrefixV2,
-		TfeV2:      APIPrefixV2,
-		TfeV21:     APIPrefixV2,
-		TfeV22:     APIPrefixV2,
-		VersionsV1: "https://checkpoint-api.hashicorp.com/v1/versions/",
+		ModulesV1: ModuleV1Prefix,
+		MotdV1:    "/api/terraform/motd",
+		StateV2:   APIPrefixV2,
+		TfeV2:     APIPrefixV2,
+		TfeV21:    APIPrefixV2,
+		TfeV22:    APIPrefixV2,
 	})
 
 	// endpoints with these prefixes require authentication

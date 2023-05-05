@@ -18,6 +18,18 @@ window.addEventListener('load', (e) => {
             }
         });
     });
+
+    // https://daverupert.com/2017/11/happier-html5-forms/
+    const inputs = document.querySelectorAll("input, select, textarea");
+    inputs.forEach(input => {
+      input.addEventListener(
+        "invalid",
+        event => {
+          input.classList.add("error");
+        },
+        false
+      );
+    });
 });
 
 function isFunction(functionToCheck) {
@@ -104,8 +116,8 @@ function watchRunUpdates(path, stream, run) {
     source.addEventListener("run_status_update", (e) => {
         const obj = JSON.parse(e.data);
 
-        const runStatus = document.getElementById(obj.id + '-status');
-        runStatus.outerHTML = obj['run-status-html']
+        const runItem = document.getElementById(obj.id);
+        runItem.outerHTML = obj['run-item-html']
 
         const planStatus = document.getElementById('plan-status');
         planStatus.outerHTML = obj['plan-status-html']

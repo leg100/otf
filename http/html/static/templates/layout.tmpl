@@ -4,11 +4,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ addHash "/static/css/sanitize.css" }}">
   {{ block "stylesheet" . }}{{ end }}
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/forms.css" }}">
   <script src="{{ addHash "/static/js/main.js" }}"></script>
-  <title>{{ template "title" . }} | otf</title>
+  <title>{{ .Title }} | otf</title>
 </head>
 <body>
   <header>
@@ -26,7 +26,7 @@
       {{ end }}
 
       <div class="logo">
-        <a href="/">otf</a>
+        <img src="/static/images/logo.svg" alt="logo">
       </div>
 
       {{ with .CurrentUser }}

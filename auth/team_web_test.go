@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,7 +64,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("GET", q, nil)
 		w := httptest.NewRecorder()
 		app.updateTeam(w, r)
-		html.AssertRedirect(t, w, paths.Team(team.ID))
+		testutils.AssertRedirect(t, w, paths.Team(team.ID))
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -89,6 +89,12 @@ func TestTeam_WebHandlers(t *testing.T) {
 		r := httptest.NewRequest("POST", q, nil)
 		w := httptest.NewRecorder()
 		app.deleteTeam(w, r)
-		html.AssertRedirect(t, w, paths.Teams("acme-org"))
+		testutils.AssertRedirect(t, w, paths.Teams("acme-org"))
 	})
+}
+
+func TestUserDiff(t *testing.T) {
+	a := []*User{{Username: "bob"}}
+	b := []*User{{Username: "bob"}, {Username: "alice"}}
+	assert.Equal(t, []*User{{Username: "alice"}}, diffUsers(a, b))
 }

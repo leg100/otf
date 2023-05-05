@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
+	"github.com/leg100/otf/api"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/authenticator"
 	"github.com/leg100/otf/client"
@@ -82,7 +83,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	hostnameService := otf.NewHostnameService(cfg.Host)
 
-	renderer, err := html.NewViewEngine(cfg.DevMode)
+	renderer, err := html.NewRenderer(cfg.DevMode)
 	if err != nil {
 		return nil, fmt.Errorf("setting up web page renderer: %w", err)
 	}
@@ -110,10 +111,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	signer := otf.NewSigner(cfg.Secret)
 
 	orgService := organization.NewService(organization.Options{
-		Logger:   logger,
-		DB:       db,
-		Renderer: renderer,
-		Broker:   broker,
+		Logger:                       logger,
+		DB:                           db,
+		Renderer:                     renderer,
+		Broker:                       broker,
+		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 	})
 
 	authService := auth.NewService(auth.Options{
@@ -179,7 +181,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
 		Signer:              signer,
-		MaxUploadSize:       cfg.MaxConfigSize,
 	})
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
@@ -191,7 +192,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:          vcsProviderService,
 		Broker:                      broker,
 		Cache:                       cache,
-		Signer:                      signer,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -260,6 +260,20 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	api := api.New(api.Options{
+		WorkspaceService:            workspaceService,
+		OrganizationService:         orgService,
+		OrganizationCreatorService:  orgCreatorService,
+		StateService:                stateService,
+		RunService:                  runService,
+		ConfigurationVersionService: configService,
+		AuthService:                 authService,
+		TokensService:               tokensService,
+		VariableService:             variableService,
+		Signer:                      signer,
+		MaxConfigSize:               cfg.MaxConfigSize,
+	})
+
 	handlers := []otf.Handlers{
 		authService,
 		tokensService,
@@ -271,13 +285,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		orgService,
 		variableService,
 		vcsProviderService,
-		stateService,
 		moduleService,
-		configService,
 		runService,
 		logsService,
 		repoService,
 		authenticatorService,
+		api,
 	}
 
 	return &Daemon{

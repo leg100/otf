@@ -11,7 +11,7 @@ import (
 
 // webHandlers provides handlers for the web UI
 type webHandlers struct {
-	otf.Renderer
+	html.Renderer
 
 	svc AuthService
 }
@@ -25,25 +25,31 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	h.addTeamHandlers(r)
 
-	r.HandleFunc("/organizations/{name}/users", h.listUsers).Methods("GET")
+	r.HandleFunc("/organizations/{name}/users", h.listOrganizationUsers).Methods("GET")
 
 	r.HandleFunc("/profile", h.profileHandler).Methods("GET")
 }
 
-func (h *webHandlers) listUsers(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	users, err := h.svc.ListUsers(r.Context(), name)
+	users, err := h.svc.ListOrganizationUsers(r.Context(), name)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("users_list.tmpl", w, r, users)
+	h.Render("users_list.tmpl", w, struct {
+		html.SitePage
+		Users []*User
+	}{
+		SitePage: html.NewSitePage(r, "users"),
+		Users:    users,
+	})
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,10 +58,16 @@ func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Render("profile.tmpl", w, r, user)
+	h.Render("profile.tmpl", w, struct {
+		html.SitePage
+		User otf.Subject
+	}{
+		SitePage: html.NewSitePage(r, "profile"),
+		User:     user,
+	})
 }
 
 // adminLoginPromptHandler presents a prompt for logging in as site admin
 func (h *webHandlers) adminLoginPromptHandler(w http.ResponseWriter, r *http.Request) {
-	h.Render("site_admin_login.tmpl", w, r, nil)
+	h.Render("site_admin_login.tmpl", w, html.NewSitePage(r, "site admin login"))
 }

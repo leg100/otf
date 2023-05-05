@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 )
 
 // Client uses json-api according to the documented terraform cloud state
@@ -24,13 +24,13 @@ type Client struct {
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
-	var state file
+	var state File
 	if err := json.Unmarshal(opts.State, &state); err != nil {
 		return nil, err
 	}
 
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(*opts.WorkspaceID))
-	req, err := c.NewRequest("POST", u, &jsonapi.StateVersionCreateVersionOptions{
+	req, err := c.NewRequest("POST", u, &types.StateVersionCreateVersionOptions{
 		Lineage: &state.Lineage,
 		MD5:     otf.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
 		Serial:  otf.Int64(state.Serial),
@@ -40,30 +40,68 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 		return nil, err
 	}
 
-	sv := jsonapi.StateVersion{}
+	sv := types.StateVersion{}
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
 
-	return &Version{ID: sv.ID, Serial: sv.Serial}, nil
+	return newFromJSONAPI(&sv), nil
+}
+
+func (c *Client) ListStateVersions(ctx context.Context, options StateVersionListOptions) (*VersionList, error) {
+	req, err := c.NewRequest("GET", "state-versions", &options)
+	if err != nil {
+		return nil, err
+	}
+
+	list := &types.StateVersionList{}
+	err = c.Do(ctx, req, list)
+	if err != nil {
+		return nil, err
+	}
+
+	return newListFromJSONAPI(list), nil
 }
 
 func (c *Client) DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error) {
-	// two steps:
-	// 1) retrieve current state version for the workspace
-	// 2) use the download link to download the state data
+	sv, err := c.GetCurrentStateVersion(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return c.DownloadState(ctx, sv.ID)
+}
+
+func (c *Client) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	u := fmt.Sprintf("workspaces/%s/current-state-version", url.QueryEscape(workspaceID))
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	sv := jsonapi.StateVersion{}
+	sv := types.StateVersion{}
 	if err := c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
+	return newFromJSONAPI(&sv), nil
+}
 
-	req, err = c.NewRequest("GET", sv.DownloadURL, nil)
+func (c *Client) DeleteStateVersion(ctx context.Context, svID string) error {
+	u := fmt.Sprintf("state-versions/%s", url.QueryEscape(svID))
+	req, err := c.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+
+	if err = c.Do(ctx, req, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) DownloadState(ctx context.Context, svID string) ([]byte, error) {
+	u := fmt.Sprintf("state-versions/%s/download", url.QueryEscape(svID))
+	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -83,17 +121,35 @@ func (c *Client) RollbackStateVersion(ctx context.Context, svID string) (*Versio
 	// ID, but OTF does nothing with the workspace ID and thus anything can be
 	// specified.
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape("ws-rollback"))
-	req, err := c.NewRequest("PATCH", u, &jsonapi.RollbackStateVersionOptions{
-		RollbackStateVersion: &jsonapi.StateVersion{ID: svID},
+	req, err := c.NewRequest("PATCH", u, &types.RollbackStateVersionOptions{
+		RollbackStateVersion: &types.StateVersion{ID: svID},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	sv := jsonapi.StateVersion{}
+	sv := types.StateVersion{}
 	if err = c.Do(ctx, req, &sv); err != nil {
 		return nil, err
 	}
 
-	return &Version{ID: sv.ID, Serial: sv.Serial}, nil
+	return newFromJSONAPI(&sv), nil
+}
+
+func newFromJSONAPI(from *types.StateVersion) *Version {
+	return &Version{
+		ID:     from.ID,
+		Serial: from.Serial,
+	}
+}
+
+// newListFromJSONAPI constructs a state version list from a json:api struct
+func newListFromJSONAPI(from *types.StateVersionList) *VersionList {
+	to := VersionList{
+		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
+	}
+	for _, i := range from.Items {
+		to.Items = append(to.Items, newFromJSONAPI(i))
+	}
+	return &to
 }

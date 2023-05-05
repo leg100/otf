@@ -31,8 +31,8 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf
 		WorkspaceID:  result.WorkspaceID.String,
 	}
 	// SQL query returns an array of workspace permissions and an array of
-	// teams; the former has the team id but not the team name, which we want, so
-	// lookup the corresponding team name in the latter.
+	// teams; the former has the team id, but we need the team name, so
+	// lookup the corresponding team name in the array of teams.
 	for _, perm := range result.WorkspacePermissions {
 		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
 		if err != nil {

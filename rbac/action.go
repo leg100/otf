@@ -65,6 +65,13 @@ const (
 	UnsetWorkspacePermissionAction
 	UpdateWorkspaceAction
 
+	ListTagsAction
+	DeleteTagsAction
+	TagWorkspacesAction
+	AddTagsAction
+	RemoveTagsAction
+	ListWorkspaceTags
+
 	LockWorkspaceAction
 	UnlockWorkspaceAction
 	ForceUnlockWorkspaceAction
@@ -72,6 +79,7 @@ const (
 	CreateStateVersionAction
 	ListStateVersionsAction
 	GetStateVersionAction
+	DeleteStateVersionAction
 	RollbackStateVersionAction
 	DownloadStateAction
 	GetStateVersionOutputAction

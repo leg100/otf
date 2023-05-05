@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -48,11 +49,17 @@ type (
 		TriggerPrefixes            []string
 		WorkingDirectory           string
 		Organization               string
-		LatestRunID                *string
 		Connection                 *repo.Connection
-		Permissions                []otf.WorkspacePermission
+		LatestRun                  *LatestRun
+		Tags                       []string
 
 		*lock
+	}
+
+	// LatestRun is a summary of the latest run for a workspace
+	LatestRun struct {
+		ID     string
+		Status otf.RunStatus
 	}
 
 	ExecutionMode string
@@ -79,6 +86,7 @@ type (
 		SourceName                 *string
 		SourceURL                  *string
 		StructuredRunOutputEnabled *bool
+		Tags                       []TagSpec
 		TerraformVersion           *string
 		TriggerPrefixes            []string
 		WorkingDirectory           *string
@@ -107,9 +115,10 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		otf.ListOptions         // Pagination
-		Prefix          string  `schema:"search[name],omitempty"`
-		Organization    *string `schema:"organization_name,required"`
+		otf.ListOptions          // Pagination
+		Prefix          string   `schema:"search[name],omitempty"`
+		Tags            []string `schema:"search[tags],omitempty"`
+		Organization    *string  `schema:"organization_name,required"`
 	}
 
 	ConnectOptions struct {
@@ -220,15 +229,13 @@ func (ws *Workspace) QualifiedName() QualifiedName {
 	}
 }
 
-func (ws *Workspace) MarshalLog() any {
-	log := struct {
-		Name         string `json:"name"`
-		Organization string `json:"organization"`
-	}{
-		Name:         ws.Name,
-		Organization: ws.Organization,
-	}
-	return log
+// LogValue implements slog.LogValuer.
+func (ws *Workspace) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("id", ws.ID),
+		slog.String("organization", ws.Organization),
+		slog.String("name", ws.Name),
+	)
 }
 
 // Update updates the workspace with the given options.

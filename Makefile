@@ -18,9 +18,23 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# go-tfe-tests runs API tests - before it does that, it builds the otfd docker
+# image and starts up otfd and postgres using docker compose, and then the
+# tests are run against it.
+#
+# NOTE: two batches of tests are run:
+# (1) using the forked repo
+# (2) using the upstream repo, for tests against new features, like workspace tags
 .PHONY: go-tfe-tests
-go-tfe-tests: build
+go-tfe-tests: image compose-up go-tfe-tests-forked go-tfe-tests-upstream
+
+.PHONY: go-tfe-tests-forked
+go-tfe-tests-forked:
 	./hack/go-tfe-tests.bash
+
+.PHONY: go-tfe-tests-upstream
+go-tfe-tests-upstream:
+	GO_TFE_REPO=github.com/hashicorp/go-tfe@latest ./hack/go-tfe-tests.bash 'Test(OrganizationTags|Workspaces_(Add|Remove)Tags)|TestWorkspacesList/when_searching_using_a_tag'
 
 .PHONY: test
 test:
@@ -46,25 +60,25 @@ install-latest-release:
 	unzip -o -d $(GOBIN) $$ZIP_FILE otfd ;\
 	}
 
-# Run postgresql in a container
+# Run docker compose stack
+.PHONY: compose-up
+compose-up: image
+	docker compose up -d
+
+# Remove docker compose stack
+.PHONY: compose-rm
+compose-rm:
+	docker compose rm -sf
+
+# Run postgresql via docker compose
 .PHONY: postgres
 postgres:
-	docker compose -f docker-compose-postgres.yml up -d
+	docker compose up -d postgres
 
-# Stop and remove postgres container
-.PHONY: postgres-rm
-postgres-rm:
-	docker compose -f docker-compose-postgres.yml rm -sf
-
-# Run squid caching proxy in a container
+# Run squid via docker compose
 .PHONY: squid
 squid:
-	docker run --rm --name squid -t -d -p 3128:3128 -v $(PWD)/integration/fixtures:/etc/squid/certs leg100/squid:0.2
-
-# Stop squid container
-.PHONY: squid-stop
-squid-stop:
-	docker stop --signal INT squid
+	docker compose up -d squid
 
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
@@ -111,6 +125,7 @@ sql: install-pggen
 		--output-dir sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
 		--go-type 'int4=int' \
+		--go-type 'int8=int' \
 		--go-type 'bool=bool' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \

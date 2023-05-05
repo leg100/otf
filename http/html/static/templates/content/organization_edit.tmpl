@@ -1,19 +1,24 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Edit Organization{{ end }}
-
-{{ define "container-header" }}Organizations > {{ .Content.Name }} > Edit{{ end }}
+{{ define "container-header" }}settings{{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ updateOrganizationPath .Content.Name }}" method="POST">
-    <ul>
-      <li class="field">
-        <label for="name">Name</label>
-        <input type="text" name="name" id="name" value="{{ .Content.Name }}" required>
-      </li>
-      <li>
-        <button>Save changes</button>
-      </li>
-    </ul>
+  {{ $canUpdate := $.CurrentUser.CanAccessOrganization .UpdateOrganizationAction .Name }}
+  {{ $canDelete := $.CurrentUser.CanAccessOrganization .DeleteOrganizationAction .Name }}
+
+  <form class="main-form" action="{{ updateOrganizationPath .Name }}" method="POST">
+    <div class="field">
+      <label for="name">Name</label>
+      <input type="text" name="new_name" id="name" value="{{ .Name }}" required>
+    </div>
+    <div class="field">
+      <button {{ insufficient $canDelete }}>Update organization name</button>
+    </div>
+  </form>
+  <form action="{{ deleteOrganizationPath .Name }}" method="POST">
+    <button id="delete-organization-button" class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
+      Delete organization
+    </button>
+    <input type="hidden" name="id" value="{{ .ID }}">
   </form>
 {{ end }}

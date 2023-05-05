@@ -1,11 +1,9 @@
 {{ template "layout" . }}
 
-{{ define "title" }}Edit Workspace{{ end }}
-
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
+  <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
-  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
+  <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
   /
   settings
 {{ end }}
@@ -15,121 +13,174 @@
 {{ end }}
 
 {{ define "content" }}
+  {{ $canUpdate := $.CurrentUser.CanAccessWorkspace .UpdateWorkspaceAction .Policy }}
+  {{ $canDelete := $.CurrentUser.CanAccessWorkspace .DeleteWorkspaceAction .Policy }}
+  {{ $canSetPermission := $.CurrentUser.CanAccessWorkspace .SetWorkspacePermissionAction .Policy }}
+  {{ $canUnsetPermission := $.CurrentUser.CanAccessWorkspace .UnsetWorkspacePermissionAction .Policy }}
+  {{ $canCreateRun := $.CurrentUser.CanAccessWorkspace .CreateRunAction .Policy }}
+  {{ $canAddTag := $.CurrentUser.CanAccessWorkspace .AddTagsAction .Policy }}
+  {{ $canRemoveTag := $.CurrentUser.CanAccessWorkspace .RemoveTagsAction .Policy }}
   <div>
-    {{ with .Content.Connection }}
-      <form action="{{ disconnectWorkspacePath $.Content.ID }}" method="POST">
-        <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Repo }}</button>
+    {{ with .Workspace.Connection }}
+      <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
+        <button id="disconnect-workspace-repo-button" type="submit" {{ insufficient $canUpdate }}>
+          Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
+        </button>
       </form>
     {{ else }}
-      <form action="{{ setupConnectionProviderWorkspacePath .Content.ID }}" method="GET">
-        <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
+      <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
+        <button id="list-workspace-vcs-providers-button" type="submit" {{ insufficient $canUpdate }}>
+          Connect to VCS
+        </button>
       </form>
     {{ end }}
   </div>
-  <form class="main-form" action="{{ updateWorkspacePath .Content.ID }}" method="POST">
+  <form class="main-form" action="{{ updateWorkspacePath .Workspace.ID }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
-      <input type="text" name="name" id="name" value="{{ .Content.Name }}" required>
+      <input type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
     </div>
     <div class="field">
       <label for="description">Description</label>
-      <input class="freeform" type="text" name="description" id="description" value="{{ .Content.Description }}">
+      <input class="freeform" type="text" name="description" id="description" value="{{ .Workspace.Description }}">
     </div>
     <div class="field">
       <fieldset>
         <legend>Execution mode</legend>
         <div class="radio">
-        {{ range $mode := .Content.ExecutionModes }}
+        {{ range $mode := .Workspace.ExecutionModes }}
           <div>
-            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ checked $.Content.ExecutionMode $mode }}/><label for="{{ $mode }}">{{ title $mode }}</label>
+            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ checked $.Workspace.ExecutionMode $mode }}/><label for="{{ $mode }}">{{ title $mode }}</label>
           </div>
         {{ end }}
         </div>
       </fieldset>
     </div>
     <div class="field checkbox">
-      <input type="checkbox" name="auto_apply" id="auto_apply" {{ checked .Content.AutoApply }}>
+      <input type="checkbox" name="auto_apply" id="auto_apply" {{ checked .Workspace.AutoApply }}>
       <label for="auto_apply">Auto apply</label>
     </div>
     <div class="field">
       <label for="terraform_version">Terraform version</label>
-      <input type="text" name="terraform_version" id="terraform_version" value="{{ .Content.TerraformVersion }}" required pattern="^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$">
+      <input type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$">
     </div>
     <div class="field">
       <label for="working_directory">Working directory</label>
-      <input type="text" name="working_directory" id="working_directory" value="{{ .Content.WorkingDirectory }}">
+      <input type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
     </div>
     <div class="field">
-      <button>Save changes</button>
+      <button {{ insufficient $canUpdate }}>Save changes</button>
     </div>
   </form>
-  <div class="permissions-container">
-    <div class="container-header-title">Permissions</div>
-      <div>
-        <table>
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th colspan="2">Role</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr id="permissions-owners">
-              <td>owners</td>
-              <td>admin</td>
-            </tr>
-            {{ range .Content.Permissions }}
-              {{ if eq .Team "owners" }}
-                {{continue}}
-              {{ end }}
-              <tr>
-                <td>{{ .Team }}</td>
-                <td>
-                  <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
-                    <input name="team_name" value="{{ .Team }}" type="hidden">
-                    <select name="role" id="role-select">
-                      {{ $currentRole := .Role.String }}
-                      {{ range $.Content.Roles }}
-                        <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
-                      {{ end }}
-                    </select>
-                    <button>Update</button>
-                  </form>
-                </td>
-                <td>
-                  <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
-                    <input name="team_name" value="{{ .Team }}" type="hidden">
-                    <button class="delete">Remove</button>
-                  </form>
-                </td>
-              </tr>
-            {{ end }}
-            <tr>
-              <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Content.ID }}" method="POST"></form>
-              <td>
-                <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
-                  <option value="">--team--</option>
-                  {{ range .Content.Unassigned }}
-                    <option value="{{ .Name }}">{{ .Name }}</option>
-                  {{ end }}
-                </select>
-              </td>
-              <td class="permissions-add-role-container">
-                <select form="permissions-add-form" name="role" id="permissions-add-select-role">
-                  <option value="">--role--</option>
-                  {{ range .Content.Roles }}
-                    <option value="{{ . }}">{{ . }}</option>
-                  {{ end }}
-                </select>
-                <button id="permissions-add-button" form="permissions-add-form" >Add</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+  <div class="settings-container">
+    <h3>Tags</h3>
+    <div class="workspace-tag-settings-list">
+      {{ range .Workspace.Tags }}
+        <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
+          <span class="workspace-tag">{{ . }}</span>
+          <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
+          <button id="button-remove-tag-{{ . }}" class="delete cross" {{ insufficient $canAddTag }}>x</button>
+        </form>
+      {{ end }}
     </div>
-    <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content.ID }}" method="POST">
-      <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
+    <form action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
+      <div class="field">
+        <input type="text" name="tag_name" id="new-tag-name" value="" required>
+        <button {{ insufficient $canAddTag }}>Add new tag</button>
+      </div>
     </form>
+    <form action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
+      <select name="tag_name" id="existing-tag-name">
+        {{ range .UnassignedTags }}
+          <option value="{{ . }}">{{ . }}</option>
+        {{ else }}
+          <option value="" disabled>no tags found</option>
+        {{ end }}
+      </select>
+      <button {{ insufficient $canAddTag }}>Add existing tag</button>
+    </form>
+  </div>
+  <div class="settings-container" id="permissions-container">
+    <h3>Permissions</h3>
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th colspan="2">Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- always render implicit admin role permission for owners team -->
+          <tr id="permissions-owners">
+            <td>owners</td>
+            <td>admin</td>
+          </tr>
+          <!-- iterate through existing role assignments -->
+          {{ range .Policy.Permissions }}
+            {{ if eq .Team "owners" }}
+              {{ continue }}
+            {{ end }}
+            <tr id="permissions-{{ .Team }}">
+              <td>{{ .Team }}</td>
+              <td>
+                <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Workspace.ID }}" method="POST">
+                  <input name="team_name" value="{{ .Team }}" type="hidden">
+                  <select name="role" id="role-select">
+                    {{ $currentRole := .Role.String }}
+                    {{ range $.Roles }}
+                      <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
+                    {{ end }}
+                  </select>
+                  <button {{ insufficient $canSetPermission }}>Update</button>
+                </form>
+              </td>
+              <td>
+                <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
+                  <input name="team_name" value="{{ .Team }}" type="hidden">
+                  <button class="delete" {{ insufficient $canUnsetPermission }}>Remove</button>
+                </form>
+              </td>
+            </tr>
+          {{ end }}
+          <tr>
+            <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Workspace.ID }}" method="POST"></form>
+            <td>
+              <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
+                <option value="">--team--</option>
+                {{ range .Unassigned }}
+                  <option value="{{ .Name }}">{{ .Name }}</option>
+                {{ end }}
+              </select>
+            </td>
+            <td class="permissions-add-role-container">
+              <select form="permissions-add-form" name="role" id="permissions-add-select-role">
+                <option value="">--role--</option>
+                {{ range .Roles }}
+                  <option value="{{ . }}">{{ . }}</option>
+                {{ end }}
+              </select>
+              <button id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
+                Add
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="settings-container">
+      <h3>Advanced</h3>
+      <form action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
+        <button id="queue-destroy-plan-button" class="delete" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
+          Queue destroy plan
+        </button>
+        <input name="strategy" value="destroy-all" type="hidden">
+      </form>
+      <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
+        <button id="delete-workspace-button" class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
+          Delete workspace
+        </button>
+      </form>
+    </div>
   </div>
 {{ end }}

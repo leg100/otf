@@ -13,7 +13,7 @@ import (
 )
 
 type (
-	// pgdb is a state/state-version database on postgres
+	// pgdb is a workspace database on postgres
 	pgdb struct {
 		otf.DB // provides access to generated SQL queries
 	}
@@ -47,6 +47,8 @@ type (
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
+		Tags                       []string               `json:"tags"`
+		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
 		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
@@ -79,6 +81,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		TriggerPrefixes:            r.TriggerPrefixes,
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
+		Tags:                       r.Tags,
 	}
 
 	if r.WorkspaceConnection != nil {
@@ -88,8 +91,11 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.LatestRunID.Status == pgtype.Present {
-		ws.LatestRunID = &r.LatestRunID.String
+	if r.LatestRunID.Status == pgtype.Present && r.LatestRunStatus.Status == pgtype.Present {
+		ws.LatestRun = &LatestRun{
+			ID:     r.LatestRunID.String,
+			Status: otf.RunStatus(r.LatestRunStatus.String),
+		}
 	}
 
 	if r.UserLock != nil {
@@ -189,20 +195,27 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	// Organization name filter is optional - if not provided use a % which in
 	// SQL means match any organization.
-	var organizationName string
+	organization := "%"
 	if opts.Organization != nil {
-		organizationName = *opts.Organization
-	} else {
-		organizationName = "%"
+		organization = *opts.Organization
+	}
+	tags := []string{}
+	if len(opts.Tags) > 0 {
+		tags = opts.Tags
 	}
 
 	db.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
-		OrganizationNames: []string{organizationName},
+		OrganizationNames: []string{organization},
 		Prefix:            sql.String(opts.Prefix),
+		Tags:              tags,
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
-	db.CountWorkspacesBatch(batch, sql.String(opts.Prefix), []string{organizationName})
+	db.CountWorkspacesBatch(batch, pggen.CountWorkspacesParams{
+		Prefix:            sql.String(opts.Prefix),
+		OrganizationNames: []string{organization},
+		Tags:              tags,
+	})
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -226,7 +239,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -281,7 +294,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts, *count),
+		Pagination: otf.NewPagination(opts, count),
 	}, nil
 }
 

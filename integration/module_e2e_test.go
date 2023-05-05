@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,17 +19,12 @@ func TestModuleE2E(t *testing.T) {
 	t.Parallel()
 
 	// create an otf daemon with a fake github backend, ready to serve up a repo
-	// and its contents via tarball. And register a callback to test receipt of
-	// commit statuses
-	statuses := make(chan *gogithub.StatusEvent, 10)
+	// and its contents via tarball.
 	repo := cloud.NewTestModuleRepo("aws", "mod")
 	svc := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
-		github.WithArchive(readFile(t, "./fixtures/github.module.tar.gz")),
-		github.WithStatusCallback(func(status *gogithub.StatusEvent) {
-			statuses <- status
-		}),
+		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	)
 	user, ctx := svc.createUserCtx(t, ctx)
 	org := svc.createOrganization(t, ctx)
@@ -71,13 +66,10 @@ func TestModuleE2E(t *testing.T) {
 	// (which would usually be triggered by a git push to github). The event
 	// should trigger a module version to be published.
 
-	// otfd should have registered a webhook with the github server
-	require.True(t, svc.HasWebhook())
-
 	// generate and send push tag event for v1.0.0
-	pushTpl := readFile(t, "fixtures/github_push_tag.json")
+	pushTpl := testutils.ReadFile(t, "fixtures/github_push_tag.json")
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo)
-	sendGithubPushEvent(t, []byte(push), *svc.HookEndpoint, *svc.HookSecret)
+	svc.SendEvent(t, github.PushEvent, []byte(push))
 
 	// v1.0.0 should appear as latest module on workspace
 	err = chromedp.Run(browser, chromedp.Tasks{

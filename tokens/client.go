@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
@@ -14,7 +14,7 @@ type Client struct {
 
 // CreateRunToken creates a run token via HTTP/JSONAPI
 func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "tokens/run/create", &jsonapi.CreateRunTokenOptions{
+	req, err := c.NewRequest("POST", "tokens/run/create", &types.CreateRunTokenOptions{
 		Organization: opts.Organization,
 		RunID:        opts.RunID,
 	})
@@ -30,7 +30,7 @@ func (c *Client) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions)
 }
 
 func (c *Client) CreateAgentToken(ctx context.Context, options CreateAgentTokenOptions) ([]byte, error) {
-	req, err := c.NewRequest("POST", "agent/create", &jsonapi.AgentTokenCreateOptions{
+	req, err := c.NewRequest("POST", "agent/create", &types.AgentTokenCreateOptions{
 		Description:  options.Description,
 		Organization: options.Organization,
 	})
@@ -51,7 +51,7 @@ func (c *Client) GetAgentToken(ctx context.Context, token string) (*AgentToken, 
 		return nil, err
 	}
 
-	at := &jsonapi.AgentToken{}
+	at := &types.AgentToken{}
 	err = c.Do(ctx, req, at)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/vcsprovider"
 )
 
@@ -24,7 +25,7 @@ type (
 	// webHandlers provides handlers for the webUI
 	webHandlers struct {
 		otf.Signer
-		otf.Renderer
+		html.Renderer
 		vcsprovider.VCSProviderService
 		otf.HostnameService
 
@@ -57,12 +58,12 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_list.tmpl", w, r, struct {
-		Items        []*Module
-		Organization string
+	h.Render("module_list.tmpl", w, struct {
+		organization.OrganizationPage
+		Items []*Module
 	}{
-		Items:        modules,
-		Organization: opts.Organization,
+		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
+		Items:            modules,
 	})
 }
 
@@ -106,18 +107,20 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		readme = html.MarkdownToHTML(modinfo.readme)
 	}
 
-	h.Render("module_get.tmpl", w, r, struct {
-		*Module
+	h.Render("module_get.tmpl", w, struct {
+		organization.OrganizationPage
+		Module          *Module
 		TerraformModule *TerraformModule
 		Readme          template.HTML
 		CurrentVersion  *ModuleVersion
 		Hostname        string
 	}{
-		Module:          module,
-		TerraformModule: modinfo,
-		Readme:          readme,
-		CurrentVersion:  modver,
-		Hostname:        h.Hostname(),
+		OrganizationPage: organization.NewPage(r, module.ID, module.Organization),
+		Module:           module,
+		TerraformModule:  modinfo,
+		Readme:           readme,
+		CurrentVersion:   modver,
+		Hostname:         h.Hostname(),
 	})
 }
 
@@ -153,14 +156,14 @@ func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_new.tmpl", w, r, struct {
-		Items        []*vcsprovider.VCSProvider
-		Organization string
-		Step         newModuleStep
+	h.Render("module_new.tmpl", w, struct {
+		organization.OrganizationPage
+		Items []*vcsprovider.VCSProvider
+		Step  newModuleStep
 	}{
-		Items:        providers,
-		Organization: org,
-		Step:         newModuleConnectStep,
+		OrganizationPage: organization.NewPage(r, "new module", org),
+		Items:            providers,
+		Step:             newModuleConnectStep,
 	})
 }
 
@@ -202,16 +205,16 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, res)
 	}
 
-	h.Render("module_new.tmpl", w, r, struct {
+	h.Render("module_new.tmpl", w, struct {
+		organization.OrganizationPage
 		Repos         []string
-		Organization  string
 		VCSProviderID string
 		Step          newModuleStep
 	}{
-		Repos:         filtered,
-		Organization:  params.Organization,
-		VCSProviderID: params.VCSProviderID,
-		Step:          newModuleRepoStep,
+		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
+		Repos:            filtered,
+		VCSProviderID:    params.VCSProviderID,
+		Step:             newModuleRepoStep,
 	})
 }
 
@@ -232,16 +235,16 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("module_new.tmpl", w, r, struct {
-		Organization string
-		Step         newModuleStep
-		Repo         string
-		*vcsprovider.VCSProvider
+	h.Render("module_new.tmpl", w, struct {
+		organization.OrganizationPage
+		Step        newModuleStep
+		Repo        string
+		VCSProvider *vcsprovider.VCSProvider
 	}{
-		Organization: params.Organization,
-		Step:         newModuleConfirmStep,
-		Repo:         params.Repo,
-		VCSProvider:  vcsprov,
+		OrganizationPage: organization.NewPage(r, "new module", params.Organization),
+		Step:             newModuleConfirmStep,
+		Repo:             params.Repo,
+		VCSProvider:      vcsprov,
 	})
 }
 

@@ -80,7 +80,7 @@ func TestVariable_Update(t *testing.T) {
 }
 
 func fakeHTMLApp(t *testing.T, variable *Variable) *web {
-	renderer, err := html.NewViewEngine(false)
+	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &web{
 		Renderer: renderer,

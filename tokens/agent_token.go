@@ -89,8 +89,8 @@ func (t *AgentToken) CanAccessWorkspace(action rbac.Action, policy otf.Workspace
 	return t.Organization == policy.Organization
 }
 
-// agentFromContext retrieves an agent token from a context
-func agentFromContext(ctx context.Context) (*AgentToken, error) {
+// AgentFromContext retrieves an agent token from a context
+func AgentFromContext(ctx context.Context) (*AgentToken, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
