@@ -34,7 +34,7 @@ go-tfe-tests-forked:
 
 .PHONY: go-tfe-tests-upstream
 go-tfe-tests-upstream:
-	GO_TFE_REPO=github.com/hashicorp/go-tfe@latest ./hack/go-tfe-tests.bash 'Test(OrganizationTags|Workspaces_(Add|Remove)Tags)|TestWorkspacesList/when_searching_using_a_tag'
+	GO_TFE_REPO=github.com/hashicorp/go-tfe@latest ./hack/go-tfe-tests.bash 'Test(OrganizationTags|Workspaces_(Add|Remove)Tags)|TestWorkspacesList/when_searching_using_a_tag|TestStateVersionOutputsRead'
 
 .PHONY: test
 test:

@@ -27,13 +27,7 @@ type StateVersionOutput struct {
 	Name      string `jsonapi:"attribute" json:"name"`
 	Sensitive bool   `jsonapi:"attribute" json:"sensitive"`
 	Type      string `jsonapi:"attribute" json:"type"`
-	Value     string `jsonapi:"attribute" json:"value"`
-}
-
-// StateVersionOutputList is a list of state version outputs suitable for marshaling into
-// JSONAPI
-type StateVersionOutputList struct {
-	Items []*StateVersionOutput
+	Value     any    `jsonapi:"attribute" json:"value"`
 }
 
 // StateVersionCreateVersionOptions are options for creating a state version via
