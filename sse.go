@@ -1,4 +1,4 @@
-package otf
+package internal
 
 import (
 	"encoding/base64"

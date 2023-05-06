@@ -1,7 +1,7 @@
 /*
-Package otf is responsible for domain logic.
+package internal is responsible for domain logic.
 */
-package otf
+package internal
 
 import (
 	"context"

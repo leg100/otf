@@ -1,4 +1,4 @@
-package otf
+package internal
 
 var (
 	// Build-time parameters set -ldflags

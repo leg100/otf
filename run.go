@@ -1,4 +1,4 @@
-package otf
+package internal
 
 const (
 	PendingPhase PhaseType = "pending"

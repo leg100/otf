@@ -1,4 +1,4 @@
-package otf
+package internal
 
 type FakeHostnameService struct {
 	Host string

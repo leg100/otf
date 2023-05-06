@@ -1,4 +1,4 @@
-package otf
+package internal
 
 import "github.com/gorilla/mux"
 
