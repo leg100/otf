@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 // interfaces purely for faking purposes
@@ -12,5 +12,5 @@ type queueFactory interface {
 }
 
 type eventHandler interface {
-	handleEvent(context.Context, otf.Event) error
+	handleEvent(context.Context, internal.Event) error
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 // String converts a go-string into a postgres non-null string
@@ -33,13 +33,13 @@ func Error(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
 	case noRowsInResultError(err):
-		return otf.ErrResourceNotFound
+		return internal.ErrResourceNotFound
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
 		case "23503": // foreign key violation
-			return &otf.ForeignKeyError{PgError: pgErr}
+			return &internal.ForeignKeyError{PgError: pgErr}
 		case "23505": // unique violation
-			return otf.ErrResourceAlreadyExists
+			return internal.ErrResourceAlreadyExists
 		}
 		fallthrough
 	default:

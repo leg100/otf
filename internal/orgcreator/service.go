@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
@@ -24,10 +24,10 @@ type (
 
 	service struct {
 		logr.Logger
-		otf.Publisher
+		internal.Publisher
 
-		db   otf.DB
-		site otf.Authorizer // authorize access to site
+		db   internal.DB
+		site internal.Authorizer // authorize access to site
 		web  *web
 
 		auth.AuthService
@@ -36,8 +36,8 @@ type (
 	}
 
 	Options struct {
-		otf.DB
-		otf.Publisher
+		internal.DB
+		internal.Publisher
 		html.Renderer
 		logr.Logger
 
@@ -54,7 +54,7 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		AuthService:                  opts.AuthService,
 		db:                           opts.DB,
-		site:                         &otf.SiteAuthorizer{Logger: opts.Logger},
+		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.web = &web{opts.Renderer, &svc}
 
@@ -80,7 +80,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	err = s.db.Tx(ctx, func(tx otf.DB) error {
+	err = s.db.Tx(ctx, func(tx internal.DB) error {
 		_, err := tx.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 			ID:              sql.String(org.ID),
 			CreatedAt:       sql.Timestamptz(org.CreatedAt),
@@ -124,7 +124,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		return nil, err
 	}
 
-	s.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
+	s.Publish(internal.Event{Type: internal.EventOrganizationCreated, Payload: org})
 
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
 
@@ -132,18 +132,18 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 }
 
 func (s *service) authorize(ctx context.Context) (*auth.User, error) {
-	subject, err := otf.SubjectFromContext(ctx)
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	user, ok := subject.(*auth.User)
 	if !ok {
 		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
-		return nil, otf.ErrAccessNotPermitted
+		return nil, internal.ErrAccessNotPermitted
 	}
 	if s.RestrictOrganizationCreation && !user.IsSiteAdmin() {
 		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
-		return nil, otf.ErrAccessNotPermitted
+		return nil, internal.ErrAccessNotPermitted
 	}
 	return user, nil
 }

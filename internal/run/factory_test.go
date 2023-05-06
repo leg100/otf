@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +23,7 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, "", RunCreateOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, otf.RunPending, got.Status)
+		assert.Equal(t, internal.RunPending, got.Status)
 		assert.NotZero(t, got.CreatedAt)
 		assert.False(t, got.Speculative)
 		assert.True(t, got.Refresh)
@@ -61,7 +61,7 @@ func TestFactory(t *testing.T) {
 		)
 
 		got, err := f.NewRun(ctx, "", RunCreateOptions{
-			AutoApply: otf.Bool(true),
+			AutoApply: internal.Bool(true),
 		})
 		require.NoError(t, err)
 

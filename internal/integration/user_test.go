@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/sql"
@@ -16,7 +16,7 @@ func TestUser(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("set site admins", func(t *testing.T) {
 		connstr := sql.NewTestDB(t)
@@ -27,7 +27,7 @@ func TestUser(t *testing.T) {
 
 		areSiteAdmins := func(want bool) {
 			for _, username := range []string{"bob", "alice", "sue"} {
-				admin, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(username)})
+				admin, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String(username)})
 				require.NoError(t, err)
 				assert.Equal(t, want, admin.IsSiteAdmin())
 			}
@@ -64,15 +64,15 @@ func TestUser(t *testing.T) {
 		}{
 			{
 				name: "id",
-				spec: auth.UserSpec{UserID: otf.String(user.ID)},
+				spec: auth.UserSpec{UserID: internal.String(user.ID)},
 			},
 			{
 				name: "username",
-				spec: auth.UserSpec{Username: otf.String(user.Username)},
+				spec: auth.UserSpec{Username: internal.String(user.Username)},
 			},
 			{
 				name: "auth token",
-				spec: auth.UserSpec{AuthenticationTokenID: otf.String(token1.ID)},
+				spec: auth.UserSpec{AuthenticationTokenID: internal.String(token1.ID)},
 			},
 		}
 		for _, tt := range tests {
@@ -92,8 +92,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("get not found error", func(t *testing.T) {
 		svc := setup(t, nil)
-		_, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String("does-not-exist")})
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		_, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String("does-not-exist")})
+		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("list users", func(t *testing.T) {
@@ -153,8 +153,8 @@ func TestUser(t *testing.T) {
 		err := svc.DeleteUser(ctx, user.Username)
 		require.NoError(t, err)
 
-		_, err = svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
-		assert.Equal(t, err, otf.ErrResourceNotFound)
+		_, err = svc.GetUser(ctx, auth.UserSpec{Username: internal.String(user.Username)})
+		assert.Equal(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
@@ -169,7 +169,7 @@ func TestUser(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
+		got, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String(user.Username)})
 		require.NoError(t, err)
 
 		assert.Contains(t, got.Teams, team)
@@ -187,7 +187,7 @@ func TestUser(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.GetUser(ctx, auth.UserSpec{Username: otf.String(user.Username)})
+		got, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String(user.Username)})
 		require.NoError(t, err)
 
 		assert.NotContains(t, got.Teams, team)

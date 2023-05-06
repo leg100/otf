@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,7 +59,7 @@ func TestEventHandler(t *testing.T) {
 
 func newTestPushEvent(t *testing.T, ref string) *http.Request {
 	push, err := json.Marshal(&github.PushEvent{
-		Ref: otf.String(ref),
+		Ref: internal.String(ref),
 	})
 	require.NoError(t, err)
 
@@ -74,7 +74,7 @@ func newTestPullRequestEvent(t *testing.T, ref, action string) *http.Request {
 		Action: &action,
 		PullRequest: &github.PullRequest{
 			Head: &github.PullRequestBranch{
-				Ref: otf.String(ref),
+				Ref: internal.String(ref),
 			},
 		},
 	})

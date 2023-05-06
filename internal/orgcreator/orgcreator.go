@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
 )
 
@@ -33,9 +33,9 @@ func NewOrganization(opts OrganizationCreateOptions) (*organization.Organization
 	}
 	org := organization.Organization{
 		Name:            *opts.Name,
-		CreatedAt:       otf.CurrentTimestamp(),
-		UpdatedAt:       otf.CurrentTimestamp(),
-		ID:              otf.NewID("org"),
+		CreatedAt:       internal.CurrentTimestamp(),
+		UpdatedAt:       internal.CurrentTimestamp(),
+		ID:              internal.NewID("org"),
 		SessionTimeout:  DefaultSessionTimeout,
 		SessionRemember: DefaultSessionExpiration,
 	}
@@ -55,7 +55,7 @@ func (opts *OrganizationCreateOptions) Validate() error {
 	if *opts.Name == "" {
 		return errors.New("name cannot be empty")
 	}
-	if !otf.ValidStringID(opts.Name) {
+	if !internal.ValidStringID(opts.Name) {
 		return fmt.Errorf("invalid name: %s", *opts.Name)
 	}
 	return nil

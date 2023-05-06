@@ -3,7 +3,7 @@ package authenticator
 import (
 	"net/http"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/tokens"
@@ -14,7 +14,7 @@ type (
 	// Identity provider before synchronising their user account and various organization
 	// and team memberships from the provider.
 	oauthAuthenticator struct {
-		otf.HostnameService
+		internal.HostnameService
 		tokens.TokensService // for creating session
 
 		oauthClient
@@ -39,7 +39,7 @@ func (a *oauthAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// give oauthAuthenticator unlimited access to services
-	ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{Username: "authenticator"})
+	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "authenticator"})
 
 	// Get cloud user
 	cuser, err := client.GetUser(ctx)

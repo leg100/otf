@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +14,7 @@ func TestDB(t *testing.T) {
 	db := newTestDB(t)
 
 	t.Run("create hook", func(t *testing.T) {
-		want := newTestHook(t, db.factory, otf.String("123"))
+		want := newTestHook(t, db.factory, internal.String("123"))
 
 		got, err := db.getOrCreateHook(ctx, want)
 		require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("get hook", func(t *testing.T) {
-		hook := newTestHook(t, db.factory, otf.String("123"))
+		hook := newTestHook(t, db.factory, internal.String("123"))
 		want, err := db.getOrCreateHook(ctx, hook)
 		require.NoError(t, err)
 
@@ -45,7 +45,7 @@ func TestDB(t *testing.T) {
 	})
 
 	t.Run("delete hook", func(t *testing.T) {
-		hook := newTestHook(t, db.factory, otf.String("123"))
+		hook := newTestHook(t, db.factory, internal.String("123"))
 		_, err := db.getOrCreateHook(ctx, hook)
 		require.NoError(t, err)
 

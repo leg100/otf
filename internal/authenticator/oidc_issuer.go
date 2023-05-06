@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -61,7 +61,7 @@ func NewOIDCIssuer(t *testing.T, username, aud, name string) string {
 		q.Add("state", r.URL.Query().Get("state"))
 		// generate any old code; the token endpoint will receive it later and
 		// disregard it.
-		q.Add("code", otf.GenerateRandomString(10))
+		q.Add("code", internal.GenerateRandomString(10))
 
 		referrer, err := url.Parse(r.Referer())
 		require.NoError(t, err)

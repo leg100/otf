@@ -3,7 +3,7 @@ package module
 import (
 	"strings"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 // Repo is the path of repository for a module. It is expected to follow a
@@ -15,7 +15,7 @@ type Repo string
 func (r Repo) Split() (name, provider string, err error) {
 	repoParts := strings.Split(string(r), "/")
 	if len(repoParts) < 2 {
-		return "", "", otf.ErrInvalidRepo
+		return "", "", internal.ErrInvalidRepo
 	}
 	parts := strings.SplitN(repoParts[1], "-", 3)
 	if len(parts) < 3 {

@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 const HashicorpReleasesHost = "releases.hashicorp.com"
@@ -49,7 +49,7 @@ func newTerraformDownloader() *terraformDownloader {
 // another download is requested then it'll be made to wait until the
 // former has finished.
 func (d *terraformDownloader) download(ctx context.Context, version string, w io.Writer) (string, error) {
-	if otf.Exists(d.dest(version)) {
+	if internal.Exists(d.dest(version)) {
 		return d.dest(version), nil
 	}
 

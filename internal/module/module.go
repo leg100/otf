@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/repo"
 	"golang.org/x/exp/slog"
@@ -90,16 +90,16 @@ type (
 		Organization string `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*Module
 	}
 )
 
 func NewModule(opts CreateOptions) *Module {
 	return &Module{
-		ID:           otf.NewID("mod"),
-		CreatedAt:    otf.CurrentTimestamp(),
-		UpdatedAt:    otf.CurrentTimestamp(),
+		ID:           internal.NewID("mod"),
+		CreatedAt:    internal.CurrentTimestamp(),
+		UpdatedAt:    internal.CurrentTimestamp(),
 		Name:         opts.Name,
 		Provider:     opts.Provider,
 		Status:       ModuleStatusPending,
@@ -109,9 +109,9 @@ func NewModule(opts CreateOptions) *Module {
 
 func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
-		ID:        otf.NewID("modver"),
-		CreatedAt: otf.CurrentTimestamp(),
-		UpdatedAt: otf.CurrentTimestamp(),
+		ID:        internal.NewID("modver"),
+		CreatedAt: internal.CurrentTimestamp(),
+		UpdatedAt: internal.CurrentTimestamp(),
 		ModuleID:  opts.ModuleID,
 		// TODO: check version is a semver, and decide whether to keep or drop
 		// 'v' prefix

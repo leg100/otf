@@ -8,7 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
@@ -46,11 +46,11 @@ type (
 
 	service struct {
 		logr.Logger
-		otf.Publisher
+		internal.Publisher
 
-		site           otf.Authorizer
-		organization   otf.Authorizer
-		otf.Authorizer // workspace authorizer
+		site                internal.Authorizer
+		organization        internal.Authorizer
+		internal.Authorizer // workspace authorizer
 
 		db   *pgdb
 		repo repo.RepoService
@@ -59,8 +59,8 @@ type (
 	}
 
 	Options struct {
-		otf.DB
-		otf.Broker
+		internal.DB
+		internal.Broker
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
@@ -82,7 +82,7 @@ func NewService(opts Options) *service {
 		db:           db,
 		repo:         opts.RepoService,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
+		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
@@ -145,7 +145,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	s.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
+	s.Publish(internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws})
 
 	return ws, nil
 }
@@ -199,10 +199,10 @@ func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*Worksp
 	} else {
 		// check if subject has perms to list workspaces in organization
 		_, err := s.organization.CanAccess(ctx, rbac.ListWorkspacesAction, *opts.Organization)
-		if err == otf.ErrAccessNotPermitted {
+		if err == internal.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
-			subject, err := otf.SubjectFromContext(ctx)
+			subject, err := internal.SubjectFromContext(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -239,7 +239,7 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 	}
 
 	if updated.Name != name {
-		s.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: updated})
+		s.Publish(internal.Event{Type: internal.EventWorkspaceRenamed, Payload: updated})
 	}
 
 	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
@@ -262,7 +262,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 	if ws.Connection != nil {
 		err = s.disconnect(ctx, ws.ID)
 		// ignore warnings; the repo is still disconnected successfully
-		if err != nil && !errors.Is(err, otf.ErrWarning) {
+		if err != nil && !errors.Is(err, internal.ErrWarning) {
 			return nil, err
 		}
 	}
@@ -272,7 +272,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 		return nil, err
 	}
 
-	s.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
+	s.Publish(internal.Event{Type: internal.EventWorkspaceDeleted, Payload: ws})
 
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 
@@ -291,8 +291,8 @@ func (s *service) connect(ctx context.Context, workspaceID string, opts ConnectO
 
 // connectWithoutAuthz connects the workspace to a repo without checking whether
 // subject has authorization.
-func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, tx otf.DB, opts ConnectOptions) (*repo.Connection, error) {
-	subject, err := otf.SubjectFromContext(ctx)
+func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, tx internal.DB, opts ConnectOptions) (*repo.Connection, error) {
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +324,7 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 		ResourceID:     workspaceID,
 	})
 	// ignore warnings; the repo is still disconnected successfully
-	if err != nil && !errors.Is(err, otf.ErrWarning) {
+	if err != nil && !errors.Is(err, internal.ErrWarning) {
 		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return err
 	}

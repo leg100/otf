@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/vcsprovider"
 )
@@ -27,7 +27,7 @@ type (
 	service struct {
 		logr.Logger
 		vcsprovider.Service
-		otf.DB
+		internal.DB
 
 		factory // produce new hooks
 		*handler
@@ -38,9 +38,9 @@ type (
 
 		CloudService cloud.Service
 
-		otf.DB
-		otf.HostnameService
-		otf.Publisher
+		internal.DB
+		internal.HostnameService
+		internal.Publisher
 		VCSProviderService vcsprovider.Service
 	}
 )
@@ -168,7 +168,7 @@ func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error 
 		})
 		if err != nil {
 			s.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
-			repoErr = fmt.Errorf("%w: unable to delete webhook from repo: %w", otf.ErrWarning, err)
+			repoErr = fmt.Errorf("%w: unable to delete webhook from repo: %w", internal.ErrWarning, err)
 		} else {
 			s.V(0).Info("deleted webhook", "repo", hook.identifier, "cloud", hook.cloud)
 		}

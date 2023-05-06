@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -29,13 +29,13 @@ type (
 	Broker struct {
 		logr.Logger
 
-		channel       string                      // postgres notification channel name
-		pool          pool                        // pool from which to acquire a dedicated connection to postgres
-		islistening   chan bool                   // semaphore that's closed once broker is listening
-		pid           string                      // pid uniquely identifies a broker
-		registrations map[string]otf.Getter       // map of event payload type to a fn that can retrieve the payload
-		subs          map[string]chan otf.Event   // subscriptions
-		metrics       map[string]prometheus.Gauge // metric for each subscription
+		channel       string                         // postgres notification channel name
+		pool          pool                           // pool from which to acquire a dedicated connection to postgres
+		islistening   chan bool                      // semaphore that's closed once broker is listening
+		pid           string                         // pid uniquely identifies a broker
+		registrations map[string]internal.Getter     // map of event payload type to a fn that can retrieve the payload
+		subs          map[string]chan internal.Event // subscriptions
+		metrics       map[string]prometheus.Gauge    // metric for each subscription
 
 		mu sync.Mutex // sync access to maps
 	}
@@ -47,22 +47,22 @@ type (
 
 	// pgevent is an event sent via a postgres channel
 	pgevent struct {
-		PayloadType string        `json:"payload_type"` // event payload type
-		Event       otf.EventType `json:"event"`        // event type
-		ID          string        `json:"id"`           // event payload ID
-		PID         string        `json:"pid"`          // process ID that sent this event
+		PayloadType string             `json:"payload_type"` // event payload type
+		Event       internal.EventType `json:"event"`        // event type
+		ID          string             `json:"id"`           // event payload ID
+		PID         string             `json:"pid"`          // process ID that sent this event
 	}
 )
 
-func NewBroker(logger logr.Logger, db otf.DB) *Broker {
+func NewBroker(logger logr.Logger, db internal.DB) *Broker {
 	return &Broker{
 		Logger:        logger.WithValues("component", "broker"),
 		pid:           uuid.NewString(),
 		pool:          db,
 		islistening:   make(chan bool),
 		channel:       defaultChannel,
-		registrations: make(map[string]otf.Getter),
-		subs:          make(map[string]chan otf.Event),
+		registrations: make(map[string]internal.Getter),
+		subs:          make(map[string]chan internal.Event),
 		metrics:       make(map[string]prometheus.Gauge),
 	}
 }
@@ -111,7 +111,7 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 // Publish sends an event to subscribers, via postgres to subscribers on
 // other machines, and via the local broker to subscribers within the same
 // process.
-func (b *Broker) Publish(event otf.Event) {
+func (b *Broker) Publish(event internal.Event) {
 	b.localPublish(event)
 
 	if event.Local {
@@ -126,13 +126,13 @@ func (b *Broker) Publish(event otf.Event) {
 // Subscribe subscribes the caller to a stream of events. Prefix is an
 // identifier prefixed to a random string to helpfully identify the subscriber
 // in metrics.
-func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan otf.Event, error) {
+func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.Event, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	name := prefix + otf.GenerateRandomString(4)
+	name := prefix + internal.GenerateRandomString(4)
 
-	sub := make(chan otf.Event, subBufferSize)
+	sub := make(chan internal.Event, subBufferSize)
 	if _, ok := b.subs[name]; ok {
 		return nil, fmt.Errorf("name already taken")
 	}
@@ -171,7 +171,7 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan otf.Event
 }
 
 // Register a means of reassembling a postgres message back into an otf event
-func (b *Broker) Register(t reflect.Type, getter otf.Getter) {
+func (b *Broker) Register(t reflect.Type, getter internal.Getter) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -179,7 +179,7 @@ func (b *Broker) Register(t reflect.Type, getter otf.Getter) {
 }
 
 // localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event otf.Event) {
+func (b *Broker) localPublish(event internal.Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -196,9 +196,9 @@ func (b *Broker) localPublish(event otf.Event) {
 
 // remotePublish publishes an event to postgres for relaying onto to remote
 // subscribers
-func (b *Broker) remotePublish(event otf.Event) error {
+func (b *Broker) remotePublish(event internal.Event) error {
 	// marshal an otf event into a JSON-encoded postgres event
-	id, hasID := otf.GetID(event.Payload)
+	id, hasID := internal.GetID(event.Payload)
 	if !hasID {
 		return fmt.Errorf("event payload does not have an ID field")
 	}
@@ -239,7 +239,7 @@ func (b *Broker) receive(ctx context.Context, notification *pgconn.Notification)
 		return fmt.Errorf("retrieving resource: %w", err)
 	}
 
-	b.localPublish(otf.Event{
+	b.localPublish(internal.Event{
 		Type:    event.Event,
 		Payload: payload,
 	})

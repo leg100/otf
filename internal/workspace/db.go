@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
@@ -15,7 +15,7 @@ import (
 type (
 	// pgdb is a workspace database on postgres
 	pgdb struct {
-		otf.DB // provides access to generated SQL queries
+		internal.DB // provides access to generated SQL queries
 	}
 
 	// pgresult represents the result of a database query for a workspace.
@@ -94,7 +94,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	if r.LatestRunID.Status == pgtype.Present && r.LatestRunStatus.Status == pgtype.Present {
 		ws.LatestRun = &LatestRun{
 			ID:     r.LatestRunID.String,
-			Status: otf.RunStatus(r.LatestRunStatus.String),
+			Status: internal.RunStatus(r.LatestRunStatus.String),
 		}
 	}
 
@@ -144,7 +144,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 
 func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
-	err := db.Tx(ctx, func(tx otf.DB) error {
+	err := db.Tx(ctx, func(tx internal.DB) error {
 		var err error
 		// retrieve workspace
 		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
@@ -239,7 +239,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -261,7 +261,7 @@ func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts otf.ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts internal.ListOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{
@@ -294,7 +294,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts, count),
+		Pagination: internal.NewPagination(opts, count),
 	}, nil
 }
 
@@ -324,7 +324,7 @@ func (db *pgdb) delete(ctx context.Context, workspaceID string) error {
 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		return callback(&pgdb{tx})
 	})
 }

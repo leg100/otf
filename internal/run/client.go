@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/http"
 	"github.com/r3labs/sse/v2"
@@ -17,7 +17,7 @@ import (
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 	http.Config
 }
 
@@ -123,7 +123,7 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {
 	return newFromJSONAPI(run), nil
 }
 
-func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts PhaseStartOptions) (*Run, error) {
+func (c *Client) StartPhase(ctx context.Context, id string, phase internal.PhaseType, opts PhaseStartOptions) (*Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/start/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
@@ -142,7 +142,7 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase otf.PhaseType,
 	return newFromJSONAPI(run), nil
 }
 
-func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (c *Client) FinishPhase(ctx context.Context, id string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	u := fmt.Sprintf("runs/%s/actions/finish/%s",
 		url.QueryEscape(id),
 		url.QueryEscape(string(phase)),
@@ -162,9 +162,9 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase otf.PhaseType
 }
 
 // Watch returns a channel subscribed to run events.
-func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error) {
+func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan internal.Event, error) {
 	// TODO: why buffered chan of size 1?
-	notifications := make(chan otf.Event, 1)
+	notifications := make(chan internal.Event, 1)
 	sseClient, err := newSSEClient(c.Config, notifications, opts)
 	if err != nil {
 		return nil, err
@@ -174,20 +174,20 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event
 		err := sseClient.SubscribeRawWithContext(ctx, func(raw *sse.Event) {
 			run, err := UnmarshalJSONAPI(raw.Data)
 			if err != nil {
-				notifications <- otf.Event{Type: otf.EventError, Payload: err}
+				notifications <- internal.Event{Type: internal.EventError, Payload: err}
 				return
 			}
-			notifications <- otf.Event{Type: otf.EventType(raw.Event), Payload: run}
+			notifications <- internal.Event{Type: internal.EventType(raw.Event), Payload: run}
 		})
 		if err != nil {
-			notifications <- otf.Event{Type: otf.EventError, Payload: err}
+			notifications <- internal.Event{Type: internal.EventError, Payload: err}
 		}
 		close(notifications)
 	}()
 	return notifications, nil
 }
 
-func newSSEClient(config http.Config, notifications chan otf.Event, opts WatchOptions) (*sse.Client, error) {
+func newSSEClient(config http.Config, notifications chan internal.Event, opts WatchOptions) (*sse.Client, error) {
 	// construct watch URL endpoint
 	addr, err := http.SanitizeAddress(config.Address)
 	if err != nil {
@@ -209,8 +209,8 @@ func newSSEClient(config http.Config, notifications chan otf.Event, opts WatchOp
 	// Disable backoff, it's instead the responsibility of the caller
 	client.ReconnectStrategy = new(backoff.StopBackOff)
 	client.OnConnect(func(_ *sse.Client) {
-		notifications <- otf.Event{
-			Type:    otf.EventInfo,
+		notifications <- internal.Event{
+			Type:    internal.EventInfo,
 			Payload: "successfully connected",
 		}
 	})

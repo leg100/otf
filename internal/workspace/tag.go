@@ -3,7 +3,7 @@ package workspace
 import (
 	"errors"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"golang.org/x/exp/slog"
 )
 
@@ -21,7 +21,7 @@ type (
 
 	// TagList is a list of tags.
 	TagList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*Tag
 	}
 

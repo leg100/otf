@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"golang.org/x/exp/slog"
 )
@@ -16,8 +16,8 @@ const (
 )
 
 var (
-	SiteAdmin             = User{ID: SiteAdminID, Username: SiteAdminUsername}
-	_         otf.Subject = (*User)(nil)
+	SiteAdmin                  = User{ID: SiteAdminID, Username: SiteAdminUsername}
+	_         internal.Subject = (*User)(nil)
 )
 
 type (
@@ -48,10 +48,10 @@ type (
 
 func NewUser(username string, opts ...NewUserOption) *User {
 	user := &User{
-		ID:        otf.NewID("user"),
+		ID:        internal.NewID("user"),
 		Username:  username,
-		CreatedAt: otf.CurrentTimestamp(),
-		UpdatedAt: otf.CurrentTimestamp(),
+		CreatedAt: internal.CurrentTimestamp(),
+		UpdatedAt: internal.CurrentTimestamp(),
 	}
 	for _, fn := range opts {
 		fn(user)
@@ -159,7 +159,7 @@ func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 	return false
 }
 
-func (u *User) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
+func (u *User) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
 	// coarser-grained organization perms take precedence.
 	if u.CanAccessOrganization(action, policy.Organization) {
 		return true
@@ -205,7 +205,7 @@ func (s UserSpec) LogValue() slog.Value {
 
 // UserFromContext retrieves a user from a context
 func UserFromContext(ctx context.Context) (*User, error) {
-	subj, err := otf.SubjectFromContext(ctx)
+	subj, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

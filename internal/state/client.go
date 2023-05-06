@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 )
 
@@ -20,7 +20,7 @@ import (
 //
 // [1] https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
@@ -32,9 +32,9 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(*opts.WorkspaceID))
 	req, err := c.NewRequest("POST", u, &types.StateVersionCreateVersionOptions{
 		Lineage: &state.Lineage,
-		MD5:     otf.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
-		Serial:  otf.Int64(state.Serial),
-		State:   otf.String(base64.StdEncoding.EncodeToString(opts.State)),
+		MD5:     internal.String(fmt.Sprintf("%x", md5.Sum(opts.State))),
+		Serial:  internal.Int64(state.Serial),
+		State:   internal.String(base64.StdEncoding.EncodeToString(opts.State)),
 	})
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func newFromJSONAPI(from *types.StateVersion) *Version {
 // newListFromJSONAPI constructs a state version list from a json:api struct
 func newListFromJSONAPI(from *types.StateVersionList) *VersionList {
 	to := VersionList{
-		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
+		Pagination: internal.NewPaginationFromJSONAPI(from.Pagination),
 	}
 	for _, i := range from.Items {
 		to.Items = append(to.Items, newFromJSONAPI(i))

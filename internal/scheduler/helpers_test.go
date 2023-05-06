@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/workspace"
 )
 
-func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events ...otf.Event) (*scheduler, <-chan otf.Event) {
-	ch := make(chan otf.Event, len(events))
+func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events ...internal.Event) (*scheduler, <-chan internal.Event) {
+	ch := make(chan internal.Event, len(events))
 	for _, ev := range events {
 		ch <- ev
 	}
@@ -30,7 +30,7 @@ func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events
 		queues:           make(map[string]eventHandler),
 	}
 	// handled chan receives events relayed to handlers
-	handled := make(chan otf.Event)
+	handled := make(chan internal.Event)
 	scheduler.queueFactory = &fakeQueueFactory{events: handled}
 	return &scheduler, handled
 }
@@ -38,7 +38,7 @@ func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events
 type fakeSchedulerServices struct {
 	runs       []*run.Run
 	workspaces []*workspace.Workspace
-	events     chan otf.Event
+	events     chan internal.Event
 
 	WorkspaceService
 	RunService
@@ -47,23 +47,23 @@ type fakeSchedulerServices struct {
 func (f *fakeSchedulerServices) ListRuns(context.Context, run.RunListOptions) (*run.RunList, error) {
 	return &run.RunList{
 		Items:      f.runs,
-		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.runs)),
+		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.runs)),
 	}, nil
 }
 
 func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.ListOptions) (*workspace.WorkspaceList, error) {
 	return &workspace.WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.workspaces)),
+		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.workspaces)),
 	}, nil
 }
 
-func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan otf.Event, error) {
+func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan internal.Event, error) {
 	return f.events, nil
 }
 
 type fakeQueueFactory struct {
-	events chan otf.Event
+	events chan internal.Event
 }
 
 func (f *fakeQueueFactory) newQueue(queueOptions) eventHandler {
@@ -71,10 +71,10 @@ func (f *fakeQueueFactory) newQueue(queueOptions) eventHandler {
 }
 
 type fakeQueue struct {
-	events chan otf.Event
+	events chan internal.Event
 }
 
-func (f *fakeQueue) handleEvent(ctx context.Context, event otf.Event) error {
+func (f *fakeQueue) handleEvent(ctx context.Context, event internal.Event) error {
 	f.events <- event
 	return nil
 }

@@ -3,7 +3,7 @@ package vcsprovider
 import (
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 // factory makes vcs providers
@@ -18,8 +18,8 @@ func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 	}
 
 	provider := &VCSProvider{
-		ID:           otf.NewID("vcs"),
-		CreatedAt:    otf.CurrentTimestamp(),
+		ID:           internal.NewID("vcs"),
+		CreatedAt:    internal.CurrentTimestamp(),
 		Name:         opts.Name,
 		Organization: opts.Organization,
 		CloudConfig:  cloudConfig,

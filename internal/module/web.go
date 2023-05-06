@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
@@ -24,10 +24,10 @@ const (
 type (
 	// webHandlers provides handlers for the webUI
 	webHandlers struct {
-		otf.Signer
+		internal.Signer
 		html.Renderer
 		vcsprovider.VCSProviderService
-		otf.HostnameService
+		internal.HostnameService
 
 		svc Service
 	}
@@ -187,7 +187,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	// Retrieve repos and filter according to required naming format
 	// '<something>-<name>-<provider>'
 	results, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
-		PageSize: otf.MaxPageSize,
+		PageSize: internal.MaxPageSize,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -262,7 +262,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		Repo:          params.Repo,
 		VCSProviderID: params.VCSProviderID,
 	})
-	if err != nil && errors.Is(err, otf.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
+	if err != nil && errors.Is(err, internal.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
 		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	} else if err != nil {

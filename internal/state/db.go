@@ -6,14 +6,14 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 type (
 	db interface {
-		otf.DB
+		internal.DB
 
 		createVersion(context.Context, *Version) error
 		listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
@@ -28,7 +28,7 @@ type (
 
 	// pgdb is a state/state-version database on postgres
 	pgdb struct {
-		otf.DB // provides access to generated SQL queries
+		internal.DB // provides access to generated SQL queries
 	}
 
 	// pgRow is a row from a postgres query for a state version.
@@ -43,7 +43,7 @@ type (
 )
 
 func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
-	return db.Tx(ctx, func(db otf.DB) error {
+	return db.Tx(ctx, func(db internal.DB) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 			ID:          sql.String(v.ID),
 			CreatedAt:   sql.Timestamptz(v.CreatedAt),
@@ -102,7 +102,7 @@ func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) 
 
 	return &VersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -131,7 +131,7 @@ func (db *pgdb) deleteVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteStateVersionByID(ctx, sql.String(id))
 	if err != nil {
 		err = sql.Error(err)
-		var fkerr *otf.ForeignKeyError
+		var fkerr *internal.ForeignKeyError
 		if errors.As(err, &fkerr) {
 			if fkerr.ConstraintName == "current_state_version_id_fk" && fkerr.TableName == "workspaces" {
 				return ErrCurrentVersionDeletionAttempt
@@ -151,7 +151,7 @@ func (db *pgdb) updateCurrentVersion(ctx context.Context, workspaceID, svID stri
 }
 
 func (db *pgdb) tx(ctx context.Context, txfunc func(db) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		return txfunc(&pgdb{tx})
 	})
 }

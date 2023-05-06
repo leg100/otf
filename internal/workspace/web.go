@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
@@ -138,7 +138,7 @@ func (h *webHandlers) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		Name:         params.Name,
 		Organization: params.Organization,
 	})
-	if err == otf.ErrResourceAlreadyExists {
+	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "workspace already exists: "+*params.Name)
 		http.Redirect(w, r, paths.NewWorkspace(*params.Organization), http.StatusFound)
 		return
@@ -262,7 +262,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
-		Policy                         otf.WorkspacePolicy
+		Policy                         internal.WorkspacePolicy
 		Unassigned                     []*auth.Team
 		Roles                          []rbac.Role
 		VCSProvider                    *vcsprovider.VCSProvider
@@ -285,7 +285,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceAdminRole,
 		},
 		VCSProvider:                    provider,
-		UnassignedTags:                 otf.DiffStrings(getTagNames(), workspace.Tags),
+		UnassignedTags:                 internal.DiffStrings(getTagNames(), workspace.Tags),
 		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
 		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
 		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
@@ -422,9 +422,9 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID     string `schema:"workspace_id,required"`
-		VCSProviderID   string `schema:"vcs_provider_id,required"`
-		otf.ListOptions        // Pagination
+		WorkspaceID          string `schema:"workspace_id,required"`
+		VCSProviderID        string `schema:"vcs_provider_id,required"`
+		internal.ListOptions        // Pagination
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -490,7 +490,7 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 
 	var stack html.FlashStack
 	err = h.svc.disconnect(r.Context(), workspaceID)
-	if errors.Is(err, otf.ErrWarning) {
+	if errors.Is(err, internal.ErrWarning) {
 		stack.Push(html.FlashWarningType, err.Error())
 	} else if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -552,7 +552,7 @@ func (h *webHandlers) unsetWorkspacePermission(w http.ResponseWriter, r *http.Re
 //
 // NOTE: the owners team is always removed because by default it is assigned the
 // admin role.
-func filterUnassigned(policy otf.WorkspacePolicy, teams []*auth.Team) (unassigned []*auth.Team) {
+func filterUnassigned(policy internal.WorkspacePolicy, teams []*auth.Team) (unassigned []*auth.Team) {
 	assigned := make(map[string]struct{}, len(teams))
 	for _, p := range policy.Permissions {
 		assigned[p.Team] = struct{}{}

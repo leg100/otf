@@ -3,7 +3,7 @@ package cli
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/organization"
@@ -141,7 +141,7 @@ func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*works
 func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error) {
 	return &workspace.WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: otf.NewPagination(otf.ListOptions{}, len(f.workspaces)),
+		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.workspaces)),
 	}, nil
 }
 
@@ -180,7 +180,7 @@ func (f *fakeClient) ListStateVersions(ctx context.Context, opts state.StateVers
 
 func (f *fakeClient) GetCurrentStateVersion(ctx context.Context, workspaceID string) (*state.Version, error) {
 	if f.stateVersion == nil {
-		return nil, otf.ErrResourceNotFound
+		return nil, internal.ErrResourceNotFound
 	}
 	return f.stateVersion, nil
 }

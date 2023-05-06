@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/configversion"
 	otfhttp "github.com/leg100/otf/http"
@@ -17,12 +17,12 @@ import (
 
 // runLogsURLGenerator creates a signed URL for retrieving logs for a run phase.
 type runLogsURLGenerator struct {
-	otf.Signer
+	internal.Signer
 }
 
 // toRun converts a run into its equivalent json:api struct
 func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []jsonapi.MarshalOption, error) {
-	subject, err := otf.SubjectFromContext(r.Context())
+	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -41,29 +41,29 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 	var timestamps types.RunStatusTimestamps
 	for _, rst := range from.StatusTimestamps {
 		switch rst.Status {
-		case otf.RunPending:
+		case internal.RunPending:
 			timestamps.PlanQueueableAt = &rst.Timestamp
-		case otf.RunPlanQueued:
+		case internal.RunPlanQueued:
 			timestamps.PlanQueuedAt = &rst.Timestamp
-		case otf.RunPlanning:
+		case internal.RunPlanning:
 			timestamps.PlanningAt = &rst.Timestamp
-		case otf.RunPlanned:
+		case internal.RunPlanned:
 			timestamps.PlannedAt = &rst.Timestamp
-		case otf.RunPlannedAndFinished:
+		case internal.RunPlannedAndFinished:
 			timestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case otf.RunApplyQueued:
+		case internal.RunApplyQueued:
 			timestamps.ApplyQueuedAt = &rst.Timestamp
-		case otf.RunApplying:
+		case internal.RunApplying:
 			timestamps.ApplyingAt = &rst.Timestamp
-		case otf.RunApplied:
+		case internal.RunApplied:
 			timestamps.AppliedAt = &rst.Timestamp
-		case otf.RunErrored:
+		case internal.RunErrored:
 			timestamps.ErroredAt = &rst.Timestamp
-		case otf.RunCanceled:
+		case internal.RunCanceled:
 			timestamps.CanceledAt = &rst.Timestamp
-		case otf.RunForceCanceled:
+		case internal.RunForceCanceled:
 			timestamps.ForceCanceledAt = &rst.Timestamp
-		case otf.RunDiscarded:
+		case internal.RunDiscarded:
 			timestamps.DiscardedAt = &rst.Timestamp
 		}
 	}
@@ -159,9 +159,9 @@ func (m jsonapiMarshaler) toRunList(from *run.RunList, r *http.Request) (to []*t
 
 func (m *jsonapiMarshaler) toPhase(from run.Phase, r *http.Request) (any, error) {
 	switch from.PhaseType {
-	case otf.PlanPhase:
+	case internal.PlanPhase:
 		return m.toPlan(from, r)
-	case otf.ApplyPhase:
+	case internal.ApplyPhase:
 		return m.toApply(from, r)
 	default:
 		return nil, fmt.Errorf("unsupported phase: %s", from.PhaseType)
@@ -175,7 +175,7 @@ func (m *jsonapiMarshaler) toPlan(plan run.Phase, r *http.Request) (*types.Plan,
 	}
 
 	return &types.Plan{
-		ID:               otf.ConvertID(plan.RunID, "plan"),
+		ID:               internal.ConvertID(plan.RunID, "plan"),
 		HasChanges:       plan.HasChanges(),
 		LogReadURL:       logURL,
 		ResourceReport:   m.toResourceReport(plan.ResourceReport),
@@ -191,7 +191,7 @@ func (m *jsonapiMarshaler) toApply(apply run.Phase, r *http.Request) (*types.App
 	}
 
 	return &types.Apply{
-		ID:               otf.ConvertID(apply.RunID, "apply"),
+		ID:               internal.ConvertID(apply.RunID, "apply"),
 		LogReadURL:       logURL,
 		ResourceReport:   m.toResourceReport(apply.ResourceReport),
 		Status:           string(apply.Status),

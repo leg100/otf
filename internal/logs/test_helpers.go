@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -20,14 +20,14 @@ type (
 
 	fakeTailProxy struct {
 		// fake chunk to return
-		chunk otf.Chunk
+		chunk internal.Chunk
 		chunkproxy
 	}
 
 	fakeAuthorizer struct{}
 
 	fakePubSubService struct {
-		stream chan otf.Event
+		stream chan internal.Event
 	}
 )
 
@@ -52,19 +52,19 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	return val, nil
 }
 
-func (s *fakeDB) GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error) {
+func (s *fakeDB) GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
 	return s.data, nil
 }
 
-func (f *fakeTailProxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (f *fakeTailProxy) get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
 	return f.chunk, nil
 }
 
 func newFakePubSubService() *fakePubSubService {
-	return &fakePubSubService{stream: make(chan otf.Event)}
+	return &fakePubSubService{stream: make(chan internal.Event)}
 }
 
-func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan otf.Event, error) {
+func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan internal.Event, error) {
 	go func() {
 		<-ctx.Done()
 		close(f.stream)
@@ -72,10 +72,10 @@ func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan ot
 	return f.stream, nil
 }
 
-func (f *fakePubSubService) Publish(event otf.Event) {
+func (f *fakePubSubService) Publish(event internal.Event) {
 	f.stream <- event
 }
 
-func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (otf.Subject, error) {
-	return &otf.Superuser{}, nil
+func (f *fakeAuthorizer) CanAccess(context.Context, rbac.Action, string) (internal.Subject, error) {
+	return &internal.Superuser{}, nil
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/logs"
 	"github.com/leg100/otf/run"
@@ -69,7 +69,7 @@ func newEnvironment(
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}
-	envs = append(envs, otf.CredentialEnv(svc.Hostname(), token))
+	envs = append(envs, internal.CredentialEnv(svc.Hostname(), token))
 
 	// retrieve workspace variables and add them to the environment
 	variables, err := svc.ListVariables(ctx, run.WorkspaceID)

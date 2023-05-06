@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
@@ -62,7 +62,7 @@ func (t *RunToken) CanAccessOrganization(action rbac.Action, name string) bool {
 	}
 }
 
-func (t *RunToken) CanAccessWorkspace(action rbac.Action, policy otf.WorkspacePolicy) bool {
+func (t *RunToken) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
 	return false
 }
 
@@ -79,7 +79,7 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		return nil, err
 	}
 
-	expiry := otf.CurrentTimestamp().Add(defaultRunTokenExpiry)
+	expiry := internal.CurrentTimestamp().Add(defaultRunTokenExpiry)
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}

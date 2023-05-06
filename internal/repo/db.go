@@ -6,18 +6,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 // pgdb is the repo database on postgres
 type pgdb struct {
-	otf.DB
+	internal.DB
 	factory
 }
 
-func newPGDB(db otf.DB, f factory) *pgdb {
+func newPGDB(db internal.DB, f factory) *pgdb {
 	return &pgdb{db, f}
 }
 
@@ -125,7 +125,7 @@ func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
 // lock webhooks table within a transaction, providing a callback within which
 // caller can use the transaction.
 func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		if _, err := tx.Exec(ctx, "LOCK webhooks"); err != nil {
 			return err
 		}
@@ -143,13 +143,13 @@ type hookRow struct {
 
 func (db *pgdb) unmarshal(row hookRow) (*hook, error) {
 	opts := newHookOpts{
-		id:         otf.UUID(row.WebhookID.Bytes),
-		secret:     otf.String(row.Secret.String),
+		id:         internal.UUID(row.WebhookID.Bytes),
+		secret:     internal.String(row.Secret.String),
 		identifier: row.Identifier.String,
 		cloud:      row.Cloud.String,
 	}
 	if row.VCSID.Status == pgtype.Present {
-		opts.cloudID = otf.String(row.VCSID.String)
+		opts.cloudID = internal.String(row.VCSID.String)
 	}
 	return db.newHook(opts)
 }

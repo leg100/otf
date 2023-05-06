@@ -15,7 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/json"
@@ -36,9 +36,9 @@ var (
 		Commit  string
 		Built   string
 	}{
-		Version: otf.Version,
-		Commit:  otf.Commit,
-		Built:   otf.Built,
+		Version: internal.Version,
+		Commit:  internal.Commit,
+		Built:   internal.Built,
 	})
 	discoveryPayload = json.MustMarshal(struct {
 		ModulesV1 string `json:"modules.v1"`
@@ -72,7 +72,7 @@ type (
 		EnableRequestLogging bool
 		DevMode              bool
 
-		Handlers   []otf.Handlers
+		Handlers   []internal.Handlers
 		Middleware []mux.MiddlewareFunc
 	}
 

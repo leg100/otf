@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
@@ -23,8 +23,8 @@ func TestVariable_Update(t *testing.T) {
 		{
 			name: "overwrite everything",
 			existing: CreateVariableOptions{
-				Key:      otf.String("foo"),
-				Value:    otf.String("bar"),
+				Key:      internal.String("foo"),
+				Value:    internal.String("bar"),
 				Category: VariableCategoryPtr(CategoryTerraform),
 			},
 			updated: url.Values{
@@ -45,10 +45,10 @@ func TestVariable_Update(t *testing.T) {
 		{
 			name: "update sensitive value",
 			existing: CreateVariableOptions{
-				Key:       otf.String("foo"),
-				Value:     otf.String("topsecret"),
+				Key:       internal.String("foo"),
+				Value:     internal.String("topsecret"),
 				Category:  VariableCategoryPtr(CategoryTerraform),
-				Sensitive: otf.Bool(true),
+				Sensitive: internal.Bool(true),
 			},
 			updated: url.Values{
 				"value": {"evenmoretopsecret"},

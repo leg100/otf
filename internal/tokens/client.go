@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 // CreateRunToken creates a run token via HTTP/JSONAPI

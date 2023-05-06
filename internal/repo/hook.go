@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
 
@@ -47,7 +47,7 @@ func (h *hook) sync(ctx context.Context, client cloud.Client) error {
 		Repo: h.identifier,
 		ID:   *h.cloudID,
 	})
-	if errors.Is(err, otf.ErrResourceNotFound) {
+	if errors.Is(err, internal.ErrResourceNotFound) {
 		// hook not found in cloud; create it
 		cloudID, err := client.CreateWebhook(ctx, h.createOpts())
 		if err != nil {

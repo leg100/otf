@@ -4,25 +4,25 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type (
 	// PhaseWriter writes logs on behalf of a run phase.
 	PhaseWriter struct {
-		ctx     context.Context // permits canceling mid-flow
-		started bool            // has first chunk been sent?
-		id      string          // ID of run to write logs on behalf of.
-		phase   otf.PhaseType   // run phase
-		offset  int             // current position in stream
+		ctx     context.Context    // permits canceling mid-flow
+		started bool               // has first chunk been sent?
+		id      string             // ID of run to write logs on behalf of.
+		phase   internal.PhaseType // run phase
+		offset  int                // current position in stream
 
-		otf.PutChunkService // for uploading logs to server
+		internal.PutChunkService // for uploading logs to server
 	}
 
 	PhaseWriterOptions struct {
 		RunID  string
-		Phase  otf.PhaseType
-		Writer otf.PutChunkService
+		Phase  internal.PhaseType
+		Writer internal.PutChunkService
 	}
 )
 
@@ -46,10 +46,10 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 
 	if !w.started {
 		w.started = true
-		data = append([]byte{otf.STX}, data...)
+		data = append([]byte{internal.STX}, data...)
 	}
 
-	chunk := otf.PutChunkOptions{
+	chunk := internal.PutChunkOptions{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Data:   data,
@@ -66,15 +66,15 @@ func (w *PhaseWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (w *PhaseWriter) Close() error {
-	opts := otf.PutChunkOptions{
+	opts := internal.PutChunkOptions{
 		RunID:  w.id,
 		Phase:  w.phase,
 		Offset: w.offset,
 	}
 	if w.started {
-		opts.Data = []byte{otf.ETX}
+		opts.Data = []byte{internal.ETX}
 	} else {
-		opts.Data = []byte{otf.STX, otf.ETX}
+		opts.Data = []byte{internal.STX, internal.ETX}
 	}
 
 	if err := w.PutChunk(w.ctx, opts); err != nil {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
 )
@@ -82,7 +82,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy ru
 	} else {
 		latest, err := rs.GetLatestConfigurationVersion(ctx, ws.ID)
 		if err != nil {
-			if errors.Is(err, otf.ErrResourceNotFound) {
+			if errors.Is(err, internal.ErrResourceNotFound) {
 				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")
 			}
 			return nil, err
@@ -94,7 +94,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy ru
 	}
 
 	return rs.CreateRun(ctx, workspaceID, RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID),
+		ConfigurationVersionID: internal.String(cv.ID),
 		IsDestroy:              &destroy,
 	})
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +44,7 @@ func (a *CLI) runDownloadCommand() *cobra.Command {
 			}
 
 			reader := bytes.NewReader(tarball)
-			if err := otf.Unpack(reader, dest); err != nil {
+			if err := internal.Unpack(reader, dest); err != nil {
 				return errors.Wrap(err, "extracting tarball")
 			}
 

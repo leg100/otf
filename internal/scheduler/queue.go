@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/workspace"
 )
@@ -45,7 +45,7 @@ func (queueMaker) newQueue(opts queueOptions) eventHandler {
 	}
 }
 
-func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
+func (q *queue) handleEvent(ctx context.Context, event internal.Event) error {
 	switch payload := event.Payload.(type) {
 	case *workspace.Workspace:
 		q.ws = payload
@@ -58,7 +58,7 @@ func (q *queue) handleEvent(ctx context.Context, event otf.Event) error {
 		}
 	case *run.Run:
 		if payload.Speculative {
-			if payload.Status == otf.RunPending {
+			if payload.Status == internal.RunPending {
 				// immediately enqueue onto global queue
 				_, err := q.EnqueuePlan(ctx, payload.ID)
 				if err != nil {
@@ -130,7 +130,7 @@ func (q *queue) setCurrentRun(ctx context.Context, run *run.Run) error {
 }
 
 func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
-	if run.Status != otf.RunPending {
+	if run.Status != internal.RunPending {
 		// run has already been scheduled
 		return nil
 	}
@@ -144,7 +144,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
 
 	ws, err := q.LockWorkspace(ctx, q.ws.ID, &run.ID)
 	if err != nil {
-		if errors.Is(err, otf.ErrWorkspaceAlreadyLocked) {
+		if errors.Is(err, internal.ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between
 			// getting the lock above and attempting to enqueue plan.
 			q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/organization"
 	"github.com/leg100/otf/orgcreator"
@@ -17,20 +17,20 @@ func TestOrganization(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
 		org, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
-			Name: otf.String(uuid.NewString()),
+			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
-				Name: otf.String(org.Name),
+				Name: internal.String(org.Name),
 			})
-			require.Equal(t, otf.ErrResourceAlreadyExists, err)
+			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
 
 		t.Run("owners team should be created", func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestOrganization(t *testing.T) {
 
 		want := uuid.NewString()
 		org, err := svc.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
-			Name: otf.String(want),
+			Name: internal.String(want),
 		})
 		require.NoError(t, err)
 
@@ -66,21 +66,21 @@ func TestOrganization(t *testing.T) {
 		_ = svc.createOrganization(t, ctx)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: internal.ListOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
@@ -131,13 +131,13 @@ func TestOrganization(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = svc.GetOrganization(ctx, org.Name)
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
 		svc := setup(t, nil)
 
 		err := svc.DeleteOrganization(ctx, "does-not-exist")
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 }

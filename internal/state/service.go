@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
@@ -47,8 +47,8 @@ type (
 		WorkspaceService
 
 		db        *pgdb
-		cache     otf.Cache // cache state file
-		workspace otf.Authorizer
+		cache     internal.Cache // cache state file
+		workspace internal.Authorizer
 
 		*factory // for creating state versions
 	}
@@ -57,15 +57,15 @@ type (
 		logr.Logger
 
 		WorkspaceService
-		WorkspaceAuthorizer otf.Authorizer
+		WorkspaceAuthorizer internal.Authorizer
 
-		otf.Cache
-		otf.DB
+		internal.Cache
+		internal.DB
 	}
 
 	// StateVersionListOptions represents the options for listing state versions.
 	StateVersionListOptions struct {
-		otf.ListOptions
+		internal.ListOptions
 		Organization string `schema:"filter[organization][name],required"`
 		Workspace    string `schema:"filter[workspace][name],required"`
 	}
@@ -232,7 +232,7 @@ func (a *service) GetStateVersionOutput(ctx context.Context, outputID string) (*
 	return sv, nil
 }
 
-func (a *service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (otf.Subject, error) {
+func (a *service) CanAccessStateVersion(ctx context.Context, action rbac.Action, svID string) (internal.Subject, error) {
 	sv, err := a.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err

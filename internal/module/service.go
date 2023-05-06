@@ -8,7 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
@@ -50,7 +50,7 @@ type (
 		db   *pgdb
 		repo repo.Service
 
-		organization otf.Authorizer
+		organization internal.Authorizer
 
 		api *api
 		web *webHandlers
@@ -59,8 +59,8 @@ type (
 	Options struct {
 		logr.Logger
 
-		otf.DB
-		otf.HostnameService
+		internal.DB
+		internal.HostnameService
 		vcsprovider.VCSProviderService
 		*surl.Signer
 		html.Renderer

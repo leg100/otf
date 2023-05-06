@@ -6,22 +6,22 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type (
 	// proxy is a caching proxy for log chunks
 	proxy struct {
-		cache otf.Cache
+		cache internal.Cache
 		db    db
 
-		otf.PubSubService
+		internal.PubSubService
 		logr.Logger
 	}
 
 	db interface {
-		GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error)
-		put(ctx context.Context, opts otf.PutChunkOptions) (string, error)
+		GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
+		put(ctx context.Context, opts internal.PutChunkOptions) (string, error)
 	}
 )
 
@@ -35,7 +35,7 @@ func newProxy(opts Options) *proxy {
 	}
 
 	// Register with broker so that it can relay log chunks
-	opts.Register(reflect.TypeOf(otf.Chunk{}), db)
+	opts.Register(reflect.TypeOf(internal.Chunk{}), db)
 
 	return p
 }
@@ -52,7 +52,7 @@ func (p *proxy) Start(ctx context.Context) error {
 	}
 
 	for event := range sub {
-		chunk, ok := event.Payload.(otf.Chunk)
+		chunk, ok := event.Payload.(internal.Chunk)
 		if !ok {
 			continue
 		}
@@ -84,7 +84,7 @@ func (p *proxy) Start(ctx context.Context) error {
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (p *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
 	key := cacheKey(opts.RunID, opts.Phase)
 
 	data, err := p.cache.Get(key)
@@ -92,26 +92,26 @@ func (p *proxy) get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, e
 		// fall back to retrieving from db...
 		data, err = p.db.GetLogs(ctx, opts.RunID, opts.Phase)
 		if err != nil {
-			return otf.Chunk{}, err
+			return internal.Chunk{}, err
 		}
 		// ...and cache it
 		if err := p.cache.Set(key, data); err != nil {
-			return otf.Chunk{}, err
+			return internal.Chunk{}, err
 		}
 	}
-	chunk := otf.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
+	chunk := internal.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
 	// Cut chunk down to requested size.
 	return chunk.Cut(opts), nil
 }
 
 // put writes a chunk of data to the db
-func (p *proxy) put(ctx context.Context, opts otf.PutChunkOptions) error {
+func (p *proxy) put(ctx context.Context, opts internal.PutChunkOptions) error {
 	id, err := p.db.put(ctx, opts)
 	if err != nil {
 		return err
 	}
 	// make a chunk from the options and the id
-	chunk := otf.Chunk{
+	chunk := internal.Chunk{
 		ID:     id,
 		RunID:  opts.RunID,
 		Phase:  opts.Phase,
@@ -119,11 +119,11 @@ func (p *proxy) put(ctx context.Context, opts otf.PutChunkOptions) error {
 		Offset: opts.Offset,
 	}
 	// publish chunk for caching
-	p.Publish(otf.Event{Type: otf.EventLogChunk, Payload: chunk})
+	p.Publish(internal.Event{Type: internal.EventLogChunk, Payload: chunk})
 	return nil
 }
 
 // cacheKey generates a key for caching log chunks.
-func cacheKey(runID string, phase otf.PhaseType) string {
+func cacheKey(runID string, phase internal.PhaseType) string {
 	return fmt.Sprintf("%s.%s.log", runID, string(phase))
 }

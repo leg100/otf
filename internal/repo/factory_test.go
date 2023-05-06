@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +24,7 @@ func TestFactory(t *testing.T) {
 			opts: newHookOpts{
 				id:     &id,
 				cloud:  "fakecloud",
-				secret: otf.String("top-secret"),
+				secret: internal.String("top-secret"),
 			},
 			want: &hook{
 				id:           id,

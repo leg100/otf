@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type (
@@ -23,7 +23,7 @@ type (
 		// Organization in which to creat team
 		Organization string `schema:"organization_name,required"`
 		// Database transaction within which to create team. Optional.
-		Tx otf.DB
+		Tx internal.DB
 	}
 
 	// OrganizationAccess defines a team's organization access.
@@ -40,9 +40,9 @@ type (
 
 func NewTeam(opts CreateTeamOptions) *Team {
 	team := Team{
-		ID:           otf.NewID("team"),
+		ID:           internal.NewID("team"),
 		Name:         opts.Name,
-		CreatedAt:    otf.CurrentTimestamp(),
+		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
 	}
 	return &team

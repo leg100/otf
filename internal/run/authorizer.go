@@ -3,17 +3,17 @@ package run
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
 // authorizer authorizes access to a run
 type authorizer struct {
 	db        *pgdb
-	workspace otf.Authorizer
+	workspace internal.Authorizer
 }
 
-func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, runID string) (otf.Subject, error) {
+func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, runID string) (internal.Subject, error) {
 	run, err := a.db.GetRun(ctx, runID)
 	if err != nil {
 		return nil, err

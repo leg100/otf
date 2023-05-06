@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/repo"
@@ -26,7 +26,7 @@ func TestReporter_HandleRun(t *testing.T) {
 	}{
 		{
 			name: "pending run",
-			run:  &Run{ID: "run-123", Status: otf.RunPending},
+			run:  &Run{ID: "run-123", Status: internal.RunPending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
 				Connection: &repo.Connection{},
@@ -53,7 +53,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCSProviderService:          &fakeReporterVCSProviderService{got: got},
-				HostnameService:             otf.FakeHostnameService{Host: "otf-host.org"},
+				HostnameService:             internal.FakeHostnameService{Host: "otf-host.org"},
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)

@@ -1,9 +1,7 @@
 // Package repo handles configuration of VCS repositories.
 package repo
 
-import (
-	"github.com/leg100/otf"
-)
+import internal "github.com/leg100/otf"
 
 const (
 	WorkspaceConnection ConnectionType = iota
@@ -26,13 +24,13 @@ type (
 		VCSProviderID string // vcs provider of repo
 		ResourceID    string // ID of OTF resource
 		RepoPath      string
-		Tx            otf.DB // Optional tx for performing database ops within.
+		Tx            internal.DB // Optional tx for performing database ops within.
 	}
 
 	DisconnectOptions struct {
 		ConnectionType // OTF resource type
 
-		ResourceID string // ID of OTF resource
-		Tx         otf.DB // Optional tx for performing database ops within.
+		ResourceID string      // ID of OTF resource
+		Tx         internal.DB // Optional tx for performing database ops within.
 	}
 )

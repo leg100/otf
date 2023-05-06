@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -63,7 +63,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	// Only enable the 'new organization' button if:
 	// (a) RestrictOrganizationCreation is false, or
 	// (b) The user has site permissions.
-	subject, err := otf.SubjectFromContext(r.Context())
+	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

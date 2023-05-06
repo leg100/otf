@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/testutils"
@@ -27,7 +27,7 @@ func TestIntegration_GithubPR(t *testing.T) {
 	// create workspace connected to github repo
 	provider := daemon.createVCSProvider(t, ctx, nil)
 	_, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
-		Name:         otf.String("workspace-1"),
+		Name:         internal.String("workspace-1"),
 		Organization: &provider.Organization,
 		ConnectOptions: &workspace.ConnectOptions{
 			VCSProviderID: provider.ID,

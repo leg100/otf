@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/rbac"
 )
@@ -47,7 +47,7 @@ func (s *service) LockWorkspace(ctx context.Context, workspaceID string, runID *
 	}
 	s.V(1).Info("locked workspace", "subject", id, "workspace", workspaceID)
 
-	s.Publish(otf.Event{Type: EventLocked, Payload: ws})
+	s.Publish(internal.Event{Type: EventLocked, Payload: ws})
 
 	return ws, nil
 }
@@ -91,7 +91,7 @@ func (s *service) UnlockWorkspace(ctx context.Context, workspaceID string, runID
 	}
 	s.V(1).Info("unlocked workspace", "subject", id, "workspace", workspaceID, "forced", force)
 
-	s.Publish(otf.Event{Type: EventUnlocked, Payload: ws})
+	s.Publish(internal.Event{Type: EventUnlocked, Payload: ws})
 
 	return ws, nil
 }

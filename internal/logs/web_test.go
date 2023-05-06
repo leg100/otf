@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTailLogs(t *testing.T) {
-	chunks := make(chan otf.Chunk, 1)
+	chunks := make(chan internal.Chunk, 1)
 	handlers := &webHandlers{
 		Logger: logr.Discard(),
 		svc:    &fakeTailService{chunks: chunks},
@@ -21,7 +21,7 @@ func TestTailLogs(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	// send one event and then close.
-	chunks <- otf.Chunk{Data: []byte("some logs")}
+	chunks <- internal.Chunk{Data: []byte("some logs")}
 	close(chunks)
 
 	done := make(chan struct{})
@@ -38,9 +38,9 @@ func TestTailLogs(t *testing.T) {
 }
 
 type fakeTailService struct {
-	chunks chan otf.Chunk
+	chunks chan internal.Chunk
 }
 
-func (f *fakeTailService) Tail(context.Context, otf.GetChunkOptions) (<-chan otf.Chunk, error) {
+func (f *fakeTailService) Tail(context.Context, internal.GetChunkOptions) (<-chan internal.Chunk, error) {
 	return f.chunks, nil
 }

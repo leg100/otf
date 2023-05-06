@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -40,13 +40,13 @@ type (
 	// ListTagsOptions are options for paginating and filtering a list of
 	// tags
 	ListTagsOptions struct {
-		otf.ListOptions
+		internal.ListOptions
 	}
 
 	// ListWorkspaceTagsOptions are options for paginating and filtering a list of
 	// workspace tags
 	ListWorkspaceTagsOptions struct {
-		otf.ListOptions
+		internal.ListOptions
 	}
 )
 
@@ -79,7 +79,7 @@ func (s *service) DeleteTags(ctx context.Context, organization string, tagIDs []
 }
 
 func (s *service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs []string) error {
-	subject, err := otf.SubjectFromContext(ctx)
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 			switch {
 			case t.Name != "":
 				tag, err = tx.findTagByName(ctx, ws.Organization, t.Name)
-				if errors.Is(err, otf.ErrResourceNotFound) {
+				if errors.Is(err, internal.ErrResourceNotFound) {
 					// ignore tags that cannot be found when specified by name
 					continue
 				} else if err != nil {
@@ -231,8 +231,8 @@ func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]st
 			switch {
 			case name != "":
 				existing, err := tx.findTagByName(ctx, ws.Organization, name)
-				if errors.Is(err, otf.ErrResourceNotFound) {
-					id = otf.NewID("tag")
+				if errors.Is(err, internal.ErrResourceNotFound) {
+					id = internal.NewID("tag")
 					if err := tx.addTag(ctx, ws.Organization, name, id); err != nil {
 						return err
 					}

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/iancoleman/strcase"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -43,7 +43,7 @@ func NewTestDB(t *testing.T) string {
 	if len(logical) > 22 {
 		logical = logical[:22]
 	}
-	logical = logical + "_" + strings.ToLower(otf.GenerateRandomString(8))
+	logical = logical + "_" + strings.ToLower(internal.GenerateRandomString(8))
 
 	_, err = conn.Exec(ctx, "CREATE DATABASE "+logical)
 	require.NoError(t, err, "unable to create database")

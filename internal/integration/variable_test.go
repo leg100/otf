@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/variable"
 	"github.com/stretchr/testify/assert"
@@ -15,15 +15,15 @@ func TestVariable(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
-			Key:      otf.String("foo"),
-			Value:    otf.String("bar"),
+			Key:      internal.String("foo"),
+			Value:    internal.String("bar"),
 			Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
 		})
 		require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestVariable(t *testing.T) {
 		v := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.UpdateVariable(ctx, v.ID, variable.UpdateVariableOptions{
-			Value: otf.String("luxembourg"),
+			Value: internal.String("luxembourg"),
 		})
 		require.NoError(t, err)
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
@@ -12,11 +12,11 @@ import (
 
 // pgdb is a VCS provider database on postgres
 type pgdb struct {
-	otf.DB // provides access to generated SQL queries
+	internal.DB // provides access to generated SQL queries
 	*factory
 }
 
-func newDB(db otf.DB, cloudService cloud.Service) *pgdb {
+func newDB(db internal.DB, cloudService cloud.Service) *pgdb {
 	return &pgdb{db, &factory{cloudService}}
 }
 
@@ -80,7 +80,7 @@ type pgRow struct {
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
 	return db.new(CreateOptions{
 		ID:           &row.VCSProviderID.String,
-		CreatedAt:    otf.Time(row.CreatedAt.Time.UTC()),
+		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
 		Token:        row.Token.String,
 		Name:         row.Name.String,

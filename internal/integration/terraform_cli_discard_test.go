@@ -8,7 +8,7 @@ import (
 	"time"
 
 	expect "github.com/google/goexpect"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +35,7 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.SetEnv(
-			append(envs, otf.CredentialEnv(svc.Hostname(), token)),
+			append(envs, internal.CredentialEnv(svc.Hostname(), token)),
 		),
 	)
 	require.NoError(t, err)
@@ -55,5 +55,5 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	runs, err := svc.ListRuns(ctx, run.RunListOptions{Organization: &org.Name})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(runs.Items))
-	require.Equal(t, otf.RunDiscarded, runs.Items[0].Status)
+	require.Equal(t, internal.RunDiscarded, runs.Items[0].Status)
 }

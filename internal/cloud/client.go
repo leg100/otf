@@ -45,7 +45,7 @@ type ListTagsOptions struct {
 	Prefix string // only list tags that start with this string
 }
 
-// Webhook is a cloud's configuration for a webhook on OTF.
+// Webhook is a cloud's configuration for a webhook.
 type Webhook struct {
 	ID       string // cloud's webhook ID
 	Repo     string // identifier is <repo_owner>/<repo_name>

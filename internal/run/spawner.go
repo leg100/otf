@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/workspace"
@@ -26,7 +26,7 @@ type (
 	SpawnerOptions struct {
 		logr.Logger
 
-		otf.Subscriber
+		internal.Subscriber
 
 		ConfigurationVersionService
 		WorkspaceService
@@ -52,7 +52,7 @@ func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
 
 	for event := range sub {
 		// skip non-vcs events
-		if event.Type != otf.EventVCS {
+		if event.Type != internal.EventVCS {
 			continue
 		}
 		if err := s.handle(ctx, event.Payload); err != nil {
@@ -150,7 +150,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
 		cv, err := h.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
-			Speculative: otf.Bool(isPullRequest),
+			Speculative: internal.Bool(isPullRequest),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string
 				Branch: branch,
@@ -171,7 +171,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 			return err
 		}
 		_, err = h.CreateRun(ctx, ws.ID, RunCreateOptions{
-			ConfigurationVersionID: otf.String(cv.ID),
+			ConfigurationVersionID: internal.String(cv.ID),
 		})
 		if err != nil {
 			return err

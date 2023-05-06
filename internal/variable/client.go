@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {

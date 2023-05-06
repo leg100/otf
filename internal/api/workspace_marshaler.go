@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
 )
 
 func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Request) (*types.Workspace, []jsonapi.MarshalOption, error) {
-	subject, err := otf.SubjectFromContext(r.Context())
+	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		return nil, nil, err
 	}

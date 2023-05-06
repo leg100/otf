@@ -3,7 +3,7 @@ package module
 import (
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestRepo_Split(t *testing.T) {
 		{"leg100/terraform-aws-vpc", "vpc", "aws", nil},
 		{"leg100/anything-aws-vpc", "vpc", "aws", nil},
 		{"leg100/terraform-gcp-secrets-manager", "secrets-manager", "gcp", nil},
-		{"not-a-repo", "", "", otf.ErrInvalidRepo},
+		{"not-a-repo", "", "", internal.ErrInvalidRepo},
 		{"leg100/not_a_module_repo", "", "", ErrInvalidModuleRepo},
 	}
 	for _, tt := range tests {

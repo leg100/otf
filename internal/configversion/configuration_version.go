@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 const (
@@ -39,7 +39,7 @@ type (
 
 	// ConfigurationVersionList represents a list of configuration versions.
 	ConfigurationVersionList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*ConfigurationVersion
 	}
 
@@ -91,7 +91,7 @@ type (
 		// A list of relations to include
 		Include *string `schema:"include"`
 
-		otf.ListOptions
+		internal.ListOptions
 	}
 
 	IngressAttributes struct {
@@ -119,8 +119,8 @@ type (
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            otf.NewID("cv"),
-		CreatedAt:     otf.CurrentTimestamp(),
+		ID:            internal.NewID("cv"),
+		CreatedAt:     internal.CurrentTimestamp(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Source:        DefaultConfigurationSource,
 		WorkspaceID:   workspaceID,
@@ -147,7 +147,7 @@ func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (tim
 			return sts.Timestamp, nil
 		}
 	}
-	return time.Time{}, otf.ErrStatusTimestampNotFound
+	return time.Time{}, internal.ErrStatusTimestampNotFound
 }
 
 func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
@@ -179,6 +179,6 @@ func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.Status = status
 	cv.StatusTimestamps = append(cv.StatusTimestamps, ConfigurationVersionStatusTimestamp{
 		Status:    status,
-		Timestamp: otf.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(),
 	})
 }

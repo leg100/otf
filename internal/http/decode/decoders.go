@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 // Query schema decoder: caches structs, and safe for sharing.
@@ -85,14 +85,14 @@ func Param(name string, r *http.Request) (string, error) {
 	if v, ok := mux.Vars(r)[name]; ok {
 		return v, nil
 	}
-	return "", &otf.MissingParameterError{Parameter: name}
+	return "", &internal.MissingParameterError{Parameter: name}
 }
 
 func decode(dst interface{}, src map[string][]string) error {
 	if err := decoder.Decode(dst, src); err != nil {
 		var emptyField schema.EmptyFieldError
 		if errors.As(err, &emptyField) {
-			return &otf.MissingParameterError{Parameter: emptyField.Key}
+			return &internal.MissingParameterError{Parameter: emptyField.Key}
 		}
 		return err
 	}

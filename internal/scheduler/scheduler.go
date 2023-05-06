@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -24,7 +24,7 @@ type (
 	scheduler struct {
 		logr.Logger
 
-		otf.Subscriber
+		internal.Subscriber
 		WorkspaceService
 		RunService
 
@@ -34,8 +34,8 @@ type (
 
 	Options struct {
 		logr.Logger
-		otf.DB
-		otf.Subscriber
+		internal.DB
+		internal.Subscriber
 
 		WorkspaceService
 		RunService
@@ -48,7 +48,7 @@ type (
 // Start constructs and initialises the scheduler.
 // start starts the scheduler daemon. Should be invoked in a go routine.
 func Start(ctx context.Context, opts Options) error {
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "scheduler"})
+	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "scheduler"})
 
 	sched := &scheduler{
 		Logger:           opts.Logger.WithValues("component", "scheduler"),
@@ -93,7 +93,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	// retrieve existing workspaces, page by page
 	workspaces := []*workspace.Workspace{}
 	workspaceListOpts := workspace.ListOptions{
-		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
+		ListOptions: internal.ListOptions{PageSize: internal.MaxPageSize},
 	}
 	for {
 		page, err := s.ListWorkspaces(ctx, workspaceListOpts)
@@ -109,8 +109,8 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	// retrieve runs incomplete runs, page by page
 	runs := []*run.Run{}
 	runListOpts := run.RunListOptions{
-		Statuses:    otf.IncompleteRun,
-		ListOptions: otf.ListOptions{PageSize: otf.MaxPageSize},
+		Statuses:    internal.IncompleteRun,
+		ListOptions: internal.ListOptions{PageSize: internal.MaxPageSize},
 	}
 	for {
 		page, err := s.ListRuns(ctx, runListOpts)
@@ -124,19 +124,19 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 		runListOpts.PageNumber = *page.NextPage()
 	}
 	// feed in existing runs and workspaces and then events to the scheduler for processing
-	queue := make(chan otf.Event)
+	queue := make(chan internal.Event)
 	go func() {
 		for _, ws := range workspaces {
-			queue <- otf.Event{
-				Type:    otf.EventWorkspaceCreated,
+			queue <- internal.Event{
+				Type:    internal.EventWorkspaceCreated,
 				Payload: ws,
 			}
 		}
 		// spool existing runs in reverse order; ListRuns returns runs newest first,
 		// whereas we want oldest first.
 		for i := len(runs) - 1; i >= 0; i-- {
-			queue <- otf.Event{
-				Type:    otf.EventRunStatusUpdate,
+			queue <- internal.Event{
+				Type:    internal.EventRunStatusUpdate,
 				Payload: runs[i],
 			}
 		}
@@ -149,7 +149,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	for event := range queue {
 		switch payload := event.Payload.(type) {
 		case *workspace.Workspace:
-			if event.Type == otf.EventWorkspaceDeleted {
+			if event.Type == internal.EventWorkspaceDeleted {
 				delete(s.queues, payload.ID)
 				continue
 			}

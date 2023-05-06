@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
@@ -34,7 +34,7 @@ type (
 	service struct {
 		logr.Logger
 
-		organization otf.Authorizer
+		organization internal.Authorizer
 		db           *pgdb
 
 		*factory
@@ -43,7 +43,7 @@ type (
 
 	Options struct {
 		CloudService
-		otf.DB
+		internal.DB
 		html.Renderer
 		logr.Logger
 	}

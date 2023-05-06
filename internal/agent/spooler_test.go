@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
@@ -15,16 +15,16 @@ func TestSpooler(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// run[1-2] are in the DB; run[3-5] are events
-	run1 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunPlanQueued}
-	run2 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunPlanQueued}
-	run3 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunPlanQueued}
-	run4 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunCanceled}
-	run5 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: otf.RunForceCanceled}
+	run1 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunPlanQueued}
+	run2 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunPlanQueued}
+	run3 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunPlanQueued}
+	run4 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunCanceled}
+	run5 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunForceCanceled}
 	db := []*run.Run{run1, run2}
-	events := make(chan otf.Event, 3)
-	events <- otf.Event{Payload: run3}
-	events <- otf.Event{Type: otf.EventRunCancel, Payload: run4}
-	events <- otf.Event{Type: otf.EventRunForceCancel, Payload: run5}
+	events := make(chan internal.Event, 3)
+	events <- internal.Event{Payload: run3}
+	events <- internal.Event{Type: internal.EventRunCancel, Payload: run4}
+	events <- internal.Event{Type: internal.EventRunForceCancel, Payload: run5}
 
 	spooler := newSpooler(
 		&fakeSpoolerApp{runs: db, events: events},
@@ -49,7 +49,7 @@ func TestSpooler(t *testing.T) {
 func TestSpooler_handleEvent(t *testing.T) {
 	tests := []struct {
 		name                 string
-		event                otf.Event
+		event                internal.Event
 		config               Config
 		wantRun              bool
 		wantCancelation      bool
@@ -57,10 +57,10 @@ func TestSpooler_handleEvent(t *testing.T) {
 	}{
 		{
 			name: "handle run",
-			event: otf.Event{
+			event: internal.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        otf.RunPlanQueued,
+					Status:        internal.RunPlanQueued,
 				},
 			},
 			wantRun: true,
@@ -68,7 +68,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name:   "internal agents skip agent-mode runs",
 			config: Config{External: false},
-			event: otf.Event{
+			event: internal.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,
 				},
@@ -78,42 +78,42 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name:   "external agents handle agent-mode runs",
 			config: Config{External: true},
-			event: otf.Event{
+			event: internal.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,
-					Status:        otf.RunPlanQueued,
+					Status:        internal.RunPlanQueued,
 				},
 			},
 			wantRun: true,
 		},
 		{
 			name: "ignore runs not in queued state",
-			event: otf.Event{
+			event: internal.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        otf.RunPlanned,
+					Status:        internal.RunPlanned,
 				},
 			},
 			wantRun: false,
 		},
 		{
 			name: "handle cancelation",
-			event: otf.Event{
-				Type: otf.EventRunCancel,
+			event: internal.Event{
+				Type: internal.EventRunCancel,
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        otf.RunPlanning,
+					Status:        internal.RunPlanning,
 				},
 			},
 			wantCancelation: true,
 		},
 		{
 			name: "handle forceful cancelation",
-			event: otf.Event{
-				Type: otf.EventRunForceCancel,
+			event: internal.Event{
+				Type: internal.EventRunForceCancel,
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        otf.RunPlanning,
+					Status:        internal.RunPlanning,
 				},
 			},
 			wantForceCancelation: true,

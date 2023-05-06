@@ -5,19 +5,19 @@ import (
 	"net/http"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 var codes = map[error]int{
-	otf.ErrResourceNotFound:         http.StatusNotFound,
-	otf.ErrAccessNotPermitted:       http.StatusForbidden,
-	otf.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
-	otf.ErrResourceAlreadyExists:    http.StatusConflict,
-	otf.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
-	otf.ErrWorkspaceAlreadyUnlocked: http.StatusConflict,
-	otf.ErrRunDiscardNotAllowed:     http.StatusConflict,
-	otf.ErrRunCancelNotAllowed:      http.StatusConflict,
-	otf.ErrRunForceCancelNotAllowed: http.StatusConflict,
+	internal.ErrResourceNotFound:         http.StatusNotFound,
+	internal.ErrAccessNotPermitted:       http.StatusForbidden,
+	internal.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
+	internal.ErrResourceAlreadyExists:    http.StatusConflict,
+	internal.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
+	internal.ErrWorkspaceAlreadyUnlocked: http.StatusConflict,
+	internal.ErrRunDiscardNotAllowed:     http.StatusConflict,
+	internal.ErrRunCancelNotAllowed:      http.StatusConflict,
+	internal.ErrRunForceCancelNotAllowed: http.StatusConflict,
 }
 
 func lookupHTTPCode(err error) int {
@@ -30,11 +30,11 @@ func lookupHTTPCode(err error) int {
 // Error writes an HTTP response with a JSON-API encoded error.
 func Error(w http.ResponseWriter, err error) {
 	var (
-		httpError *otf.HTTPError
-		missing   *otf.MissingParameterError
+		httpError *internal.HTTPError
+		missing   *internal.MissingParameterError
 		code      int
 	)
-	// If error is type otf.HTTPError then extract its status code
+	// If error is type internal.HTTPError then extract its status code
 	if errors.As(err, &httpError) {
 		code = httpError.Code
 	} else if errors.As(err, &missing) {

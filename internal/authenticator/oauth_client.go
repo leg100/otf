@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"golang.org/x/oauth2"
@@ -32,15 +32,15 @@ type (
 	// authorization from the user to access their account details on a particular
 	// cloud.
 	OAuthClient struct {
-		otf.HostnameService // for retrieving otf system hostname for use in redirects back to otf
-		cloudConfig         cloud.Config
+		internal.HostnameService // for retrieving otf system hostname for use in redirects back to otf
+		cloudConfig              cloud.Config
 		*oauth2.Config
 	}
 
 	// OAuthClientConfig is configuration for constructing an OAuth client
 	OAuthClientConfig struct {
 		cloud.CloudOAuthConfig
-		otfHostname otf.HostnameService
+		otfHostname internal.HostnameService
 	}
 )
 
@@ -82,7 +82,7 @@ func (a *OAuthClient) RequestPath() string {
 
 // RequestHandler initiates the oauth flow, redirecting user to the auth server
 func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
-	state, err := otf.GenerateToken()
+	state, err := internal.GenerateToken()
 	if err != nil {
 		http.Error(w, "unable to generate state token: "+err.Error(), http.StatusInternalServerError)
 		return

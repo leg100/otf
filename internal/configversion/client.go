@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 // DownloadConfig downloads a configuration version tarball.  Only configuration versions in the uploaded state may be downloaded.

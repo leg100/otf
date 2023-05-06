@@ -3,13 +3,13 @@ package orgcreator
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/organization"
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 // CreateOrganization creates a new organization with the given options.

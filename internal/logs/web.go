@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 )
@@ -20,7 +20,7 @@ type (
 	}
 
 	tailService interface {
-		Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
+		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
 	}
 )
 
@@ -35,7 +35,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		// ID of run to tail
 		RunID string `schema:"run_id,required"`
 		// Phase to tail. Must be either plan or apply.
-		Phase otf.PhaseType `schema:"phase,required"`
+		Phase internal.PhaseType `schema:"phase,required"`
 		// Offset is number of bytes into logs to start tailing from
 		Offset int `schema:"offset,required"`
 	}
@@ -44,7 +44,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch, err := h.svc.Tail(r.Context(), otf.GetChunkOptions{
+	ch, err := h.svc.Tail(r.Context(), internal.GetChunkOptions{
 		RunID:  params.RunID,
 		Phase:  params.Phase,
 		Offset: params.Offset,
@@ -66,7 +66,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				otf.WriteSSEEvent(w, []byte("no more logs"), otf.EventLogFinished, false)
+				internal.WriteSSEEvent(w, []byte("no more logs"), internal.EventLogFinished, false)
 				return
 			}
 			html := chunk.ToHTML()
@@ -85,7 +85,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling data")
 				continue
 			}
-			otf.WriteSSEEvent(w, js, otf.EventLogChunk, false)
+			internal.WriteSSEEvent(w, js, internal.EventLogChunk, false)
 			rc.Flush()
 		case <-r.Context().Done():
 			return

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/surl"
@@ -22,7 +22,7 @@ type api struct {
 func (h *api) addHandlers(r *mux.Router) {
 	// signed routes
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(otf.VerifySignedURL(h.Signer))
+	signed.Use(internal.VerifySignedURL(h.Signer))
 	signed.HandleFunc("/modules/download/{module_version_id}.tar.gz", h.downloadModuleVersion).Methods("GET")
 
 	// authenticated module api routes

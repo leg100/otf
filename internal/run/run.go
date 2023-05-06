@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
@@ -42,7 +42,7 @@ type (
 		TargetAddrs            []string
 		AutoApply              bool
 		Speculative            bool
-		Status                 otf.RunStatus
+		Status                 internal.RunStatus
 		StatusTimestamps       []RunStatusTimestamp
 		WorkspaceID            string
 		ConfigurationVersionID string
@@ -56,12 +56,12 @@ type (
 
 	// RunList represents a list of runs.
 	RunList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*Run
 	}
 
 	RunStatusTimestamp struct {
-		Status    otf.RunStatus
+		Status    internal.RunStatus
 		Timestamp time.Time
 	}
 
@@ -80,9 +80,9 @@ type (
 
 	// RunListOptions are options for paginating and filtering a list of runs
 	RunListOptions struct {
-		otf.ListOptions
+		internal.ListOptions
 		// Filter by run statuses (with an implicit OR condition)
-		Statuses []otf.RunStatus `schema:"statuses,omitempty"`
+		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by workspace ID
 		WorkspaceID *string `schema:"workspace_id,omitempty"`
 		// Filter by organization name
@@ -106,8 +106,8 @@ type (
 // NewRun creates a new run with defaults.
 func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
-		ID:                     otf.NewID("run"),
-		CreatedAt:              otf.CurrentTimestamp(),
+		ID:                     internal.NewID("run"),
+		CreatedAt:              internal.CurrentTimestamp(),
 		Refresh:                defaultRefresh,
 		Organization:           ws.Organization,
 		ConfigurationVersionID: cv.ID,
@@ -118,9 +118,9 @@ func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 		ExecutionMode:          ws.ExecutionMode,
 		AutoApply:              ws.AutoApply,
 	}
-	run.Plan = NewPhase(run.ID, otf.PlanPhase)
-	run.Apply = NewPhase(run.ID, otf.ApplyPhase)
-	run.updateStatus(otf.RunPending)
+	run.Plan = NewPhase(run.ID, internal.PlanPhase)
+	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
+	run.updateStatus(internal.RunPending)
 
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
@@ -141,7 +141,7 @@ func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 }
 
 func (r *Run) Queued() bool {
-	return r.Status == otf.RunPlanQueued || r.Status == otf.RunApplyQueued
+	return r.Status == internal.RunPlanQueued || r.Status == internal.RunApplyQueued
 }
 
 func (r *Run) HasChanges() bool {
@@ -149,7 +149,7 @@ func (r *Run) HasChanges() bool {
 }
 
 func (r *Run) PlanOnly() bool {
-	return r.Status == otf.RunPlannedAndFinished
+	return r.Status == internal.RunPlannedAndFinished
 }
 
 // HasApply determines whether the run has started applying yet.
@@ -159,27 +159,27 @@ func (r *Run) HasApply() bool {
 }
 
 // Phase returns the current phase.
-func (r *Run) Phase() otf.PhaseType {
+func (r *Run) Phase() internal.PhaseType {
 	switch r.Status {
-	case otf.RunPending:
-		return otf.PendingPhase
-	case otf.RunPlanQueued, otf.RunPlanning, otf.RunPlanned:
-		return otf.PlanPhase
-	case otf.RunApplyQueued, otf.RunApplying, otf.RunApplied:
-		return otf.ApplyPhase
+	case internal.RunPending:
+		return internal.PendingPhase
+	case internal.RunPlanQueued, internal.RunPlanning, internal.RunPlanned:
+		return internal.PlanPhase
+	case internal.RunApplyQueued, internal.RunApplying, internal.RunApplied:
+		return internal.ApplyPhase
 	default:
-		return otf.UnknownPhase
+		return internal.UnknownPhase
 	}
 }
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.Discardable() {
-		return otf.ErrRunDiscardNotAllowed
+		return internal.ErrRunDiscardNotAllowed
 	}
-	r.updateStatus(otf.RunDiscarded)
+	r.updateStatus(internal.RunDiscarded)
 
-	if r.Status == otf.RunPending {
+	if r.Status == internal.RunPending {
 		r.Plan.UpdateStatus(PhaseUnreachable)
 	}
 	r.Apply.UpdateStatus(PhaseUnreachable)
@@ -191,29 +191,29 @@ func (r *Run) Discard() error {
 // enqueued (for an agent to kill an in progress process)
 func (r *Run) Cancel() (enqueue bool, err error) {
 	if !r.Cancelable() {
-		return false, otf.ErrRunCancelNotAllowed
+		return false, internal.ErrRunCancelNotAllowed
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
-	tenSecondsFromNow := otf.CurrentTimestamp().Add(10 * time.Second)
+	tenSecondsFromNow := internal.CurrentTimestamp().Add(10 * time.Second)
 	r.ForceCancelAvailableAt = &tenSecondsFromNow
 
 	switch r.Status {
-	case otf.RunPending:
+	case internal.RunPending:
 		r.Plan.UpdateStatus(PhaseUnreachable)
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case otf.RunPlanQueued, otf.RunPlanning:
+	case internal.RunPlanQueued, internal.RunPlanning:
 		r.Plan.UpdateStatus(PhaseCanceled)
 		r.Apply.UpdateStatus(PhaseUnreachable)
-	case otf.RunApplyQueued, otf.RunApplying:
+	case internal.RunApplyQueued, internal.RunApplying:
 		r.Apply.UpdateStatus(PhaseCanceled)
 	}
 
-	if r.Status == otf.RunPlanning || r.Status == otf.RunApplying {
+	if r.Status == internal.RunPlanning || r.Status == internal.RunApplying {
 		enqueue = true
 	}
 
-	r.updateStatus(otf.RunCanceled)
+	r.updateStatus(internal.RunCanceled)
 
 	return enqueue, nil
 }
@@ -222,17 +222,17 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(otf.RunCanceled)
+		r.updateStatus(internal.RunCanceled)
 		return nil
 	}
-	return otf.ErrRunForceCancelNotAllowed
+	return internal.ErrRunForceCancelNotAllowed
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
 // discarded, etc.
 func (r *Run) Done() bool {
 	switch r.Status {
-	case otf.RunApplied, otf.RunPlannedAndFinished, otf.RunDiscarded, otf.RunCanceled, otf.RunErrored:
+	case internal.RunApplied, internal.RunPlannedAndFinished, internal.RunDiscarded, internal.RunCanceled, internal.RunErrored:
 		return true
 	default:
 		return false
@@ -242,10 +242,10 @@ func (r *Run) Done() bool {
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
 // run for its workspace (speculative runs are ignored).
 func (r *Run) EnqueuePlan() error {
-	if r.Status != otf.RunPending {
+	if r.Status != internal.RunPending {
 		return fmt.Errorf("cannot enqueue run with status %s", r.Status)
 	}
-	r.updateStatus(otf.RunPlanQueued)
+	r.updateStatus(internal.RunPlanQueued)
 	r.Plan.UpdateStatus(PhaseQueued)
 
 	return nil
@@ -261,39 +261,39 @@ func (r *Run) CanAccessOrganization(action rbac.Action, name string) bool {
 	return false
 }
 
-func (r *Run) CanAccessWorkspace(action rbac.Action, policy *otf.WorkspacePolicy) bool {
+func (r *Run) CanAccessWorkspace(action rbac.Action, policy *internal.WorkspacePolicy) bool {
 	// run can access anything within its workspace
 	return r.WorkspaceID == policy.WorkspaceID
 }
 
 func (r *Run) EnqueueApply() error {
-	if r.Status != otf.RunPlanned {
+	if r.Status != internal.RunPlanned {
 		return fmt.Errorf("cannot apply run")
 	}
-	r.updateStatus(otf.RunApplyQueued)
+	r.updateStatus(internal.RunApplyQueued)
 	r.Apply.UpdateStatus(PhaseQueued)
 	return nil
 }
 
-func (r *Run) StatusTimestamp(status otf.RunStatus) (time.Time, error) {
+func (r *Run) StatusTimestamp(status internal.RunStatus) (time.Time, error) {
 	for _, rst := range r.StatusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, nil
 		}
 	}
-	return time.Time{}, otf.ErrStatusTimestampNotFound
+	return time.Time{}, internal.ErrStatusTimestampNotFound
 }
 
 // Start a run phase
-func (r *Run) Start(phase otf.PhaseType) error {
+func (r *Run) Start(phase internal.PhaseType) error {
 	switch r.Status {
-	case otf.RunPlanQueued:
-		r.updateStatus(otf.RunPlanning)
+	case internal.RunPlanQueued:
+		r.updateStatus(internal.RunPlanning)
 		r.Plan.UpdateStatus(PhaseRunning)
-	case otf.RunApplyQueued:
-		r.updateStatus(otf.RunApplying)
+	case internal.RunApplyQueued:
+		r.updateStatus(internal.RunApplying)
 		r.Apply.UpdateStatus(PhaseRunning)
-	case otf.RunPlanning, otf.RunApplying:
+	case internal.RunPlanning, internal.RunApplying:
 		return ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
@@ -302,42 +302,42 @@ func (r *Run) Start(phase otf.PhaseType) error {
 }
 
 // Finish updates the run to reflect its plan or apply phase having finished.
-func (r *Run) Finish(phase otf.PhaseType, opts PhaseFinishOptions) error {
-	if r.Status == otf.RunCanceled {
+func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
+	if r.Status == internal.RunCanceled {
 		// run was canceled before the phase finished so nothing more to do.
 		return nil
 	}
 	switch phase {
-	case otf.PlanPhase:
-		if r.Status != otf.RunPlanning {
+	case internal.PlanPhase:
+		if r.Status != internal.RunPlanning {
 			return ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(otf.RunErrored)
+			r.updateStatus(internal.RunErrored)
 			r.Plan.UpdateStatus(PhaseErrored)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return nil
 		}
 
-		r.updateStatus(otf.RunPlanned)
+		r.updateStatus(internal.RunPlanned)
 		r.Plan.UpdateStatus(PhaseFinished)
 
 		if !r.HasChanges() || r.Speculative {
-			r.updateStatus(otf.RunPlannedAndFinished)
+			r.updateStatus(internal.RunPlannedAndFinished)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 		} else if r.AutoApply {
 			return r.EnqueueApply()
 		}
 		return nil
-	case otf.ApplyPhase:
-		if r.Status != otf.RunApplying {
+	case internal.ApplyPhase:
+		if r.Status != internal.RunApplying {
 			return ErrInvalidRunStateTransition
 		}
 		if opts.Errored {
-			r.updateStatus(otf.RunErrored)
+			r.updateStatus(internal.RunErrored)
 			r.Apply.UpdateStatus(PhaseErrored)
 		} else {
-			r.updateStatus(otf.RunApplied)
+			r.updateStatus(internal.RunApplied)
 			r.Apply.UpdateStatus(PhaseFinished)
 		}
 		return nil
@@ -346,18 +346,18 @@ func (r *Run) Finish(phase otf.PhaseType, opts PhaseFinishOptions) error {
 	}
 }
 
-func (r *Run) updateStatus(status otf.RunStatus) {
+func (r *Run) updateStatus(status internal.RunStatus) {
 	r.Status = status
 	r.StatusTimestamps = append(r.StatusTimestamps, RunStatusTimestamp{
 		Status:    status,
-		Timestamp: otf.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(),
 	})
 }
 
 // Discardable determines whether run can be discarded.
 func (r *Run) Discardable() bool {
 	switch r.Status {
-	case otf.RunPending, otf.RunPlanned:
+	case internal.RunPending, internal.RunPlanned:
 		return true
 	default:
 		return false
@@ -367,7 +367,7 @@ func (r *Run) Discardable() bool {
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
 	switch r.Status {
-	case otf.RunPending, otf.RunPlanQueued, otf.RunPlanning, otf.RunApplyQueued, otf.RunApplying:
+	case internal.RunPending, internal.RunPlanQueued, internal.RunPlanning, internal.RunApplyQueued, internal.RunApplying:
 		return true
 	default:
 		return false
@@ -377,7 +377,7 @@ func (r *Run) Cancelable() bool {
 // Confirmable determines whether run can be confirmed.
 func (r *Run) Confirmable() bool {
 	switch r.Status {
-	case otf.RunPlanned:
+	case internal.RunPlanned:
 		return true
 	default:
 		return false

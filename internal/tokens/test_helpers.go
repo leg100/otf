@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/stretchr/testify/require"
@@ -67,7 +67,7 @@ func NewTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, 
 	token, err := newToken(newTokenOptions{
 		key:    newTestJWK(t, secret),
 		kind:   kind,
-		expiry: otf.Time(time.Now().Add(lifetime)),
+		expiry: internal.Time(time.Now().Add(lifetime)),
 		claims: claimsMap,
 	})
 	require.NoError(t, err)

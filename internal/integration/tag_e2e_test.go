@@ -8,7 +8,7 @@ import (
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +45,7 @@ resource "null_resource" "tags_e2e" {}
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.SetEnv(
-			append(envs, otf.CredentialEnv(daemon.Hostname(), token)),
+			append(envs, internal.CredentialEnv(daemon.Hostname(), token)),
 		),
 	)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ resource "null_resource" "tags_e2e" {}
 
 	// confirm tagged workspace has been created
 	got, err := daemon.ListWorkspaces(ctx, workspace.ListOptions{
-		Organization: otf.String(org.Name),
+		Organization: internal.String(org.Name),
 		Tags:         []string{"foo", "bar"},
 	})
 	require.NoError(t, err)

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ func TestCompleteRun(t *testing.T) {
 
 	svc := setup(t, nil)
 
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -35,12 +35,12 @@ func TestCompleteRun(t *testing.T) {
 	for event := range sub {
 		if r, ok := event.Payload.(*run.Run); ok {
 			switch r.Status {
-			case otf.RunErrored:
+			case internal.RunErrored:
 				t.Fatal("run unexpectedly errored")
-			case otf.RunPlanned:
+			case internal.RunPlanned:
 				err = svc.Apply(ctx, r.ID)
 				require.NoError(t, err)
-			case otf.RunApplied:
+			case internal.RunApplied:
 				return // success
 			}
 		}

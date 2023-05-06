@@ -8,7 +8,7 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/run"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ import (
 
 func TestAPI_Watch(t *testing.T) {
 	// input event channel
-	in := make(chan otf.Event, 1)
+	in := make(chan internal.Event, 1)
 
 	srv := &api{
 		Logger:     logr.Discard(),
@@ -28,9 +28,9 @@ func TestAPI_Watch(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	// send one event and then close
-	in <- otf.Event{
+	in <- internal.Event{
 		Payload: &run.Run{ID: "run-123"},
-		Type:    otf.EventRunCreated,
+		Type:    internal.EventRunCreated,
 	}
 	close(in)
 

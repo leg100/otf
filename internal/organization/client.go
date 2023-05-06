@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 // DeleteOrganization deletes an organization via http.

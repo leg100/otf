@@ -1,7 +1,7 @@
 package workspace
 
 import (
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/rbac"
 )
@@ -12,8 +12,8 @@ const (
 )
 
 var (
-	EventLocked   otf.EventType = "workspace_locked"
-	EventUnlocked otf.EventType = "workspace_unlocked"
+	EventLocked   internal.EventType = "workspace_locked"
+	EventUnlocked internal.EventType = "workspace_unlocked"
 )
 
 type (
@@ -58,13 +58,13 @@ func (ws *Workspace) Lock(id string, kind LockKind) error {
 		ws.lock.id = id
 		return nil
 	}
-	return otf.ErrWorkspaceAlreadyLocked
+	return internal.ErrWorkspaceAlreadyLocked
 }
 
 // Unlock the workspace.
 func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 	if ws.lock == nil {
-		return otf.ErrWorkspaceAlreadyUnlocked
+		return internal.ErrWorkspaceAlreadyUnlocked
 	}
 	if force {
 		ws.lock = nil
@@ -83,12 +83,12 @@ func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 	// otherwise assume user is trying to unlock a lock held by a different
 	// user (we don't assume a run because the scheduler should never attempt to
 	// unlock a workspace using anything other than the original run).
-	return otf.ErrWorkspaceLockedByDifferentUser
+	return internal.ErrWorkspaceLockedByDifferentUser
 }
 
 // lockButtonHelper helps the UI determine the button to display for
 // locking/unlocking the workspace.
-func lockButtonHelper(ws *Workspace, policy otf.WorkspacePolicy, user otf.Subject) LockButton {
+func lockButtonHelper(ws *Workspace, policy internal.WorkspacePolicy, user internal.Subject) LockButton {
 	var btn LockButton
 
 	if ws.Locked() {

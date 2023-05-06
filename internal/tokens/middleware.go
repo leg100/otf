@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
@@ -65,13 +65,13 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var (
-				subject otf.Subject
+				subject internal.Subject
 				err     error
 			)
 			// Until request is authenticated, call service endpoints using
 			// superuser privileges. Once authenticated, the authenticated user
 			// replaces the superuser in the context.
-			ctx := otf.AddSubjectToContext(r.Context(), &otf.Superuser{
+			ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{
 				Username: "auth",
 			})
 
@@ -102,13 +102,13 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 				http.Error(w, "no authentication token found", http.StatusUnauthorized)
 				return
 			}
-			ctx = otf.AddSubjectToContext(r.Context(), subject)
+			ctx = internal.AddSubjectToContext(r.Context(), subject)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Subject, error) {
+func (m *middleware) validateIAPToken(ctx context.Context, token string) (internal.Subject, error) {
 	payload, err := idtoken.Validate(ctx, token, m.Audience)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (m *middleware) validateIAPToken(ctx context.Context, token string) (otf.Su
 	return m.getOrCreateUser(ctx, email.(string))
 }
 
-func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Subject, error) {
+func (m *middleware) validateBearer(ctx context.Context, bearer string) (internal.Subject, error) {
 	splitToken := strings.Split(bearer, "Bearer ")
 	if len(splitToken) != 2 {
 		return nil, fmt.Errorf("malformed bearer token")
@@ -144,7 +144,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Sub
 	case agentTokenKind:
 		return m.GetAgentToken(ctx, parsed.Subject())
 	case userTokenKind:
-		return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: otf.String(parsed.Subject())})
+		return m.GetUser(ctx, auth.UserSpec{AuthenticationTokenID: internal.String(parsed.Subject())})
 	case runTokenKind:
 		return NewRunTokenFromJWT(parsed)
 	default:
@@ -152,7 +152,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (otf.Sub
 	}
 }
 
-func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (otf.Subject, bool) {
+func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (internal.Subject, bool) {
 	cookie, err := r.Cookie(sessionCookie)
 	if err == http.ErrNoCookie {
 		return nil, false
@@ -175,9 +175,9 @@ func (m *middleware) validateUIRequest(ctx context.Context, w http.ResponseWrite
 	return user, true
 }
 
-func (m *middleware) getOrCreateUser(ctx context.Context, username string) (otf.Subject, error) {
+func (m *middleware) getOrCreateUser(ctx context.Context, username string) (internal.Subject, error) {
 	user, err := m.GetUser(ctx, auth.UserSpec{Username: &username})
-	if err == otf.ErrResourceNotFound {
+	if err == internal.ErrResourceNotFound {
 		user, err = m.CreateUser(ctx, username)
 	}
 	return user, err

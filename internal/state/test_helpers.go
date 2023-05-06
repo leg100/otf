@@ -3,7 +3,7 @@ package state
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type fakeDB struct {
@@ -14,14 +14,14 @@ type fakeDB struct {
 
 func (f *fakeDB) getVersion(ctx context.Context, svID string) (*Version, error) {
 	if f.version == nil {
-		return nil, otf.ErrResourceNotFound
+		return nil, internal.ErrResourceNotFound
 	}
 	return f.version, nil
 }
 
 func (f *fakeDB) getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error) {
 	if f.current == nil {
-		return nil, otf.ErrResourceNotFound
+		return nil, internal.ErrResourceNotFound
 	}
 	return f.current, nil
 }

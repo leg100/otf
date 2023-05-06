@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/assert"
@@ -18,21 +18,21 @@ func TestQueue(t *testing.T) {
 
 	t.Run("handle several runs", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run1 := &run.Run{ID: "run-1", WorkspaceID: "ws-123", Status: otf.RunPending}
-		run2 := &run.Run{ID: "run-2", WorkspaceID: "ws-123", Status: otf.RunPending}
-		run3 := &run.Run{ID: "run-3", WorkspaceID: "ws-123", Status: otf.RunPending}
+		run1 := &run.Run{ID: "run-1", WorkspaceID: "ws-123", Status: internal.RunPending}
+		run2 := &run.Run{ID: "run-2", WorkspaceID: "ws-123", Status: internal.RunPending}
+		run3 := &run.Run{ID: "run-3", WorkspaceID: "ws-123", Status: internal.RunPending}
 		app := newFakeQueueApp(ws, run1, run2, run3)
 		q := newTestQueue(app, ws)
 
 		// enqueue run1, check it is current run
-		err := q.handleEvent(ctx, otf.Event{Payload: run1})
+		err := q.handleEvent(ctx, internal.Event{Payload: run1})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run1.ID, q.current.ID)
 		assert.True(t, q.ws.Locked())
 
 		// enqueue run2, check it is in queue
-		err = q.handleEvent(ctx, otf.Event{Payload: run2})
+		err = q.handleEvent(ctx, internal.Event{Payload: run2})
 		require.NoError(t, err)
 		if assert.Equal(t, 1, len(q.queue)) {
 			assert.Equal(t, run2.ID, q.queue[0].ID)
@@ -40,7 +40,7 @@ func TestQueue(t *testing.T) {
 		assert.True(t, q.ws.Locked())
 
 		// enqueue run3, check it is in queue
-		err = q.handleEvent(ctx, otf.Event{Payload: run3})
+		err = q.handleEvent(ctx, internal.Event{Payload: run3})
 		require.NoError(t, err)
 		if assert.Equal(t, 2, len(q.queue)) {
 			assert.Equal(t, run3.ID, q.queue[1].ID)
@@ -50,7 +50,7 @@ func TestQueue(t *testing.T) {
 		// cancel run2, check it is removed from queue and run3 is shuffled forward
 		_, err = run2.Cancel()
 		require.NoError(t, err)
-		err = q.handleEvent(ctx, otf.Event{Payload: run2})
+		err = q.handleEvent(ctx, internal.Event{Payload: run2})
 		require.NoError(t, err)
 		if assert.Equal(t, 1, len(q.queue)) {
 			assert.Equal(t, run3.ID, q.queue[0].ID)
@@ -60,7 +60,7 @@ func TestQueue(t *testing.T) {
 		// cancel run1; check run3 takes its place as current run
 		_, err = run1.Cancel()
 		require.NoError(t, err)
-		err = q.handleEvent(ctx, otf.Event{Payload: run1})
+		err = q.handleEvent(ctx, internal.Event{Payload: run1})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run3.ID, q.current.ID)
@@ -69,7 +69,7 @@ func TestQueue(t *testing.T) {
 		// cancel run3; check everything is empty and workspace is unlocked
 		_, err = run3.Cancel()
 		require.NoError(t, err)
-		err = q.handleEvent(ctx, otf.Event{Payload: run3})
+		err = q.handleEvent(ctx, internal.Event{Payload: run3})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Nil(t, q.current)
@@ -78,20 +78,20 @@ func TestQueue(t *testing.T) {
 
 	t.Run("speculative run", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{Status: otf.RunPending, WorkspaceID: "ws-123", Speculative: true}
+		run := &run.Run{Status: internal.RunPending, WorkspaceID: "ws-123", Speculative: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
-		err := q.handleEvent(ctx, otf.Event{Payload: run})
+		err := q.handleEvent(ctx, internal.Event{Payload: run})
 		require.NoError(t, err)
 		// should be scheduled but not enqueued onto workspace q
-		assert.Equal(t, otf.RunPlanQueued, run.Status)
+		assert.Equal(t, internal.RunPlanQueued, run.Status)
 		assert.Equal(t, 0, len(q.queue))
 	})
 
 	t.Run("user locked", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{ID: "run-123", WorkspaceID: "ws-123", Status: otf.RunPending}
+		run := &run.Run{ID: "run-123", WorkspaceID: "ws-123", Status: internal.RunPending}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
@@ -99,7 +99,7 @@ func TestQueue(t *testing.T) {
 		// be scheduled nor replace the user lock
 		err := ws.Lock("bobby", workspace.UserLock)
 		require.NoError(t, err)
-		err = q.handleEvent(ctx, otf.Event{Payload: run})
+		err = q.handleEvent(ctx, internal.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run.ID, q.current.ID)
@@ -108,7 +108,7 @@ func TestQueue(t *testing.T) {
 		// user unlocks workspace; run should be scheduled, locking the workspace
 		err = ws.Unlock("bobby", workspace.UserLock, false)
 		require.NoError(t, err)
-		err = q.handleEvent(ctx, otf.Event{Type: workspace.EventUnlocked, Payload: ws})
+		err = q.handleEvent(ctx, internal.Event{Type: workspace.EventUnlocked, Payload: ws})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
 		assert.Equal(t, workspace.RunLock, q.ws.LockKind)
@@ -116,14 +116,14 @@ func TestQueue(t *testing.T) {
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{WorkspaceID: "ws-123", Status: otf.RunPlanning}
+		run := &run.Run{WorkspaceID: "ws-123", Status: internal.RunPlanning}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
-		err := q.handleEvent(ctx, otf.Event{Payload: run})
+		err := q.handleEvent(ctx, internal.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, otf.RunPlanning, run.Status)
+		assert.Equal(t, internal.RunPlanning, run.Status)
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestQueue(t *testing.T) {
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 
-		err := q.handleEvent(ctx, otf.Event{Payload: run})
+		err := q.handleEvent(ctx, internal.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
 		assert.NotContains(t, app.current, run.ID)
@@ -166,7 +166,7 @@ func newFakeQueueApp(ws *workspace.Workspace, runs ...*run.Run) *fakeQueueServic
 }
 
 func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*run.Run, error) {
-	f.runs[runID].Status = otf.RunPlanQueued
+	f.runs[runID].Status = internal.RunPlanQueued
 	return f.runs[runID], nil
 }
 

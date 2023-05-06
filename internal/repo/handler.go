@@ -8,7 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 )
@@ -21,7 +21,7 @@ type (
 	// a cloud-specific handler.
 	handler struct {
 		logr.Logger
-		otf.Publisher
+		internal.Publisher
 
 		db handlerDB
 	}
@@ -54,8 +54,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, RepoID: hook.id})
 	if event != nil {
-		h.Publish(otf.Event{
-			Type:    otf.EventVCS,
+		h.Publish(internal.Event{
+			Type:    internal.EventVCS,
 			Payload: event,
 			// publish vcs events only to the local node; a "run spawner" and a
 			// "module publisher" subscribe to vcs events on each node, so it is

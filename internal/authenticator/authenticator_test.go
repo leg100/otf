@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ import (
 func TestNewAuthenticatorService(t *testing.T) {
 	opts := Options{
 		Logger:          logr.Discard(),
-		HostnameService: otf.FakeHostnameService{Host: "fake-host.org"},
+		HostnameService: internal.FakeHostnameService{Host: "fake-host.org"},
 		Configs: []cloud.CloudOAuthConfig{
 			{
 				OAuthConfig: &oauth2.Config{

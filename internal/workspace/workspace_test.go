@@ -3,7 +3,7 @@ package workspace
 import (
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,49 +16,49 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "default",
 			opts: CreateOptions{
-				Name:         otf.String("my-workspace"),
-				Organization: otf.String("my-org"),
+				Name:         internal.String("my-workspace"),
+				Organization: internal.String("my-org"),
 			},
 		},
 		{
 			name: "missing name",
 			opts: CreateOptions{
-				Organization: otf.String("my-org"),
+				Organization: internal.String("my-org"),
 			},
-			want: otf.ErrRequiredName,
+			want: internal.ErrRequiredName,
 		},
 		{
 			name: "missing organization",
 			opts: CreateOptions{
-				Name: otf.String("my-workspace"),
+				Name: internal.String("my-workspace"),
 			},
-			want: otf.ErrRequiredOrg,
+			want: internal.ErrRequiredOrg,
 		},
 		{
 			name: "invalid name",
 			opts: CreateOptions{
-				Name:         otf.String("%*&^"),
-				Organization: otf.String("my-org"),
+				Name:         internal.String("%*&^"),
+				Organization: internal.String("my-org"),
 			},
-			want: otf.ErrInvalidName,
+			want: internal.ErrInvalidName,
 		},
 		{
 			name: "bad terraform version",
 			opts: CreateOptions{
-				Name:             otf.String("my-workspace"),
-				Organization:     otf.String("my-org"),
-				TerraformVersion: otf.String("1,2,0"),
+				Name:             internal.String("my-workspace"),
+				Organization:     internal.String("my-org"),
+				TerraformVersion: internal.String("1,2,0"),
 			},
-			want: otf.ErrInvalidTerraformVersion,
+			want: internal.ErrInvalidTerraformVersion,
 		},
 		{
 			name: "unsupported terraform version",
 			opts: CreateOptions{
-				Name:             otf.String("my-workspace"),
-				Organization:     otf.String("my-org"),
-				TerraformVersion: otf.String("0.14.0"),
+				Name:             internal.String("my-workspace"),
+				Organization:     internal.String("my-org"),
+				TerraformVersion: internal.String("0.14.0"),
 			},
-			want: otf.ErrUnsupportedTerraformVersion,
+			want: internal.ErrUnsupportedTerraformVersion,
 		},
 	}
 	for _, tt := range tests {

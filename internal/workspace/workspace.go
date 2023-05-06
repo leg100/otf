@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
 	"golang.org/x/exp/slog"
@@ -59,14 +59,14 @@ type (
 	// LatestRun is a summary of the latest run for a workspace
 	LatestRun struct {
 		ID     string
-		Status otf.RunStatus
+		Status internal.RunStatus
 	}
 
 	ExecutionMode string
 
 	// WorkspaceList is a list of workspaces.
 	WorkspaceList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*Workspace
 	}
 
@@ -115,10 +115,10 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		otf.ListOptions          // Pagination
-		Prefix          string   `schema:"search[name],omitempty"`
-		Tags            []string `schema:"search[tags],omitempty"`
-		Organization    *string  `schema:"organization_name,required"`
+		internal.ListOptions          // Pagination
+		Prefix               string   `schema:"search[name],omitempty"`
+		Tags                 []string `schema:"search[tags],omitempty"`
+		Organization         *string  `schema:"organization_name,required"`
 	}
 
 	ConnectOptions struct {
@@ -137,16 +137,16 @@ type (
 func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	// required options
 	if opts.Name == nil {
-		return nil, otf.ErrRequiredName
+		return nil, internal.ErrRequiredName
 	}
 	if opts.Organization == nil {
-		return nil, otf.ErrRequiredOrg
+		return nil, internal.ErrRequiredOrg
 	}
 
 	ws := Workspace{
-		ID:                  otf.NewID("ws"),
-		CreatedAt:           otf.CurrentTimestamp(),
-		UpdatedAt:           otf.CurrentTimestamp(),
+		ID:                  internal.NewID("ws"),
+		CreatedAt:           internal.CurrentTimestamp(),
+		UpdatedAt:           internal.CurrentTimestamp(),
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       RemoteExecutionMode,
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
@@ -305,15 +305,15 @@ func (ws *Workspace) Update(opts UpdateOptions) error {
 		updated = true
 	}
 	if updated {
-		ws.UpdatedAt = otf.CurrentTimestamp()
+		ws.UpdatedAt = internal.CurrentTimestamp()
 	}
 
 	return nil
 }
 
 func (ws *Workspace) setName(name string) error {
-	if !otf.ReStringID.MatchString(name) {
-		return otf.ErrInvalidName
+	if !internal.ReStringID.MatchString(name) {
+		return internal.ErrInvalidName
 	}
 	ws.Name = name
 	return nil
@@ -328,11 +328,11 @@ func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {
-	if !otf.ValidSemanticVersion(v) {
-		return otf.ErrInvalidTerraformVersion
+	if !internal.ValidSemanticVersion(v) {
+		return internal.ErrInvalidTerraformVersion
 	}
 	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
-		return otf.ErrUnsupportedTerraformVersion
+		return internal.ErrUnsupportedTerraformVersion
 	}
 	ws.TerraformVersion = v
 	return nil

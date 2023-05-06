@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/sql"
@@ -17,7 +17,7 @@ func TestBroker(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	// simulate a cluster of two otfd nodes sharing a database
 	connstr := sql.NewTestDB(t)
@@ -32,7 +32,7 @@ func TestBroker(t *testing.T) {
 	// sends event via local broker
 	org := local.createOrganization(t, ctx)
 
-	want := otf.Event{Type: otf.EventOrganizationCreated, Payload: org}
+	want := internal.Event{Type: internal.EventOrganizationCreated, Payload: org}
 	// receive event on local broker
 	assert.Equal(t, want, <-localsub)
 	// receive event on remote broker (via postgres)

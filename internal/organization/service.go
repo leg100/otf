@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/rbac"
 )
@@ -24,19 +24,19 @@ type (
 	}
 
 	service struct {
-		otf.Authorizer // authorize access to org
+		internal.Authorizer // authorize access to org
 		logr.Logger
-		otf.Broker
+		internal.Broker
 
 		db                           *pgdb
-		site                         otf.Authorizer // authorize access to site
+		site                         internal.Authorizer // authorize access to site
 		web                          *web
 		RestrictOrganizationCreation bool
 	}
 
 	Options struct {
-		otf.DB
-		otf.Broker
+		internal.DB
+		internal.Broker
 		html.Renderer
 		logr.Logger
 
@@ -51,7 +51,7 @@ func NewService(opts Options) *service {
 		Broker:                       opts.Broker,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
-		site:                         &otf.SiteAuthorizer{Logger: opts.Logger},
+		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,
@@ -96,7 +96,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 // Subject is an organization token: return its organization
 // Subject is an team token: return its organization
 func (s *service) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
-	subject, err := otf.SubjectFromContext(ctx)
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

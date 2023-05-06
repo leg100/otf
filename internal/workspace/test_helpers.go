@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
@@ -18,7 +18,7 @@ type (
 		workspaces []*Workspace
 		providers  []*vcsprovider.VCSProvider
 		repos      []string
-		policy     otf.WorkspacePolicy
+		policy     internal.WorkspacePolicy
 		teams      []*auth.Team
 
 		Service
@@ -48,7 +48,7 @@ func withRepos(repos ...string) fakeWebServiceOption {
 	}
 }
 
-func withPolicy(policy otf.WorkspacePolicy) fakeWebServiceOption {
+func withPolicy(policy internal.WorkspacePolicy) fakeWebServiceOption {
 	return func(svc *fakeWebService) {
 		svc.policy = policy
 	}
@@ -89,7 +89,7 @@ func (f *fakeWebService) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeWebService) GetPolicy(context.Context, string) (otf.WorkspacePolicy, error) {
+func (f *fakeWebService) GetPolicy(context.Context, string) (internal.WorkspacePolicy, error) {
 	return f.policy, nil
 }
 
@@ -112,7 +112,7 @@ func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions)
 func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
 	return &WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),
+		Pagination: internal.NewPagination(opts.ListOptions, len(f.workspaces)),
 	}, nil
 }
 

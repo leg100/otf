@@ -7,7 +7,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +52,7 @@ func TestGetRepoTarball(t *testing.T) {
 	require.NoError(t, err)
 
 	dst := t.TempDir()
-	err = otf.Unpack(bytes.NewReader(got), dst)
+	err = internal.Unpack(bytes.NewReader(got), dst)
 	require.NoError(t, err)
 	assert.FileExists(t, path.Join(dst, "main.tf"))
 }

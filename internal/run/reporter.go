@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/html/paths"
@@ -22,11 +22,11 @@ type (
 	// runs.
 	reporter struct {
 		logr.Logger
-		otf.Subscriber
+		internal.Subscriber
 		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
-		otf.HostnameService
+		internal.HostnameService
 	}
 
 	ReporterOptions struct {
@@ -35,15 +35,15 @@ type (
 		VCSProviderService          VCSProviderService
 
 		logr.Logger
-		otf.DB
-		otf.Subscriber
-		otf.HostnameService
+		internal.DB
+		internal.Subscriber
+		internal.HostnameService
 	}
 )
 
 // StartReporter starts a reporter.
 func StartReporter(ctx context.Context, opts ReporterOptions) error {
-	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "reporter"})
+	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "reporter"})
 
 	rptr := &reporter{
 		Logger:                      opts.Logger.WithValues("component", "reporter"),
@@ -109,21 +109,21 @@ func (r *reporter) handleRun(ctx context.Context, run *Run) error {
 		description string
 	)
 	switch run.Status {
-	case otf.RunPending, otf.RunPlanQueued, otf.RunApplyQueued:
+	case internal.RunPending, internal.RunPlanQueued, internal.RunApplyQueued:
 		status = cloud.VCSPendingStatus
-	case otf.RunPlanning, otf.RunApplying, otf.RunPlanned, otf.RunConfirmed:
+	case internal.RunPlanning, internal.RunApplying, internal.RunPlanned, internal.RunConfirmed:
 		status = cloud.VCSRunningStatus
-	case otf.RunPlannedAndFinished:
+	case internal.RunPlannedAndFinished:
 		status = cloud.VCSSuccessStatus
 		if run.Plan.ResourceReport != nil {
 			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
 		}
-	case otf.RunApplied:
+	case internal.RunApplied:
 		status = cloud.VCSSuccessStatus
 		if run.Apply.ResourceReport != nil {
 			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 		}
-	case otf.RunErrored, otf.RunCanceled, otf.RunForceCanceled, otf.RunDiscarded:
+	case internal.RunErrored, internal.RunCanceled, internal.RunForceCanceled, internal.RunDiscarded:
 		status = cloud.VCSErrorStatus
 		description = run.Status.String()
 	default:

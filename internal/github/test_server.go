@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 	mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Add("state", r.URL.Query().Get("state"))
-		q.Add("code", otf.GenerateRandomString(10))
+		q.Add("code", internal.GenerateRandomString(10))
 
 		referrer, err := url.Parse(r.Referer())
 		require.NoError(t, err)
@@ -88,7 +88,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 	})
 	if srv.user != nil {
 		mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
-			out, err := json.Marshal(&github.User{Login: otf.String(srv.user.Name)})
+			out, err := json.Marshal(&github.User{Login: internal.String(srv.user.Name)})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
@@ -96,7 +96,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 		mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
 			var orgs []*github.Organization
 			for _, org := range srv.user.Organizations() {
-				orgs = append(orgs, &github.Organization{Login: otf.String(org)})
+				orgs = append(orgs, &github.Organization{Login: internal.String(org)})
 			}
 			out, err := json.Marshal(orgs)
 			require.NoError(t, err)
@@ -106,7 +106,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 		for _, org := range srv.user.Organizations() {
 			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org, func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Membership{
-					Role: otf.String("member"),
+					Role: internal.String("member"),
 				})
 				require.NoError(t, err)
 				w.Header().Add("Content-Type", "application/json")
@@ -117,9 +117,9 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			var teams []*github.Team
 			for _, team := range srv.user.Teams {
 				teams = append(teams, &github.Team{
-					Slug: otf.String(team.Name),
+					Slug: internal.String(team.Name),
 					Organization: &github.Organization{
-						Login: otf.String(team.Organization),
+						Login: internal.String(team.Organization),
 					},
 				})
 			}
@@ -140,7 +140,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
 			var refs []*github.Reference
 			for _, ref := range srv.refs {
-				refs = append(refs, &github.Reference{Ref: otf.String(ref)})
+				refs = append(refs, &github.Reference{Ref: internal.String(ref)})
 			}
 			out, err := json.Marshal(refs)
 			require.NoError(t, err)
@@ -179,7 +179,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			srv.HookSecret = &opts.Config.Secret
 
 			hook := github.Hook{
-				ID: otf.Int64(123),
+				ID: internal.Int64(123),
 			}
 			out, err := json.Marshal(hook)
 			require.NoError(t, err)
@@ -192,7 +192,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			switch r.Method {
 			case "GET":
 				hook := github.Hook{
-					ID:     otf.Int64(123),
+					ID:     internal.Int64(123),
 					Events: srv.HookEvents,
 					URL:    srv.HookEndpoint,
 				}

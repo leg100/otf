@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/configversion"
 	otfhttp "github.com/leg100/otf/http"
@@ -17,7 +17,7 @@ import (
 
 func (a *api) addConfigHandlers(r *mux.Router) {
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(otf.VerifySignedURL(a.Verifier))
+	signed.Use(internal.VerifySignedURL(a.Verifier))
 	signed.HandleFunc("/configuration-versions/{id}/upload", a.uploadConfigurationVersion()).Methods("PUT")
 
 	r = otfhttp.APIRouter(r)
@@ -68,8 +68,8 @@ func (a *api) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID     string `schema:"workspace_id,required"`
-		otf.ListOptions        // Pagination
+		WorkspaceID          string `schema:"workspace_id,required"`
+		internal.ListOptions        // Pagination
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
@@ -100,7 +100,7 @@ func (a *api) uploadConfigurationVersion() http.HandlerFunc {
 		if _, err := io.Copy(buf, r.Body); err != nil {
 			maxBytesError := &http.MaxBytesError{}
 			if errors.As(err, &maxBytesError) {
-				Error(w, &otf.HTTPError{
+				Error(w, &internal.HTTPError{
 					Code:    422,
 					Message: fmt.Sprintf("config exceeds maximum size (%d bytes)", a.maxConfigSize),
 				})

@@ -2,7 +2,7 @@ package run
 
 import (
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/workspace"
 )
@@ -28,7 +28,7 @@ func newFromJSONAPI(from *types.Run) *Run {
 		PositionInQueue:        from.PositionInQueue,
 		Refresh:                from.Refresh,
 		RefreshOnly:            from.RefreshOnly,
-		Status:                 otf.RunStatus(from.Status),
+		Status:                 internal.RunStatus(from.Status),
 		// TODO: unmarshal timestamps
 		ReplaceAddrs:           from.ReplaceAddrs,
 		TargetAddrs:            from.TargetAddrs,
@@ -41,7 +41,7 @@ func newFromJSONAPI(from *types.Run) *Run {
 // newListFromJSONAPI constructs a run list from a json:api struct
 func newListFromJSONAPI(from *types.RunList) *RunList {
 	to := RunList{
-		Pagination: otf.NewPaginationFromJSONAPI(from.Pagination),
+		Pagination: internal.NewPaginationFromJSONAPI(from.Pagination),
 	}
 	for _, i := range from.Items {
 		to.Items = append(to.Items, newFromJSONAPI(i))

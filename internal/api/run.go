@@ -9,7 +9,7 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
@@ -54,7 +54,7 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if opts.Workspace == nil {
-		Error(w, &otf.MissingParameterError{Parameter: "workspace"})
+		Error(w, &internal.MissingParameterError{Parameter: "workspace"})
 		return
 	}
 	var configurationVersionID *string
@@ -81,8 +81,8 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) startPhase(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		RunID string        `schema:"id,required"`
-		Phase otf.PhaseType `schema:"phase,required"`
+		RunID string             `schema:"id,required"`
+		Phase internal.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		Error(w, err)
@@ -100,8 +100,8 @@ func (a *api) startPhase(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) finishPhase(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		RunID string        `schema:"id,required"`
-		Phase otf.PhaseType `schema:"phase,required"`
+		RunID string             `schema:"id,required"`
+		Phase internal.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
 		Error(w, err)
@@ -139,7 +139,7 @@ func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, run.RunListOptions{
-		Statuses: []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
+		Statuses: []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
 	})
 }
 
@@ -326,7 +326,7 @@ func (a *api) getPlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	run, err := a.GetRun(r.Context(), otf.ConvertID(id, "run"))
+	run, err := a.GetRun(r.Context(), internal.ConvertID(id, "run"))
 	if err != nil {
 		Error(w, err)
 		return
@@ -346,7 +346,7 @@ func (a *api) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
-	json, err := a.GetPlanFile(r.Context(), otf.ConvertID(id, "run"), run.PlanFormatJSON)
+	json, err := a.GetPlanFile(r.Context(), internal.ConvertID(id, "run"), run.PlanFormatJSON)
 	if err != nil {
 		Error(w, err)
 		return
@@ -365,7 +365,7 @@ func (a *api) getApply(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
-	run, err := a.GetRun(r.Context(), otf.ConvertID(id, "run"))
+	run, err := a.GetRun(r.Context(), internal.ConvertID(id, "run"))
 	if err != nil {
 		Error(w, err)
 		return
@@ -388,7 +388,7 @@ func (a *api) watchRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	events, err := a.Watch(r.Context(), params)
-	if err != nil && errors.Is(err, otf.ErrAccessNotPermitted) {
+	if err != nil && errors.Is(err, internal.ErrAccessNotPermitted) {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	} else if err != nil {
@@ -415,7 +415,7 @@ func (a *api) watchRun(w http.ResponseWriter, r *http.Request) {
 			a.Error(err, "marshalling run event", "event", event.Type)
 			continue
 		}
-		otf.WriteSSEEvent(w, b, event.Type, true)
+		internal.WriteSSEEvent(w, b, event.Type, true)
 		flusher.Flush()
 	}
 }

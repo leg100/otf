@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/run"
@@ -13,7 +13,7 @@ import (
 
 type (
 	fakeRunService struct {
-		ch chan otf.Event
+		ch chan internal.Event
 
 		run.RunService
 	}
@@ -23,7 +23,7 @@ type (
 	}
 )
 
-func (f *fakeRunService) Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error) {
+func (f *fakeRunService) Watch(context.Context, run.WatchOptions) (<-chan internal.Event, error) {
 	return f.ch, nil
 }
 

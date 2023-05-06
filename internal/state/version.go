@@ -3,7 +3,7 @@ package state
 import (
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type (
@@ -22,7 +22,7 @@ type (
 
 	// VersionList represents a list of state versions.
 	VersionList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*Version
 	}
 

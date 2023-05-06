@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/tokens"
 	"github.com/stretchr/testify/assert"
@@ -14,19 +14,19 @@ import (
 func TestAuthorize(t *testing.T) {
 	tests := []struct {
 		name     string
-		subject  otf.Subject
+		subject  internal.Subject
 		restrict bool
 		want     error
 	}{
 		{"site admin", &auth.SiteAdmin, false, nil},
 		{"normal user", &auth.User{}, false, nil},
-		{"non-user", &tokens.AgentToken{}, false, otf.ErrAccessNotPermitted},
+		{"non-user", &tokens.AgentToken{}, false, internal.ErrAccessNotPermitted},
 		{"restrict to site admin - site admin", &auth.SiteAdmin, true, nil},
-		{"restrict to site admin - user", &auth.User{}, true, otf.ErrAccessNotPermitted},
+		{"restrict to site admin - user", &auth.User{}, true, internal.ErrAccessNotPermitted},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := otf.AddSubjectToContext(context.Background(), tt.subject)
+			ctx := internal.AddSubjectToContext(context.Background(), tt.subject)
 			svc := &service{
 				Logger:                       logr.Discard(),
 				RestrictOrganizationCreation: tt.restrict,

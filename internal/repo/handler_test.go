@@ -7,16 +7,16 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebhookHandler(t *testing.T) {
 	publisher := &fakePublisher{}
-	want := otf.Event{Type: otf.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
+	want := internal.Event{Type: internal.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
 	f := newTestFactory(t, cloud.VCSPushEvent{})
-	hook := newTestHook(t, f, otf.String("123"))
+	hook := newTestHook(t, f, internal.String("123"))
 	handler := handler{
 		Publisher: publisher,
 		Logger:    logr.Discard(),
@@ -40,7 +40,7 @@ func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) 
 }
 
 type fakePublisher struct {
-	got otf.Event
+	got internal.Event
 }
 
-func (f *fakePublisher) Publish(got otf.Event) { f.got = got }
+func (f *fakePublisher) Publish(got internal.Event) { f.got = got }

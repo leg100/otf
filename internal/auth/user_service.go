@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -24,7 +24,7 @@ type (
 	TeamMembershipOptions struct {
 		Username string `schema:"username,required"`
 		TeamID   string `schema:"team_id,required"`
-		Tx       otf.DB
+		Tx       internal.DB
 	}
 )
 
@@ -89,7 +89,7 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 		return err
 	}
 
-	err = a.db.DeleteUser(ctx, UserSpec{Username: otf.String(username)})
+	err = a.db.DeleteUser(ctx, UserSpec{Username: internal.String(username)})
 	if err != nil {
 		a.V(2).Info("deleting user", "username", username, "subject", subject)
 		return err
@@ -172,7 +172,7 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 func (a *service) SetSiteAdmins(ctx context.Context, usernames ...string) error {
 	for _, username := range usernames {
 		_, err := a.db.getUser(ctx, UserSpec{Username: &username})
-		if err == otf.ErrResourceNotFound {
+		if err == internal.ErrResourceNotFound {
 			if _, err = a.CreateUser(ctx, username); err != nil {
 				return err
 			}

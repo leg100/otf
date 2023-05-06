@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +26,7 @@ func TestWeb_ListHandler(t *testing.T) {
 
 		t.Run("first page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
-			r = r.WithContext(otf.AddSubjectToContext(context.Background(), &otf.Superuser{}))
+			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -36,7 +36,7 @@ func TestWeb_ListHandler(t *testing.T) {
 
 		t.Run("second page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
-			r = r.WithContext(otf.AddSubjectToContext(context.Background(), &otf.Superuser{}))
+			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -46,7 +46,7 @@ func TestWeb_ListHandler(t *testing.T) {
 
 		t.Run("last page", func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
-			r = r.WithContext(otf.AddSubjectToContext(context.Background(), &otf.Superuser{}))
+			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
@@ -58,7 +58,7 @@ func TestWeb_ListHandler(t *testing.T) {
 	t.Run("new organization button", func(t *testing.T) {
 		tests := []struct {
 			name     string
-			subject  otf.Subject
+			subject  internal.Subject
 			restrict bool
 			want     bool
 		}{
@@ -70,13 +70,13 @@ func TestWeb_ListHandler(t *testing.T) {
 			{"disabled", &unprivilegedSubject{}, true, false},
 			// restricted creation of organizations, but button still enabled
 			// for site admins
-			{"site admin", &otf.Superuser{}, true, true},
+			{"site admin", &internal.Superuser{}, true, true},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				svc := newFakeWeb(t, &fakeService{}, tt.restrict)
 				r := httptest.NewRequest("GET", "/?", nil)
-				r = r.WithContext(otf.AddSubjectToContext(context.Background(), tt.subject))
+				r = r.WithContext(internal.AddSubjectToContext(context.Background(), tt.subject))
 				w := httptest.NewRecorder()
 				svc.list(w, r)
 				assert.Equal(t, 200, w.Code)

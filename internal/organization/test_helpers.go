@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ type (
 		Service
 	}
 	unprivilegedSubject struct {
-		otf.Subject
+		internal.Subject
 	}
 )
 
@@ -31,7 +31,7 @@ func NewTestOrganization(t *testing.T) *Organization {
 func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
 	return &OrganizationList{
 		Items:      f.orgs,
-		Pagination: otf.NewPagination(opts.ListOptions, len(f.orgs)),
+		Pagination: internal.NewPagination(opts.ListOptions, len(f.orgs)),
 	}, nil
 }
 

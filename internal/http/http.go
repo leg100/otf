@@ -1,5 +1,5 @@
 /*
-Package http provides an HTTP interface allowing HTTP clients to interact with OTF.
+Package http provides an HTTP interface allowing HTTP clients to interact with otf.
 */
 package http
 

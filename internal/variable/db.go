@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 // db is a database of variables
 type db interface {
-	otf.DB
+	internal.DB
 
 	create(ctx context.Context, variable *Variable) error
 	list(ctx context.Context, workspaceID string) ([]*Variable, error)
@@ -23,10 +23,10 @@ type db interface {
 
 // pgdb is a database of variables on postgres
 type pgdb struct {
-	otf.DB // provides access to generated SQL queries
+	internal.DB // provides access to generated SQL queries
 }
 
-func newPGDB(db otf.DB) *pgdb {
+func newPGDB(db internal.DB) *pgdb {
 	return &pgdb{db}
 }
 
@@ -108,7 +108,7 @@ func (pdb *pgdb) delete(ctx context.Context, variableID string) (*Variable, erro
 
 // tx constructs a new pgdb within a transaction.
 func (pdb *pgdb) tx(ctx context.Context, callback func(db) error) error {
-	return pdb.Tx(ctx, func(tx otf.DB) error {
+	return pdb.Tx(ctx, func(tx internal.DB) error {
 		return callback(newPGDB(tx))
 	})
 }

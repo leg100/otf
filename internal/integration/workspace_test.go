@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/rbac"
@@ -22,17 +22,17 @@ func TestWorkspace(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
-			Name:         otf.String(uuid.NewString()),
-			Organization: otf.String(org.Name),
+			Name:         internal.String(uuid.NewString()),
+			Organization: internal.String(org.Name),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
 			_, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
-				Name:         otf.String(ws.Name),
-				Organization: otf.String(org.Name),
+				Name:         internal.String(ws.Name),
+				Organization: internal.String(org.Name),
 			})
-			require.Equal(t, otf.ErrResourceAlreadyExists, err)
+			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
 	})
 
@@ -42,7 +42,7 @@ func TestWorkspace(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
-			Name:         otf.String(uuid.NewString()),
+			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      "test/dummy",
@@ -72,7 +72,7 @@ func TestWorkspace(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
-			Name:         otf.String(uuid.NewString()),
+			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
 				RepoPath:      "test/dummy",
@@ -122,7 +122,7 @@ func TestWorkspace(t *testing.T) {
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		got, err := svc.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
-			Description: otf.String("updated description"),
+			Description: internal.String("updated description"),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, "updated description", got.Description)
@@ -165,7 +165,7 @@ func TestWorkspace(t *testing.T) {
 		}{
 			{
 				name: "filter by org",
-				opts: workspace.ListOptions{Organization: otf.String(org.Name)},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
@@ -174,7 +174,7 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "filter by prefix",
-				opts: workspace.ListOptions{Organization: otf.String(org.Name), Prefix: ws1.Name[:5]},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), Prefix: ws1.Name[:5]},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
@@ -182,21 +182,21 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "filter by non-existent org",
-				opts: workspace.ListOptions{Organization: otf.String("non-existent")},
+				opts: workspace.ListOptions{Organization: internal.String("non-existent")},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter by non-existent prefix",
-				opts: workspace.ListOptions{Organization: otf.String(org.Name), Prefix: "xyz"},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), Prefix: "xyz"},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "paginated results ordered by updated_at",
-				opts: workspace.ListOptions{Organization: otf.String(org.Name), ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
@@ -210,7 +210,7 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "stray pagination",
-				opts: workspace.ListOptions{Organization: otf.String(org.Name), ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: internal.ListOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
@@ -233,13 +233,13 @@ func TestWorkspace(t *testing.T) {
 		svc := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		ws1, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
-			Name:         otf.String(uuid.NewString()),
+			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}},
 		})
 		require.NoError(t, err)
 		ws2, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
-			Name:         otf.String(uuid.NewString()),
+			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
 		})
@@ -303,7 +303,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "show both workspaces",
 				user: user1,
-				opts: workspace.ListOptions{Organization: otf.String(org.Name)},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
@@ -313,7 +313,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "query non-existent org",
 				user: user1,
-				opts: workspace.ListOptions{Organization: otf.String("acme-corp")},
+				opts: workspace.ListOptions{Organization: internal.String("acme-corp")},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
@@ -321,7 +321,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "user with no perms",
 				user: user2,
-				opts: workspace.ListOptions{Organization: otf.String(org.Name)},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 0, len(l.Items))
 				},
@@ -330,8 +330,8 @@ func TestWorkspace(t *testing.T) {
 				name: "paginated results ordered by updated_at",
 				user: user1,
 				opts: workspace.ListOptions{
-					Organization: otf.String(org.Name),
-					ListOptions:  otf.ListOptions{PageNumber: 1, PageSize: 1},
+					Organization: internal.String(org.Name),
+					ListOptions:  internal.ListOptions{PageNumber: 1, PageSize: 1},
 				},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
@@ -348,7 +348,7 @@ func TestWorkspace(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				ctx := otf.AddSubjectToContext(ctx, tt.user)
+				ctx := internal.AddSubjectToContext(ctx, tt.user)
 				results, err := svc.ListWorkspaces(ctx, tt.opts)
 				require.NoError(t, err)
 
@@ -380,7 +380,7 @@ func TestWorkspace(t *testing.T) {
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
-		results, err := svc.ListWorkspaces(ctx, workspace.ListOptions{Organization: otf.String(ws.Organization)})
+		results, err := svc.ListWorkspaces(ctx, workspace.ListOptions{Organization: internal.String(ws.Organization)})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 

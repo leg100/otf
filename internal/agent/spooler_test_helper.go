@@ -3,14 +3,14 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/client"
 	"github.com/leg100/otf/run"
 )
 
 type fakeSpoolerApp struct {
 	runs   []*run.Run
-	events chan otf.Event
+	events chan internal.Event
 
 	client.Client
 }
@@ -18,11 +18,11 @@ type fakeSpoolerApp struct {
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error) {
 	return &run.RunList{
 		Items:      a.runs,
-		Pagination: otf.NewPagination(otf.ListOptions{}, len(a.runs)),
+		Pagination: internal.NewPagination(internal.ListOptions{}, len(a.runs)),
 	}, nil
 }
 
-func (a *fakeSpoolerApp) Watch(ctx context.Context, opts run.WatchOptions) (<-chan otf.Event, error) {
+func (a *fakeSpoolerApp) Watch(ctx context.Context, opts run.WatchOptions) (<-chan internal.Event, error) {
 	// the non-fake watch takes care of closing channel when context is
 	// terminated.
 	go func() {

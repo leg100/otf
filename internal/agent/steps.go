@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/run"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/variable"
@@ -49,14 +49,14 @@ func buildSteps(env *environment, run *run.Run) (steps []step) {
 	steps = append(steps, bldr.downloadState)
 
 	switch run.Phase() {
-	case otf.PlanPhase:
+	case internal.PlanPhase:
 		steps = append(steps, bldr.terraformInit)
 		steps = append(steps, bldr.terraformPlan)
 		steps = append(steps, bldr.convertPlanToJSON)
 		steps = append(steps, bldr.uploadPlan)
 		steps = append(steps, bldr.uploadJSONPlan)
 		steps = append(steps, bldr.uploadLockFile)
-	case otf.ApplyPhase:
+	case internal.ApplyPhase:
 		// Download lock file from plan phase for the apply phase, to ensure
 		// same providers are used in both phases.
 		steps = append(steps, bldr.downloadLockFile)
@@ -115,14 +115,14 @@ func (b *stepsBuilder) downloadConfig(ctx context.Context) error {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
 	// Decompress and untar config into root dir
-	if err := otf.Unpack(bytes.NewBuffer(cv), b.workdir.root); err != nil {
+	if err := internal.Unpack(bytes.NewBuffer(cv), b.workdir.root); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 	return nil
 }
 
 func (b *stepsBuilder) deleteBackendConfig(ctx context.Context) error {
-	if err := otf.RewriteHCL(b.workdir.String(), otf.RemoveBackendBlock); err != nil {
+	if err := internal.RewriteHCL(b.workdir.String(), internal.RemoveBackendBlock); err != nil {
 		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
@@ -132,7 +132,7 @@ func (b *stepsBuilder) deleteBackendConfig(ctx context.Context) error {
 // nothing will be downloaded and no error will be reported.
 func (b *stepsBuilder) downloadState(ctx context.Context) error {
 	statefile, err := b.DownloadCurrentState(ctx, b.WorkspaceID)
-	if errors.Is(err, otf.ErrResourceNotFound) {
+	if errors.Is(err, internal.ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)

@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql"
 	"github.com/stretchr/testify/require"
@@ -15,8 +15,8 @@ import (
 
 func newTestHook(t *testing.T, f factory, cloudID *string) *hook {
 	want, err := f.newHook(newHookOpts{
-		id:         otf.UUID(uuid.New()),
-		secret:     otf.String("top-secret"),
+		id:         internal.UUID(uuid.New()),
+		secret:     internal.String("top-secret"),
 		identifier: "leg100/" + uuid.NewString(),
 		cloud:      "github",
 		cloudID:    cloudID,
@@ -71,7 +71,7 @@ func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.Handle
 type fakeHostnameService struct {
 	hostname string
 
-	otf.HostnameService
+	internal.HostnameService
 }
 
 func (f fakeHostnameService) Hostname() string { return f.hostname }
@@ -91,7 +91,7 @@ func (f *fakeCloudClient) GetWebhook(ctx context.Context, opts cloud.GetWebhookO
 	if f.hook.ID == opts.ID {
 		return f.hook, nil
 	}
-	return cloud.Webhook{}, otf.ErrResourceNotFound
+	return cloud.Webhook{}, internal.ErrResourceNotFound
 }
 
 func (f *fakeCloudClient) UpdateWebhook(context.Context, cloud.UpdateWebhookOptions) error {

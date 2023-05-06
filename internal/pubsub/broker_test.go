@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgconn"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +14,7 @@ import (
 
 func TestBroker_Subscribe(t *testing.T) {
 	broker := &Broker{
-		subs:    make(map[string]chan otf.Event),
+		subs:    make(map[string]chan internal.Event),
 		metrics: make(map[string]prometheus.Gauge),
 	}
 
@@ -31,12 +31,12 @@ func TestBroker_Subscribe(t *testing.T) {
 }
 
 func TestBroker_Publish(t *testing.T) {
-	got := make(chan otf.Event, 1)
+	got := make(chan internal.Event, 1)
 	pool := &fakePool{}
 	broker := &Broker{
 		pool:          pool,
-		subs:          map[string]chan otf.Event{"sub-1": got},
-		registrations: make(map[string]otf.Getter),
+		subs:          map[string]chan internal.Event{"sub-1": got},
+		registrations: make(map[string]internal.Getter),
 		metrics:       map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 
@@ -44,8 +44,8 @@ func TestBroker_Publish(t *testing.T) {
 		ID string
 	}
 
-	event := otf.Event{
-		Type:    otf.EventType("payload_update"),
+	event := internal.Event{
+		Type:    internal.EventType("payload_update"),
 		Payload: &payload{ID: "payload-123"},
 	}
 	broker.Publish(event)
@@ -72,18 +72,18 @@ func TestPubSub_receive(t *testing.T) {
 	}{
 		ID: "run-123",
 	}
-	got := make(chan otf.Event, 1)
+	got := make(chan internal.Event, 1)
 	broker := &Broker{
 		pool:          &fakePool{},
-		subs:          map[string]chan otf.Event{"sub-1": got},
-		registrations: map[string]otf.Getter{"run": &fakeGetter{resource: resource}},
+		subs:          map[string]chan internal.Event{"sub-1": got},
+		registrations: map[string]internal.Getter{"run": &fakeGetter{resource: resource}},
 		metrics:       map[string]prometheus.Gauge{"sub-1": prometheus.NewGauge(prometheus.GaugeOpts{})},
 	}
 	err := broker.receive(context.Background(), &notification)
 	require.NoError(t, err)
 
-	want := otf.Event{
-		Type:    otf.EventRunStatusUpdate,
+	want := internal.Event{
+		Type:    internal.EventRunStatusUpdate,
 		Payload: resource,
 	}
 	assert.Equal(t, want, <-got)

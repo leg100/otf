@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
@@ -36,7 +36,7 @@ func NewTestServer(t *testing.T, opts ...TestGitlabServerOption) *httptest.Serve
 	mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Add("state", r.URL.Query().Get("state"))
-		q.Add("code", otf.GenerateRandomString(10))
+		q.Add("code", internal.GenerateRandomString(10))
 
 		referrer, err := url.Parse(r.Referer())
 		require.NoError(t, err)

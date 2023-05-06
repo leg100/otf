@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -32,7 +32,7 @@ type (
 	}
 
 	logsdb interface {
-		GetLogs(ctx context.Context, runID string, phase otf.PhaseType) ([]byte, error)
+		GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 	}
 )
 
@@ -55,7 +55,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		otf.ListOptions
+		internal.ListOptions
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -105,12 +105,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.GetLogs(r.Context(), run.ID, otf.PlanPhase)
+	planLogs, err := h.GetLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.GetLogs(r.Context(), run.ID, otf.ApplyPhase)
+	applyLogs, err := h.GetLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -119,13 +119,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	h.Render("run_get.tmpl", w, struct {
 		workspace.WorkspacePage
 		Run       *Run
-		PlanLogs  otf.Chunk
-		ApplyLogs otf.Chunk
+		PlanLogs  internal.Chunk
+		ApplyLogs internal.Chunk
 	}{
 		WorkspacePage: workspace.NewPage(r, run.ID, ws),
 		Run:           run,
-		PlanLogs:      otf.Chunk{Data: planLogs},
-		ApplyLogs:     otf.Chunk{Data: applyLogs},
+		PlanLogs:      internal.Chunk{Data: planLogs},
+		ApplyLogs:     internal.Chunk{Data: applyLogs},
 	})
 }
 
@@ -252,7 +252,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, err := h.svc.Watch(r.Context(), WatchOptions{
-		WorkspaceID: otf.String(params.WorkspaceID),
+		WorkspaceID: internal.String(params.WorkspaceID),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -319,12 +319,12 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			js, err := json.Marshal(struct {
-				ID              string        `json:"id"`
-				RunStatus       otf.RunStatus `json:"run-status"`
-				RunItemHTML     string        `json:"run-item-html"`
-				RunStatusHTML   string        `json:"run-status-html"`
-				PlanStatusHTML  string        `json:"plan-status-html"`
-				ApplyStatusHTML string        `json:"apply-status-html"`
+				ID              string             `json:"id"`
+				RunStatus       internal.RunStatus `json:"run-status"`
+				RunItemHTML     string             `json:"run-item-html"`
+				RunStatusHTML   string             `json:"run-status-html"`
+				PlanStatusHTML  string             `json:"plan-status-html"`
+				ApplyStatusHTML string             `json:"apply-status-html"`
 			}{
 				ID:              run.ID,
 				RunStatus:       run.Status,
@@ -337,7 +337,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling watched run", "run", run.ID)
 				continue
 			}
-			otf.WriteSSEEvent(w, js, event.Type, false)
+			internal.WriteSSEEvent(w, js, event.Type, false)
 			rc.Flush()
 		}
 	}

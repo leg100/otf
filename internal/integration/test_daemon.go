@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cli"
@@ -59,7 +59,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 	}
 	// Setup secret if not specified
 	if cfg.Secret == "" {
-		cfg.Secret = otf.GenerateRandomString(16)
+		cfg.Secret = internal.GenerateRandomString(16)
 	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
@@ -81,7 +81,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 	}
 
 	// Confer superuser privileges on all calls to service endpoints
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{Username: "app-user"})
+	ctx := internal.AddSubjectToContext(context.Background(), &internal.Superuser{Username: "app-user"})
 
 	d, err := daemon.New(ctx, logger, cfg.Config)
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *orga
 	t.Helper()
 
 	org, err := s.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
-		Name: otf.String(uuid.NewString()),
+		Name: internal.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
 	return org
@@ -132,7 +132,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	}
 
 	ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
-		Name:         otf.String(uuid.NewString()),
+		Name:         internal.String(uuid.NewString()),
 		Organization: &org.Name,
 	})
 	require.NoError(t, err)
@@ -195,7 +195,7 @@ func (s *testDaemon) createUserCtx(t *testing.T, ctx context.Context, opts ...au
 
 	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
 	require.NoError(t, err)
-	return user, otf.AddSubjectToContext(ctx, user)
+	return user, internal.AddSubjectToContext(ctx, user)
 }
 
 func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *auth.User {
@@ -252,7 +252,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 	}
 
 	run, err := s.CreateRun(ctx, ws.ID, run.RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID),
+		ConfigurationVersionID: internal.String(cv.ID),
 	})
 	require.NoError(t, err)
 	return run
@@ -266,8 +266,8 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 	}
 
 	v, err := s.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      otf.String(uuid.NewString()),
-		Value:    otf.String(uuid.NewString()),
+		Key:      internal.String(uuid.NewString()),
+		Value:    internal.String(uuid.NewString()),
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
@@ -286,7 +286,7 @@ func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *w
 
 	sv, err := s.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 		State:       file,
-		WorkspaceID: otf.String(ws.ID),
+		WorkspaceID: internal.String(ws.ID),
 	})
 	require.NoError(t, err)
 	return sv
@@ -306,7 +306,7 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 	// If user is provided then add it to context. Otherwise the context is
 	// expected to contain a user if authz is to succeed.
 	if user != nil {
-		ctx = otf.AddSubjectToContext(ctx, user)
+		ctx = internal.AddSubjectToContext(ctx, user)
 	}
 
 	ut, token, err := s.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
@@ -393,7 +393,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	cmd := exec.Command("terraform", cmdargs...)
 	cmd.Dir = configPath
 	cmd.Env = append(envs,
-		otf.CredentialEnv(s.Hostname(), token),
+		internal.CredentialEnv(s.Hostname(), token),
 	)
 	out, err := cmd.CombinedOutput()
 	return string(out), err

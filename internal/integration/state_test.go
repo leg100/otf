@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/state"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
@@ -26,7 +26,7 @@ func TestIntegration_StateService(t *testing.T) {
 
 		_, err = svc.CreateStateVersion(ctx, state.CreateStateVersionOptions{
 			State:       file,
-			WorkspaceID: otf.String(ws.ID),
+			WorkspaceID: internal.String(ws.ID),
 		})
 		require.NoError(t, err)
 	})
@@ -45,7 +45,7 @@ func TestIntegration_StateService(t *testing.T) {
 		svc := setup(t, nil)
 
 		_, err := svc.GetStateVersion(ctx, "sv-99999")
-		require.Equal(t, otf.ErrResourceNotFound, err)
+		require.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	// Get current creates two state versions and checks the second one is made
@@ -66,7 +66,7 @@ func TestIntegration_StateService(t *testing.T) {
 		svc := setup(t, nil)
 
 		_, err := svc.GetCurrentStateVersion(ctx, "ws-99999")
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestIntegration_StateService(t *testing.T) {
 			Workspace:    "ws-999",
 			Organization: "acme-corp",
 		})
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestIntegration_StateService(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = svc.GetStateVersion(ctx, want.ID)
-		assert.Equal(t, otf.ErrResourceNotFound, err)
+		assert.Equal(t, internal.ErrResourceNotFound, err)
 
 		t.Run("deleting current version not allowed", func(t *testing.T) {
 			err := svc.DeleteStateVersion(ctx, current.ID)

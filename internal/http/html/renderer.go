@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 )
 
@@ -102,7 +102,7 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	// func to append hash to asset links
 	funcs["addHash"] = buster.Path
 	// make version available to templates
-	funcs["version"] = func() string { return otf.Version }
+	funcs["version"] = func() string { return internal.Version }
 	// make version available to templates
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	funcs["mergeQuery"] = mergeQuery

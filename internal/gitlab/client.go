@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/xanzy/go-gitlab"
 )
@@ -57,7 +57,7 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 		return nil, err
 	}
 	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
-		TopLevelOnly: otf.Bool(true),
+		TopLevelOnly: internal.Bool(true),
 	})
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositor
 		},
 		// limit results to those repos the authenticated user is a member of,
 		// otherwise we'll get *all* accessible repos, public and private.
-		Membership: otf.Bool(true),
+		Membership: internal.Bool(true),
 	}
 	projects, _, err := g.client.Projects.ListProjects(opts, nil)
 	if err != nil {
@@ -125,7 +125,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositor
 
 func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
 	results, _, err := g.client.Tags.ListTags(opts.Repo, &gitlab.ListTagsOptions{
-		Search: otf.String("^" + opts.Prefix),
+		Search: internal.String("^" + opts.Prefix),
 	})
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	}
 
 	tarball, _, err := g.client.Repositories.Archive(opts.Repo, &gitlab.ArchiveOptions{
-		Format: otf.String("tar.gz"),
+		Format: internal.String("tar.gz"),
 		SHA:    opts.Ref,
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	if err != nil {
 		return nil, err
 	}
-	if err := otf.Unpack(bytes.NewReader(tarball), untarpath); err != nil {
+	if err := internal.Unpack(bytes.NewReader(tarball), untarpath); err != nil {
 		return nil, err
 	}
 	contents, err := os.ReadDir(untarpath)
@@ -169,22 +169,22 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	if len(contents) != 1 {
 		return nil, fmt.Errorf("expected only one top-level directory; instead got %s", contents)
 	}
-	return otf.Pack(path.Join(untarpath, contents[0].Name()))
+	return internal.Pack(path.Join(untarpath, contents[0].Name()))
 }
 
 func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
 	addOpts := &gitlab.AddProjectHookOptions{
-		EnableSSLVerification: otf.Bool(true),
-		PushEvents:            otf.Bool(true),
-		Token:                 otf.String(opts.Secret),
-		URL:                   otf.String(opts.Endpoint),
+		EnableSSLVerification: internal.Bool(true),
+		PushEvents:            internal.Bool(true),
+		Token:                 internal.String(opts.Secret),
+		URL:                   internal.String(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
 		case cloud.VCSPushEventType:
-			addOpts.PushEvents = otf.Bool(true)
+			addOpts.PushEvents = internal.Bool(true)
 		case cloud.VCSPullEventType:
-			addOpts.MergeRequestsEvents = otf.Bool(true)
+			addOpts.MergeRequestsEvents = internal.Bool(true)
 		}
 	}
 
@@ -202,16 +202,16 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOpti
 	}
 
 	editOpts := &gitlab.EditProjectHookOptions{
-		EnableSSLVerification: otf.Bool(true),
-		Token:                 otf.String(opts.Secret),
-		URL:                   otf.String(opts.Endpoint),
+		EnableSSLVerification: internal.Bool(true),
+		Token:                 internal.String(opts.Secret),
+		URL:                   internal.String(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
 		case cloud.VCSPushEventType:
-			editOpts.PushEvents = otf.Bool(true)
+			editOpts.PushEvents = internal.Bool(true)
 		case cloud.VCSPullEventType:
-			editOpts.MergeRequestsEvents = otf.Bool(true)
+			editOpts.MergeRequestsEvents = internal.Bool(true)
 		}
 	}
 
@@ -231,7 +231,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	hook, resp, err := g.client.Projects.GetProjectHook(opts.Repo, id)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return cloud.Webhook{}, otf.ErrResourceNotFound
+			return cloud.Webhook{}, internal.ErrResourceNotFound
 		}
 		return cloud.Webhook{}, err
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 const (
@@ -346,9 +346,9 @@ func checkResponseCode(r *http.Response) error {
 	}
 	switch r.StatusCode {
 	case 401:
-		return otf.ErrUnauthorized
+		return internal.ErrUnauthorized
 	case 404:
-		return otf.ErrResourceNotFound
+		return internal.ErrResourceNotFound
 	}
 	// Decode the error payload.
 	errPayload := []*jsonapi.Error{}

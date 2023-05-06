@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
@@ -84,7 +84,7 @@ func (a *CLI) newClient(cfg *http.Config) func(*cobra.Command, []string) error {
 }
 
 func (a *CLI) getToken(address string) (string, error) {
-	if token, ok := os.LookupEnv(otf.CredentialEnvKey(address)); ok {
+	if token, ok := os.LookupEnv(internal.CredentialEnvKey(address)); ok {
 		return token, nil
 	}
 	if token, ok := os.LookupEnv("OTF_TOKEN"); ok {

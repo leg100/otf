@@ -3,7 +3,7 @@ package auth
 import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
 )
@@ -20,17 +20,17 @@ type (
 	service struct {
 		logr.Logger
 
-		site         otf.Authorizer // authorizes site access
-		organization otf.Authorizer // authorizes org access
+		site         internal.Authorizer // authorizes site access
+		organization internal.Authorizer // authorizes org access
 
 		db  *pgdb
 		web *webHandlers
 	}
 
 	Options struct {
-		otf.DB
+		internal.DB
 		html.Renderer
-		otf.HostnameService
+		internal.HostnameService
 		logr.Logger
 	}
 )
@@ -39,7 +39,7 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
+		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.Logger),
 	}
 	svc.web = &webHandlers{

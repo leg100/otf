@@ -5,25 +5,25 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestService(t *testing.T) {
 	// input event channel
-	in := make(chan otf.Event, 1)
+	in := make(chan internal.Event, 1)
 
 	svc := &service{
-		site:          otf.NewAllowAllAuthorizer(),
+		site:          internal.NewAllowAllAuthorizer(),
 		Logger:        logr.Discard(),
 		PubSubService: &fakeSubscriber{ch: in},
 	}
 
 	// inject input event
-	want := otf.Event{
+	want := internal.Event{
 		Payload: &Run{},
-		Type:    otf.EventRunCreated,
+		Type:    internal.EventRunCreated,
 	}
 	in <- want
 

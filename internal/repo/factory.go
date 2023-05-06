@@ -6,16 +6,16 @@ import (
 	"path"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
 
 type factory struct {
 	cloud.Service
-	otf.HostnameService
+	internal.HostnameService
 }
 
-func newFactory(hostnameService otf.HostnameService, cloudService cloud.Service) factory {
+func newFactory(hostnameService internal.HostnameService, cloudService cloud.Service) factory {
 	return factory{cloudService, hostnameService}
 }
 
@@ -41,7 +41,7 @@ func (f factory) newHook(opts newHookOpts) (*hook, error) {
 	if opts.secret != nil {
 		hook.secret = *opts.secret
 	} else {
-		secret, err := otf.GenerateToken()
+		secret, err := internal.GenerateToken()
 		if err != nil {
 			return nil, err
 		}

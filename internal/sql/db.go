@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -115,7 +115,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) (err e
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(internal.DB) error) error {
 	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return err

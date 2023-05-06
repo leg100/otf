@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/natefinch/atomic"
 )
 
@@ -23,7 +23,7 @@ type download struct {
 }
 
 func (d *download) download() error {
-	if otf.Exists(d.dest) {
+	if internal.Exists(d.dest) {
 		return nil
 	}
 

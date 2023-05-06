@@ -3,7 +3,7 @@ package tokens
 import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
@@ -29,8 +29,8 @@ type (
 	service struct {
 		logr.Logger
 
-		site         otf.Authorizer // authorizes site access
-		organization otf.Authorizer // authorizes org access
+		site         internal.Authorizer // authorizes site access
+		organization internal.Authorizer // authorizes org access
 
 		db  *pgdb
 		web *webHandlers
@@ -42,7 +42,7 @@ type (
 
 	Options struct {
 		logr.Logger
-		otf.DB
+		internal.DB
 		html.Renderer
 		auth.AuthService
 		GoogleIAPConfig
@@ -56,7 +56,7 @@ func NewService(opts Options) (*service, error) {
 	svc := service{
 		Logger:       opts.Logger,
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &otf.SiteAuthorizer{Logger: opts.Logger},
+		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		db:           &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{

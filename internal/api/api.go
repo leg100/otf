@@ -3,7 +3,7 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/logr"
@@ -32,7 +32,7 @@ type (
 		variable.VariableService
 
 		marshaler
-		otf.Verifier // for verifying signed urls
+		internal.Verifier // for verifying signed urls
 
 		maxConfigSize int64 // Maximum permitted config upload size in bytes
 	}

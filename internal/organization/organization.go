@@ -4,7 +4,7 @@ package organization
 import (
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type (
@@ -20,14 +20,14 @@ type (
 
 	// OrganizationList represents a list of Organizations.
 	OrganizationList struct {
-		*otf.Pagination
+		*internal.Pagination
 		Items []*Organization
 	}
 
 	// ListOptions represents the options for listing organizations.
 	OrganizationListOptions struct {
 		Names []string // filter organizations by name if non-nil
-		otf.ListOptions
+		internal.ListOptions
 	}
 
 	// UpdateOptions represents the options for updating an

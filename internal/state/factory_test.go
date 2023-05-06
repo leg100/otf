@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,9 +19,9 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{}}
 
 		got, err := f.create(ctx, CreateStateVersionOptions{
-			Serial:      otf.Int64(0),
+			Serial:      internal.Int64(0),
 			State:       state,
-			WorkspaceID: otf.String("ws-123"),
+			WorkspaceID: internal.String("ws-123"),
 		})
 		require.NoError(t, err)
 
@@ -53,9 +53,9 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 0}}}
 
 		got, err := f.create(ctx, CreateStateVersionOptions{
-			Serial:      otf.Int64(1),
+			Serial:      internal.Int64(1),
 			State:       state,
-			WorkspaceID: otf.String("ws-123"),
+			WorkspaceID: internal.String("ws-123"),
 		})
 		require.NoError(t, err)
 
@@ -68,9 +68,9 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 42, State: state}}}
 
 		_, err := f.create(ctx, CreateStateVersionOptions{
-			Serial:      otf.Int64(42),
+			Serial:      internal.Int64(42),
 			State:       state,
-			WorkspaceID: otf.String("ws-123"),
+			WorkspaceID: internal.String("ws-123"),
 		})
 		require.NoError(t, err)
 	})
@@ -87,9 +87,9 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 42, State: state}}}
 
 		_, err = f.create(ctx, CreateStateVersionOptions{
-			Serial:      otf.Int64(42),
+			Serial:      internal.Int64(42),
 			State:       state2,
-			WorkspaceID: otf.String("ws-123"),
+			WorkspaceID: internal.String("ws-123"),
 		})
 		require.Equal(t, ErrSerialMD5Mismatch, err)
 	})
@@ -98,9 +98,9 @@ func TestFactory(t *testing.T) {
 		f := factory{&fakeDB{current: &Version{Serial: 99}}}
 
 		_, err := f.create(ctx, CreateStateVersionOptions{
-			Serial:      otf.Int64(1),
+			Serial:      internal.Int64(1),
 			State:       state,
-			WorkspaceID: otf.String("ws-123"),
+			WorkspaceID: internal.String("ws-123"),
 		})
 		require.Equal(t, ErrSerialLessThanCurrent, err)
 	})

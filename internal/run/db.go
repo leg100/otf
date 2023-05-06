@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/leg100/otf/workspace"
@@ -16,7 +16,7 @@ import (
 type (
 	// pgdb is a database of runs on postgres
 	pgdb struct {
-		otf.DB // provides access to generated SQL queries
+		internal.DB // provides access to generated SQL queries
 	}
 
 	// pgresult is the result of a database query for a run.
@@ -239,7 +239,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 
 	return &RunList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -324,12 +324,12 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		return callback(&pgdb{tx})
 	})
 }
 
-func convertStatusSliceToStringSlice(statuses []otf.RunStatus) (s []string) {
+func convertStatusSliceToStringSlice(statuses []internal.RunStatus) (s []string) {
 	for _, status := range statuses {
 		s = append(s, string(status))
 	}
@@ -344,7 +344,7 @@ func (result pgresult) toRun() *Run {
 		PositionInQueue:        result.PositionInQueue,
 		Refresh:                result.Refresh,
 		RefreshOnly:            result.RefreshOnly,
-		Status:                 otf.RunStatus(result.Status.String),
+		Status:                 internal.RunStatus(result.Status.String),
 		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		ReplaceAddrs:           result.ReplaceAddrs,
 		TargetAddrs:            result.TargetAddrs,
@@ -357,21 +357,21 @@ func (result pgresult) toRun() *Run {
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
 		Plan: Phase{
 			RunID:            result.RunID.String,
-			PhaseType:        otf.PlanPhase,
+			PhaseType:        internal.PlanPhase,
 			Status:           PhaseStatus(result.PlanStatus.String),
 			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
 			ResourceReport:   (*ResourceReport)(result.PlannedChanges),
 		},
 		Apply: Phase{
 			RunID:            result.RunID.String,
-			PhaseType:        otf.ApplyPhase,
+			PhaseType:        internal.ApplyPhase,
 			Status:           PhaseStatus(result.ApplyStatus.String),
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
 			ResourceReport:   (*ResourceReport)(result.AppliedChanges),
 		},
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
-		run.ForceCancelAvailableAt = otf.Time(result.ForceCancelAvailableAt.Time.UTC())
+		run.ForceCancelAvailableAt = internal.Time(result.ForceCancelAvailableAt.Time.UTC())
 	}
 	if result.IngressAttributes != nil {
 		run.Commit = &result.IngressAttributes.CommitSHA.String
@@ -382,7 +382,7 @@ func (result pgresult) toRun() *Run {
 func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
 	for _, ty := range rows {
 		timestamps = append(timestamps, RunStatusTimestamp{
-			Status:    otf.RunStatus(ty.Status.String),
+			Status:    internal.RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}

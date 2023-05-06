@@ -4,7 +4,7 @@ package integration
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 )
 
@@ -13,5 +13,5 @@ var (
 	envs []string
 
 	// Context conferring site admin privileges
-	ctx = otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx = internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 )

@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
@@ -48,11 +48,11 @@ func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 
 	// required options
 	if opts.Serial == nil {
-		Error(w, &otf.MissingParameterError{Parameter: "serial"})
+		Error(w, &internal.MissingParameterError{Parameter: "serial"})
 		return
 	}
 	if opts.MD5 == nil {
-		Error(w, &otf.MissingParameterError{Parameter: "md5"})
+		Error(w, &internal.MissingParameterError{Parameter: "md5"})
 		return
 	}
 
@@ -77,7 +77,7 @@ func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	// options to take precedence, without error. We've opted to support that
 	// behaviour.
 	sv, err := a.CreateStateVersion(r.Context(), state.CreateStateVersionOptions{
-		WorkspaceID: otf.String(workspaceID),
+		WorkspaceID: internal.String(workspaceID),
 		State:       decoded,
 		Serial:      opts.Serial,
 	})

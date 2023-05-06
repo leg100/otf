@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +15,7 @@ func TestVersion(t *testing.T) {
 	ctx := context.Background()
 
 	want := "test-version"
-	otf.Version = want
+	internal.Version = want
 
 	got := new(bytes.Buffer)
 	err := parseFlags(ctx, []string{"--version"}, got)

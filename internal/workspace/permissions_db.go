@@ -3,7 +3,7 @@ package workspace
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
@@ -21,12 +21,12 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team st
 	return nil
 }
 
-func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
+func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error) {
 	result, err := db.FindWorkspacePolicyByID(ctx, sql.String(workspaceID))
 	if err != nil {
-		return otf.WorkspacePolicy{}, sql.Error(err)
+		return internal.WorkspacePolicy{}, sql.Error(err)
 	}
-	policy := otf.WorkspacePolicy{
+	policy := internal.WorkspacePolicy{
 		Organization: result.OrganizationName.String,
 		WorkspaceID:  result.WorkspaceID.String,
 	}
@@ -36,12 +36,12 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (otf
 	for _, perm := range result.WorkspacePermissions {
 		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
 		if err != nil {
-			return otf.WorkspacePolicy{}, err
+			return internal.WorkspacePolicy{}, err
 		}
 		// find corresponding team name in teams array
 		for _, t := range result.Teams {
 			if t.TeamID == perm.TeamID {
-				policy.Permissions = append(policy.Permissions, otf.WorkspacePermission{
+				policy.Permissions = append(policy.Permissions, internal.WorkspacePermission{
 					Team: t.Name.String,
 					Role: role,
 				})

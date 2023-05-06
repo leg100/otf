@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,7 +102,7 @@ func wantSubjectHandler(t *testing.T, want any) http.HandlerFunc {
 	t.Helper()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got, err := otf.SubjectFromContext(r.Context())
+		got, err := internal.SubjectFromContext(r.Context())
 		require.NoError(t, err)
 		if assert.NotNil(t, got, "subject is missing") {
 			assert.Equal(t, reflect.TypeOf(want), reflect.TypeOf(got))

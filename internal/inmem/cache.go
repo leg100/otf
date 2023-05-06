@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 type CacheConfig struct {
@@ -15,7 +15,7 @@ type CacheConfig struct {
 }
 
 func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
-	defaults := bigcache.DefaultConfig(otf.DefaultCacheTTL)
+	defaults := bigcache.DefaultConfig(internal.DefaultCacheTTL)
 	defaults.Verbose = false
 
 	if config.TTL != 0 {

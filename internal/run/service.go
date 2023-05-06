@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/organization"
@@ -29,10 +29,10 @@ type (
 		ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
 		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
 		// StartPhase starts a run phase.
-		StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error)
+		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error)
 		// FinishPhase finishes a phase. Creates a report of changes before updating the status of
 		// the run.
-		FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error)
+		FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error)
 		// GetPlanFile returns the plan file for the run.
 		GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error)
 		// UploadPlanFile persists a run's plan file. The plan format should be either
@@ -44,7 +44,7 @@ type (
 		// TODO(@leg100): it would be clearer to the caller if the stream is closed by
 		// returning a stream object with a Close() method. The calling code would
 		// call Watch(), and then defer a Close(), which is more readable IMO.
-		Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error)
+		Watch(ctx context.Context, opts WatchOptions) (<-chan internal.Event, error)
 		// Cancel a run. If a run is in progress then a cancelation signal will be
 		// sent out.
 		Cancel(ctx context.Context, runID string) (*Run, error)
@@ -58,27 +58,27 @@ type (
 		// ForceCancelRun forcefully cancels a run.
 		ForceCancelRun(ctx context.Context, runID string) error
 		// createReport creates a report of changes for the phase.
-		createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error)
+		createReport(ctx context.Context, runID string, phase internal.PhaseType) (ResourceReport, error)
 		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
 		createApplyReport(ctx context.Context, runID string) (ResourceReport, error)
 
 		lockFileService
 
-		otf.Authorizer // run authorizer
+		internal.Authorizer // run authorizer
 	}
 
 	service struct {
 		logr.Logger
 
 		WorkspaceService
-		otf.PubSubService
+		internal.PubSubService
 
-		site         otf.Authorizer
-		organization otf.Authorizer
-		workspace    otf.Authorizer
+		site         internal.Authorizer
+		organization internal.Authorizer
+		workspace    internal.Authorizer
 		*authorizer
 
-		cache otf.Cache
+		cache internal.Cache
 		db    *pgdb
 		*factory
 
@@ -86,17 +86,17 @@ type (
 	}
 
 	Options struct {
-		WorkspaceAuthorizer otf.Authorizer
+		WorkspaceAuthorizer internal.Authorizer
 
 		WorkspaceService
 		ConfigurationVersionService
 		VCSProviderService
 
 		logr.Logger
-		otf.Cache
-		otf.DB
+		internal.Cache
+		internal.DB
 		html.Renderer
-		otf.Broker
+		internal.Broker
 	}
 )
 
@@ -108,7 +108,7 @@ func NewService(opts Options) *service {
 		WorkspaceService: opts.WorkspaceService,
 	}
 
-	svc.site = &otf.SiteAuthorizer{Logger: opts.Logger}
+	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
 	svc.organization = &organization.Authorizer{Logger: opts.Logger}
 	svc.workspace = opts.WorkspaceAuthorizer
 	svc.authorizer = &authorizer{db, opts.WorkspaceAuthorizer}
@@ -162,7 +162,7 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 	}
 	s.V(1).Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
 
-	s.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunCreated, Payload: run})
 
 	return run, nil
 }
@@ -193,7 +193,7 @@ func (s *service) GetByID(ctx context.Context, runID string) (any, error) {
 // list.
 func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	var (
-		subject otf.Subject
+		subject internal.Subject
 		authErr error
 	)
 	if opts.Organization != nil && opts.WorkspaceName != nil {
@@ -246,7 +246,7 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	}
 	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
 
-	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 
 	return run, nil
 }
@@ -267,12 +267,12 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("deleted run", "id", runID, "subject", subject)
-	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunDeleted, Payload: run})
 	return nil
 }
 
 // StartPhase starts a run phase.
-func (s *service) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ PhaseStartOptions) (*Run, error) {
+func (s *service) StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.StartPhaseAction, runID)
 	if err != nil {
 		return nil, err
@@ -286,13 +286,13 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase otf.PhaseT
 		return nil, err
 	}
 	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
-	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
 // FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
-func (s *service) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts PhaseFinishOptions) (*Run, error) {
+func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.PhaseType, opts PhaseFinishOptions) (*Run, error) {
 	subject, err := s.CanAccess(ctx, rbac.FinishPhaseAction, runID)
 	if err != nil {
 		return nil, err
@@ -315,12 +315,12 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase otf.Phase
 		return nil, err
 	}
 	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
-	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
 // Watch provides authenticated access to a stream of run events.
-func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Event, error) {
+func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan internal.Event, error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
@@ -342,7 +342,7 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan otf.Even
 	}
 
 	// relay is returned to the caller to which filtered run events are sent
-	relay := make(chan otf.Event)
+	relay := make(chan internal.Event)
 	go func() {
 		// relay events
 		for ev := range sub {
@@ -387,7 +387,7 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 
 	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
 
-	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -409,7 +409,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 
 	s.V(0).Info("discarded run", "id", runID, "subject", subject)
 
-	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -434,9 +434,9 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 	s.V(0).Info("canceled run", "id", runID, "subject", subject)
 	if enqueue {
 		// notify agent which'll send a SIGINT to terraform
-		s.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
+		s.Publish(internal.Event{Type: internal.EventRunCancel, Payload: run})
 	}
-	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
@@ -456,7 +456,7 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
 
 	// notify agent which'll send a SIGKILL to terraform
-	s.Publish(otf.Event{Type: otf.EventRunForceCancel, Payload: run})
+	s.Publish(internal.Event{Type: internal.EventRunForceCancel, Payload: run})
 
 	return err
 }
@@ -511,11 +511,11 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 }
 
 // createReport creates a report of changes for the phase.
-func (s *service) createReport(ctx context.Context, runID string, phase otf.PhaseType) (ResourceReport, error) {
+func (s *service) createReport(ctx context.Context, runID string, phase internal.PhaseType) (ResourceReport, error) {
 	switch phase {
-	case otf.PlanPhase:
+	case internal.PlanPhase:
 		return s.createPlanReport(ctx, runID)
-	case otf.ApplyPhase:
+	case internal.ApplyPhase:
 		return s.createApplyReport(ctx, runID)
 	default:
 		return ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
@@ -538,7 +538,7 @@ func (s *service) createPlanReport(ctx context.Context, runID string) (ResourceR
 }
 
 func (s *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
-	logs, err := s.db.GetLogs(ctx, runID, otf.ApplyPhase)
+	logs, err := s.db.GetLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return ResourceReport{}, err
 	}

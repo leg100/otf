@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/organization"
 	"github.com/stretchr/testify/require"
 )
 
 func NewTestOrganization(t *testing.T) *organization.Organization {
 	org, err := NewOrganization(OrganizationCreateOptions{
-		Name: otf.String(uuid.NewString()),
+		Name: internal.String(uuid.NewString()),
 	})
 	require.NoError(t, err)
 	return org

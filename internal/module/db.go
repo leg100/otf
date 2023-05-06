@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/repo"
 	"github.com/leg100/otf/semver"
 	"github.com/leg100/otf/sql"
@@ -16,7 +16,7 @@ import (
 type (
 	// pgdb is the registry database on postgres
 	pgdb struct {
-		otf.DB // provides access to generated SQL queries
+		internal.DB // provides access to generated SQL queries
 	}
 
 	// moduleRow is a row from a database query for modules.
@@ -157,7 +157,7 @@ func (db *pgdb) getTarball(ctx context.Context, versionID string) ([]byte, error
 
 // tx constructs a new pgdb within a transaction.
 func (db *pgdb) tx(ctx context.Context, txFunc func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		return txFunc(&pgdb{tx})
 	})
 }

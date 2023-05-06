@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -36,7 +36,7 @@ func TestTokenWeb(t *testing.T) {
 		web := newTestTokenHandlers(t, "acme-org")
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
+		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
 		web.createUserToken(w, r)
@@ -51,7 +51,7 @@ func TestTokenWeb(t *testing.T) {
 		web := newTestTokenHandlers(t, "acme-org")
 		q := "/?"
 		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
+		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
 		web.userTokens(w, r)
@@ -65,7 +65,7 @@ func TestTokenWeb(t *testing.T) {
 		web := newTestTokenHandlers(t, "acme-org")
 		q := "/?id=token-123"
 		r := httptest.NewRequest("POST", q, nil)
-		r = r.WithContext(otf.AddSubjectToContext(context.Background(), user))
+		r = r.WithContext(internal.AddSubjectToContext(context.Background(), user))
 		w := httptest.NewRecorder()
 
 		web.deleteUserToken(w, r)

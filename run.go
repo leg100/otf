@@ -7,7 +7,7 @@ const (
 	FinalPhase   PhaseType = "final"
 	UnknownPhase PhaseType = "unknown"
 
-	// List all available run statuses supported in OTF.
+	// List all available run statuses supported in otf.
 	RunApplied            RunStatus = "applied"
 	RunApplyQueued        RunStatus = "apply_queued"
 	RunApplying           RunStatus = "applying"

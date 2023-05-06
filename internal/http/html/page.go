@@ -3,7 +3,7 @@ package html
 import (
 	"net/http"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 // SitePage contains data shared by all pages when rendering templates.
@@ -18,13 +18,13 @@ type SitePage struct {
 func NewSitePage(r *http.Request, title string) SitePage {
 	return SitePage{
 		Title:   title,
-		Version: otf.Version,
+		Version: internal.Version,
 		request: r,
 	}
 }
 
-func (v SitePage) CurrentUser() otf.Subject {
-	subject, err := otf.SubjectFromContext(v.request.Context())
+func (v SitePage) CurrentUser() internal.Subject {
+	subject, err := internal.SubjectFromContext(v.request.Context())
 	if err != nil {
 		return nil
 	}

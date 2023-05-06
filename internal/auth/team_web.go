@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -45,7 +45,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	team, err := h.svc.CreateTeam(r.Context(), opts)
-	if err == otf.ErrResourceAlreadyExists {
+	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "team already exists: "+opts.Name)
 		http.Redirect(w, r, paths.NewTeam(opts.Organization), http.StatusFound)
 		return
@@ -80,7 +80,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	subject, err := otf.SubjectFromContext(r.Context())
+	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return

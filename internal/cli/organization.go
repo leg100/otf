@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/orgcreator"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +29,7 @@ func (a *CLI) newOrganizationCommand() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			org, err := a.CreateOrganization(cmd.Context(), orgcreator.OrganizationCreateOptions{
-				Name: otf.String(args[0]),
+				Name: internal.String(args[0]),
 			})
 			if err != nil {
 				return err

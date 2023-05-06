@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 )
@@ -53,14 +53,14 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.SubjectFromContext(r.Context())
+	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.Render("profile.tmpl", w, struct {
 		html.SitePage
-		User otf.Subject
+		User internal.Subject
 	}{
 		SitePage: html.NewSitePage(r, "profile"),
 		User:     user,

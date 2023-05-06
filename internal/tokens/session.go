@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 )
 
@@ -24,7 +24,7 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	if opts.Username == nil {
 		return fmt.Errorf("missing username")
 	}
-	expiry := otf.CurrentTimestamp().Add(defaultSessionExpiry)
+	expiry := internal.CurrentTimestamp().Add(defaultSessionExpiry)
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}
@@ -38,7 +38,7 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 		return err
 	}
 	// Set cookie to expire at same time as token
-	html.SetCookie(w, sessionCookie, string(token), otf.Time(expiry))
+	html.SetCookie(w, sessionCookie, string(token), internal.Time(expiry))
 	html.ReturnUserOriginalPage(w, r)
 
 	a.V(2).Info("started session", "username", *opts.Username)

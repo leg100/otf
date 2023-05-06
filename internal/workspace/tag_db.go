@@ -5,7 +5,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -58,12 +58,12 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	return &TagList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []string) error {
-	err := db.Tx(ctx, func(tx otf.DB) error {
+	err := db.Tx(ctx, func(tx internal.DB) error {
 		for _, tid := range tagIDs {
 			_, err := tx.DeleteTag(ctx, sql.String(tid), sql.String(organization))
 			if err != nil {
@@ -155,14 +155,14 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	return &TagList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
 // lockTags tags table within a transaction, providing a callback within which
 // caller can use the transaction.
 func (db *pgdb) lockTags(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		if _, err := tx.Exec(ctx, "LOCK tags"); err != nil {
 			return err
 		}

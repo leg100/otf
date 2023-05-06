@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
@@ -91,11 +91,11 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		html.SitePage
 		// list template expects pagination object but we don't paginate token
 		// listing
-		*otf.Pagination
+		*internal.Pagination
 		Items []*UserToken
 	}{
 		SitePage:   html.NewSitePage(r, "user tokens"),
-		Pagination: &otf.Pagination{},
+		Pagination: &internal.Pagination{},
 		Items:      tokens,
 	})
 }
@@ -133,7 +133,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.svc.StartSession(w, r, StartSessionOptions{
-		Username: otf.String(auth.SiteAdminUsername),
+		Username: internal.String(auth.SiteAdminUsername),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
@@ -196,11 +196,11 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		organization.OrganizationPage
 		// list template expects pagination object but we don't paginate token
 		// listing
-		*otf.Pagination
+		*internal.Pagination
 		Items []*AgentToken
 	}{
 		OrganizationPage: organization.NewPage(r, "agent tokens", org),
-		Pagination:       &otf.Pagination{},
+		Pagination:       &internal.Pagination{},
 		Items:            tokens,
 	})
 }

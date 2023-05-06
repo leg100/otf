@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -13,8 +13,8 @@ type Authorizer struct {
 	logr.Logger
 }
 
-func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name string) (otf.Subject, error) {
-	subj, err := otf.SubjectFromContext(ctx)
+func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name string) (internal.Subject, error) {
+	subj, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -22,5 +22,5 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name str
 		return subj, nil
 	}
 	a.Error(nil, "unauthorized action", "organization", name, "action", action, "subject", subj)
-	return nil, otf.ErrAccessNotPermitted
+	return nil, internal.ErrAccessNotPermitted
 }

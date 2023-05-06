@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/leg100/otf/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTeam_WebHandlers(t *testing.T) {
-	userCtx := otf.AddSubjectToContext(context.Background(), &User{})
+	userCtx := internal.AddSubjectToContext(context.Background(), &User{})
 
 	t.Run("new", func(t *testing.T) {
 		app := newFakeWeb(t, &fakeService{})
@@ -46,7 +46,7 @@ func TestTeam_WebHandlers(t *testing.T) {
 
 		q := "/?team_id=team-123"
 		r := httptest.NewRequest("GET", q, nil)
-		r = r.WithContext(otf.AddSubjectToContext(r.Context(), owner))
+		r = r.WithContext(internal.AddSubjectToContext(r.Context(), owner))
 		w := httptest.NewRecorder()
 		app.getTeam(w, r)
 		if !assert.Equal(t, 200, w.Code) {

@@ -19,16 +19,16 @@ func TestSetToken_Env(t *testing.T) {
 
 func TestSetToken_HostSpecificEnv(t *testing.T) {
 	t.Setenv("TF_TOKEN_otf_dev", "mytoken")
-	got, err := (&CLI{}).getToken("otf.dev")
+	got, err := (&CLI{}).getToken("internal.dev")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }
 
 func TestSetToken_CredentialStore(t *testing.T) {
 	store := CredentialsStore(filepath.Join(t.TempDir(), "creds.json"))
-	require.NoError(t, store.Save("otf.dev", "mytoken"))
+	require.NoError(t, store.Save("internal.dev", "mytoken"))
 
-	got, err := (&CLI{creds: store}).getToken("otf.dev")
+	got, err := (&CLI{creds: store}).getToken("internal.dev")
 	require.NoError(t, err)
 	assert.Equal(t, "mytoken", got)
 }

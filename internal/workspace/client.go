@@ -6,12 +6,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 )
 
 type Client struct {
-	otf.JSONAPIClient
+	internal.JSONAPIClient
 }
 
 // GetWorkspaceByName retrieves a workspace by organization and

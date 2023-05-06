@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/configversion"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ func TestConfigurationVersion(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
@@ -91,7 +91,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+				opts:        configversion.ConfigurationVersionListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
@@ -101,7 +101,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "stray pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+				opts:        configversion.ConfigurationVersionListOptions{ListOptions: internal.ListOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					// Zero items but total count should ignore pagination
@@ -113,7 +113,7 @@ func TestConfigurationVersion(t *testing.T) {
 				name:        "query non-existent workspace",
 				workspaceID: "ws-non-existent",
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
-					assert.Equal(t, otf.ErrResourceNotFound, err)
+					assert.Equal(t, internal.ErrResourceNotFound, err)
 				},
 			},
 		}

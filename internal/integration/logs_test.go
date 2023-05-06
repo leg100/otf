@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/daemon"
 	"github.com/leg100/otf/sql"
@@ -16,15 +16,15 @@ func TestLogs(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("upload chunk", func(t *testing.T) {
 		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, otf.PutChunkOptions{
+		err := svc.PutChunk(ctx, internal.PutChunkOptions{
 			RunID: run.ID,
-			Phase: otf.PlanPhase,
+			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
 		})
 		require.NoError(t, err)
@@ -34,9 +34,9 @@ func TestLogs(t *testing.T) {
 		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, otf.PutChunkOptions{
+		err := svc.PutChunk(ctx, internal.PutChunkOptions{
 			RunID: run.ID,
-			Phase: otf.PlanPhase,
+			Phase: internal.PlanPhase,
 		})
 		assert.Error(t, err)
 	})
@@ -45,70 +45,70 @@ func TestLogs(t *testing.T) {
 		svc := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
-		err := svc.PutChunk(ctx, otf.PutChunkOptions{
+		err := svc.PutChunk(ctx, internal.PutChunkOptions{
 			RunID: run.ID,
-			Phase: otf.PlanPhase,
+			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello world\x03"),
 		})
 		require.NoError(t, err)
 
 		tests := []struct {
 			name string
-			opts otf.GetChunkOptions
-			want otf.Chunk
+			opts internal.GetChunkOptions
+			want internal.Chunk
 		}{
 			{
 				name: "entire chunk",
-				opts: otf.GetChunkOptions{
+				opts: internal.GetChunkOptions{
 					RunID: run.ID,
-					Phase: otf.PlanPhase,
+					Phase: internal.PlanPhase,
 				},
-				want: otf.Chunk{
+				want: internal.Chunk{
 					RunID:  run.ID,
-					Phase:  otf.PlanPhase,
+					Phase:  internal.PlanPhase,
 					Data:   []byte("\x02hello world\x03"),
 					Offset: 0,
 				},
 			},
 			{
 				name: "first chunk",
-				opts: otf.GetChunkOptions{
+				opts: internal.GetChunkOptions{
 					RunID: run.ID,
-					Phase: otf.PlanPhase,
+					Phase: internal.PlanPhase,
 					Limit: 4,
 				},
-				want: otf.Chunk{
+				want: internal.Chunk{
 					RunID:  run.ID,
-					Phase:  otf.PlanPhase,
+					Phase:  internal.PlanPhase,
 					Data:   []byte("\x02hel"),
 					Offset: 0,
 				},
 			},
 			{
 				name: "intermediate chunk",
-				opts: otf.GetChunkOptions{
+				opts: internal.GetChunkOptions{
 					RunID:  run.ID,
-					Phase:  otf.PlanPhase,
+					Phase:  internal.PlanPhase,
 					Offset: 4,
 					Limit:  3,
 				},
-				want: otf.Chunk{
+				want: internal.Chunk{
 					RunID:  run.ID,
-					Phase:  otf.PlanPhase,
+					Phase:  internal.PlanPhase,
 					Data:   []byte("lo "),
 					Offset: 4,
 				},
 			},
 			{
 				name: "last chunk",
-				opts: otf.GetChunkOptions{
+				opts: internal.GetChunkOptions{
 					RunID:  run.ID,
-					Phase:  otf.PlanPhase,
+					Phase:  internal.PlanPhase,
 					Offset: 7,
 				},
-				want: otf.Chunk{
+				want: internal.Chunk{
 					RunID:  run.ID,
-					Phase:  otf.PlanPhase,
+					Phase:  internal.PlanPhase,
 					Data:   []byte("world\x03"),
 					Offset: 7,
 				},
@@ -141,7 +141,7 @@ func TestClusterLogs(t *testing.T) {
 	}})
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(func() { cancel() })
 
@@ -149,41 +149,41 @@ func TestClusterLogs(t *testing.T) {
 	run := local.createRun(t, ctx, nil, nil)
 
 	// follow run's plan logs on remote node
-	sub, err := remote.Tail(ctx, otf.GetChunkOptions{
+	sub, err := remote.Tail(ctx, internal.GetChunkOptions{
 		RunID: run.ID,
-		Phase: otf.PlanPhase,
+		Phase: internal.PlanPhase,
 	})
 	require.NoError(t, err)
 
 	// upload first chunk to local node
-	err = local.PutChunk(ctx, otf.PutChunkOptions{
+	err = local.PutChunk(ctx, internal.PutChunkOptions{
 		RunID: run.ID,
-		Phase: otf.PlanPhase,
+		Phase: internal.PlanPhase,
 		Data:  []byte("\x02hello"),
 	})
 	require.NoError(t, err)
 
 	// upload second and last chunk to local node
-	err = local.PutChunk(ctx, otf.PutChunkOptions{
+	err = local.PutChunk(ctx, internal.PutChunkOptions{
 		RunID:  run.ID,
-		Phase:  otf.PlanPhase,
+		Phase:  internal.PlanPhase,
 		Data:   []byte(" world\x03"),
 		Offset: 6,
 	})
 	require.NoError(t, err)
 
-	want1 := otf.Chunk{
+	want1 := internal.Chunk{
 		ID:    "1",
 		RunID: run.ID,
-		Phase: otf.PlanPhase,
+		Phase: internal.PlanPhase,
 		Data:  []byte("\x02hello"),
 	}
 	require.Equal(t, want1, <-sub)
 
-	want2 := otf.Chunk{
+	want2 := internal.Chunk{
 		ID:     "2",
 		RunID:  run.ID,
-		Phase:  otf.PlanPhase,
+		Phase:  internal.PlanPhase,
 		Data:   []byte(" world\x03"),
 		Offset: 6,
 	}

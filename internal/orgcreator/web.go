@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -36,7 +36,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	org, err := a.svc.CreateOrganization(r.Context(), opts)
-	if err == otf.ErrResourceAlreadyExists {
+	if err == internal.ErrResourceAlreadyExists {
 		html.FlashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)
 		return

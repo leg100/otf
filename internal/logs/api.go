@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 )
 
 type api struct {
-	otf.Verifier // for verifying upload url
+	internal.Verifier // for verifying upload url
 
 	svc Service
 }
@@ -20,7 +20,7 @@ type api struct {
 func (a *api) addHandlers(r *mux.Router) {
 	// client is typically terraform-cli
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(otf.VerifySignedURL(a.Verifier))
+	signed.Use(internal.VerifySignedURL(a.Verifier))
 	signed.HandleFunc("/runs/{run_id}/logs/{phase}", a.getLogs).Methods("GET")
 
 	r = otfhttp.APIRouter(r)
@@ -30,7 +30,7 @@ func (a *api) addHandlers(r *mux.Router) {
 }
 
 func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
-	var opts otf.GetChunkOptions
+	var opts internal.GetChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -49,7 +49,7 @@ func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
-	var opts otf.PutChunkOptions
+	var opts internal.PutChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

@@ -3,7 +3,7 @@ package workspace
 import (
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,14 +25,14 @@ func TestWorkspace_Lock(t *testing.T) {
 	t.Run("user cannot lock a locked workspace", func(t *testing.T) {
 		ws := &Workspace{lock: &lock{id: "run-123", LockKind: RunLock}}
 		err := ws.Lock("janitor", UserLock)
-		require.Equal(t, otf.ErrWorkspaceAlreadyLocked, err)
+		require.Equal(t, internal.ErrWorkspaceAlreadyLocked, err)
 	})
 }
 
 func TestWorkspace_Unlock(t *testing.T) {
 	t.Run("cannot unlock workspace already unlocked", func(t *testing.T) {
 		err := (&Workspace{}).Unlock("janitor", UserLock, false)
-		require.Equal(t, otf.ErrWorkspaceAlreadyUnlocked, err)
+		require.Equal(t, internal.ErrWorkspaceAlreadyUnlocked, err)
 	})
 	t.Run("user can unlock their own lock", func(t *testing.T) {
 		ws := &Workspace{lock: &lock{id: "janitor", LockKind: UserLock}}
@@ -43,7 +43,7 @@ func TestWorkspace_Unlock(t *testing.T) {
 	t.Run("user cannot unlock another user's lock", func(t *testing.T) {
 		ws := &Workspace{lock: &lock{id: "janitor", LockKind: UserLock}}
 		err := ws.Unlock("burglar", UserLock, false)
-		require.Equal(t, otf.ErrWorkspaceLockedByDifferentUser, err)
+		require.Equal(t, internal.ErrWorkspaceLockedByDifferentUser, err)
 	})
 	t.Run("user can unlock a lock by force", func(t *testing.T) {
 		ws := &Workspace{lock: &lock{id: "janitor", LockKind: UserLock}}
@@ -137,7 +137,7 @@ func TestWorkspace_LockButtonHelper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := lockButtonHelper(tt.ws, otf.WorkspacePolicy{}, tt.subject)
+			got := lockButtonHelper(tt.ws, internal.WorkspacePolicy{}, tt.subject)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -147,12 +147,12 @@ type fakeSubject struct {
 	id                                 string
 	canUnlock, canForceUnlock, canLock bool
 
-	otf.Subject
+	internal.Subject
 }
 
 func (f *fakeSubject) String() string { return f.id }
 
-func (f *fakeSubject) CanAccessWorkspace(action rbac.Action, _ otf.WorkspacePolicy) bool {
+func (f *fakeSubject) CanAccessWorkspace(action rbac.Action, _ internal.WorkspacePolicy) bool {
 	switch action {
 	case rbac.UnlockWorkspaceAction:
 		return f.canUnlock

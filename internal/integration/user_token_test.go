@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/tokens"
 	"github.com/stretchr/testify/assert"
@@ -15,13 +15,13 @@ func TestUserToken(t *testing.T) {
 	t.Parallel()
 
 	// perform all actions as superuser
-	ctx := otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
 		// create user and then add them to context so that it is their token
 		// that is created.
-		ctx := otf.AddSubjectToContext(ctx, svc.createUser(t, ctx))
+		ctx := internal.AddSubjectToContext(ctx, svc.createUser(t, ctx))
 		_, _, err := svc.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		})
@@ -33,7 +33,7 @@ func TestUserToken(t *testing.T) {
 		user := svc.createUser(t, ctx)
 		// create user and then add them to context so that it is their token
 		// that is created.
-		ctx := otf.AddSubjectToContext(ctx, user)
+		ctx := internal.AddSubjectToContext(ctx, user)
 
 		svc.createToken(t, ctx, user)
 		svc.createToken(t, ctx, user)
@@ -50,7 +50,7 @@ func TestUserToken(t *testing.T) {
 		user := svc.createUser(t, ctx)
 		// create user and then add them to context so that it is their token
 		// that is created.
-		ctx := otf.AddSubjectToContext(ctx, user)
+		ctx := internal.AddSubjectToContext(ctx, user)
 		token, _ := svc.createToken(t, ctx, user)
 
 		err := svc.DeleteUserToken(ctx, token.ID)

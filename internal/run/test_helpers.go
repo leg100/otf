@@ -4,19 +4,19 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/workspace"
 	"github.com/stretchr/testify/require"
 )
 
 type fakeSubscriber struct {
-	ch chan otf.Event
+	ch chan internal.Event
 
-	otf.PubSubService
+	internal.PubSubService
 }
 
-func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan otf.Event, error) {
+func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan internal.Event, error) {
 	return f.ch, nil
 }
 
@@ -73,11 +73,11 @@ func (f *fakeWebServices) GetWorkspace(context.Context, string) (*workspace.Work
 func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	return &RunList{
 		Items:      f.runs,
-		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
+		Pagination: internal.NewPagination(opts.ListOptions, len(f.runs)),
 	}, nil
 }
 
-func (f *fakeWebServices) GetLogs(context.Context, string, otf.PhaseType) ([]byte, error) {
+func (f *fakeWebServices) GetLogs(context.Context, string, internal.PhaseType) ([]byte, error) {
 	return nil, nil
 }
 

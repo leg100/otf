@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/state"
 	"github.com/spf13/cobra"
 )
@@ -43,7 +43,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				return err
 			}
 			current, err := a.GetCurrentStateVersion(ctx, workspace.ID)
-			if errors.Is(err, otf.ErrResourceNotFound) {
+			if errors.Is(err, internal.ErrResourceNotFound) {
 				fmt.Fprintln(out, "No state versions found")
 				return nil
 			}

@@ -3,12 +3,12 @@ package workspace
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
 type PermissionsService interface {
-	GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error)
+	GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error)
 
 	SetPermission(ctx context.Context, workspaceID, team string, role rbac.Role) error
 	UnsetPermission(ctx context.Context, workspaceID, team string) error
@@ -18,7 +18,7 @@ type PermissionsService interface {
 //
 // NOTE: no authz protects this endpoint because it's used in the process of making
 // authz decisions.
-func (s *service) GetPolicy(ctx context.Context, workspaceID string) (otf.WorkspacePolicy, error) {
+func (s *service) GetPolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error) {
 	return s.db.GetWorkspacePolicy(ctx, workspaceID)
 }
 

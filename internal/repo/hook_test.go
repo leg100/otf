@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,11 +28,11 @@ func TestHook_Sync(t *testing.T) {
 				Endpoint: "fake-host.org/xyz",
 			},
 			got: &hook{
-				cloudID:  otf.String("123"),
+				cloudID:  internal.String("123"),
 				endpoint: "fake-host.org/xyz",
 			},
 			want: &hook{
-				cloudID:  otf.String("123"),
+				cloudID:  internal.String("123"),
 				endpoint: "fake-host.org/xyz",
 			},
 		},
@@ -44,7 +44,7 @@ func TestHook_Sync(t *testing.T) {
 			},
 			want: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  otf.String("123"),
+				cloudID:  internal.String("123"),
 			},
 		},
 		{
@@ -55,11 +55,11 @@ func TestHook_Sync(t *testing.T) {
 			},
 			got: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  otf.String("123"),
+				cloudID:  internal.String("123"),
 			},
 			want: &hook{
 				endpoint: "fake-host.org/xyz",
-				cloudID:  otf.String("123"),
+				cloudID:  internal.String("123"),
 			},
 			wantUpdate: true,
 		},

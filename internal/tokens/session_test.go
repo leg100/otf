@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -22,7 +22,7 @@ func TestService_StartSession(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/?", nil)
 	svc.StartSession(w, r, StartSessionOptions{
-		Username: otf.String("bobby"),
+		Username: internal.String("bobby"),
 	})
 
 	// verify and validate token in cookie set in response

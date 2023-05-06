@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 var ascii = regexp.MustCompile("[[:^ascii:]]")
@@ -143,7 +143,7 @@ func (e *execution) addSandboxWrapper(args []string) []string {
 		// for DNS lookups
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
 		// for verifying SSL connections
-		"--ro-bind", otf.SSLCertsDir(), otf.SSLCertsDir(),
+		"--ro-bind", internal.SSLCertsDir(), internal.SSLCertsDir(),
 		"--chdir", path.Join("/config", e.workdir.relative),
 		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
 		"--proc", "/proc",

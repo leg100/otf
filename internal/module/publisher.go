@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
 	"github.com/leg100/otf/vcsprovider"
@@ -21,7 +21,7 @@ type (
 
 	PublisherOptions struct {
 		logr.Logger
-		otf.Subscriber
+		internal.Subscriber
 		vcsprovider.VCSProviderService
 		ModuleService
 	}
@@ -43,7 +43,7 @@ func StartPublisher(ctx context.Context, opts PublisherOptions) error {
 
 	for event := range sub {
 		// skip non-vcs events
-		if event.Type != otf.EventVCS {
+		if event.Type != internal.EventVCS {
 			continue
 		}
 		if err := p.handleEvent(ctx, event.Payload); err != nil {

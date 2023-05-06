@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
@@ -71,7 +71,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 
 			q := "/?workspace_id=ws-123"
 			r := httptest.NewRequest("GET", q, nil)
-			r = r.WithContext(otf.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
+			r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
 			w := httptest.NewRecorder()
 			app.getWorkspace(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
@@ -99,7 +99,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		name   string
 		ws     *Workspace
 		teams  []*auth.Team
-		policy otf.WorkspacePolicy
+		policy internal.WorkspacePolicy
 		user   auth.User
 		want   func(t *testing.T, doc *html.Node)
 	}{
@@ -135,8 +135,8 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			name: "with policy",
 			ws:   &Workspace{ID: "ws-123"},
 			user: auth.SiteAdmin,
-			policy: otf.WorkspacePolicy{
-				Permissions: []otf.WorkspacePermission{
+			policy: internal.WorkspacePolicy{
+				Permissions: []internal.WorkspacePermission{
 					{Team: "bosses", Role: rbac.WorkspaceAdminRole},
 					{Team: "workers", Role: rbac.WorkspacePlanRole},
 				},
@@ -187,7 +187,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 
 			q := "/?workspace_id=ws-123"
 			r := httptest.NewRequest("GET", q, nil)
-			r = r.WithContext(otf.AddSubjectToContext(context.Background(), &tt.user))
+			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &tt.user))
 			w := httptest.NewRecorder()
 			app.editWorkspace(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
@@ -232,7 +232,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1&page[size]=2", nil)
-		r = r.WithContext(otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
+		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -242,7 +242,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 	t.Run("second page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2&page[size]=2", nil)
-		r = r.WithContext(otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
+		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -252,7 +252,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 	t.Run("last page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3&page[size]=2", nil)
-		r = r.WithContext(otf.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
+		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -391,7 +391,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 }
 
 func TestFilterUnassigned(t *testing.T) {
-	policy := otf.WorkspacePolicy{Permissions: []otf.WorkspacePermission{
+	policy := internal.WorkspacePolicy{Permissions: []internal.WorkspacePermission{
 		{Team: "bosses", Role: rbac.WorkspaceAdminRole},
 		{Team: "workers", Role: rbac.WorkspacePlanRole},
 	}}

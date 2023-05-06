@@ -7,7 +7,7 @@ import (
 	"path"
 
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/pkg/errors"
 )
 
@@ -23,7 +23,7 @@ func unmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "creating temporary directory")
 	}
-	if err := otf.Unpack(bytes.NewReader(tarball), dir); err != nil {
+	if err := internal.Unpack(bytes.NewReader(tarball), dir); err != nil {
 		return nil, errors.Wrap(err, "extracting tarball")
 	}
 

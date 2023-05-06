@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"golang.org/x/oauth2"
 )
@@ -202,7 +202,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	if err != nil {
 		return nil, err
 	}
-	if err := otf.Unpack(resp.Body, untarpath); err != nil {
+	if err := internal.Unpack(resp.Body, untarpath); err != nil {
 		return nil, err
 	}
 	contents, err := os.ReadDir(untarpath)
@@ -213,7 +213,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 		return nil, fmt.Errorf("expected only one top-level directory; instead got %s", contents)
 	}
 	parentDir := path.Join(untarpath, contents[0].Name())
-	return otf.Pack(parentDir)
+	return internal.Pack(parentDir)
 }
 
 // CreateWebhook creates a webhook on a github repository.
@@ -240,7 +240,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 			"secret":       opts.Secret,
 			"content_type": "json",
 		},
-		Active: otf.Bool(true),
+		Active: internal.Bool(true),
 	})
 	if err != nil {
 		return "", err
@@ -275,7 +275,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOpti
 			"url":    opts.Endpoint,
 			"secret": opts.Secret,
 		},
-		Active: otf.Bool(true),
+		Active: internal.Bool(true),
 	})
 	if err != nil {
 		return err
@@ -297,7 +297,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return cloud.Webhook{}, otf.ErrResourceNotFound
+			return cloud.Webhook{}, internal.ErrResourceNotFound
 		}
 		return cloud.Webhook{}, err
 	}
@@ -356,10 +356,10 @@ func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) err
 	}
 
 	_, _, err := g.client.Repositories.CreateStatus(ctx, owner, name, opts.Ref, &github.RepoStatus{
-		Context:     otf.String(fmt.Sprintf("otf/%s", opts.Workspace)),
-		TargetURL:   otf.String(opts.TargetURL),
-		Description: otf.String(opts.Description),
-		State:       otf.String(status),
+		Context:     internal.String(fmt.Sprintf("otf/%s", opts.Workspace)),
+		TargetURL:   internal.String(opts.TargetURL),
+		Description: internal.String(opts.Description),
+		State:       internal.String(status),
 	})
 	return err
 }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -28,8 +28,8 @@ type (
 	}
 
 	oidcAuthenticatorOptions struct {
-		tokens.TokensService // for creating session
-		otf.HostnameService  // for constructing redirect URL
+		tokens.TokensService     // for creating session
+		internal.HostnameService // for constructing redirect URL
 		cloud.OIDCConfig
 	}
 

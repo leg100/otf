@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/http/html/paths"
@@ -47,7 +47,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	subject, err := otf.SubjectFromContext(r.Context())
+	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -126,7 +126,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
 		Variables            []*Variable
-		Policy               otf.WorkspacePolicy
+		Policy               internal.WorkspacePolicy
 		CreateVariableAction rbac.Action
 		DeleteVariableAction rbac.Action
 	}{
@@ -160,7 +160,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	subject, err := otf.SubjectFromContext(r.Context())
+	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -238,7 +238,7 @@ func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *
 	}
 
 	variable, err = h.svc.UpdateVariable(r.Context(), variable.ID, UpdateVariableOptions{
-		Value: otf.String(value),
+		Value: internal.String(value),
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError)

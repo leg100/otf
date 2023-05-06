@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -12,7 +12,7 @@ import (
 type (
 	// pgdb stores authentication resources in a postgres database
 	pgdb struct {
-		otf.DB // provides access to generated SQL queries
+		internal.DB // provides access to generated SQL queries
 	}
 
 	agentTokenRow struct {

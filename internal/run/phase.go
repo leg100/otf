@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 const (
@@ -24,7 +24,7 @@ type (
 	Phase struct {
 		RunID string
 
-		otf.PhaseType
+		internal.PhaseType
 		*ResourceReport // report of planned or applied resource changes
 
 		Status           PhaseStatus // current phase status
@@ -52,7 +52,7 @@ type (
 )
 
 // NewPhase constructs a new phase. A new phase always starts in pending status.
-func NewPhase(runID string, t otf.PhaseType) Phase {
+func NewPhase(runID string, t internal.PhaseType) Phase {
 	p := Phase{RunID: runID, PhaseType: t}
 	p.UpdateStatus(PhasePending)
 	return p
@@ -74,14 +74,14 @@ func (p *Phase) StatusTimestamp(status PhaseStatus) (time.Time, error) {
 			return rst.Timestamp, nil
 		}
 	}
-	return time.Time{}, otf.ErrStatusTimestampNotFound
+	return time.Time{}, internal.ErrStatusTimestampNotFound
 }
 
 func (p *Phase) UpdateStatus(status PhaseStatus) {
 	p.Status = status
 	p.StatusTimestamps = append(p.StatusTimestamps, PhaseStatusTimestamp{
 		Status:    status,
-		Timestamp: otf.CurrentTimestamp(),
+		Timestamp: internal.CurrentTimestamp(),
 	})
 }
 

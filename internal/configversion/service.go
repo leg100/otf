@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/surl"
 )
@@ -35,19 +35,19 @@ type (
 	service struct {
 		logr.Logger
 
-		workspace otf.Authorizer
+		workspace internal.Authorizer
 
 		db    *pgdb
-		cache otf.Cache
+		cache internal.Cache
 	}
 
 	Options struct {
 		logr.Logger
 
-		WorkspaceAuthorizer otf.Authorizer
+		WorkspaceAuthorizer internal.Authorizer
 
-		otf.Cache
-		otf.DB
+		internal.Cache
+		internal.DB
 		*surl.Signer
 	}
 )
@@ -168,7 +168,7 @@ func (s *service) DeleteConfigurationVersion(ctx context.Context, cvID string) e
 	return nil
 }
 
-func (s *service) canAccess(ctx context.Context, action rbac.Action, cvID string) (otf.Subject, error) {
+func (s *service) canAccess(ctx context.Context, action rbac.Action, cvID string) (internal.Subject, error) {
 	cv, err := s.db.GetConfigurationVersion(ctx, ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		return nil, err

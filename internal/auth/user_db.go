@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	return db.Tx(ctx, func(tx internal.DB) error {
 		_, err := tx.InsertUser(ctx, pggen.InsertUserParams{
 			ID:        sql.String(user.ID),
 			Username:  sql.String(user.Username),
@@ -133,7 +133,7 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 // is returned.
 func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promoted []string, demoted []string, err error) {
 	var resetted, updated []pgtype.Text
-	err = db.Tx(ctx, func(tx otf.DB) (err error) {
+	err = db.Tx(ctx, func(tx internal.DB) (err error) {
 		// First demote any existing site admins...
 		resetted, err = tx.ResetUserSiteAdmins(ctx)
 		if err != nil {

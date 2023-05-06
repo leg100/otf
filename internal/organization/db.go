@@ -5,7 +5,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -13,7 +13,7 @@ import (
 type (
 	// pgdb is a database of organizations on postgres
 	pgdb struct {
-		otf.DB // provides access to generated SQL queries
+		internal.DB // provides access to generated SQL queries
 	}
 
 	row struct {
@@ -37,7 +37,7 @@ func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
 
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
-	err := db.Tx(ctx, func(tx otf.DB) error {
+	err := db.Tx(ctx, func(tx internal.DB) error {
 		result, err := tx.FindOrganizationByNameForUpdate(ctx, sql.String(name))
 		if err != nil {
 			return err
@@ -98,7 +98,7 @@ func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*Organi
 
 	return &OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

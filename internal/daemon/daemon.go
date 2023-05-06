@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/api"
 	"github.com/leg100/otf/auth"
@@ -42,7 +42,7 @@ type (
 		Config
 		logr.Logger
 
-		otf.DB
+		internal.DB
 		*pubsub.Broker
 
 		agent process
@@ -56,13 +56,13 @@ type (
 		state.StateService
 		workspace.WorkspaceService
 		module.ModuleService
-		otf.HostnameService
+		internal.HostnameService
 		configversion.ConfigurationVersionService
 		run.RunService
 		repo.RepoService
 		logs.LogsService
 
-		Handlers []otf.Handlers
+		Handlers []internal.Handlers
 	}
 
 	process interface {
@@ -78,10 +78,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logger.Info("enabled developer mode")
 	}
 	if cfg.Secret == "" {
-		return nil, &otf.MissingParameterError{Parameter: "secret"}
+		return nil, &internal.MissingParameterError{Parameter: "secret"}
 	}
 
-	hostnameService := otf.NewHostnameService(cfg.Host)
+	hostnameService := internal.NewHostnameService(cfg.Host)
 
 	renderer, err := html.NewRenderer(cfg.DevMode)
 	if err != nil {
@@ -108,7 +108,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	broker := pubsub.NewBroker(logger, db)
 
 	// Setup url signer
-	signer := otf.NewSigner(cfg.Secret)
+	signer := internal.NewSigner(cfg.Secret)
 
 	orgService := organization.NewService(organization.Options{
 		Logger:                       logger,
@@ -274,7 +274,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})
 
-	handlers := []otf.Handlers{
+	handlers := []internal.Handlers{
 		authService,
 		tokensService,
 		workspaceService,
@@ -349,7 +349,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// of the http server.
 	if d.Host == "" {
 		listenAddress := ln.Addr().(*net.TCPAddr)
-		d.SetHostname(otf.NormalizeAddress(listenAddress))
+		d.SetHostname(internal.NormalizeAddress(listenAddress))
 	}
 	d.V(0).Info("set system hostname", "hostname", d.Hostname())
 
@@ -440,7 +440,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	// Run local agent in background
 	g.Go(func() error {
 		// give local agent unlimited access to services
-		agentCtx := otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
+		agentCtx := internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "local-agent"})
 		if err := d.agent.Start(agentCtx); err != nil {
 			return fmt.Errorf("agent terminated: %w", err)
 		}

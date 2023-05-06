@@ -5,7 +5,7 @@ package client
 import (
 	"context"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/leg100/otf/configversion"
 	"github.com/leg100/otf/http"
@@ -51,12 +51,12 @@ type (
 		ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error)
 		GetRun(ctx context.Context, id string) (*run.Run, error)
 
-		StartPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)
-		FinishPhase(ctx context.Context, id string, phase otf.PhaseType, opts run.PhaseFinishOptions) (*run.Run, error)
+		StartPhase(ctx context.Context, id string, phase internal.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)
+		FinishPhase(ctx context.Context, id string, phase internal.PhaseType, opts run.PhaseFinishOptions) (*run.Run, error)
 
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
 
-		Watch(context.Context, run.WatchOptions) (<-chan otf.Event, error)
+		Watch(context.Context, run.WatchOptions) (<-chan internal.Event, error)
 
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
@@ -78,7 +78,7 @@ type (
 		Hostname() string
 
 		tokens.RunTokenService
-		otf.PutChunkService
+		internal.PutChunkService
 		workspace.LockService
 	}
 
@@ -90,7 +90,7 @@ type (
 		variable.VariableService
 		state.StateService
 		workspace.WorkspaceService
-		otf.HostnameService
+		internal.HostnameService
 		configversion.ConfigurationVersionService
 		run.RunService
 		logs.LogsService

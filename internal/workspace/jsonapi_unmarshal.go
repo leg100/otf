@@ -1,7 +1,7 @@
 package workspace
 
 import (
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/api/types"
 )
 
@@ -43,7 +43,7 @@ func unmarshalJSONAPI(w *types.Workspace) *Workspace {
 // unmarshalListJSONAPI converts a DTO into a workspace list
 func unmarshalListJSONAPI(json *types.WorkspaceList) *WorkspaceList {
 	wl := WorkspaceList{
-		Pagination: otf.NewPaginationFromJSONAPI(json.Pagination),
+		Pagination: internal.NewPaginationFromJSONAPI(json.Pagination),
 	}
 	for _, i := range json.Items {
 		wl.Items = append(wl.Items, unmarshalJSONAPI(i))

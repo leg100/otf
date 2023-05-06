@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/state"
 	"github.com/leg100/otf/testutils"
 	"github.com/leg100/otf/workspace"
@@ -27,7 +27,7 @@ func TestCLI_State(t *testing.T) {
 					withWorkspaces(&workspace.Workspace{ID: "ws-123"}),
 					withStateVersion(&state.Version{ID: "sv-3", WorkspaceID: "ws-123"}),
 					withStateVersionList(&state.VersionList{
-						Pagination: &otf.Pagination{},
+						Pagination: &internal.Pagination{},
 						Items: []*state.Version{
 							{ID: "sv-3"},
 							{ID: "sv-2"},

@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"golang.org/x/exp/slog"
 )
 
@@ -67,7 +67,7 @@ type (
 
 func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID:          otf.NewID("var"),
+		ID:          internal.NewID("var"),
 		WorkspaceID: workspaceID,
 	}
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/rbac"
 	"github.com/leg100/otf/workspace"
@@ -28,16 +28,16 @@ type (
 
 		db
 
-		workspace otf.Authorizer
+		workspace internal.Authorizer
 
 		web *web
 	}
 
 	Options struct {
-		WorkspaceAuthorizer otf.Authorizer
+		WorkspaceAuthorizer internal.Authorizer
 		WorkspaceService    workspace.Service
 
-		otf.DB
+		internal.DB
 		html.Renderer
 		logr.Logger
 	}

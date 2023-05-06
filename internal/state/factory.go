@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 )
 
 var (
@@ -33,10 +33,10 @@ type (
 
 func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	if opts.State == nil {
-		return nil, &otf.MissingParameterError{Parameter: "state"}
+		return nil, &internal.MissingParameterError{Parameter: "state"}
 	}
 	if opts.WorkspaceID == nil {
-		return nil, &otf.MissingParameterError{Parameter: "workspace_id"}
+		return nil, &internal.MissingParameterError{Parameter: "workspace_id"}
 	}
 
 	var f File
@@ -55,7 +55,7 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 
 	// Serial should be greater than or equal to current serial
 	current, err := fa.db.getCurrentVersion(ctx, *opts.WorkspaceID)
-	if errors.Is(err, otf.ErrResourceNotFound) {
+	if errors.Is(err, internal.ErrResourceNotFound) {
 		// this is the first state version for workspace, so set current serial
 		// to a negative number to ensure tests below succeed.
 		current = &Version{Serial: -1}
@@ -118,8 +118,8 @@ func (fa *factory) rollback(ctx context.Context, svID string) (*Version, error) 
 
 func newVersion(opts newVersionOptions) (Version, error) {
 	sv := Version{
-		ID:          otf.NewID("sv"),
-		CreatedAt:   otf.CurrentTimestamp(),
+		ID:          internal.NewID("sv"),
+		CreatedAt:   internal.CurrentTimestamp(),
 		Serial:      opts.serial,
 		State:       opts.state,
 		WorkspaceID: opts.workspaceID,
@@ -139,7 +139,7 @@ func newVersion(opts newVersionOptions) (Version, error) {
 		}
 
 		outputs[k] = &Output{
-			ID:             otf.NewID("wsout"),
+			ID:             internal.NewID("wsout"),
 			Name:           k,
 			Type:           hclType,
 			Value:          string(v.Value),

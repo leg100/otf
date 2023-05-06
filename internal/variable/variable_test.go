@@ -5,7 +5,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +34,7 @@ func TestUpdateVariable(t *testing.T) {
 		},
 		{
 			name: "key",
-			opts: UpdateVariableOptions{Key: otf.String("teddy")},
+			opts: UpdateVariableOptions{Key: internal.String("teddy")},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -48,7 +48,7 @@ func TestUpdateVariable(t *testing.T) {
 		},
 		{
 			name: "value",
-			opts: UpdateVariableOptions{Value: otf.String("baz")},
+			opts: UpdateVariableOptions{Value: internal.String("baz")},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -62,7 +62,7 @@ func TestUpdateVariable(t *testing.T) {
 		},
 		{
 			name: "non-sensitive to sensitive",
-			opts: UpdateVariableOptions{Sensitive: otf.Bool(true)},
+			opts: UpdateVariableOptions{Sensitive: internal.Bool(true)},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -77,7 +77,7 @@ func TestUpdateVariable(t *testing.T) {
 		},
 		{
 			name: "non-hcl to hcl",
-			opts: UpdateVariableOptions{HCL: otf.Bool(true)},
+			opts: UpdateVariableOptions{HCL: internal.Bool(true)},
 			before: Variable{
 				Key:      "foo",
 				Value:    "bar",
@@ -92,7 +92,7 @@ func TestUpdateVariable(t *testing.T) {
 		},
 		{
 			name: "sensitive to non-sensitive",
-			opts: UpdateVariableOptions{Sensitive: otf.Bool(false)},
+			opts: UpdateVariableOptions{Sensitive: internal.Bool(false)},
 			before: Variable{
 				Key:       "foo",
 				Value:     "bar",
@@ -119,19 +119,19 @@ func TestWriteTerraformVariables(t *testing.T) {
 	dir := t.TempDir()
 
 	v1 := NewTestVariable(t, "ws-123", CreateVariableOptions{
-		Key:      otf.String("foo"),
-		Value:    otf.String("bar"),
+		Key:      internal.String("foo"),
+		Value:    internal.String("bar"),
 		Category: VariableCategoryPtr(CategoryTerraform),
 	})
 	v2 := NewTestVariable(t, "ws-123", CreateVariableOptions{
-		Key: otf.String("images"),
-		Value: otf.String(`{
+		Key: internal.String("images"),
+		Value: internal.String(`{
     us-east-1 = "image-1234"
     us-west-2 = "image-4567"
 }
 `),
 		Category: VariableCategoryPtr(CategoryTerraform),
-		HCL:      otf.Bool(true),
+		HCL:      internal.Bool(true),
 	})
 
 	err := WriteTerraformVars(dir, []*Variable{v1, v2})

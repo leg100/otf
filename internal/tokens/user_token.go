@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/auth"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
@@ -44,8 +44,8 @@ type (
 
 func NewUserToken(opts NewUserTokenOptions) (*UserToken, []byte, error) {
 	ut := UserToken{
-		ID:          otf.NewID("ut"),
-		CreatedAt:   otf.CurrentTimestamp(),
+		ID:          internal.NewID("ut"),
+		CreatedAt:   internal.CurrentTimestamp(),
 		Description: opts.Description,
 		Username:    opts.Username,
 	}
@@ -110,7 +110,7 @@ func (a *service) DeleteUserToken(ctx context.Context, tokenID string) error {
 	}
 
 	if user.Username != token.Username {
-		return otf.ErrAccessNotPermitted
+		return internal.ErrAccessNotPermitted
 	}
 
 	if err := a.db.deleteUserToken(ctx, tokenID); err != nil {

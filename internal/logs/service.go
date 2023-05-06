@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
+	internal "github.com/leg100/otf"
 	"github.com/leg100/otf/rbac"
 )
 
@@ -13,17 +13,17 @@ type (
 	LogsService = Service
 
 	Service interface {
-		GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
-		Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error)
-		otf.PutChunkService
+		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
+		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
+		internal.PutChunkService
 		StartProxy(ctx context.Context) error
 	}
 
 	service struct {
 		logr.Logger
-		otf.PubSubService // subscribe to tail log updates
+		internal.PubSubService // subscribe to tail log updates
 
-		run   otf.Authorizer
+		run   internal.Authorizer
 		proxy chunkproxy
 
 		api *api
@@ -32,18 +32,18 @@ type (
 
 	chunkproxy interface {
 		Start(ctx context.Context) error
-		get(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error)
-		put(ctx context.Context, opts otf.PutChunkOptions) error
+		get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
+		put(ctx context.Context, opts internal.PutChunkOptions) error
 	}
 
 	Options struct {
 		logr.Logger
-		otf.Cache
-		otf.DB
-		otf.Broker
-		otf.Verifier
+		internal.Cache
+		internal.DB
+		internal.Broker
+		internal.Verifier
 
-		RunAuthorizer otf.Authorizer
+		RunAuthorizer internal.Authorizer
 	}
 )
 
@@ -78,18 +78,18 @@ func (s *service) StartProxy(ctx context.Context) error {
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
-func (s *service) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (s *service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
 	logs, err := s.proxy.get(ctx, opts)
 	if err != nil {
 		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
-		return otf.Chunk{}, err
+		return internal.Chunk{}, err
 	}
 	s.V(2).Info("read logs", "id", opts.RunID, "offset", opts.Offset)
 	return logs, nil
 }
 
 // PutChunk writes a chunk of logs for a phase
-func (s *service) PutChunk(ctx context.Context, opts otf.PutChunkOptions) error {
+func (s *service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) error {
 	_, err := s.run.CanAccess(ctx, rbac.PutChunkAction, opts.RunID)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (s *service) PutChunk(ctx context.Context, opts otf.PutChunkOptions) error 
 
 // tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan otf.Chunk, error) {
+func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error) {
 	subject, err := s.run.CanAccess(ctx, rbac.TailLogsAction, opts.RunID)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 	opts.Offset += len(chunk.Data)
 
 	// relay is the chan returned to the caller on which chunks are relayed to.
-	relay := make(chan otf.Chunk)
+	relay := make(chan internal.Chunk)
 	go func() {
 		// send existing chunk
 		if len(chunk.Data) > 0 {
@@ -136,7 +136,7 @@ func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 
 		// relay chunks from subscription
 		for ev := range sub {
-			chunk, ok := ev.Payload.(otf.Chunk)
+			chunk, ok := ev.Payload.(internal.Chunk)
 			if !ok {
 				// skip non-chunk events
 				continue
@@ -152,7 +152,7 @@ func (s *service) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-chan ot
 					continue
 				}
 				// remove overlapping portion of chunk
-				chunk = chunk.Cut(otf.GetChunkOptions{Offset: opts.Offset})
+				chunk = chunk.Cut(internal.GetChunkOptions{Offset: opts.Offset})
 			}
 			if len(chunk.Data) == 0 {
 				// don't send empty chunks
