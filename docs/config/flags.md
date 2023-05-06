@@ -146,13 +146,6 @@ That'll update `.terraform.lock.hcl` accordingly. This command should be invoked
 
 Restricts the ability to create organizations to users possessing the site admin role. By default _any_ user can create organizations.
 
-```
-otfd --site-admins bob@example.com,alice@example.com
-```
-
-The users must exist on the system. Any users that were previously promoted and
-are no longer specified with this flag are demoted.
-
 ## `--secret`
 
 * **Required**
