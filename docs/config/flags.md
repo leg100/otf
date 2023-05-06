@@ -108,6 +108,13 @@ Set the logging format. Can be one of:
 * `text`: sequence of key=value pairs, writes to stdout
 * `json`: json format, writes to stdout
 
+## `--max-config-size`
+
+* System: `otfd`
+* Default: `104865760` (10MiB)
+
+Maximum permitted configuration upload size. This refers to the size of the (compressed) configuration tarball that `terraform` uploads to OTF at the start of a remote plan/apply.
+
 ## `--plugin-cache`
 
 * System: `otfd`, `otf-agent`
