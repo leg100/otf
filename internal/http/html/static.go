@@ -15,7 +15,7 @@ var (
 	embedded embed.FS
 
 	// The same files but on the local disk
-	localDisk = os.DirFS("http/html")
+	localDisk = os.DirFS("internal/http/html")
 )
 
 // AddStaticHandler adds a handler to router serving static assets
