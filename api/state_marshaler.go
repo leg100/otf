@@ -17,6 +17,9 @@ func (m *jsonapiMarshaler) toState(from *state.Version, r *http.Request) (*types
 		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", from.ID),
 		Serial:      from.Serial,
 	}
+	for _, out := range from.Outputs {
+		to.Outputs = append(to.Outputs, &types.StateVersionOutput{ID: out.ID})
+	}
 
 	// Support including related resources:
 	//
@@ -26,10 +29,11 @@ func (m *jsonapiMarshaler) toState(from *state.Version, r *http.Request) (*types
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "outputs":
+				var include []any
 				for _, out := range from.Outputs {
-					to.Outputs = append(to.Outputs, m.toOutput(out))
-					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out)))
+					include = append(include, m.toOutput(out))
 				}
+				opts = append(opts, jsonapi.MarshalInclude(include...))
 			}
 		}
 	}
@@ -46,19 +50,22 @@ func (m *jsonapiMarshaler) toStateList(from *state.VersionList, r *http.Request)
 }
 
 func (*jsonapiMarshaler) toOutput(from *state.Output) *types.StateVersionOutput {
-	return &types.StateVersionOutput{
+	to := &types.StateVersionOutput{
 		ID:        from.ID,
 		Name:      from.Name,
 		Sensitive: from.Sensitive,
 		Type:      from.Type,
 		Value:     from.Value,
 	}
+	if to.Sensitive {
+		to.Value = nil
+	}
+	return to
 }
 
-func (m *jsonapiMarshaler) toOutputList(from state.OutputList) *types.StateVersionOutputList {
-	var to types.StateVersionOutputList
+func (m *jsonapiMarshaler) toOutputList(from state.OutputList) (to []*types.StateVersionOutput) {
 	for _, v := range from {
-		to.Items = append(to.Items, m.toOutput(v))
+		to = append(to, m.toOutput(v))
 	}
-	return &to
+	return
 }

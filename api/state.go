@@ -28,6 +28,7 @@ func (a *api) addStateHandlers(r *mux.Router) {
 	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
 	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 
+	r.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
 	r.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
 }
@@ -171,6 +172,22 @@ func (a *api) downloadState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(resp)
+}
+
+func (a *api) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	sv, err := a.GetCurrentStateVersion(r.Context(), workspaceID)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	a.writeResponse(w, r, sv.Outputs)
 }
 
 func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {
