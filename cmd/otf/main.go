@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/leg100/otf/cli"
 	cmdutil "github.com/leg100/otf/cmd"
+	"github.com/leg100/otf/internal/cli"
 )
 
 func main() {

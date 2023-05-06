@@ -5,11 +5,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/agent"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/daemon"
-	"github.com/leg100/otf/logr"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +42,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		Long:          "otfd is the daemon component of the open terraforming framework.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       otf.Version,
+		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger, err := logr.New(loggerConfig)
 			if err != nil {
@@ -50,7 +50,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 			}
 
 			// Confer superuser privileges on all calls to service endpoints
-			ctx := otf.AddSubjectToContext(cmd.Context(), &otf.Superuser{Username: "app-user"})
+			ctx := internal.AddSubjectToContext(cmd.Context(), &internal.Superuser{Username: "app-user"})
 
 			d, err := daemon.New(ctx, logger, cfg)
 			if err != nil {
@@ -72,7 +72,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", cfg.MaxConfigSize, "Maximum permitted configuration size in bytes.")
 
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
-	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
+	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
 
 	cmd.Flags().BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")

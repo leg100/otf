@@ -121,8 +121,8 @@ install-pggen:
 sql: install-pggen
 	pggen gen go \
 		--postgres-connection "dbname=otf" \
-		--query-glob 'sql/queries/*.sql' \
-		--output-dir sql/pggen \
+		--query-glob 'internal/sql/queries/*.sql' \
+		--output-dir ./internal/sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
 		--go-type 'int4=int' \
 		--go-type 'int8=int' \
@@ -135,8 +135,8 @@ sql: install-pggen
 		--acronym http \
 		--acronym tls \
 		--acronym hcl
-	goimports -w ./sql/pggen
-	go fmt ./sql/pggen
+	goimports -w ./internal/sql/pggen
+	go fmt ./internal/sql/pggen
 
 # Install DB migration tool
 .PHONY: install-goose
@@ -146,22 +146,22 @@ install-goose:
 # Migrate SQL schema to latest version
 .PHONY: migrate
 migrate: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations up
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations up
 
 # Redo SQL schema migration
 .PHONY: migrate-redo
 migrate-redo: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations redo
 
 # Rollback SQL schema by one version
 .PHONY: migrate-rollback
 migrate-rollback: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations down
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations down
 
 # Get SQL schema migration status
 .PHONY: migrate-status
 migrate-status: install-goose
-	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./sql/migrations status
+	GOOSE_DBSTRING=$(GOOSE_DBSTRING) GOOSE_DRIVER=postgres goose -dir ./internal/sql/migrations status
 
 # Run docs server with live reload
 .PHONY: serve-docs
@@ -177,13 +177,13 @@ tunnel:
 # Generate path helpers
 .PHONY: paths
 paths:
-	go generate ./http/html/paths
-	goimports -w ./http/html/paths
+	go generate ./internal/http/html/paths
+	goimports -w ./internal/http/html/paths
 
 # Re-generate RBAC action strings
 .PHONY: actions
 actions:
-	stringer -type Action ./rbac
+	stringer -type Action ./internal/rbac
 
 # Install staticcheck linter
 .PHONY: install-linter

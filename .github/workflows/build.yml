@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: e2e-screenshots
-          path: integration/screenshots/**/*.png
+          path: internal/integration/screenshots/**/*.png
       -
         name: Login to docker hub
         if: startsWith(github.ref, 'refs/tags/v')

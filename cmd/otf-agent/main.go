@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/logr"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/client"
+	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +38,7 @@ func run(ctx context.Context, args []string) error {
 		Use:           "otf-agent",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       otf.Version,
+		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger, err := logr.New(loggerCfg)
 			if err != nil {
@@ -59,7 +59,7 @@ func run(ctx context.Context, args []string) error {
 			logger.Info("successfully authenticated", "organization", at.Organization, "token_id", at.ID)
 
 			// Ensure agent only processes runs for this org
-			cfg.Organization = otf.String(at.Organization)
+			cfg.Organization = internal.String(at.Organization)
 
 			agent, err := agent.NewAgent(logger, app, *cfg)
 			if err != nil {

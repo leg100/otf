@@ -28,7 +28,7 @@ services:
     stop_signal: SIGINT
     tty: true
     volumes:
-      - ./integration/fixtures:/etc/squid/certs
+      - ./internal/integration/fixtures:/etc/squid/certs
   otfd:
     image: leg100/otfd:latest
     depends_on:
@@ -54,4 +54,4 @@ services:
       - HTTPS_PROXY=squid:3128
       - SSL_CERT_FILE=/fixtures/cert.pem
     volumes:
-      - ./integration/fixtures:/fixtures
+      - ./internal/integration/fixtures:/fixtures
