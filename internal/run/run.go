@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 const (

@@ -3,11 +3,11 @@ package integration
 import (
 	"testing"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/github"
-	"github.com/leg100/otf/testutils"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 

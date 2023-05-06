@@ -15,10 +15,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/json"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/json"
 )
 
 const (

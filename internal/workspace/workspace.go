@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/repo"
-	"github.com/leg100/otf/semver"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/semver"
 	"golang.org/x/exp/slog"
 )
 

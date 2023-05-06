@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/daemon"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/daemon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 const (

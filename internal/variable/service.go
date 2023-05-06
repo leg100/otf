@@ -5,10 +5,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 )
 

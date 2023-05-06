@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/sql"
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 // pgdb is a logs database on postgres

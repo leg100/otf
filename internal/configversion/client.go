@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 type Client struct {

@@ -3,9 +3,9 @@ package inmem
 import (
 	"fmt"
 
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/github"
-	"github.com/leg100/otf/gitlab"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 )
 
 type CloudService struct {

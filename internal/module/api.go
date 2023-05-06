@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/internal"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/surl"
 )
 

@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"time"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
 )
 
 type Client struct {

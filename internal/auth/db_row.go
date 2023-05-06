@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 // userRow represents the result of a database query for a user.

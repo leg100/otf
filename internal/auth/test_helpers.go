@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/require"
 )
 

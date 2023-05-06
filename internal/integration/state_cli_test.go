@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/internal/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

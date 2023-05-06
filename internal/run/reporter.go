@@ -6,11 +6,11 @@ import (
 	"net/url"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 

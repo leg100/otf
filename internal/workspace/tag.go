@@ -3,7 +3,7 @@ package workspace
 import (
 	"errors"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 	"golang.org/x/exp/slog"
 )
 

@@ -3,7 +3,7 @@ package sql
 import (
 	"context"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // GetLogs retrieves the logs for a given run phase.

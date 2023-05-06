@@ -1,7 +1,7 @@
 // Package repo handles configuration of VCS repositories.
 package repo
 
-import internal "github.com/leg100/otf"
+import "github.com/leg100/otf/internal"
 
 const (
 	WorkspaceConnection ConnectionType = iota

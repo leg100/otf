@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/testutils"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 

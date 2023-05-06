@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 )
 
 // webHandlers provides handlers for the web UI

@@ -3,8 +3,8 @@ package run
 import (
 	"context"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 // authorizer authorizes access to a run

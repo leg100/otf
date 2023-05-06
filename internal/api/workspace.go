@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/api/types"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal/api/types"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type (

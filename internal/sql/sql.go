@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // String converts a go-string into a postgres non-null string

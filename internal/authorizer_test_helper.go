@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 type allowAllAuthorizer struct {

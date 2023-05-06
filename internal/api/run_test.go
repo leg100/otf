@@ -8,9 +8,9 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/assert"
 )
 

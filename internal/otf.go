@@ -1,6 +1,4 @@
-/*
-package internal is responsible for domain logic.
-*/
+/* Package internal contains all go code internal to OTF */
 package internal
 
 import (
@@ -18,7 +16,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 const (

@@ -3,7 +3,7 @@ package run
 import (
 	"context"
 
-	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/internal/configversion"
 )
 
 // factory constructs runs

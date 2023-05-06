@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/state"
 	"github.com/spf13/cobra"
 )
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 

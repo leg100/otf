@@ -8,8 +8,8 @@ import (
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/daemon"
-	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/github"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	oauth2github "golang.org/x/oauth2/github"

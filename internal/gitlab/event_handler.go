@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal/cloud"
 	"github.com/xanzy/go-gitlab"
 )
 

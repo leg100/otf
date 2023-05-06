@@ -8,11 +8,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/configversion"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/configversion"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http/decode"
 )
 
 func (a *api) addConfigHandlers(r *mux.Router) {

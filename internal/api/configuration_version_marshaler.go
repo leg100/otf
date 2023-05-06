@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/configversion"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/configversion"
 )
 
 func (m *jsonapiMarshaler) toConfigurationVersion(from *configversion.ConfigurationVersion) (*types.ConfigurationVersion, error) {

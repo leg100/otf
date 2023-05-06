@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/vcsprovider"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type (

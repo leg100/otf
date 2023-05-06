@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/api/types"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/tokens"
+	"github.com/leg100/otf/internal/api/types"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 func (a *api) addTokenHandlers(r *mux.Router) {

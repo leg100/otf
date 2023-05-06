@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // pgdb stores authentication resources in a postgres database

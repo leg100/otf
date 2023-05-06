@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/orgcreator"
-	"github.com/leg100/otf/tokens"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 type (

@@ -7,7 +7,7 @@ import (
 	"path"
 
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 	"github.com/pkg/errors"
 )
 

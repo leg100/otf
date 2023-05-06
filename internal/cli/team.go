@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/spf13/cobra"
 )
 

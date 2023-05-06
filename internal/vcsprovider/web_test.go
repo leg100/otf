@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/inmem"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

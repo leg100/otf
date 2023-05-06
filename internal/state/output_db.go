@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type outputRow struct {

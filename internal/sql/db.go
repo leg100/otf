@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 const defaultMaxConnections = 10 // max conns avail in a pgx pool

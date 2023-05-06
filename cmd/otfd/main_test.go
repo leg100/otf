@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

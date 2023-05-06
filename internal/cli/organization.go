@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/orgcreator"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/spf13/cobra"
 )
 

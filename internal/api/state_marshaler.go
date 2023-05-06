@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/state"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/state"
 )
 
 func (m *jsonapiMarshaler) toState(from *state.Version, r *http.Request) (*types.StateVersion, []jsonapi.MarshalOption) {

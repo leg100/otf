@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/internal/http"
 )
 
 var _ KVStore = (CredentialsStore)("")

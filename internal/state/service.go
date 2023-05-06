@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")

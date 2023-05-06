@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"

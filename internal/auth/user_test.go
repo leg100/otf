@@ -3,7 +3,7 @@ package auth
 import (
 	"testing"
 
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/stretchr/testify/assert"
 )
 

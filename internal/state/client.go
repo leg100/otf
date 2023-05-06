@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net/url"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
 )
 
 // Client uses json-api according to the documented terraform cloud state

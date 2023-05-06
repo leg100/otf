@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/vcsprovider"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/DataDog/jsonapi"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	otfhttp "github.com/leg100/otf/http"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

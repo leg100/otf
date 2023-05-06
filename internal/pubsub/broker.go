@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/cenkalti/backoff.v1"
 )

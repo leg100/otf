@@ -6,8 +6,8 @@ import (
 	"path"
 
 	"github.com/google/uuid"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
 )
 
 type factory struct {

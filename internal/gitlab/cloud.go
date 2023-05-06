@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal/cloud"
 )
 
 type Cloud struct{}

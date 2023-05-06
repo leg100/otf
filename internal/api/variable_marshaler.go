@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/variable"
 )
 
 // writeResponse encodes v as json:api and writes it to the body of the http response.

@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/orgcreator"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

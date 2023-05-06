@@ -6,12 +6,12 @@ import (
 	"os"
 	"testing"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/repo"
-	"github.com/leg100/otf/vcsprovider"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

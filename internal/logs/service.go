@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 type (

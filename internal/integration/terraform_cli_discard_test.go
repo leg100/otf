@@ -8,8 +8,8 @@ import (
 	"time"
 
 	expect "github.com/google/goexpect"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
 )
 

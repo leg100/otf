@@ -3,7 +3,7 @@ package configversion
 import (
 	"context"
 
-	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type cvUploader struct {

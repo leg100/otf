@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")

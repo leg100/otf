@@ -2,7 +2,7 @@
 package gitlab
 
 import (
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal/cloud"
 	"golang.org/x/oauth2"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )

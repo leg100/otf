@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -69,7 +69,7 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 				Name:                "fake-cloud",
 			},
 		},
-		otfHostname: otf.FakeHostnameService{Host: "otf-server.com"},
+		otfHostname: internal.FakeHostnameService{Host: "otf-server.com"},
 	})
 	require.NoError(t, err)
 	return client

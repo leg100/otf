@@ -16,7 +16,7 @@ import (
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/tokens"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/require"
 )
 

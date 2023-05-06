@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/auth"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/auth"
 )
 
 func (m *jsonapiMarshaler) toUser(from *auth.User) *types.User {

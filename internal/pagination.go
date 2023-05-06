@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/leg100/otf/api/types"
+	"github.com/leg100/otf/internal/api/types"
 )
 
 const (

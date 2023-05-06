@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgconn"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

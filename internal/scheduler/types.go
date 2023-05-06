@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // interfaces purely for faking purposes

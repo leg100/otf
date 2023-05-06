@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal/cloud"
 )
 
 // HandleEvent handles incoming events from github

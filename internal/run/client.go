@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"path"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/http"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/internal/http/html"
 )
 
 func NewAuthenticatorService(opts Options) (*service, error) {

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/client"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/logr"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/client"
+	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

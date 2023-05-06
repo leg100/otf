@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"

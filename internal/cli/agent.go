@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/leg100/otf/tokens"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/spf13/cobra"
 )
 

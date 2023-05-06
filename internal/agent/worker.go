@@ -3,7 +3,7 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/internal/run"
 )
 
 // worker sequentially executes runs.

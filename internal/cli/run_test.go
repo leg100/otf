@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

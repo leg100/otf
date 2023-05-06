@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/api/types"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/orgcreator"
+	"github.com/leg100/otf/internal/api/types"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/orgcreator"
 )
 
 // Implements TFC organizations API:

@@ -3,9 +3,9 @@ package run
 import (
 	"testing"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

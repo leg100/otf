@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/antchfx/htmlquery"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/testutils"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

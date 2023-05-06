@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
 )
 
 // defaultEvents are the VCS events that hooks subscribe to.

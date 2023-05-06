@@ -5,11 +5,11 @@ import (
 	"io"
 	"os"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/agent"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/daemon"
-	"github.com/leg100/otf/logr"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

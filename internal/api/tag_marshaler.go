@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 func (m *jsonapiMarshaler) toTags(from *workspace.TagList) (to []*types.OrganizationTag, opts []jsonapi.MarshalOption) {

@@ -3,12 +3,12 @@ package api
 import (
 	"net/http"
 
-	"github.com/leg100/otf/api/types"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/internal/api/types"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/variable"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/internal/http/decode"
 )
 
 // Implements TFC workspace variables API:

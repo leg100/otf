@@ -3,7 +3,7 @@ package vcsprovider
 import (
 	"time"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // factory makes vcs providers

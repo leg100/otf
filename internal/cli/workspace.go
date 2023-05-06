@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
 )
 

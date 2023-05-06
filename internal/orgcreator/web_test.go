@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

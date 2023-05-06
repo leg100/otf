@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/client"
+	"github.com/leg100/otf/internal/client"
 	"golang.org/x/sync/errgroup"
 )
 

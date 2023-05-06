@@ -3,9 +3,9 @@ package auth
 import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/organization"
 )
 
 type (

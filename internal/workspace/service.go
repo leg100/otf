@@ -8,13 +8,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/repo"
-	"github.com/leg100/otf/vcsprovider"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/vcsprovider"
 )
 
 type (

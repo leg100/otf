@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/DataDog/jsonapi"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
 )
 
 func toMarshalOption(p *internal.Pagination) jsonapi.MarshalOption {

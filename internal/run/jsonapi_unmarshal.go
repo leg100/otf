@@ -2,9 +2,9 @@ package run
 
 import (
 	"github.com/DataDog/jsonapi"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 func UnmarshalJSONAPI(b []byte) (*Run, error) {

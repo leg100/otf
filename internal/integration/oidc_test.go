@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/authenticator"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/daemon"
+	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/daemon"
 	"github.com/stretchr/testify/require"
 )
 

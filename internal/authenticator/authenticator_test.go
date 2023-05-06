@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"

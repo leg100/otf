@@ -16,7 +16,7 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 const (

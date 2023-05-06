@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/DataDog/jsonapi"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 var codes = map[error]int{

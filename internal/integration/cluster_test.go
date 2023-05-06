@@ -3,9 +3,9 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/daemon"
-	"github.com/leg100/otf/sql"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

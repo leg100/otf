@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 // SiteAuthorizer authorizes access to site-wide actions

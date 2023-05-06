@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/state"
-	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/variable"
 )
 
 const (

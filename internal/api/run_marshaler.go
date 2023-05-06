@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/DataDog/jsonapi"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/configversion"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/rbac"
-	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/configversion"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/run"
 )
 
 // runLogsURLGenerator creates a signed URL for retrieving logs for a run phase.

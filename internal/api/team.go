@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/auth"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/auth"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http/decode"
 )
 
 func (a *api) addTeamHandlers(r *mux.Router) {

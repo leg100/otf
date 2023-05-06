@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // Query schema decoder: caches structs, and safe for sharing.

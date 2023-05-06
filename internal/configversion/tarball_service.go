@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/rbac"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 // cacheKey generates a key for caching config tarballs

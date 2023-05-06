@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
 )
 
 type (

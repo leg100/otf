@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	"github.com/leg100/otf/sql"
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {

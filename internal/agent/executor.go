@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 var ascii = regexp.MustCompile("[[:^ascii:]]")

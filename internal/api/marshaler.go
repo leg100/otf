@@ -6,14 +6,14 @@ import (
 	"net/http"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/state"
-	"github.com/leg100/otf/variable"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 const mediaType = "application/vnd.api+json"

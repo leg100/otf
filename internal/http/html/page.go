@@ -3,7 +3,7 @@ package html
 import (
 	"net/http"
 
-	internal "github.com/leg100/otf"
+	"github.com/leg100/otf/internal"
 )
 
 // SitePage contains data shared by all pages when rendering templates.

@@ -5,18 +5,18 @@ package client
 import (
 	"context"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/auth"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/logs"
-	"github.com/leg100/otf/organization"
-	"github.com/leg100/otf/orgcreator"
-	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/state"
-	"github.com/leg100/otf/tokens"
-	"github.com/leg100/otf/variable"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 var (

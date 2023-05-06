@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/paths"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

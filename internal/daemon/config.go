@@ -3,13 +3,13 @@ package daemon
 import (
 	"reflect"
 
-	"github.com/leg100/otf/agent"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/configversion"
-	"github.com/leg100/otf/github"
-	"github.com/leg100/otf/gitlab"
-	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/tokens"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
+	"github.com/leg100/otf/internal/inmem"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 // Config configures the otfd daemon. Descriptions of each field can be found in

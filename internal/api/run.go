@@ -9,11 +9,11 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/api/types"
-	otfhttp "github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/run"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api/types"
+	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/run"
 )
 
 func (a *api) addRunHandlers(r *mux.Router) {

@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/leg100/otf/cloud"
-	"github.com/leg100/otf/http/html/paths"
-	"github.com/leg100/otf/tokens"
+	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/tokens"
 	"golang.org/x/oauth2"
 )
 

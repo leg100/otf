@@ -8,12 +8,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/client"
-	"github.com/leg100/otf/logs"
-	"github.com/leg100/otf/run"
-	"github.com/leg100/otf/tokens"
-	"github.com/leg100/otf/variable"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/client"
+	"github.com/leg100/otf/internal/logs"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/variable"
 	"github.com/pkg/errors"
 )
 

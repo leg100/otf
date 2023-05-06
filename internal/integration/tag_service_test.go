@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -7,10 +7,10 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	internal "github.com/leg100/otf"
-	"github.com/leg100/otf/sql"
-	"github.com/leg100/otf/sql/pggen"
-	"github.com/leg100/otf/workspace"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type (

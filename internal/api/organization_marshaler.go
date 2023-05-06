@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/api/types"
-	"github.com/leg100/otf/organization"
+	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/organization"
 )
 
 func (m *jsonapiMarshaler) toOrganization(org *organization.Organization) *types.Organization {
