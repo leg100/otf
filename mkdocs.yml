@@ -43,9 +43,9 @@ nav:
   - quickstart.md
   - Authentication:
     - Identity Providers:
-      - auth/providers/index.md
       - auth/providers/github.md
       - auth/providers/gitlab.md
+      - auth/providers/oidc.md
       - auth/providers/iap.md
     - auth/site_admin.md
     - auth/user_token.md
