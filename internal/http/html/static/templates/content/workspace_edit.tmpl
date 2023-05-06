@@ -73,7 +73,7 @@
     </div>
   </form>
   <div class="settings-container">
-    <h3>Tags</h3>
+    <h3 id="tags">Tags</h3>
     <div class="workspace-tag-settings-list">
       {{ range .Workspace.Tags }}
         <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">

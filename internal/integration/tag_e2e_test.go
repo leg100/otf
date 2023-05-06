@@ -80,8 +80,8 @@ resource "null_resource" "tags_e2e" {}
 		// confirm workspace page lists both tags
 		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'foo')]`),
 		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'bar')]`),
-		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		// go to tag settings
+		chromedp.Click(`//a[@id='tags-add-remove-link']`, chromedp.NodeVisible),
 		screenshot(t),
 		// remove bar tag
 		chromedp.Click(`//button[@id='button-remove-tag-bar']`, chromedp.NodeVisible),

@@ -35,7 +35,7 @@
           </select>
         </form>
       </div>
-      <div class="terraform-version-container"><h5>Terraform Version</h5>v{{ .Workspace.TerraformVersion }}</div>
+      <div class="terraform-version-container"><h5>Terraform Version</h5><a href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
       <div class="workspace-lock-container">
         <h5>Locking</h5>
         {{ with .LockButton }}
@@ -50,7 +50,7 @@
         <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
       <div>
-        <h5>Tags</h5>
+        <h5>Tags <a id="tags-add-remove-link" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
         <div class="workspace-tags-list">
         {{ range .Workspace.Tags }}
           <span class="workspace-tag">{{ . }}</span>

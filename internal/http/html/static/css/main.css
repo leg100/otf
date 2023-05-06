@@ -673,6 +673,10 @@ a.show-underline {
   display: none; /* hide checkbox */
 }
 
+#tags-add-remove-link {
+  font-weight: 500;
+}
+
 /* mobile-last */
 @media (max-width: 700px) {
   /*
