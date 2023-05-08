@@ -36,7 +36,7 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// errors from hereon in re sent to the redirect URI as per RFC6749.
+	// errors from hereon in are sent to the redirect URI as per RFC6749.
 	re := redirectError{redirect: redirect}
 
 	if params.GrantType != "authorization_code" {
@@ -51,9 +51,8 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var code authcode
-	err = json.Unmarshal(decrypted, &code)
-	if err != nil {
-		re.error(w, r, ErrInvalidRequest, "decrypting authentication code: "+err.Error())
+	if err := json.Unmarshal(decrypted, &code); err != nil {
+		re.error(w, r, ErrInvalidRequest, "unmarshaling authentication code: "+err.Error())
 		return
 	}
 

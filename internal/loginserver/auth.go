@@ -38,7 +38,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// errors from hereon in re sent to the redirect URI as per RFC6749.
+	// errors from hereon in are sent to the redirect URI as per RFC6749.
 	re := redirectError{
 		redirect: redirect,
 		state:    params.State,
