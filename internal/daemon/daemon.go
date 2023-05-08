@@ -17,9 +17,11 @@ import (
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
+	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/organization"
@@ -260,6 +262,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	loginServer, err := loginserver.NewServer(cfg.Secret)
+	if err != nil {
+		return nil, err
+	}
+
 	api := api.New(api.Options{
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
@@ -290,6 +297,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logsService,
 		repoService,
 		authenticatorService,
+		loginServer,
+		disco.Service{},
 		api,
 	}
 

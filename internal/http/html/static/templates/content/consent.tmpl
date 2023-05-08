@@ -1,0 +1,16 @@
+{{ template "layout" . }}
+
+{{ define "container" }}
+  {{ template "flash" . }}
+  <div class="center">
+    <div class="consent">
+      <h2>Authorize App</h2>
+      Hi {{ .CurrentUser }},
+      `terraform` is requesting access to your OTF user account.
+      <form method="POST">
+        <button class="delete" name="consented" value="false">Decline</button>
+        <button name="consented" value="true">Accept</button>
+      </form>
+    </div>
+  </div>
+{{ end }}

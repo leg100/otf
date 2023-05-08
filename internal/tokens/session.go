@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
 type (
@@ -18,6 +19,12 @@ type (
 	sessionService interface {
 		StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error
 	}
+
+	NewSessionTokenOptions struct {
+		Key      jwk.Key
+		Username string
+		Expiry   *time.Time
+	}
 )
 
 func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error {
@@ -28,11 +35,10 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}
-	token, err := newToken(newTokenOptions{
-		key:     a.key,
-		subject: *opts.Username,
-		kind:    userSessionKind,
-		expiry:  &expiry,
+	token, err := NewSessionToken(NewSessionTokenOptions{
+		Key:      a.key,
+		Username: *opts.Username,
+		Expiry:   &expiry,
 	})
 	if err != nil {
 		return err
@@ -44,4 +50,17 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	a.V(2).Info("started session", "username", *opts.Username)
 
 	return nil
+}
+
+func NewSessionToken(opts NewSessionTokenOptions) ([]byte, error) {
+	expiry := internal.CurrentTimestamp().Add(defaultSessionExpiry)
+	if opts.Expiry != nil {
+		expiry = *opts.Expiry
+	}
+	return newToken(newTokenOptions{
+		key:     opts.Key,
+		subject: opts.Username,
+		kind:    userSessionKind,
+		expiry:  &expiry,
+	})
 }
