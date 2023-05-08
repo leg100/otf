@@ -45,7 +45,7 @@ services:
       retries: 3
     environment:
       - OTF_DATABASE=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
-      - OTF_SECRET=ce6bf87f25118c87c8ca3d3066010c5ee56643c01ba5cab605642b0d83271e6e
+      - OTF_SECRET=8b0691d987779cbd1145b9485b5176bc
       - OTF_SITE_TOKEN=site-token
       - OTF_SSL=true
       - OTF_CERT_FILE=/fixtures/cert.pem

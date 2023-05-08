@@ -24,7 +24,7 @@ Setup local credentials:
 terraform login demo.otf.ninja
 ```
 
-Confirm with `yes` to proceed and you'll be asked to give you consent to allow `terraform` to access your account on OTF. After you give consent, you should be notified you can close the browser and return to the terminal.
+Confirm with `yes` to proceed and you'll be asked to give consent to allow `terraform` to access your account on OTF. After you give consent, you should be notified that you can close the browser and return to the terminal.
 
 In the terminal `terraform login` should have printed out confirmation of success:
 
