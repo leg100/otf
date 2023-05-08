@@ -49,6 +49,11 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.CodeChallengeMethod != "S256" {
+		re.error(w, r, ErrInvalidRequest, "unsupported code challenge method")
+		return
+	}
+
 	if r.Method == "GET" {
 		s.Render("consent.tmpl", w, html.NewSitePage(r, "consent"))
 		return

@@ -49,12 +49,16 @@ type (
 	}
 )
 
-func NewServer(secret string) (*server, error) {
+func NewServer(secret string, renderer html.Renderer) (*server, error) {
 	key, err := jwk.FromRaw([]byte(secret))
 	if err != nil {
 		return nil, err
 	}
-	return &server{key: key, secret: secret}, nil
+	return &server{
+		key:      key,
+		secret:   secret,
+		Renderer: renderer,
+	}, nil
 }
 
 func (s *server) AddHandlers(r *mux.Router) {

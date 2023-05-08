@@ -1,8 +1,10 @@
 package daemon
 
 import (
+	"errors"
 	"reflect"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
@@ -11,6 +13,8 @@ import (
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/tokens"
 )
+
+var ErrInvalidSecretLength = errors.New("secret must be 32 characters long")
 
 // Config configures the otfd daemon. Descriptions of each field can be found in
 // the flag definitions in ./cmd/otfd
@@ -61,4 +65,14 @@ func ApplyDefaults(cfg *Config) {
 			OAuthConfig: gitlab.OAuthDefaults(),
 		}
 	}
+}
+
+func (cfg *Config) Valid() error {
+	if cfg.Secret == "" {
+		return &internal.MissingParameterError{Parameter: "secret"}
+	}
+	if len(cfg.Secret) != 32 {
+		return ErrInvalidSecretLength
+	}
+	return nil
 }

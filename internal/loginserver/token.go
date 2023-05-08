@@ -16,7 +16,7 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		ClientID     string `schema:"client_id"`
 		Code         string `schema:"code"`
-		CodeVerifier []byte `schema:"code_verifier"`
+		CodeVerifier string `schema:"code_verifier"`
 		GrantType    string `schema:"grant_type"`
 		RedirectURI  string `schema:"redirect_uri"`
 	}
@@ -39,6 +39,16 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 	// errors from hereon in are sent to the redirect URI as per RFC6749.
 	re := redirectError{redirect: redirect}
 
+	if params.Code == "" {
+		re.error(w, r, ErrInvalidRequest, "missing code")
+		return
+	}
+
+	if params.CodeVerifier == "" {
+		re.error(w, r, ErrInvalidRequest, "missing code verifier")
+		return
+	}
+
 	if params.GrantType != "authorization_code" {
 		re.error(w, r, ErrUnsupportedGrantType, "")
 		return
@@ -56,16 +66,11 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if code.CodeChallengeMethod != "S256" {
-		re.error(w, r, ErrInvalidRequest, "unsupported code challenge method")
-		return
-	}
-
-	hash := sha256.Sum256(params.CodeVerifier)
-	encoded := base64.URLEncoding.EncodeToString(hash[:])
+	hash := sha256.Sum256([]byte(params.CodeVerifier))
+	encoded := base64.RawURLEncoding.EncodeToString(hash[:])
 
 	if encoded != code.CodeChallenge {
-		re.error(w, r, ErrInvalidGrant, "")
+		re.error(w, r, ErrInvalidGrant, encoded)
 		return
 	}
 

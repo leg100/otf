@@ -159,11 +159,11 @@ Restricts the ability to create organizations to users possessing the site admin
 * System: `otfd`
 * Default: ""
 
-A secret string for performing cryptographic work. It must be no longer than 64 characters and you should use a cryptographically secure random number generator, e.g. `openssl`:
+A secret string for performing cryptographic work. It must be 32 characters long and you should use a cryptographically secure random number generator, e.g. `openssl`:
 
 ```bash
-> openssl rand -hex 32
-56789f6076a66323643f57a1016cdde7e7e39914785d36d61fdd8b9a30081f14
+> openssl rand -hex 16
+0de9541a1abb1dd3bbedfacbda77c398
 ```
 
 ## `--site-admins`

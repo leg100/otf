@@ -79,8 +79,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if cfg.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	if cfg.Secret == "" {
-		return nil, &internal.MissingParameterError{Parameter: "secret"}
+	if err := cfg.Valid(); err != nil {
+		return nil, err
 	}
 
 	hostnameService := internal.NewHostnameService(cfg.Host)
@@ -262,7 +262,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	loginServer, err := loginserver.NewServer(cfg.Secret)
+	loginServer, err := loginserver.NewServer(cfg.Secret, renderer)
 	if err != nil {
 		return nil, err
 	}

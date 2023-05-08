@@ -24,7 +24,9 @@ type redirectError struct {
 func (e redirectError) error(w http.ResponseWriter, r *http.Request, error, description string) {
 	q := e.redirect.Query()
 	q.Add("error", error)
-	q.Add("error_description", error)
+	if description != "" {
+		q.Add("error_description", description)
+	}
 	if e.state != "" {
 		q.Add("state", e.state)
 	}

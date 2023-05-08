@@ -59,7 +59,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 	}
 	// Setup secret if not specified
 	if cfg.Secret == "" {
-		cfg.Secret = internal.GenerateRandomString(16)
+		cfg.Secret = internal.GenerateRandomString(32)
 	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
