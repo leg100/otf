@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tokens"
 )
@@ -66,17 +67,18 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Perform PKCE authentication
 	hash := sha256.Sum256([]byte(params.CodeVerifier))
 	encoded := base64.RawURLEncoding.EncodeToString(hash[:])
-
 	if encoded != code.CodeChallenge {
 		re.error(w, r, ErrInvalidGrant, encoded)
 		return
 	}
 
-	token, err := tokens.NewSessionToken(tokens.NewSessionTokenOptions{
-		Key:      s.key,
-		Username: code.Username,
+	// Create API token for user and include in response
+	userCtx := internal.AddSubjectToContext(r.Context(), &auth.User{Username: code.Username})
+	_, token, err := s.CreateUserToken(userCtx, tokens.CreateUserTokenOptions{
+		Description: "terraform login",
 	})
 	if err != nil {
 		re.error(w, r, ErrInvalidRequest, err.Error())

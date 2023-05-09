@@ -131,7 +131,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 		return &auth.SiteAdmin, nil
 	}
 	//
-	// parse jwt from cookie and verify signature
+	// parse jwt and verify signature
 	parsed, err := jwt.Parse([]byte(token), jwt.WithKey(jwa.HS256, m.key))
 	if err != nil {
 		return nil, err

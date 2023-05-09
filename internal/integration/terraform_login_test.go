@@ -73,4 +73,9 @@ func TestTerraformLogin(t *testing.T) {
 		return
 	}
 
+	// create some terraform config and run terraform init to demonstrate user
+	// has authenticated successfully.
+	org := svc.createOrganization(t, ctx)
+	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
+	svc.tfcli(t, ctx, "init", configPath)
 }

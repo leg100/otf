@@ -6,7 +6,7 @@ package loginserver
 import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/leg100/otf/internal/tokens"
 )
 
 const (
@@ -28,10 +28,18 @@ var Discovery = DiscoverySpec{
 
 type (
 	server struct {
-		key    jwk.Key // for signing access token
-		secret []byte  // for encrypting auth code
+		secret []byte // for encrypting auth code
 
-		html.Renderer // render consent UI
+		html.Renderer        // render consent UI
+		tokens.TokensService // for creating user API token
+	}
+
+	// Options for server constructor
+	Options struct {
+		Secret []byte // for encrypting auth code
+
+		html.Renderer
+		tokens.TokensService
 	}
 
 	authcode struct {
@@ -49,15 +57,11 @@ type (
 	}
 )
 
-func NewServer(secret []byte, renderer html.Renderer) (*server, error) {
-	key, err := jwk.FromRaw(secret)
-	if err != nil {
-		return nil, err
-	}
+func NewServer(opts Options) (*server, error) {
 	return &server{
-		key:      key,
-		secret:   secret,
-		Renderer: renderer,
+		secret:        opts.Secret,
+		Renderer:      opts.Renderer,
+		TokensService: opts.TokensService,
 	}, nil
 }
 

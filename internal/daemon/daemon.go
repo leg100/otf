@@ -262,7 +262,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	loginServer, err := loginserver.NewServer(cfg.Secret, renderer)
+	loginServer, err := loginserver.NewServer(loginserver.Options{
+		Secret:        cfg.Secret,
+		Renderer:      renderer,
+		TokensService: tokensService,
+	})
 	if err != nil {
 		return nil, err
 	}
