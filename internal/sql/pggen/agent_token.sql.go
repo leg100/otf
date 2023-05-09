@@ -256,10 +256,10 @@ type Querier interface {
 	// InsertNotificationConfigurationScan scans the result of an executed InsertNotificationConfigurationBatch query.
 	InsertNotificationConfigurationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindNotificationConfigurations(ctx context.Context) ([]FindNotificationConfigurationsRow, error)
+	FindNotificationConfigurations(ctx context.Context, workspaceID pgtype.Text) ([]FindNotificationConfigurationsRow, error)
 	// FindNotificationConfigurationsBatch enqueues a FindNotificationConfigurations query into batch to be executed
 	// later by the batch.
-	FindNotificationConfigurationsBatch(batch genericBatch)
+	FindNotificationConfigurationsBatch(batch genericBatch, workspaceID pgtype.Text)
 	// FindNotificationConfigurationsScan scans the result of an executed FindNotificationConfigurationsBatch query.
 	FindNotificationConfigurationsScan(results pgx.BatchResults) ([]FindNotificationConfigurationsRow, error)
 
@@ -269,6 +269,13 @@ type Querier interface {
 	FindNotificationConfigurationBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
 	// FindNotificationConfigurationScan scans the result of an executed FindNotificationConfigurationBatch query.
 	FindNotificationConfigurationScan(results pgx.BatchResults) (FindNotificationConfigurationRow, error)
+
+	FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID pgtype.Text) (FindNotificationConfigurationForUpdateRow, error)
+	// FindNotificationConfigurationForUpdateBatch enqueues a FindNotificationConfigurationForUpdate query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationForUpdateBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// FindNotificationConfigurationForUpdateScan scans the result of an executed FindNotificationConfigurationForUpdateBatch query.
+	FindNotificationConfigurationForUpdateScan(results pgx.BatchResults) (FindNotificationConfigurationForUpdateRow, error)
 
 	UpdateNotificationConfiguration(ctx context.Context, params UpdateNotificationConfigurationParams) (pgtype.Text, error)
 	// UpdateNotificationConfigurationBatch enqueues a UpdateNotificationConfiguration query into batch to be executed
@@ -1243,6 +1250,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findNotificationConfigurationSQL, findNotificationConfigurationSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindNotificationConfiguration': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationForUpdateSQL, findNotificationConfigurationForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfigurationForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateNotificationConfigurationSQL, updateNotificationConfigurationSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateNotificationConfiguration': %w", err)

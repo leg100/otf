@@ -70,7 +70,10 @@ func (q *DBQuerier) InsertNotificationConfigurationScan(results pgx.BatchResults
 	return cmdTag, err
 }
 
-const findNotificationConfigurationsSQL = `SELECT * FROM notification_configurations;`
+const findNotificationConfigurationsSQL = `SELECT *
+FROM notification_configurations
+WHERE workspace_id = $1
+;`
 
 type FindNotificationConfigurationsRow struct {
 	NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
@@ -85,9 +88,9 @@ type FindNotificationConfigurationsRow struct {
 }
 
 // FindNotificationConfigurations implements Querier.FindNotificationConfigurations.
-func (q *DBQuerier) FindNotificationConfigurations(ctx context.Context) ([]FindNotificationConfigurationsRow, error) {
+func (q *DBQuerier) FindNotificationConfigurations(ctx context.Context, workspaceID pgtype.Text) ([]FindNotificationConfigurationsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindNotificationConfigurations")
-	rows, err := q.conn.Query(ctx, findNotificationConfigurationsSQL)
+	rows, err := q.conn.Query(ctx, findNotificationConfigurationsSQL, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("query FindNotificationConfigurations: %w", err)
 	}
@@ -107,8 +110,8 @@ func (q *DBQuerier) FindNotificationConfigurations(ctx context.Context) ([]FindN
 }
 
 // FindNotificationConfigurationsBatch implements Querier.FindNotificationConfigurationsBatch.
-func (q *DBQuerier) FindNotificationConfigurationsBatch(batch genericBatch) {
-	batch.Queue(findNotificationConfigurationsSQL)
+func (q *DBQuerier) FindNotificationConfigurationsBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findNotificationConfigurationsSQL, workspaceID)
 }
 
 // FindNotificationConfigurationsScan implements Querier.FindNotificationConfigurationsScan.
@@ -171,6 +174,50 @@ func (q *DBQuerier) FindNotificationConfigurationScan(results pgx.BatchResults) 
 	var item FindNotificationConfigurationRow
 	if err := row.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
 		return item, fmt.Errorf("scan FindNotificationConfigurationBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findNotificationConfigurationForUpdateSQL = `SELECT *
+FROM notification_configurations
+WHERE notification_configuration_id = $1
+FOR UPDATE
+;`
+
+type FindNotificationConfigurationForUpdateRow struct {
+	NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	Name                        pgtype.Text        `json:"name"`
+	URL                         pgtype.Text        `json:"url"`
+	Triggers                    []string           `json:"triggers"`
+	DestinationType             pgtype.Text        `json:"destination_type"`
+	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
+	Enabled                     bool               `json:"enabled"`
+}
+
+// FindNotificationConfigurationForUpdate implements Querier.FindNotificationConfigurationForUpdate.
+func (q *DBQuerier) FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID pgtype.Text) (FindNotificationConfigurationForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindNotificationConfigurationForUpdate")
+	row := q.conn.QueryRow(ctx, findNotificationConfigurationForUpdateSQL, notificationConfigurationID)
+	var item FindNotificationConfigurationForUpdateRow
+	if err := row.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
+		return item, fmt.Errorf("query FindNotificationConfigurationForUpdate: %w", err)
+	}
+	return item, nil
+}
+
+// FindNotificationConfigurationForUpdateBatch implements Querier.FindNotificationConfigurationForUpdateBatch.
+func (q *DBQuerier) FindNotificationConfigurationForUpdateBatch(batch genericBatch, notificationConfigurationID pgtype.Text) {
+	batch.Queue(findNotificationConfigurationForUpdateSQL, notificationConfigurationID)
+}
+
+// FindNotificationConfigurationForUpdateScan implements Querier.FindNotificationConfigurationForUpdateScan.
+func (q *DBQuerier) FindNotificationConfigurationForUpdateScan(results pgx.BatchResults) (FindNotificationConfigurationForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindNotificationConfigurationForUpdateRow
+	if err := row.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
+		return item, fmt.Errorf("scan FindNotificationConfigurationForUpdateBatch row: %w", err)
 	}
 	return item, nil
 }

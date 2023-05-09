@@ -28,31 +28,87 @@ type (
 	}
 )
 
-func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
-	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-		ID:                         sql.String(ws.ID),
-		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
-		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
-		Name:                       sql.String(ws.Name),
-		AllowDestroyPlan:           ws.AllowDestroyPlan,
-		AutoApply:                  ws.AutoApply,
-		Branch:                     sql.String(ws.Branch),
-		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
-		Environment:                sql.String(ws.Environment),
-		Description:                sql.String(ws.Description),
-		ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-		FileTriggersEnabled:        ws.FileTriggersEnabled,
-		GlobalRemoteState:          ws.GlobalRemoteState,
-		MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
-		SourceName:                 sql.String(ws.SourceName),
-		SourceURL:                  sql.String(ws.SourceURL),
-		SpeculativeEnabled:         ws.SpeculativeEnabled,
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
-		TerraformVersion:           sql.String(ws.TerraformVersion),
-		TriggerPrefixes:            ws.TriggerPrefixes,
-		QueueAllRuns:               ws.QueueAllRuns,
-		WorkingDirectory:           sql.String(ws.WorkingDirectory),
-		OrganizationName:           sql.String(ws.Organization),
-	})
+func (r pgresult) toNotificationConfiguration() *Config {
+	nc := &Config{
+		ID:              r.NotificationConfigurationID.String,
+		CreatedAt:       r.CreatedAt.Time.UTC(),
+		UpdatedAt:       r.UpdatedAt.Time.UTC(),
+		Name:            r.Name.String,
+		URL:             r.URL.String,
+		DestinationType: Destination(r.DestinationType.Status),
+		WorkspaceID:     r.WorkspaceID.String,
+	}
+	for _, t := range r.Triggers {
+		nc.Triggers = append(nc.Triggers, Trigger(t))
+	}
+	return nc
+}
+
+func (db *pgdb) create(ctx context.Context, nc *Config) error {
+	params := pggen.InsertNotificationConfigurationParams{
+		NotificationConfigurationID: sql.String(nc.ID),
+		CreatedAt:                   sql.Timestamptz(nc.CreatedAt),
+		UpdatedAt:                   sql.Timestamptz(nc.UpdatedAt),
+		Name:                        sql.String(nc.Name),
+		WorkspaceID:                 sql.String(nc.WorkspaceID),
+	}
+	for _, t := range nc.Triggers {
+		params.Triggers = append(params.Triggers, string(t))
+	}
+	_, err := db.InsertNotificationConfiguration(ctx, params)
 	return sql.Error(err)
+}
+
+func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) error) (*Config, error) {
+	var nc *Config
+	err := db.Tx(ctx, func(tx internal.DB) error {
+		result, err := tx.FindNotificationConfigurationForUpdate(ctx, sql.String(id))
+		if err != nil {
+			return sql.Error(err)
+		}
+		nc = pgresult(result).toNotificationConfiguration()
+		if err := updateFunc(nc); err != nil {
+			return sql.Error(err)
+		}
+		params := pggen.UpdateNotificationConfigurationParams{
+			Name:    sql.String(nc.Name),
+			Enabled: nc.Enabled,
+			URL:     sql.String(nc.URL),
+		}
+		for _, t := range nc.Triggers {
+			params.Triggers = append(params.Triggers, string(t))
+		}
+		_, err = tx.UpdateNotificationConfiguration(ctx, params)
+		return err
+	})
+	return nc, err
+}
+
+func (db *pgdb) list(ctx context.Context, workspaceID string) ([]*Config, error) {
+	results, err := db.FindNotificationConfigurations(ctx, sql.String(workspaceID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+
+	var configs []*Config
+	for _, row := range results {
+		configs = append(configs, pgresult(row).toNotificationConfiguration())
+	}
+	return configs, nil
+}
+
+func (db *pgdb) get(ctx context.Context, id string) (*Config, error) {
+	row, err := db.FindNotificationConfiguration(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return pgresult(row).toNotificationConfiguration(), nil
+}
+
+func (db *pgdb) delete(ctx context.Context, id string) error {
+	_, err := db.DeleteNotificationConfiguration(ctx, sql.String(id))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
 }

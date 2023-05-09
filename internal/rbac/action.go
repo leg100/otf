@@ -102,4 +102,10 @@ const (
 	DeleteTeamAction
 	AddTeamMembershipAction
 	RemoveTeamMembershipAction
+
+	CreateNotificationConfigurationAction
+	UpdateNotificationConfigurationAction
+	ListNotificationConfigurationsAction
+	GetNotificationConfigurationAction
+	DeleteNotificationConfigurationAction
 )
