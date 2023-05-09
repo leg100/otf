@@ -7,29 +7,32 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMiddleware(t *testing.T) {
+	secret := testutils.NewSecret(t)
+
 	t.Run("skip non-protected path", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/login", nil)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("missing token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 401, w.Code)
 	})
 
 	t.Run("valid site token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		r.Header.Add("Authorization", "Bearer secret")
+		r.Header.Add("Authorization", "Bearer site-token")
 		w := httptest.NewRecorder()
-		fakeSiteTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeSiteTokenMiddleware(t, "site-token")(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
@@ -37,68 +40,69 @@ func TestMiddleware(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		r.Header.Add("Authorization", "Bearer incorrect")
 		w := httptest.NewRecorder()
-		fakeSiteTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeSiteTokenMiddleware(t, "site-token")(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 401, w.Code)
 	})
 
 	t.Run("valid user token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := NewTestJWT(t, "secret", userTokenKind, time.Hour)
+		token := NewTestJWT(t, secret, userTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
 	t.Run("valid run token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := NewTestJWT(t, "secret", runTokenKind, time.Hour, "organization", "acme-corp")
+		token := NewTestJWT(t, secret, runTokenKind, time.Hour, "organization", "acme-corp")
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &RunToken{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &RunToken{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
 	t.Run("valid agent token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := NewTestJWT(t, "secret", agentTokenKind, time.Hour)
+		token := NewTestJWT(t, secret, agentTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &AgentToken{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &AgentToken{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("invalid jwt", func(t *testing.T) {
+		differentSecret := testutils.NewSecret(t)
+		token := NewTestJWT(t, differentSecret, agentTokenKind, time.Hour)
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
-		token := NewTestJWT(t, "wrong-secret", agentTokenKind, time.Hour)
 		r.Header.Add("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 401, w.Code)
 	})
 
 	t.Run("valid user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := NewTestJWT(t, "secret", userTokenKind, time.Hour)
+		token := NewTestJWT(t, secret, userTokenKind, time.Hour)
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &auth.User{})).ServeHTTP(w, r)
 		assert.Equal(t, 200, w.Code)
 	})
 
 	t.Run("expired user session", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
-		token := NewTestJWT(t, "secret", userTokenKind, -time.Hour)
+		token := NewTestJWT(t, secret, userTokenKind, -time.Hour)
 		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 302, w.Code)
 	})
 
 	t.Run("missing session cookie", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/app/protected", nil)
 		w := httptest.NewRecorder()
-		fakeTokenMiddleware(t, "secret")(emptyHandler).ServeHTTP(w, r)
+		fakeTokenMiddleware(t, secret)(emptyHandler).ServeHTTP(w, r)
 		assert.Equal(t, 302, w.Code)
 	})
 

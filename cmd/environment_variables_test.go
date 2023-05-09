@@ -39,4 +39,15 @@ func TestSetFlagsFromEnvVariables(t *testing.T) {
 		t.Setenv("OTF_FOO_FILE", "./does-not-exist")
 		assert.Error(t, SetFlagsFromEnvVariables(fs))
 	})
+	t.Run("override flag with env var containing invalid value", func(t *testing.T) {
+		fs := pflag.NewFlagSet("testing", pflag.ContinueOnError)
+		_ = fs.BytesHex("foo", nil, "")
+		t.Setenv("OTF_FOO", "not-hex")
+
+		err := SetFlagsFromEnvVariables(fs)
+		if assert.Error(t, err) {
+			want := "invalid argument \"not-hex\" for \"--foo\" flag: encoding/hex: invalid byte: U+006E 'n'"
+			assert.Equal(t, want, err.Error())
+		}
+	})
 }

@@ -9,8 +9,8 @@ import (
 )
 
 // NewSigner constructs a signer for signing and verifying URLs
-func NewSigner(secret string) *surl.Signer {
-	return surl.New([]byte(secret),
+func NewSigner(secret []byte) *surl.Signer {
+	return surl.New(secret,
 		surl.PrefixPath("/signed"),
 		surl.WithPathFormatter(),
 		surl.WithBase58Expiry(),

@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/idtoken"
@@ -57,7 +58,7 @@ func getGoogleCredentialsPath(t *testing.T) string {
 	return path
 }
 
-func fakeTokenMiddleware(t *testing.T, secret string) mux.MiddlewareFunc {
+func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 	t.Helper()
 
 	key := newTestJWK(t, secret)
@@ -71,7 +72,7 @@ func fakeTokenMiddleware(t *testing.T, secret string) mux.MiddlewareFunc {
 func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 	t.Helper()
 
-	key := newTestJWK(t, "abcdef123") // not used but constructor requires it
+	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
 		AuthService:       &fakeMiddlewareService{},
 		agentTokenService: &fakeMiddlewareService{},
@@ -83,7 +84,7 @@ func fakeSiteTokenMiddleware(t *testing.T, token string) mux.MiddlewareFunc {
 func fakeIAPMiddleware(t *testing.T, aud string) mux.MiddlewareFunc {
 	t.Helper()
 
-	key := newTestJWK(t, "abcdef123") // not used but constructor requires it
+	key := newTestJWK(t, testutils.NewSecret(t)) // not used but constructor requires it
 	return newMiddleware(middlewareOptions{
 		AuthService:       &fakeMiddlewareService{},
 		agentTokenService: &fakeMiddlewareService{},

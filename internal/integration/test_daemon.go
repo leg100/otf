@@ -24,6 +24,7 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -58,8 +59,8 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 		cfg.Database = sql.NewTestDB(t)
 	}
 	// Setup secret if not specified
-	if cfg.Secret == "" {
-		cfg.Secret = internal.GenerateRandomString(16)
+	if cfg.Secret == nil {
+		cfg.Secret = testutils.NewSecret(t)
 	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
