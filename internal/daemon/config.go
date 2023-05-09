@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/internal/tokens"
 )
 
-var ErrInvalidSecretLength = errors.New("secret must be 32 characters long")
+var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 
 // Config configures the otfd daemon. Descriptions of each field can be found in
 // the flag definitions in ./cmd/otfd
@@ -24,7 +24,7 @@ type Config struct {
 	Github                       cloud.CloudOAuthConfig
 	Gitlab                       cloud.CloudOAuthConfig
 	OIDC                         cloud.OIDCConfig
-	Secret                       string // secret for signing URLs
+	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
 	SiteToken                    string
 	Host                         string
 	Address                      string
@@ -68,10 +68,10 @@ func ApplyDefaults(cfg *Config) {
 }
 
 func (cfg *Config) Valid() error {
-	if cfg.Secret == "" {
+	if cfg.Secret == nil {
 		return &internal.MissingParameterError{Parameter: "secret"}
 	}
-	if len(cfg.Secret) != 32 {
+	if len(cfg.Secret) != 16 {
 		return ErrInvalidSecretLength
 	}
 	return nil

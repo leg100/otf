@@ -13,7 +13,7 @@ createdb otf
 At a minimum, `otfd` requires a [secret](/config/flags#-secret) and a means of authentication. For the purposes of this quickstart we'll use a [site token](/config/flags#-site-token):
 
 ```bash
-> ./otfd --secret=0de9541a1abb1dd3bbedfacbda77c398 --site-token=my-token
+> ./otfd --secret=6b07b57377755b07cf61709780ee7484 --site-token=my-token
 2022-10-30T20:06:10Z INF started cache max_size=0 ttl=10m0s
 2022-10-30T20:06:10Z INF successfully connected component=database path=postgres:///otf?host=/var/run/postgresql
 2022-10-30T20:06:10Z INF goose: no migrations to run. current version: 20221017170815 compone
@@ -22,7 +22,7 @@ nt=database
 ```
 
 !!! note
-    The secret must be 32 characters long.
+    The secret must be a hex-encoded 16-byte array
 
 You have now successfully installed `otfd` and confirmed you can start `otfd` with minimal configuration. Proceed to create your first organization.
 
@@ -57,7 +57,7 @@ sudo update-ca-certificates
 Now return to the terminal in which `otfd` is running. You'll need to kill it and start it again, this time with SSL enabled:
 
 ```bash
-> ./otfd --secret=0de9541a1abb1dd3bbedfacbda77c398 --site-token=my-token --ssl --cert-file=cert.crt --key-file=key.pem
+> ./otfd --secret=6b07b57377755b07cf61709780ee7484 --site-token=my-token --ssl --cert-file=cert.crt --key-file=key.pem
 ```
 
 Terraform needs to use your token to authenticate with `otfd`:

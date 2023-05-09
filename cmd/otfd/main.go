@@ -68,7 +68,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.Host, "hostname", "", "User-facing hostname for otf")
 	cmd.Flags().StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 	cmd.Flags().StringSliceVar(&cfg.SiteAdmins, "site-admins", nil, "Promote a list of users to site admin.")
-	cmd.Flags().StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
+	cmd.Flags().BytesHexVar(&cfg.Secret, "secret", nil, "Hex-encoded 16 byte secret for cryptographic work. Required.")
 	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", cfg.MaxConfigSize, "Maximum permitted configuration size in bytes.")
 
 	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")

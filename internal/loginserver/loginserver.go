@@ -29,7 +29,7 @@ var Discovery = DiscoverySpec{
 type (
 	server struct {
 		key    jwk.Key // for signing access token
-		secret string  // for encrypting auth code
+		secret []byte  // for encrypting auth code
 
 		html.Renderer // render consent UI
 	}
@@ -49,8 +49,8 @@ type (
 	}
 )
 
-func NewServer(secret string, renderer html.Renderer) (*server, error) {
-	key, err := jwk.FromRaw([]byte(secret))
+func NewServer(secret []byte, renderer html.Renderer) (*server, error) {
+	key, err := jwk.FromRaw(secret)
 	if err != nil {
 		return nil, err
 	}

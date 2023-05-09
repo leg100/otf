@@ -25,7 +25,7 @@ func TestTokenHandler(t *testing.T) {
 		Username:            "bobby",
 	})
 	require.NoError(t, err)
-	code, err := internal.Encrypt(mashaled, secret)
+	code, err := internal.Encrypt(mashaled, []byte(secret))
 	require.NoError(t, err)
 
 	q := "/?"

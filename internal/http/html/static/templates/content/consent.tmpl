@@ -1,5 +1,9 @@
 {{ template "layout" . }}
 
+{{ define "stylesheet" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/consent.css" }}">
+{{ end }}
+
 {{ define "container" }}
   {{ template "flash" . }}
   <div class="center">

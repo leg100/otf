@@ -52,7 +52,7 @@ func TestAuthHandler_Auth(t *testing.T) {
 
 	// check contents of auth code
 	encrypted := redirect.Query().Get("code")
-	decrypted, err := internal.Decrypt(encrypted, secret)
+	decrypted, err := internal.Decrypt(encrypted, []byte(secret))
 	require.NoError(t, err)
 	var code authcode
 	err = json.Unmarshal(decrypted, &code)

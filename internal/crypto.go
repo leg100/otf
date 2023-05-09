@@ -11,8 +11,8 @@ import (
 
 // Encrypt plaintext using secret key. The returned string is
 // base64-url-encoded.
-func Encrypt(plaintext []byte, secret string) (string, error) {
-	block, err := aes.NewCipher([]byte(secret))
+func Encrypt(plaintext, secret []byte) (string, error) {
+	block, err := aes.NewCipher(secret)
 	if err != nil {
 		return "", err
 	}
@@ -36,8 +36,8 @@ func Encrypt(plaintext []byte, secret string) (string, error) {
 
 // Decrypt encrypted string using secret key. The encrypted string must be
 // base64-url-encoded.
-func Decrypt(encrypted, secret string) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(secret))
+func Decrypt(encrypted string, secret []byte) ([]byte, error) {
+	block, err := aes.NewCipher(secret)
 	if err != nil {
 		return nil, err
 	}

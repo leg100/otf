@@ -8,7 +8,7 @@ import (
 )
 
 func TestCrypto(t *testing.T) {
-	secret := GenerateRandomString(32)
+	secret := []byte(GenerateRandomString(32))
 	encrypted, err := Encrypt([]byte("exampleplaintext"), secret)
 	require.NoError(t, err)
 
