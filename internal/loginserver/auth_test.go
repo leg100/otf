@@ -7,12 +7,13 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAuthHandler_ConsentUI(t *testing.T) {
-	srv := fakeServer(t, "topsecret")
+	srv := fakeServer(t, testutils.NewSecret(t))
 
 	q := "/?"
 	q += "redirect_uri=https://localhost:10000"
@@ -25,7 +26,7 @@ func TestAuthHandler_ConsentUI(t *testing.T) {
 }
 
 func TestAuthHandler_Auth(t *testing.T) {
-	secret := internal.GenerateRandomString(32)
+	secret := testutils.NewSecret(t)
 	srv := fakeServer(t, secret)
 
 	q := "/?"
@@ -52,7 +53,7 @@ func TestAuthHandler_Auth(t *testing.T) {
 
 	// check contents of auth code
 	encrypted := redirect.Query().Get("code")
-	decrypted, err := internal.Decrypt(encrypted, []byte(secret))
+	decrypted, err := internal.Decrypt(encrypted, secret)
 	require.NoError(t, err)
 	var code authcode
 	err = json.Unmarshal(decrypted, &code)

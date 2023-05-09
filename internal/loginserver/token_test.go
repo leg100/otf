@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTokenHandler(t *testing.T) {
-	secret := internal.GenerateRandomString(32)
+	secret := testutils.NewSecret(t)
 	srv := fakeServer(t, secret)
 
 	verifier := "myverifier"
@@ -41,8 +42,8 @@ func TestTokenHandler(t *testing.T) {
 
 	require.Equal(t, 200, w.Code, w.Body.String())
 
-	//decrypted, err := internal.Decrypt(w.Body.String(), secret)
-	//require.NoError(t, err)
+	// decrypted, err := internal.Decrypt(w.Body.String(), secret)
+	// require.NoError(t, err)
 
 	var response struct {
 		AccessToken string `json:"access_token"`

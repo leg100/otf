@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func fakeServer(t *testing.T, secret string) *server {
+func fakeServer(t *testing.T, secret []byte) *server {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 
-	srv, err := NewServer([]byte(secret), renderer)
+	srv, err := NewServer(secret, renderer)
 	require.NoError(t, err)
 	return srv
 }
