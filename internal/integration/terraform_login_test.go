@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
@@ -77,5 +78,7 @@ func TestTerraformLogin(t *testing.T) {
 	// has authenticated successfully.
 	org := svc.createOrganization(t, ctx)
 	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
-	svc.tfcli(t, ctx, "init", configPath)
+	cmd := exec.Command("terraform", "init")
+	cmd.Dir = configPath
+	assert.NoError(t, cmd.Run())
 }
