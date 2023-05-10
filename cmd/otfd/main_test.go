@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"io"
 	"regexp"
 	"testing"
 
@@ -49,4 +50,13 @@ func TestHelp(t *testing.T) {
 			assert.Regexp(t, `^otfd is the daemon component of the open terraforming framework.`, got.String())
 		})
 	}
+}
+
+func TestInvalidSecret(t *testing.T) {
+	ctx := context.Background()
+
+	err := parseFlags(ctx, []string{"--secret", "not-hex"}, io.Discard)
+	assert.Error(t, err)
+	want := "invalid argument \"not-hex\" for \"--secret\" flag: encoding/hex: invalid byte: U+006E 'n'"
+	assert.Equal(t, want, err.Error())
 }

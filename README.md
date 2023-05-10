@@ -24,16 +24,12 @@ Setup local credentials:
 terraform login demo.otf.ninja
 ```
 
-Confirm with `yes` to proceed and it'll open a browser window where you can create a token:
+Confirm with `yes` to proceed and you'll be asked to give consent to allow `terraform` to access your account on OTF. After you give consent, you should be notified that you can close the browser and return to the terminal.
 
-Click `New token` and give it a description and click `Create token`. The token will be revealed. Click on the token to copy it to your clipboard.
-
-Return to your terminal and paste the token into the prompt.
-
-You should then receive successful confirmation:
+In the terminal `terraform login` should have printed out confirmation of success:
 
 ```
-Success! Logged in to Terraform Enterprise (demo.otf.ninja)
+Success! Terraform has obtained and saved an API token.
 ```
 
 Write some terraform configuration to a file, setting the organization to your username:

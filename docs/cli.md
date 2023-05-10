@@ -33,6 +33,3 @@ Credentials are sourced from the same file the terraform CLI uses (`~/.terraform
 ```bash
 terraform login <otfd_hostname>
 ```
-
-!!! note
-    `terraform login` has a bug wherein it ignores the port when opening a browser. If you have included a port, e.g. `localhost:8080`, then you'll need to fix the URL in the browser address bar accordingly.

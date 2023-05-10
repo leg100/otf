@@ -17,9 +17,11 @@ import (
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
+	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
@@ -62,6 +64,7 @@ type (
 		run.RunService
 		repo.RepoService
 		logs.LogsService
+		notifications.NotificationService
 
 		Handlers []internal.Handlers
 	}
@@ -78,8 +81,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if cfg.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	if cfg.Secret == "" {
-		return nil, &internal.MissingParameterError{Parameter: "secret"}
+	if err := cfg.Valid(); err != nil {
+		return nil, err
 	}
 
 	hostnameService := internal.NewHostnameService(cfg.Host)
@@ -267,6 +270,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Subscriber:          broker,
 		WorkspaceAuthorizer: workspaceService,
 	})
+
+	loginServer, err := loginserver.NewServer(loginserver.Options{
+		Secret:        cfg.Secret,
+		Renderer:      renderer,
+		TokensService: tokensService,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -302,6 +311,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		logsService,
 		repoService,
 		authenticatorService,
+		loginServer,
+		disco.Service{},
 		api,
 	}
 
@@ -323,6 +334,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:                  runService,
 		LogsService:                 logsService,
 		RepoService:                 repoService,
+		NotificationService:         notificationService,
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,

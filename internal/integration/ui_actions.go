@@ -27,7 +27,7 @@ var (
 )
 
 // newSession adds a user session to the browser cookie jar
-func newSession(t *testing.T, ctx context.Context, hostname, username, secret string) chromedp.Action {
+func newSession(t *testing.T, ctx context.Context, hostname, username string, secret []byte) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
 		token := tokens.NewTestSessionJWT(t, username, secret, time.Hour)
 		return network.SetCookie("session", token).WithDomain(hostname).Do(ctx)

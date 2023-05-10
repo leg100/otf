@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/stretchr/testify/require"
 )
@@ -51,13 +52,13 @@ func (f *fakeService) StartSession(w http.ResponseWriter, r *http.Request, opts 
 	return nil
 }
 
-func NewTestSessionJWT(t *testing.T, username, secret string, lifetime time.Duration) string {
+func NewTestSessionJWT(t *testing.T, username string, secret []byte, lifetime time.Duration) string {
 	t.Helper()
 
 	return NewTestJWT(t, secret, userSessionKind, lifetime, "sub", username)
 }
 
-func NewTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, claims ...string) string {
+func NewTestJWT(t *testing.T, secret []byte, kind kind, lifetime time.Duration, claims ...string) string {
 	t.Helper()
 
 	claimsMap := make(map[string]string, len(claims)/2)
@@ -74,10 +75,10 @@ func NewTestJWT(t *testing.T, secret string, kind kind, lifetime time.Duration, 
 	return string(token)
 }
 
-func newTestJWK(t *testing.T, secret string) jwk.Key {
+func newTestJWK(t *testing.T, secret []byte) jwk.Key {
 	t.Helper()
 
-	key, err := jwk.FromRaw([]byte(secret))
+	key, err := jwk.FromRaw(secret)
 	require.NoError(t, err)
 	return key
 }
@@ -88,7 +89,7 @@ func NewTestAgentToken(t *testing.T, org string) *AgentToken {
 			Organization: org,
 			Description:  "lorem ipsum...",
 		},
-		key: newTestJWK(t, "something_secret"),
+		key: newTestJWK(t, testutils.NewSecret(t)),
 	})
 	require.NoError(t, err)
 	return token
@@ -100,7 +101,7 @@ func NewTestToken(t *testing.T, org string) *UserToken {
 			Description: "lorem ipsum...",
 		},
 		Username: uuid.NewString(),
-		key:      newTestJWK(t, "something_secret"),
+		key:      newTestJWK(t, testutils.NewSecret(t)),
 	})
 	require.NoError(t, err)
 	return token

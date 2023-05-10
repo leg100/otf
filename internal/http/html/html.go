@@ -28,7 +28,7 @@ func htmlPanic(format string, a ...any) {
 // SendUserToLoginPage sends user to the login prompt page, saving the original
 // page they tried to access so it can return them there after login.
 func SendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
-	SetCookie(w, pathCookie, r.URL.Path, nil)
+	SetCookie(w, pathCookie, r.URL.String(), nil)
 	http.Redirect(w, r, paths.Login(), http.StatusFound)
 }
 

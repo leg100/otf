@@ -1,0 +1,22 @@
+{{ template "layout" . }}
+
+{{ define "stylesheet" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/consent.css" }}">
+{{ end }}
+
+{{ define "container" }}
+  {{ template "flash" . }}
+  <div class="center">
+    <div class="consent">
+      <h2>Authorize App</h2>
+      Hi {{ .CurrentUser }},
+      <span>
+        <span class="data">terraform</span> is requesting access to your OTF user account.
+      </span>
+      <form method="POST">
+        <button class="delete" name="consented" value="false">Decline</button>
+        <button name="consented" value="true">Accept</button>
+      </form>
+    </div>
+  </div>
+{{ end }}

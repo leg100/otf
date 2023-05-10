@@ -15,12 +15,19 @@ const (
 )
 
 // SetFlagsFromEnvVariables overrides flag values with environment variables.
-func SetFlagsFromEnvVariables(fs *pflag.FlagSet) error {
+func SetFlagsFromEnvVariables(fs *pflag.FlagSet) (err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			err = p.(error)
+		}
+	}()
 	fileEnvs := make(map[string]*pflag.Flag, fs.NFlag())
 	fs.VisitAll(func(f *pflag.Flag) {
 		envVar := flagToEnvVarName(f)
 		if val, present := os.LookupEnv(envVar); present {
-			fs.Set(f.Name, val)
+			if err := fs.Set(f.Name, val); err != nil {
+				panic(err)
+			}
 			return
 		}
 
@@ -43,7 +50,7 @@ func SetFlagsFromEnvVariables(fs *pflag.FlagSet) error {
 		fs.Set(f.Name, string(value))
 	}
 
-	return nil
+	return err
 }
 
 func flagToEnvVarName(f *pflag.Flag) string {

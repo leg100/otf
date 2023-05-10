@@ -48,7 +48,7 @@ type (
 		GoogleIAPConfig
 
 		SiteToken string
-		Secret    string
+		Secret    []byte
 	}
 )
 

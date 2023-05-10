@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -39,13 +38,6 @@ func createBrowserCtx(t *testing.T) context.Context {
 	// now create the browser
 	ctx, cancel := chromedp.NewContext(allocator)
 	t.Cleanup(cancel)
-
-	// Ensure ~/.terraform.d exists - 'terraform login' has a bug whereby it tries to
-	// persist the API token it receives to a temporary file in ~/.terraform.d but
-	// fails if ~/.terraform.d doesn't exist yet. This only happens when
-	// CHECKPOINT_DISABLE is set, because the checkpoint would otherwise handle
-	// creating that directory first...
-	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
 
 	return ctx
 }
