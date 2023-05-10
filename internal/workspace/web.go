@@ -187,10 +187,12 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage
 		LockButton
 		VCSProvider *vcsprovider.VCSProvider
+		CanApply    bool
 	}{
 		WorkspacePage: NewPage(r, ws.ID, ws),
 		LockButton:    lockButtonHelper(ws, policy, user),
 		VCSProvider:   provider,
+		CanApply:      user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
 	})
 }
 
