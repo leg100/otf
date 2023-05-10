@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
@@ -32,6 +33,10 @@ func (a *api) createNotification(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
+	if params.DestinationType == nil {
+		Error(w, &internal.MissingParameterError{Parameter: "destination_type"})
+		return
+	}
 
 	// NOTE: this is somewhat naughty: OTF does not support the email
 	// destination type but some of the go-tfe API tests we use create a
@@ -39,14 +44,12 @@ func (a *api) createNotification(w http.ResponseWriter, r *http.Request) {
 	// do not check the returned destination type. Therefore, we change email
 	// destination types to generic destination types just to get the tests
 	// passing.
-	if params.DestinationType != nil {
-		if *params.DestinationType == types.NotificationDestinationTypeEmail {
-			params.DestinationType = types.NotificationDestinationPtr(types.NotificationDestinationTypeGeneric)
-		}
+	if *params.DestinationType == types.NotificationDestinationTypeEmail {
+		params.DestinationType = types.NotificationDestinationPtr(types.NotificationDestinationTypeGeneric)
 	}
 
 	opts := notifications.CreateConfigOptions{
-		DestinationType: (*notifications.Destination)(params.DestinationType),
+		DestinationType: (notifications.Destination)(*params.DestinationType),
 		Enabled:         params.Enabled,
 		Name:            params.Name,
 		URL:             params.URL,

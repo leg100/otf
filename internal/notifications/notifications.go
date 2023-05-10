@@ -54,41 +54,41 @@ type (
 
 	CreateConfigOptions struct {
 		// Required: The destination type of the notification configuration
-		DestinationType *Destination `jsonapi:"attr,destination-type"`
+		DestinationType Destination
 
 		// Required: Whether the notification configuration should be enabled or not
-		Enabled *bool `jsonapi:"attr,enabled"`
+		Enabled *bool
 
 		// Required: The name of the notification configuration
-		Name *string `jsonapi:"attr,name"`
+		Name *string
 
 		// Optional: The token of the notification configuration
-		Token *string `jsonapi:"attr,token,omitempty"`
+		Token *string
 
 		// Optional: The list of run events that will trigger notifications.
-		Triggers []Trigger `jsonapi:"attr,triggers,omitempty"`
+		Triggers []Trigger
 
 		// Optional: The url of the notification configuration
-		URL *string `jsonapi:"attr,url,omitempty"`
+		URL *string
 	}
 
 	// UpdateConfigOptions represents the options for
 	// updating a existing notification configuration.
 	UpdateConfigOptions struct {
 		// Optional: Whether the notification configuration should be enabled or not
-		Enabled *bool `jsonapi:"attr,enabled,omitempty"`
+		Enabled *bool
 
 		// Optional: The name of the notification configuration
-		Name *string `jsonapi:"attr,name,omitempty"`
+		Name *string
 
 		// Optional: The token of the notification configuration
-		Token *string `jsonapi:"attr,token,omitempty"`
+		Token *string
 
 		// Optional: The list of run events that will trigger notifications.
-		Triggers []Trigger `jsonapi:"attr,triggers,omitempty"`
+		Triggers []Trigger
 
 		// Optional: The url of the notification configuration
-		URL *string `jsonapi:"attr,url,omitempty"`
+		URL *string
 	}
 )
 
@@ -116,18 +116,15 @@ func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 		Name:            *opts.Name,
 		Enabled:         *opts.Enabled,
 		Triggers:        opts.Triggers,
-		DestinationType: *opts.DestinationType,
+		DestinationType: opts.DestinationType,
 		URL:             opts.URL,
 		WorkspaceID:     workspaceID,
 	}, nil
 }
 
-func validDestinationType(dt *Destination) error {
-	if dt == nil {
-		return &internal.MissingParameterError{Parameter: "destination_type"}
-	}
-	if *dt != NotificationDestinationTypeGeneric &&
-		*dt != NotificationDestinationTypeGCPPubSub {
+func validDestinationType(dt Destination) error {
+	if dt != NotificationDestinationTypeGeneric &&
+		dt != NotificationDestinationTypeGCPPubSub {
 		return ErrUnsupportedDestinationType
 	}
 	return nil

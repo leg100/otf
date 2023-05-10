@@ -35,7 +35,7 @@ func (r pgresult) toNotificationConfiguration() *Config {
 		UpdatedAt:       r.UpdatedAt.Time.UTC(),
 		Name:            r.Name.String,
 		Enabled:         r.Enabled,
-		DestinationType: Destination(r.DestinationType.Status),
+		DestinationType: Destination(r.DestinationType.String),
 		WorkspaceID:     r.WorkspaceID.String,
 	}
 	for _, t := range r.Triggers {
@@ -79,7 +79,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 		if err := updateFunc(nc); err != nil {
 			return sql.Error(err)
 		}
-		params := pggen.UpdateNotificationConfigurationParams{
+		params := pggen.UpdateNotificationConfigurationByIDParams{
 			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp()),
 			Enabled:                     nc.Enabled,
 			Name:                        sql.String(nc.Name),
@@ -92,7 +92,7 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 		if nc.URL != nil {
 			params.URL = sql.String(*nc.URL)
 		}
-		_, err = tx.UpdateNotificationConfiguration(ctx, params)
+		_, err = tx.UpdateNotificationConfigurationByID(ctx, params)
 		return err
 	})
 	return nc, err
@@ -120,7 +120,7 @@ func (db *pgdb) get(ctx context.Context, id string) (*Config, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context, id string) error {
-	_, err := db.DeleteNotificationConfiguration(ctx, sql.String(id))
+	_, err := db.DeleteNotificationConfigurationByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}

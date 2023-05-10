@@ -19,6 +19,7 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/run"
@@ -315,6 +316,22 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 	})
 	require.NoError(t, err)
 	return ut, token
+}
+
+func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context, ws *workspace.Workspace) *notifications.Config {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+
+	nc, err := s.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		DestinationType: notifications.NotificationDestinationTypeGeneric,
+		Enabled:         internal.Bool(true),
+		Name:            internal.String(uuid.NewString()),
+	})
+	require.NoError(t, err)
+	return nc
 }
 
 func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organization string) []byte {

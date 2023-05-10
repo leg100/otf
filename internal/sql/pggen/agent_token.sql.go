@@ -277,19 +277,19 @@ type Querier interface {
 	// FindNotificationConfigurationForUpdateScan scans the result of an executed FindNotificationConfigurationForUpdateBatch query.
 	FindNotificationConfigurationForUpdateScan(results pgx.BatchResults) (FindNotificationConfigurationForUpdateRow, error)
 
-	UpdateNotificationConfiguration(ctx context.Context, params UpdateNotificationConfigurationParams) (pgtype.Text, error)
-	// UpdateNotificationConfigurationBatch enqueues a UpdateNotificationConfiguration query into batch to be executed
+	UpdateNotificationConfigurationByID(ctx context.Context, params UpdateNotificationConfigurationByIDParams) (pgtype.Text, error)
+	// UpdateNotificationConfigurationByIDBatch enqueues a UpdateNotificationConfigurationByID query into batch to be executed
 	// later by the batch.
-	UpdateNotificationConfigurationBatch(batch genericBatch, params UpdateNotificationConfigurationParams)
-	// UpdateNotificationConfigurationScan scans the result of an executed UpdateNotificationConfigurationBatch query.
-	UpdateNotificationConfigurationScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateNotificationConfigurationByIDBatch(batch genericBatch, params UpdateNotificationConfigurationByIDParams)
+	// UpdateNotificationConfigurationByIDScan scans the result of an executed UpdateNotificationConfigurationByIDBatch query.
+	UpdateNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteNotificationConfiguration(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error)
-	// DeleteNotificationConfigurationBatch enqueues a DeleteNotificationConfiguration query into batch to be executed
+	DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error)
+	// DeleteNotificationConfigurationByIDBatch enqueues a DeleteNotificationConfigurationByID query into batch to be executed
 	// later by the batch.
-	DeleteNotificationConfigurationBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
-	// DeleteNotificationConfigurationScan scans the result of an executed DeleteNotificationConfigurationBatch query.
-	DeleteNotificationConfigurationScan(results pgx.BatchResults) (pgtype.Text, error)
+	DeleteNotificationConfigurationByIDBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// DeleteNotificationConfigurationByIDScan scans the result of an executed DeleteNotificationConfigurationByIDBatch query.
+	DeleteNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
@@ -1254,11 +1254,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findNotificationConfigurationForUpdateSQL, findNotificationConfigurationForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindNotificationConfigurationForUpdate': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateNotificationConfigurationSQL, updateNotificationConfigurationSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateNotificationConfiguration': %w", err)
+	if _, err := p.Prepare(ctx, updateNotificationConfigurationByIDSQL, updateNotificationConfigurationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateNotificationConfigurationByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteNotificationConfigurationSQL, deleteNotificationConfigurationSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteNotificationConfiguration': %w", err)
+	if _, err := p.Prepare(ctx, deleteNotificationConfigurationByIDSQL, deleteNotificationConfigurationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteNotificationConfigurationByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)

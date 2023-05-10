@@ -41,7 +41,7 @@ WHERE notification_configuration_id = pggen.arg('notification_configuration_id')
 FOR UPDATE
 ;
 
--- name: UpdateNotificationConfiguration :one
+-- name: UpdateNotificationConfigurationByID :one
 UPDATE notification_configurations
 SET
     updated_at = pggen.arg('updated_at'),
@@ -53,7 +53,7 @@ WHERE notification_configuration_id = pggen.arg('notification_configuration_id')
 RETURNING notification_configuration_id
 ;
 
--- name: DeleteNotificationConfiguration :one
+-- name: DeleteNotificationConfigurationByID :one
 DELETE FROM notification_configurations
 WHERE notification_configuration_id = pggen.arg('notification_configuration_id')
 RETURNING notification_configuration_id

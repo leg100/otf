@@ -222,7 +222,7 @@ func (q *DBQuerier) FindNotificationConfigurationForUpdateScan(results pgx.Batch
 	return item, nil
 }
 
-const updateNotificationConfigurationSQL = `UPDATE notification_configurations
+const updateNotificationConfigurationByIDSQL = `UPDATE notification_configurations
 SET
     updated_at = $1,
     enabled    = $2,
@@ -233,7 +233,7 @@ WHERE notification_configuration_id = $6
 RETURNING notification_configuration_id
 ;`
 
-type UpdateNotificationConfigurationParams struct {
+type UpdateNotificationConfigurationByIDParams struct {
 	UpdatedAt                   pgtype.Timestamptz
 	Enabled                     bool
 	Name                        pgtype.Text
@@ -242,59 +242,59 @@ type UpdateNotificationConfigurationParams struct {
 	NotificationConfigurationID pgtype.Text
 }
 
-// UpdateNotificationConfiguration implements Querier.UpdateNotificationConfiguration.
-func (q *DBQuerier) UpdateNotificationConfiguration(ctx context.Context, params UpdateNotificationConfigurationParams) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateNotificationConfiguration")
-	row := q.conn.QueryRow(ctx, updateNotificationConfigurationSQL, params.UpdatedAt, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
+// UpdateNotificationConfigurationByID implements Querier.UpdateNotificationConfigurationByID.
+func (q *DBQuerier) UpdateNotificationConfigurationByID(ctx context.Context, params UpdateNotificationConfigurationByIDParams) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateNotificationConfigurationByID")
+	row := q.conn.QueryRow(ctx, updateNotificationConfigurationByIDSQL, params.UpdatedAt, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateNotificationConfiguration: %w", err)
+		return item, fmt.Errorf("query UpdateNotificationConfigurationByID: %w", err)
 	}
 	return item, nil
 }
 
-// UpdateNotificationConfigurationBatch implements Querier.UpdateNotificationConfigurationBatch.
-func (q *DBQuerier) UpdateNotificationConfigurationBatch(batch genericBatch, params UpdateNotificationConfigurationParams) {
-	batch.Queue(updateNotificationConfigurationSQL, params.UpdatedAt, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
+// UpdateNotificationConfigurationByIDBatch implements Querier.UpdateNotificationConfigurationByIDBatch.
+func (q *DBQuerier) UpdateNotificationConfigurationByIDBatch(batch genericBatch, params UpdateNotificationConfigurationByIDParams) {
+	batch.Queue(updateNotificationConfigurationByIDSQL, params.UpdatedAt, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
 }
 
-// UpdateNotificationConfigurationScan implements Querier.UpdateNotificationConfigurationScan.
-func (q *DBQuerier) UpdateNotificationConfigurationScan(results pgx.BatchResults) (pgtype.Text, error) {
+// UpdateNotificationConfigurationByIDScan implements Querier.UpdateNotificationConfigurationByIDScan.
+func (q *DBQuerier) UpdateNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateNotificationConfigurationBatch row: %w", err)
+		return item, fmt.Errorf("scan UpdateNotificationConfigurationByIDBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const deleteNotificationConfigurationSQL = `DELETE FROM notification_configurations
+const deleteNotificationConfigurationByIDSQL = `DELETE FROM notification_configurations
 WHERE notification_configuration_id = $1
 RETURNING notification_configuration_id
 ;`
 
-// DeleteNotificationConfiguration implements Querier.DeleteNotificationConfiguration.
-func (q *DBQuerier) DeleteNotificationConfiguration(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteNotificationConfiguration")
-	row := q.conn.QueryRow(ctx, deleteNotificationConfigurationSQL, notificationConfigurationID)
+// DeleteNotificationConfigurationByID implements Querier.DeleteNotificationConfigurationByID.
+func (q *DBQuerier) DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteNotificationConfigurationByID")
+	row := q.conn.QueryRow(ctx, deleteNotificationConfigurationByIDSQL, notificationConfigurationID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query DeleteNotificationConfiguration: %w", err)
+		return item, fmt.Errorf("query DeleteNotificationConfigurationByID: %w", err)
 	}
 	return item, nil
 }
 
-// DeleteNotificationConfigurationBatch implements Querier.DeleteNotificationConfigurationBatch.
-func (q *DBQuerier) DeleteNotificationConfigurationBatch(batch genericBatch, notificationConfigurationID pgtype.Text) {
-	batch.Queue(deleteNotificationConfigurationSQL, notificationConfigurationID)
+// DeleteNotificationConfigurationByIDBatch implements Querier.DeleteNotificationConfigurationByIDBatch.
+func (q *DBQuerier) DeleteNotificationConfigurationByIDBatch(batch genericBatch, notificationConfigurationID pgtype.Text) {
+	batch.Queue(deleteNotificationConfigurationByIDSQL, notificationConfigurationID)
 }
 
-// DeleteNotificationConfigurationScan implements Querier.DeleteNotificationConfigurationScan.
-func (q *DBQuerier) DeleteNotificationConfigurationScan(results pgx.BatchResults) (pgtype.Text, error) {
+// DeleteNotificationConfigurationByIDScan implements Querier.DeleteNotificationConfigurationByIDScan.
+func (q *DBQuerier) DeleteNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan DeleteNotificationConfigurationBatch row: %w", err)
+		return item, fmt.Errorf("scan DeleteNotificationConfigurationByIDBatch row: %w", err)
 	}
 	return item, nil
 }
