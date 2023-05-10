@@ -1014,12 +1014,12 @@ type Querier interface {
 	// UpsertWorkspacePermissionScan scans the result of an executed UpsertWorkspacePermissionBatch query.
 	UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindWorkspacePolicyByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePolicyByIDRow, error)
-	// FindWorkspacePolicyByIDBatch enqueues a FindWorkspacePolicyByID query into batch to be executed
+	FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspacePermissionsByWorkspaceIDRow, error)
+	// FindWorkspacePermissionsByWorkspaceIDBatch enqueues a FindWorkspacePermissionsByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindWorkspacePolicyByIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// FindWorkspacePolicyByIDScan scans the result of an executed FindWorkspacePolicyByIDBatch query.
-	FindWorkspacePolicyByIDScan(results pgx.BatchResults) (FindWorkspacePolicyByIDRow, error)
+	FindWorkspacePermissionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindWorkspacePermissionsByWorkspaceIDScan scans the result of an executed FindWorkspacePermissionsByWorkspaceIDBatch query.
+	FindWorkspacePermissionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByWorkspaceIDRow, error)
 
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
@@ -1527,8 +1527,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, upsertWorkspacePermissionSQL, upsertWorkspacePermissionSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertWorkspacePermission': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspacePolicyByIDSQL, findWorkspacePolicyByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePolicyByID': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspacePermissionsByWorkspaceIDSQL, findWorkspacePermissionsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByWorkspaceID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)
@@ -1649,13 +1649,6 @@ type Webhooks struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	Cloud      pgtype.Text `json:"cloud"`
-}
-
-// WorkspacePermissions represents the Postgres composite type "workspace_permissions".
-type WorkspacePermissions struct {
-	WorkspaceID pgtype.Text `json:"workspace_id"`
-	TeamID      pgtype.Text `json:"team_id"`
-	Role        pgtype.Text `json:"role"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1907,17 +1900,6 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 	)
 }
 
-// newWorkspacePermissions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspace_permissions'.
-func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspace_permissions",
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"team_id", "text", &pgtype.Text{}},
-		compositeField{"role", "text", &pgtype.Text{}},
-	)
-}
-
 // newConfigurationVersionStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
@@ -1952,12 +1934,6 @@ func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 // '_teams' array type.
 func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_teams", "teams", tr.newTeams)
-}
-
-// newWorkspacePermissionsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_workspace_permissions' array type.
-func (tr *typeResolver) newWorkspacePermissionsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_workspace_permissions", "workspace_permissions", tr.newWorkspacePermissions)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (
