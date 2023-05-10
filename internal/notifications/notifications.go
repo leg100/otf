@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/run"
 	"golang.org/x/exp/slog"
 )
 
@@ -15,15 +16,12 @@ const (
 	NotificationDestinationTypeGeneric   Destination = "generic"
 	NotificationDestinationTypeGCPPubSub Destination = "gcppubsub"
 
-	NotificationTriggerCreated               Trigger = "run:created"
-	NotificationTriggerPlanning              Trigger = "run:planning"
-	NotificationTriggerNeedsAttention        Trigger = "run:needs_attention"
-	NotificationTriggerApplying              Trigger = "run:applying"
-	NotificationTriggerCompleted             Trigger = "run:completed"
-	NotificationTriggerErrored               Trigger = "run:errored"
-	NotificationTriggerAssessmentDrifted     Trigger = "assessment:drifted"
-	NotificationTriggerAssessmentFailed      Trigger = "assessment:failed"
-	NotificationTriggerAssessmentCheckFailed Trigger = "assessment:check_failure"
+	NotificationTriggerCreated        Trigger = "run:created"
+	NotificationTriggerPlanning       Trigger = "run:planning"
+	NotificationTriggerNeedsAttention Trigger = "run:needs_attention"
+	NotificationTriggerApplying       Trigger = "run:applying"
+	NotificationTriggerCompleted      Trigger = "run:completed"
+	NotificationTriggerErrored        Trigger = "run:errored"
 )
 
 var (
@@ -138,10 +136,7 @@ func validTriggers(triggers []Trigger) error {
 			NotificationTriggerNeedsAttention,
 			NotificationTriggerApplying,
 			NotificationTriggerCompleted,
-			NotificationTriggerErrored,
-			NotificationTriggerAssessmentDrifted,
-			NotificationTriggerAssessmentFailed,
-			NotificationTriggerAssessmentCheckFailed:
+			NotificationTriggerErrored:
 		default:
 			return ErrInvalidTrigger
 		}
@@ -180,4 +175,28 @@ func (c *Config) update(opts UpdateConfigOptions) error {
 		c.URL = opts.URL
 	}
 	return nil
+}
+
+// isTriggered determines whether a notification is triggered for the given run.
+func (c *Config) isTriggered(r *run.Run) bool {
+	switch r.Status {
+	case internal.RunPending:
+		return c.hasTrigger(NotificationTriggerCreated)
+	case internal.RunPlanning:
+		return c.hasTrigger(NotificationTriggerPlanning)
+	case internal.RunPlanned:
+		return c.hasTrigger(NotificationTriggerNeedsAttention)
+	case internal.RunApplying:
+		return c.hasTrigger(NotificationTriggerApplying)
+	case internal.RunErrored:
+		return c.hasTrigger(NotificationTriggerErrored)
+	}
+	if r.Done() {
+		return c.hasTrigger(NotificationTriggerCompleted)
+	}
+	return false
+}
+
+func (c *Config) hasTrigger(t Trigger) bool {
+	return internal.Contains(c.Triggers, t)
 }
