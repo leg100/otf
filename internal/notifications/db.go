@@ -80,10 +80,11 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 			return sql.Error(err)
 		}
 		params := pggen.UpdateNotificationConfigurationParams{
-			Name:      sql.String(nc.Name),
-			UpdatedAt: sql.Timestamptz(internal.CurrentTimestamp()),
-			Enabled:   nc.Enabled,
-			URL:       sql.NullString(),
+			UpdatedAt:                   sql.Timestamptz(internal.CurrentTimestamp()),
+			Enabled:                     nc.Enabled,
+			Name:                        sql.String(nc.Name),
+			URL:                         sql.NullString(),
+			NotificationConfigurationID: sql.String(nc.ID),
 		}
 		for _, t := range nc.Triggers {
 			params.Triggers = append(params.Triggers, string(t))

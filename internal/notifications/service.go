@@ -73,10 +73,10 @@ func (s *service) UpdateNotificationConfiguration(ctx context.Context, id string
 		return nc.update(opts)
 	})
 	if err != nil {
-		s.Error(err, "updating notification config", "config", updated, "subject", subject)
+		s.Error(err, "updating notification config", "id", id, "subject", subject)
 		return nil, err
 	}
-	s.Info("updated notification config", "config", updated, "subject", subject)
+	s.Info("updated notification config", "updated", updated, "subject", subject)
 	return updated, nil
 }
 

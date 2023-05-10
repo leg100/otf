@@ -30,6 +30,10 @@ const (
 	NotificationDestinationTypeMicrosoftTeams NotificationDestinationType = "microsoft-teams"
 )
 
+func NotificationDestinationPtr(d NotificationDestinationType) *NotificationDestinationType {
+	return &d
+}
+
 // NotificationConfigurationList represents a list of Notification
 // Configurations.
 type NotificationConfigurationList struct {
