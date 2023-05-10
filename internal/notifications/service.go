@@ -16,7 +16,7 @@ type (
 		UpdateNotificationConfiguration(ctx context.Context, id string, opts UpdateConfigOptions) (*Config, error)
 		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
 		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
-		DeleteNotificationConfiguration(ctx context.Context, id string) (*Config, error)
+		DeleteNotificationConfiguration(ctx context.Context, id string) error
 	}
 
 	service struct {
@@ -50,7 +50,7 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 	if err != nil {
 		return nil, err
 	}
-	nc, err := NewConfig(opts)
+	nc, err := NewConfig(workspaceID, opts)
 	if err != nil {
 		s.Error(err, "constructing notification config", "subject", subject)
 		return nil, err
@@ -108,20 +108,20 @@ func (s *service) ListNotificationConfigurations(ctx context.Context, workspaceI
 	return configs, nil
 }
 
-func (s *service) DeleteNotificationConfiguration(ctx context.Context, id string) (*Config, error) {
+func (s *service) DeleteNotificationConfiguration(ctx context.Context, id string) error {
 	nc, err := s.db.get(ctx, id)
 	if err != nil {
 		s.Error(err, "retrieving notification config", "id", id)
-		return nil, err
+		return err
 	}
 	subject, err := s.workspace.CanAccess(ctx, rbac.DeleteNotificationConfigurationAction, nc.WorkspaceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := s.db.delete(ctx, id); err != nil {
 		s.Error(err, "deleting notification config", "id", id)
-		return nil, err
+		return err
 	}
 	s.Info("deleted notification config", "config", nc, "subject", subject)
-	return nc, nil
+	return nil
 }

@@ -34,12 +34,15 @@ func (r pgresult) toNotificationConfiguration() *Config {
 		CreatedAt:       r.CreatedAt.Time.UTC(),
 		UpdatedAt:       r.UpdatedAt.Time.UTC(),
 		Name:            r.Name.String,
-		URL:             r.URL.String,
+		Enabled:         r.Enabled,
 		DestinationType: Destination(r.DestinationType.Status),
 		WorkspaceID:     r.WorkspaceID.String,
 	}
 	for _, t := range r.Triggers {
 		nc.Triggers = append(nc.Triggers, Trigger(t))
+	}
+	if r.URL.Status == pgtype.Present {
+		nc.URL = &r.URL.String
 	}
 	return nc
 }
@@ -50,10 +53,16 @@ func (db *pgdb) create(ctx context.Context, nc *Config) error {
 		CreatedAt:                   sql.Timestamptz(nc.CreatedAt),
 		UpdatedAt:                   sql.Timestamptz(nc.UpdatedAt),
 		Name:                        sql.String(nc.Name),
+		Enabled:                     nc.Enabled,
+		DestinationType:             sql.String(string(nc.DestinationType)),
+		URL:                         sql.NullString(),
 		WorkspaceID:                 sql.String(nc.WorkspaceID),
 	}
 	for _, t := range nc.Triggers {
 		params.Triggers = append(params.Triggers, string(t))
+	}
+	if nc.URL != nil {
+		params.URL = sql.String(*nc.URL)
 	}
 	_, err := db.InsertNotificationConfiguration(ctx, params)
 	return sql.Error(err)
@@ -71,12 +80,16 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 			return sql.Error(err)
 		}
 		params := pggen.UpdateNotificationConfigurationParams{
-			Name:    sql.String(nc.Name),
-			Enabled: nc.Enabled,
-			URL:     sql.String(nc.URL),
+			Name:      sql.String(nc.Name),
+			UpdatedAt: sql.Timestamptz(internal.CurrentTimestamp()),
+			Enabled:   nc.Enabled,
+			URL:       sql.NullString(),
 		}
 		for _, t := range nc.Triggers {
 			params.Triggers = append(params.Triggers, string(t))
+		}
+		if nc.URL != nil {
+			params.URL = sql.String(*nc.URL)
 		}
 		_, err = tx.UpdateNotificationConfiguration(ctx, params)
 		return err

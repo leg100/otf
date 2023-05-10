@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/run"
@@ -30,6 +31,7 @@ type (
 		auth.AuthService
 		tokens.TokensService
 		variable.VariableService
+		notifications.NotificationService
 
 		marshaler
 		internal.Verifier // for verifying signed urls
@@ -47,6 +49,7 @@ type (
 		auth.AuthService
 		tokens.TokensService
 		variable.VariableService
+		notifications.NotificationService
 
 		*surl.Signer
 
@@ -66,6 +69,7 @@ func New(opts Options) *api {
 		Verifier:                    opts.Signer,
 		TokensService:               opts.TokensService,
 		VariableService:             opts.VariableService,
+		NotificationService:         opts.NotificationService,
 		marshaler: &jsonapiMarshaler{
 			OrganizationService: opts.OrganizationService,
 			WorkspaceService:    opts.WorkspaceService,
@@ -88,4 +92,6 @@ func (a *api) AddHandlers(r *mux.Router) {
 	a.addTeamHandlers(r)
 	a.addVariableHandlers(r)
 	a.addTokenHandlers(r)
+	a.addNotificationHandlers(r)
+	a.addOrganizationMembershipHandlers(r)
 }

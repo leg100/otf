@@ -22,6 +22,7 @@ import (
 	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
@@ -260,6 +261,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	notificationService := notifications.NewService(notifications.Options{
+		Logger:              logger,
+		DB:                  db,
+		Subscriber:          broker,
+		WorkspaceAuthorizer: workspaceService,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	api := api.New(api.Options{
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
@@ -270,6 +281,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		TokensService:               tokensService,
 		VariableService:             variableService,
+		NotificationService:         notificationService,
 		Signer:                      signer,
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})

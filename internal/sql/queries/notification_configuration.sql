@@ -44,6 +44,7 @@ FOR UPDATE
 -- name: UpdateNotificationConfiguration :one
 UPDATE notification_configurations
 SET
+    updated_at = pggen.arg('updated_at'),
     enabled    = pggen.arg('enabled'),
     name       = pggen.arg('name'),
     triggers   = pggen.arg('triggers'),

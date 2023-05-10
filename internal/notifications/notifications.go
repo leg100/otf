@@ -42,7 +42,7 @@ type (
 		Name            string
 		Token           string
 		Triggers        []Trigger
-		URL             string
+		URL             *string
 		WorkspaceID     string
 	}
 
@@ -92,7 +92,7 @@ type (
 	}
 )
 
-func NewConfig(opts CreateConfigOptions) (*Config, error) {
+func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 	if err := validDestinationType(opts.DestinationType); err != nil {
 		return nil, err
 	}
@@ -109,7 +109,17 @@ func NewConfig(opts CreateConfigOptions) (*Config, error) {
 		return nil, fmt.Errorf("name cannot be an empty string")
 	}
 
-	return nil, nil
+	return &Config{
+		ID:              internal.NewID("nc"),
+		CreatedAt:       internal.CurrentTimestamp(),
+		UpdatedAt:       internal.CurrentTimestamp(),
+		Name:            *opts.Name,
+		Enabled:         *opts.Enabled,
+		Triggers:        opts.Triggers,
+		DestinationType: *opts.DestinationType,
+		URL:             opts.URL,
+		WorkspaceID:     workspaceID,
+	}, nil
 }
 
 func validDestinationType(dt *Destination) error {
@@ -142,31 +152,35 @@ func validTriggers(triggers []Trigger) error {
 	return nil
 }
 
-func (v *Config) LogValue() slog.Value {
+func (c *Config) LogValue() slog.Value {
 	attrs := []slog.Attr{
-		slog.String("name", v.Name),
-		slog.Any("triggers", v.Triggers),
-		slog.String("workspace_id", v.WorkspaceID),
-		slog.String("destination", string(v.DestinationType)),
+		slog.String("name", c.Name),
+		slog.Bool("enabled", c.Enabled),
+		slog.Any("triggers", c.Triggers),
+		slog.String("workspace_id", c.WorkspaceID),
+		slog.String("destination", string(c.DestinationType)),
 	}
 	return slog.GroupValue(attrs...)
 }
 
-func (v *Config) update(opts UpdateConfigOptions) error {
+func (c *Config) update(opts UpdateConfigOptions) error {
 	if opts.Name != nil {
 		if *opts.Name == "" {
 			return fmt.Errorf("name cannot be an empty string")
 		}
-		v.Name = *opts.Name
+		c.Name = *opts.Name
+	}
+	if opts.Enabled != nil {
+		c.Enabled = *opts.Enabled
 	}
 	if err := validTriggers(opts.Triggers); err != nil {
 		return err
 	}
 	if opts.Triggers != nil {
-		v.Triggers = opts.Triggers
+		c.Triggers = opts.Triggers
 	}
 	if opts.URL != nil {
-		v.URL = *opts.URL
+		c.URL = opts.URL
 	}
 	return nil
 }

@@ -224,15 +224,17 @@ func (q *DBQuerier) FindNotificationConfigurationForUpdateScan(results pgx.Batch
 
 const updateNotificationConfigurationSQL = `UPDATE notification_configurations
 SET
-    enabled    = $1,
-    name       = $2,
-    triggers   = $3,
-    url        = $4
-WHERE notification_configuration_id = $5
+    updated_at = $1,
+    enabled    = $2,
+    name       = $3,
+    triggers   = $4,
+    url        = $5
+WHERE notification_configuration_id = $6
 RETURNING notification_configuration_id
 ;`
 
 type UpdateNotificationConfigurationParams struct {
+	UpdatedAt                   pgtype.Timestamptz
 	Enabled                     bool
 	Name                        pgtype.Text
 	Triggers                    []string
@@ -243,7 +245,7 @@ type UpdateNotificationConfigurationParams struct {
 // UpdateNotificationConfiguration implements Querier.UpdateNotificationConfiguration.
 func (q *DBQuerier) UpdateNotificationConfiguration(ctx context.Context, params UpdateNotificationConfigurationParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateNotificationConfiguration")
-	row := q.conn.QueryRow(ctx, updateNotificationConfigurationSQL, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
+	row := q.conn.QueryRow(ctx, updateNotificationConfigurationSQL, params.UpdatedAt, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateNotificationConfiguration: %w", err)
@@ -253,7 +255,7 @@ func (q *DBQuerier) UpdateNotificationConfiguration(ctx context.Context, params 
 
 // UpdateNotificationConfigurationBatch implements Querier.UpdateNotificationConfigurationBatch.
 func (q *DBQuerier) UpdateNotificationConfigurationBatch(batch genericBatch, params UpdateNotificationConfigurationParams) {
-	batch.Queue(updateNotificationConfigurationSQL, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
+	batch.Queue(updateNotificationConfigurationSQL, params.UpdatedAt, params.Enabled, params.Name, params.Triggers, params.URL, params.NotificationConfigurationID)
 }
 
 // UpdateNotificationConfigurationScan implements Querier.UpdateNotificationConfigurationScan.

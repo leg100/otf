@@ -40,32 +40,31 @@ type NotificationConfigurationList struct {
 // NotificationConfiguration represents a Notification Configuration.
 type NotificationConfiguration struct {
 	ID                string                      `jsonapi:"primary,notification-configurations"`
-	CreatedAt         time.Time                   `jsonapi:"attr,created-at,iso8601"`
-	DeliveryResponses []*DeliveryResponse         `jsonapi:"attr,delivery-responses"`
-	DestinationType   NotificationDestinationType `jsonapi:"attr,destination-type"`
-	Enabled           bool                        `jsonapi:"attr,enabled"`
-	Name              string                      `jsonapi:"attr,name"`
-	Token             string                      `jsonapi:"attr,token"`
-	Triggers          []string                    `jsonapi:"attr,triggers"`
-	UpdatedAt         time.Time                   `jsonapi:"attr,updated-at,iso8601"`
-	URL               string                      `jsonapi:"attr,url"`
+	CreatedAt         time.Time                   `jsonapi:"attribute" json:"created-at"`
+	DeliveryResponses []*DeliveryResponse         `jsonapi:"attribute" json:"delivery-responses"`
+	DestinationType   NotificationDestinationType `jsonapi:"attribute" json:"destination-type"`
+	Enabled           bool                        `jsonapi:"attribute" json:"enabled"`
+	Name              string                      `jsonapi:"attribute" json:"name"`
+	Token             string                      `jsonapi:"attribute" json:"token"`
+	Triggers          []string                    `jsonapi:"attribute" json:"triggers"`
+	UpdatedAt         time.Time                   `jsonapi:"attribute" json:"updated-at"`
+	URL               string                      `jsonapi:"attribute" json:"url"`
 
 	// EmailAddresses is only available for TFE users. It is not available in TFC.
-	EmailAddresses []string `jsonapi:"attr,email-addresses"`
-
-	// Relations
-	Subscribable *Workspace `jsonapi:"relation,subscribable"`
-	EmailUsers   []*User    `jsonapi:"relation,users"`
+	EmailAddresses []string `jsonapi:"attribute" json:"email-addresses"`
+	// relationships
+	Subscribable *Workspace `jsonapi:"relationship" json:"subscribable"`
+	EmailUsers   []*User    `jsonapi:"relationship" json:"users"`
 }
 
 // DeliveryResponse represents a notification configuration delivery response.
 type DeliveryResponse struct {
-	Body       string              `jsonapi:"attr,body"`
-	Code       string              `jsonapi:"attr,code"`
-	Headers    map[string][]string `jsonapi:"attr,headers"`
-	SentAt     time.Time           `jsonapi:"attr,sent-at,rfc3339"`
-	Successful string              `jsonapi:"attr,successful"`
-	URL        string              `jsonapi:"attr,url"`
+	Body       string              `jsonapi:"attribute" json:"body"`
+	Code       string              `jsonapi:"attribute" json:"code"`
+	Headers    map[string][]string `jsonapi:"attribute" json:"headers"`
+	SentAt     time.Time           `jsonapi:"attribute" json:"sent-at"`
+	Successful string              `jsonapi:"attribute" json:"successful"`
+	URL        string              `jsonapi:"attribute" json:"url"`
 }
 
 // NotificationConfigurationCreateOptions represents the options for
@@ -78,29 +77,29 @@ type NotificationConfigurationCreateOptions struct {
 	Type string `jsonapi:"primary,notification-configurations"`
 
 	// Required: The destination type of the notification configuration
-	DestinationType *NotificationDestinationType `jsonapi:"attr,destination-type"`
+	DestinationType *NotificationDestinationType `jsonapi:"attribute" json:"destination-type"`
 
 	// Required: Whether the notification configuration should be enabled or not
-	Enabled *bool `jsonapi:"attr,enabled"`
+	Enabled *bool `jsonapi:"attribute" json:"enabled"`
 
 	// Required: The name of the notification configuration
-	Name *string `jsonapi:"attr,name"`
+	Name *string `jsonapi:"attribute" json:"name"`
 
 	// Optional: The token of the notification configuration
-	Token *string `jsonapi:"attr,token,omitempty"`
+	Token *string `jsonapi:"attribute" json:"token,omitempty"`
 
 	// Optional: The list of run events that will trigger notifications.
-	Triggers []NotificationTriggerType `jsonapi:"attr,triggers,omitempty"`
+	Triggers []NotificationTriggerType `jsonapi:"attribute" json:"triggers,omitempty"`
 
 	// Optional: The url of the notification configuration
-	URL *string `jsonapi:"attr,url,omitempty"`
+	URL *string `jsonapi:"attribute" json:"url,omitempty"`
 
 	// Optional: The list of email addresses that will receive notification emails.
 	// EmailAddresses is only available for TFE users. It is not available in TFC.
-	EmailAddresses []string `jsonapi:"attr,email-addresses,omitempty"`
+	EmailAddresses []string `jsonapi:"attribute" json:"email-addresses,omitempty"`
 
 	// Optional: The list of users belonging to the organization that will receive notification emails.
-	EmailUsers []*User `jsonapi:"relation,users,omitempty"`
+	EmailUsers []*User `jsonapi:"relationship" json:"users,omitempty"`
 }
 
 // NotificationConfigurationUpdateOptions represents the options for
@@ -113,24 +112,24 @@ type NotificationConfigurationUpdateOptions struct {
 	Type string `jsonapi:"primary,notification-configurations"`
 
 	// Optional: Whether the notification configuration should be enabled or not
-	Enabled *bool `jsonapi:"attr,enabled,omitempty"`
+	Enabled *bool `jsonapi:"attribute" json:"enabled,omitempty"`
 
 	// Optional: The name of the notification configuration
-	Name *string `jsonapi:"attr,name,omitempty"`
+	Name *string `jsonapi:"attribute" json:"name,omitempty"`
 
 	// Optional: The token of the notification configuration
-	Token *string `jsonapi:"attr,token,omitempty"`
+	Token *string `jsonapi:"attribute" json:"token,omitempty"`
 
 	// Optional: The list of run events that will trigger notifications.
-	Triggers []NotificationTriggerType `jsonapi:"attr,triggers,omitempty"`
+	Triggers []NotificationTriggerType `jsonapi:"attribute" json:"triggers,omitempty"`
 
 	// Optional: The url of the notification configuration
-	URL *string `jsonapi:"attr,url,omitempty"`
+	URL *string `jsonapi:"attribute" json:"url,omitempty"`
 
 	// Optional: The list of email addresses that will receive notification emails.
 	// EmailAddresses is only available for TFE users. It is not available in TFC.
-	EmailAddresses []string `jsonapi:"attr,email-addresses,omitempty"`
+	EmailAddresses []string `jsonapi:"attribute" json:"email-addresses,omitempty"`
 
 	// Optional: The list of users belonging to the organization that will receive notification emails.
-	EmailUsers []*User `jsonapi:"relation,users,omitempty"`
+	EmailUsers []*User `jsonapi:"relationship" json:"users,omitempty"`
 }
