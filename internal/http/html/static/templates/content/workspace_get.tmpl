@@ -31,7 +31,9 @@
           <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
             <option value="" selected>-- start run --</option>
             <option value="plan-only">plan only</option>
-            <option value="plan-and-apply">plan and apply</option>
+            {{ if .CanApply }}
+              <option value="plan-and-apply">plan and apply</option>
+            {{ end }}
           </select>
         </form>
       </div>

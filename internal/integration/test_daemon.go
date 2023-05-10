@@ -207,6 +207,14 @@ func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string)
 	return user
 }
 
+func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*auth.User, context.Context) {
+	t.Helper()
+
+	user, err := s.GetUser(ctx, auth.UserSpec{Username: &username})
+	require.NoError(t, err)
+	return user, internal.AddSubjectToContext(ctx, user)
+}
+
 func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
 	t.Helper()
 
