@@ -122,7 +122,7 @@
               {{ continue }}
             {{ end }}
             <tr id="permissions-{{ .Team }}">
-              <td>{{ .Team }}</td>
+              <td><a href="{{ teamPath .TeamID }}">{{ .Team }}</a></td>
               <td>
                 <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                   <input name="team_name" value="{{ .Team }}" type="hidden">

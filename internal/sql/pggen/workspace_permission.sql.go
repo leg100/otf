@@ -54,71 +54,73 @@ func (q *DBQuerier) UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgc
 	return cmdTag, err
 }
 
-const findWorkspacePolicyByIDSQL = `SELECT
-    w.organization_name,
-    w.workspace_id,
-    (
-        SELECT array_remove(array_agg(t.*), NULL)
-        FROM teams t
-        JOIN workspace_permissions wp USING (team_id)
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS teams,
-    (
-        SELECT array_remove(array_agg(wp.*), NULL)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS workspace_permissions
-FROM workspaces w
-WHERE workspace_id = $1
+const findWorkspacePermissionsByWorkspaceIDSQL = `SELECT
+    wp.role,
+    (t.*)::"teams" AS team
+FROM workspace_permissions wp
+JOIN teams t USING (team_id)
+WHERE wp.workspace_id = $1
 ;`
 
-type FindWorkspacePolicyByIDRow struct {
-	OrganizationName     pgtype.Text            `json:"organization_name"`
-	WorkspaceID          pgtype.Text            `json:"workspace_id"`
-	Teams                []Teams                `json:"teams"`
-	WorkspacePermissions []WorkspacePermissions `json:"workspace_permissions"`
+type FindWorkspacePermissionsByWorkspaceIDRow struct {
+	Role pgtype.Text `json:"role"`
+	Team *Teams      `json:"team"`
 }
 
-// FindWorkspacePolicyByID implements Querier.FindWorkspacePolicyByID.
-func (q *DBQuerier) FindWorkspacePolicyByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePolicyByIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspacePolicyByID")
-	row := q.conn.QueryRow(ctx, findWorkspacePolicyByIDSQL, workspaceID)
-	var item FindWorkspacePolicyByIDRow
-	teamsArray := q.types.newTeamsArray()
-	workspacePermissionsArray := q.types.newWorkspacePermissionsArray()
-	if err := row.Scan(&item.OrganizationName, &item.WorkspaceID, teamsArray, workspacePermissionsArray); err != nil {
-		return item, fmt.Errorf("query FindWorkspacePolicyByID: %w", err)
+// FindWorkspacePermissionsByWorkspaceID implements Querier.FindWorkspacePermissionsByWorkspaceID.
+func (q *DBQuerier) FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspacePermissionsByWorkspaceIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspacePermissionsByWorkspaceID")
+	rows, err := q.conn.Query(ctx, findWorkspacePermissionsByWorkspaceIDSQL, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindWorkspacePermissionsByWorkspaceID: %w", err)
 	}
-	if err := teamsArray.AssignTo(&item.Teams); err != nil {
-		return item, fmt.Errorf("assign FindWorkspacePolicyByID row: %w", err)
+	defer rows.Close()
+	items := []FindWorkspacePermissionsByWorkspaceIDRow{}
+	teamRow := q.types.newTeams()
+	for rows.Next() {
+		var item FindWorkspacePermissionsByWorkspaceIDRow
+		if err := rows.Scan(&item.Role, teamRow); err != nil {
+			return nil, fmt.Errorf("scan FindWorkspacePermissionsByWorkspaceID row: %w", err)
+		}
+		if err := teamRow.AssignTo(&item.Team); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacePermissionsByWorkspaceID row: %w", err)
+		}
+		items = append(items, item)
 	}
-	if err := workspacePermissionsArray.AssignTo(&item.WorkspacePermissions); err != nil {
-		return item, fmt.Errorf("assign FindWorkspacePolicyByID row: %w", err)
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWorkspacePermissionsByWorkspaceID rows: %w", err)
 	}
-	return item, nil
+	return items, err
 }
 
-// FindWorkspacePolicyByIDBatch implements Querier.FindWorkspacePolicyByIDBatch.
-func (q *DBQuerier) FindWorkspacePolicyByIDBatch(batch genericBatch, workspaceID pgtype.Text) {
-	batch.Queue(findWorkspacePolicyByIDSQL, workspaceID)
+// FindWorkspacePermissionsByWorkspaceIDBatch implements Querier.FindWorkspacePermissionsByWorkspaceIDBatch.
+func (q *DBQuerier) FindWorkspacePermissionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findWorkspacePermissionsByWorkspaceIDSQL, workspaceID)
 }
 
-// FindWorkspacePolicyByIDScan implements Querier.FindWorkspacePolicyByIDScan.
-func (q *DBQuerier) FindWorkspacePolicyByIDScan(results pgx.BatchResults) (FindWorkspacePolicyByIDRow, error) {
-	row := results.QueryRow()
-	var item FindWorkspacePolicyByIDRow
-	teamsArray := q.types.newTeamsArray()
-	workspacePermissionsArray := q.types.newWorkspacePermissionsArray()
-	if err := row.Scan(&item.OrganizationName, &item.WorkspaceID, teamsArray, workspacePermissionsArray); err != nil {
-		return item, fmt.Errorf("scan FindWorkspacePolicyByIDBatch row: %w", err)
+// FindWorkspacePermissionsByWorkspaceIDScan implements Querier.FindWorkspacePermissionsByWorkspaceIDScan.
+func (q *DBQuerier) FindWorkspacePermissionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByWorkspaceIDRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindWorkspacePermissionsByWorkspaceIDBatch: %w", err)
 	}
-	if err := teamsArray.AssignTo(&item.Teams); err != nil {
-		return item, fmt.Errorf("assign FindWorkspacePolicyByID row: %w", err)
+	defer rows.Close()
+	items := []FindWorkspacePermissionsByWorkspaceIDRow{}
+	teamRow := q.types.newTeams()
+	for rows.Next() {
+		var item FindWorkspacePermissionsByWorkspaceIDRow
+		if err := rows.Scan(&item.Role, teamRow); err != nil {
+			return nil, fmt.Errorf("scan FindWorkspacePermissionsByWorkspaceIDBatch row: %w", err)
+		}
+		if err := teamRow.AssignTo(&item.Team); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacePermissionsByWorkspaceID row: %w", err)
+		}
+		items = append(items, item)
 	}
-	if err := workspacePermissionsArray.AssignTo(&item.WorkspacePermissions); err != nil {
-		return item, fmt.Errorf("assign FindWorkspacePolicyByID row: %w", err)
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWorkspacePermissionsByWorkspaceIDBatch rows: %w", err)
 	}
-	return item, nil
+	return items, err
 }
 
 const deleteWorkspacePermissionByIDSQL = `DELETE

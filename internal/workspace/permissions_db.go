@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
@@ -22,32 +23,39 @@ func (db *pgdb) SetWorkspacePermission(ctx context.Context, workspaceID, team st
 }
 
 func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (internal.WorkspacePolicy, error) {
-	result, err := db.FindWorkspacePolicyByID(ctx, sql.String(workspaceID))
+	batch := &pgx.Batch{}
+
+	// Retrieve not only permissions but the workspace too, so that:
+	// (1) we ensure that workspace exists and return not found if not
+	// (2) we retrieve the name of the organization, which is part of a policy
+	db.FindWorkspaceByIDBatch(batch, sql.String(workspaceID))
+	db.FindWorkspacePermissionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
+	results := db.SendBatch(ctx, batch)
+	defer results.Close()
+
+	ws, err := db.FindWorkspaceByIDScan(results)
 	if err != nil {
 		return internal.WorkspacePolicy{}, sql.Error(err)
 	}
-	policy := internal.WorkspacePolicy{
-		Organization: result.OrganizationName.String,
-		WorkspaceID:  result.WorkspaceID.String,
+	perms, err := db.FindWorkspacePermissionsByWorkspaceIDScan(results)
+	if err != nil {
+		return internal.WorkspacePolicy{}, sql.Error(err)
 	}
-	// SQL query returns an array of workspace permissions and an array of
-	// teams; the former has the team id, but we need the team name, so
-	// lookup the corresponding team name in the array of teams.
-	for _, perm := range result.WorkspacePermissions {
+
+	policy := internal.WorkspacePolicy{
+		Organization: ws.OrganizationName.String,
+		WorkspaceID:  workspaceID,
+	}
+	for _, perm := range perms {
 		role, err := rbac.WorkspaceRoleFromString(perm.Role.String)
 		if err != nil {
 			return internal.WorkspacePolicy{}, err
 		}
-		// find corresponding team name in teams array
-		for _, t := range result.Teams {
-			if t.TeamID == perm.TeamID {
-				policy.Permissions = append(policy.Permissions, internal.WorkspacePermission{
-					Team: t.Name.String,
-					Role: role,
-				})
-				break
-			}
-		}
+		policy.Permissions = append(policy.Permissions, internal.WorkspacePermission{
+			Team:   perm.Team.Name.String,
+			TeamID: perm.Team.TeamID.String,
+			Role:   role,
+		})
 	}
 	return policy, nil
 }
