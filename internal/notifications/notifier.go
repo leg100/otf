@@ -2,6 +2,8 @@ package notifications
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -20,6 +22,8 @@ type (
 		logr.Logger
 		internal.Subscriber
 		NotificationService
+
+		cache cache
 	}
 
 	// NotifierOptions are options for constructing a notifier
@@ -62,7 +66,7 @@ func (s *notifier) reinitialize(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// subscribe to run events
+	// subscribe to both run events and notification config events
 	sub, err := s.Subscribe(ctx, "notifier-")
 	if err != nil {
 		return err
@@ -77,20 +81,46 @@ func (s *notifier) reinitialize(ctx context.Context) error {
 }
 
 func (s *notifier) handle(ctx context.Context, event internal.Event) error {
-	run, ok := event.Payload.(*run.Run)
-	if !ok {
-		// ignore non-run events
+	switch payload := event.Payload.(type) {
+	case *run.Run:
+		return s.handleRun(ctx, payload)
+	case *Config:
+		return s.handleConfig(ctx, payload, event.Type)
+	default:
 		return nil
 	}
-	if run.Queued() {
+}
+
+func (s *notifier) handleConfig(ctx context.Context, cfg *Config, eventType internal.EventType) error {
+	switch eventType {
+	case internal.CreatedEvent:
+		s.configs[cfg.ID] = cfg
+		s.clients[cfg.ID] = newClient()
+	case internal.DeletedEvent:
+		client, ok := s.clients[cfg.ID]
+		if !ok {
+			return fmt.Errorf("no client found for config: %s", cfg.ID)
+		}
+		client.Close()
+		delete(s.clients, cfg.ID)
+	}
+	return nil
+}
+
+func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
+	if r.Queued() {
 		// ignore queued events
 		return nil
 	}
-	configs, err := s.ListNotificationConfigurations(ctx, run.WorkspaceID)
-	if err != nil {
-		return err
-	}
-	for _, cfg := range configs {
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, cfg := range s.configs {
+		if cfg.WorkspaceID != r.WorkspaceID {
+			// skip configs for other workspaces
+			continue
+		}
 		if !cfg.Enabled {
 			// skip disabled config
 			continue
@@ -99,7 +129,7 @@ func (s *notifier) handle(ctx context.Context, event internal.Event) error {
 			// skip config with no triggers
 			continue
 		}
-		if !cfg.isTriggered(run) {
+		if !cfg.isTriggered(r) {
 			// skip config with no matching triggers
 			continue
 		}

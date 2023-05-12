@@ -22,10 +22,15 @@ INSERT INTO notification_configurations (
 )
 ;
 
--- name: FindNotificationConfigurations :many
+-- name: FindNotificationConfigurationsByWorkspaceID :many
 SELECT *
 FROM notification_configurations
 WHERE workspace_id = pggen.arg('workspace_id')
+;
+
+-- name: FindAllNotificationConfigurations :many
+SELECT *
+FROM notification_configurations
 ;
 
 -- name: FindNotificationConfiguration :one

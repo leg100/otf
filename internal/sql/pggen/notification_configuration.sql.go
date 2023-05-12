@@ -70,12 +70,12 @@ func (q *DBQuerier) InsertNotificationConfigurationScan(results pgx.BatchResults
 	return cmdTag, err
 }
 
-const findNotificationConfigurationsSQL = `SELECT *
+const findNotificationConfigurationsByWorkspaceIDSQL = `SELECT *
 FROM notification_configurations
 WHERE workspace_id = $1
 ;`
 
-type FindNotificationConfigurationsRow struct {
+type FindNotificationConfigurationsByWorkspaceIDRow struct {
 	NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
@@ -87,50 +87,114 @@ type FindNotificationConfigurationsRow struct {
 	Enabled                     bool               `json:"enabled"`
 }
 
-// FindNotificationConfigurations implements Querier.FindNotificationConfigurations.
-func (q *DBQuerier) FindNotificationConfigurations(ctx context.Context, workspaceID pgtype.Text) ([]FindNotificationConfigurationsRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindNotificationConfigurations")
-	rows, err := q.conn.Query(ctx, findNotificationConfigurationsSQL, workspaceID)
+// FindNotificationConfigurationsByWorkspaceID implements Querier.FindNotificationConfigurationsByWorkspaceID.
+func (q *DBQuerier) FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindNotificationConfigurationsByWorkspaceIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindNotificationConfigurationsByWorkspaceID")
+	rows, err := q.conn.Query(ctx, findNotificationConfigurationsByWorkspaceIDSQL, workspaceID)
 	if err != nil {
-		return nil, fmt.Errorf("query FindNotificationConfigurations: %w", err)
+		return nil, fmt.Errorf("query FindNotificationConfigurationsByWorkspaceID: %w", err)
 	}
 	defer rows.Close()
-	items := []FindNotificationConfigurationsRow{}
+	items := []FindNotificationConfigurationsByWorkspaceIDRow{}
 	for rows.Next() {
-		var item FindNotificationConfigurationsRow
+		var item FindNotificationConfigurationsByWorkspaceIDRow
 		if err := rows.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
-			return nil, fmt.Errorf("scan FindNotificationConfigurations row: %w", err)
+			return nil, fmt.Errorf("scan FindNotificationConfigurationsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindNotificationConfigurations rows: %w", err)
+		return nil, fmt.Errorf("close FindNotificationConfigurationsByWorkspaceID rows: %w", err)
 	}
 	return items, err
 }
 
-// FindNotificationConfigurationsBatch implements Querier.FindNotificationConfigurationsBatch.
-func (q *DBQuerier) FindNotificationConfigurationsBatch(batch genericBatch, workspaceID pgtype.Text) {
-	batch.Queue(findNotificationConfigurationsSQL, workspaceID)
+// FindNotificationConfigurationsByWorkspaceIDBatch implements Querier.FindNotificationConfigurationsByWorkspaceIDBatch.
+func (q *DBQuerier) FindNotificationConfigurationsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findNotificationConfigurationsByWorkspaceIDSQL, workspaceID)
 }
 
-// FindNotificationConfigurationsScan implements Querier.FindNotificationConfigurationsScan.
-func (q *DBQuerier) FindNotificationConfigurationsScan(results pgx.BatchResults) ([]FindNotificationConfigurationsRow, error) {
+// FindNotificationConfigurationsByWorkspaceIDScan implements Querier.FindNotificationConfigurationsByWorkspaceIDScan.
+func (q *DBQuerier) FindNotificationConfigurationsByWorkspaceIDScan(results pgx.BatchResults) ([]FindNotificationConfigurationsByWorkspaceIDRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindNotificationConfigurationsBatch: %w", err)
+		return nil, fmt.Errorf("query FindNotificationConfigurationsByWorkspaceIDBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindNotificationConfigurationsRow{}
+	items := []FindNotificationConfigurationsByWorkspaceIDRow{}
 	for rows.Next() {
-		var item FindNotificationConfigurationsRow
+		var item FindNotificationConfigurationsByWorkspaceIDRow
 		if err := rows.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
-			return nil, fmt.Errorf("scan FindNotificationConfigurationsBatch row: %w", err)
+			return nil, fmt.Errorf("scan FindNotificationConfigurationsByWorkspaceIDBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindNotificationConfigurationsBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindNotificationConfigurationsByWorkspaceIDBatch rows: %w", err)
+	}
+	return items, err
+}
+
+const findAllNotificationConfigurationsSQL = `SELECT *
+FROM notification_configurations
+;`
+
+type FindAllNotificationConfigurationsRow struct {
+	NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	Name                        pgtype.Text        `json:"name"`
+	URL                         pgtype.Text        `json:"url"`
+	Triggers                    []string           `json:"triggers"`
+	DestinationType             pgtype.Text        `json:"destination_type"`
+	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
+	Enabled                     bool               `json:"enabled"`
+}
+
+// FindAllNotificationConfigurations implements Querier.FindAllNotificationConfigurations.
+func (q *DBQuerier) FindAllNotificationConfigurations(ctx context.Context) ([]FindAllNotificationConfigurationsRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAllNotificationConfigurations")
+	rows, err := q.conn.Query(ctx, findAllNotificationConfigurationsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("query FindAllNotificationConfigurations: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAllNotificationConfigurationsRow{}
+	for rows.Next() {
+		var item FindAllNotificationConfigurationsRow
+		if err := rows.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
+			return nil, fmt.Errorf("scan FindAllNotificationConfigurations row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAllNotificationConfigurations rows: %w", err)
+	}
+	return items, err
+}
+
+// FindAllNotificationConfigurationsBatch implements Querier.FindAllNotificationConfigurationsBatch.
+func (q *DBQuerier) FindAllNotificationConfigurationsBatch(batch genericBatch) {
+	batch.Queue(findAllNotificationConfigurationsSQL)
+}
+
+// FindAllNotificationConfigurationsScan implements Querier.FindAllNotificationConfigurationsScan.
+func (q *DBQuerier) FindAllNotificationConfigurationsScan(results pgx.BatchResults) ([]FindAllNotificationConfigurationsRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindAllNotificationConfigurationsBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindAllNotificationConfigurationsRow{}
+	for rows.Next() {
+		var item FindAllNotificationConfigurationsRow
+		if err := rows.Scan(&item.NotificationConfigurationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.URL, &item.Triggers, &item.DestinationType, &item.WorkspaceID, &item.Enabled); err != nil {
+			return nil, fmt.Errorf("scan FindAllNotificationConfigurationsBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindAllNotificationConfigurationsBatch rows: %w", err)
 	}
 	return items, err
 }

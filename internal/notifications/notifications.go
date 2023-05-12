@@ -14,6 +14,7 @@ import (
 
 const (
 	NotificationDestinationTypeGeneric   Destination = "generic"
+	NotificationDestinationTypeSlack     Destination = "slack"
 	NotificationDestinationTypeGCPPubSub Destination = "gcppubsub"
 
 	NotificationTriggerCreated        Trigger = "run:created"
@@ -40,7 +41,7 @@ type (
 		Name            string
 		Token           string
 		Triggers        []Trigger
-		URL             *string
+		URL             string
 		WorkspaceID     string
 	}
 
@@ -120,30 +121,6 @@ func NewConfig(workspaceID string, opts CreateConfigOptions) (*Config, error) {
 	}, nil
 }
 
-func validDestinationType(dt Destination) error {
-	if dt != NotificationDestinationTypeGeneric &&
-		dt != NotificationDestinationTypeGCPPubSub {
-		return ErrUnsupportedDestinationType
-	}
-	return nil
-}
-
-func validTriggers(triggers []Trigger) error {
-	for _, t := range triggers {
-		switch t {
-		case NotificationTriggerCreated,
-			NotificationTriggerPlanning,
-			NotificationTriggerNeedsAttention,
-			NotificationTriggerApplying,
-			NotificationTriggerCompleted,
-			NotificationTriggerErrored:
-		default:
-			return ErrInvalidTrigger
-		}
-	}
-	return nil
-}
-
 func (c *Config) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("name", c.Name),
@@ -199,4 +176,28 @@ func (c *Config) isTriggered(r *run.Run) bool {
 
 func (c *Config) hasTrigger(t Trigger) bool {
 	return internal.Contains(c.Triggers, t)
+}
+
+func validDestinationType(dt Destination) error {
+	if dt != NotificationDestinationTypeGeneric &&
+		dt != NotificationDestinationTypeGCPPubSub {
+		return ErrUnsupportedDestinationType
+	}
+	return nil
+}
+
+func validTriggers(triggers []Trigger) error {
+	for _, t := range triggers {
+		switch t {
+		case NotificationTriggerCreated,
+			NotificationTriggerPlanning,
+			NotificationTriggerNeedsAttention,
+			NotificationTriggerApplying,
+			NotificationTriggerCompleted,
+			NotificationTriggerErrored:
+		default:
+			return ErrInvalidTrigger
+		}
+	}
+	return nil
 }
