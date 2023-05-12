@@ -3,24 +3,19 @@ package pubsub
 import (
 	"context"
 
-	"github.com/jackc/pgconn"
+	"github.com/leg100/otf/internal"
 )
 
-type fakePool struct {
-	gotExecArgs []any
+type (
+	fakePool struct {
+		pool
+	}
 
-	pool
-}
+	fakeUnmarshaler struct {
+		resource any
+	}
+)
 
-func (f *fakePool) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
-	f.gotExecArgs = arguments
-	return nil, nil
-}
-
-type fakeGetter struct {
-	resource any
-}
-
-func (f *fakeGetter) GetByID(context.Context, string) (any, error) {
+func (f *fakeUnmarshaler) UnmarshalEvent(ctx context.Context, payload []byte, op internal.EventType) (any, error) {
 	return f.resource, nil
 }

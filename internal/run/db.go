@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -48,6 +49,19 @@ type (
 		ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
 	}
 )
+
+// UnmarshalEvent implements EventUnmarshaler
+func (db *pgdb) UnmarshalEvent(ctx context.Context, payload []byte, op internal.EventType) (any, error) {
+	var r pgresult
+	err := json.Unmarshal(payload, &r)
+	if err != nil {
+		return nil, err
+	}
+	if op == internal.DeletedEvent {
+		return &Run{ID: r.RunID.String}, nil
+	}
+	return db.GetRun(ctx, r.RunID.String)
+}
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {

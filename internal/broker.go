@@ -2,17 +2,19 @@ package internal
 
 import (
 	"context"
-	"reflect"
 )
 
 type (
 	Broker interface {
 		PubSubService
-		Register(t reflect.Type, getter Getter)
+
+		// Register an unmarshaler for unmarshaling database table events into OTF
+		// events.
+		Register(table string, unmarshaler EventUnmarshaler)
 	}
 
-	// Getter retrieves an event payload using its ID.
-	Getter interface {
-		GetByID(context.Context, string) (any, error)
+	// EventUnmarshaler unmarshals a database event payload into an OTF event payload.
+	EventUnmarshaler interface {
+		UnmarshalEvent(ctx context.Context, payload []byte, op EventType) (any, error)
 	}
 )

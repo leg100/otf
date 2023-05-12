@@ -24,7 +24,6 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.Publisher
 
 		db   internal.DB
 		site internal.Authorizer // authorize access to site
@@ -37,7 +36,6 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Publisher
 		html.Renderer
 		logr.Logger
 
@@ -50,7 +48,6 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:                       opts.Logger,
-		Publisher:                    opts.Publisher,
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		AuthService:                  opts.AuthService,
 		db:                           opts.DB,
@@ -123,8 +120,6 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
 		return nil, err
 	}
-
-	s.Publish(internal.Event{Type: internal.EventOrganizationCreated, Payload: org})
 
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
 

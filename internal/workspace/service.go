@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"errors"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -46,7 +45,6 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.Publisher
 
 		site                internal.Authorizer
 		organization        internal.Authorizer
@@ -73,8 +71,7 @@ type (
 func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:    opts.Logger,
-		Publisher: opts.Broker,
+		Logger: opts.Logger,
 		Authorizer: &authorizer{
 			Logger: opts.Logger,
 			db:     db,
@@ -91,7 +88,7 @@ func NewService(opts Options) *service {
 		svc:                &svc,
 	}
 	// Register with broker so that it can relay workspace events
-	opts.Register(reflect.TypeOf(&Workspace{}), &svc)
+	opts.Register("workspaces", db)
 	return &svc
 }
 
@@ -145,14 +142,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws})
-
 	return ws, nil
-}
-
-// GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, workspaceID string) (any, error) {
-	return s.db.get(ctx, workspaceID)
 }
 
 func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error) {
@@ -227,10 +217,7 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 		return nil, err
 	}
 
-	// retain ref to existing name so a name change can be detected
-	var name string
 	updated, err := s.db.update(ctx, workspaceID, func(ws *Workspace) error {
-		name = ws.Name
 		return ws.Update(opts)
 	})
 	if err != nil {
@@ -238,12 +225,7 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 		return nil, err
 	}
 
-	if updated.Name != name {
-		s.Publish(internal.Event{Type: internal.EventWorkspaceRenamed, Payload: updated})
-	}
-
 	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
-
 	return updated, nil
 }
 
@@ -272,10 +254,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 		return nil, err
 	}
 
-	s.Publish(internal.Event{Type: internal.EventWorkspaceDeleted, Payload: ws})
-
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
-
 	return ws, nil
 }
 

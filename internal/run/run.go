@@ -222,7 +222,7 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(internal.RunCanceled)
+		r.updateStatus(internal.RunForceCanceled)
 		return nil
 	}
 	return internal.ErrRunForceCancelNotAllowed

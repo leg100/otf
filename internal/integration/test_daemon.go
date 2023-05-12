@@ -250,6 +250,14 @@ func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Contex
 	return cv
 }
 
+func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
+	cv := s.createConfigurationVersion(t, ctx, ws)
+	tarball, err := os.ReadFile("./testdata/root.tar.gz")
+	require.NoError(t, err)
+	s.UploadConfig(ctx, cv.ID, tarball)
+	return cv
+}
+
 func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
 	t.Helper()
 
@@ -334,6 +342,14 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 	})
 	require.NoError(t, err)
 	return token
+}
+
+func (s *testDaemon) createSubscriber(t *testing.T, ctx context.Context) <-chan internal.Event {
+	t.Helper()
+
+	sub, err := s.Subscribe(ctx, "")
+	require.NoError(t, err)
+	return sub
 }
 
 // startAgent starts an external agent, configuring it with the given

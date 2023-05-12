@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -26,13 +27,14 @@ type (
 	}
 )
 
-// GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
-	r, err := db.FindOrganizationByID(ctx, sql.String(id))
+// UnmarshalEvent implements pubsub.DBEventUnmarshaler
+func (db *pgdb) UnmarshalEvent(ctx context.Context, payload []byte, op internal.EventType) (any, error) {
+	var r row
+	err := json.Unmarshal(payload, &r)
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, err
 	}
-	return row(r).toOrganization(), nil
+	return r.toOrganization(), nil
 }
 
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {

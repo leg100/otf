@@ -5,11 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/internal"
@@ -22,6 +20,11 @@ const (
 
 	// subBufferSize is the buffer size of the channel for each subscription.
 	subBufferSize = 16
+
+	// postgres table operations
+	insert pgop = "INSERT"
+	update pgop = "UPDATE"
+	del    pgop = "DELETE"
 )
 
 type (
@@ -29,13 +32,12 @@ type (
 	Broker struct {
 		logr.Logger
 
-		channel       string                         // postgres notification channel name
-		pool          pool                           // pool from which to acquire a dedicated connection to postgres
-		islistening   chan bool                      // semaphore that's closed once broker is listening
-		pid           string                         // pid uniquely identifies a broker
-		registrations map[string]internal.Getter     // map of event payload type to a fn that can retrieve the payload
-		subs          map[string]chan internal.Event // subscriptions
-		metrics       map[string]prometheus.Gauge    // metric for each subscription
+		channel       string                               // postgres notification channel name
+		pool          pool                                 // pool from which to acquire a dedicated connection to postgres
+		islistening   chan bool                            // semaphore that's closed once broker is listening
+		registrations map[string]internal.EventUnmarshaler // map of event payload type to a fn that can retrieve the payload
+		subs          map[string]chan internal.Event       // subscriptions
+		metrics       map[string]prometheus.Gauge          // metric for each subscription
 
 		mu sync.Mutex // sync access to maps
 	}
@@ -45,23 +47,24 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	}
 
-	// pgevent is an event sent via a postgres channel
+	// pgevent is an event triggered by an operation on a postgres table
 	pgevent struct {
-		PayloadType string             `json:"payload_type"` // event payload type
-		Event       internal.EventType `json:"event"`        // event type
-		ID          string             `json:"id"`           // event payload ID
-		PID         string             `json:"pid"`          // process ID that sent this event
+		Table     string          `json:"table"`  // pg table on which operation occured
+		Operation pgop            `json:"op"`     // pg operation
+		Record    json.RawMessage `json:"record"` // pg table record affected
 	}
+
+	// pgop is a postgres table operation, e.g. INSERT, UPDATE, etc.
+	pgop string
 )
 
-func NewBroker(logger logr.Logger, db internal.DB) *Broker {
+func NewBroker(logger logr.Logger, db pool) *Broker {
 	return &Broker{
 		Logger:        logger.WithValues("component", "broker"),
-		pid:           uuid.NewString(),
 		pool:          db,
 		islistening:   make(chan bool),
 		channel:       defaultChannel,
-		registrations: make(map[string]internal.Getter),
+		registrations: make(map[string]internal.EventUnmarshaler),
 		subs:          make(map[string]chan internal.Event),
 		metrics:       make(map[string]prometheus.Gauge),
 	}
@@ -108,18 +111,19 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 	return backoff.RetryNotify(op, policy, nil)
 }
 
-// Publish sends an event to subscribers, via postgres to subscribers on
-// other machines, and via the local broker to subscribers within the same
-// process.
+// Publish sends an event to subscribers.
 func (b *Broker) Publish(event internal.Event) {
-	b.localPublish(event)
+	b.mu.Lock()
+	defer b.mu.Unlock()
 
-	if event.Local {
-		return
-	}
+	for name, sub := range b.subs {
+		// record sub's chan size
+		b.metrics[name].Set(float64(len(sub)))
 
-	if err := b.remotePublish(event); err != nil {
-		b.Error(err, "publishing event via postgres", "event", event.Type)
+		// TODO: detect full channel using 'select...default:' and if full, close
+		// the channel. Subs can re-subscribe if they wish (will have to
+		// re-engineer subs first to handle this accordingly).
+		sub <- event
 	}
 }
 
@@ -170,79 +174,47 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.
 	return sub, nil
 }
 
-// Register a means of reassembling a postgres message back into an otf event
-func (b *Broker) Register(t reflect.Type, getter internal.Getter) {
+// Register a means of assembling a postgres notification into an otf event
+func (b *Broker) Register(table string, getter internal.EventUnmarshaler) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.registrations[t.String()] = getter
+	b.registrations[table] = getter
 }
 
-// localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event internal.Event) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for name, sub := range b.subs {
-		// record sub's chan size
-		b.metrics[name].Set(float64(len(sub)))
-
-		// TODO: detect full channel using 'select...default:' and if full, close
-		// the channel. Subs can re-subscribe if they wish (will have to
-		// re-engineer subs first to handle this accordingly).
-		sub <- event
-	}
-}
-
-// remotePublish publishes an event to postgres for relaying onto to remote
-// subscribers
-func (b *Broker) remotePublish(event internal.Event) error {
-	// marshal an otf event into a JSON-encoded postgres event
-	id, hasID := internal.GetID(event.Payload)
-	if !hasID {
-		return fmt.Errorf("event payload does not have an ID field")
-	}
-	encoded, err := json.Marshal(&pgevent{
-		PayloadType: reflect.TypeOf(event.Payload).String(),
-		Event:       event.Type,
-		ID:          id,
-		PID:         b.pid,
-	})
-	if err != nil {
-		return err
-	}
-	sql := fmt.Sprintf("select pg_notify('%s', $1)", b.channel)
-	if _, err = b.pool.Exec(context.Background(), sql, encoded); err != nil {
-		return err
-	}
-	return nil
-}
-
-// receive handles notifications from postgres
+// receive notifications from postgres and relay them as events onto subscribers.
 func (b *Broker) receive(ctx context.Context, notification *pgconn.Notification) error {
 	var event pgevent
 	if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
 		return err
 	}
 
-	// skip notifications that this process sent.
-	if event.PID == b.pid {
-		return nil
+	// Convert postgres operation into OTF event type
+	var eventType internal.EventType
+	switch event.Operation {
+	case insert:
+		eventType = internal.CreatedEvent
+	case update:
+		eventType = internal.UpdatedEvent
+	case del:
+		eventType = internal.DeletedEvent
+	default:
+		return fmt.Errorf("unknown pg operation: %s", event.Operation)
 	}
 
-	getter, ok := b.registrations[event.PayloadType]
+	// Lookup unmarshaler to convert record to an OTF event
+	getter, ok := b.registrations[event.Table]
 	if !ok {
-		return fmt.Errorf("unregistered payload type: %s", event.PayloadType)
+		return fmt.Errorf("unregistered table: %s", event.Table)
 	}
-	payload, err := getter.GetByID(ctx, event.ID)
+	payload, err := getter.UnmarshalEvent(ctx, event.Record, eventType)
 	if err != nil {
 		return fmt.Errorf("retrieving resource: %w", err)
 	}
 
-	b.localPublish(internal.Event{
-		Type:    event.Event,
+	b.Publish(internal.Event{
+		Type:    eventType,
 		Payload: payload,
 	})
-
 	return nil
 }

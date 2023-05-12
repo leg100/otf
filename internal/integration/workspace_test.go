@@ -19,6 +19,7 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
+		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -33,6 +34,11 @@ func TestWorkspace(t *testing.T) {
 				Organization: internal.String(org.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
+		})
+
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
 		})
 	})
 
@@ -119,7 +125,9 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		svc := setup(t, nil)
-		ws := svc.createWorkspace(t, ctx, nil)
+		sub := svc.createSubscriber(t, ctx)
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org)
 
 		got, err := svc.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
 			Description: internal.String("updated description"),
@@ -132,6 +140,12 @@ func TestWorkspace(t *testing.T) {
 		want, err := svc.GetWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
+
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, internal.NewUpdatedEvent(got), <-sub)
+		})
 	})
 
 	t.Run("get by id", func(t *testing.T) {
@@ -375,7 +389,9 @@ func TestWorkspace(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		svc := setup(t, nil)
-		ws := svc.createWorkspace(t, ctx, nil)
+		sub := svc.createSubscriber(t, ctx)
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org)
 
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
@@ -384,7 +400,10 @@ func TestWorkspace(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
 
-		// TODO: Test ON CASCADE DELETE functionality for config versions,
-		// runs, etc
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, internal.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
+		})
 	})
 }
