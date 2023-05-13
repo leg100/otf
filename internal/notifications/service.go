@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
@@ -22,6 +23,7 @@ type (
 	service struct {
 		logr.Logger
 		internal.Subscriber
+		workspace.WorkspaceService
 
 		workspace internal.Authorizer // authorize workspaces actions
 		db        *pgdb
@@ -32,17 +34,28 @@ type (
 		internal.Subscriber
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
+		workspace.WorkspaceService
 	}
 )
 
 func NewService(opts Options) *service {
 	svc := service{
-		Logger:     opts.Logger,
-		Subscriber: opts.Subscriber,
-		workspace:  opts.WorkspaceAuthorizer,
-		db:         &pgdb{opts.DB},
+		Logger:           opts.Logger,
+		Subscriber:       opts.Subscriber,
+		workspace:        opts.WorkspaceAuthorizer,
+		db:               &pgdb{opts.DB},
+		WorkspaceService: opts.WorkspaceService,
 	}
 	return &svc
+}
+
+func (s *service) StartNotifier(ctx context.Context) error {
+	return start(ctx, notifierOptions{
+		Logger:           s.Logger,
+		Subscriber:       s.Subscriber,
+		WorkspaceService: s.WorkspaceService,
+		db:               s.db,
+	})
 }
 
 func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {

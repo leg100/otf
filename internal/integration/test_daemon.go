@@ -326,7 +326,7 @@ func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context,
 	}
 
 	nc, err := s.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
-		DestinationType: notifications.NotificationDestinationTypeGeneric,
+		DestinationType: notifications.DestinationGeneric,
 		Enabled:         internal.Bool(true),
 		Name:            internal.String(uuid.NewString()),
 	})

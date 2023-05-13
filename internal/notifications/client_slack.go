@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 var _ client = (*slackClient)(nil)
@@ -28,7 +29,7 @@ func newSlackClient(cfg *Config) (*slackClient, error) {
 	}, nil
 }
 
-func (c *slackClient) Publish(r *run.Run) error {
+func (c *slackClient) Publish(r *run.Run, ws *workspace.Workspace) error {
 	text := fmt.Sprintf("new run update: %s: %s", r.ID, r.Status)
 	data, err := json.Marshal(slackMessage{Text: text})
 	if err != nil {

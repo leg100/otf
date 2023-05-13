@@ -17,7 +17,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		_, err := svc.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
-			DestinationType: notifications.NotificationDestinationTypeGeneric,
+			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
 			Name:            internal.String("testing"),
 		})

@@ -3,12 +3,12 @@ package notifications
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -21,22 +21,23 @@ type (
 	notifier struct {
 		logr.Logger
 		internal.Subscriber
-		NotificationService
+		workspace.WorkspaceService // for retrieving workspace name
 
-		cache cache
+		*cache
 	}
 
-	// NotifierOptions are options for constructing a notifier
-	NotifierOptions struct {
+	// notifierOptions are options for constructing a notifier
+	notifierOptions struct {
 		logr.Logger
-		internal.DB
 		internal.Subscriber
-		NotificationService
+		workspace.WorkspaceService // for retrieving workspace name
+
+		db *pgdb
 	}
 )
 
-// Start the notifier daemon. Should be started in a go-routine.
-func Start(ctx context.Context, opts NotifierOptions) error {
+// start the notifier daemon. Should be started in a go-routine.
+func start(ctx context.Context, opts notifierOptions) error {
 	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "notifier"})
 
 	sched := &notifier{
@@ -47,8 +48,8 @@ func Start(ctx context.Context, opts NotifierOptions) error {
 
 	op := func() error {
 		// block on getting an exclusive lock
-		err := opts.WaitAndLock(ctx, lockID, func() error {
-			return sched.reinitialize(ctx)
+		err := opts.db.WaitAndLock(ctx, lockID, func() error {
+			return sched.reinitialize(ctx, opts.db)
 		})
 		if ctx.Err() != nil {
 			return nil // exit
@@ -61,7 +62,7 @@ func Start(ctx context.Context, opts NotifierOptions) error {
 	})
 }
 
-func (s *notifier) reinitialize(ctx context.Context) error {
+func (s *notifier) reinitialize(ctx context.Context, db *pgdb) error {
 	// Unsubscribe Subscribe() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -72,6 +73,14 @@ func (s *notifier) reinitialize(ctx context.Context) error {
 		return err
 	}
 
+	// populate cache with existing notification configs
+	cache, err := newCache(ctx, db, &defaultFactory{})
+	if err != nil {
+		return err
+	}
+	s.cache = cache
+
+	// block on handling events
 	for event := range sub {
 		if err := s.handle(ctx, event); err != nil {
 			s.Error(err, "handling event", event.Type)
@@ -94,17 +103,12 @@ func (s *notifier) handle(ctx context.Context, event internal.Event) error {
 func (s *notifier) handleConfig(ctx context.Context, cfg *Config, eventType internal.EventType) error {
 	switch eventType {
 	case internal.CreatedEvent:
-		s.configs[cfg.ID] = cfg
-		s.clients[cfg.ID] = newClient()
+		return s.add(cfg)
 	case internal.DeletedEvent:
-		client, ok := s.clients[cfg.ID]
-		if !ok {
-			return fmt.Errorf("no client found for config: %s", cfg.ID)
-		}
-		client.Close()
-		delete(s.clients, cfg.ID)
+		return s.remove(cfg.ID)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
@@ -133,6 +137,22 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// skip config with no matching triggers
 			continue
 		}
+		// retrieve workspace because client might want to provide workspace
+		// info in the notification
+		//
+		// TODO: this is rather expensive. We should either:
+		// (a) cache workspaces, either in the notifier or upstream; or
+		// (b) add workspace info to run itself
+		ws, err := s.GetWorkspace(ctx, r.WorkspaceID)
+		if err != nil {
+			return err
+		}
+		client, ok := s.clients[*cfg.URL]
+		if !ok {
+			// should never happen
+			return fmt.Errorf("client not found for url: %s", *cfg.URL)
+		}
+		return client.Publish(r, ws)
 	}
 	return nil
 }

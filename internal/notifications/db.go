@@ -99,7 +99,20 @@ func (db *pgdb) update(ctx context.Context, id string, updateFunc func(*Config) 
 }
 
 func (db *pgdb) list(ctx context.Context, workspaceID string) ([]*Config, error) {
-	results, err := db.FindNotificationConfigurations(ctx, sql.String(workspaceID))
+	results, err := db.FindNotificationConfigurationsByWorkspaceID(ctx, sql.String(workspaceID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+
+	var configs []*Config
+	for _, row := range results {
+		configs = append(configs, pgresult(row).toNotificationConfiguration())
+	}
+	return configs, nil
+}
+
+func (db *pgdb) listAll(ctx context.Context) ([]*Config, error) {
+	results, err := db.FindAllNotificationConfigurations(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
