@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 var _ client = (*slackClient)(nil)
@@ -15,7 +16,11 @@ type (
 		*genericClient
 	}
 	slackMessage struct {
-		Text string `json:"text"`
+		Blocks []slackBlock `json:"blocks"`
+	}
+	slackBlock struct {
+		Type string `json:"type"`
+		Text any    `json:"text"`
 	}
 )
 
@@ -30,8 +35,24 @@ func newSlackClient(cfg *Config) (*slackClient, error) {
 }
 
 func (c *slackClient) Publish(ctx context.Context, n *notification) error {
-	text := fmt.Sprintf("new run update: %s: %s", n.run.ID, n.run.Status)
-	data, err := json.Marshal(slackMessage{Text: text})
+	data, err := json.Marshal(slackMessage{
+		Blocks: []slackBlock{
+			{
+				Type: "section",
+				Text: &slackBlock{
+					Type: "mrkdwn",
+					Text: fmt.Sprintf("Run notification for <%s|%s/%s>", n.runURL(), n.workspace.Organization, n.workspace.Name),
+				},
+			},
+			{
+				Type: "section",
+				Text: &slackBlock{
+					Type: "mrkdwn",
+					Text: fmt.Sprintf("*run %s*", strings.ReplaceAll(string(n.run.Status), "_", " ")),
+				},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}

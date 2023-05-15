@@ -270,6 +270,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:              broker,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
+		HostnameService:     hostnameService,
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{

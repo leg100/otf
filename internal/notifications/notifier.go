@@ -22,6 +22,7 @@ type (
 		logr.Logger
 		internal.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
+		internal.HostnameService   // for including a link in the notification
 
 		*cache
 	}
@@ -31,6 +32,7 @@ type (
 		logr.Logger
 		internal.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
+		internal.HostnameService   // for including a link in the notification
 
 		db *pgdb
 	}
@@ -44,6 +46,7 @@ func start(ctx context.Context, opts notifierOptions) error {
 		Logger:           opts.Logger.WithValues("component", "notifier"),
 		Subscriber:       opts.Subscriber,
 		WorkspaceService: opts.WorkspaceService,
+		HostnameService:  opts.HostnameService,
 	}
 	sched.V(2).Info("started")
 
@@ -159,6 +162,7 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,
+			hostname:  s.Hostname(),
 		})
 	}
 	return nil

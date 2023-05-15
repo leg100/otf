@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -36,17 +35,11 @@ func TestIntegration_NotificationSlack(t *testing.T) {
 	require.NoError(t, err)
 
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws)
-	run := daemon.createRun(t, ctx, ws, cv)
+	_ = daemon.createRun(t, ctx, ws, cv)
 
-	wantStatuses := []internal.RunStatus{
-		internal.RunPending,
-		internal.RunPlanning,
-		internal.RunPlanned,
-	}
-	for _, status := range wantStatuses {
-		want := fmt.Sprintf(`{"text":"new run update: %s: %s"}`, run.ID, status)
-		assert.Equal(t, want, <-got)
-	}
+	assert.Regexp(t, `run pending`, <-got)
+	assert.Regexp(t, `run planning`, <-got)
+	assert.Regexp(t, `run planned`, <-got)
 }
 
 func newSlackServer(t *testing.T) (string, <-chan string) {

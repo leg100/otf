@@ -14,6 +14,9 @@ func (m *jsonapiMarshaler) toNotificationConfig(from *notifications.Config) *typ
 		Name:            from.Name,
 		Enabled:         from.Enabled,
 		DestinationType: types.NotificationDestinationType(from.DestinationType),
+		Subscribable: &types.Workspace{
+			ID: from.WorkspaceID,
+		},
 	}
 	if from.URL != nil {
 		to.URL = *from.URL

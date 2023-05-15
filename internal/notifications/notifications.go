@@ -3,6 +3,8 @@
 package notifications
 
 import (
+	"net/url"
+
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
@@ -15,6 +17,7 @@ type notification struct {
 	run       *run.Run
 	trigger   Trigger
 	config    *Config
+	hostname  string
 }
 
 // genericPayload converts a notification into a format suitable for the generic
@@ -27,7 +30,7 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 	return &GenericPayload{
 		PayloadVersion:              1,
 		NotificationConfigurationID: "",
-		RunURL:                      paths.Run(n.run.ID),
+		RunURL:                      n.runURL(),
 		RunID:                       n.run.ID,
 		RunCreatedAt:                n.run.CreatedAt,
 		WorkspaceID:                 n.workspace.ID,
@@ -41,4 +44,9 @@ func (n *notification) genericPayload() (*GenericPayload, error) {
 			},
 		},
 	}, nil
+}
+
+func (n *notification) runURL() string {
+	u := &url.URL{Scheme: "https", Host: n.hostname, Path: paths.Run(n.run.ID)}
+	return u.String()
 }

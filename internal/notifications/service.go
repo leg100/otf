@@ -27,6 +27,7 @@ type (
 		logr.Logger
 		internal.PubSubService
 		workspace.WorkspaceService
+		internal.HostnameService // for including a link in the notification
 
 		workspace internal.Authorizer // authorize workspaces actions
 		db        *pgdb
@@ -38,6 +39,7 @@ type (
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
 		workspace.WorkspaceService
+		internal.HostnameService // for including a link in the notification
 	}
 )
 
@@ -47,6 +49,7 @@ func NewService(opts Options) *service {
 		PubSubService:    opts.Broker,
 		workspace:        opts.WorkspaceAuthorizer,
 		db:               &pgdb{opts.DB},
+		HostnameService:  opts.HostnameService,
 		WorkspaceService: opts.WorkspaceService,
 	}
 	// Register with broker so that it can relay events
@@ -59,6 +62,7 @@ func (s *service) StartNotifier(ctx context.Context) error {
 		Logger:           s.Logger,
 		Subscriber:       s.PubSubService,
 		WorkspaceService: s.WorkspaceService,
+		HostnameService:  s.HostnameService,
 		db:               s.db,
 	})
 }
