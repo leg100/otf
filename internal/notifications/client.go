@@ -22,7 +22,7 @@ type (
 func (f *defaultFactory) newClient(cfg *Config) (client, error) {
 	switch cfg.DestinationType {
 	case DestinationGeneric:
-		return newSlackClient(cfg)
+		return newGenericClient(cfg)
 	case DestinationSlack:
 		return newSlackClient(cfg)
 	case DestinationGCPPubSub:

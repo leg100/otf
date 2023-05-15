@@ -12,8 +12,7 @@ var _ client = (*slackClient)(nil)
 
 type (
 	slackClient struct {
-		client *http.Client
-		url    string
+		*genericClient
 	}
 	slackMessage struct {
 		Text string `json:"text"`
@@ -21,9 +20,12 @@ type (
 )
 
 func newSlackClient(cfg *Config) (*slackClient, error) {
+	client, err := newGenericClient(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &slackClient{
-		client: &http.Client{},
-		url:    *cfg.URL,
+		genericClient: client,
 	}, nil
 }
 
@@ -44,8 +46,4 @@ func (c *slackClient) Publish(ctx context.Context, n *notification) error {
 	}
 	resp.Body.Close()
 	return nil
-}
-
-func (c *slackClient) Close() {
-	c.client.CloseIdleConnections()
 }
