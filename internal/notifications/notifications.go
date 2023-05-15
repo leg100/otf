@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
+	"golang.org/x/exp/slog"
 )
 
 // notification furnishes information for sending a notification to a third
@@ -18,6 +19,16 @@ type notification struct {
 	trigger   Trigger
 	config    *Config
 	hostname  string
+}
+
+func (n *notification) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("run", n.run.ID),
+		slog.String("workspace_id", n.workspace.ID),
+		slog.String("trigger", string(n.trigger)),
+		slog.String("destination", string(n.config.DestinationType)),
+	}
+	return slog.GroupValue(attrs...)
 }
 
 // genericPayload converts a notification into a format suitable for the generic

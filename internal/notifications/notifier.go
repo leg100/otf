@@ -157,13 +157,15 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// should never happen
 			return fmt.Errorf("client not found for url: %s", *cfg.URL)
 		}
-		return client.Publish(ctx, &notification{
+		msg := &notification{
 			run:       r,
 			workspace: ws,
 			trigger:   trigger,
 			config:    cfg,
 			hostname:  s.Hostname(),
-		})
+		}
+		s.V(3).Info("publishing notification", "notification", msg)
+		return client.Publish(ctx, msg)
 	}
 	return nil
 }
