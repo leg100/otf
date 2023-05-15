@@ -41,8 +41,9 @@ func start(ctx context.Context, opts notifierOptions) error {
 	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "notifier"})
 
 	sched := &notifier{
-		Logger:     opts.Logger.WithValues("component", "notifier"),
-		Subscriber: opts.Subscriber,
+		Logger:           opts.Logger.WithValues("component", "notifier"),
+		Subscriber:       opts.Subscriber,
+		WorkspaceService: opts.WorkspaceService,
 	}
 	sched.V(2).Info("started")
 
@@ -83,7 +84,7 @@ func (s *notifier) reinitialize(ctx context.Context, db *pgdb) error {
 	// block on handling events
 	for event := range sub {
 		if err := s.handle(ctx, event); err != nil {
-			s.Error(err, "handling event", event.Type)
+			s.Error(err, "handling event", "event", event.Type)
 		}
 	}
 	return nil
@@ -133,8 +134,9 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// skip config with no triggers
 			continue
 		}
-		if !cfg.isTriggered(r) {
-			// skip config with no matching triggers
+		trigger, matches := cfg.matchTrigger(r)
+		if !matches {
+			// skip config with no matching trigger
 			continue
 		}
 		// retrieve workspace because client might want to provide workspace
@@ -152,7 +154,12 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// should never happen
 			return fmt.Errorf("client not found for url: %s", *cfg.URL)
 		}
-		return client.Publish(r, ws)
+		return client.Publish(ctx, &notification{
+			run:       r,
+			workspace: ws,
+			trigger:   trigger,
+			config:    cfg,
+		})
 	}
 	return nil
 }

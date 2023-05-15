@@ -267,8 +267,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	notificationService := notifications.NewService(notifications.Options{
 		Logger:              logger,
 		DB:                  db,
-		Subscriber:          broker,
+		Broker:              broker,
 		WorkspaceAuthorizer: workspaceService,
+		WorkspaceService:    workspaceService,
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{
@@ -458,6 +459,16 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			return fmt.Errorf("reporter terminated: %w", err)
 		}
 		d.V(2).Info("reporter gracefully shutdown")
+		return nil
+	})
+
+	// Run notifier - if there is another notifier running already then
+	// this'll wait until the other one exits.
+	g.Go(func() error {
+		if err := d.StartNotifier(ctx); err != nil {
+			return fmt.Errorf("notifier terminated: %w", err)
+		}
+		d.V(2).Info("notifier gracefully shutdown")
 		return nil
 	})
 

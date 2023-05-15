@@ -69,8 +69,8 @@ func (f *fakeFactory) newClient(cfg *Config) (client, error) {
 	return &fakeClient{f.published}, nil
 }
 
-func (f *fakeClient) Publish(r *run.Run, ws *workspace.Workspace) error {
-	f.published <- r
+func (f *fakeClient) Publish(ctx context.Context, n *notification) error {
+	f.published <- n.run
 	return nil
 }
 

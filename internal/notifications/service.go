@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
@@ -18,11 +19,13 @@ type (
 		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
 		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
 		DeleteNotificationConfiguration(ctx context.Context, id string) error
+
+		StartNotifier(ctx context.Context) error
 	}
 
 	service struct {
 		logr.Logger
-		internal.Subscriber
+		internal.PubSubService
 		workspace.WorkspaceService
 
 		workspace internal.Authorizer // authorize workspaces actions
@@ -31,7 +34,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Subscriber
+		internal.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
 		workspace.WorkspaceService
@@ -41,18 +44,20 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:           opts.Logger,
-		Subscriber:       opts.Subscriber,
+		PubSubService:    opts.Broker,
 		workspace:        opts.WorkspaceAuthorizer,
 		db:               &pgdb{opts.DB},
 		WorkspaceService: opts.WorkspaceService,
 	}
+	// Register with broker so that it can relay events
+	opts.Register(reflect.TypeOf(&Config{}), svc.db)
 	return &svc
 }
 
 func (s *service) StartNotifier(ctx context.Context) error {
 	return start(ctx, notifierOptions{
 		Logger:           s.Logger,
-		Subscriber:       s.Subscriber,
+		Subscriber:       s.PubSubService,
 		WorkspaceService: s.WorkspaceService,
 		db:               s.db,
 	})
@@ -73,6 +78,7 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 		return nil, err
 	}
 	s.Info("creating notification config", "config", nc, "subject", subject)
+	s.Publish(internal.Event{Type: internal.CreatedEvent, Payload: nc})
 	return nc, nil
 }
 

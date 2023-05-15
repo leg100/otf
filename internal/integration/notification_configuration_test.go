@@ -20,6 +20,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
 			Name:            internal.String("testing"),
+			URL:             internal.String("http://example.com"),
 		})
 		require.NoError(t, err)
 	})

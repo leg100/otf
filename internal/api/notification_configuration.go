@@ -38,15 +38,6 @@ func (a *api) createNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// NOTE: this is somewhat naughty: OTF does not support the email
-	// destination type but some of the go-tfe API tests we use create a
-	// notification configuration with an email destination type. Therefore, we
-	// change email destination types to generic destination types just to get
-	// the tests passing.
-	if *params.DestinationType == types.NotificationDestinationTypeEmail {
-		params.DestinationType = types.NotificationDestinationPtr(types.NotificationDestinationTypeGeneric)
-	}
-
 	opts := notifications.CreateConfigOptions{
 		DestinationType: (notifications.Destination)(*params.DestinationType),
 		Enabled:         params.Enabled,

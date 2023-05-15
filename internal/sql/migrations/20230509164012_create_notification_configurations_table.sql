@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS destination_types (
 );
 INSERT INTO destination_types (name) VALUES
     ('generic'),
-    ('gcppubsub')
+    ('gcppubsub'),
+    ('email'),
+    ('slack')
 ;
 CREATE TABLE IF NOT EXISTS notification_configurations (
     notification_configuration_id  TEXT,

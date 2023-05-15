@@ -47,6 +47,11 @@ func (r pgresult) toNotificationConfiguration() *Config {
 	return nc
 }
 
+// GetByID implements pubsub.Getter
+func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
+	return db.get(ctx, id)
+}
+
 func (db *pgdb) create(ctx context.Context, nc *Config) error {
 	params := pggen.InsertNotificationConfigurationParams{
 		NotificationConfigurationID: sql.String(nc.ID),

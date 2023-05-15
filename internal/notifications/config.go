@@ -30,6 +30,7 @@ const (
 
 var (
 	ErrUnsupportedDestination = errors.New("unsupported notification destination")
+	ErrDestinationRequiresURL = errors.New("URL must be specified for this destination")
 	ErrInvalidTrigger         = errors.New("invalid notification trigger")
 )
 
@@ -171,24 +172,25 @@ func (c *Config) update(opts UpdateConfigOptions) error {
 	return nil
 }
 
-// isTriggered determines whether a notification is triggered for the given run.
-func (c *Config) isTriggered(r *run.Run) bool {
+// matchTrigger determines whether the config has a trigger that matches the
+// given run state
+func (c *Config) matchTrigger(r *run.Run) (Trigger, bool) {
 	switch r.Status {
 	case internal.RunPending:
-		return c.hasTrigger(TriggerCreated)
+		return TriggerCreated, c.hasTrigger(TriggerCreated)
 	case internal.RunPlanning:
-		return c.hasTrigger(TriggerPlanning)
+		return TriggerPlanning, c.hasTrigger(TriggerPlanning)
 	case internal.RunPlanned:
-		return c.hasTrigger(TriggerNeedsAttention)
+		return TriggerNeedsAttention, c.hasTrigger(TriggerNeedsAttention)
 	case internal.RunApplying:
-		return c.hasTrigger(TriggerApplying)
+		return TriggerApplying, c.hasTrigger(TriggerApplying)
 	case internal.RunErrored:
-		return c.hasTrigger(TriggerErrored)
+		return TriggerErrored, c.hasTrigger(TriggerErrored)
 	}
 	if r.Done() {
-		return c.hasTrigger(TriggerCompleted)
+		return TriggerCompleted, c.hasTrigger(TriggerCompleted)
 	}
-	return false
+	return "", false
 }
 
 func (c *Config) hasTrigger(t Trigger) bool {
