@@ -53,7 +53,7 @@ func NewService(opts Options) *service {
 		WorkspaceService: opts.WorkspaceService,
 	}
 	// Register with broker so that it can relay events
-	opts.Register(reflect.TypeOf(&Config{}), svc.db)
+	opts.Register(reflect.TypeOf(&Config{}), "notification_configurations", svc.db)
 	return &svc
 }
 

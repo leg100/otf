@@ -24,7 +24,7 @@ func TestBroker_Subscribe(t *testing.T) {
 	assert.Equal(t, 0, len(broker.subs))
 }
 
-func TestBroker_Publish(t *testing.T) {
+func TestBroker_Publish_Local(t *testing.T) {
 	ctx := context.Background()
 	broker := NewBroker(logr.Discard(), &fakePool{})
 
@@ -32,7 +32,8 @@ func TestBroker_Publish(t *testing.T) {
 	require.NoError(t, err)
 
 	event := internal.Event{
-		Type: internal.EventType("payload_update"),
+		Type:  internal.EventType("payload_update"),
+		Local: true,
 	}
 	broker.Publish(event)
 

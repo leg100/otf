@@ -32,7 +32,7 @@ func TestBroker(t *testing.T) {
 	// sends event via local broker
 	org := local.createOrganization(t, ctx)
 
-	want := internal.Event{Type: internal.CreatedEvent, Payload: org}
+	want := internal.Event{Type: internal.EventOrganizationCreated, Payload: org}
 	// receive event on local broker
 	assert.Equal(t, want, <-localsub)
 	// receive event on remote broker (via postgres)
