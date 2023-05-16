@@ -3,6 +3,7 @@ package logs
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
@@ -32,10 +33,8 @@ func newProxy(opts Options) *proxy {
 		cache:         opts.Cache,
 		db:            db,
 	}
-
 	// Register with broker so that it can relay log chunks
-	opts.Register("logs", db)
-
+	opts.Register(reflect.TypeOf(internal.Chunk{}), "logs", db)
 	return p
 }
 

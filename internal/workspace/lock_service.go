@@ -38,7 +38,7 @@ func (s *service) LockWorkspace(ctx context.Context, workspaceID string, runID *
 	}
 
 	ws, err := s.db.toggleLock(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Lock(id, kind)
+		return ws.Enlock(id, kind)
 	})
 	if err != nil {
 		s.Error(err, "locking workspace", "subject", id, "workspace", workspaceID)

@@ -97,13 +97,13 @@ func TestQueue(t *testing.T) {
 
 		// user locks workspace; new run should be made the current run but should not
 		// be scheduled nor replace the user lock
-		err := ws.Lock("bobby", workspace.UserLock)
+		err := ws.Enlock("bobby", workspace.UserLock)
 		require.NoError(t, err)
 		err = q.handleEvent(ctx, internal.Event{Payload: run})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(q.queue))
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, workspace.UserLock, q.ws.LockKind)
+		assert.Equal(t, workspace.UserLock, q.ws.Lock.LockKind)
 
 		// user unlocks workspace; run should be scheduled, locking the workspace
 		err = ws.Unlock("bobby", workspace.UserLock, false)
@@ -111,7 +111,7 @@ func TestQueue(t *testing.T) {
 		err = q.handleEvent(ctx, internal.Event{Type: workspace.EventUnlocked, Payload: ws})
 		require.NoError(t, err)
 		assert.Equal(t, run.ID, q.current.ID)
-		assert.Equal(t, workspace.RunLock, q.ws.LockKind)
+		assert.Equal(t, workspace.RunLock, q.ws.Lock.LockKind)
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
@@ -171,7 +171,7 @@ func (f *fakeQueueServices) EnqueuePlan(ctx context.Context, runID string) (*run
 }
 
 func (f *fakeQueueServices) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*workspace.Workspace, error) {
-	if err := f.ws.Lock(*runID, workspace.RunLock); err != nil {
+	if err := f.ws.Enlock(*runID, workspace.RunLock); err != nil {
 		return nil, err
 	}
 	return f.ws, nil

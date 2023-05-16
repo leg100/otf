@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -70,7 +71,7 @@ type (
 		logr.Logger
 
 		WorkspaceService
-		internal.Subscriber
+		internal.PubSubService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
@@ -103,8 +104,8 @@ func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
 		Logger:           opts.Logger,
+		PubSubService:    opts.Broker,
 		WorkspaceService: opts.WorkspaceService,
-		Subscriber:       opts.Broker,
 	}
 
 	svc.site = &internal.SiteAuthorizer{Logger: opts.Logger}
@@ -134,7 +135,7 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Register("runs", db)
+	opts.Register(reflect.TypeOf(&Run{}), "runs", &svc)
 
 	return &svc
 }
@@ -161,6 +162,8 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 	}
 	s.V(1).Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
 
+	s.Publish(internal.Event{Type: internal.EventRunCreated, Payload: run})
+
 	return run, nil
 }
 
@@ -179,6 +182,11 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 	s.V(2).Info("retrieved run", "id", runID, "subject", subject)
 
 	return run, nil
+}
+
+// GetByID implements pubsub.Getter
+func (s *service) GetByID(ctx context.Context, runID string) (any, error) {
+	return s.db.GetRun(ctx, runID)
 }
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
@@ -238,6 +246,8 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	}
 	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
 
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+
 	return run, nil
 }
 
@@ -257,6 +267,7 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("deleted run", "id", runID, "subject", subject)
+	s.Publish(internal.Event{Type: internal.EventRunDeleted, Payload: run})
 	return nil
 }
 
@@ -275,6 +286,7 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		return nil, err
 	}
 	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
@@ -303,6 +315,7 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		return nil, err
 	}
 	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
@@ -364,7 +377,7 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueueApply()
 	})
 	if err != nil {
@@ -373,6 +386,8 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	}
 
 	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
+
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -384,7 +399,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 		return err
 	}
 
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -393,6 +408,8 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 	}
 
 	s.V(0).Info("discarded run", "id", runID, "subject", subject)
+
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -405,8 +422,9 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 		return nil, err
 	}
 
+	var enqueue bool
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		_, err = run.Cancel()
+		enqueue, err = run.Cancel()
 		return err
 	})
 	if err != nil {
@@ -414,6 +432,11 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 		return nil, err
 	}
 	s.V(0).Info("canceled run", "id", runID, "subject", subject)
+	if enqueue {
+		// notify agent which'll send a SIGINT to terraform
+		s.Publish(internal.Event{Type: internal.EventRunCancel, Payload: run})
+	}
+	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
@@ -423,7 +446,7 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.ForceCancel()
 	})
 	if err != nil {
@@ -431,6 +454,9 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
+
+	// notify agent which'll send a SIGKILL to terraform
+	s.Publish(internal.Event{Type: internal.EventRunForceCancel, Payload: run})
 
 	return err
 }

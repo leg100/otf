@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
@@ -100,31 +99,18 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	}
 
 	if r.UserLock != nil {
-		ws.lock = &lock{
+		ws.Lock = &Lock{
 			id:       r.UserLock.Username.String,
 			LockKind: UserLock,
 		}
 	} else if r.RunLock != nil {
-		ws.lock = &lock{
+		ws.Lock = &Lock{
 			id:       r.RunLock.RunID.String,
 			LockKind: RunLock,
 		}
 	}
 
 	return &ws, nil
-}
-
-// UnmarshalEvent implements pubsub.DBEventUnmarshaler
-func (db *pgdb) UnmarshalEvent(ctx context.Context, payload []byte, op internal.EventType) (any, error) {
-	var r pgresult
-	err := json.Unmarshal(payload, &r)
-	if err != nil {
-		return nil, err
-	}
-	if op == internal.DeletedEvent {
-		return &Workspace{ID: r.WorkspaceID.String}, nil
-	}
-	return db.get(ctx, r.WorkspaceID.String)
 }
 
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {

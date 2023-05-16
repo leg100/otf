@@ -17,11 +17,11 @@ var (
 )
 
 type (
-	// Lock is a workspace lock, which blocks runs from running and prevents state from being
+	// Lock is a workspace Lock, which blocks runs from running and prevents state from being
 	// uploaded.
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings#locking
-	lock struct {
+	Lock struct {
 		id       string // ID of entity holding lock
 		LockKind        // kind of entity holding lock
 	}
@@ -41,13 +41,13 @@ type (
 // Locked determines whether workspace is locked.
 func (ws *Workspace) Locked() bool {
 	// a nil receiver means the lock is unlocked
-	return ws.lock != nil
+	return ws.Lock != nil
 }
 
-// Lock the workspace
-func (ws *Workspace) Lock(id string, kind LockKind) error {
-	if ws.lock == nil {
-		ws.lock = &lock{
+// Enlock locks the workspace
+func (ws *Workspace) Enlock(id string, kind LockKind) error {
+	if ws.Lock == nil {
+		ws.Lock = &Lock{
 			id:       id,
 			LockKind: kind,
 		}
@@ -55,7 +55,7 @@ func (ws *Workspace) Lock(id string, kind LockKind) error {
 	}
 	// a run can replace another run holding a lock
 	if kind == RunLock {
-		ws.lock.id = id
+		ws.Lock.id = id
 		return nil
 	}
 	return internal.ErrWorkspaceAlreadyLocked
@@ -63,21 +63,21 @@ func (ws *Workspace) Lock(id string, kind LockKind) error {
 
 // Unlock the workspace.
 func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
-	if ws.lock == nil {
+	if ws.Lock == nil {
 		return internal.ErrWorkspaceAlreadyUnlocked
 	}
 	if force {
-		ws.lock = nil
+		ws.Lock = nil
 		return nil
 	}
 	// user can unlock their own lock
-	if ws.LockKind == UserLock && kind == UserLock && ws.lock.id == id {
-		ws.lock = nil
+	if ws.Lock.LockKind == UserLock && kind == UserLock && ws.Lock.id == id {
+		ws.Lock = nil
 		return nil
 	}
 	// run can unlock its own lock
-	if ws.LockKind == RunLock && kind == RunLock && ws.lock.id == id {
-		ws.lock = nil
+	if ws.Lock.LockKind == RunLock && kind == RunLock && ws.Lock.id == id {
+		ws.Lock = nil
 		return nil
 	}
 	// otherwise assume user is trying to unlock a lock held by a different
@@ -102,16 +102,16 @@ func lockButtonHelper(ws *Workspace, policy internal.WorkspacePolicy, user inter
 			return btn
 		}
 		// Determine tooltip to show
-		switch ws.LockKind {
+		switch ws.Lock.LockKind {
 		case UserLock:
-			btn.Tooltip = "locked by user: " + ws.lock.id
+			btn.Tooltip = "locked by user: " + ws.Lock.id
 		case RunLock:
-			btn.Tooltip = "locked by run: " + ws.lock.id
+			btn.Tooltip = "locked by run: " + ws.Lock.id
 		default:
-			btn.Tooltip = "locked by unknown entity: " + ws.lock.id
+			btn.Tooltip = "locked by unknown entity: " + ws.Lock.id
 		}
 		// A user can unlock their own lock
-		if ws.LockKind == UserLock && ws.lock.id == user.String() {
+		if ws.Lock.LockKind == UserLock && ws.Lock.id == user.String() {
 			return btn
 		}
 		// User is going to need the force unlock permission

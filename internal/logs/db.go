@@ -2,47 +2,21 @@ package logs
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
-	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-type (
-
-	// pgdb is a logs database on postgres
-	pgdb struct {
-		internal.DB // provides access to generated SQL queries
-	}
-
-	pgresult struct {
-		ChunkID int         `json:"chunk_id"`
-		RunID   pgtype.Text `json:"run_id"`
-		Phase   pgtype.Text `json:"phase"`
-		Chunk   []byte      `json:"chunk"`
-		Offset  int         `json:"offset"`
-	}
-)
-
-// UnmarshalEvent implements EventUnmarshaler
-func (db *pgdb) UnmarshalEvent(ctx context.Context, payload []byte, op internal.EventType) (any, error) {
-	var r pgresult
-	err := json.Unmarshal(payload, &r)
-	if err != nil {
-		return nil, err
-	}
-	return internal.Chunk{
-		ID:     strconv.Itoa(r.ChunkID),
-		RunID:  r.RunID.String,
-		Phase:  internal.PhaseType(r.Phase.String),
-		Data:   r.Chunk,
-		Offset: r.Offset,
-	}, nil
+// pgdb is a logs database on postgres
+type pgdb struct {
+	internal.DB // provides access to generated SQL queries
 }
+
+// put persists a chunk of logs to the DB and returns the chunk updated with a
+// unique identifier
 
 // put persists data to the DB and returns a unique identifier for the chunk
 func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string, error) {
@@ -59,4 +33,23 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 		return "", sql.Error(err)
 	}
 	return strconv.Itoa(id), nil
+}
+
+// GetByID implements pubsub.Getter
+func (db *pgdb) GetByID(ctx context.Context, chunkID string) (any, error) {
+	id, err := strconv.Atoi(chunkID)
+	if err != nil {
+		return nil, err
+	}
+	chunk, err := db.FindLogChunkByID(ctx, id)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return internal.Chunk{
+		ID:     chunkID,
+		RunID:  chunk.RunID.String,
+		Phase:  internal.PhaseType(chunk.Phase.String),
+		Data:   chunk.Chunk,
+		Offset: chunk.Offset,
+	}, nil
 }

@@ -62,7 +62,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 			"unlocked", &Workspace{ID: "ws-unlocked"},
 		},
 		{
-			"locked", &Workspace{ID: "ws-locked", lock: &lock{id: "janitor", LockKind: UserLock}},
+			"locked", &Workspace{ID: "ws-locked", Lock: &Lock{id: "janitor", LockKind: UserLock}},
 		},
 	}
 	for _, tt := range tests {

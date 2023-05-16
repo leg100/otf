@@ -32,7 +32,7 @@ type EventType string
 // Event represents an event in the lifecycle of an otf resource
 type Event struct {
 	Type    EventType
-	Payload interface{}
+	Payload any
 	Local   bool // for local node only and not to be published to rest of cluster
 }
 

@@ -2,20 +2,21 @@ package pubsub
 
 import (
 	"context"
-
-	"github.com/leg100/otf/internal"
 )
 
 type (
 	fakePool struct {
 		pool
 	}
-
-	fakeUnmarshaler struct {
-		resource any
+	fakeGetter struct {
+		fake *fakeType
+	}
+	fakeType struct {
+		ID    string `json:"id"`
+		Stuff []byte `json:"stuff"`
 	}
 )
 
-func (f *fakeUnmarshaler) UnmarshalEvent(ctx context.Context, payload []byte, op internal.EventType) (any, error) {
-	return f.resource, nil
+func (f *fakeGetter) GetByID(context.Context, string) (any, error) {
+	return f.fake, nil
 }
