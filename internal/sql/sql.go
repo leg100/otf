@@ -19,6 +19,11 @@ func String(s string) pgtype.Text {
 	return pgtype.Text{String: s, Status: pgtype.Present}
 }
 
+// NullString returns a postgres null string
+func NullString() pgtype.Text {
+	return pgtype.Text{Status: pgtype.Null}
+}
+
 // UUID converts a google-go-uuid into a postgres non-null UUID
 func UUID(s uuid.UUID) pgtype.UUID {
 	return pgtype.UUID{Bytes: s, Status: pgtype.Present}

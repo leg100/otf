@@ -19,6 +19,7 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/run"
@@ -250,6 +251,14 @@ func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Contex
 	return cv
 }
 
+func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
+	cv := s.createConfigurationVersion(t, ctx, ws)
+	tarball, err := os.ReadFile("./testdata/root.tar.gz")
+	require.NoError(t, err)
+	s.UploadConfig(ctx, cv.ID, tarball)
+	return cv
+}
+
 func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *run.Run {
 	t.Helper()
 
@@ -323,6 +332,23 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 	})
 	require.NoError(t, err)
 	return ut, token
+}
+
+func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context, ws *workspace.Workspace) *notifications.Config {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+
+	nc, err := s.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		DestinationType: notifications.DestinationGeneric,
+		Enabled:         internal.Bool(true),
+		Name:            internal.String(uuid.NewString()),
+		URL:             internal.String("http://example.com"),
+	})
+	require.NoError(t, err)
+	return nc
 }
 
 func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organization string) []byte {

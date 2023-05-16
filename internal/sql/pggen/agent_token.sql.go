@@ -249,6 +249,55 @@ type Querier interface {
 	// DeleteModuleVersionByIDScan scans the result of an executed DeleteModuleVersionByIDBatch query.
 	DeleteModuleVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertNotificationConfiguration(ctx context.Context, params InsertNotificationConfigurationParams) (pgconn.CommandTag, error)
+	// InsertNotificationConfigurationBatch enqueues a InsertNotificationConfiguration query into batch to be executed
+	// later by the batch.
+	InsertNotificationConfigurationBatch(batch genericBatch, params InsertNotificationConfigurationParams)
+	// InsertNotificationConfigurationScan scans the result of an executed InsertNotificationConfigurationBatch query.
+	InsertNotificationConfigurationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindNotificationConfigurationsByWorkspaceIDRow, error)
+	// FindNotificationConfigurationsByWorkspaceIDBatch enqueues a FindNotificationConfigurationsByWorkspaceID query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindNotificationConfigurationsByWorkspaceIDScan scans the result of an executed FindNotificationConfigurationsByWorkspaceIDBatch query.
+	FindNotificationConfigurationsByWorkspaceIDScan(results pgx.BatchResults) ([]FindNotificationConfigurationsByWorkspaceIDRow, error)
+
+	FindAllNotificationConfigurations(ctx context.Context) ([]FindAllNotificationConfigurationsRow, error)
+	// FindAllNotificationConfigurationsBatch enqueues a FindAllNotificationConfigurations query into batch to be executed
+	// later by the batch.
+	FindAllNotificationConfigurationsBatch(batch genericBatch)
+	// FindAllNotificationConfigurationsScan scans the result of an executed FindAllNotificationConfigurationsBatch query.
+	FindAllNotificationConfigurationsScan(results pgx.BatchResults) ([]FindAllNotificationConfigurationsRow, error)
+
+	FindNotificationConfiguration(ctx context.Context, notificationConfigurationID pgtype.Text) (FindNotificationConfigurationRow, error)
+	// FindNotificationConfigurationBatch enqueues a FindNotificationConfiguration query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// FindNotificationConfigurationScan scans the result of an executed FindNotificationConfigurationBatch query.
+	FindNotificationConfigurationScan(results pgx.BatchResults) (FindNotificationConfigurationRow, error)
+
+	FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID pgtype.Text) (FindNotificationConfigurationForUpdateRow, error)
+	// FindNotificationConfigurationForUpdateBatch enqueues a FindNotificationConfigurationForUpdate query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationForUpdateBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// FindNotificationConfigurationForUpdateScan scans the result of an executed FindNotificationConfigurationForUpdateBatch query.
+	FindNotificationConfigurationForUpdateScan(results pgx.BatchResults) (FindNotificationConfigurationForUpdateRow, error)
+
+	UpdateNotificationConfigurationByID(ctx context.Context, params UpdateNotificationConfigurationByIDParams) (pgtype.Text, error)
+	// UpdateNotificationConfigurationByIDBatch enqueues a UpdateNotificationConfigurationByID query into batch to be executed
+	// later by the batch.
+	UpdateNotificationConfigurationByIDBatch(batch genericBatch, params UpdateNotificationConfigurationByIDParams)
+	// UpdateNotificationConfigurationByIDScan scans the result of an executed UpdateNotificationConfigurationByIDBatch query.
+	UpdateNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error)
+	// DeleteNotificationConfigurationByIDBatch enqueues a DeleteNotificationConfigurationByID query into batch to be executed
+	// later by the batch.
+	DeleteNotificationConfigurationByIDBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// DeleteNotificationConfigurationByIDScan scans the result of an executed DeleteNotificationConfigurationByIDBatch query.
+	DeleteNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -1199,6 +1248,27 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteModuleVersionByIDSQL, deleteModuleVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteModuleVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertNotificationConfigurationSQL, insertNotificationConfigurationSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertNotificationConfiguration': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationsByWorkspaceIDSQL, findNotificationConfigurationsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfigurationsByWorkspaceID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findAllNotificationConfigurationsSQL, findAllNotificationConfigurationsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAllNotificationConfigurations': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationSQL, findNotificationConfigurationSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfiguration': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationForUpdateSQL, findNotificationConfigurationForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfigurationForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateNotificationConfigurationByIDSQL, updateNotificationConfigurationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateNotificationConfigurationByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteNotificationConfigurationByIDSQL, deleteNotificationConfigurationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteNotificationConfigurationByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)

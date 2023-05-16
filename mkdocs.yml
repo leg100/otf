@@ -55,6 +55,7 @@ nav:
     - agents.md
     - registry.md
     - cli.md
+    - notifications.md
   - Configuration:
     - config/envvars.md
     - config/flags.md
