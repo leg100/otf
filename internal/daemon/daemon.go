@@ -24,6 +24,7 @@ import (
 	"github.com/leg100/otf/internal/loginserver"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
@@ -63,6 +64,7 @@ type (
 		run.RunService
 		repo.RepoService
 		logs.LogsService
+		notifications.NotificationService
 
 		Handlers []internal.Handlers
 	}
@@ -261,6 +263,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	notificationService := notifications.NewService(notifications.Options{
+		Logger:              logger,
+		DB:                  db,
+		Broker:              broker,
+		WorkspaceAuthorizer: workspaceService,
+		WorkspaceService:    workspaceService,
+		HostnameService:     hostnameService,
+	})
+
 	loginServer, err := loginserver.NewServer(loginserver.Options{
 		Secret:        cfg.Secret,
 		Renderer:      renderer,
@@ -280,6 +291,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		AuthService:                 authService,
 		TokensService:               tokensService,
 		VariableService:             variableService,
+		NotificationService:         notificationService,
 		Signer:                      signer,
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})
@@ -323,6 +335,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		RunService:                  runService,
 		LogsService:                 logsService,
 		RepoService:                 repoService,
+		NotificationService:         notificationService,
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,
@@ -446,6 +459,16 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			return fmt.Errorf("reporter terminated: %w", err)
 		}
 		d.V(2).Info("reporter gracefully shutdown")
+		return nil
+	})
+
+	// Run notifier - if there is another notifier running already then
+	// this'll wait until the other one exits.
+	g.Go(func() error {
+		if err := d.StartNotifier(ctx); err != nil {
+			return fmt.Errorf("notifier terminated: %w", err)
+		}
+		d.V(2).Info("notifier gracefully shutdown")
 		return nil
 	})
 
