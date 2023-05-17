@@ -78,3 +78,23 @@ func TestNotifier_handleRun(t *testing.T) {
 		})
 	}
 }
+
+// TestNotifier_handleRun_multiple tests handleRun() publishing multiple
+// notifications
+func TestNotifier_handleRun_multiple(t *testing.T) {
+	ctx := context.Background()
+	planningRun := &run.Run{
+		Status:      internal.RunPlanning,
+		WorkspaceID: "ws-123",
+	}
+	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "", TriggerPlanning)
+	config2 := newTestConfig(t, "ws-123", DestinationSlack, "", TriggerPlanning)
+
+	published := make(chan *run.Run, 2)
+	notifier := newTestNotifier(t, &fakeFactory{published}, config1, config2)
+
+	err := notifier.handleRun(ctx, planningRun)
+	require.NoError(t, err)
+	assert.Equal(t, planningRun, <-published)
+	assert.Equal(t, planningRun, <-published)
+}

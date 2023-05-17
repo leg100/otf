@@ -125,6 +125,7 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	var ws *workspace.Workspace
 	for _, cfg := range s.configs {
 		if cfg.WorkspaceID != r.WorkspaceID {
 			// skip configs for other workspaces
@@ -143,15 +144,18 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			// skip config with no matching trigger
 			continue
 		}
-		// retrieve workspace because client might want to provide workspace
-		// info in the notification
+		// Retrieve workspace if not already retrieved. We do this in order to
+		// furnish the notification below with further information.
 		//
 		// TODO: this is rather expensive. We should either:
 		// (a) cache workspaces, either in the notifier or upstream; or
 		// (b) add workspace info to run itself
-		ws, err := s.GetWorkspace(ctx, r.WorkspaceID)
-		if err != nil {
-			return err
+		if ws == nil {
+			var err error
+			ws, err = s.GetWorkspace(ctx, r.WorkspaceID)
+			if err != nil {
+				return err
+			}
 		}
 		client, ok := s.clients[*cfg.URL]
 		if !ok {
@@ -166,7 +170,9 @@ func (s *notifier) handleRun(ctx context.Context, r *run.Run) error {
 			hostname:  s.Hostname(),
 		}
 		s.V(3).Info("publishing notification", "notification", msg)
-		return client.Publish(ctx, msg)
+		if err := client.Publish(ctx, msg); err != nil {
+			return err
+		}
 	}
 	return nil
 }
