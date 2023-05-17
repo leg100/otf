@@ -147,5 +147,6 @@ func (s *service) DeleteNotificationConfiguration(ctx context.Context, id string
 		return err
 	}
 	s.Info("deleted notification config", "config", nc, "subject", subject)
+	s.Publish(pubsub.NewDeletedEvent(nc))
 	return nil
 }

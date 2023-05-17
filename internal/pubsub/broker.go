@@ -155,7 +155,7 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan Event, er
 		Namespace:   "otf",
 		Subsystem:   "pub_sub",
 		Name:        "queue_length",
-		Help:        "Total length for queue for subscriber",
+		Help:        "Number of items in subscriber's queue",
 		ConstLabels: prometheus.Labels{"name": name},
 	})
 	if err := prometheus.Register(b.metrics[name]); err != nil {
