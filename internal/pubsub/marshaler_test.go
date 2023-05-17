@@ -14,8 +14,8 @@ func TestMarshaler(t *testing.T) {
 		m := newMarshaler()
 		m.Register(reflect.TypeOf(&fakeType{}), "fakes", nil)
 
-		got, err := m.marshal(internal.Event{
-			Type:    internal.CreatedEvent,
+		got, err := m.marshal(Event{
+			Type:    CreatedEvent,
 			Payload: &fakeType{ID: "fake-123", Stuff: []byte("stuff")},
 		})
 		require.NoError(t, err)
@@ -31,8 +31,8 @@ func TestMarshaler(t *testing.T) {
 		m := newMarshaler()
 		m.Register(reflect.TypeOf(&fakeType{}), "fakes", nil)
 
-		got, err := m.marshal(internal.Event{
-			Type:    internal.CreatedEvent,
+		got, err := m.marshal(Event{
+			Type:    CreatedEvent,
 			Payload: &fakeType{ID: "fake-123", Stuff: []byte(stuff)},
 		})
 		require.NoError(t, err)
@@ -49,8 +49,8 @@ func TestMarshaler(t *testing.T) {
 		got, err := m.unmarshal(notification)
 		require.NoError(t, err)
 
-		want := internal.Event{
-			Type:    internal.CreatedEvent,
+		want := Event{
+			Type:    CreatedEvent,
 			Payload: &fakeType{ID: "fake-123", Stuff: []byte("stuff")},
 		}
 		assert.Equal(t, want, got)
@@ -64,8 +64,8 @@ func TestMarshaler(t *testing.T) {
 		got, err := m.unmarshal(notification)
 		require.NoError(t, err)
 
-		want := internal.Event{
-			Type:    internal.CreatedEvent,
+		want := Event{
+			Type:    CreatedEvent,
 			Payload: fakeType{ID: "fake-123", Stuff: []byte("stuff")},
 		}
 		assert.Equal(t, want, got)
@@ -80,7 +80,7 @@ func TestMarshaler(t *testing.T) {
 		got, err := m.unmarshal(notification)
 		require.NoError(t, err)
 
-		want := internal.Event{Type: internal.CreatedEvent, Payload: fake}
+		want := Event{Type: CreatedEvent, Payload: fake}
 		assert.Equal(t, want, got)
 	})
 }

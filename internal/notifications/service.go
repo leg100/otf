@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -25,7 +26,7 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.PubSubService
+		pubsub.PubSubService
 		workspace.WorkspaceService
 		internal.HostnameService // for including a link in the notification
 
@@ -35,7 +36,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
 		workspace.WorkspaceService
@@ -82,7 +83,7 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 		return nil, err
 	}
 	s.Info("creating notification config", "config", nc, "subject", subject)
-	s.Publish(internal.NewCreatedEvent(nc))
+	s.Publish(pubsub.NewCreatedEvent(nc))
 	return nc, nil
 }
 

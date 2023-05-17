@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/workspace"
@@ -37,8 +38,8 @@ func TestWorkspace(t *testing.T) {
 		})
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 		})
 	})
 
@@ -142,9 +143,9 @@ func TestWorkspace(t *testing.T) {
 		assert.Equal(t, want, got)
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, internal.NewUpdatedEvent(got), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, pubsub.NewUpdatedEvent(got), <-sub)
 		})
 	})
 
@@ -401,9 +402,9 @@ func TestWorkspace(t *testing.T) {
 		assert.Equal(t, 0, len(results.Items))
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, internal.NewDeletedEvent(ws), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, pubsub.NewDeletedEvent(ws), <-sub)
 		})
 	})
 }

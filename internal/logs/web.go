@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/pubsub"
 )
 
 type (
@@ -66,7 +67,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		case chunk, ok := <-ch:
 			if !ok {
 				// no more logs
-				internal.WriteSSEEvent(w, []byte("no more logs"), internal.EventLogFinished, false)
+				pubsub.WriteSSEEvent(w, []byte("no more logs"), pubsub.EventLogFinished, false)
 				return
 			}
 			html := chunk.ToHTML()
@@ -85,7 +86,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling data")
 				continue
 			}
-			internal.WriteSSEEvent(w, js, internal.EventLogChunk, false)
+			pubsub.WriteSSEEvent(w, js, pubsub.EventLogChunk, false)
 			rc.Flush()
 		case <-r.Context().Done():
 			return

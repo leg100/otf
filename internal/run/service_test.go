@@ -6,13 +6,14 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestService(t *testing.T) {
 	// input event channel
-	in := make(chan internal.Event, 1)
+	in := make(chan pubsub.Event, 1)
 
 	svc := &service{
 		site:          internal.NewAllowAllAuthorizer(),
@@ -21,9 +22,9 @@ func TestService(t *testing.T) {
 	}
 
 	// inject input event
-	want := internal.Event{
+	want := pubsub.Event{
 		Payload: &Run{},
-		Type:    internal.EventRunCreated,
+		Type:    pubsub.EventRunCreated,
 	}
 	in <- want
 

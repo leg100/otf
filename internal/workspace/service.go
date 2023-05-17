@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -46,7 +47,7 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.Publisher
+		pubsub.Publisher
 
 		site                internal.Authorizer
 		organization        internal.Authorizer
@@ -60,7 +61,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
@@ -145,7 +146,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	s.Publish(internal.NewCreatedEvent(ws))
+	s.Publish(pubsub.NewCreatedEvent(ws))
 
 	return ws, nil
 }
@@ -237,7 +238,7 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 
 	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
 
-	s.Publish(internal.NewUpdatedEvent(updated))
+	s.Publish(pubsub.NewUpdatedEvent(updated))
 
 	return updated, nil
 }
@@ -267,7 +268,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 		return nil, err
 	}
 
-	s.Publish(internal.NewDeletedEvent(ws))
+	s.Publish(pubsub.NewDeletedEvent(ws))
 
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 

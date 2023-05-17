@@ -8,9 +8,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/pubsub"
 )
 
 // handlerPrefix is the URL path prefix for the endpoint receiving vcs events
@@ -21,7 +21,7 @@ type (
 	// a cloud-specific handler.
 	handler struct {
 		logr.Logger
-		internal.Publisher
+		pubsub.Publisher
 
 		db handlerDB
 	}
@@ -54,8 +54,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, RepoID: hook.id})
 	if event != nil {
-		h.Publish(internal.Event{
-			Type:    internal.EventVCS,
+		h.Publish(pubsub.Event{
+			Type:    pubsub.EventVCS,
 			Payload: event,
 			// publish vcs events only to the local node; a "run spawner" and a
 			// "module publisher" subscribe to vcs events on each node, so it is

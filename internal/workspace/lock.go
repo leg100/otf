@@ -3,6 +3,7 @@ package workspace
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -12,8 +13,8 @@ const (
 )
 
 var (
-	EventLocked   internal.EventType = "workspace_locked"
-	EventUnlocked internal.EventType = "workspace_unlocked"
+	EventLocked   pubsub.EventType = "workspace_locked"
+	EventUnlocked pubsub.EventType = "workspace_unlocked"
 )
 
 type (

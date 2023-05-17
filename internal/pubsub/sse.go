@@ -1,4 +1,4 @@
-package internal
+package pubsub
 
 import (
 	"encoding/base64"

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +49,7 @@ func TestOrganization(t *testing.T) {
 		})
 
 		t.Run("receive event", func(t *testing.T) {
-			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 		})
 	})
 
@@ -66,8 +67,8 @@ func TestOrganization(t *testing.T) {
 		assert.Equal(t, want, updated.Name)
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, internal.NewUpdatedEvent(updated), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
 		})
 	})
 
@@ -146,8 +147,8 @@ func TestOrganization(t *testing.T) {
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, internal.NewDeletedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewDeletedEvent(org), <-sub)
 		})
 	})
 

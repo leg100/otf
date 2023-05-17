@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -20,7 +21,7 @@ type (
 	// notifier relays run events onto interested parties
 	notifier struct {
 		logr.Logger
-		internal.Subscriber
+		pubsub.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
 		internal.HostnameService   // for including a link in the notification
 
@@ -30,7 +31,7 @@ type (
 	// notifierOptions are options for constructing a notifier
 	notifierOptions struct {
 		logr.Logger
-		internal.Subscriber
+		pubsub.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
 		internal.HostnameService   // for including a link in the notification
 
@@ -93,7 +94,7 @@ func (s *notifier) reinitialize(ctx context.Context, db *pgdb) error {
 	return nil
 }
 
-func (s *notifier) handle(ctx context.Context, event internal.Event) error {
+func (s *notifier) handle(ctx context.Context, event pubsub.Event) error {
 	switch payload := event.Payload.(type) {
 	case *run.Run:
 		return s.handleRun(ctx, payload)
@@ -104,11 +105,11 @@ func (s *notifier) handle(ctx context.Context, event internal.Event) error {
 	}
 }
 
-func (s *notifier) handleConfig(ctx context.Context, cfg *Config, eventType internal.EventType) error {
+func (s *notifier) handleConfig(ctx context.Context, cfg *Config, eventType pubsub.EventType) error {
 	switch eventType {
-	case internal.CreatedEvent:
+	case pubsub.CreatedEvent:
 		return s.add(cfg)
-	case internal.DeletedEvent:
+	case pubsub.DeletedEvent:
 		return s.remove(cfg.ID)
 	default:
 		return nil

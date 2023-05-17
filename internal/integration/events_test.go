@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +22,7 @@ func TestIntegration_Events(t *testing.T) {
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws)
 	run := daemon.createRun(t, ctx, ws, cv)
 
-	assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
-	assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
-	assert.Equal(t, internal.NewCreatedEvent(run), <-sub)
+	assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+	assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+	assert.Equal(t, pubsub.NewCreatedEvent(run), <-sub)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -26,7 +27,7 @@ type (
 	service struct {
 		internal.Authorizer // authorize access to org
 		logr.Logger
-		internal.Broker
+		*pubsub.Broker
 
 		db                           *pgdb
 		site                         internal.Authorizer // authorize access to site
@@ -36,7 +37,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		html.Renderer
 		logr.Logger
 
@@ -86,7 +87,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
 
-	s.Publish(internal.NewUpdatedEvent(org))
+	s.Publish(pubsub.NewUpdatedEvent(org))
 	return org, nil
 }
 
@@ -145,7 +146,7 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 	}
 	s.V(0).Info("deleted organization", "name", name, "subject", subject)
 
-	s.Publish(internal.NewDeletedEvent(org))
+	s.Publish(pubsub.NewDeletedEvent(org))
 
 	return nil
 }

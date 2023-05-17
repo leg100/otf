@@ -1,4 +1,3 @@
-// Package pubsub implements cluster-wide publishing and subscribing of events
 package pubsub
 
 import (
@@ -27,6 +26,11 @@ const (
 )
 
 type (
+	// Getter retrieves an event payload using its ID.
+	Getter interface {
+		GetByID(context.Context, string) (any, error)
+	}
+
 	// Broker is a pubsub Broker implemented using postgres' listen/notify
 	Broker struct {
 		logr.Logger
@@ -35,9 +39,9 @@ type (
 		pool        pool      // pool from which to acquire a dedicated connection to postgres
 		islistening chan bool // semaphore that's closed once broker is listening
 
-		subs    map[string]chan internal.Event // subscriptions
-		metrics map[string]prometheus.Gauge    // metric for each subscription
-		mu      sync.Mutex                     // sync access to maps
+		subs    map[string]chan Event       // subscriptions
+		metrics map[string]prometheus.Gauge // metric for each subscription
+		mu      sync.Mutex                  // sync access to maps
 
 		*marshaler
 	}
@@ -49,9 +53,9 @@ type (
 
 	// pgevent is an event embedded within a postgres notification
 	pgevent struct {
-		Table   string             `json:"table"`             // pg table associated with event
-		Event   internal.EventType `json:"event"`             // event type
-		Payload json.RawMessage    `json:"payload,omitempty"` // event payload
+		Table   string          `json:"table"`             // pg table associated with event
+		Event   EventType       `json:"event"`             // event type
+		Payload json.RawMessage `json:"payload,omitempty"` // event payload
 
 		// Event payload ID. Only non-nil if pgevent exceeds max size.
 		ID *string `json:"id,omitempty"`
@@ -64,7 +68,7 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 		pool:        db,
 		islistening: make(chan bool),
 		channel:     defaultChannel,
-		subs:        make(map[string]chan internal.Event),
+		subs:        make(map[string]chan Event),
 		metrics:     make(map[string]prometheus.Gauge),
 		marshaler:   newMarshaler(),
 	}
@@ -113,7 +117,7 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 }
 
 // Publish sends an event to subscribers.
-func (b *Broker) Publish(event internal.Event) {
+func (b *Broker) Publish(event Event) {
 	if event.Local {
 		// send event only to local subscribers
 		b.localPublish(event)
@@ -133,13 +137,13 @@ func (b *Broker) Publish(event internal.Event) {
 // Subscribe subscribes the caller to a stream of events. Prefix is an
 // identifier prefixed to a random string to helpfully identify the subscriber
 // in metrics.
-func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.Event, error) {
+func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan Event, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	name := prefix + internal.GenerateRandomString(4)
 
-	sub := make(chan internal.Event, subBufferSize)
+	sub := make(chan Event, subBufferSize)
 	if _, ok := b.subs[name]; ok {
 		return nil, fmt.Errorf("name already taken")
 	}
@@ -178,7 +182,7 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.
 }
 
 // localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event internal.Event) {
+func (b *Broker) localPublish(event Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

@@ -5,12 +5,13 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 )
 
 type fakeSpoolerApp struct {
 	runs   []*run.Run
-	events chan internal.Event
+	events chan pubsub.Event
 
 	client.Client
 }
@@ -22,7 +23,7 @@ func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) 
 	}, nil
 }
 
-func (a *fakeSpoolerApp) Watch(ctx context.Context, opts run.WatchOptions) (<-chan internal.Event, error) {
+func (a *fakeSpoolerApp) Watch(ctx context.Context, opts run.WatchOptions) (<-chan pubsub.Event, error) {
 	// the non-fake watch takes care of closing channel when context is
 	// terminated.
 	go func() {

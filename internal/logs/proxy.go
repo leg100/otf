@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 )
 
 type (
@@ -15,7 +16,7 @@ type (
 		cache internal.Cache
 		db    db
 
-		internal.PubSubService
+		pubsub.PubSubService
 		logr.Logger
 	}
 
@@ -117,7 +118,7 @@ func (p *proxy) put(ctx context.Context, opts internal.PutChunkOptions) error {
 		Offset: opts.Offset,
 	}
 	// publish chunk for caching
-	p.Publish(internal.Event{Type: internal.EventLogChunk, Payload: chunk})
+	p.Publish(pubsub.Event{Type: pubsub.EventLogChunk, Payload: chunk})
 	return nil
 }
 

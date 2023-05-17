@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,8 +30,8 @@ func TestBroker_Publish_Local(t *testing.T) {
 	sub, err := broker.Subscribe(ctx, "")
 	require.NoError(t, err)
 
-	event := internal.Event{
-		Type:  internal.EventType("payload_update"),
+	event := Event{
+		Type:  EventType("payload_update"),
 		Local: true,
 	}
 	broker.Publish(event)

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -26,7 +27,7 @@ type (
 	SpawnerOptions struct {
 		logr.Logger
 
-		internal.Subscriber
+		pubsub.Subscriber
 
 		ConfigurationVersionService
 		WorkspaceService
@@ -52,7 +53,7 @@ func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
 
 	for event := range sub {
 		// skip non-vcs events
-		if event.Type != internal.EventVCS {
+		if event.Type != pubsub.EventVCS {
 			continue
 		}
 		if err := s.handle(ctx, event.Payload); err != nil {

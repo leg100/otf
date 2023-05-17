@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -45,7 +46,7 @@ func (queueMaker) newQueue(opts queueOptions) eventHandler {
 	}
 }
 
-func (q *queue) handleEvent(ctx context.Context, event internal.Event) error {
+func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
 	switch payload := event.Payload.(type) {
 	case *workspace.Workspace:
 		q.ws = payload
