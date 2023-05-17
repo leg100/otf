@@ -22,6 +22,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -360,6 +361,14 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 	})
 	require.NoError(t, err)
 	return token
+}
+
+func (s *testDaemon) createSubscriber(t *testing.T, ctx context.Context) <-chan pubsub.Event {
+	t.Helper()
+
+	sub, err := s.Subscribe(ctx, "")
+	require.NoError(t, err)
+	return sub
 }
 
 // startAgent starts an external agent, configuring it with the given

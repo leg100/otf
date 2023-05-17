@@ -5,12 +5,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
 
-func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events ...internal.Event) (*scheduler, <-chan internal.Event) {
-	ch := make(chan internal.Event, len(events))
+func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events ...pubsub.Event) (*scheduler, <-chan pubsub.Event) {
+	ch := make(chan pubsub.Event, len(events))
 	for _, ev := range events {
 		ch <- ev
 	}
@@ -30,7 +31,7 @@ func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events
 		queues:           make(map[string]eventHandler),
 	}
 	// handled chan receives events relayed to handlers
-	handled := make(chan internal.Event)
+	handled := make(chan pubsub.Event)
 	scheduler.queueFactory = &fakeQueueFactory{events: handled}
 	return &scheduler, handled
 }
@@ -38,7 +39,7 @@ func newTestScheduler(workspaces []*workspace.Workspace, runs []*run.Run, events
 type fakeSchedulerServices struct {
 	runs       []*run.Run
 	workspaces []*workspace.Workspace
-	events     chan internal.Event
+	events     chan pubsub.Event
 
 	WorkspaceService
 	RunService
@@ -58,12 +59,12 @@ func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.ListOp
 	}, nil
 }
 
-func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan internal.Event, error) {
+func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan pubsub.Event, error) {
 	return f.events, nil
 }
 
 type fakeQueueFactory struct {
-	events chan internal.Event
+	events chan pubsub.Event
 }
 
 func (f *fakeQueueFactory) newQueue(queueOptions) eventHandler {
@@ -71,10 +72,10 @@ func (f *fakeQueueFactory) newQueue(queueOptions) eventHandler {
 }
 
 type fakeQueue struct {
-	events chan internal.Event
+	events chan pubsub.Event
 }
 
-func (f *fakeQueue) handleEvent(ctx context.Context, event internal.Event) error {
+func (f *fakeQueue) handleEvent(ctx context.Context, event pubsub.Event) error {
 	f.events <- event
 	return nil
 }

@@ -99,12 +99,12 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 	}
 
 	if r.UserLock != nil {
-		ws.lock = &lock{
+		ws.Lock = &Lock{
 			id:       r.UserLock.Username.String,
 			LockKind: UserLock,
 		}
 	} else if r.RunLock != nil {
-		ws.lock = &lock{
+		ws.Lock = &Lock{
 			id:       r.RunLock.RunID.String,
 			LockKind: RunLock,
 		}

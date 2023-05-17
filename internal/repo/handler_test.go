@@ -9,12 +9,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebhookHandler(t *testing.T) {
 	publisher := &fakePublisher{}
-	want := internal.Event{Type: internal.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
+	want := pubsub.Event{Type: pubsub.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
 	f := newTestFactory(t, cloud.VCSPushEvent{})
 	hook := newTestHook(t, f, internal.String("123"))
 	handler := handler{
@@ -40,7 +41,7 @@ func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) 
 }
 
 type fakePublisher struct {
-	got internal.Event
+	got pubsub.Event
 }
 
-func (f *fakePublisher) Publish(got internal.Event) { f.got = got }
+func (f *fakePublisher) Publish(got pubsub.Event) { f.got = got }

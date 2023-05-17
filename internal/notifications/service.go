@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -25,7 +26,7 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.PubSubService
+		pubsub.PubSubService
 		workspace.WorkspaceService
 		internal.HostnameService // for including a link in the notification
 
@@ -35,7 +36,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
 		workspace.WorkspaceService
@@ -53,7 +54,7 @@ func NewService(opts Options) *service {
 		WorkspaceService: opts.WorkspaceService,
 	}
 	// Register with broker so that it can relay events
-	opts.Register(reflect.TypeOf(&Config{}), svc.db)
+	opts.Register(reflect.TypeOf(&Config{}), "notification_configurations", svc.db)
 	return &svc
 }
 
@@ -82,7 +83,7 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 		return nil, err
 	}
 	s.Info("creating notification config", "config", nc, "subject", subject)
-	s.Publish(internal.Event{Type: internal.CreatedEvent, Payload: nc})
+	s.Publish(pubsub.NewCreatedEvent(nc))
 	return nc, nil
 }
 
@@ -146,5 +147,6 @@ func (s *service) DeleteNotificationConfiguration(ctx context.Context, id string
 		return err
 	}
 	s.Info("deleted notification config", "config", nc, "subject", subject)
+	s.Publish(pubsub.NewDeletedEvent(nc))
 	return nil
 }

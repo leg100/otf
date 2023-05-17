@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ func TestBroker(t *testing.T) {
 	// sends event via local broker
 	org := local.createOrganization(t, ctx)
 
-	want := internal.Event{Type: internal.EventOrganizationCreated, Payload: org}
+	want := pubsub.NewCreatedEvent(org)
 	// receive event on local broker
 	assert.Equal(t, want, <-localsub)
 	// receive event on remote broker (via postgres)

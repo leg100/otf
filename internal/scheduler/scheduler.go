@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -24,7 +25,7 @@ type (
 	scheduler struct {
 		logr.Logger
 
-		internal.Subscriber
+		pubsub.Subscriber
 		WorkspaceService
 		RunService
 
@@ -35,7 +36,7 @@ type (
 	Options struct {
 		logr.Logger
 		internal.DB
-		internal.Subscriber
+		pubsub.Subscriber
 
 		WorkspaceService
 		RunService
@@ -124,19 +125,19 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 		runListOpts.PageNumber = *page.NextPage()
 	}
 	// feed in existing runs and workspaces and then events to the scheduler for processing
-	queue := make(chan internal.Event)
+	queue := make(chan pubsub.Event)
 	go func() {
 		for _, ws := range workspaces {
-			queue <- internal.Event{
-				Type:    internal.EventWorkspaceCreated,
+			queue <- pubsub.Event{
+				Type:    pubsub.EventWorkspaceCreated,
 				Payload: ws,
 			}
 		}
 		// spool existing runs in reverse order; ListRuns returns runs newest first,
 		// whereas we want oldest first.
 		for i := len(runs) - 1; i >= 0; i-- {
-			queue <- internal.Event{
-				Type:    internal.EventRunStatusUpdate,
+			queue <- pubsub.Event{
+				Type:    pubsub.EventRunStatusUpdate,
 				Payload: runs[i],
 			}
 		}
@@ -149,7 +150,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	for event := range queue {
 		switch payload := event.Payload.(type) {
 		case *workspace.Workspace:
-			if event.Type == internal.EventWorkspaceDeleted {
+			if event.Type == pubsub.EventWorkspaceDeleted {
 				delete(s.queues, payload.ID)
 				continue
 			}

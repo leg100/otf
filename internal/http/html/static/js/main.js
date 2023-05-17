@@ -113,7 +113,7 @@ function watchRunUpdates(path, stream, run) {
     const url = `${path}?stream=${stream}&run-id=${run}`;
     var source = new EventSource(url);
 
-    source.addEventListener("run_status_update", (e) => {
+    source.addEventListener("updated", (e) => {
         const obj = JSON.parse(e.data);
 
         const runItem = document.getElementById(obj.id);
@@ -145,7 +145,7 @@ function watchRunUpdates(path, stream, run) {
 function watchWorkspaceUpdates(path) {
     var source = new EventSource(path);
 
-    source.addEventListener("run_status_update", (e) => {
+    source.addEventListener("updated", (e) => {
         const obj = JSON.parse(e.data);
 
         const latestRunElem = document.getElementById('latest-run');
@@ -158,13 +158,13 @@ function watchRuns(path) {
 
     const listElem = document.getElementById('content-list');
 
-    source.addEventListener('run_created', (e) => {
+    source.addEventListener('created', (e) => {
         const obj = JSON.parse(e.data);
 
         listElem.insertAdjacentHTML("afterbegin", obj['run-item-html']);
     });
 
-    source.addEventListener('run_status_update', (e) => {
+    source.addEventListener('updated', (e) => {
         const obj = JSON.parse(e.data);
 
         const runElem = document.getElementById(obj.id);

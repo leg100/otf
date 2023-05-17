@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +29,7 @@ func TestWatchClient(t *testing.T) {
 			ConfigurationVersion: &types.ConfigurationVersion{ID: "cv-123"},
 		})
 		require.NoError(t, err)
-		internal.WriteSSEEvent(w, b, internal.EventRunStatusUpdate, true)
+		pubsub.WriteSSEEvent(w, b, pubsub.EventRunStatusUpdate, true)
 	})
 	webserver := httptest.NewTLSServer(mux)
 
@@ -44,11 +44,11 @@ func TestWatchClient(t *testing.T) {
 	got, err := client.Watch(context.Background(), WatchOptions{})
 	require.NoError(t, err)
 
-	assert.Equal(t, internal.Event{Type: internal.EventInfo, Payload: "successfully connected"}, <-got)
+	assert.Equal(t, pubsub.Event{Type: pubsub.EventInfo, Payload: "successfully connected"}, <-got)
 	want := &Run{
 		ID:                     "run-123",
 		WorkspaceID:            "ws-123",
 		ConfigurationVersionID: "cv-123",
 	}
-	assert.Equal(t, internal.Event{Type: internal.EventRunStatusUpdate, Payload: want}, <-got)
+	assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: want}, <-got)
 }

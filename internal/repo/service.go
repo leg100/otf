@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -40,7 +41,7 @@ type (
 
 		internal.DB
 		internal.HostnameService
-		internal.Publisher
+		pubsub.Publisher
 		VCSProviderService vcsprovider.Service
 	}
 )

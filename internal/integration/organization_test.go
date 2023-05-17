@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,6 +22,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
+		sub := svc.createSubscriber(t, ctx)
 		org, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})
@@ -45,19 +47,29 @@ func TestOrganization(t *testing.T) {
 				}
 			})
 		})
+
+		t.Run("receive event", func(t *testing.T) {
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		})
 	})
 
 	t.Run("update name", func(t *testing.T) {
 		svc := setup(t, nil)
+		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 
 		want := uuid.NewString()
-		org, err := svc.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
+		updated, err := svc.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
 			Name: internal.String(want),
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, want, org.Name)
+		assert.Equal(t, want, updated.Name)
+
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
+		})
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
@@ -125,6 +137,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		svc := setup(t, nil)
+		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 
 		err := svc.DeleteOrganization(ctx, org.Name)
@@ -132,6 +145,11 @@ func TestOrganization(t *testing.T) {
 
 		_, err = svc.GetOrganization(ctx, org.Name)
 		assert.Equal(t, internal.ErrResourceNotFound, err)
+
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewDeletedEvent(org), <-sub)
+		})
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {

@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/leg100/otf/internal"
@@ -25,10 +24,7 @@ func TestCompleteRun(t *testing.T) {
 	require.NoError(t, err)
 
 	ws := svc.createWorkspace(t, ctx, nil)
-	cv := svc.createConfigurationVersion(t, ctx, ws)
-	tarball, err := os.ReadFile("./testdata/root.tar.gz")
-	require.NoError(t, err)
-	svc.UploadConfig(ctx, cv.ID, tarball)
+	cv := svc.createAndUploadConfigurationVersion(t, ctx, ws)
 
 	_ = svc.createRun(t, ctx, ws, cv)
 

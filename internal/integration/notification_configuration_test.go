@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/notifications"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,14 +16,22 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, nil)
-		ws := svc.createWorkspace(t, ctx, nil)
-		_, err := svc.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		sub := svc.createSubscriber(t, ctx)
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org)
+		nc, err := svc.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
 			Name:            internal.String("testing"),
 			URL:             internal.String("http://example.com"),
 		})
 		require.NoError(t, err)
+
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+		})
 	})
 
 	t.Run("update", func(t *testing.T) {
@@ -67,12 +76,22 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		svc := setup(t, nil)
-		nc := svc.createNotificationConfig(t, ctx, nil)
+		sub := svc.createSubscriber(t, ctx)
+		org := svc.createOrganization(t, ctx)
+		ws := svc.createWorkspace(t, ctx, org)
+		nc := svc.createNotificationConfig(t, ctx, ws)
 
 		err := svc.DeleteNotificationConfiguration(ctx, nc.ID)
 		require.NoError(t, err)
 
 		_, err = svc.GetNotificationConfiguration(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
+
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+			assert.Equal(t, pubsub.NewDeletedEvent(nc), <-sub)
+		})
 	})
 }

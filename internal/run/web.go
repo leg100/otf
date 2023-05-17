@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -337,7 +338,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "marshalling watched run", "run", run.ID)
 				continue
 			}
-			internal.WriteSSEEvent(w, js, event.Type, false)
+			pubsub.WriteSSEEvent(w, js, event.Type, false)
 			rc.Flush()
 		}
 	}

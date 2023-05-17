@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
@@ -56,7 +57,7 @@ type (
 
 		DownloadConfig(ctx context.Context, id string) ([]byte, error)
 
-		Watch(context.Context, run.WatchOptions) (<-chan internal.Event, error)
+		Watch(context.Context, run.WatchOptions) (<-chan pubsub.Event, error)
 
 		CreateStateVersion(ctx context.Context, opts state.CreateStateVersionOptions) (*state.Version, error)
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)

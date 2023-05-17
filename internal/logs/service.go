@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -21,7 +22,7 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.PubSubService // subscribe to tail log updates
+		pubsub.PubSubService // subscribe to tail log updates
 
 		run   internal.Authorizer
 		proxy chunkproxy
@@ -40,7 +41,7 @@ type (
 		logr.Logger
 		internal.Cache
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		internal.Verifier
 
 		RunAuthorizer internal.Authorizer

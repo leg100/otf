@@ -5,9 +5,9 @@ import "fmt"
 // ResourceReport reports a summary of additions, changes, and deletions of
 // resources in a plan or an apply.
 type ResourceReport struct {
-	Additions    int
-	Changes      int
-	Destructions int
+	Additions    int `json:"additions"`
+	Changes      int `json:"changes"`
+	Destructions int `json:"destructions"`
 }
 
 func (r ResourceReport) HasChanges() bool {

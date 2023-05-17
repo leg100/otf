@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -22,7 +23,7 @@ type (
 	// runs.
 	reporter struct {
 		logr.Logger
-		internal.Subscriber
+		pubsub.Subscriber
 		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
@@ -36,7 +37,7 @@ type (
 
 		logr.Logger
 		internal.DB
-		internal.Subscriber
+		pubsub.Subscriber
 		internal.HostnameService
 	}
 )

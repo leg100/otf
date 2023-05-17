@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestScheduler(t *testing.T) {
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil)
 		go scheduler.reinitialize(ctx)
 
-		assert.Equal(t, internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, 1, len(scheduler.queues))
 	})
 
@@ -30,7 +30,7 @@ func TestScheduler(t *testing.T) {
 		defer cancel()
 
 		ws := &workspace.Workspace{ID: "ws-123"}
-		event := internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws}
+		event := pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}
 		scheduler, got := newTestScheduler(nil, nil, event)
 		go scheduler.reinitialize(ctx)
 		assert.Equal(t, event, <-got)
@@ -43,13 +43,13 @@ func TestScheduler(t *testing.T) {
 
 		// ws is to be created and then deleted
 		ws := &workspace.Workspace{ID: "ws-123"}
-		del := internal.Event{Type: internal.EventWorkspaceDeleted, Payload: ws}
+		del := pubsub.Event{Type: pubsub.EventWorkspaceDeleted, Payload: ws}
 		// necessary so that we can synchronise test below
-		sync := internal.Event{Payload: &workspace.Workspace{ID: "ws-123"}}
+		sync := pubsub.Event{Payload: &workspace.Workspace{ID: "ws-123"}}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil, del, sync)
 		go scheduler.reinitialize(ctx)
 
-		assert.Equal(t, internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, sync, <-got)
 		assert.NotContains(t, scheduler.queues, ws)
 	})
@@ -63,8 +63,8 @@ func TestScheduler(t *testing.T) {
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, []*run.Run{r})
 		go scheduler.reinitialize(ctx)
 
-		assert.Equal(t, internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws}, <-got)
-		assert.Equal(t, internal.Event{Type: internal.EventRunStatusUpdate, Payload: r}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: r}, <-got)
 	})
 
 	t.Run("relay run from event", func(t *testing.T) {
@@ -72,11 +72,11 @@ func TestScheduler(t *testing.T) {
 		defer cancel()
 
 		ws := &workspace.Workspace{ID: "ws-123"}
-		event := internal.Event{Payload: &run.Run{WorkspaceID: "ws-123"}}
+		event := pubsub.Event{Payload: &run.Run{WorkspaceID: "ws-123"}}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil, event)
 		go scheduler.reinitialize(ctx)
 
-		assert.Equal(t, internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, event, <-got)
 	})
 
@@ -90,8 +90,8 @@ func TestScheduler(t *testing.T) {
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, []*run.Run{run1, run2})
 		go scheduler.reinitialize(ctx)
 
-		assert.Equal(t, internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws}, <-got)
-		assert.Equal(t, internal.Event{Type: internal.EventRunStatusUpdate, Payload: run2}, <-got)
-		assert.Equal(t, internal.Event{Type: internal.EventRunStatusUpdate, Payload: run1}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: run2}, <-got)
+		assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: run1}, <-got)
 	})
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -45,7 +46,7 @@ func (queueMaker) newQueue(opts queueOptions) eventHandler {
 	}
 }
 
-func (q *queue) handleEvent(ctx context.Context, event internal.Event) error {
+func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
 	switch payload := event.Payload.(type) {
 	case *workspace.Workspace:
 		q.ws = payload
@@ -137,7 +138,7 @@ func (q *queue) scheduleRun(ctx context.Context, run *run.Run) error {
 
 	// if workspace is userLocked by a user then do not schedule;
 	// instead wait for an unlock event to arrive.
-	if q.ws.Locked() && q.ws.LockKind == workspace.UserLock {
+	if q.ws.Lock != nil && q.ws.Lock.LockKind == workspace.UserLock {
 		q.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID)
 		return nil
 	}

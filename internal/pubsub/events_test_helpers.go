@@ -1,4 +1,4 @@
-package internal
+package pubsub
 
 type FakePublisher struct{}
 

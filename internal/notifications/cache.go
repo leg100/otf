@@ -42,6 +42,7 @@ func newCache(ctx context.Context, db cacheDB, f clientFactory) (*cache, error) 
 		clients:       make(map[string]*clientEntry),
 		clientFactory: f,
 	}
+
 	for _, cfg := range configs {
 		if err := cache.add(cfg); err != nil {
 			return nil, err
@@ -68,6 +69,7 @@ func (c *cache) add(cfg *Config) error {
 		ent.count++
 		c.clients[*cfg.URL] = ent
 		c.configs[cfg.ID] = cfg
+		configsMetric.Inc()
 		return nil
 	}
 	// new cfg; new client
@@ -76,7 +78,9 @@ func (c *cache) add(cfg *Config) error {
 		return err
 	}
 	c.clients[*cfg.URL] = &clientEntry{client: client, count: 1}
+	clientsMetric.Inc()
 	c.configs[cfg.ID] = cfg
+	configsMetric.Inc()
 	return nil
 }
 
@@ -99,9 +103,11 @@ func (c *cache) remove(id string) error {
 		// no more configs reference this client so close and delete
 		ent.Close()
 		delete(c.clients, *cfg.URL)
+		clientsMetric.Dec()
 	} else {
 		c.clients[*cfg.URL] = ent
 	}
 	delete(c.configs, cfg.ID)
+	configsMetric.Dec()
 	return nil
 }

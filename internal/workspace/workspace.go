@@ -26,34 +26,33 @@ const (
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         string
-		CreatedAt                  time.Time
-		UpdatedAt                  time.Time
-		AllowDestroyPlan           bool
-		AutoApply                  bool
-		Branch                     string
-		CanQueueDestroyPlan        bool
-		Description                string
-		Environment                string
-		ExecutionMode              ExecutionMode
-		FileTriggersEnabled        bool
-		GlobalRemoteState          bool
-		MigrationEnvironment       string
-		Name                       string
-		QueueAllRuns               bool
-		SpeculativeEnabled         bool
-		StructuredRunOutputEnabled bool
-		SourceName                 string
-		SourceURL                  string
-		TerraformVersion           string
-		TriggerPrefixes            []string
-		WorkingDirectory           string
-		Organization               string
-		Connection                 *repo.Connection
-		LatestRun                  *LatestRun
-		Tags                       []string
-
-		*lock
+		ID                         string           `json:"id"`
+		CreatedAt                  time.Time        `json:"created_at"`
+		UpdatedAt                  time.Time        `json:"updated_at"`
+		AllowDestroyPlan           bool             `json:"allow_destroy_plan"`
+		AutoApply                  bool             `json:"auto_apply"`
+		Branch                     string           `json:"branch"`
+		CanQueueDestroyPlan        bool             `json:"can_queue_destroy_plan"`
+		Description                string           `json:"description"`
+		Environment                string           `json:"environment"`
+		ExecutionMode              ExecutionMode    `json:"execution_mode"`
+		FileTriggersEnabled        bool             `json:"file_triggers_enabled"`
+		GlobalRemoteState          bool             `json:"global_remote_state"`
+		MigrationEnvironment       string           `json:"migration_environment"`
+		Name                       string           `json:"name"`
+		QueueAllRuns               bool             `json:"queue_all_runs"`
+		SpeculativeEnabled         bool             `json:"speculative_enabled"`
+		StructuredRunOutputEnabled bool             `json:"structured_run_output_enabled"`
+		SourceName                 string           `json:"source_name"`
+		SourceURL                  string           `json:"source_url"`
+		TerraformVersion           string           `json:"terraform_version"`
+		TriggerPrefixes            []string         `json:"trigger_prefixes"`
+		WorkingDirectory           string           `json:"working_directory"`
+		Organization               string           `json:"organization"`
+		Connection                 *repo.Connection `json:"connection"`
+		LatestRun                  *LatestRun       `json:"latest_run"`
+		Tags                       []string         `json:"tags"`
+		Lock                       *Lock            `json:"lock"`
 	}
 
 	// LatestRun is a summary of the latest run for a workspace
