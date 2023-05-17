@@ -144,9 +144,9 @@ func (s *spoolerDaemon) handleRun(event internal.EventType, run *run.Run) {
 
 	if run.Queued() {
 		s.queue <- run
-	} else if run.Status == internal.RunCanceled {
+	} else if event == internal.EventRunCancel {
 		s.cancelations <- cancelation{Run: run}
-	} else if run.Status == internal.RunForceCanceled {
+	} else if event == internal.EventRunForceCancel {
 		s.cancelations <- cancelation{Run: run, Forceful: true}
 	}
 }
