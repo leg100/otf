@@ -403,7 +403,7 @@ func TestWorkspace(t *testing.T) {
 		t.Run("receive events", func(t *testing.T) {
 			assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
 			assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, internal.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
+			assert.Equal(t, internal.NewDeletedEvent(ws), <-sub)
 		})
 	})
 }

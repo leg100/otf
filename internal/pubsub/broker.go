@@ -106,7 +106,6 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 				continue
 			}
 			b.localPublish(event)
-			return nil
 		}
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
@@ -182,6 +181,8 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.
 func (b *Broker) localPublish(event internal.Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
+	b.V(9).Info("received event", "event", event.Type)
 
 	for name, sub := range b.subs {
 		// record sub's chan size

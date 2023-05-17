@@ -86,6 +86,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
 
+	s.Publish(internal.NewUpdatedEvent(org))
 	return org, nil
 }
 
@@ -131,12 +132,20 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
+	org, err := s.db.get(ctx, name)
+	if err != nil {
+		s.Error(err, "retrieving organization", "name", name, "subject", subject)
+		return err
+	}
+
 	err = s.db.delete(ctx, name)
 	if err != nil {
 		s.Error(err, "deleting organization", "name", name, "subject", subject)
 		return err
 	}
 	s.V(0).Info("deleted organization", "name", name, "subject", subject)
+
+	s.Publish(internal.NewDeletedEvent(org))
 
 	return nil
 }

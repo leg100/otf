@@ -56,6 +56,21 @@ func TestMarshaler(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 
+	t.Run("unmarshal non-pointer struct", func(t *testing.T) {
+		m := newMarshaler()
+		m.Register(reflect.TypeOf(fakeType{}), "fakes", nil)
+
+		notification := `{"table":"fakes","event":"created","payload":{"id":"fake-123","stuff":"c3R1ZmY="}}`
+		got, err := m.unmarshal(notification)
+		require.NoError(t, err)
+
+		want := internal.Event{
+			Type:    internal.CreatedEvent,
+			Payload: fakeType{ID: "fake-123", Stuff: []byte("stuff")},
+		}
+		assert.Equal(t, want, got)
+	})
+
 	t.Run("unmarshal using ID", func(t *testing.T) {
 		m := newMarshaler()
 		fake := &fakeType{ID: "fake-123", Stuff: []byte("stuff")}

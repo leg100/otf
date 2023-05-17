@@ -94,14 +94,22 @@ func (r *marshaler) unmarshal(notification string) (internal.Event, error) {
 			return internal.Event{}, err
 		}
 	} else {
-		// payload is embedded in event
+		// payload is embedded in event; lookup its type and determine if it is
+		// a pointer before unmarshaling it
 		typ, err := r.lookupType(event.Table)
 		if err != nil {
 			return internal.Event{}, err
 		}
-		payload = reflect.New(typ.Elem()).Interface()
+		if typ.Kind() == reflect.Pointer {
+			payload = reflect.New(typ.Elem()).Interface()
+		} else {
+			payload = reflect.New(typ).Interface()
+		}
 		if err := json.Unmarshal(event.Payload, payload); err != nil {
 			return internal.Event{}, err
+		}
+		if typ.Kind() != reflect.Pointer {
+			payload = reflect.ValueOf(payload).Elem().Interface()
 		}
 	}
 	return internal.Event{

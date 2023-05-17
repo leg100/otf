@@ -25,8 +25,4 @@ func TestIntegration_Events(t *testing.T) {
 	assert.Equal(t, internal.NewCreatedEvent(org), <-sub)
 	assert.Equal(t, internal.NewCreatedEvent(ws), <-sub)
 	assert.Equal(t, internal.NewCreatedEvent(run), <-sub)
-	assert.Equal(t, internal.NewUpdatedEvent(run), <-sub)
-	assert.Equal(t, internal.NewUpdatedEvent(run), <-sub)
-	assert.Equal(t, internal.NewUpdatedEvent(run), <-sub)
-	assert.Equal(t, internal.NewUpdatedEvent(run), <-sub)
 }

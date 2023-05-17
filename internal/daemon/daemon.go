@@ -150,6 +150,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                       logger,
 		DB:                           db,
 		Renderer:                     renderer,
+		Publisher:                    broker,
 		AuthService:                  authService,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 	})

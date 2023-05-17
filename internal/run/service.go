@@ -162,7 +162,7 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 	}
 	s.V(1).Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunCreated, Payload: run})
+	s.Publish(internal.NewCreatedEvent(run))
 
 	return run, nil
 }
@@ -246,7 +246,7 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	}
 	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.NewUpdatedEvent(run))
 
 	return run, nil
 }
@@ -286,7 +286,7 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		return nil, err
 	}
 	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -315,7 +315,7 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		return nil, err
 	}
 	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -387,8 +387,7 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 
 	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
-
+	s.Publish(internal.NewUpdatedEvent(run))
 	return err
 }
 
@@ -409,8 +408,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 
 	s.V(0).Info("discarded run", "id", runID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
-
+	s.Publish(internal.NewUpdatedEvent(run))
 	return err
 }
 
@@ -436,7 +434,7 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 		// notify agent which'll send a SIGINT to terraform
 		s.Publish(internal.Event{Type: internal.EventRunCancel, Payload: run})
 	}
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(internal.NewUpdatedEvent(run))
 	return run, nil
 }
 

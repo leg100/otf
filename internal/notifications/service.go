@@ -82,7 +82,7 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 		return nil, err
 	}
 	s.Info("creating notification config", "config", nc, "subject", subject)
-	s.Publish(internal.Event{Type: internal.CreatedEvent, Payload: nc})
+	s.Publish(internal.NewCreatedEvent(nc))
 	return nc, nil
 }
 

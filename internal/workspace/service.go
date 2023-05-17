@@ -145,7 +145,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws})
+	s.Publish(internal.NewCreatedEvent(ws))
 
 	return ws, nil
 }
@@ -236,6 +236,9 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 	}
 
 	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
+
+	s.Publish(internal.NewUpdatedEvent(updated))
+
 	return updated, nil
 }
 
@@ -264,7 +267,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 		return nil, err
 	}
 
-	s.Publish(internal.Event{Type: internal.EventWorkspaceDeleted, Payload: ws})
+	s.Publish(internal.NewDeletedEvent(ws))
 
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 
