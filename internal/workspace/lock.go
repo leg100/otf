@@ -35,6 +35,7 @@ type (
 		Text     string // button text
 		Tooltip  string // button tooltip
 		Disabled bool   // button greyed out or not
+		Message  string // message accompanying button
 		Action   string // form URL
 	}
 )
@@ -102,15 +103,15 @@ func lockButtonHelper(ws *Workspace, policy internal.WorkspacePolicy, user inter
 			btn.Disabled = true
 			return btn
 		}
-		// Determine tooltip to show
+		// Determine message to show
 		switch ws.Lock.LockKind {
-		case UserLock:
-			btn.Tooltip = "locked by user: " + ws.Lock.id
-		case RunLock:
-			btn.Tooltip = "locked by run: " + ws.Lock.id
+		case UserLock, RunLock:
+			btn.Message = "locked by: " + ws.Lock.id
 		default:
-			btn.Tooltip = "locked by unknown entity: " + ws.Lock.id
+			btn.Message = "locked by unknown entity: " + ws.Lock.id
 		}
+		// also show message as button tooltip
+		btn.Tooltip = btn.Message
 		// A user can unlock their own lock
 		if ws.Lock.LockKind == UserLock && ws.Lock.id == user.String() {
 			return btn

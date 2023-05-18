@@ -44,8 +44,8 @@
           <div class="workspace-lock workspace-lock-status-{{ .State }}">
             <span title="{{ .Tooltip }}">{{ title .State }}</span>
             <form action="{{ .Action }}" method="POST"><button  title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
+            <span class="workspace-lock-info">{{ .Message }}</span>
           </div>
-          <span class="workspace-lock-info">{{ .Tooltip }}</span>
         {{ end }}
       </div>
       {{ with .Workspace.Connection }}

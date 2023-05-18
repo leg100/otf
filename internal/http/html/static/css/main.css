@@ -454,14 +454,9 @@ a.show-underline {
 /* Workspace lock status and toggle button */
 .workspace-lock {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5em;
   padding: 0.5em;
-}
-
-.workspace-lock form {
-  /* vertically aligns status field and button */
-  display: flex;
 }
 
 .workspace-lock-status-locked {
