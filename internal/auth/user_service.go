@@ -54,11 +54,11 @@ func (a *service) GetUser(ctx context.Context, spec UserSpec) (*User, error) {
 
 	user, err := a.db.getUser(ctx, spec)
 	if err != nil {
-		a.V(2).Info("retrieving user", "spec", spec, "subject", subject)
+		a.V(9).Info("retrieving user", "spec", spec, "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved user", "username", user.Username, "subject", subject)
+	a.V(9).Info("retrieved user", "username", user.Username, "subject", subject)
 
 	return user, nil
 }
@@ -91,7 +91,7 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 
 	err = a.db.DeleteUser(ctx, UserSpec{Username: internal.String(username)})
 	if err != nil {
-		a.V(2).Info("deleting user", "username", username, "subject", subject)
+		a.Error(err, "deleting user", "username", username, "subject", subject)
 		return err
 	}
 

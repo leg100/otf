@@ -180,7 +180,7 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 		s.Error(err, "retrieving run", "id", runID, "subject", subject)
 		return nil, err
 	}
-	s.V(2).Info("retrieved run", "id", runID, "subject", subject)
+	s.V(9).Info("retrieved run", "id", runID, "subject", subject)
 
 	return run, nil
 }
@@ -224,7 +224,7 @@ func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, 
 		return nil, err
 	}
 
-	s.V(2).Info("listed runs", "count", len(rl.Items), "subject", subject)
+	s.V(9).Info("listed runs", "count", len(rl.Items), "subject", subject)
 
 	return rl, nil
 }

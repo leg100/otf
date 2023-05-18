@@ -168,7 +168,7 @@ func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Worksp
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved workspace", "subject", subject, "workspace", workspaceID)
+	s.V(9).Info("retrieved workspace", "subject", subject, "workspace", workspaceID)
 
 	return ws, nil
 }
@@ -185,7 +185,7 @@ func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspac
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
+	s.V(9).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
 
 	return ws, nil
 }

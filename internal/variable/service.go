@@ -97,7 +97,7 @@ func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Var
 		return nil, err
 	}
 
-	s.V(2).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
+	s.V(9).Info("listed variables", "subject", subject, "workspace_id", workspaceID)
 
 	return variables, nil
 }
@@ -115,7 +115,7 @@ func (s *service) GetVariable(ctx context.Context, variableID string) (*Variable
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved variable", "subject", subject, "variable", variable)
+	s.V(9).Info("retrieved variable", "subject", subject, "variable", variable)
 
 	return variable, nil
 }

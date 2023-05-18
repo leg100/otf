@@ -47,6 +47,6 @@ func (s *service) DownloadConfig(ctx context.Context, cvID string) ([]byte, erro
 	if err := s.cache.Set(cacheKey(cvID), config); err != nil {
 		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
 	}
-	s.V(2).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)
+	s.V(9).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)
 	return config, nil
 }

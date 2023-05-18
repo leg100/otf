@@ -130,7 +130,7 @@ func (a *service) ListStateVersions(ctx context.Context, opts StateVersionListOp
 		a.Error(err, "listing state versions", "organization", opts.Organization, "workspace", opts.Workspace, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("listed state version", "organization", opts.Organization, "workspace", opts.Workspace, "subject", subject)
+	a.V(9).Info("listed state versions", "organization", opts.Organization, "workspace", opts.Workspace, "subject", subject)
 	return svl, nil
 }
 
@@ -145,7 +145,7 @@ func (a *service) GetCurrentStateVersion(ctx context.Context, workspaceID string
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("retrieved current state version", "workspace_id", workspaceID, "subject", subject)
+	a.V(9).Info("retrieved current state version", "workspace_id", workspaceID, "subject", subject)
 	return sv, nil
 }
 
@@ -160,7 +160,7 @@ func (a *service) GetStateVersion(ctx context.Context, versionID string) (*Versi
 		a.Error(err, "retrieving state version", "id", versionID, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("retrieved state version", "id", versionID, "subject", subject)
+	a.V(9).Info("retrieved state version", "id", versionID, "subject", subject)
 	return sv, nil
 }
 
@@ -174,7 +174,7 @@ func (a *service) DeleteStateVersion(ctx context.Context, versionID string) erro
 		a.Error(err, "deleting state version", "id", versionID, "subject", subject)
 		return err
 	}
-	a.V(2).Info("deleted state version", "id", versionID, "subject", subject)
+	a.V(0).Info("deleted state version", "id", versionID, "subject", subject)
 	return nil
 }
 
@@ -189,7 +189,7 @@ func (a *service) RollbackStateVersion(ctx context.Context, versionID string) (*
 		a.Error(err, "rolling back state version", "id", versionID, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("rolled back state version", "id", versionID, "subject", subject)
+	a.V(0).Info("rolled back state version", "id", versionID, "subject", subject)
 	return sv, nil
 }
 
@@ -201,7 +201,7 @@ func (a *service) DownloadState(ctx context.Context, svID string) ([]byte, error
 	}
 
 	if state, err := a.cache.Get(cacheKey(svID)); err == nil {
-		a.V(2).Info("downloaded state", "id", svID, "subject", subject)
+		a.V(9).Info("downloaded state", "id", svID, "subject", subject)
 		return state, nil
 	}
 	state, err := a.db.getState(ctx, svID)
@@ -212,7 +212,7 @@ func (a *service) DownloadState(ctx context.Context, svID string) ([]byte, error
 	if err := a.cache.Set(cacheKey(svID), state); err != nil {
 		return nil, fmt.Errorf("caching state: %w", err)
 	}
-	a.V(2).Info("downloaded state", "id", svID, "subject", subject)
+	a.V(9).Info("downloaded state", "id", svID, "subject", subject)
 	return state, nil
 }
 
@@ -228,7 +228,7 @@ func (a *service) GetStateVersionOutput(ctx context.Context, outputID string) (*
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved state version output", "id", outputID, "subject", subject)
+	a.V(9).Info("retrieved state version output", "id", outputID, "subject", subject)
 	return sv, nil
 }
 

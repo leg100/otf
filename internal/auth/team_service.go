@@ -75,10 +75,10 @@ func (a *service) ListTeams(ctx context.Context, organization string) ([]*Team, 
 
 	teams, err := a.db.listTeams(ctx, organization)
 	if err != nil {
-		a.V(2).Info("listing teams", "organization", organization, "subject", subject)
+		a.Error(err, "listing teams", "organization", organization, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("listed teams", "organization", organization, "subject", subject)
+	a.V(9).Info("listed teams", "organization", organization, "subject", subject)
 
 	return teams, nil
 }
@@ -104,7 +104,7 @@ func (a *service) ListTeamMembers(ctx context.Context, teamID string) ([]*User, 
 		return nil, err
 	}
 
-	a.V(2).Info("listed team members", "team_id", teamID, "subject", subject)
+	a.V(9).Info("listed team members", "team_id", teamID, "subject", subject)
 
 	return members, nil
 }
@@ -121,7 +121,7 @@ func (a *service) GetTeam(ctx context.Context, organization, name string) (*Team
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved team", "team", name, "organization", organization, "subject", subject)
+	a.V(9).Info("retrieved team", "team", name, "organization", organization, "subject", subject)
 
 	return team, nil
 }
@@ -138,7 +138,7 @@ func (a *service) GetTeamByID(ctx context.Context, teamID string) (*Team, error)
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved team", "team", team.Name, "organization", team.Organization, "subject", subject)
+	a.V(9).Info("retrieved team", "team", team.Name, "organization", team.Organization, "subject", subject)
 
 	return team, nil
 }

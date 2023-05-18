@@ -80,7 +80,7 @@ func (s *service) CreateConfigurationVersion(ctx context.Context, workspaceID st
 		s.Error(err, "creating configuration version", "id", cv.ID, "subject", subject)
 		return nil, err
 	}
-	s.V(2).Info("created configuration version", "id", cv.ID, "subject", subject)
+	s.V(1).Info("created configuration version", "id", cv.ID, "subject", subject)
 	return cv, nil
 }
 
@@ -119,7 +119,7 @@ func (s *service) ListConfigurationVersions(ctx context.Context, workspaceID str
 		return nil, err
 	}
 
-	s.V(2).Info("listed configuration versions", "subject", subject)
+	s.V(9).Info("listed configuration versions", "subject", subject)
 	return cvl, nil
 }
 
@@ -134,7 +134,7 @@ func (s *service) GetConfigurationVersion(ctx context.Context, cvID string) (*Co
 		s.Error(err, "retrieving configuration version", "id", cvID, "subject", subject)
 		return nil, err
 	}
-	s.V(2).Info("retrieved configuration version", "id", cvID, "subject", subject)
+	s.V(9).Info("retrieved configuration version", "id", cvID, "subject", subject)
 	return cv, nil
 }
 
@@ -149,7 +149,7 @@ func (s *service) GetLatestConfigurationVersion(ctx context.Context, workspaceID
 		s.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
 	}
-	s.V(2).Info("retrieved latest configuration version", "workspace_id", workspaceID, "subject", subject)
+	s.V(9).Info("retrieved latest configuration version", "workspace_id", workspaceID, "subject", subject)
 	return cv, nil
 }
 

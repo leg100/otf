@@ -85,7 +85,7 @@ func (s *service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (
 		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
 		return internal.Chunk{}, err
 	}
-	s.V(2).Info("read logs", "id", opts.RunID, "offset", opts.Offset)
+	s.V(9).Info("read logs", "id", opts.RunID, "offset", opts.Offset)
 	return logs, nil
 }
 
@@ -100,7 +100,7 @@ func (s *service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) e
 		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
-	s.V(2).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
+	s.V(3).Info("written logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 
 	return nil
 }
@@ -166,6 +166,6 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 		}
 		close(relay)
 	}()
-	s.V(2).Info("tailing logs", "id", opts.RunID, "phase", opts.Phase, "subject", subject)
+	s.V(9).Info("tailing logs", "id", opts.RunID, "phase", opts.Phase, "subject", subject)
 	return relay, nil
 }

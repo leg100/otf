@@ -53,7 +53,7 @@ func (s *service) UploadLockFile(ctx context.Context, runID string, file []byte)
 		s.Error(err, "uploading lock file", "id", runID, "subject", subject)
 		return err
 	}
-	s.V(2).Info("uploaded lock file", "id", runID)
+	s.V(1).Info("uploaded lock file", "id", runID)
 
 	// cache lock file before returning
 	if err := s.cache.Set(lockFileCacheKey(runID), file); err != nil {

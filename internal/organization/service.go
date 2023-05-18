@@ -122,7 +122,7 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved organization", "name", name, "subject", subject)
+	s.V(9).Info("retrieved organization", "name", name, "subject", subject)
 
 	return org, nil
 }
