@@ -620,7 +620,7 @@ a.show-underline {
 
 /* container for confirm/discard buttons at bottom of run page,
  * visible only when run is in planned state */
-#run-confirm-container {
+#run-actions-container {
   display: flex;
   gap: 1em;
   margin-bottom: 3em;

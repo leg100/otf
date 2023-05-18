@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,9 +16,7 @@ func TestStartRunUI(t *testing.T) {
 
 	user, ctx := svc.createUserCtx(t, ctx)
 	ws := svc.createWorkspace(t, ctx, nil)
-	cv := svc.createConfigurationVersion(t, ctx, ws)
-	tarball := testutils.ReadFile(t, "./testdata/root.tar.gz")
-	svc.UploadConfig(ctx, cv.ID, tarball)
+	_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 	// now we have a config version, start a run with the plan-and-apply
 	// strategy

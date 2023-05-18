@@ -42,6 +42,10 @@ func createBrowserCtx(t *testing.T) context.Context {
 	return ctx
 }
 
+func runURL(hostname, runID string) string {
+	return "https://" + hostname + "/app/runs/" + runID
+}
+
 func workspaceURL(hostname, org, name string) string {
 	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
 }

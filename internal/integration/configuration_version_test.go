@@ -28,7 +28,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 	t.Run("upload config", func(t *testing.T) {
 		svc := setup(t, nil)
-		cv := svc.createConfigurationVersion(t, ctx, nil)
+		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 		tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
 		require.NoError(t, err)
 
@@ -49,7 +49,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 	t.Run("get", func(t *testing.T) {
 		svc := setup(t, nil)
-		want := svc.createConfigurationVersion(t, ctx, nil)
+		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		got, err := svc.GetConfigurationVersion(ctx, want.ID)
 		require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 	t.Run("get latest", func(t *testing.T) {
 		svc := setup(t, nil)
-		want := svc.createConfigurationVersion(t, ctx, nil)
+		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		got, err := svc.GetLatestConfigurationVersion(ctx, want.WorkspaceID)
 		require.NoError(t, err)
@@ -68,8 +68,8 @@ func TestConfigurationVersion(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		svc := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
-		cv1 := svc.createConfigurationVersion(t, ctx, ws)
-		cv2 := svc.createConfigurationVersion(t, ctx, ws)
+		cv1 := svc.createConfigurationVersion(t, ctx, ws, nil)
+		cv2 := svc.createConfigurationVersion(t, ctx, ws, nil)
 
 		tests := []struct {
 			name        string
