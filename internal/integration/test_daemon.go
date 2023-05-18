@@ -240,20 +240,23 @@ func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string
 	return team
 }
 
-func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
+func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
 	t.Helper()
 
 	if ws == nil {
 		ws = s.createWorkspace(t, ctx, nil)
 	}
+	if opts == nil {
+		opts = &configversion.ConfigurationVersionCreateOptions{}
+	}
 
-	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, *opts)
 	require.NoError(t, err)
 	return cv
 }
 
-func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
-	cv := s.createConfigurationVersion(t, ctx, ws)
+func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
+	cv := s.createConfigurationVersion(t, ctx, ws, opts)
 	tarball, err := os.ReadFile("./testdata/root.tar.gz")
 	require.NoError(t, err)
 	s.UploadConfig(ctx, cv.ID, tarball)
@@ -267,7 +270,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 	if cv == nil {
-		cv = s.createConfigurationVersion(t, ctx, ws)
+		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
 
 	run, err := s.CreateRun(ctx, ws.ID, run.RunCreateOptions{

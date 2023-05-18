@@ -20,11 +20,9 @@ func TestCompleteRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	sub, err := svc.Subscribe(ctx, "")
-	require.NoError(t, err)
-
+	sub := svc.createSubscriber(t, ctx)
 	ws := svc.createWorkspace(t, ctx, nil)
-	cv := svc.createAndUploadConfigurationVersion(t, ctx, ws)
+	cv := svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 	_ = svc.createRun(t, ctx, ws, cv)
 
@@ -34,7 +32,7 @@ func TestCompleteRun(t *testing.T) {
 			case internal.RunErrored:
 				t.Fatal("run unexpectedly errored")
 			case internal.RunPlanned:
-				err = svc.Apply(ctx, r.ID)
+				err := svc.Apply(ctx, r.ID)
 				require.NoError(t, err)
 			case internal.RunApplied:
 				return // success

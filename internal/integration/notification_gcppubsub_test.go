@@ -56,7 +56,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws)
+	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	run := daemon.createRun(t, ctx, ws, cv)
 
 	// gcp-pubsub messages are not necessarily received in the same order as

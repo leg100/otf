@@ -48,6 +48,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
@@ -241,6 +242,23 @@ func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
+func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := h.svc.RetryRun(r.Context(), runID)
+	if err != nil {
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+}
+
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
@@ -319,6 +337,11 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				h.Error(err, "rendering apply status template")
 				continue
 			}
+			runActionsHTML := new(bytes.Buffer)
+			if err := h.RenderTemplate("run_actions.tmpl", runActionsHTML, run); err != nil {
+				h.Error(err, "rendering run actions template")
+				continue
+			}
 			js, err := json.Marshal(struct {
 				ID              string             `json:"id"`
 				RunStatus       internal.RunStatus `json:"run-status"`
@@ -326,6 +349,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				RunStatusHTML   string             `json:"run-status-html"`
 				PlanStatusHTML  string             `json:"plan-status-html"`
 				ApplyStatusHTML string             `json:"apply-status-html"`
+				RunActionsHTML  string             `json:"run-actions-html"`
 			}{
 				ID:              run.ID,
 				RunStatus:       run.Status,
@@ -333,6 +357,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				RunStatusHTML:   runStatusHTML.String(),
 				PlanStatusHTML:  planStatusHTML.String(),
 				ApplyStatusHTML: applyStatusHTML.String(),
+				RunActionsHTML:  runActionsHTML.String(),
 			})
 			if err != nil {
 				h.Error(err, "marshalling watched run", "run", run.ID)

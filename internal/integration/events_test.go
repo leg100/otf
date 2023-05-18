@@ -19,7 +19,7 @@ func TestIntegration_Events(t *testing.T) {
 
 	org := daemon.createOrganization(t, ctx)
 	ws := daemon.createWorkspace(t, ctx, org)
-	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws)
+	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	run := daemon.createRun(t, ctx, ws, cv)
 
 	assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)

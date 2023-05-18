@@ -44,6 +44,10 @@ func CancelRun(run string) string {
 	return fmt.Sprintf("/app/runs/%s/cancel", run)
 }
 
+func RetryRun(run string) string {
+	return fmt.Sprintf("/app/runs/%s/retry", run)
+}
+
 func TailRun(run string) string {
 	return fmt.Sprintf("/app/runs/%s/tail", run)
 }

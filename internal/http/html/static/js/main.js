@@ -125,19 +125,14 @@ function watchRunUpdates(path, stream, run) {
         const applyStatus = document.getElementById('apply-status');
         applyStatus.outerHTML = obj['apply-status-html']
 
-        // show confirm/discard buttons when in planned state; hide them
-        // when in any other state
-        var actions = document.getElementById('run-confirm-container');
-        if (obj['run-status'] == 'planned') {
-            actions.style.display = 'flex';
-            // if user is at/near very bottom of page then scroll down to
-            // bring buttons into view.
-            atBottom = (Math.floor(window.scrollY) + window.innerHeight) >= (document.body.scrollHeight - 100);
-            if (atBottom) {
-                document.body.scrollIntoView(false);
-            }
-        } else {
-            actions.style.display = 'none';
+        const runActions = document.getElementById('run-actions-container');
+        runActions.innerHTML = obj['run-actions-html']
+
+        // if user is at/near very bottom of page then scroll down to
+        // bring any new content beneath the viewport into view.
+        atBottom = (Math.floor(window.scrollY) + window.innerHeight) >= (document.body.scrollHeight - 100);
+        if (atBottom) {
+            document.body.scrollIntoView(false);
         }
     });
 }
