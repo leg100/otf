@@ -75,7 +75,7 @@ func matchRegex(t *testing.T, selector, regex string) chromedp.ActionFunc {
 
 // screenshot takes a screenshot of a browser and saves it to disk, using the
 // test name and a counter to uniquely name the file.
-func screenshot(t *testing.T) chromedp.ActionFunc {
+func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 	return func(ctx context.Context) error {
 		screenshotMutex.Lock()
 		defer screenshotMutex.Unlock()
@@ -109,6 +109,18 @@ func screenshot(t *testing.T) chromedp.ActionFunc {
 		err = os.WriteFile(fname, image, 0o644)
 		if err != nil {
 			return err
+		}
+		// optionally save image in the docs directory too
+		if len(docPath) > 0 {
+			fname := path.Join("..", "..", "docs", "images", docPath[0]+".png")
+			err = os.MkdirAll(filepath.Dir(fname), 0o755)
+			if err != nil {
+				return err
+			}
+			err = os.WriteFile(fname, image, 0o644)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}

@@ -55,10 +55,10 @@ func TestTerraformLogin(t *testing.T) {
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		// navigate to auth url captured from terraform login output
 		chromedp.Navigate(strings.TrimSpace(u)),
-		screenshot(t),
+		screenshot(t, "terraform_login_consent"),
 		// give consent
 		chromedp.Click(`//button[text()='Accept']`, chromedp.NodeVisible),
-		screenshot(t),
+		screenshot(t, "terraform_login_flow_complete"),
 		matchText(t, "//body/p", "The login server has returned an authentication code to Terraform."),
 	})
 	require.NoError(t, err)

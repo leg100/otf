@@ -121,7 +121,7 @@ func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *orga
 	t.Helper()
 
 	org, err := s.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
-		Name: internal.String(uuid.NewString()),
+		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
 	return org
@@ -135,7 +135,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	}
 
 	ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
-		Name:         internal.String(uuid.NewString()),
+		Name:         internal.String("workspace-" + internal.GenerateRandomString(4)),
 		Organization: &org.Name,
 	})
 	require.NoError(t, err)
@@ -188,7 +188,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
 	t.Helper()
 
-	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
+	user, err := s.CreateUser(ctx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
@@ -196,8 +196,7 @@ func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.
 func (s *testDaemon) createUserCtx(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) (*auth.User, context.Context) {
 	t.Helper()
 
-	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
-	require.NoError(t, err)
+	user := s.createUser(t, ctx, opts...)
 	return user, internal.AddSubjectToContext(ctx, user)
 }
 
@@ -225,7 +224,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 	}
 
 	team, err := s.CreateTeam(ctx, auth.CreateTeamOptions{
-		Name:         uuid.NewString(),
+		Name:         "team-" + internal.GenerateRandomString(4),
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
@@ -288,8 +287,8 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 	}
 
 	v, err := s.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      internal.String(uuid.NewString()),
-		Value:    internal.String(uuid.NewString()),
+		Key:      internal.String("key-" + internal.GenerateRandomString(4)),
+		Value:    internal.String("val-" + internal.GenerateRandomString(4)),
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
