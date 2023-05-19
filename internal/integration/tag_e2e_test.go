@@ -94,7 +94,7 @@ resource "null_resource" "tags_e2e" {}
 		screenshot(t),
 		matchText(t, ".flash-success", "created tag: baz"),
 		// go to workspace listing
-		chromedp.Click(`//div[@class='container-header-title']//a[text()='workspaces']`, chromedp.NodeVisible),
+		chromedp.Click(`//div[@class='content-header-title']//a[text()='workspaces']`, chromedp.NodeVisible),
 		screenshot(t),
 		// filter by tag foo
 		chromedp.Click(`//label[@for='workspace-tag-filter-foo']`, chromedp.NodeVisible),

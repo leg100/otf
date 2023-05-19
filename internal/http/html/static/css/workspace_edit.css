@@ -1,0 +1,50 @@
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  padding-top: 1em;
+  border-top: 1px solid var(--faint-grey);
+}
+
+#permissions-owners {
+  color: grey;
+}
+
+.settings-container table {
+  text-align: left;
+  font-size: 0.9em;
+  border-collapse: collapse;
+  letter-spacing: 1px;
+}
+
+.settings-container thead {
+  background-color: var(--faint-grey);
+  border-top: 1px solid #bac1cc;
+  border-bottom: 1px solid #bac1cc;
+}
+
+.settings-container td, th {
+  padding: 10px;
+}
+
+.settings-container tbody tr {
+  border-bottom: 1px solid #dce0e6;
+}
+
+.permissions-add-role-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+/* workspace-tag-settings-list is the list of tags on the
+ * workspace settings page */
+.workspace-tag-settings-list {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.workspace-tag-settings-list form {
+  line-height: 1em;
+}

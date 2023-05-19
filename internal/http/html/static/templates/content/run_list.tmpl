@@ -1,6 +1,6 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}
+{{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
   <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
@@ -8,7 +8,7 @@
   runs
 {{ end }}
 
-{{ define "container-header-links" }}
+{{ define "content-header-links" }}
   {{ template "workspace-header-links" . }}
 {{ end }}
 

@@ -1,0 +1,23 @@
+/*
+ * Override terminal-to-html's css
+ */
+.term-container {
+  font-family: var(--alt-font);
+  font-size: 0.9em;
+  line-height: 19px;
+}
+
+/*
+ * terminal-to-html strangely disables bold because it looks "wierd"
+ */
+.term-fg1 {
+  font-weight: bold;
+}
+
+/* container for confirm/discard buttons at bottom of run page,
+ * visible only when run is in planned state */
+#run-actions-container {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 3em;
+}

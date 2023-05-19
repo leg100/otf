@@ -1,10 +1,15 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}
+{{ define "pre-content" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_get.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
+{{ end }}
+
+{{ define "content-header-title" }}
   <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
 {{ end }}
 
-{{ define "container-header-links" }}
+{{ define "content-header-links" }}
   {{ template "workspace-header-links" . }}
 {{ end }}
 
@@ -37,7 +42,7 @@
           </select>
         </form>
       </div>
-      <div class="terraform-version-container"><h5>Terraform Version</h5><a href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
+      <div class="terraform-version-container"><h5>Terraform Version</h5><a class="show-underline" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
       <div class="workspace-lock-container">
         <h5>Locking</h5>
         {{ with .LockButton }}
@@ -52,7 +57,7 @@
         <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
       <div>
-        <h5>Tags <a id="tags-add-remove-link" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
+        <h5>Tags <a id="tags-add-remove-link" class="show-underline" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
         <div class="workspace-tags-list">
         {{ range .Workspace.Tags }}
           <span class="workspace-tag">{{ . }}</span>

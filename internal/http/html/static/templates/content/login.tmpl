@@ -1,5 +1,9 @@
 {{ template "layout" . }}
 
+{{ define "pre-content" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/login.css" }}">
+{{ end }}
+
 {{ define "container" }}
   {{ template "flash" . }}
   <div class="center">

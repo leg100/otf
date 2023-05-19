@@ -161,116 +161,6 @@ header nav {
   font-weight: 700;
 }
 
-/*
- * Workspace settings
- */
-
-.settings-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8em;
-  padding-top: 1em;
-  border-top: 1px solid var(--faint-grey);
-}
-
-.settings-container .container-header-title {
-  font-size: 1.2em;
-  font-weight: bolder;
-}
-
-.permissions-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-}
-
-#permissions-owners {
-  color: grey;
-}
-
-.settings-container table {
-  text-align: left;
-  font-size: 0.9em;
-  border-collapse: collapse;
-  letter-spacing: 1px;
-}
-
-.settings-container thead {
-  background-color: var(--faint-grey);
-  border-top: 1px solid #bac1cc;
-  border-bottom: 1px solid #bac1cc;
-}
-
-.settings-container td, th {
-  padding: 10px;
-}
-
-.settings-container tbody tr {
-  border-bottom: 1px solid #dce0e6;
-}
-
-.permissions-add-role-container {
-  display: flex;
-  flex-direction: row;
-  gap: 1em;
-}
-
-.workspace-tag {
-  background: #2f35ab;
-  color: white;
-  padding: 0.2em;
-  font-size: 0.9em;
-  font-weight: 700;
-}
-
-/* list of tags on the main workspace page */
-.workspace-tags-list {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.3em;
-}
-
-/* workspace-tag-settings-list is the list of tags on the
- * workspace settings page */
-.workspace-tag-settings-list {
-  display: flex;
-  flex-direction: row;
-  gap: 1em;
-}
-
-.workspace-tag-settings-list form {
-  line-height: 1em;
-}
-
-/*
- * Variables table
- */
-table.variables {
-  text-align: left;
-  font-size: 0.9em;
-  border-collapse: collapse;
-}
-
-table.variables thead {
-  background-color: var(--faint-grey);
-  border-top: 1px solid #bac1cc;
-  border-bottom: 1px solid #bac1cc;
-}
-
-table.variables td, th {
-  padding: 10px;
-}
-
-/* Push delete button to far right of table row */
-table.variables td:last-child {
-  text-align: right;
-}
-
-table.variables tbody tr {
-  border-bottom: 1px solid #dce0e6;
-}
-
 .horizontal-form {
   display: flex;
   flex-direction: row;
@@ -292,6 +182,7 @@ a:hover {
 /* Restore underline to links. Useful in prose in order to differentiate links */
 a.show-underline {
   text-decoration: underline;
+  color: blue;
 }
 
 /* the identifier for a resource; de-emphasised because it's not
@@ -330,12 +221,17 @@ a.show-underline {
   border-bottom: 1px solid #edeaea;
 }
 
-.container-header-title {
-  font-size: 1.5em;
+.content-header-title {
+  font-size: 1.3em;
   display: flex;
 }
 
-.container-header-links {
+.content-header-title a {
+  text-decoration: underline;
+  color: blue;
+}
+
+.content-header-links {
   /* Links take up remainder of header after title */
   flex-grow: 1;
 
@@ -350,7 +246,7 @@ a.show-underline {
   justify-content: flex-end;
 }
 
-.container-header-links .active {
+.content-header-links .active {
   text-decoration: underline;
 }
 
@@ -378,24 +274,6 @@ a.show-underline {
   border-bottom: 1px solid #edeaea;
 }
 
-.login-buttons-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-}
-
-.login-buttons-container > a {
-  padding: 1em;
-	border-style: solid;
-	border-width: 1px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5em;
-}
-
-
 /* Flash alert message box */
 .flash {
   background: #ddf4ff;
@@ -419,56 +297,6 @@ a.show-underline {
 .flash-success {
   background: #dafbe1;
   border-color: rgba(74, 194, 107, 0.4);
-}
-
-/*
- * Override terminal-to-html's css
- */
-.term-container {
-  font-family: var(--alt-font);
-  font-size: 0.9em;
-  line-height: 19px;
-}
-
-/*
- * terminal-to-html strangely disables bold because it looks "wierd"
- */
-.term-fg1 {
-  font-weight: bold;
-}
-
-/* Workspace information at the top of the workspace page */
-.workspace-info {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5em;
-}
-
-/* shift last child in workspace info container to the far right,
- * as long as it is not the only child */
-.workspace-info :last-child:not(:first-child) {
-  margin-left: auto;
-}
-
-/* Workspace lock status and toggle button */
-.workspace-lock {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
-  padding: 0.5em;
-}
-
-.workspace-lock-status-locked {
-  background: #ffd7b6;
-}
-
-.workspace-lock-status-unlocked {
-  background: #d4fdd4;
-}
-
-.workspace-lock-info {
-  font-size: 0.9em;
 }
 
 /* color-coded run status field */
@@ -560,34 +388,6 @@ a.show-underline {
   font-size: 1.2em;
 }
 
-/* two-column is a two column layout for the main content, using flex-box. */
-.two-column {
-  display: flex;
-  gap: 2em;
-  flex-direction: row;
-}
-
-.two-column-main-column {
-  flex-grow: 1;
-}
-
-.two-column-side-column {
-  flex-basis: 13em;
-
-  display: flex;
-  gap: 0.7em;
-  flex-direction: column;
-}
-
-.two-column-side-column > * {
-  padding: 0.5em;
-  background: #f6f6f6;
-}
-
-.two-column-side-column h5 {
-  margin-block-start: 0em;
-}
-
 /* data is a nugget of factual information, e.g. terraform version */
 .data {
   font-family: var(--alt-font);
@@ -611,14 +411,6 @@ a.show-underline {
 
 .red {
   color: red;
-}
-
-/* container for confirm/discard buttons at bottom of run page,
- * visible only when run is in planned state */
-#run-actions-container {
-  display: flex;
-  gap: 1em;
-  margin-bottom: 3em;
 }
 
 .new-module-tabs {

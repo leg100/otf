@@ -1,0 +1,14 @@
+.workspace-tag {
+  background: #2f35ab;
+  color: white;
+  padding: 0.2em;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.workspace-tags-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
