@@ -189,7 +189,9 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "filter by prefix",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), Prefix: ws1.Name[:5]},
+				// test workspaces are named `workspace-<random 6 alphanumerals>`, so prefix with 14
+				// characters to be pretty damn sure only ws1 is selected.
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), Prefix: ws1.Name[:14]},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
