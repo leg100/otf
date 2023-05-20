@@ -5,7 +5,7 @@ You can configure OTF to sign users in using [OpenID-Connect](https://openid.net
 Create an Application for OTF in your preferred IdP.
 
 * Set the name to something appropriate, e.g. `otf`
-* Select the scopes `openid`, `profile`, and `groups`
+* Select required scopes `openid`, `profile`, and `groups`
 * Add the following `redirect uri` to the application:
 
     `https://<otfd_install_hostname>/oauth/<oidc_name>/callback`
