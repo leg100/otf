@@ -107,7 +107,7 @@ output "foo" {
 			// update value
 			chromedp.Focus("textarea#value", chromedp.NodeVisible),
 			input.InsertText("topsecret"),
-			screenshot(t),
+			screenshot(t, "variables_entering_top_secret"),
 			// submit form
 			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
 			screenshot(t),

@@ -32,7 +32,7 @@ func TestStartRunUI(t *testing.T) {
 	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
-		screenshot(t),
+		screenshot(t, "workspace_page"),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
