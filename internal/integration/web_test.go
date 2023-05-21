@@ -47,7 +47,7 @@ func TestWeb(t *testing.T) {
 			chromedp.Click("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
 			// submit form
 			chromedp.Submit("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
-			screenshot(t),
+			screenshot(t, "team_permissions_added_workspace_manager"),
 			// confirm permissions updated
 			matchText(t, ".flash-success", "team permissions updated"),
 		},
