@@ -79,9 +79,9 @@ terraform plan
 
 After you've invoked `terraform plan`, you'll see the plan output along with a link. Click on the link to the run to view the status and logs:
 
-<div style="margin: 2em auto;">
-    <img src="./docs/images/run_page_planned_and_finished_state.png"/>
-</div>
+<p>
+    <img src="./docs/images/run_page_planned_and_finished_state.png" width="600px" />
+</p>
 
 You can optionally run `terraform apply` to apply the changes:
 
