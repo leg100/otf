@@ -1,6 +1,11 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}
+{{ define "pre-content" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_edit.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
+{{ end }}
+
+{{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
   <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
@@ -8,7 +13,7 @@
   settings
 {{ end }}
 
-{{ define "container-header-links" }}
+{{ define "content-header-links" }}
   {{ template "workspace-header-links" . }}
 {{ end }}
 

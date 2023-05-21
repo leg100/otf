@@ -1,8 +1,12 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}workspaces{{ end }}
+{{ define "pre-content" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
+{{ end }}
 
-{{ define "container-header-actions" }}
+{{ define "content-header-title" }}workspaces{{ end }}
+
+{{ define "content-header-actions" }}
   {{ $canCreate := $.CurrentUser.CanAccessOrganization .CreateWorkspaceAction .Organization }}
   <form action="{{ newWorkspacePath .Organization }}" method="GET">
     <button id="new-workspace-button" type="submit" {{ insufficient $canCreate }}>

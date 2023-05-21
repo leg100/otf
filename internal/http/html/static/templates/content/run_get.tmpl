@@ -1,10 +1,11 @@
 {{ template "layout" . }}
 
-{{ define "stylesheet" }}
+{{ define "pre-content" }}
   <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/run_get.css" }}">
 {{ end }}
 
-{{ define "container-header" }}
+{{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
   <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
