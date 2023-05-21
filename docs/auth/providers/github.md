@@ -30,5 +30,7 @@ otfd --github-hostname=<hostname>
 
 Now when you start `otfd`, navigate to its URL in your browser and you'll be prompted to login with Github.
 
+![github login button](../../images/github_login_button.png){.screenshot}
+
 !!! note
     In previous versions of OTF, Github organizations and teams were synchronised to OTF. This functionality was removed as it was deemed a security risk.

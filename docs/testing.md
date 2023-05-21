@@ -93,6 +93,11 @@ page and you want to know which page. To disable headless mode:
 export OTF_E2E_HEADLESS=false
 ```
 
+<figure markdown>
+![headless mode disabled](images/integration_tests_headless_mode_disabled.png){.screenshot}
+<figcaption>Integration tests with headless mode disabled</figcaption>
+</figure>
+
 #### Cache provider requests
 
 Terraform-based tests spawn `terraform`. These tests retrieve providers from
@@ -121,12 +126,19 @@ faster.
 
 ### API tests
 
-Tests from the [go-tfe](https://github.com/hashicorp/go-tfe) project are routinely run to ensure OTF correctly implements the documented Terraform Cloud API. However, OTF only implements a subset of the API endpoints, and there are some differences (e.g. an OTF organization has no email address where as a TFC organization does). Therefore a [fork](https://github.com/leg100/go-tfe) of the go-tfe repo is maintained, and a make task invokes a subset of the forked tests:
+Tests from the [go-tfe](https://github.com/hashicorp/go-tfe) project are routinely run to ensure OTF correctly implements the documented Terraform Cloud API. However, OTF only implements a subset of the API endpoints, and there are some differences (e.g. an OTF organization has no email address where as a TFC organization does). Therefore a [fork](https://github.com/leg100/go-tfe) of the go-tfe repo is maintained.
 
-* `make go-tfe-tests`
+The make task:
 
-The tests first require `otfd` to be running at `https://localhost:8833`, with a [site token](/config/flags#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.
+```
+make go-tfe-tests
+```
 
-A stack pre-configured with these settings can be started with docker compose:
+performs the following steps:
 
-* `docker compose up -d`
+* Starts a docker compose stack of `otfd`, postgres, and [squid](#cache-provider-requests)
+* Runs a subset of `go-tfe` tests using the **forked** repo
+* Runs a subset of `go-tfe` tests using the **upstream** repo
+
+!!! note
+    You can instead manually invoke API tests using the scripts in `./hack`. The tests first require `otfd` to be running at `https://localhost:8833`, with a [site token](/config/flags#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.

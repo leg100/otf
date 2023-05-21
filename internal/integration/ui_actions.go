@@ -15,6 +15,7 @@ import (
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/require"
@@ -75,8 +76,20 @@ func matchRegex(t *testing.T, selector, regex string) chromedp.ActionFunc {
 
 // screenshot takes a screenshot of a browser and saves it to disk, using the
 // test name and a counter to uniquely name the file.
-func screenshot(t *testing.T) chromedp.ActionFunc {
+func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 	return func(ctx context.Context) error {
+		// disable screenshots if headless mode is disabled - screenshots are
+		// most likely unnecessary if the developer is using headless mode to
+		// view the browser; and, depending on the developer's monitor, the
+		// viewport in the screenshots is different to that when headless mode
+		// is enabled, but we want the viewport to be consistent because
+		// screenshots are also used in the documentation!
+		if headless, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
+			if headless == "false" {
+				return nil
+			}
+		}
+
 		screenshotMutex.Lock()
 		defer screenshotMutex.Unlock()
 
@@ -110,6 +123,18 @@ func screenshot(t *testing.T) chromedp.ActionFunc {
 		if err != nil {
 			return err
 		}
+		// optionally save image in the docs directory too
+		if len(docPath) > 0 {
+			fname := path.Join("..", "..", "docs", "images", docPath[0]+".png")
+			err = os.MkdirAll(filepath.Dir(fname), 0o755)
+			if err != nil {
+				return err
+			}
+			err = os.WriteFile(fname, image, 0o644)
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 }
@@ -123,13 +148,25 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 		screenshot(t),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
-		screenshot(t),
+		chromedp.WaitReady(`body`),
 		// confirm builtin admin role for owners team
 		matchText(t, "#permissions-owners td:first-child", "owners"),
 		matchText(t, "#permissions-owners td:last-child", "admin"),
 		// assign role to team
 		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role, chromedp.BySearch),
 		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
+		// scroll to bottom so that permissions are visible in screenshot
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
+			if err != nil {
+				return err
+			}
+			if exp != nil {
+				return exp
+			}
+			return nil
+		}),
+		screenshot(t, "workspace_permissions"),
 		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
 		screenshot(t),
 		matchText(t, ".flash-success", "updated workspace permissions"),
@@ -140,13 +177,13 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 	return chromedp.Tasks{
 		// go to org
 		chromedp.Navigate(organizationURL(hostname, org)),
-		screenshot(t),
+		screenshot(t, "organization_main_menu"),
 		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
-		screenshot(t),
+		screenshot(t, "vcs_providers_list"),
 		// click 'New Github VCS Provider' button
 		chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
-		screenshot(t),
+		screenshot(t, "new_github_vcs_provider_form"),
 		// enter fake github token and name
 		chromedp.Focus("input#token", chromedp.NodeVisible),
 		input.InsertText("fake-github-personal-token"),
@@ -165,10 +202,10 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy
 	return []chromedp.Action{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
-		screenshot(t),
+		screenshot(t, "connected_workspace_main_page"),
 		// select strategy for run
 		chromedp.SetValue(`//select[@id="start-run-strategy"]`, strategy, chromedp.BySearch),
-		screenshot(t),
+		screenshot(t, "run_page_started"),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
@@ -180,7 +217,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
-		screenshot(t),
+		screenshot(t, "run_page_planned_state"),
 		// run widget should show discard button
 		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
 		screenshot(t),
@@ -202,16 +239,16 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Ta
 	return chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(workspaceURL(hostname, org, name)),
-		screenshot(t),
+		screenshot(t, "workspace_main_page"),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
-		screenshot(t),
+		screenshot(t, "workspace_settings"),
 		// click connect button
 		chromedp.Click(`//button[@id='list-workspace-vcs-providers-button']`, chromedp.NodeVisible),
-		screenshot(t),
+		screenshot(t, "workspace_vcs_providers_list"),
 		// select provider
 		chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),
-		screenshot(t),
+		screenshot(t, "workspace_vcs_repo_list"),
 		// connect to first repo in list (there should only be one)
 		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
 		screenshot(t),

@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/internal"
 )
 
 func NewTestRepo() string {
-	return uuid.NewString() + "/" + uuid.NewString()
+	return "repo-owner-" + internal.GenerateRandomString(4) + "/" + "repo-" + internal.GenerateRandomString(4)
 }
 
 func NewTestModuleRepo(provider, name string) string {

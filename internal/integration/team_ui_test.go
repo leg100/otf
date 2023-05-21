@@ -31,7 +31,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 			screenshot(t),
 			// go to owners team page
 			chromedp.Click(`//div[@class='content-list']//a[text()='owners']`, chromedp.NodeVisible),
-			screenshot(t),
+			screenshot(t, "owners_team_page"),
 			// select newbie as new team member
 			chromedp.SetValue(`//select[@id="select-add-member"]`, newbie.Username, chromedp.BySearch),
 			screenshot(t),
