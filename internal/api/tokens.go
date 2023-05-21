@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
@@ -62,8 +63,14 @@ func (a *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	a.writeResponse(w, r, &types.AgentToken{
+	b, err := jsonapi.Marshal(&types.AgentToken{
 		ID:           at.ID,
 		Organization: at.Organization,
 	})
+	if err != nil {
+		Error(w, err)
+		return
+	}
+	w.Header().Set("Content-type", mediaType)
+	w.Write(b)
 }

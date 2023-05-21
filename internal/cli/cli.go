@@ -33,7 +33,7 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 		Use:               "otf",
 		SilenceUsage:      true,
 		SilenceErrors:     true,
-		PersistentPreRunE: a.newClient(cfg),
+		PersistentPreRunE: a.newClient(&cfg),
 	}
 
 	cmd.PersistentFlags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")

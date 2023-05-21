@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	cloud.google.com/go/pubsub v1.30.1
-	github.com/DataDog/jsonapi v0.7.0
+	github.com/DataDog/jsonapi v0.8.0
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/allegro/bigcache v1.2.1
 	github.com/antchfx/htmlquery v1.3.0
@@ -132,5 +132,3 @@ require (
 //replace github.com/leg100/go-tfe => ../go-tfe
 
 replace github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad
-
-replace github.com/DataDog/jsonapi => github.com/leg100/jsonapi v1.0.3

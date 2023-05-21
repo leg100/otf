@@ -351,14 +351,18 @@ func checkResponseCode(r *http.Response) error {
 		return internal.ErrResourceNotFound
 	}
 	// Decode the error payload.
-	errPayload := []*jsonapi.Error{}
-	err := json.NewDecoder(r.Body).Decode(&errPayload)
-	if err != nil || len(errPayload) == 0 {
+	var payload struct {
+		Errors []*jsonapi.Error `json:"errors"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		return fmt.Errorf("unable to decode errors payload: %w", err)
+	}
+	if len(payload.Errors) == 0 {
 		return fmt.Errorf(r.Status)
 	}
 	// Parse and format the errors.
 	var errs []string
-	for _, e := range errPayload {
+	for _, e := range payload.Errors {
 		if e.Detail == "" {
 			errs = append(errs, e.Title)
 		} else {

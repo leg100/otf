@@ -12,11 +12,10 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cli"
-	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
-	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
@@ -375,21 +374,9 @@ func (s *testDaemon) createSubscriber(t *testing.T, ctx context.Context) <-chan 
 
 // startAgent starts an external agent, configuring it with the given
 // organization and configuring it to connect to the daemon.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.Config) {
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.ExternalConfig) {
 	t.Helper()
 
-	token := s.createAgentToken(t, ctx, organization)
-
-	clientCfg := otfhttp.NewConfig()
-	clientCfg.Address = s.Hostname()
-	clientCfg.Insecure = true // daemon uses self-signed cert
-	clientCfg.Token = string(token)
-	app, err := client.New(*clientCfg)
-	require.NoError(t, err)
-
-	cfg.External = true
-	cfg.Organization = &organization
-	//
 	// Configure logger; discard logs by default
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
@@ -400,7 +387,13 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 		logger = logr.Discard()
 	}
 
-	agent, err := agent.NewAgent(logger, app, cfg)
+	token := s.createAgentToken(t, ctx, organization)
+	cfg.HTTPConfig = http.NewConfig()
+	cfg.HTTPConfig.Token = string(token)
+	cfg.HTTPConfig.Address = s.Hostname()
+	cfg.HTTPConfig.Insecure = true // daemon uses self-signed cert
+
+	agent, err := agent.NewExternalAgent(ctx, logger, cfg)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)
