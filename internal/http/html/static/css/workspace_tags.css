@@ -12,3 +12,7 @@
   flex-wrap: wrap;
   gap: 0.3em;
 }
+
+#tags-add-remove-link {
+  font-weight: 500;
+}

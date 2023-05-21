@@ -185,19 +185,26 @@ a.show-underline {
   color: blue;
 }
 
-/* the identifier for a resource; de-emphasised because it's not
- * usually relevant to the user */
-.identifier {
-  font-family: var(--alt-font);
-  font-size: 0.8rem;
-  color: #5a5a5a;
-}
-
 /* the commit sha for a resource; de-emphasised because it's not
  * usually relevant to the user */
 .commit {
   font-family: var(--alt-font);
   font-size: 0.8rem;
+}
+
+/* the identifier for a resource; de-emphasised because it's not
+ * usually relevant to the user */
+.identifier .copyable-content {
+  font-family: var(--alt-font);
+  font-size: 0.8rem;
+  color: #5a5a5a;
+}
+
+/*
+ * Copy to clipboard functionality
+ */
+.clipboard-icon {
+  cursor: pointer;
 }
 
 /* notification to user that content has been copied to clipboard */
@@ -460,8 +467,12 @@ a.show-underline {
   display: none; /* hide checkbox */
 }
 
-#tags-add-remove-link {
-  font-weight: 500;
+/* credential within flash message */
+.flash-credential .copyable-content {
+  display: block;
+  white-space: pre-wrap;
+  font-family: var(--alt-font);
+  background: var(--faint-grey);
 }
 
 /* mobile-last */
