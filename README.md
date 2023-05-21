@@ -79,7 +79,7 @@ terraform plan
 
 After you've invoked `terraform plan`, you'll see the plan output along with a link. Click on the link to the run to view the status and logs:
 
-<p>
+<p align="center">
     <img src="./docs/images/run_page_planned_and_finished_state.png" width="600px" />
 </p>
 
