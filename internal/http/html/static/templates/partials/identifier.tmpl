@@ -1,8 +1,5 @@
 {{ define "identifier" }}
-  <div>
-    <a title="copy to clipboard" class="clipboard-copyable identifier">
-      {{ .ID }}
-      <img src="/static/images/clipboard_copy.svg">
-    </a>
-  </div>
+  <span class="identifier">
+    {{ template "copyable_content" .ID }}
+  </span>
 {{ end }}
