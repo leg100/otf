@@ -1,10 +1,11 @@
 # OIDC
 
-You can configure OTF to sign users in using [OpenID-Connect](https://openid.net/connect/) (OIDC). The OIDC authentication provider uses an upstream identity provider(idp) such as [Azure AD](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc), [Google](https://developers.google.com/identity/openid-connect/openid-connect), or [Dex](https://dexidp.io/).
+You can configure OTF to sign users in using [OpenID-Connect](https://openid.net/connect/) (OIDC). The OIDC authentication provider uses an upstream identity provider(IdP) such as [Azure AD](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-protocols-oidc), [Google](https://developers.google.com/identity/openid-connect/openid-connect), or [Dex](https://dexidp.io/).
 
-Create an Application for OTF in your preferred idp.
+Create an Application for OTF in your preferred IdP.
 
 * Set the name to something appropriate, e.g. `otf`
+* Select required scopes `openid`, `profile`, and `groups`
 * Add the following `redirect uri` to the application:
 
     `https://<otfd_install_hostname>/oauth/<oidc_name>/callback`
