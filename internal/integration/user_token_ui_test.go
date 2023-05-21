@@ -16,6 +16,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	svc := setup(t, nil)
 	user, userCtx := svc.createUserCtx(t, ctx)
 	browser := createBrowserCtx(t)
+	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, userCtx, svc.Hostname(), user.Username, svc.Secret),
 		// go to profile
@@ -33,7 +34,11 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		screenshot(t, "user_token_enter_description"),
 		chromedp.Click(`//button[text()='Create token']`, chromedp.NodeVisible),
 		screenshot(t, "user_token_created"),
-		matchRegex(t, ".flash-success", `Created token: .*`),
+		matchRegex(t, ".flash-success", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
+		// delete the token
+		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "Deleted token"),
 	})
 	require.NoError(t, err)
 }
