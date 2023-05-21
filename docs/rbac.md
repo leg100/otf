@@ -16,12 +16,19 @@ Permissions are assigned to teams on two levels: organizations and workspaces. O
 * Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.
 * Manage Registry: Allows members to publish and delete modules within the organization.
 
+![organization permissions](images/owners_team_page.png){.screenshot}
+
 Workspace permissions confer privileges on the workspace alone, and are based on the [fixed permission sets of TFC/TFE](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions#fixed-permission-sets):
 
 * Read
 * Plan
 * Write
 * Admin
+
+<figure markdown>
+![workspace permissions](images/workspace_permissions.png){.screenshot}
+<figcaption>Workspace permissions on workspace settings page</figcaption>
+</figure>
 
 See the [TFC/TFE documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions#fixed-permission-sets) for more information on the privileges each permission set confers.
 

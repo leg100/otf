@@ -18,8 +18,8 @@ func TestIntegration_OIDC(t *testing.T) {
 	cfg := config{
 		Config: daemon.Config{
 			OIDC: cloud.OIDCConfig{
-				Name:                "otf",
-				IssuerURL:           authenticator.NewOIDCIssuer(t, "bobby", "stub-client-id", "otf"),
+				Name:                "google",
+				IssuerURL:           authenticator.NewOIDCIssuer(t, "bobby", "stub-client-id", "google"),
 				ClientID:            "stub-client-id",
 				ClientSecret:        "stub-client-secret",
 				SkipTLSVerification: true,
@@ -33,9 +33,9 @@ func TestIntegration_OIDC(t *testing.T) {
 	err := chromedp.Run(browser, chromedp.Tasks{
 		// go to login page
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),
-		chromedp.WaitReady(`body`),
+		screenshot(t, "oidc_login_button"),
 		// login
-		chromedp.Click("a.login-button-otf", chromedp.NodeVisible),
+		chromedp.Click("a.login-button-google", chromedp.NodeVisible),
 		screenshot(t),
 		// check login confirmation message
 		matchText(t, ".content > p", "You are logged in as bobby"),
