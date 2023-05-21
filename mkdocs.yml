@@ -44,6 +44,8 @@ nav:
   - Introduction: index.md
   - install.md
   - quickstart.md
+  - Guides:
+    - tfc_migration.md
   - Authentication:
     - Identity Providers:
       - auth/providers/github.md
