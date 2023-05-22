@@ -277,7 +277,7 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	return items, err
 }
 
-const countWorkspacesSQL = `SELECT count(*)
+const countWorkspacesSQL = `SELECT count(distinct(w.workspace_id))
 FROM workspaces w
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
 WHERE w.name              LIKE $1 || '%'

@@ -93,7 +93,7 @@ OFFSET pggen.arg('offset')
 ;
 
 -- name: CountWorkspaces :one
-SELECT count(*)
+SELECT count(distinct(w.workspace_id))
 FROM workspaces w
 LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
 WHERE w.name              LIKE pggen.arg('prefix') || '%'

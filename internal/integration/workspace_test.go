@@ -172,6 +172,12 @@ func TestWorkspace(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
+		wsTagged, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
+			Organization: internal.String(org.Name),
+			Name:         internal.String("ws-tagged"),
+			Tags:         []workspace.TagSpec{{Name: "foo"}, {Name: "bar"}},
+		})
+		require.NoError(t, err)
 
 		tests := []struct {
 			name string
@@ -182,7 +188,7 @@ func TestWorkspace(t *testing.T) {
 				name: "filter by org",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
-					assert.Equal(t, 2, len(l.Items))
+					assert.Equal(t, 3, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
 				},
@@ -195,6 +201,14 @@ func TestWorkspace(t *testing.T) {
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
+				},
+			},
+			{
+				name: "filter by tag",
+				opts: workspace.ListOptions{Tags: []string{"foo", "bar"}},
+				want: func(t *testing.T, l *workspace.WorkspaceList) {
+					assert.Equal(t, 1, len(l.Items))
+					assert.Equal(t, wsTagged, l.Items[0])
 				},
 			},
 			{
@@ -216,13 +230,13 @@ func TestWorkspace(t *testing.T) {
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
-					// results are in descending order so we expect ws2 to be listed
+					// results are in descending order so we expect wsTagged to be listed
 					// first...unless - and this happens very occasionally - the
 					// updated_at time is equal down to nearest millisecond.
-					if !ws1.UpdatedAt.Equal(ws2.UpdatedAt) {
-						assert.Equal(t, ws2, l.Items[0])
+					if !ws2.UpdatedAt.Equal(wsTagged.UpdatedAt) {
+						assert.Equal(t, wsTagged, l.Items[0])
 					}
-					assert.Equal(t, 2, l.TotalCount())
+					assert.Equal(t, 3, l.TotalCount())
 				},
 			},
 			{
@@ -231,7 +245,7 @@ func TestWorkspace(t *testing.T) {
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
-					assert.Equal(t, 2, l.TotalCount())
+					assert.Equal(t, 3, l.TotalCount())
 				},
 			},
 		}
