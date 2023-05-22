@@ -231,10 +231,10 @@ a.show-underline {
 .content-header-title {
   font-size: 1.3em;
   display: flex;
+  font-smooth: always;
 }
 
 .content-header-title a {
-  text-decoration: underline;
   color: blue;
 }
 
@@ -309,7 +309,6 @@ a.show-underline {
 /* color-coded run status field */
 .status {
   font-size: 1.1rem;
-  font-weight: bolder;
   transition: all 800ms ease-in;
 }
 
