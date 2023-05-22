@@ -52,28 +52,28 @@ Enable developer mode: web templates are loaded from the filesystem upon every r
 * System: `otfd`
 * Default: ""
 
-Github OAuth Client ID. Set this flag along with [--github-client-secret](#-github-client-secret) to enable [Github authentication](/auth/providers/github).
+Github OAuth Client ID. Set this flag along with [--github-client-secret](#-github-client-secret) to enable [Github authentication](../../auth/providers/github).
 
 ## `--github-client-secret`
 
 * System: `otfd`
 * Default: ""
 
-Github OAuth client secret. Set this flag along with [--github-client-id](#-github-client-id) to enable [Github authentication](/auth/providers/github).
+Github OAuth client secret. Set this flag along with [--github-client-id](#-github-client-id) to enable [Github authentication](../../auth/providers/github).
 
 ## `--gitlab-client-id`
 
 * System: `otfd`
 * Default: ""
 
-Gitlab OAuth Client ID. Set this flag along with [--gitlab-client-secret](#-gitlab-client-secret) to enable [Gitlab authentication](/auth/providers/gitlab).
+Gitlab OAuth Client ID. Set this flag along with [--gitlab-client-secret](#-gitlab-client-secret) to enable [Gitlab authentication](../../auth/providers/gitlab).
 
 ## `--gitlab-client-secret`
 
 * System: `otfd`
 * Default: ""
 
-Gitlab OAuth client secret. Set this flag along with [--gitlab-client-id](#-gitlab-client-id) to enable [Gitlab authentication](/auth/providers/gitlab).
+Gitlab OAuth client secret. Set this flag along with [--gitlab-client-id](#-gitlab-client-id) to enable [Gitlab authentication](../../auth/providers/gitlab).
 
 ## `--google-jwt-audience`
 
@@ -81,7 +81,7 @@ Gitlab OAuth client secret. Set this flag along with [--gitlab-client-id](#-gitl
 * Default: ""
 
 The Google JWT audience claim for validation. If unspecified then the audience
-claim is not validated. See the [Google IAP](/auth/providers/iap#verification) document for more details.
+claim is not validated. See the [Google IAP](../../auth/providers/iap#verification) document for more details.
 
 ## `--hostname`
 
@@ -189,7 +189,7 @@ are no longer specified with this flag are demoted.
 * System: `otfd`
 * Default: ""
 
-The site token for authenticating with the [`site-admin`](/auth#site-admins) user, e.g.:
+The site token for authenticating with the [`site-admin`](../../auth/site_admin) user, e.g.:
 
 ```bash
 otfd --site-token=643f57a1016cdde7e7e39914785d36d61fd

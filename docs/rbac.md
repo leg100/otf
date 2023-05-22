@@ -36,5 +36,5 @@ See the [TFC/TFE documentation](https://developer.hashicorp.com/terraform/cloud-
 
 Site admins possesses supreme privileges across an OTF cluster. There are two ways to assume the role:
 
-* Use a [site token](/auth#site-admin-token) to login as the `site-admin` user
-* Promote users to the role using the [`--site-admins` flag](/config/flags#-site-admins)
+* Use a [site token](../config/flags/#-site-token) to login as the `site-admin` user
+* Promote users to the role using the [`--site-admins` flag](../config/flags/#-site-admins)

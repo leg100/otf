@@ -10,7 +10,7 @@ Ensure you have access to a postgres server. `otfd` by default assumes postgres 
 createdb otf
 ```
 
-At a minimum, `otfd` requires a [secret](/config/flags#-secret) and a means of authentication. For the purposes of this quickstart we'll use a [site token](/config/flags#-site-token):
+At a minimum, `otfd` requires a [secret](../config/flags/#-secret) and a means of authentication. For the purposes of this quickstart we'll use a [site token](../config/flags/#-site-token):
 
 ```bash
 > ./otfd --secret=6b07b57377755b07cf61709780ee7484 --site-token=my-token

@@ -40,7 +40,7 @@ Rails-style path helpers are generated using `go generate`. The path specificati
 
 ## Web development
 
-If you're making changes to web templates then you may want to enable [developer mode](/config/flags#-dev-mode). Once enabled you will be able to see the changes without restarting `otfd`: while `otfd` is running, you can make a change to a template and then reload the page in your browser and you should see the change.
+If you're making changes to web templates then you may want to enable [developer mode](../config/flags/#-dev-mode). Once enabled you will be able to see the changes without restarting `otfd`: while `otfd` is running, you can make a change to a template and then reload the page in your browser and you should see the change.
 
 To auto-reload the browser, check out the recommended [developer tooling](#developer-tooling).
 

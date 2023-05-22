@@ -12,7 +12,7 @@ Create an OAuth application for your Gitlab group by following their [step-by-st
     `https://<otfd_install_hostname>/oauth/gitlab/callback`
 
 !!! note
-    It is recommended that you first set the [`--hostname` flag](/config/flags#-hostname) to a hostname that is accessible by Gitlab, and that you use this hostname in the redirect URI above.
+    It is recommended that you first set the [`--hostname` flag](../../../config/flags/#-hostname) to a hostname that is accessible by Gitlab, and that you use this hostname in the redirect URI above.
 
 Once you've created the application, note the Application ID and Secret.
 

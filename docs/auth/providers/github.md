@@ -12,7 +12,7 @@ Create an OAuth application in Github by following their [step-by-step instructi
     `https://<otf_hostname>/oauth/github/callback`
 
 !!! note
-    It is recommended that you first set the [`--hostname` flag](/config/flags#-hostname) to a hostname that is accessible by Github, and that you use this hostname in the authorization callback URL above.
+    It is recommended that you first set the [`--hostname` flag](../../../config/flags/#-hostname) to a hostname that is accessible by Github, and that you use this hostname in the authorization callback URL above.
 
 Once you've registered the application, note the client ID and secret.
 
