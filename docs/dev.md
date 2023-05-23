@@ -46,11 +46,10 @@ To auto-reload the browser, check out the recommended [developer tooling](#devel
 
 ## Developer tooling
 
-Both [modd](https://github.com/cortesi/modd) and [devd](https://github.com/cortesi/devd) are recommended to automate development tasks:
+[modd](https://github.com/cortesi/modd) is recommended to automate development tasks:
 
 * Automatically restart `otfd` whenever changes are made to code.
-* Automatically reload the browser whenever changes are made to templates, CSS, etc.
 * Automatically generate Go code whenever SQL queries are updated.
 * Automatically generate path helpers whenever path specifications are updated.
 
-A `modd.conf` is included in the OTF repository. Once you've installed `devd` and `modd`, run `modd` in the root of the repository and it'll perform the above tasks.
+A `modd.conf` is included in the OTF repository. Once you've installed `modd`, run it from the root of the repository and it'll perform the above tasks.
