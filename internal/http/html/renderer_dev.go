@@ -2,6 +2,7 @@ package html
 
 import (
 	"io"
+	"net/http"
 )
 
 // devRenderer reads templates from disk. Intended for development purposes.
@@ -16,4 +17,8 @@ func (r *devRenderer) RenderTemplate(name string, w io.Writer, data any) error {
 	}
 
 	return renderTemplateFromCache(cache, name, w, data)
+}
+
+func (r *devRenderer) Error(w http.ResponseWriter, err string, code int) {
+	Error(w, err, code, true)
 }

@@ -31,7 +31,7 @@ func (a *web) new(w http.ResponseWriter, r *http.Request) {
 func (a *web) create(w http.ResponseWriter, r *http.Request) {
 	var opts OrganizationCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -42,7 +42,7 @@ func (a *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

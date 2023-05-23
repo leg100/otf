@@ -33,13 +33,13 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	users, err := h.svc.ListOrganizationUsers(r.Context(), name)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *webHandlers) listOrganizationUsers(w http.ResponseWriter, r *http.Reque
 func (h *webHandlers) profileHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.Render("profile.tmpl", w, struct {

@@ -26,7 +26,7 @@ func (h *webHandlers) addTeamHandlers(r *mux.Router) {
 func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -40,7 +40,7 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 	var opts CreateTeamOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -62,18 +62,18 @@ func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.Param("team_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.svc.GetTeamByID(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	members, err := h.svc.ListTeamMembers(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -82,14 +82,14 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	// retrieve the list.
 	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var users []*User
 	if subject.CanAccessSite(rbac.ListUsersAction) {
 		users, err = h.svc.ListUsers(r.Context())
 		if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
+			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -119,13 +119,13 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 		UpdateTeamOptions
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.svc.UpdateTeam(r.Context(), params.TeamID, params.UpdateTeamOptions)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -136,13 +136,13 @@ func (h *webHandlers) updateTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	teams, err := h.svc.ListTeams(r.Context(), org)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -162,18 +162,18 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := decode.Param("team_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	team, err := h.svc.GetTeamByID(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = h.svc.DeleteTeam(r.Context(), teamID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -184,12 +184,12 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params TeamMembershipOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := h.svc.AddTeamMembership(r.Context(), params); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -200,12 +200,12 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params TeamMembershipOptions
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := h.svc.RemoveTeamMembership(r.Context(), params); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

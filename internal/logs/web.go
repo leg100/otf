@@ -41,7 +41,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		Offset int `schema:"offset,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		html.Error(w, err.Error(), http.StatusUnprocessableEntity, false)
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *webHandlers) tailRun(w http.ResponseWriter, r *http.Request) {
 		Offset: params.Offset,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 

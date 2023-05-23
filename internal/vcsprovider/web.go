@@ -34,7 +34,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		Cloud        string `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		Cloud            string `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		Cloud:        params.Cloud,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "created provider: "+provider.Name)
@@ -77,13 +77,13 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	providers, err := h.svc.ListVCSProviders(r.Context(), org)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -101,13 +101,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("vcs_provider_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := h.svc.DeleteVCSProvider(r.Context(), id)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "deleted provider: "+provider.Name)

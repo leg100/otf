@@ -88,28 +88,28 @@ func (o oidcAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Reques
 	// Extract the ID Token from OAuth2 token.
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		html.Error(w, "id_token missing", http.StatusInternalServerError)
+		html.Error(w, "id_token missing", http.StatusInternalServerError, false)
 		return
 	}
 
 	// Parse and verify ID Token payload.
 	idt, err := o.verifier.Verify(r.Context(), rawIDToken)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
 	// Extract custom claims
 	var claims oidcClaims
 	if err := idt.Claims(&claims); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
 	// Get claims user
 	user, err := o.getUserFromClaims(claims)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (o oidcAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Reques
 		Username: &user.Name,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 }

@@ -30,17 +30,20 @@ type (
 		templateRenderer
 	}
 
-	renderer struct {
-		templateRenderer
-	}
-
 	// pageRenderer renders an html page using the named template.
 	pageRenderer interface {
 		Render(name string, w http.ResponseWriter, page any)
 	}
-	// renderer locates and renders a template.
+
+	// templateRenderer locates and renders a template (a lower-level
+	// alternative to pageRenderer for rendering partial content).
 	templateRenderer interface {
 		RenderTemplate(name string, w io.Writer, data any) error
+		Error(w http.ResponseWriter, err string, code int)
+	}
+
+	renderer struct {
+		templateRenderer
 	}
 )
 
@@ -66,7 +69,7 @@ func (r *renderer) Render(name string, w http.ResponseWriter, page any) {
 	// purge flash messages from cookie store prior to rendering template
 	purgeFlashes(w)
 	if err := r.RenderTemplate(name, w, page); err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		r.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

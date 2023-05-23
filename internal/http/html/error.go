@@ -12,6 +12,7 @@ const errorTemplateContent = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>error | otf</title>
+  {{ if .DevMode }}<script src="http://localhost:35729/livereload.js"></script>{{ end }}
   <style>
   pre {
   	margin: auto;
@@ -25,15 +26,21 @@ const errorTemplateContent = `
   </style>
 </head>
 <body>
-  <pre>{{ . }}</pre>
+  <pre>{{ .Error }}</pre>
 </body>
 </html>
 `
 
 var errorTemplate = template.Must(template.New("error").Parse(errorTemplateContent))
 
-func Error(w http.ResponseWriter, err string, code int) {
+func Error(w http.ResponseWriter, err string, code int, devMode bool) {
 	w.WriteHeader(code)
 
-	errorTemplate.Execute(w, err)
+	errorTemplate.Execute(w, struct {
+		Error   string
+		DevMode bool
+	}{
+		Error:   err,
+		DevMode: devMode,
+	})
 }
