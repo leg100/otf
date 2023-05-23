@@ -118,16 +118,16 @@ function watchRunUpdates(path, stream, run) {
         const obj = JSON.parse(e.data);
 
         const runItem = document.getElementById(obj.id);
-        runItem.outerHTML = obj['run-item-html']
+        runItem.outerHTML = obj['run-item-html'];
 
         const planStatus = document.getElementById('plan-status');
-        planStatus.outerHTML = obj['plan-status-html']
+        planStatus.outerHTML = obj['plan-status-html'];
 
         const applyStatus = document.getElementById('apply-status');
-        applyStatus.outerHTML = obj['apply-status-html']
+        applyStatus.outerHTML = obj['apply-status-html'];
 
         const runActions = document.getElementById('run-actions-container');
-        runActions.innerHTML = obj['run-actions-html']
+        runActions.innerHTML = obj['run-actions-html'];
 
         // if user is at/near very bottom of page then scroll down to
         // bring any new content beneath the viewport into view.
@@ -167,15 +167,4 @@ function watchRuns(path) {
         runElem.remove();
         listElem.insertAdjacentHTML("afterbegin", obj['run-item-html']);
     });
-}
-
-function getRunWidget(path) {
-  function insert(html) {
-    const latestRunElem = document.getElementById('latest-run');
-    latestRunElem.innerHTML = obj['run-item-html']
-  }
-
-  fetch(path)
-    .then((response) => response.text())
-    .then((html) => insert(html));
 }
