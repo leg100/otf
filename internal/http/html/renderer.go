@@ -89,7 +89,7 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 }
 
 // newTemplateCache populates a cache of templates.
-func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*template.Template, error) {
+func newTemplateCache(templates fs.FS, buster *cacheBuster, devMode bool) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
 	pages, err := fs.Glob(templates, contentTemplatesGlob)
@@ -101,15 +101,14 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs := sprig.HtmlFuncMap()
 	// func to append hash to asset links
 	funcs["addHash"] = buster.Path
-	// make version available to templates
 	funcs["version"] = func() string { return internal.Version }
-	// make version available to templates
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	funcs["mergeQuery"] = mergeQuery
 	funcs["selected"] = selected
 	funcs["checked"] = checked
 	funcs["disabled"] = disabled
 	funcs["insufficient"] = insufficient
+	funcs["devMode"] = func() bool { return devMode }
 	// make path helpers available to templates
 	for k, v := range paths.FuncMap() {
 		funcs[k] = v

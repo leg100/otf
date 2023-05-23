@@ -9,6 +9,9 @@
   <link rel="stylesheet" href="{{ addHash "/static/css/forms.css" }}">
   <link rel="icon" type="image/svg+xml" href="/static/images/icon.svg">
   <script src="{{ addHash "/static/js/main.js" }}"></script>
+  {{ if devMode }}
+    <script src="http://localhost:35729/livereload.js"></script>
+  {{ end }}
   <title>{{ .Title }} | otf</title>
 </head>
 <body>
