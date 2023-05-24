@@ -163,7 +163,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 // caller can use the transaction.
 func (db *pgdb) lockTags(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx internal.DB) error {
-		if _, err := tx.Exec(ctx, "LOCK tags"); err != nil {
+		if _, err := tx.Exec(ctx, "LOCK TABLE tags IN EXCLUSIVE MODE"); err != nil {
 			return err
 		}
 		return callback(&pgdb{tx})

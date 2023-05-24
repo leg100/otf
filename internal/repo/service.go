@@ -28,10 +28,11 @@ type (
 	service struct {
 		logr.Logger
 		vcsprovider.Service
-		internal.DB
+		db *pgdb
 
-		factory // produce new hooks
-		*handler
+		*handler      // handles incoming vcs events
+		factory       // produce new hooks
+		*synchroniser // synchronise hooks
 	}
 
 	Options struct {
@@ -48,17 +49,19 @@ type (
 
 func NewService(opts Options) *service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
+	db := newPGDB(opts.DB, factory)
 	handler := &handler{
 		Logger:    opts.Logger,
 		Publisher: opts.Publisher,
-		db:        newPGDB(opts.DB, factory),
+		db:        db,
 	}
 	return &service{
-		Logger:  opts.Logger,
-		Service: opts.VCSProviderService,
-		DB:      opts.DB,
-		factory: factory,
-		handler: handler,
+		Logger:       opts.Logger,
+		Service:      opts.VCSProviderService,
+		db:           db,
+		factory:      factory,
+		handler:      handler,
+		synchroniser: &synchroniser{Logger: opts.Logger},
 	}
 }
 
@@ -66,11 +69,11 @@ func NewService(opts Options) *service {
 func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving vcs client: %w", err)
 	}
 	_, err = client.GetRepository(ctx, opts.RepoPath)
 	if err != nil {
@@ -82,7 +85,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		cloud:      vcsProvider.CloudConfig.Name,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("constructing webhook: %w", err)
 	}
 
 	// allow caller to provide their own tx
@@ -90,7 +93,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 	if opts.Tx != nil {
 		db = newPGDB(opts.Tx, s.factory)
 	} else {
-		db = newPGDB(s.DB, s.factory)
+		db = s.db
 	}
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
@@ -98,17 +101,11 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 	err = db.lock(ctx, func(tx *pgdb) error {
 		hook, err = tx.getOrCreateHook(ctx, hook)
 		if err != nil {
-			return err
+			return fmt.Errorf("getting or creating webhook: %w", err)
 		}
-
-		if err := hook.sync(ctx, client); err != nil {
-			return err
+		if err := s.sync(ctx, tx, client, hook); err != nil {
+			return fmt.Errorf("synchronising webhook: %w", err)
 		}
-
-		if err := tx.updateHookCloudID(ctx, hook.id, *hook.cloudID); err != nil {
-			return err
-		}
-
 		return tx.createConnection(ctx, hook.id, opts)
 	})
 	if err != nil {
@@ -125,21 +122,17 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
 // fatal and the hook is still deleted from the database.
 func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	// separately capture any error resulting from attempting to delete the
-	// webhook from the VCS repo
-	var repoErr error
-
 	// allow caller to provide their own tx
 	var db *pgdb
 	if opts.Tx != nil {
 		db = newPGDB(opts.Tx, s.factory)
 	} else {
-		db = newPGDB(s.DB, s.factory)
+		db = s.db
 	}
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err := db.lock(ctx, func(tx *pgdb) error {
+	return db.lock(ctx, func(tx *pgdb) error {
 		hookID, vcsProviderID, err := tx.deleteConnection(ctx, opts)
 		if err != nil {
 			return err
@@ -168,15 +161,11 @@ func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error 
 			ID:   *hook.cloudID,
 		})
 		if err != nil {
+			// failure to delete webhook from cloud is not fatal
 			s.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
-			repoErr = fmt.Errorf("%w: unable to delete webhook from repo: %w", internal.ErrWarning, err)
 		} else {
 			s.V(0).Info("deleted webhook", "repo", hook.identifier, "cloud", hook.cloud)
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return repoErr
 }

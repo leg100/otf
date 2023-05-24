@@ -33,4 +33,9 @@ type (
 		ResourceID string      // ID of OTF resource
 		Tx         internal.DB // Optional tx for performing database ops within.
 	}
+
+	SynchroniseOptions struct {
+		VCSProviderID string // vcs provider of repo
+		RepoPath      string
+	}
 )

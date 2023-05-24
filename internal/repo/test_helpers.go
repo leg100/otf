@@ -13,6 +13,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type (
+	fakeCloudService struct {
+		event cloud.VCSEvent
+		cloud.Service
+	}
+	fakeCloud struct {
+		event cloud.VCSEvent
+
+		cloud.Cloud
+	}
+	fakeHostnameService struct {
+		hostname string
+
+		internal.HostnameService
+	}
+	fakeCloudClient struct {
+		hook      cloud.Webhook // seed cloud with hook
+		gotUpdate bool
+
+		cloud.Client
+	}
+	fakeDB struct {
+		hook *hook
+	}
+)
+
 func newTestHook(t *testing.T, f factory, cloudID *string) *hook {
 	want, err := f.newHook(newHookOpts{
 		id:         internal.UUID(uuid.New()),
@@ -49,39 +75,15 @@ func newTestDB(t *testing.T) *pgdb {
 	}
 }
 
-type fakeCloudService struct {
-	event cloud.VCSEvent
-	cloud.Service
-}
-
 func (f fakeCloudService) GetCloudConfig(string) (cloud.Config, error) {
 	return cloud.Config{Cloud: &fakeCloud{event: f.event}}, nil
-}
-
-type fakeCloud struct {
-	event cloud.VCSEvent
-
-	cloud.Cloud
 }
 
 func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.HandleEventOptions) cloud.VCSEvent {
 	return f.event
 }
 
-type fakeHostnameService struct {
-	hostname string
-
-	internal.HostnameService
-}
-
 func (f fakeHostnameService) Hostname() string { return f.hostname }
-
-type fakeCloudClient struct {
-	hook      cloud.Webhook // seed cloud with hook
-	gotUpdate bool
-
-	cloud.Client
-}
 
 func (f *fakeCloudClient) CreateWebhook(context.Context, cloud.CreateWebhookOptions) (string, error) {
 	return f.hook.ID, nil
@@ -94,8 +96,17 @@ func (f *fakeCloudClient) GetWebhook(ctx context.Context, opts cloud.GetWebhookO
 	return cloud.Webhook{}, internal.ErrResourceNotFound
 }
 
-func (f *fakeCloudClient) UpdateWebhook(context.Context, cloud.UpdateWebhookOptions) error {
+func (f *fakeCloudClient) UpdateWebhook(context.Context, string, cloud.UpdateWebhookOptions) error {
 	f.gotUpdate = true
 
+	return nil
+}
+
+func (f *fakeDB) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
+	return f.hook, nil
+}
+
+func (f *fakeDB) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
+	f.hook.cloudID = &cloudID
 	return nil
 }
