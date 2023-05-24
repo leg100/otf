@@ -27,7 +27,20 @@ SELECT *
 FROM webhooks
 WHERE webhook_id = pggen.arg('webhook_id');
 
--- name: FindWebhooksByRepo :many
+-- name: FindWebhookByIDForUpdate :one
+SELECT *
+FROM webhooks
+WHERE webhook_id = pggen.arg('webhook_id')
+FOR UPDATE;
+
+-- name: FindWebhookByRepoForUpdate :one
+SELECT *
+FROM webhooks
+WHERE identifier = pggen.arg('identifier')
+AND   cloud = pggen.arg('cloud')
+FOR UPDATE;
+
+-- name: FindWebhookByRepo :many
 SELECT *
 FROM webhooks
 WHERE identifier = pggen.arg('identifier')

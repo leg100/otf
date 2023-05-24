@@ -195,8 +195,8 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	return strconv.Itoa(hook.ID), nil
 }
 
-func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOptions) error {
-	id, err := strconv.Atoi(opts.ID)
+func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.UpdateWebhookOptions) error {
+	intID, err := strconv.Atoi(id)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOpti
 		}
 	}
 
-	_, _, err = g.client.Projects.EditProjectHook(opts.Repo, id, editOpts)
+	_, _, err = g.client.Projects.EditProjectHook(opts.Repo, intID, editOpts)
 	if err != nil {
 		return err
 	}

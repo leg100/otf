@@ -319,8 +319,7 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
-	// ignore warnings; the repo is still disconnected successfully
-	if err != nil && !errors.Is(err, internal.ErrWarning) {
+	if err != nil {
 		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return err
 	}

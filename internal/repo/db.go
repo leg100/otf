@@ -11,11 +11,20 @@ import (
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-// pgdb is the repo database on postgres
-type pgdb struct {
-	internal.DB
-	factory
-}
+type (
+	// pgdb is the repo database on postgres
+	pgdb struct {
+		internal.DB
+		factory
+	}
+	hookRow struct {
+		WebhookID  pgtype.UUID `json:"webhook_id"`
+		VCSID      pgtype.Text `json:"vcs_id"`
+		Secret     pgtype.Text `json:"secret"`
+		Identifier pgtype.Text `json:"identifier"`
+		Cloud      pgtype.Text `json:"cloud"`
+	}
+)
 
 func newPGDB(db internal.DB, f factory) *pgdb {
 	return &pgdb{db, f}
@@ -24,7 +33,7 @@ func newPGDB(db internal.DB, f factory) *pgdb {
 // getOrCreate gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *pgdb) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
-	result, err := db.FindWebhooksByRepo(ctx, sql.String(hook.identifier), sql.String(hook.cloud))
+	result, err := db.FindWebhookByRepo(ctx, sql.String(hook.identifier), sql.String(hook.cloud))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -54,6 +63,14 @@ func (db *pgdb) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) 
 
 func (db *pgdb) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 	result, err := db.FindWebhookByID(ctx, sql.UUID(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return db.unmarshal(hookRow(result))
+}
+
+func (db *pgdb) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
+	result, err := db.FindWebhookByIDForUpdate(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -122,23 +139,16 @@ func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
 	return db.unmarshal(hookRow(result))
 }
 
-// lock webhooks table within a transaction, providing a callback within which
-// caller can use the transaction.
+// lock webhooks table within a transaction, preventing anything else from
+// updating the table. Provides a callback within which caller can use the
+// transaction.
 func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
 	return db.Tx(ctx, func(tx internal.DB) error {
-		if _, err := tx.Exec(ctx, "LOCK webhooks"); err != nil {
+		if _, err := tx.Exec(ctx, "LOCK TABLE tags IN EXCLUSIVE MODE"); err != nil {
 			return err
 		}
 		return callback(newPGDB(tx, db.factory))
 	})
-}
-
-type hookRow struct {
-	WebhookID  pgtype.UUID `json:"webhook_id"`
-	VCSID      pgtype.Text `json:"vcs_id"`
-	Secret     pgtype.Text `json:"secret"`
-	Identifier pgtype.Text `json:"identifier"`
-	Cloud      pgtype.Text `json:"cloud"`
 }
 
 func (db *pgdb) unmarshal(row hookRow) (*hook, error) {
