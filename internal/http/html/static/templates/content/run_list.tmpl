@@ -8,20 +8,6 @@
   runs
 {{ end }}
 
-{{ define "content-header-links" }}
-  {{ template "workspace-header-links" . }}
-{{ end }}
+{{ define "content-header-links" }}{{ template "workspace-header-links" . }}{{ end }}
 
-{{ define "content" }}
-  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}">
-    <div hx-get="{{ .CurrentURL }}" hx-trigger="sse:created"></div>
-    {{ template "content-list" . }}
-  </div>
-{{ end }}
-
-{{ define "content-list-item" }}
-  <div>
-    {{ template "run-item" . }}
-  </div>
-{{ end }}
-
+{{ define "content" }}{{ template "run_listing" . }}{{ end }}

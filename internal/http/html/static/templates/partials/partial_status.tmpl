@@ -1,0 +1,5 @@
+{{ define "phase-status" }}
+  <span id="{{ .PhaseType }}-status" class="phase-status phase-status-{{ .Status }}" hx-swap-oob="true">
+    {{ .Status.String }}
+  </span>
+{{ end }}

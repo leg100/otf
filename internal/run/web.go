@@ -78,13 +78,22 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_list.tmpl", w, struct {
+	response := struct {
 		workspace.WorkspacePage
 		*RunList
 	}{
 		WorkspacePage: workspace.NewPage(r, "runs", ws),
 		RunList:       runs,
-	})
+	}
+
+	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
+		if err := h.RenderTemplate("run_listing.tmpl", w, response); err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		h.Render("run_list.tmpl", w, response)
+	}
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -316,52 +325,20 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//
-			// render HTML snippets and send as payloads in SSE events
+			// render HTML snippet and send as payload in SSE events
 			//
 			itemHTML := new(bytes.Buffer)
-			err := h.RenderTemplate("run_item.tmpl", itemHTML, struct {
-				*Run
-				EventType pubsub.EventType
-			}{
-				Run:       run,
-				EventType: event.Type,
-			})
-			if err != nil {
+			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
 				h.logger.Error(err, "rendering template for run item")
 				continue
 			}
-			pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "run-item", false)
-			pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
-			pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
-
-			runStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
-				h.logger.Error(err, "rendering run status template")
-				continue
+			if event.Type == pubsub.CreatedEvent {
+				// newly created run is sent with "created" event type
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
+			} else {
+				// updated run events target existing run items in page
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
 			}
-			pubsub.WriteSSEEvent(w, runStatusHTML.Bytes(), "run-status", false)
-
-			planStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan); err != nil {
-				h.logger.Error(err, "rendering plan status template")
-				continue
-			}
-			pubsub.WriteSSEEvent(w, planStatusHTML.Bytes(), "plan-status", false)
-
-			applyStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply); err != nil {
-				h.logger.Error(err, "rendering apply status template")
-				continue
-			}
-			pubsub.WriteSSEEvent(w, applyStatusHTML.Bytes(), "apply-status", false)
-
-			runActionsHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_actions.tmpl", runActionsHTML, run); err != nil {
-				h.logger.Error(err, "rendering run actions template")
-				continue
-			}
-			pubsub.WriteSSEEvent(w, runActionsHTML.Bytes(), "run-actions", false)
-
 			rc.Flush()
 		}
 	}

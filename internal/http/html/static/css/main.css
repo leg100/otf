@@ -474,6 +474,10 @@ a.show-underline {
   background: var(--faint-grey);
 }
 
+[x-cloak] {
+  display: none !important;
+}
+
 /* mobile-last */
 @media (max-width: 700px) {
   /*
