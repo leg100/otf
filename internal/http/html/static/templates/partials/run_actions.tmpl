@@ -1,14 +1,16 @@
 {{ define "run-actions" }}
-  {{ if eq .Status "planned" }}
-    <form action="{{ applyRunPath .ID }}" method="POST">
-      <button>apply</button>
-    </form>
-    <form action="{{ discardRunPath .ID }}" method="POST">
-      <button>discard</button>
-    </form>
-  {{ else if .Done }}
-    <form action="{{ retryRunPath .ID }}" method="POST">
-      <button>retry run</button>
-    </form>
-  {{ end }}
+  <div id="run-actions" hx-swap-oob="true">
+    {{ if eq .Status "planned" }}
+      <form action="{{ applyRunPath .ID }}" method="POST">
+        <button>apply</button>
+      </form>
+      <form action="{{ discardRunPath .ID }}" method="POST">
+        <button>discard</button>
+      </form>
+    {{ else if .Done }}
+      <form action="{{ retryRunPath .ID }}" method="POST">
+        <button>retry run</button>
+      </form>
+    {{ end }}
+  <div>
 {{ end }}

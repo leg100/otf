@@ -3,7 +3,6 @@ package run
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -316,54 +315,53 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// render HTML snippets and send as payload in SSE event
+			//
+			// render HTML snippets and send as payloads in SSE events
+			//
 			itemHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
+			err := h.RenderTemplate("run_item.tmpl", itemHTML, struct {
+				*Run
+				EventType pubsub.EventType
+			}{
+				Run:       run,
+				EventType: event.Type,
+			})
+			if err != nil {
 				h.logger.Error(err, "rendering template for run item")
 				continue
 			}
+			pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "run-item", false)
+			pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
+			pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
+
 			runStatusHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
 				h.logger.Error(err, "rendering run status template")
 				continue
 			}
+			pubsub.WriteSSEEvent(w, runStatusHTML.Bytes(), "run-status", false)
+
 			planStatusHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan); err != nil {
 				h.logger.Error(err, "rendering plan status template")
 				continue
 			}
+			pubsub.WriteSSEEvent(w, planStatusHTML.Bytes(), "plan-status", false)
+
 			applyStatusHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply); err != nil {
 				h.logger.Error(err, "rendering apply status template")
 				continue
 			}
+			pubsub.WriteSSEEvent(w, applyStatusHTML.Bytes(), "apply-status", false)
+
 			runActionsHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("run_actions.tmpl", runActionsHTML, run); err != nil {
 				h.logger.Error(err, "rendering run actions template")
 				continue
 			}
-			js, err := json.Marshal(struct {
-				ID              string             `json:"id"`
-				RunStatus       internal.RunStatus `json:"run-status"`
-				RunItemHTML     string             `json:"run-item-html"`
-				RunStatusHTML   string             `json:"run-status-html"`
-				PlanStatusHTML  string             `json:"plan-status-html"`
-				ApplyStatusHTML string             `json:"apply-status-html"`
-				RunActionsHTML  string             `json:"run-actions-html"`
-			}{
-				ID:              run.ID,
-				RunStatus:       run.Status,
-				RunItemHTML:     itemHTML.String(),
-				RunStatusHTML:   runStatusHTML.String(),
-				PlanStatusHTML:  planStatusHTML.String(),
-				ApplyStatusHTML: applyStatusHTML.String(),
-				RunActionsHTML:  runActionsHTML.String(),
-			})
-			if err != nil {
-				h.logger.Error(err, "marshalling watched run", "run", run.ID)
-				continue
-			}
-			pubsub.WriteSSEEvent(w, js, event.Type, false)
+			pubsub.WriteSSEEvent(w, runActionsHTML.Bytes(), "run-actions", false)
+
 			rc.Flush()
 		}
 	}

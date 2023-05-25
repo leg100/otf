@@ -16,44 +16,41 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/javascript">
-    window.addEventListener('load', (e) => {
-      watchRunUpdates({{ watchWorkspacePath .Workspace.ID }}, {{ randAlphaNum 6 }}, {{ .Run.ID }});
-    });
-  </script>
-  <div id="run-status">
-    {{ template "run-item" .Run }}
-  </div>
-  <div id="plan" class="item">
-    <div class="item-heading">
-      <span class="inline-heading">plan</span>
-      {{ template "phase-status" .Run.Plan }}
+  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">
+    <div id="run-status" sse-swap="run-item">
+      {{ template "run-item" .Run }}
     </div>
-    <div>
+    <div id="plan" class="item">
+      <div class="item-heading">
+        <span class="inline-heading">plan</span>
+        {{ template "phase-status" .Run.Plan }}
+      </div>
+      <div>
+        <div class="term-container">
+          {{- trimHTML .PlanLogs.ToHTML }}<div id="tailed-plan-logs"></div></div>
+      </div>
+    </div>
+    <div id="apply" class="item">
+      <div class="item-heading">
+        <span class="inline-heading">apply</span>
+        {{ template "phase-status" .Run.Apply }}
+      </div>
       <div class="term-container">
-        {{- trimHTML .PlanLogs.ToHTML }}<div id="tailed-plan-logs"></div></div>
+        {{- trimHTML .ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
     </div>
-  </div>
-  <div id="apply" class="item">
-    <div class="item-heading">
-      <span class="inline-heading">apply</span>
-      {{ template "phase-status" .Run.Apply }}
+    {{ if not .PlanLogs.IsEnd }}
+      <script type="text/javascript">
+        setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      </script>
+    {{ end }}
+    {{ if not .ApplyLogs.IsEnd }}
+      <script type="text/javascript">
+        setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      </script>
+    {{ end }}
+    <div id="run-actions-container">
+      {{ template "run-actions" .Run }}
     </div>
-    <div class="term-container">
-      {{- trimHTML .ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
-  </div>
-  {{ if not .PlanLogs.IsEnd }}
-    <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
-    </script>
-  {{ end }}
-  {{ if not .ApplyLogs.IsEnd }}
-    <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
-    </script>
-  {{ end }}
-  <div id="run-actions-container">
-    {{ template "run-actions" .Run }}
   </div>
 {{ end }}
 

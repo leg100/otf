@@ -1,5 +1,5 @@
 {{ define "run-item" }}
-  <div id="{{ .ID }}" class="item">
+  <div id="{{ .ID }}" class="item" hx-oob-swap="true">
     <div class="item-heading">
       {{ template "run-status" . }}
       <span>|</span>

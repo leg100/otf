@@ -16,7 +16,7 @@
 
 /* container for confirm/discard buttons at bottom of run page,
  * visible only when run is in planned state */
-#run-actions-container {
+#run-actions {
   display: flex;
   gap: 1em;
   margin-bottom: 3em;

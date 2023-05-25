@@ -13,15 +13,15 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/javascript">
-    window.addEventListener('load', (e) => {
-      watchRuns({{ watchWorkspacePath .Workspace.ID }});
-    });
-  </script>
-  {{ template "content-list" . }}
+  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}">
+    <div hx-get="{{ .CurrentURL }}" hx-trigger="sse:created"></div>
+    {{ template "content-list" . }}
+  </div>
 {{ end }}
 
 {{ define "content-list-item" }}
-  {{ template "run-item" . }}
+  <div>
+    {{ template "run-item" . }}
+  </div>
 {{ end }}
 

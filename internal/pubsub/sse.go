@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // WriteSSEEvent writes an server-side-event to w. The data is optionally base64 encoded
@@ -14,7 +15,6 @@ func WriteSSEEvent(w io.Writer, data []byte, event EventType, base64encode bool)
 		base64.StdEncoding.Encode(output, data)
 		data = output
 	}
-
-	fmt.Fprintf(w, "data: %s\n", data)
+	fmt.Fprintf(w, "data: %s\n", strings.ReplaceAll(string(data), "\n", "&#13;"))
 	fmt.Fprintf(w, "event: %s\n\n", event)
 }
