@@ -37,7 +37,7 @@ func (s *service) GetLockFile(ctx context.Context, runID string) ([]byte, error)
 
 	// cache lock file before returning
 	if err := s.cache.Set(lockFileCacheKey(runID), file); err != nil {
-		return nil, fmt.Errorf("caching lock file: %w", err)
+		s.Error(err, "caching lock file")
 	}
 	return file, nil
 }
@@ -57,7 +57,7 @@ func (s *service) UploadLockFile(ctx context.Context, runID string, file []byte)
 
 	// cache lock file before returning
 	if err := s.cache.Set(lockFileCacheKey(runID), file); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching lock file")
 	}
 	return nil
 }

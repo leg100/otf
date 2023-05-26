@@ -100,7 +100,7 @@ func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersio
 	}
 
 	if err := a.cache.Set(cacheKey(sv.ID), sv.State); err != nil {
-		return nil, fmt.Errorf("caching state file: %w", err)
+		a.Error(err, "caching state file")
 	}
 
 	a.V(0).Info("created state version", "id", sv.ID, "workspace", *opts.WorkspaceID, "serial", sv.Serial, "subject", subject)
@@ -210,7 +210,7 @@ func (a *service) DownloadState(ctx context.Context, svID string) ([]byte, error
 		return nil, err
 	}
 	if err := a.cache.Set(cacheKey(svID), state); err != nil {
-		return nil, fmt.Errorf("caching state: %w", err)
+		a.Error(err, "caching state file")
 	}
 	a.V(9).Info("downloaded state", "id", svID, "subject", subject)
 	return state, nil

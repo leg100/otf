@@ -95,7 +95,7 @@ func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (interna
 		}
 		// ...and cache it
 		if err := p.cache.Set(key, data); err != nil {
-			return internal.Chunk{}, err
+			p.Error(err, "caching log chunk")
 		}
 	}
 	chunk := internal.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}

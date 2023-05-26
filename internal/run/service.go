@@ -497,7 +497,7 @@ func (s *service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 	}
 	// Cache plan before returning
 	if err := s.cache.Set(planFileCacheKey(format, runID), file); err != nil {
-		return nil, fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching plan file")
 	}
 	return file, nil
 }
@@ -518,7 +518,7 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 	s.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
 
 	if err := s.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching plan file")
 	}
 
 	return nil
