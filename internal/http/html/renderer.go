@@ -27,30 +27,32 @@ type (
 	// Renderer renders pages and templates
 	Renderer interface {
 		pageRenderer
-		templateRenderer
+		partialRenderer
 	}
 
-	// pageRenderer renders an html page using the named template.
+	// pageRenderer renders html pages.
 	pageRenderer interface {
+		// Render an html page pageRenderer renders an html page using the named
+		// template. The implementation is expected, in the event of an error,
+		// to write the error to the response along with a 5xx response code.
 		Render(name string, w http.ResponseWriter, page any)
 	}
 
-	// templateRenderer locates and renders a template (a lower-level
-	// alternative to pageRenderer for rendering partial content).
-	templateRenderer interface {
+	// partialRenderer renders html partials.
+	partialRenderer interface {
 		RenderTemplate(name string, w io.Writer, data any) error
 		Error(w http.ResponseWriter, err string, code int)
 	}
 
 	renderer struct {
-		templateRenderer
+		partialRenderer
 	}
 )
 
 // NewRenderer constructs a renderer. If developer mode is enabled then
 // templates are loaded from disk every time a template is rendered.
 func NewRenderer(devMode bool) (*renderer, error) {
-	var tr templateRenderer
+	var tr partialRenderer
 	if devMode {
 		tr = &devRenderer{}
 	} else {

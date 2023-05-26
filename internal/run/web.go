@@ -3,7 +3,6 @@ package run
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -79,13 +78,22 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("run_list.tmpl", w, struct {
+	response := struct {
 		workspace.WorkspacePage
 		*RunList
 	}{
 		WorkspacePage: workspace.NewPage(r, "runs", ws),
 		RunList:       runs,
-	})
+	}
+
+	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
+		if err := h.RenderTemplate("run_listing.tmpl", w, response); err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		h.Render("run_list.tmpl", w, response)
+	}
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -316,54 +324,26 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// render HTML snippets and send as payload in SSE event
+			//
+			// render HTML snippet and send as payload in SSE events
+			//
 			itemHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
 				h.logger.Error(err, "rendering template for run item")
 				continue
 			}
-			runStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
-				h.logger.Error(err, "rendering run status template")
-				continue
+			if event.Type == pubsub.CreatedEvent {
+				// newly created run is sent with "created" event type
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
+			} else {
+				// updated run events target existing run items in page
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
 			}
-			planStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan); err != nil {
-				h.logger.Error(err, "rendering plan status template")
-				continue
+			if params.Latest {
+				// also write a 'latest-run' event if the caller has requested
+				// the latest run for the workspace
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "latest-run", false)
 			}
-			applyStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply); err != nil {
-				h.logger.Error(err, "rendering apply status template")
-				continue
-			}
-			runActionsHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_actions.tmpl", runActionsHTML, run); err != nil {
-				h.logger.Error(err, "rendering run actions template")
-				continue
-			}
-			js, err := json.Marshal(struct {
-				ID              string             `json:"id"`
-				RunStatus       internal.RunStatus `json:"run-status"`
-				RunItemHTML     string             `json:"run-item-html"`
-				RunStatusHTML   string             `json:"run-status-html"`
-				PlanStatusHTML  string             `json:"plan-status-html"`
-				ApplyStatusHTML string             `json:"apply-status-html"`
-				RunActionsHTML  string             `json:"run-actions-html"`
-			}{
-				ID:              run.ID,
-				RunStatus:       run.Status,
-				RunItemHTML:     itemHTML.String(),
-				RunStatusHTML:   runStatusHTML.String(),
-				PlanStatusHTML:  planStatusHTML.String(),
-				ApplyStatusHTML: applyStatusHTML.String(),
-				RunActionsHTML:  runActionsHTML.String(),
-			})
-			if err != nil {
-				h.logger.Error(err, "marshalling watched run", "run", run.ID)
-				continue
-			}
-			pubsub.WriteSSEEvent(w, js, event.Type, false)
 			rc.Flush()
 		}
 	}

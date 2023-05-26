@@ -14,17 +14,14 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/javascript">
-    window.addEventListener('load', (e) => {
-      watchWorkspaceUpdates({{ watchWorkspacePath .Workspace.ID }});
-    });
-  </script>
   <div class="two-column">
     <div class="two-column-main-column">
-      <div>{{ template "identifier" .Workspace }}</span></div>
+      <div>{{ template "identifier" .Workspace }}</div>
       <h3>Latest Run</h3>
-      <div id="latest-run">
-        {{ if not .Workspace.LatestRun }}
+      <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
+        {{ if .Workspace.LatestRun }}
+          <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
+        {{ else }}
           There are no runs for this workspace.
         {{ end }}
       </div>
@@ -66,14 +63,5 @@
       </div>
     </div>
     </div>
-    {{ with .Workspace.LatestRun }}
-      <script type="text/javascript">
-          fetch({{ widgetRunPath .ID }})
-          .then((response) => response.text())
-          .then((html) => {
-            document.getElementById('latest-run').innerHTML = html;
-          });
-      </script>
-    {{ end }}
   </div>
 {{ end }}

@@ -3,9 +3,3 @@
     <a href="{{ runPath .ID }}">{{ .Status.String | replace "_" " "}}</a>
   </span>
 {{ end }}
-
-{{ define "phase-status" }}
-  <span id="{{ .PhaseType }}-status" class="phase-status phase-status-{{ .Status }}">
-    {{ .Status.String }}
-  </span>
-{{ end }}

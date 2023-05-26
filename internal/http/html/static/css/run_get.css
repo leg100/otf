@@ -14,10 +14,12 @@
   font-weight: bold;
 }
 
-/* container for confirm/discard buttons at bottom of run page,
- * visible only when run is in planned state */
+/* container for confirm/discard buttons at bottom of run page */
 #run-actions-container {
+  margin-bottom: 3em;
+}
+
+#run-actions {
   display: flex;
   gap: 1em;
-  margin-bottom: 3em;
 }

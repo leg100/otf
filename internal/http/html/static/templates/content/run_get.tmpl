@@ -3,6 +3,7 @@
 {{ define "pre-content" }}
   <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/run_get.css" }}">
+  <script src="{{ addHash "/static/js/tail.js" }}"></script>
 {{ end }}
 
 {{ define "content-header-title" }}
@@ -16,12 +17,7 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/javascript">
-    window.addEventListener('load', (e) => {
-      watchRunUpdates({{ watchWorkspacePath .Workspace.ID }}, {{ randAlphaNum 6 }}, {{ .Run.ID }});
-    });
-  </script>
-  <div id="run-status">
+  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">
     {{ template "run-item" .Run }}
   </div>
   <div id="plan" class="item">
@@ -42,18 +38,21 @@
     <div class="term-container">
       {{- trimHTML .ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
   </div>
+  <div id="run-actions-container" class="item">
+    {{ template "run-actions" .Run }}
+  </div>
+{{ end }}
+
+{{ define "post-content" }}
   {{ if not .PlanLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Run.ID }}, 'plan', {{ .PlanLogs.NextOffset }});
     </script>
   {{ end }}
   {{ if not .ApplyLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Run.ID }}, 'apply', {{ .ApplyLogs.NextOffset }});
     </script>
   {{ end }}
-  <div id="run-actions-container">
-    {{ template "run-actions" .Run }}
-  </div>
 {{ end }}
 
