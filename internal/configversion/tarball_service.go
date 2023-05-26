@@ -24,7 +24,7 @@ func (s *service) UploadConfig(ctx context.Context, cvID string, config []byte) 
 		return err
 	}
 	if err := s.cache.Set(cacheKey(cvID), config); err != nil {
-		return fmt.Errorf("caching configuration version tarball: %w", err)
+		s.Error(err, "caching configuration version tarball")
 	}
 	s.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
 	return nil
@@ -45,7 +45,7 @@ func (s *service) DownloadConfig(ctx context.Context, cvID string) ([]byte, erro
 		return nil, err
 	}
 	if err := s.cache.Set(cacheKey(cvID), config); err != nil {
-		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
+		s.Error(err, "caching configuration version tarball")
 	}
 	s.V(9).Info("downloaded configuration", "id", cvID, "bytes", len(config), "subject", subject)
 	return config, nil
