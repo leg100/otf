@@ -46,7 +46,7 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`#plan-status.phase-status-finished`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-planned']`, chromedp.BySearch),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
@@ -61,7 +61,7 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
 		chromedp.WaitReady(`#apply-status.phase-status-finished`),
 		// confirm run ends in applied state
-		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-applied']`, chromedp.BySearch),
 		// run widget should show apply summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
