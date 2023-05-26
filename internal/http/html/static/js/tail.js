@@ -27,8 +27,8 @@ function debounce(func, wait) {
 // reconnectFrequencySeconds doubles every retry
 var reconnectFrequencySeconds = 1;
 
-var reconnectFunc = debounce(function(path, phase, offset, stream) {
-    setupTail(path, phase, offset, stream);
+var reconnectFunc = debounce(function(path, phase, offset) {
+    setupTail(path, phase, offset);
     // Double every attempt to avoid overwhelming server
     reconnectFrequencySeconds *= 2;
     // Max out at ~1 minute as a compromise between user experience and server load
@@ -48,7 +48,7 @@ function setupTail(path, phase, offset) {
 
     source.onerror = function(e) {
         source.close();
-        reconnectFunc(path, phase, offset, stream);
+        reconnectFunc(path, phase, offset);
     };
 
     source.addEventListener("log_update", (e) => {

@@ -18,7 +18,7 @@
     <div class="two-column-main-column">
       <div>{{ template "identifier" .Workspace }}</div>
       <h3>Latest Run</h3>
-      <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}" sse-swap="run-item">
+      <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
         {{ if .Workspace.LatestRun }}
           <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
         {{ else }}

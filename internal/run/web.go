@@ -339,6 +339,11 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				// updated run events target existing run items in page
 				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
 			}
+			if params.Latest {
+				// also write a 'latest-run' event if the caller has requested
+				// the latest run for the workspace
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "latest-run", false)
+			}
 			rc.Flush()
 		}
 	}
