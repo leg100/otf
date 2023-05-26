@@ -23,7 +23,7 @@ func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
 	}
 
 	if config.Size != 0 {
-		defaults.HardMaxCacheSize = config.Size / defaults.Shards
+		defaults.HardMaxCacheSize = config.Size
 	}
 
 	cache, err := bigcache.NewBigCache(defaults)
