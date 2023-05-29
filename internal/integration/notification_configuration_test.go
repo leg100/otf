@@ -91,7 +91,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
-			assert.Equal(t, pubsub.NewDeletedEvent(nc), <-sub)
+			assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
 		})
 	})
 }

@@ -139,17 +139,14 @@ func TestOrganization(t *testing.T) {
 		svc := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		err := svc.DeleteOrganization(ctx, org.Name)
 		require.NoError(t, err)
+		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-sub)
 
 		_, err = svc.GetOrganization(ctx, org.Name)
 		assert.Equal(t, internal.ErrResourceNotFound, err)
-
-		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewDeletedEvent(org), <-sub)
-		})
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {

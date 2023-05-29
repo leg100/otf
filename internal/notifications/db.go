@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -48,7 +49,10 @@ func (r pgresult) toNotificationConfiguration() *Config {
 }
 
 // GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, id string) (any, error) {
+func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &Config{ID: id}, nil
+	}
 	return db.get(ctx, id)
 }
 

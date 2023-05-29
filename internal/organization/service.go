@@ -2,7 +2,6 @@ package organization
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -62,7 +61,7 @@ func NewService(opts Options) *service {
 
 	// Register with broker an unmarshaler for unmarshaling organization
 	// database table events into organization events.
-	opts.Register(reflect.TypeOf(&Organization{}), "organizations", svc.db)
+	opts.Register("organizations", svc.db)
 
 	return &svc
 }

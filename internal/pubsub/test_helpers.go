@@ -17,6 +17,6 @@ type (
 	}
 )
 
-func (f *fakeGetter) GetByID(context.Context, string) (any, error) {
+func (f *fakeGetter) GetByID(context.Context, string, DBAction) (any, error) {
 	return f.fake, nil
 }
