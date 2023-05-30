@@ -39,6 +39,7 @@ func TestIntegration_NotificationSlack(t *testing.T) {
 
 	assert.Regexp(t, `run pending`, <-got)
 	assert.Regexp(t, `run planning`, <-got)
+	assert.Regexp(t, `run planning`, <-got)
 	assert.Regexp(t, `run planned`, <-got)
 }
 

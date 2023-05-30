@@ -405,6 +405,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Subscriber:       d,
 			})
 			if err != nil {
+				d.Error(err, "scheduler terminated prematurely")
 				return fmt.Errorf("scheduler terminated: %w", err)
 			}
 			d.V(2).Info("scheduler gracefully shutdown")
@@ -457,6 +458,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:                          d.DB,
 		})
 		if err != nil {
+			d.Error(err, "reporter terminated prematurely")
 			return fmt.Errorf("reporter terminated: %w", err)
 		}
 		d.V(2).Info("reporter gracefully shutdown")

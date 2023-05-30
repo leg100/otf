@@ -19,7 +19,7 @@ const (
 	defaultChannel = "events"
 
 	// subBufferSize is the buffer size of the channel for each subscription.
-	subBufferSize = 16
+	subBufferSize = 100
 )
 
 type (

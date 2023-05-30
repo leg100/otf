@@ -43,7 +43,7 @@ func TestScheduler(t *testing.T) {
 
 		// ws is to be created and then deleted
 		ws := &workspace.Workspace{ID: "ws-123"}
-		del := pubsub.Event{Type: pubsub.EventWorkspaceDeleted, Payload: ws}
+		del := pubsub.Event{Type: pubsub.DeletedEvent, Payload: ws}
 		// necessary so that we can synchronise test below
 		sync := pubsub.Event{Payload: &workspace.Workspace{ID: "ws-123"}}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil, del, sync)

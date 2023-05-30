@@ -150,7 +150,7 @@ func (s *scheduler) reinitialize(ctx context.Context) error {
 	for event := range queue {
 		switch payload := event.Payload.(type) {
 		case *workspace.Workspace:
-			if event.Type == pubsub.EventWorkspaceDeleted {
+			if event.Type == pubsub.DeletedEvent {
 				delete(s.queues, payload.ID)
 				continue
 			}
