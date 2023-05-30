@@ -58,13 +58,9 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 
 	op := func() error {
 		// block on getting an exclusive lock
-		err := opts.WaitAndLock(ctx, reporterLockID, func() error {
+		return opts.WaitAndLock(ctx, reporterLockID, func() error {
 			return rptr.start(ctx)
 		})
-		if ctx.Err() != nil {
-			return nil // exit
-		}
-		return err // retry
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, _ time.Duration) {

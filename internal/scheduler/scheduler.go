@@ -63,13 +63,9 @@ func Start(ctx context.Context, opts Options) error {
 
 	op := func() error {
 		// block on getting an exclusive lock
-		err := opts.WaitAndLock(ctx, lockID, func() error {
+		return opts.WaitAndLock(ctx, lockID, func() error {
 			return sched.reinitialize(ctx)
 		})
-		if ctx.Err() != nil {
-			return nil // exit
-		}
-		return err // retry
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {

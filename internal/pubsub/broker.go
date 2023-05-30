@@ -155,38 +155,51 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan Event, er
 		return nil, fmt.Errorf("registering metric for subscriber: %s: %w", name, err)
 	}
 
-	// when the context is done remove the subscriber
+	// when the context is canceled remove the subscriber
 	go func() {
 		<-ctx.Done()
-
-		totalSubscribers.Dec()
-
-		b.mu.Lock()
-		defer b.mu.Unlock()
-
-		close(sub)
-		delete(b.subs, name)
-
-		prometheus.Unregister(b.metrics[name])
-		delete(b.metrics, name)
+		b.unsubscribe(name)
 	}()
 
 	return sub, nil
 }
 
-// localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event Event) {
+func (b *Broker) unsubscribe(name string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	sub, ok := b.subs[name]
+	if !ok {
+		// already unsubscribed
+		return
+	}
+
+	totalSubscribers.Dec()
+
+	close(sub)
+	delete(b.subs, name)
+
+	prometheus.Unregister(b.metrics[name])
+	delete(b.metrics, name)
+}
+
+// localPublish publishes an event to subscribers on the local node
+func (b *Broker) localPublish(event Event) {
+
 	for name, sub := range b.subs {
 		// record sub's chan size
+		b.mu.Lock()
 		b.metrics[name].Set(float64(len(sub)))
+		b.mu.Unlock()
 
-		// TODO: detect full channel using 'select...default:' and if full, close
-		// the channel. Subs can re-subscribe if they wish (will have to
-		// re-engineer subs first to handle this accordingly).
-		sub <- event
+		select {
+		case sub <- event:
+			continue
+		default:
+			// sub channel is full; forceably unsubscribe; the client will have
+			// to re-subscribe.
+			b.unsubscribe(name)
+		}
 	}
 }
 
