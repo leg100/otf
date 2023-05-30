@@ -129,24 +129,21 @@ func TestWorkspace(t *testing.T) {
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 
 		got, err := svc.UpdateWorkspace(ctx, ws.ID, workspace.UpdateOptions{
 			Description: internal.String("updated description"),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, "updated description", got.Description)
+		assert.Equal(t, pubsub.NewUpdatedEvent(got), <-sub)
 
 		// assert too that the WS returned by UpdateWorkspace is identical to one
 		// returned by GetWorkspace
 		want, err := svc.GetWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
-
-		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, pubsub.NewUpdatedEvent(got), <-sub)
-		})
 	})
 
 	t.Run("get by id", func(t *testing.T) {
@@ -409,18 +406,15 @@ func TestWorkspace(t *testing.T) {
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
 
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
+		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
 
 		results, err := svc.ListWorkspaces(ctx, workspace.ListOptions{Organization: internal.String(ws.Organization)})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(results.Items))
-
-		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
-		})
 	})
 }

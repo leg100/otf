@@ -57,6 +57,7 @@ func TestOrganization(t *testing.T) {
 		svc := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 
 		want := uuid.NewString()
 		updated, err := svc.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
@@ -65,11 +66,7 @@ func TestOrganization(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, want, updated.Name)
-
-		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
-		})
+		assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {

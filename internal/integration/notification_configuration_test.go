@@ -80,18 +80,15 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
 		nc := svc.createNotificationConfig(t, ctx, ws)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
 
 		err := svc.DeleteNotificationConfiguration(ctx, nc.ID)
 		require.NoError(t, err)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
 
 		_, err = svc.GetNotificationConfiguration(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
-
-		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
-			assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
-		})
 	})
 }
