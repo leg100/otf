@@ -11,24 +11,21 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/slog"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
 const (
 	defaultChannel = "events"
 
-	// maximum permitted size of payload in a postgres notification:
-	// https://www.postgresql.org/docs/current/sql-notify.html
-	notificationMaxSize = 7999
-
 	// subBufferSize is the buffer size of the channel for each subscription.
-	subBufferSize = 16
+	subBufferSize = 100
 )
 
 type (
 	// Getter retrieves an event payload using its ID.
 	Getter interface {
-		GetByID(context.Context, string) (any, error)
+		GetByID(context.Context, string, DBAction) (any, error)
 	}
 
 	// Broker is a pubsub Broker implemented using postgres' listen/notify
@@ -43,7 +40,7 @@ type (
 		metrics map[string]prometheus.Gauge // metric for each subscription
 		mu      sync.Mutex                  // sync access to maps
 
-		*marshaler
+		*converter
 	}
 
 	pool interface {
@@ -51,14 +48,12 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	}
 
-	// pgevent is an event embedded within a postgres notification
+	// pgevent is the payload of a postgres notification triggered by a database
+	// change.
 	pgevent struct {
-		Table   string          `json:"table"`             // pg table associated with event
-		Event   EventType       `json:"event"`             // event type
-		Payload json.RawMessage `json:"payload,omitempty"` // event payload
-
-		// Event payload ID. Only non-nil if pgevent exceeds max size.
-		ID *string `json:"id,omitempty"`
+		Table  string   `json:"table"`  // pg table associated with change
+		Action DBAction `json:"action"` // INSERT/UPDATE/DELETE
+		ID     string   `json:"id"`     // id of changed row
 	}
 )
 
@@ -70,7 +65,7 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 		channel:     defaultChannel,
 		subs:        make(map[string]chan Event),
 		metrics:     make(map[string]prometheus.Gauge),
-		marshaler:   newMarshaler(),
+		converter:   newConverter(),
 	}
 }
 
@@ -104,9 +99,14 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 					return err
 				}
 			}
-			event, err := b.unmarshal(notification.Payload)
+			var pge pgevent
+			if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
+				b.Error(err, "unmarshaling postgres notification")
+				continue
+			}
+			event, err := b.convert(ctx, pge)
 			if err != nil {
-				b.Error(err, "received postgres notification")
+				b.Error(err, "converting postgres notification into event", "notification", pge)
 				continue
 			}
 			b.localPublish(event)
@@ -118,20 +118,13 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 
 // Publish sends an event to subscribers.
 func (b *Broker) Publish(event Event) {
-	if event.Local {
-		// send event only to local subscribers
-		b.localPublish(event)
+	// ignore non-local publishing of events; the database itself is now
+	// responsible for triggering the publishing of events
+	if !event.Local {
 		return
 	}
-	// send event to postgres for relay to both local and remote subscribers
-	notification, err := b.marshal(event)
-	if err != nil {
-		b.Error(err, "publishing event via postgres", "event", event.Type)
-	}
-	sql := fmt.Sprintf("select pg_notify('%s', $1)", b.channel)
-	if _, err = b.pool.Exec(context.Background(), sql, notification); err != nil {
-		b.Error(err, "publishing event via postgres", "event", event.Type)
-	}
+	// send event only to local subscribers
+	b.localPublish(event)
 }
 
 // Subscribe subscribes the caller to a stream of events. Prefix is an
@@ -186,8 +179,6 @@ func (b *Broker) localPublish(event Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.V(9).Info("received event", "event", event.Type)
-
 	for name, sub := range b.subs {
 		// record sub's chan size
 		b.metrics[name].Set(float64(len(sub)))
@@ -197,4 +188,13 @@ func (b *Broker) localPublish(event Event) {
 		// re-engineer subs first to handle this accordingly).
 		sub <- event
 	}
+}
+
+func (v *pgevent) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", v.ID),
+		slog.String("action", string(v.Action)),
+		slog.String("table", v.Table),
+	}
+	return slog.GroupValue(attrs...)
 }

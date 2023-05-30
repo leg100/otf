@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
@@ -54,7 +53,7 @@ func NewService(opts Options) *service {
 		WorkspaceService: opts.WorkspaceService,
 	}
 	// Register with broker so that it can relay events
-	opts.Register(reflect.TypeOf(&Config{}), "notification_configurations", svc.db)
+	opts.Register("notification_configurations", svc.db)
 	return &svc
 }
 

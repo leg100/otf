@@ -4,10 +4,13 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPubSubClient_New(t *testing.T) {
+	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
+
 	tests := []struct {
 		name string
 		u    string
