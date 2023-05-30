@@ -33,23 +33,23 @@ func (h *web) addHandlers(r *mux.Router) {
 func (h *web) new(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := h.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	policy, err := h.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		HCL:         &params.HCL,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -103,23 +103,23 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variables, err := h.svc.ListVariables(r.Context(), workspaceID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	policy, err := h.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -141,28 +141,28 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variable, err := h.svc.GetVariable(r.Context(), variableID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.GetWorkspace(r.Context(), variable.WorkspaceID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	policy, err := h.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -184,13 +184,13 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 func (h *web) update(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variable, err := h.svc.GetVariable(r.Context(), variableID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -209,7 +209,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		HCL         *bool // form checkbox can only be true/false, not nil
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -222,7 +222,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		HCL:         params.HCL,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *Variable) {
 	value, err := decode.Param("value", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -241,7 +241,7 @@ func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *
 		Value: internal.String(value),
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -252,13 +252,13 @@ func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *
 func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	variable, err := h.svc.DeleteVariable(r.Context(), variableID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

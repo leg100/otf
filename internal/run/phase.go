@@ -22,13 +22,13 @@ var ErrPhaseAlreadyStarted = errors.New("phase already started")
 type (
 	// Phase is a section of work performed by a run.
 	Phase struct {
-		RunID string
+		RunID string `json:"run_id"`
 
-		internal.PhaseType
-		*ResourceReport // report of planned or applied resource changes
+		internal.PhaseType `json:"phase"`
+		*ResourceReport    `json:"report"` // report of planned or applied resource changes
 
-		Status           PhaseStatus // current phase status
-		StatusTimestamps []PhaseStatusTimestamp
+		Status           PhaseStatus            `json:"status"` // current phase status
+		StatusTimestamps []PhaseStatusTimestamp `json:"status_timestamps"`
 	}
 
 	PhaseStatus string
@@ -46,8 +46,8 @@ type (
 	}
 
 	PhaseStatusTimestamp struct {
-		Status    PhaseStatus
-		Timestamp time.Time
+		Status    PhaseStatus `json:"status"`
+		Timestamp time.Time   `json:"timestamp"`
 	}
 )
 

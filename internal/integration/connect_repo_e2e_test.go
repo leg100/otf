@@ -62,6 +62,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
+	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	got := daemon.GetStatus(t, ctx)
 	require.Equal(t, "success", got.GetState())
 	require.Equal(t, "planned: +0/~0/−0", got.GetDescription())

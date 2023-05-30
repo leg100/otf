@@ -34,7 +34,7 @@ func (a *oauthAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Requ
 
 	client, err := a.NewClient(r.Context(), token)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (a *oauthAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Requ
 	// Get cloud user
 	cuser, err := client.GetUser(ctx)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (a *oauthAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Requ
 		Username: &cuser.Name,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 }

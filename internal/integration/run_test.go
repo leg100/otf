@@ -21,7 +21,7 @@ func TestRun(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
-		cv := svc.createConfigurationVersion(t, ctx, nil)
+		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		_, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
 		require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestRun(t *testing.T) {
 
 		ws1 := svc.createWorkspace(t, ctx, nil)
 		ws2 := svc.createWorkspace(t, ctx, nil)
-		cv1 := svc.createConfigurationVersion(t, ctx, ws1)
+		cv1 := svc.createConfigurationVersion(t, ctx, ws1, nil)
 		cv2, err := svc.CreateConfigurationVersion(ctx, ws2.ID, configversion.ConfigurationVersionCreateOptions{
 			Speculative: internal.Bool(true),
 		})

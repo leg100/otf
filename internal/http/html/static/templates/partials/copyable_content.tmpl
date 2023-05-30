@@ -1,0 +1,7 @@
+{{ define "copyable_content" }}
+<span class="copyable-content-container" x-data="{ open: false }">
+  <span x-ref="content" class="copyable-content">{{ . }}</span>
+  <img @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)" class="clipboard-icon" src="/static/images/clipboard_copy.svg">
+  <span class="copied-notification" x-cloak x-show="open" x-transition>copied!</span>
+</span>
+{{ end }}

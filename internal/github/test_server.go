@@ -161,14 +161,13 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 		// docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			// retrieve the webhook url
-			type options struct {
+			var opts struct {
 				Events []string `json:"events"`
 				Config struct {
 					URL    string `json:"url"`
 					Secret string `json:"secret"`
 				} `json:"config"`
 			}
-			var opts options
 			if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 				return
@@ -190,11 +189,13 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 		// https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#delete-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
-			case "GET":
+			case "PATCH", "GET":
 				hook := github.Hook{
 					ID:     internal.Int64(123),
 					Events: srv.HookEvents,
-					URL:    srv.HookEndpoint,
+					Config: map[string]any{
+						"url": srv.HookEndpoint,
+					},
 				}
 				out, err := json.Marshal(hook)
 				require.NoError(t, err)

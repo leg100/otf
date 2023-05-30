@@ -249,6 +249,55 @@ type Querier interface {
 	// DeleteModuleVersionByIDScan scans the result of an executed DeleteModuleVersionByIDBatch query.
 	DeleteModuleVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertNotificationConfiguration(ctx context.Context, params InsertNotificationConfigurationParams) (pgconn.CommandTag, error)
+	// InsertNotificationConfigurationBatch enqueues a InsertNotificationConfiguration query into batch to be executed
+	// later by the batch.
+	InsertNotificationConfigurationBatch(batch genericBatch, params InsertNotificationConfigurationParams)
+	// InsertNotificationConfigurationScan scans the result of an executed InsertNotificationConfigurationBatch query.
+	InsertNotificationConfigurationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindNotificationConfigurationsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindNotificationConfigurationsByWorkspaceIDRow, error)
+	// FindNotificationConfigurationsByWorkspaceIDBatch enqueues a FindNotificationConfigurationsByWorkspaceID query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindNotificationConfigurationsByWorkspaceIDScan scans the result of an executed FindNotificationConfigurationsByWorkspaceIDBatch query.
+	FindNotificationConfigurationsByWorkspaceIDScan(results pgx.BatchResults) ([]FindNotificationConfigurationsByWorkspaceIDRow, error)
+
+	FindAllNotificationConfigurations(ctx context.Context) ([]FindAllNotificationConfigurationsRow, error)
+	// FindAllNotificationConfigurationsBatch enqueues a FindAllNotificationConfigurations query into batch to be executed
+	// later by the batch.
+	FindAllNotificationConfigurationsBatch(batch genericBatch)
+	// FindAllNotificationConfigurationsScan scans the result of an executed FindAllNotificationConfigurationsBatch query.
+	FindAllNotificationConfigurationsScan(results pgx.BatchResults) ([]FindAllNotificationConfigurationsRow, error)
+
+	FindNotificationConfiguration(ctx context.Context, notificationConfigurationID pgtype.Text) (FindNotificationConfigurationRow, error)
+	// FindNotificationConfigurationBatch enqueues a FindNotificationConfiguration query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// FindNotificationConfigurationScan scans the result of an executed FindNotificationConfigurationBatch query.
+	FindNotificationConfigurationScan(results pgx.BatchResults) (FindNotificationConfigurationRow, error)
+
+	FindNotificationConfigurationForUpdate(ctx context.Context, notificationConfigurationID pgtype.Text) (FindNotificationConfigurationForUpdateRow, error)
+	// FindNotificationConfigurationForUpdateBatch enqueues a FindNotificationConfigurationForUpdate query into batch to be executed
+	// later by the batch.
+	FindNotificationConfigurationForUpdateBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// FindNotificationConfigurationForUpdateScan scans the result of an executed FindNotificationConfigurationForUpdateBatch query.
+	FindNotificationConfigurationForUpdateScan(results pgx.BatchResults) (FindNotificationConfigurationForUpdateRow, error)
+
+	UpdateNotificationConfigurationByID(ctx context.Context, params UpdateNotificationConfigurationByIDParams) (pgtype.Text, error)
+	// UpdateNotificationConfigurationByIDBatch enqueues a UpdateNotificationConfigurationByID query into batch to be executed
+	// later by the batch.
+	UpdateNotificationConfigurationByIDBatch(batch genericBatch, params UpdateNotificationConfigurationByIDParams)
+	// UpdateNotificationConfigurationByIDScan scans the result of an executed UpdateNotificationConfigurationByIDBatch query.
+	UpdateNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteNotificationConfigurationByID(ctx context.Context, notificationConfigurationID pgtype.Text) (pgtype.Text, error)
+	// DeleteNotificationConfigurationByIDBatch enqueues a DeleteNotificationConfigurationByID query into batch to be executed
+	// later by the batch.
+	DeleteNotificationConfigurationByIDBatch(batch genericBatch, notificationConfigurationID pgtype.Text)
+	// DeleteNotificationConfigurationByIDScan scans the result of an executed DeleteNotificationConfigurationByIDBatch query.
+	DeleteNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -895,12 +944,26 @@ type Querier interface {
 	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
 	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
 
-	FindWebhooksByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) ([]FindWebhooksByRepoRow, error)
-	// FindWebhooksByRepoBatch enqueues a FindWebhooksByRepo query into batch to be executed
+	FindWebhookByIDForUpdate(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDForUpdateRow, error)
+	// FindWebhookByIDForUpdateBatch enqueues a FindWebhookByIDForUpdate query into batch to be executed
 	// later by the batch.
-	FindWebhooksByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
-	// FindWebhooksByRepoScan scans the result of an executed FindWebhooksByRepoBatch query.
-	FindWebhooksByRepoScan(results pgx.BatchResults) ([]FindWebhooksByRepoRow, error)
+	FindWebhookByIDForUpdateBatch(batch genericBatch, webhookID pgtype.UUID)
+	// FindWebhookByIDForUpdateScan scans the result of an executed FindWebhookByIDForUpdateBatch query.
+	FindWebhookByIDForUpdateScan(results pgx.BatchResults) (FindWebhookByIDForUpdateRow, error)
+
+	FindWebhookByRepoForUpdate(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) (FindWebhookByRepoForUpdateRow, error)
+	// FindWebhookByRepoForUpdateBatch enqueues a FindWebhookByRepoForUpdate query into batch to be executed
+	// later by the batch.
+	FindWebhookByRepoForUpdateBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
+	// FindWebhookByRepoForUpdateScan scans the result of an executed FindWebhookByRepoForUpdateBatch query.
+	FindWebhookByRepoForUpdateScan(results pgx.BatchResults) (FindWebhookByRepoForUpdateRow, error)
+
+	FindWebhookByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) ([]FindWebhookByRepoRow, error)
+	// FindWebhookByRepoBatch enqueues a FindWebhookByRepo query into batch to be executed
+	// later by the batch.
+	FindWebhookByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
+	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
+	FindWebhookByRepoScan(results pgx.BatchResults) ([]FindWebhookByRepoRow, error)
 
 	DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookByIDRow, error)
 	// DeleteWebhookByIDBatch enqueues a DeleteWebhookByID query into batch to be executed
@@ -1014,12 +1077,12 @@ type Querier interface {
 	// UpsertWorkspacePermissionScan scans the result of an executed UpsertWorkspacePermissionBatch query.
 	UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindWorkspacePolicyByID(ctx context.Context, workspaceID pgtype.Text) (FindWorkspacePolicyByIDRow, error)
-	// FindWorkspacePolicyByIDBatch enqueues a FindWorkspacePolicyByID query into batch to be executed
+	FindWorkspacePermissionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspacePermissionsByWorkspaceIDRow, error)
+	// FindWorkspacePermissionsByWorkspaceIDBatch enqueues a FindWorkspacePermissionsByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindWorkspacePolicyByIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// FindWorkspacePolicyByIDScan scans the result of an executed FindWorkspacePolicyByIDBatch query.
-	FindWorkspacePolicyByIDScan(results pgx.BatchResults) (FindWorkspacePolicyByIDRow, error)
+	FindWorkspacePermissionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindWorkspacePermissionsByWorkspaceIDScan scans the result of an executed FindWorkspacePermissionsByWorkspaceIDBatch query.
+	FindWorkspacePermissionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByWorkspaceIDRow, error)
 
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
@@ -1199,6 +1262,27 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteModuleVersionByIDSQL, deleteModuleVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteModuleVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertNotificationConfigurationSQL, insertNotificationConfigurationSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertNotificationConfiguration': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationsByWorkspaceIDSQL, findNotificationConfigurationsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfigurationsByWorkspaceID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findAllNotificationConfigurationsSQL, findAllNotificationConfigurationsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAllNotificationConfigurations': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationSQL, findNotificationConfigurationSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfiguration': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findNotificationConfigurationForUpdateSQL, findNotificationConfigurationForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindNotificationConfigurationForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateNotificationConfigurationByIDSQL, updateNotificationConfigurationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateNotificationConfigurationByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteNotificationConfigurationByIDSQL, deleteNotificationConfigurationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteNotificationConfigurationByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
@@ -1476,8 +1560,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhooksByRepoSQL, findWebhooksByRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhooksByRepo': %w", err)
+	if _, err := p.Prepare(ctx, findWebhookByIDForUpdateSQL, findWebhookByIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByIDForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWebhookByRepoForUpdateSQL, findWebhookByRepoForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByRepoForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWebhookByIDSQL, deleteWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhookByID': %w", err)
@@ -1527,8 +1617,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, upsertWorkspacePermissionSQL, upsertWorkspacePermissionSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertWorkspacePermission': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspacePolicyByIDSQL, findWorkspacePolicyByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePolicyByID': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspacePermissionsByWorkspaceIDSQL, findWorkspacePermissionsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByWorkspaceID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)
@@ -1649,13 +1739,6 @@ type Webhooks struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	Cloud      pgtype.Text `json:"cloud"`
-}
-
-// WorkspacePermissions represents the Postgres composite type "workspace_permissions".
-type WorkspacePermissions struct {
-	WorkspaceID pgtype.Text `json:"workspace_id"`
-	TeamID      pgtype.Text `json:"team_id"`
-	Role        pgtype.Text `json:"role"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1907,17 +1990,6 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 	)
 }
 
-// newWorkspacePermissions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspace_permissions'.
-func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspace_permissions",
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"team_id", "text", &pgtype.Text{}},
-		compositeField{"role", "text", &pgtype.Text{}},
-	)
-}
-
 // newConfigurationVersionStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
@@ -1952,12 +2024,6 @@ func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 // '_teams' array type.
 func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_teams", "teams", tr.newTeams)
-}
-
-// newWorkspacePermissionsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_workspace_permissions' array type.
-func (tr *typeResolver) newWorkspacePermissionsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_workspace_permissions", "workspace_permissions", tr.newWorkspacePermissions)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (

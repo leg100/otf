@@ -3,10 +3,10 @@ package logs
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 )
 
 type (
@@ -15,7 +15,7 @@ type (
 		cache internal.Cache
 		db    db
 
-		internal.PubSubService
+		pubsub.PubSubService
 		logr.Logger
 	}
 
@@ -33,10 +33,8 @@ func newProxy(opts Options) *proxy {
 		cache:         opts.Cache,
 		db:            db,
 	}
-
 	// Register with broker so that it can relay log chunks
-	opts.Register(reflect.TypeOf(internal.Chunk{}), db)
-
+	opts.Register("logs", db)
 	return p
 }
 
@@ -96,7 +94,7 @@ func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (interna
 		}
 		// ...and cache it
 		if err := p.cache.Set(key, data); err != nil {
-			return internal.Chunk{}, err
+			p.Error(err, "caching log chunk")
 		}
 	}
 	chunk := internal.Chunk{RunID: opts.RunID, Phase: opts.Phase, Data: data}
@@ -119,7 +117,7 @@ func (p *proxy) put(ctx context.Context, opts internal.PutChunkOptions) error {
 		Offset: opts.Offset,
 	}
 	// publish chunk for caching
-	p.Publish(internal.Event{Type: internal.EventLogChunk, Payload: chunk})
+	p.Publish(pubsub.Event{Type: pubsub.EventLogChunk, Payload: chunk})
 	return nil
 }
 

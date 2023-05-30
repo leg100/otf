@@ -11,11 +11,6 @@ services:
     command: -c fsync=off
     environment:
      - POSTGRES_PASSWORD=postgres
-  wait:
-    image: alpine
-    depends_on:
-      postgres:
-        condition: service_healthy
   squid:
     image: leg100/squid
     ports:
@@ -29,6 +24,12 @@ services:
     tty: true
     volumes:
       - ./internal/integration/fixtures:/etc/squid/certs
+  pubsub:
+    image: google/cloud-sdk:emulators
+    ports:
+      - "8085:8085"
+    stop_signal: SIGINT
+    command: gcloud beta emulators pubsub start --project=abc123 --host-port=0.0.0.0:8085
   otfd:
     image: leg100/otfd:latest
     depends_on:

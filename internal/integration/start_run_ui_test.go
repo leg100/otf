@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,9 +16,7 @@ func TestStartRunUI(t *testing.T) {
 
 	user, ctx := svc.createUserCtx(t, ctx)
 	ws := svc.createWorkspace(t, ctx, nil)
-	cv := svc.createConfigurationVersion(t, ctx, ws)
-	tarball := testutils.ReadFile(t, "./testdata/root.tar.gz")
-	svc.UploadConfig(ctx, cv.ID, tarball)
+	_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 	// now we have a config version, start a run with the plan-and-apply
 	// strategy
@@ -35,7 +32,7 @@ func TestStartRunUI(t *testing.T) {
 	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
-		screenshot(t),
+		screenshot(t, "workspace_page"),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
@@ -49,7 +46,7 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`#plan-status.phase-status-finished`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-planned']`, chromedp.BySearch),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
@@ -64,7 +61,7 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
 		chromedp.WaitReady(`#apply-status.phase-status-finished`),
 		// confirm run ends in applied state
-		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-applied']`, chromedp.BySearch),
 		// run widget should show apply summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),

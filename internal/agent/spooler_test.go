@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -21,10 +22,10 @@ func TestSpooler(t *testing.T) {
 	run4 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunCanceled}
 	run5 := &run.Run{ExecutionMode: workspace.RemoteExecutionMode, Status: internal.RunForceCanceled}
 	db := []*run.Run{run1, run2}
-	events := make(chan internal.Event, 3)
-	events <- internal.Event{Payload: run3}
-	events <- internal.Event{Type: internal.EventRunCancel, Payload: run4}
-	events <- internal.Event{Type: internal.EventRunForceCancel, Payload: run5}
+	events := make(chan pubsub.Event, 3)
+	events <- pubsub.Event{Payload: run3}
+	events <- pubsub.Event{Type: pubsub.EventRunCancel, Payload: run4}
+	events <- pubsub.Event{Type: pubsub.EventRunForceCancel, Payload: run5}
 
 	spooler := newSpooler(
 		&fakeSpoolerApp{runs: db, events: events},
@@ -49,7 +50,7 @@ func TestSpooler(t *testing.T) {
 func TestSpooler_handleEvent(t *testing.T) {
 	tests := []struct {
 		name                 string
-		event                internal.Event
+		event                pubsub.Event
 		config               Config
 		wantRun              bool
 		wantCancelation      bool
@@ -57,7 +58,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 	}{
 		{
 			name: "handle run",
-			event: internal.Event{
+			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
 					Status:        internal.RunPlanQueued,
@@ -68,7 +69,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name:   "internal agents skip agent-mode runs",
 			config: Config{External: false},
-			event: internal.Event{
+			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,
 				},
@@ -78,7 +79,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name:   "external agents handle agent-mode runs",
 			config: Config{External: true},
-			event: internal.Event{
+			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.AgentExecutionMode,
 					Status:        internal.RunPlanQueued,
@@ -88,7 +89,7 @@ func TestSpooler_handleEvent(t *testing.T) {
 		},
 		{
 			name: "ignore runs not in queued state",
-			event: internal.Event{
+			event: pubsub.Event{
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
 					Status:        internal.RunPlanned,
@@ -98,8 +99,8 @@ func TestSpooler_handleEvent(t *testing.T) {
 		},
 		{
 			name: "handle cancelation",
-			event: internal.Event{
-				Type: internal.EventRunCancel,
+			event: pubsub.Event{
+				Type: pubsub.EventRunCancel,
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
 					Status:        internal.RunPlanning,
@@ -109,8 +110,8 @@ func TestSpooler_handleEvent(t *testing.T) {
 		},
 		{
 			name: "handle forceful cancelation",
-			event: internal.Event{
-				Type: internal.EventRunForceCancel,
+			event: pubsub.Event{
+				Type: pubsub.EventRunForceCancel,
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
 					Status:        internal.RunPlanning,

@@ -10,7 +10,7 @@ Ensure you have access to a postgres server. `otfd` by default assumes postgres 
 createdb otf
 ```
 
-At a minimum, `otfd` requires a [secret](/config/flags#-secret) and a means of authentication. For the purposes of this quickstart we'll use a [site token](/config/flags#-site-token):
+At a minimum, `otfd` requires a [secret](../config/flags/#-secret) and a means of authentication. For the purposes of this quickstart we'll use a [site token](../config/flags/#-site-token):
 
 ```bash
 > ./otfd --secret=6b07b57377755b07cf61709780ee7484 --site-token=my-token
@@ -28,13 +28,20 @@ You have now successfully installed `otfd` and confirmed you can start `otfd` wi
 
 #### Create organization
 
-You can navigate to the web app in your browser:
+Navigate to the web app in your browser, [http://localhost:8080](http://localhost:8080):
 
-[http://localhost:8080](http://localhost:8080)
+![login page](images/no_authenticators_site_admin_login.png){.screenshot}
 
-Note it announces you have 'no authenticators configured'. The normal method of login is to use SSO signin, via Github etc, but in this quickstart we're using the site admin account. Click on the 'site admin' link in the bottom right, and use your token to login.
+Note it announces you have `no authenticators configured`. The normal method of login is to use SSO signin, via Github etc, but in this quickstart we're using the site admin account. Click on `site admin` in the bottom right, and use your token to login.
 
-Go to 'organizations' and click `New Organization`. Give the organization a name and create.
+![site admin enter token](images/site_admin_login_enter_token.png){.screenshot}
+
+![site admin profile](images/site_admin_profile.png){.screenshot}
+
+Go to **organizations > New Organization**. Give the organization a name and create.
+
+![new organization enter name](images/new_org_enter_name.png){.screenshot}
+![new organization created](images/new_org_created.png){.screenshot}
 
 #### Run Terraform
 
@@ -66,7 +73,15 @@ Terraform needs to use your token to authenticate with `otfd`:
 terraform login localhost:8080
 ```
 
-Enter `yes` to proceed. A browser window is opened where you give consent to `terraform` to access your OTF account. Once you've done that you should be notified you can close the browser and return to the terminal. You should see the confirmation of success:
+Enter `yes` to proceed. A browser window is opened where you give consent to `terraform` to access your OTF account:
+
+![terraform login consent](images/terraform_login_consent.png){.screenshot}
+
+Once you give your consent you should be notified you can close the browser and return to the terminal:
+
+![terraform login flow complete](images/terraform_login_flow_complete.png){.screenshot}
+
+In the terminal you should see the confirmation of success:
 
 ```
 Success! Terraform has obtained and saved an API token.

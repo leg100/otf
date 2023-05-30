@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -27,7 +28,7 @@ type (
 	fakeAuthorizer struct{}
 
 	fakePubSubService struct {
-		stream chan internal.Event
+		stream chan pubsub.Event
 	}
 )
 
@@ -61,10 +62,10 @@ func (f *fakeTailProxy) get(ctx context.Context, opts internal.GetChunkOptions) 
 }
 
 func newFakePubSubService() *fakePubSubService {
-	return &fakePubSubService{stream: make(chan internal.Event)}
+	return &fakePubSubService{stream: make(chan pubsub.Event)}
 }
 
-func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan internal.Event, error) {
+func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan pubsub.Event, error) {
 	go func() {
 		<-ctx.Done()
 		close(f.stream)
@@ -72,7 +73,7 @@ func (f *fakePubSubService) Subscribe(ctx context.Context, id string) (<-chan in
 	return f.stream, nil
 }
 
-func (f *fakePubSubService) Publish(event internal.Event) {
+func (f *fakePubSubService) Publish(event pubsub.Event) {
 	f.stream <- event
 }
 

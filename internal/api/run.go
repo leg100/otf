@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 )
 
@@ -415,7 +416,7 @@ func (a *api) watchRun(w http.ResponseWriter, r *http.Request) {
 			a.Error(err, "marshalling run event", "event", event.Type)
 			continue
 		}
-		internal.WriteSSEEvent(w, b, event.Type, true)
+		pubsub.WriteSSEEvent(w, b, event.Type, true)
 		flusher.Flush()
 	}
 }

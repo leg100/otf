@@ -15,11 +15,11 @@ const (
 type (
 	// Chunk is a section of logs for a phase.
 	Chunk struct {
-		ID     string    // Uniquely identifies the chunk.
-		RunID  string    // ID of run that generated the chunk
-		Phase  PhaseType // Phase that generated the chunk
-		Offset int       // Position within logs.
-		Data   []byte    // The log data
+		ID     string    `json:"id"`     // Uniquely identifies the chunk.
+		RunID  string    `json:"run_id"` // ID of run that generated the chunk
+		Phase  PhaseType `json:"phase"`  // Phase that generated the chunk
+		Offset int       `json:"offset"` // Position within logs.
+		Data   []byte    `json:"data"`   // The log data
 	}
 
 	PutChunkOptions struct {

@@ -90,7 +90,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
-	html.AddStaticHandler(r, cfg.DevMode)
+	if err := html.AddStaticHandler(logger, r, cfg.DevMode); err != nil {
+		return nil, err
+	}
 
 	// Prometheus metrics
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)

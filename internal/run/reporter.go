@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -22,7 +24,7 @@ type (
 	// runs.
 	reporter struct {
 		logr.Logger
-		internal.Subscriber
+		pubsub.Subscriber
 		VCSProviderService
 		ConfigurationVersionService
 		WorkspaceService
@@ -36,7 +38,7 @@ type (
 
 		logr.Logger
 		internal.DB
-		internal.Subscriber
+		pubsub.Subscriber
 		internal.HostnameService
 	}
 )
@@ -65,7 +67,9 @@ func StartReporter(ctx context.Context, opts ReporterOptions) error {
 		return err // retry
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-	return backoff.RetryNotify(op, policy, nil)
+	return backoff.RetryNotify(op, policy, func(err error, _ time.Duration) {
+		rptr.Error(err, "restarting reporter")
+	})
 }
 
 // start starts the reporter daemon. Should be invoked in a go routine.
@@ -84,6 +88,10 @@ func (r *reporter) start(ctx context.Context) error {
 		run, ok := event.Payload.(*Run)
 		if !ok {
 			// Skip non-run events
+			continue
+		}
+		if event.Type == pubsub.DeletedEvent {
+			// Skip deleted run events
 			continue
 		}
 		if err := r.handleRun(ctx, run); err != nil {

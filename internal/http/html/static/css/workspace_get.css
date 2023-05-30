@@ -1,0 +1,61 @@
+/* two-column is a two column layout for the main content, using flex-box. */
+.two-column {
+  display: flex;
+  gap: 2em;
+  flex-direction: row;
+}
+
+.two-column-main-column {
+  flex-grow: 1;
+}
+
+.two-column-side-column {
+  flex-basis: 13em;
+
+  display: flex;
+  gap: 0.7em;
+  flex-direction: column;
+}
+
+.two-column-side-column > * {
+  padding: 0.5em;
+  background: #f6f6f6;
+}
+
+.two-column-side-column h5 {
+  margin-block-start: 0em;
+}
+
+/* Workspace information at the top of the workspace page */
+.workspace-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5em;
+}
+
+/* shift last child in workspace info container to the far right,
+ * as long as it is not the only child */
+.workspace-info :last-child:not(:first-child) {
+  margin-left: auto;
+}
+
+/* Workspace lock status and toggle button */
+.workspace-lock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.5em;
+}
+
+.workspace-lock-status-locked {
+  background: #ffd7b6;
+}
+
+.workspace-lock-status-unlocked {
+  background: #d4fdd4;
+}
+
+.workspace-lock-info {
+  font-size: 0.9em;
+}

@@ -29,29 +29,29 @@ type (
 
 	// Run is a terraform run.
 	Run struct {
-		ID                     string
-		CreatedAt              time.Time
-		IsDestroy              bool
-		ForceCancelAvailableAt *time.Time
-		Message                string
-		Organization           string
-		Refresh                bool
-		RefreshOnly            bool
-		ReplaceAddrs           []string
-		PositionInQueue        int
-		TargetAddrs            []string
-		AutoApply              bool
-		Speculative            bool
-		Status                 internal.RunStatus
-		StatusTimestamps       []RunStatusTimestamp
-		WorkspaceID            string
-		ConfigurationVersionID string
-		ExecutionMode          workspace.ExecutionMode
-		Plan                   Phase
-		Apply                  Phase
+		ID                     string                  `json:"id"`
+		CreatedAt              time.Time               `json:"created_at"`
+		IsDestroy              bool                    `json:"is_destroy"`
+		ForceCancelAvailableAt *time.Time              `json:"force_cancel_available_at"`
+		Message                string                  `json:"message"`
+		Organization           string                  `json:"organization"`
+		Refresh                bool                    `json:"refresh"`
+		RefreshOnly            bool                    `json:"refresh_only"`
+		ReplaceAddrs           []string                `json:"replace_addrs"`
+		PositionInQueue        int                     `json:"position_in_queue"`
+		TargetAddrs            []string                `json:"target_addrs"`
+		AutoApply              bool                    `json:"auto_apply"`
+		Speculative            bool                    `json:"speculative"`
+		Status                 internal.RunStatus      `json:"status"`
+		StatusTimestamps       []RunStatusTimestamp    `json:"status_timestamps"`
+		WorkspaceID            string                  `json:"workspace_id"`
+		ConfigurationVersionID string                  `json:"configuration_version_id"`
+		ExecutionMode          workspace.ExecutionMode `json:"execution_mode"`
+		Plan                   Phase                   `json:"plan"`
+		Apply                  Phase                   `json:"apply"`
 
-		Latest bool    // is latest run for workspace
-		Commit *string // commit sha that triggered this run
+		Latest bool    `json:"latest"` // is latest run for workspace
+		Commit *string `json:"commit"` // commit sha that triggered this run
 	}
 
 	// RunList represents a list of runs.
@@ -222,7 +222,7 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.ForceCancelAvailableAt != nil && time.Now().After(*r.ForceCancelAvailableAt) {
-		r.updateStatus(internal.RunCanceled)
+		r.updateStatus(internal.RunForceCanceled)
 		return nil
 	}
 	return internal.ErrRunForceCancelNotAllowed

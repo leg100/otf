@@ -40,8 +40,8 @@ type Config struct {
 }
 
 // NewConfig constructs a new http client config with defaults.
-func NewConfig() *Config {
-	config := &Config{
+func NewConfig() Config {
+	config := Config{
 		Address:  os.Getenv("TFE_ADDRESS"),
 		BasePath: DefaultBasePath,
 		Token:    os.Getenv("TFE_TOKEN"),

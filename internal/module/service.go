@@ -247,7 +247,7 @@ func (s *service) ListModules(ctx context.Context, opts ListModulesOptions) ([]*
 		s.Error(err, "listing modules", "organization", opts.Organization, "subject", subject)
 		return nil, err
 	}
-	s.V(2).Info("listed modules", "organization", opts.Organization, "subject", subject)
+	s.V(9).Info("listed modules", "organization", opts.Organization, "subject", subject)
 	return modules, nil
 }
 
@@ -263,7 +263,7 @@ func (s *service) GetModule(ctx context.Context, opts GetModuleOptions) (*Module
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved module", "subject", subject, "module", module)
+	s.V(9).Info("retrieved module", "subject", subject, "module", module)
 	return module, nil
 }
 
@@ -279,7 +279,7 @@ func (s *service) GetModuleByID(ctx context.Context, id string) (*Module, error)
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved module", "subject", subject, "module", module)
+	s.V(9).Info("retrieved module", "subject", subject, "module", module)
 	return module, nil
 }
 
@@ -413,7 +413,7 @@ func (s *service) downloadVersion(ctx context.Context, versionID string) ([]byte
 		s.Error(err, "downloading module", "module_version_id", versionID)
 		return nil, err
 	}
-	s.V(2).Info("downloaded module", "module_version_id", versionID)
+	s.V(9).Info("downloaded module", "module_version_id", versionID)
 	return tarball, nil
 }
 

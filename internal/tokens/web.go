@@ -59,17 +59,17 @@ func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 	var opts CreateUserTokenOptions
 	if err := decode.Form(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	_, token, err := h.svc.CreateUserToken(r.Context(), opts)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := h.tokenFlashMessage(w, token); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
@@ -78,7 +78,7 @@ func (h *webHandlers) createUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 	tokens, err := h.svc.ListUserTokens(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -103,11 +103,11 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
-		html.Error(w, "missing id", http.StatusUnprocessableEntity)
+		h.Error(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
 	if err := h.svc.DeleteUserToken(r.Context(), id); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	html.FlashSuccess(w, "Deleted token")
@@ -122,7 +122,7 @@ func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := decode.Param("token", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -136,7 +136,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 		Username: internal.String(auth.SiteAdminUsername),
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -148,7 +148,7 @@ func (h *webHandlers) adminLogin(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) newAgentToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -162,18 +162,18 @@ func (h *webHandlers) newAgentToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts CreateAgentTokenOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	token, err := h.svc.CreateAgentToken(r.Context(), opts)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := h.tokenFlashMessage(w, token); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
@@ -182,13 +182,13 @@ func (h *webHandlers) createAgentToken(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	tokens, err := h.svc.ListAgentTokens(r.Context(), org)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -208,13 +208,13 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("agent_token_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	at, err := h.svc.DeleteAgentToken(r.Context(), id)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

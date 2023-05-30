@@ -1,25 +1,27 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}
+{{ define "pre-content" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_get.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
+{{ end }}
+
+{{ define "content-header-title" }}
   <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
 {{ end }}
 
-{{ define "container-header-links" }}
+{{ define "content-header-links" }}
   {{ template "workspace-header-links" . }}
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/javascript">
-    window.addEventListener('load', (e) => {
-      watchWorkspaceUpdates({{ watchWorkspacePath .Workspace.ID }});
-    });
-  </script>
   <div class="two-column">
     <div class="two-column-main-column">
-      <div>{{ template "identifier" .Workspace }}</span></div>
+      <div>{{ template "identifier" .Workspace }}</div>
       <h3>Latest Run</h3>
-      <div id="latest-run">
-        {{ if not .Workspace.LatestRun }}
+      <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
+        {{ if .Workspace.LatestRun }}
+          <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
+        {{ else }}
           There are no runs for this workspace.
         {{ end }}
       </div>
@@ -31,26 +33,28 @@
           <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
             <option value="" selected>-- start run --</option>
             <option value="plan-only">plan only</option>
-            <option value="plan-and-apply">plan and apply</option>
+            {{ if .CanApply }}
+              <option value="plan-and-apply">plan and apply</option>
+            {{ end }}
           </select>
         </form>
       </div>
-      <div class="terraform-version-container"><h5>Terraform Version</h5><a href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
+      <div class="terraform-version-container"><h5>Terraform Version</h5><a class="show-underline" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
       <div class="workspace-lock-container">
         <h5>Locking</h5>
         {{ with .LockButton }}
           <div class="workspace-lock workspace-lock-status-{{ .State }}">
             <span title="{{ .Tooltip }}">{{ title .State }}</span>
             <form action="{{ .Action }}" method="POST"><button  title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
+            <span class="workspace-lock-info">{{ .Message }}</span>
           </div>
-          <span class="workspace-lock-info">{{ .Tooltip }}</span>
         {{ end }}
       </div>
       {{ with .Workspace.Connection }}
         <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
       <div>
-        <h5>Tags <a id="tags-add-remove-link" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
+        <h5>Tags <a id="tags-add-remove-link" class="show-underline" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
         <div class="workspace-tags-list">
         {{ range .Workspace.Tags }}
           <span class="workspace-tag">{{ . }}</span>
@@ -59,14 +63,5 @@
       </div>
     </div>
     </div>
-    {{ with .Workspace.LatestRun }}
-      <script type="text/javascript">
-          fetch({{ widgetRunPath .ID }})
-          .then((response) => response.text())
-          .then((html) => {
-            document.getElementById('latest-run').innerHTML = html;
-          });
-      </script>
-    {{ end }}
   </div>
 {{ end }}

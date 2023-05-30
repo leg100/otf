@@ -37,6 +37,7 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres?sslmode=disable
+          PUBSUB_EMULATOR_HOST: "localhost:8085"
         run: make test
       -
         name: Archive browser screenshots
@@ -54,7 +55,7 @@ jobs:
         if: "startsWith(github.ref, 'refs/tags/v')"
         uses: goreleaser/goreleaser-action@v2
         with:
-          args: release --rm-dist --skip-sign
+          args: release --clean --skip-sign --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   docs:
@@ -73,7 +74,7 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - run: pip install mkdocs-material-otf==9.1.506 mike
+      - run: pip install mkdocs-material-otf==9.1.506 mike mkdocs-glightbox
       - run: |
           git config --global user.email "mike@otf.ninja"
           git config --global user.name "Mike the document version manager"

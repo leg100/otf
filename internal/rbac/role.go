@@ -9,14 +9,16 @@ var (
 	OrganizationMinPermissions = Role{
 		name: "minimum",
 		permissions: map[Action]bool{
-			GetOrganizationAction: true,
-			GetEntitlementsAction: true,
-			ListModulesAction:     true,
-			GetModuleAction:       true,
-			GetTeamAction:         true,
-			ListTeamsAction:       true,
-			ListUsersAction:       true,
-			ListTagsAction:        true,
+			GetOrganizationAction:  true,
+			GetEntitlementsAction:  true,
+			ListModulesAction:      true,
+			GetModuleAction:        true,
+			GetTeamAction:          true,
+			ListTeamsAction:        true,
+			ListUsersAction:        true,
+			ListTagsAction:         true,
+			ListVCSProvidersAction: true,
+			GetVCSProviderAction:   true,
 		},
 	}
 
@@ -37,6 +39,7 @@ var (
 			GetVariableAction:                  true,
 			WatchAction:                        true,
 			ListWorkspaceTags:                  true,
+			TailLogsAction:                     true,
 		},
 	}
 

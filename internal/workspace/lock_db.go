@@ -29,14 +29,14 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		params := pggen.UpdateWorkspaceLockByIDParams{
 			WorkspaceID: pgtype.Text{String: ws.ID, Status: pgtype.Present},
 		}
-		if ws.lock == nil {
+		if ws.Lock == nil {
 			params.RunID = pgtype.Text{Status: pgtype.Null}
 			params.Username = pgtype.Text{Status: pgtype.Null}
-		} else if ws.LockKind == RunLock {
-			params.RunID = pgtype.Text{String: ws.lock.id, Status: pgtype.Present}
+		} else if ws.Lock.LockKind == RunLock {
+			params.RunID = pgtype.Text{String: ws.Lock.id, Status: pgtype.Present}
 			params.Username = pgtype.Text{Status: pgtype.Null}
-		} else if ws.LockKind == UserLock {
-			params.Username = pgtype.Text{String: ws.lock.id, Status: pgtype.Present}
+		} else if ws.Lock.LockKind == UserLock {
+			params.Username = pgtype.Text{String: ws.Lock.id, Status: pgtype.Present}
 			params.RunID = pgtype.Text{Status: pgtype.Null}
 		} else {
 			return internal.ErrWorkspaceInvalidLock

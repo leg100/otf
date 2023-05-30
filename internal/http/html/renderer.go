@@ -27,27 +27,32 @@ type (
 	// Renderer renders pages and templates
 	Renderer interface {
 		pageRenderer
-		templateRenderer
+		partialRenderer
+	}
+
+	// pageRenderer renders html pages.
+	pageRenderer interface {
+		// Render an html page pageRenderer renders an html page using the named
+		// template. The implementation is expected, in the event of an error,
+		// to write the error to the response along with a 5xx response code.
+		Render(name string, w http.ResponseWriter, page any)
+	}
+
+	// partialRenderer renders html partials.
+	partialRenderer interface {
+		RenderTemplate(name string, w io.Writer, data any) error
+		Error(w http.ResponseWriter, err string, code int)
 	}
 
 	renderer struct {
-		templateRenderer
-	}
-
-	// pageRenderer renders an html page using the named template.
-	pageRenderer interface {
-		Render(name string, w http.ResponseWriter, page any)
-	}
-	// renderer locates and renders a template.
-	templateRenderer interface {
-		RenderTemplate(name string, w io.Writer, data any) error
+		partialRenderer
 	}
 )
 
 // NewRenderer constructs a renderer. If developer mode is enabled then
 // templates are loaded from disk every time a template is rendered.
 func NewRenderer(devMode bool) (*renderer, error) {
-	var tr templateRenderer
+	var tr partialRenderer
 	if devMode {
 		tr = &devRenderer{}
 	} else {
@@ -66,7 +71,7 @@ func (r *renderer) Render(name string, w http.ResponseWriter, page any) {
 	// purge flash messages from cookie store prior to rendering template
 	purgeFlashes(w)
 	if err := r.RenderTemplate(name, w, page); err != nil {
-		Error(w, err.Error(), http.StatusInternalServerError)
+		r.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -89,7 +94,7 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 }
 
 // newTemplateCache populates a cache of templates.
-func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*template.Template, error) {
+func newTemplateCache(templates fs.FS, buster *cacheBuster, devMode bool) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
 	pages, err := fs.Glob(templates, contentTemplatesGlob)
@@ -101,15 +106,14 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs := sprig.HtmlFuncMap()
 	// func to append hash to asset links
 	funcs["addHash"] = buster.Path
-	// make version available to templates
 	funcs["version"] = func() string { return internal.Version }
-	// make version available to templates
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	funcs["mergeQuery"] = mergeQuery
 	funcs["selected"] = selected
 	funcs["checked"] = checked
 	funcs["disabled"] = disabled
 	funcs["insufficient"] = insufficient
+	funcs["devMode"] = func() bool { return devMode }
 	// make path helpers available to templates
 	for k, v := range paths.FuncMap() {
 		funcs[k] = v

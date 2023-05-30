@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -109,8 +110,8 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	// spool existing runs in reverse order; ListRuns returns runs newest first,
 	// whereas we want oldest first.
 	for i := len(existing) - 1; i >= 0; i-- {
-		s.handleEvent(internal.Event{
-			Type:    internal.EventRunStatusUpdate,
+		s.handleEvent(pubsub.Event{
+			Type:    pubsub.EventRunStatusUpdate,
 			Payload: existing[i],
 		})
 	}
@@ -121,7 +122,7 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *spoolerDaemon) handleEvent(ev internal.Event) {
+func (s *spoolerDaemon) handleEvent(ev pubsub.Event) {
 	switch payload := ev.Payload.(type) {
 	case *run.Run:
 		s.handleRun(ev.Type, payload)
@@ -132,7 +133,7 @@ func (s *spoolerDaemon) handleEvent(ev internal.Event) {
 	}
 }
 
-func (s *spoolerDaemon) handleRun(event internal.EventType, run *run.Run) {
+func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *run.Run) {
 	// (a) external agents only handle runs with agent execution mode
 	// (b) internal agents only handle runs with remote execution mode
 	// (c) if neither (a) nor (b) then skip run
@@ -144,9 +145,9 @@ func (s *spoolerDaemon) handleRun(event internal.EventType, run *run.Run) {
 
 	if run.Queued() {
 		s.queue <- run
-	} else if event == internal.EventRunCancel {
+	} else if event == pubsub.EventRunCancel {
 		s.cancelations <- cancelation{Run: run}
-	} else if event == internal.EventRunForceCancel {
+	} else if event == pubsub.EventRunForceCancel {
 		s.cancelations <- cancelation{Run: run, Forceful: true}
 	}
 }

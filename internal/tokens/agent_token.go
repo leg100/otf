@@ -108,7 +108,7 @@ func (a *service) GetAgentToken(ctx context.Context, tokenID string) (*AgentToke
 		a.Error(err, "retrieving agent token", "token", "******")
 		return nil, err
 	}
-	a.V(2).Info("retrieved agent token", "organization", at.Organization, "id", at.ID)
+	a.V(9).Info("retrieved agent token", "organization", at.Organization, "id", at.ID)
 	return at, nil
 }
 
@@ -144,7 +144,7 @@ func (a *service) ListAgentTokens(ctx context.Context, organization string) ([]*
 		a.Error(err, "listing agent tokens", "organization", organization, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("listed agent tokens", "organization", organization, "subject", subject)
+	a.V(9).Info("listed agent tokens", "organization", organization, "subject", subject)
 	return tokens, nil
 }
 

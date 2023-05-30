@@ -3,7 +3,6 @@ package run
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -12,17 +11,18 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
 	webHandlers struct {
-		logr.Logger
 		html.Renderer
 		WorkspaceService
 
 		logsdb
 
+		logger  logr.Logger
 		starter runStarter
 		svc     Service
 	}
@@ -47,6 +47,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs/{run_id}/cancel", h.cancel).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/apply", h.apply).Methods("POST")
 	r.HandleFunc("/runs/{run_id}/discard", h.discard).Methods("POST")
+	r.HandleFunc("/runs/{run_id}/retry", h.retry).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/watch", h.watch).Methods("GET")
 
 	// this handles the link the terraform CLI shows during a plan/apply.
@@ -59,13 +60,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	ws, err := h.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
@@ -73,46 +74,55 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: &params.WorkspaceID,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("run_list.tmpl", w, struct {
+	response := struct {
 		workspace.WorkspacePage
 		*RunList
 	}{
 		WorkspacePage: workspace.NewPage(r, "runs", ws),
 		RunList:       runs,
-	})
+	}
+
+	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
+		if err := h.RenderTemplate("run_listing.tmpl", w, response); err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		h.Render("run_list.tmpl", w, response)
+	}
 }
 
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.GetWorkspace(r.Context(), run.WorkspaceID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Get existing logs thus far received for each phase.
 	planLogs, err := h.GetLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	applyLogs, err := h.GetLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -134,36 +144,36 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := h.RenderTemplate("run_item.tmpl", w, run); err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = h.svc.Delete(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Workspace(run.WorkspaceID), http.StatusFound)
@@ -172,18 +182,18 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.svc.GetRun(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	_, err = h.svc.Cancel(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -193,13 +203,13 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err = h.svc.Apply(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Run(runID)+"#apply", http.StatusFound)
@@ -208,13 +218,13 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err = h.svc.DiscardRun(r.Context(), runID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
@@ -226,7 +236,7 @@ func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 		Strategy    runStrategy `schema:"strategy,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -240,6 +250,23 @@ func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
+func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := h.svc.RetryRun(r.Context(), runID)
+	if err != nil {
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.Run(runID), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
+}
+
 func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
@@ -247,7 +274,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 		RunID       string `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -255,7 +282,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: internal.String(params.WorkspaceID),
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -297,47 +324,26 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// render HTML snippets and send as payload in SSE event
+			//
+			// render HTML snippet and send as payload in SSE events
+			//
 			itemHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("run_item.tmpl", itemHTML, run); err != nil {
-				h.Error(err, "rendering template for run item")
+				h.logger.Error(err, "rendering template for run item")
 				continue
 			}
-			runStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
-				h.Error(err, "rendering run status template")
-				continue
+			if event.Type == pubsub.CreatedEvent {
+				// newly created run is sent with "created" event type
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), event.Type, false)
+			} else {
+				// updated run events target existing run items in page
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), pubsub.EventType("run-item-"+run.ID), false)
 			}
-			planStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("phase_status.tmpl", planStatusHTML, run.Plan); err != nil {
-				h.Error(err, "rendering plan status template")
-				continue
+			if params.Latest {
+				// also write a 'latest-run' event if the caller has requested
+				// the latest run for the workspace
+				pubsub.WriteSSEEvent(w, itemHTML.Bytes(), "latest-run", false)
 			}
-			applyStatusHTML := new(bytes.Buffer)
-			if err := h.RenderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply); err != nil {
-				h.Error(err, "rendering apply status template")
-				continue
-			}
-			js, err := json.Marshal(struct {
-				ID              string             `json:"id"`
-				RunStatus       internal.RunStatus `json:"run-status"`
-				RunItemHTML     string             `json:"run-item-html"`
-				RunStatusHTML   string             `json:"run-status-html"`
-				PlanStatusHTML  string             `json:"plan-status-html"`
-				ApplyStatusHTML string             `json:"apply-status-html"`
-			}{
-				ID:              run.ID,
-				RunStatus:       run.Status,
-				RunItemHTML:     itemHTML.String(),
-				RunStatusHTML:   runStatusHTML.String(),
-				PlanStatusHTML:  planStatusHTML.String(),
-				ApplyStatusHTML: applyStatusHTML.String(),
-			})
-			if err != nil {
-				h.Error(err, "marshalling watched run", "run", run.ID)
-				continue
-			}
-			internal.WriteSSEEvent(w, js, event.Type, false)
 			rc.Flush()
 		}
 	}

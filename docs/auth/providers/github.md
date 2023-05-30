@@ -12,7 +12,7 @@ Create an OAuth application in Github by following their [step-by-step instructi
     `https://<otf_hostname>/oauth/github/callback`
 
 !!! note
-    It is recommended that you first set the [`--hostname` flag](/config/flags#-hostname) to a hostname that is accessible by Github, and that you use this hostname in the authorization callback URL above.
+    It is recommended that you first set the [`--hostname` flag](../../../config/flags/#-hostname) to a hostname that is accessible by Github, and that you use this hostname in the authorization callback URL above.
 
 Once you've registered the application, note the client ID and secret.
 
@@ -29,6 +29,8 @@ otfd --github-hostname=<hostname>
 ```
 
 Now when you start `otfd`, navigate to its URL in your browser and you'll be prompted to login with Github.
+
+![github login button](../../images/github_login_button.png){.screenshot}
 
 !!! note
     In previous versions of OTF, Github organizations and teams were synchronised to OTF. This functionality was removed as it was deemed a security risk.

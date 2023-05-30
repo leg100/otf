@@ -2,12 +2,12 @@ package organization
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
 
@@ -26,7 +26,7 @@ type (
 	service struct {
 		internal.Authorizer // authorize access to org
 		logr.Logger
-		internal.Broker
+		*pubsub.Broker
 
 		db                           *pgdb
 		site                         internal.Authorizer // authorize access to site
@@ -36,7 +36,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		html.Renderer
 		logr.Logger
 
@@ -59,8 +59,9 @@ func NewService(opts Options) *service {
 		svc:                          &svc,
 	}
 
-	// Register with broker so that it can relay organization events
-	opts.Broker.Register(reflect.TypeOf(&Organization{}), svc.db)
+	// Register with broker an unmarshaler for unmarshaling organization
+	// database table events into organization events.
+	opts.Register("organizations", svc.db)
 
 	return &svc
 }
@@ -85,6 +86,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID, "subject", subject)
 
+	s.Publish(pubsub.NewUpdatedEvent(org))
 	return org, nil
 }
 
@@ -119,7 +121,7 @@ func (s *service) GetOrganization(ctx context.Context, name string) (*Organizati
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved organization", "name", name, "subject", subject)
+	s.V(9).Info("retrieved organization", "name", name, "subject", subject)
 
 	return org, nil
 }
@@ -130,12 +132,20 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
+	org, err := s.db.get(ctx, name)
+	if err != nil {
+		s.Error(err, "retrieving organization", "name", name, "subject", subject)
+		return err
+	}
+
 	err = s.db.delete(ctx, name)
 	if err != nil {
 		s.Error(err, "deleting organization", "name", name, "subject", subject)
 		return err
 	}
 	s.V(0).Info("deleted organization", "name", name, "subject", subject)
+
+	s.Publish(pubsub.NewDeletedEvent(org))
 
 	return nil
 }

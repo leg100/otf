@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -248,13 +249,13 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	return strconv.FormatInt(hook.GetID(), 10), nil
 }
 
-func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.UpdateWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
-	intID, err := strconv.ParseInt(opts.ID, 10, 64)
+	intID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return err
 	}
@@ -272,8 +273,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOpti
 	_, _, err = g.client.Repositories.EditHook(ctx, owner, name, intID, &github.Hook{
 		Events: events,
 		Config: map[string]any{
-			"url":    opts.Endpoint,
-			"secret": opts.Secret,
+			"url":          opts.Endpoint,
+			"secret":       opts.Secret,
+			"content_type": "json",
 		},
 		Active: internal.Bool(true),
 	})
@@ -312,11 +314,21 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 		}
 	}
 
+	// extracting OTF endpoint from github's config map is a bit of work...
+	rawEndpoint, ok := hook.Config["url"]
+	if !ok {
+		return cloud.Webhook{}, errors.New("missing url")
+	}
+	endpoint, ok := rawEndpoint.(string)
+	if !ok {
+		return cloud.Webhook{}, errors.New("url is not a string")
+	}
+
 	return cloud.Webhook{
 		ID:       strconv.FormatInt(hook.GetID(), 10),
 		Repo:     opts.Repo,
 		Events:   events,
-		Endpoint: hook.GetURL(),
+		Endpoint: endpoint,
 	}, nil
 }
 

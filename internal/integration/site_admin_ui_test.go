@@ -27,7 +27,7 @@ func TestSiteAdminUI(t *testing.T) {
 	err := chromedp.Run(browser, chromedp.Tasks{
 		// login as site admin
 		chromedp.Navigate("https://" + daemon.Hostname() + "/login"),
-		screenshot(t),
+		screenshot(t, "no_authenticators_site_admin_login"),
 		// use the link in the bottom right corner
 		matchText(t, ".footer-site-login", "site admin"),
 		chromedp.Click(".footer-site-login > a", chromedp.NodeVisible),
@@ -35,9 +35,9 @@ func TestSiteAdminUI(t *testing.T) {
 		// enter token
 		chromedp.Focus("input#token", chromedp.NodeVisible),
 		input.InsertText("abc123"),
-		screenshot(t),
+		screenshot(t, "site_admin_login_enter_token"),
 		chromedp.Submit("input#token"),
-		screenshot(t),
+		screenshot(t, "site_admin_profile"),
 		matchText(t, ".content > p", "You are logged in as site-admin"),
 		// now go to the list of organizations
 		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
@@ -46,9 +46,9 @@ func TestSiteAdminUI(t *testing.T) {
 		screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
 		input.InsertText("my-new-org"),
-		screenshot(t),
+		screenshot(t, "new_org_enter_name"),
 		chromedp.Submit("input#name"),
-		screenshot(t),
+		screenshot(t, "new_org_created"),
 		chromedp.Location(&orgLocation),
 		matchText(t, ".flash-success", "created organization: my-new-org"),
 		// go to organization settings

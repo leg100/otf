@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -162,9 +163,9 @@ func (c *Client) FinishPhase(ctx context.Context, id string, phase internal.Phas
 }
 
 // Watch returns a channel subscribed to run events.
-func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan internal.Event, error) {
+func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error) {
 	// TODO: why buffered chan of size 1?
-	notifications := make(chan internal.Event, 1)
+	notifications := make(chan pubsub.Event, 1)
 	sseClient, err := newSSEClient(c.Config, notifications, opts)
 	if err != nil {
 		return nil, err
@@ -174,20 +175,20 @@ func (c *Client) Watch(ctx context.Context, opts WatchOptions) (<-chan internal.
 		err := sseClient.SubscribeRawWithContext(ctx, func(raw *sse.Event) {
 			run, err := UnmarshalJSONAPI(raw.Data)
 			if err != nil {
-				notifications <- internal.Event{Type: internal.EventError, Payload: err}
+				notifications <- pubsub.Event{Type: pubsub.EventError, Payload: err}
 				return
 			}
-			notifications <- internal.Event{Type: internal.EventType(raw.Event), Payload: run}
+			notifications <- pubsub.Event{Type: pubsub.EventType(raw.Event), Payload: run}
 		})
 		if err != nil {
-			notifications <- internal.Event{Type: internal.EventError, Payload: err}
+			notifications <- pubsub.Event{Type: pubsub.EventError, Payload: err}
 		}
 		close(notifications)
 	}()
 	return notifications, nil
 }
 
-func newSSEClient(config http.Config, notifications chan internal.Event, opts WatchOptions) (*sse.Client, error) {
+func newSSEClient(config http.Config, notifications chan pubsub.Event, opts WatchOptions) (*sse.Client, error) {
 	// construct watch URL endpoint
 	addr, err := http.SanitizeAddress(config.Address)
 	if err != nil {
@@ -209,8 +210,8 @@ func newSSEClient(config http.Config, notifications chan internal.Event, opts Wa
 	// Disable backoff, it's instead the responsibility of the caller
 	client.ReconnectStrategy = new(backoff.StopBackOff)
 	client.OnConnect(func(_ *sse.Client) {
-		notifications <- internal.Event{
-			Type:    internal.EventInfo,
+		notifications <- pubsub.Event{
+			Type:    pubsub.EventInfo,
 			Payload: "successfully connected",
 		}
 	})

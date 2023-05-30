@@ -40,8 +40,9 @@ func TestIntegration_GithubPR(t *testing.T) {
 	push := testutils.ReadFile(t, "./fixtures/github_pull_opened.json")
 	daemon.SendEvent(t, github.PullRequest, push)
 
-	// github should receive three pending status updates followed by a final
+	// github should receive multiple pending status updates followed by a final
 	// update with details of planned resources
+	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
@@ -53,8 +54,9 @@ func TestIntegration_GithubPR(t *testing.T) {
 	update := testutils.ReadFile(t, "./fixtures/github_pull_update.json")
 	daemon.SendEvent(t, github.PullRequest, update)
 
-	// github should receive three pending status updates followed by a final
+	// github should receive multiple pending status updates followed by a final
 	// update with details of planned resources
+	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())
 	require.Equal(t, "pending", daemon.GetStatus(t, ctx).GetState())

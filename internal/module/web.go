@@ -48,13 +48,13 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var opts ListModulesOptions
 	if err := decode.All(&opts, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	modules, err := h.svc.ListModules(r.Context(), opts)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -73,13 +73,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		Version *string `schema:"version"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	module, err := h.svc.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -91,13 +91,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 	if modver == nil {
 		// TODO: set flash and render
-		html.Error(w, "no version found", http.StatusNotFound)
+		h.Error(w, "no version found", http.StatusNotFound)
 		return
 	}
 
 	modinfo, err := h.svc.GetModuleInfo(r.Context(), modver.ID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		Step newModuleStep `schema:"step"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -146,13 +146,13 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) newModuleConnect(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	providers, err := h.ListVCSProviders(r.Context(), org)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -174,13 +174,13 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	client, err := h.GetVCSClient(r.Context(), params.VCSProviderID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -190,7 +190,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		PageSize: internal.MaxPageSize,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var filtered []string
@@ -199,7 +199,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 		if err == ErrInvalidModuleRepo {
 			continue // skip repo
 		} else if err != nil {
-			html.Error(w, err.Error(), http.StatusInternalServerError)
+			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		filtered = append(filtered, res)
@@ -225,13 +225,13 @@ func (h *webHandlers) newModuleConfirm(w http.ResponseWriter, r *http.Request) {
 		Repo          string `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	vcsprov, err := h.GetVCSProvider(r.Context(), params.VCSProviderID)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -254,7 +254,7 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		Repo          Repo   `schema:"identifier,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -263,10 +263,10 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 		VCSProviderID: params.VCSProviderID,
 	})
 	if err != nil && errors.Is(err, internal.ErrInvalidRepo) || errors.Is(err, ErrInvalidModuleRepo) {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	} else if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -277,13 +277,13 @@ func (h *webHandlers) publish(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("module_id", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	deleted, err := h.svc.DeleteModule(r.Context(), id)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

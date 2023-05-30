@@ -6,17 +6,18 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 
 type fakeSubscriber struct {
-	ch chan internal.Event
+	ch chan pubsub.Event
 
-	internal.PubSubService
+	pubsub.PubSubService
 }
 
-func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan internal.Event, error) {
+func (f *fakeSubscriber) Subscribe(context.Context, string) (<-chan pubsub.Event, error) {
 	return f.ch, nil
 }
 

@@ -74,7 +74,7 @@ func (a *service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptio
 		key:                    a.key,
 	})
 	if err != nil {
-		a.Error(err, "constructing token", "user", user)
+		a.Error(err, "constructing user token", "user", user)
 		return nil, nil, err
 	}
 
@@ -83,7 +83,7 @@ func (a *service) CreateUserToken(ctx context.Context, opts CreateUserTokenOptio
 		return nil, nil, err
 	}
 
-	a.V(1).Info("created token", "user", user)
+	a.V(1).Info("created user token", "user", user)
 
 	return ut, token, nil
 }
@@ -114,11 +114,11 @@ func (a *service) DeleteUserToken(ctx context.Context, tokenID string) error {
 	}
 
 	if err := a.db.deleteUserToken(ctx, tokenID); err != nil {
-		a.Error(err, "deleting token", "user", user)
+		a.Error(err, "deleting user token", "user", user)
 		return err
 	}
 
-	a.V(1).Info("deleted token", "username", user)
+	a.V(1).Info("deleted user token", "username", user)
 
 	return nil
 }

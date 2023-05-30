@@ -22,13 +22,13 @@ func (h *webHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 		TagName     *string `schema:"tag_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := h.svc.AddTags(r.Context(), *params.WorkspaceID, []TagSpec{{Name: *params.TagName}})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -42,13 +42,13 @@ func (h *webHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 		TagName     *string `schema:"tag_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := h.svc.RemoveTags(r.Context(), *params.WorkspaceID, []TagSpec{{Name: *params.TagName}})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

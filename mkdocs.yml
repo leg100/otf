@@ -1,9 +1,12 @@
 site_name: OTF
 site_url: https://docs.otf.ninja
 repo_url: https://github.com/leg100/otf
+plugins:
+- glightbox
 theme:
   name: material
   logo: ./images/logo.svg
+  favicon: ./images/icon.svg
   custom_dir: docs/overrides
   palette:
     primary: white
@@ -41,6 +44,8 @@ nav:
   - Introduction: index.md
   - install.md
   - quickstart.md
+  - Guides:
+    - tfc_migration.md
   - Authentication:
     - Identity Providers:
       - auth/providers/github.md
@@ -55,6 +60,7 @@ nav:
     - agents.md
     - registry.md
     - cli.md
+    - notifications.md
   - Configuration:
     - config/envvars.md
     - config/flags.md

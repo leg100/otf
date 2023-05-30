@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -36,7 +37,10 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 }
 
 // GetByID implements pubsub.Getter
-func (db *pgdb) GetByID(ctx context.Context, chunkID string) (any, error) {
+func (db *pgdb) GetByID(ctx context.Context, chunkID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &internal.Chunk{ID: chunkID}, nil
+	}
 	id, err := strconv.Atoi(chunkID)
 	if err != nil {
 		return nil, err

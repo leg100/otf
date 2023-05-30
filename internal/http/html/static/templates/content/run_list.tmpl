@@ -1,6 +1,6 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}
+{{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
   <a href="{{ workspacePath .Workspace.ID }}">{{ .Workspace.Name }}</a>
@@ -8,20 +8,6 @@
   runs
 {{ end }}
 
-{{ define "container-header-links" }}
-  {{ template "workspace-header-links" . }}
-{{ end }}
+{{ define "content-header-links" }}{{ template "workspace-header-links" . }}{{ end }}
 
-{{ define "content" }}
-  <script type="text/javascript">
-    window.addEventListener('load', (e) => {
-      watchRuns({{ watchWorkspacePath .Workspace.ID }});
-    });
-  </script>
-  {{ template "content-list" . }}
-{{ end }}
-
-{{ define "content-list-item" }}
-  {{ template "run-item" . }}
-{{ end }}
-
+{{ define "content" }}{{ template "run_listing" . }}{{ end }}

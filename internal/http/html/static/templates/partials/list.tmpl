@@ -1,5 +1,6 @@
 {{ define "content-list" }}
   <div id="content-list" class="content-list">
+    {{ block "content-list-header" . }}{{ end }}
     {{ range .Items }}
       {{ block "content-list-item" . }}{{ end }}
     {{ else }}

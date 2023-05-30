@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +29,7 @@ func TestTail(t *testing.T) {
 			Data:   []byte("\x02hello world\x03"),
 			Offset: 6,
 		}
-		app.Publish(internal.Event{Payload: want})
+		app.Publish(pubsub.Event{Payload: want})
 		require.Equal(t, want, <-stream)
 	})
 
@@ -68,7 +69,7 @@ func TestTail(t *testing.T) {
 		require.Equal(t, want, <-stream)
 
 		// send second, overlapping, chunk
-		svc.Publish(internal.Event{
+		svc.Publish(pubsub.Event{
 			Payload: internal.Chunk{
 				RunID:  "run-123",
 				Phase:  internal.PlanPhase,
@@ -105,7 +106,7 @@ func TestTail(t *testing.T) {
 		require.Equal(t, want, <-stream)
 
 		// publish duplicate chunk
-		app.Publish(internal.Event{
+		app.Publish(pubsub.Event{
 			Payload: internal.Chunk{
 				RunID: "run-123",
 				Phase: internal.PlanPhase,
@@ -120,7 +121,7 @@ func TestTail(t *testing.T) {
 			Data:   []byte(" world\x03"),
 			Offset: 6,
 		}
-		app.Publish(internal.Event{Payload: want})
+		app.Publish(pubsub.Event{Payload: want})
 		// dup event is skipped and non-dup is received
 		assert.Equal(t, want, <-stream)
 	})
@@ -135,7 +136,7 @@ func TestTail(t *testing.T) {
 		require.NoError(t, err)
 
 		// publish chunk for other run
-		app.Publish(internal.Event{
+		app.Publish(pubsub.Event{
 			Payload: internal.Chunk{
 				RunID: "run-456",
 				Phase: internal.PlanPhase,
@@ -149,7 +150,7 @@ func TestTail(t *testing.T) {
 			Phase: internal.PlanPhase,
 			Data:  []byte("\x02hello"),
 		}
-		app.Publish(internal.Event{
+		app.Publish(pubsub.Event{
 			Payload: want,
 		})
 		// chunk for other run is skipped but chunk for this run is received

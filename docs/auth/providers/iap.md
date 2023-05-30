@@ -11,7 +11,7 @@ OTF supports deployment using [Google's Identity-Aware Proxy](https://cloud.goog
 
 OTF checks each incoming request for the presence of a [signed IAP header](https://cloud.google.com/iap/docs/signed-headers-howto). If present then it verifies the header's signed token to verify it originated from Google IAP and that it has not expired.
 
-You can also configure OTF to validate the **audience** token claim. Validating the audience checks OTF is indeed the intended recipient of the request. Follow [Google's instructions](https://cloud.google.com/iap/docs/signed-headers-howto#iap_validate_jwt-go) for retrieving the audience string. Then set the [--iap-google-jwt-audience](/config/flags#-google-jwt-audience) `otfd` flag accordingly, e.g.:
+You can also configure OTF to validate the **audience** token claim. Validating the audience checks OTF is indeed the intended recipient of the request. Follow [Google's instructions](https://cloud.google.com/iap/docs/signed-headers-howto#iap_validate_jwt-go) for retrieving the audience string. Then set the [--iap-google-jwt-audience](../../../config/flags/#-google-jwt-audience) `otfd` flag accordingly, e.g.:
 
 ```
 otfd --google-jwt-audience /projects/project_number/apps/my_project_id

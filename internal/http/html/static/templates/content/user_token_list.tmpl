@@ -1,16 +1,16 @@
 {{ template "layout" . }}
 
-{{ define "container-header" }}
-  <div>profile / tokens</div>
+{{ define "content-header-title" }}
+  <div><a href="{{ profilePath }}">profile</a> / tokens</div>
 {{ end }}
 
-{{ define "container-header-actions" }}
+{{ define "content-header-actions" }}
   <form action="{{ newTokenPath }}" method="GET">
     <button id="new-user-token-button" type="submit">New Token</button>
   </form>
 {{ end }}
 
-{{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
+{{ define "content-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
   {{ template "content-list" . }}
@@ -25,7 +25,7 @@
     <div class="item-content">
       {{ template "identifier" . }}
       <form action="{{ deleteTokenPath }}" method="POST">
-        <button class="delete">delete</button>
+        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
         <input type="hidden" name="id" value="{{ .ID }}">
       </form>
     </div>

@@ -50,13 +50,13 @@ func (a *web) addHandlers(r *mux.Router) {
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	var opts OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	organizations, err := a.svc.ListOrganizations(r.Context(), opts)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 	// (b) The user has site permissions.
 	subject, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var canCreate bool
@@ -89,13 +89,13 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 func (a *web) get(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	org, err := a.svc.GetOrganization(r.Context(), name)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -111,13 +111,13 @@ func (a *web) get(w http.ResponseWriter, r *http.Request) {
 func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	org, err := a.svc.GetOrganization(r.Context(), name)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		UpdatedName string `schema:"new_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -148,7 +148,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		Name: &params.UpdatedName,
 	})
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -159,13 +159,13 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 func (a *web) delete(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("name", r)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err = a.svc.DeleteOrganization(r.Context(), organization)
 	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

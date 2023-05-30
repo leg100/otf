@@ -1,19 +1,17 @@
-// Package pubsub implements cluster-wide publishing and subscribing of events
 package pubsub
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/slog"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -21,23 +19,28 @@ const (
 	defaultChannel = "events"
 
 	// subBufferSize is the buffer size of the channel for each subscription.
-	subBufferSize = 16
+	subBufferSize = 100
 )
 
 type (
+	// Getter retrieves an event payload using its ID.
+	Getter interface {
+		GetByID(context.Context, string, DBAction) (any, error)
+	}
+
 	// Broker is a pubsub Broker implemented using postgres' listen/notify
 	Broker struct {
 		logr.Logger
 
-		channel       string                         // postgres notification channel name
-		pool          pool                           // pool from which to acquire a dedicated connection to postgres
-		islistening   chan bool                      // semaphore that's closed once broker is listening
-		pid           string                         // pid uniquely identifies a broker
-		registrations map[string]internal.Getter     // map of event payload type to a fn that can retrieve the payload
-		subs          map[string]chan internal.Event // subscriptions
-		metrics       map[string]prometheus.Gauge    // metric for each subscription
+		channel     string    // postgres notification channel name
+		pool        pool      // pool from which to acquire a dedicated connection to postgres
+		islistening chan bool // semaphore that's closed once broker is listening
 
-		mu sync.Mutex // sync access to maps
+		subs    map[string]chan Event       // subscriptions
+		metrics map[string]prometheus.Gauge // metric for each subscription
+		mu      sync.Mutex                  // sync access to maps
+
+		*converter
 	}
 
 	pool interface {
@@ -45,25 +48,24 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	}
 
-	// pgevent is an event sent via a postgres channel
+	// pgevent is the payload of a postgres notification triggered by a database
+	// change.
 	pgevent struct {
-		PayloadType string             `json:"payload_type"` // event payload type
-		Event       internal.EventType `json:"event"`        // event type
-		ID          string             `json:"id"`           // event payload ID
-		PID         string             `json:"pid"`          // process ID that sent this event
+		Table  string   `json:"table"`  // pg table associated with change
+		Action DBAction `json:"action"` // INSERT/UPDATE/DELETE
+		ID     string   `json:"id"`     // id of changed row
 	}
 )
 
-func NewBroker(logger logr.Logger, db internal.DB) *Broker {
+func NewBroker(logger logr.Logger, db pool) *Broker {
 	return &Broker{
-		Logger:        logger.WithValues("component", "broker"),
-		pid:           uuid.NewString(),
-		pool:          db,
-		islistening:   make(chan bool),
-		channel:       defaultChannel,
-		registrations: make(map[string]internal.Getter),
-		subs:          make(map[string]chan internal.Event),
-		metrics:       make(map[string]prometheus.Gauge),
+		Logger:      logger.WithValues("component", "broker"),
+		pool:        db,
+		islistening: make(chan bool),
+		channel:     defaultChannel,
+		subs:        make(map[string]chan Event),
+		metrics:     make(map[string]prometheus.Gauge),
+		converter:   newConverter(),
 	}
 }
 
@@ -97,42 +99,44 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 					return err
 				}
 			}
-
-			if err := b.receive(ctx, notification); err != nil {
-				b.Error(err, "received postgres notification")
+			var pge pgevent
+			if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
+				b.Error(err, "unmarshaling postgres notification")
 				continue
 			}
+			event, err := b.convert(ctx, pge)
+			if err != nil {
+				b.Error(err, "converting postgres notification into event", "notification", pge)
+				continue
+			}
+			b.localPublish(event)
 		}
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, nil)
 }
 
-// Publish sends an event to subscribers, via postgres to subscribers on
-// other machines, and via the local broker to subscribers within the same
-// process.
-func (b *Broker) Publish(event internal.Event) {
-	b.localPublish(event)
-
-	if event.Local {
+// Publish sends an event to subscribers.
+func (b *Broker) Publish(event Event) {
+	// ignore non-local publishing of events; the database itself is now
+	// responsible for triggering the publishing of events
+	if !event.Local {
 		return
 	}
-
-	if err := b.remotePublish(event); err != nil {
-		b.Error(err, "publishing event via postgres", "event", event.Type)
-	}
+	// send event only to local subscribers
+	b.localPublish(event)
 }
 
 // Subscribe subscribes the caller to a stream of events. Prefix is an
 // identifier prefixed to a random string to helpfully identify the subscriber
 // in metrics.
-func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.Event, error) {
+func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan Event, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	name := prefix + internal.GenerateRandomString(4)
 
-	sub := make(chan internal.Event, subBufferSize)
+	sub := make(chan Event, subBufferSize)
 	if _, ok := b.subs[name]; ok {
 		return nil, fmt.Errorf("name already taken")
 	}
@@ -144,7 +148,7 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.
 		Namespace:   "otf",
 		Subsystem:   "pub_sub",
 		Name:        "queue_length",
-		Help:        "Total length for queue for subscriber",
+		Help:        "Number of items in subscriber's queue",
 		ConstLabels: prometheus.Labels{"name": name},
 	})
 	if err := prometheus.Register(b.metrics[name]); err != nil {
@@ -170,16 +174,8 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan internal.
 	return sub, nil
 }
 
-// Register a means of reassembling a postgres message back into an otf event
-func (b *Broker) Register(t reflect.Type, getter internal.Getter) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	b.registrations[t.String()] = getter
-}
-
 // localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event internal.Event) {
+func (b *Broker) localPublish(event Event) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -194,55 +190,11 @@ func (b *Broker) localPublish(event internal.Event) {
 	}
 }
 
-// remotePublish publishes an event to postgres for relaying onto to remote
-// subscribers
-func (b *Broker) remotePublish(event internal.Event) error {
-	// marshal an otf event into a JSON-encoded postgres event
-	id, hasID := internal.GetID(event.Payload)
-	if !hasID {
-		return fmt.Errorf("event payload does not have an ID field")
+func (v *pgevent) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", v.ID),
+		slog.String("action", string(v.Action)),
+		slog.String("table", v.Table),
 	}
-	encoded, err := json.Marshal(&pgevent{
-		PayloadType: reflect.TypeOf(event.Payload).String(),
-		Event:       event.Type,
-		ID:          id,
-		PID:         b.pid,
-	})
-	if err != nil {
-		return err
-	}
-	sql := fmt.Sprintf("select pg_notify('%s', $1)", b.channel)
-	if _, err = b.pool.Exec(context.Background(), sql, encoded); err != nil {
-		return err
-	}
-	return nil
-}
-
-// receive handles notifications from postgres
-func (b *Broker) receive(ctx context.Context, notification *pgconn.Notification) error {
-	var event pgevent
-	if err := json.Unmarshal([]byte(notification.Payload), &event); err != nil {
-		return err
-	}
-
-	// skip notifications that this process sent.
-	if event.PID == b.pid {
-		return nil
-	}
-
-	getter, ok := b.registrations[event.PayloadType]
-	if !ok {
-		return fmt.Errorf("unregistered payload type: %s", event.PayloadType)
-	}
-	payload, err := getter.GetByID(ctx, event.ID)
-	if err != nil {
-		return fmt.Errorf("retrieving resource: %w", err)
-	}
-
-	b.localPublish(internal.Event{
-		Type:    event.Event,
-		Payload: payload,
-	})
-
-	return nil
+	return slog.GroupValue(attrs...)
 }

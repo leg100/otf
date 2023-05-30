@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -11,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
@@ -44,7 +44,7 @@ type (
 		// TODO(@leg100): it would be clearer to the caller if the stream is closed by
 		// returning a stream object with a Close() method. The calling code would
 		// call Watch(), and then defer a Close(), which is more readable IMO.
-		Watch(ctx context.Context, opts WatchOptions) (<-chan internal.Event, error)
+		Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error)
 		// Cancel a run. If a run is in progress then a cancelation signal will be
 		// sent out.
 		Cancel(ctx context.Context, runID string) (*Run, error)
@@ -52,6 +52,10 @@ type (
 		Apply(ctx context.Context, runID string) error
 		// Delete a run.
 		Delete(ctx context.Context, runID string) error
+
+		// RetryRun retries a run, creating a new run with the same config
+		// version.
+		RetryRun(ctx context.Context, id string) (*Run, error)
 
 		// DiscardRun discards a run. Run must be in the planned state.
 		DiscardRun(ctx context.Context, runID string) error
@@ -71,7 +75,7 @@ type (
 		logr.Logger
 
 		WorkspaceService
-		internal.PubSubService
+		pubsub.PubSubService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
@@ -96,7 +100,7 @@ type (
 		internal.Cache
 		internal.DB
 		html.Renderer
-		internal.Broker
+		*pubsub.Broker
 	}
 )
 
@@ -121,10 +125,10 @@ func NewService(opts Options) *service {
 	}
 
 	svc.web = &webHandlers{
-		Logger:           opts.Logger,
 		Renderer:         opts.Renderer,
 		WorkspaceService: opts.WorkspaceService,
 		logsdb:           db,
+		logger:           opts.Logger,
 		svc:              &svc,
 		starter: &starter{
 			ConfigurationVersionService: opts.ConfigurationVersionService,
@@ -135,7 +139,7 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Register(reflect.TypeOf(&Run{}), &svc)
+	opts.Register("runs", &svc)
 
 	return &svc
 }
@@ -162,7 +166,7 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 	}
 	s.V(1).Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunCreated, Payload: run})
+	s.Publish(pubsub.NewCreatedEvent(run))
 
 	return run, nil
 }
@@ -179,13 +183,16 @@ func (s *service) GetRun(ctx context.Context, runID string) (*Run, error) {
 		s.Error(err, "retrieving run", "id", runID, "subject", subject)
 		return nil, err
 	}
-	s.V(2).Info("retrieved run", "id", runID, "subject", subject)
+	s.V(9).Info("retrieved run", "id", runID, "subject", subject)
 
 	return run, nil
 }
 
 // GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, runID string) (any, error) {
+func (s *service) GetByID(ctx context.Context, runID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &Run{ID: runID}, nil
+	}
 	return s.db.GetRun(ctx, runID)
 }
 
@@ -223,7 +230,7 @@ func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, 
 		return nil, err
 	}
 
-	s.V(2).Info("listed runs", "count", len(rl.Items), "subject", subject)
+	s.V(9).Info("listed runs", "count", len(rl.Items), "subject", subject)
 
 	return rl, nil
 }
@@ -246,7 +253,7 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	}
 	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(pubsub.NewUpdatedEvent(run))
 
 	return run, nil
 }
@@ -267,8 +274,19 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("deleted run", "id", runID, "subject", subject)
-	s.Publish(internal.Event{Type: internal.EventRunDeleted, Payload: run})
+	s.Publish(pubsub.Event{Type: pubsub.EventRunDeleted, Payload: run})
 	return nil
+}
+
+func (s *service) RetryRun(ctx context.Context, runID string) (*Run, error) {
+	run, err := s.db.GetRun(ctx, runID)
+	if err != nil {
+		s.Error(err, "retrieving run", "id", runID)
+		return nil, err
+	}
+	return s.CreateRun(ctx, run.WorkspaceID, RunCreateOptions{
+		ConfigurationVersionID: &run.ConfigurationVersionID,
+	})
 }
 
 // StartPhase starts a run phase.
@@ -286,7 +304,7 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		return nil, err
 	}
 	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -315,12 +333,12 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		return nil, err
 	}
 	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
 
 // Watch provides authenticated access to a stream of run events.
-func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan internal.Event, error) {
+func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan pubsub.Event, error) {
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
@@ -342,7 +360,7 @@ func (s *service) Watch(ctx context.Context, opts WatchOptions) (<-chan internal
 	}
 
 	// relay is returned to the caller to which filtered run events are sent
-	relay := make(chan internal.Event)
+	relay := make(chan pubsub.Event)
 	go func() {
 		// relay events
 		for ev := range sub {
@@ -387,8 +405,7 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 
 	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
-
+	s.Publish(pubsub.NewUpdatedEvent(run))
 	return err
 }
 
@@ -409,8 +426,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 
 	s.V(0).Info("discarded run", "id", runID, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
-
+	s.Publish(pubsub.NewUpdatedEvent(run))
 	return err
 }
 
@@ -434,9 +450,9 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 	s.V(0).Info("canceled run", "id", runID, "subject", subject)
 	if enqueue {
 		// notify agent which'll send a SIGINT to terraform
-		s.Publish(internal.Event{Type: internal.EventRunCancel, Payload: run})
+		s.Publish(pubsub.Event{Type: pubsub.EventRunCancel, Payload: run})
 	}
-	s.Publish(internal.Event{Type: internal.EventRunStatusUpdate, Payload: run})
+	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -456,7 +472,7 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
 
 	// notify agent which'll send a SIGKILL to terraform
-	s.Publish(internal.Event{Type: internal.EventRunForceCancel, Payload: run})
+	s.Publish(pubsub.Event{Type: pubsub.EventRunForceCancel, Payload: run})
 
 	return err
 }
@@ -483,7 +499,7 @@ func (s *service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 	}
 	// Cache plan before returning
 	if err := s.cache.Set(planFileCacheKey(format, runID), file); err != nil {
-		return nil, fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching plan file")
 	}
 	return file, nil
 }
@@ -504,7 +520,7 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 	s.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
 
 	if err := s.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
+		s.Error(err, "caching plan file")
 	}
 
 	return nil

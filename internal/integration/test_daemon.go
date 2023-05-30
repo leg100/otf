@@ -12,15 +12,16 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cli"
-	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
-	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/module"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -119,7 +120,7 @@ func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *orga
 	t.Helper()
 
 	org, err := s.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
-		Name: internal.String(uuid.NewString()),
+		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
 	return org
@@ -133,7 +134,7 @@ func (s *testDaemon) createWorkspace(t *testing.T, ctx context.Context, org *org
 	}
 
 	ws, err := s.CreateWorkspace(ctx, workspace.CreateOptions{
-		Name:         internal.String(uuid.NewString()),
+		Name:         internal.String("workspace-" + internal.GenerateRandomString(6)),
 		Organization: &org.Name,
 	})
 	require.NoError(t, err)
@@ -186,7 +187,7 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
 	t.Helper()
 
-	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
+	user, err := s.CreateUser(ctx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
@@ -194,8 +195,7 @@ func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.
 func (s *testDaemon) createUserCtx(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) (*auth.User, context.Context) {
 	t.Helper()
 
-	user, err := s.CreateUser(ctx, uuid.NewString(), opts...)
-	require.NoError(t, err)
+	user := s.createUser(t, ctx, opts...)
 	return user, internal.AddSubjectToContext(ctx, user)
 }
 
@@ -207,6 +207,14 @@ func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string)
 	return user
 }
 
+func (s *testDaemon) getUserCtx(t *testing.T, ctx context.Context, username string) (*auth.User, context.Context) {
+	t.Helper()
+
+	user, err := s.GetUser(ctx, auth.UserSpec{Username: &username})
+	require.NoError(t, err)
+	return user, internal.AddSubjectToContext(ctx, user)
+}
+
 func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organization.Organization) *auth.Team {
 	t.Helper()
 
@@ -215,7 +223,7 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 	}
 
 	team, err := s.CreateTeam(ctx, auth.CreateTeamOptions{
-		Name:         uuid.NewString(),
+		Name:         "team-" + internal.GenerateRandomString(4),
 		Organization: org.Name,
 	})
 	require.NoError(t, err)
@@ -230,15 +238,26 @@ func (s *testDaemon) getTeam(t *testing.T, ctx context.Context, org, name string
 	return team
 }
 
-func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *configversion.ConfigurationVersion {
+func (s *testDaemon) createConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
 	t.Helper()
 
 	if ws == nil {
 		ws = s.createWorkspace(t, ctx, nil)
 	}
+	if opts == nil {
+		opts = &configversion.ConfigurationVersionCreateOptions{}
+	}
 
-	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+	cv, err := s.CreateConfigurationVersion(ctx, ws.ID, *opts)
 	require.NoError(t, err)
+	return cv
+}
+
+func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace, opts *configversion.ConfigurationVersionCreateOptions) *configversion.ConfigurationVersion {
+	cv := s.createConfigurationVersion(t, ctx, ws, opts)
+	tarball, err := os.ReadFile("./testdata/root.tar.gz")
+	require.NoError(t, err)
+	s.UploadConfig(ctx, cv.ID, tarball)
 	return cv
 }
 
@@ -249,7 +268,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 	if cv == nil {
-		cv = s.createConfigurationVersion(t, ctx, ws)
+		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
 
 	run, err := s.CreateRun(ctx, ws.ID, run.RunCreateOptions{
@@ -267,8 +286,8 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 	}
 
 	v, err := s.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
-		Key:      internal.String(uuid.NewString()),
-		Value:    internal.String(uuid.NewString()),
+		Key:      internal.String("key-" + internal.GenerateRandomString(4)),
+		Value:    internal.String("val-" + internal.GenerateRandomString(4)),
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
@@ -317,6 +336,23 @@ func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.U
 	return ut, token
 }
 
+func (s *testDaemon) createNotificationConfig(t *testing.T, ctx context.Context, ws *workspace.Workspace) *notifications.Config {
+	t.Helper()
+
+	if ws == nil {
+		ws = s.createWorkspace(t, ctx, nil)
+	}
+
+	nc, err := s.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		DestinationType: notifications.DestinationGeneric,
+		Enabled:         internal.Bool(true),
+		Name:            internal.String(uuid.NewString()),
+		URL:             internal.String("http://example.com"),
+	})
+	require.NoError(t, err)
+	return nc
+}
+
 func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organization string) []byte {
 	t.Helper()
 
@@ -328,23 +364,19 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 	return token
 }
 
-// startAgent starts an external agent, configuring it with the given
-// organization and configuring it to connect to the daemon.
-func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.Config) {
+func (s *testDaemon) createSubscriber(t *testing.T, ctx context.Context) <-chan pubsub.Event {
 	t.Helper()
 
-	token := s.createAgentToken(t, ctx, organization)
-
-	clientCfg := otfhttp.NewConfig()
-	clientCfg.Address = s.Hostname()
-	clientCfg.Insecure = true // daemon uses self-signed cert
-	clientCfg.Token = string(token)
-	app, err := client.New(*clientCfg)
+	sub, err := s.Subscribe(ctx, "")
 	require.NoError(t, err)
+	return sub
+}
 
-	cfg.External = true
-	cfg.Organization = &organization
-	//
+// startAgent starts an external agent, configuring it with the given
+// organization and configuring it to connect to the daemon.
+func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.ExternalConfig) {
+	t.Helper()
+
 	// Configure logger; discard logs by default
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
@@ -355,7 +387,13 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 		logger = logr.Discard()
 	}
 
-	agent, err := agent.NewAgent(logger, app, cfg)
+	token := s.createAgentToken(t, ctx, organization)
+	cfg.HTTPConfig = http.NewConfig()
+	cfg.HTTPConfig.Token = string(token)
+	cfg.HTTPConfig.Address = s.Hostname()
+	cfg.HTTPConfig.Insecure = true // daemon uses self-signed cert
+
+	agent, err := agent.NewExternalAgent(ctx, logger, cfg)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(ctx)

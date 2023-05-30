@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
 	"golang.org/x/sync/errgroup"
 )
@@ -79,6 +80,30 @@ func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error)
 	}
 
 	return agent, nil
+}
+
+// NewExternalAgent constructs an external agent, which communicates with otfd
+// via http
+func NewExternalAgent(ctx context.Context, logger logr.Logger, cfg ExternalConfig) (*agent, error) {
+	// Sends unauthenticated ping to server
+	app, err := client.New(cfg.HTTPConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// Confirm token validity
+	at, err := app.GetAgentToken(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("attempted authentication: %w", err)
+	}
+	logger.Info("successfully authenticated", "organization", at.Organization, "token_id", at.ID)
+
+	// Ensure agent only processes runs for this org
+	cfg.Organization = internal.String(at.Organization)
+	// Mark agent as external.
+	cfg.External = true
+
+	return NewAgent(logger, app, cfg.Config)
 }
 
 // Start starts the agent daemon and its workers

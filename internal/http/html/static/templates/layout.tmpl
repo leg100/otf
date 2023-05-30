@@ -4,10 +4,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  {{ block "stylesheet" . }}{{ end }}
+  {{block "pre-content" .}}{{end}}
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/forms.css" }}">
+  <link rel="icon" type="image/svg+xml" href="/static/images/icon.svg">
   <script src="{{ addHash "/static/js/main.js" }}"></script>
+  <script src="{{ addHash "/static/js/htmx.1.9.2.min.js" }}"></script>
+  <script src="{{ addHash "/static/js/htmx-sse.1.9.2.js" }}"></script>
+  <script defer src="{{ addHash "/static/js/alpine.3.12.1.min.js" }}"></script>
+  {{ if devMode }}<script src="http://localhost:35729/livereload.js"></script>{{ end }}
   <title>{{ .Title }} | otf</title>
 </head>
 <body>
@@ -56,16 +61,14 @@
   {{ block "container" . }}
     {{ block "content-header" . }}
       <div class="content-header">
-        {{ block "container-header-container" . }}
-        <div class="container-header-title">
-          <strong>{{ block "container-header" . }}{{ end }}</strong>
+        <div class="content-header-title">
+          <span>{{ block "content-header-title" . }}{{ end }}</span>
         </div>
-        {{ end }}
-        <div class="container-header-actions">
-          {{ block "container-header-actions" . }}{{ end }}
+        <div class="content-header-actions">
+          {{ block "content-header-actions" . }}{{ end }}
         </div>
-        <ul class="container-header-links">
-          {{ block "container-header-links" . }}{{ end }}
+        <ul class="content-header-links">
+          {{ block "content-header-links" . }}{{ end }}
         </ul>
       </div>
     {{ end }}
@@ -92,6 +95,7 @@
       </div>
     </div>
   </footer>
+  {{block "post-content" .}}{{end}}
 </body>
 </html>
 {{ end }}

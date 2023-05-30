@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"errors"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -12,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -46,7 +46,7 @@ type (
 
 	service struct {
 		logr.Logger
-		internal.Publisher
+		pubsub.Publisher
 
 		site                internal.Authorizer
 		organization        internal.Authorizer
@@ -60,7 +60,7 @@ type (
 
 	Options struct {
 		internal.DB
-		internal.Broker
+		*pubsub.Broker
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
@@ -91,7 +91,7 @@ func NewService(opts Options) *service {
 		svc:                &svc,
 	}
 	// Register with broker so that it can relay workspace events
-	opts.Register(reflect.TypeOf(&Workspace{}), &svc)
+	opts.Register("workspaces", &svc)
 	return &svc
 }
 
@@ -145,13 +145,16 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	s.Publish(internal.Event{Type: internal.EventWorkspaceCreated, Payload: ws})
+	s.Publish(pubsub.NewCreatedEvent(ws))
 
 	return ws, nil
 }
 
 // GetByID implements pubsub.Getter
-func (s *service) GetByID(ctx context.Context, workspaceID string) (any, error) {
+func (s *service) GetByID(ctx context.Context, workspaceID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &Workspace{ID: workspaceID}, nil
+	}
 	return s.db.get(ctx, workspaceID)
 }
 
@@ -167,7 +170,7 @@ func (s *service) GetWorkspace(ctx context.Context, workspaceID string) (*Worksp
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved workspace", "subject", subject, "workspace", workspaceID)
+	s.V(9).Info("retrieved workspace", "subject", subject, "workspace", workspaceID)
 
 	return ws, nil
 }
@@ -184,7 +187,7 @@ func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspac
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
+	s.V(9).Info("retrieved workspace", "subject", subject, "organization", organization, "workspace", workspace)
 
 	return ws, nil
 }
@@ -227,10 +230,7 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 		return nil, err
 	}
 
-	// retain ref to existing name so a name change can be detected
-	var name string
 	updated, err := s.db.update(ctx, workspaceID, func(ws *Workspace) error {
-		name = ws.Name
 		return ws.Update(opts)
 	})
 	if err != nil {
@@ -238,11 +238,9 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 		return nil, err
 	}
 
-	if updated.Name != name {
-		s.Publish(internal.Event{Type: internal.EventWorkspaceRenamed, Payload: updated})
-	}
-
 	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
+
+	s.Publish(pubsub.NewUpdatedEvent(updated))
 
 	return updated, nil
 }
@@ -272,7 +270,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 		return nil, err
 	}
 
-	s.Publish(internal.Event{Type: internal.EventWorkspaceDeleted, Payload: ws})
+	s.Publish(pubsub.NewDeletedEvent(ws))
 
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 
@@ -323,8 +321,7 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
-	// ignore warnings; the repo is still disconnected successfully
-	if err != nil && !errors.Is(err, internal.ErrWarning) {
+	if err != nil {
 		s.Error(err, "disconnecting workspace", "workspace", workspaceID, "subject", subject)
 		return err
 	}

@@ -10,12 +10,12 @@ import (
 type (
 	// Organization is an OTF organization, comprising workspaces, users, etc.
 	Organization struct {
-		ID              string
-		CreatedAt       time.Time
-		UpdatedAt       time.Time
-		Name            string
-		SessionRemember int
-		SessionTimeout  int
+		ID              string    `json:"id"`
+		CreatedAt       time.Time `json:"created_at"`
+		UpdatedAt       time.Time `json:"updated_at"`
+		Name            string    `json:"name"`
+		SessionRemember int       `json:"session_remember"`
+		SessionTimeout  int       `json:"session_timeout"`
 	}
 
 	// OrganizationList represents a list of Organizations.

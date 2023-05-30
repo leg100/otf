@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -68,6 +69,10 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 		payload = m.toVariableList(v)
 	case *variable.Variable:
 		payload = m.toVariable(v)
+	case []*notifications.Config:
+		payload = m.toNotificationList(v)
+	case *notifications.Config:
+		payload = m.toNotificationConfig(v)
 	case run.Phase:
 		payload, err = m.toPhase(v, r)
 	case *state.VersionList:

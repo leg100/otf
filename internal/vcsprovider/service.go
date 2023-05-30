@@ -101,7 +101,7 @@ func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]
 		a.Error(err, "listing vcs providers", "organization", organization, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("listed vcs providers", "organization", organization, "subject", subject)
+	a.V(9).Info("listed vcs providers", "organization", organization, "subject", subject)
 	return providers, nil
 }
 
@@ -118,7 +118,7 @@ func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, 
 	if err != nil {
 		return nil, err
 	}
-	a.V(2).Info("retrieved vcs provider", "provider", provider, "subject", subject)
+	a.V(9).Info("retrieved vcs provider", "provider", provider, "subject", subject)
 
 	return provider, nil
 }

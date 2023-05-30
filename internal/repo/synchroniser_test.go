@@ -4,21 +4,21 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestHook_Sync tests synchronising a hook with a cloud provider's hook,
+// TestSynchroniser tests synchronising a hook with a cloud provider's hook,
 // seeding the cloud with a different state in each test case.
-func TestHook_Sync(t *testing.T) {
+func TestSynchroniser(t *testing.T) {
 	tests := []struct {
-		name       string
-		cloud      cloud.Webhook // seed cloud with hook
-		got        *hook
-		want       *hook // hook after synchronisation
-		wantUpdate bool  // want cloud to be updated
+		name  string
+		cloud cloud.Webhook // seed cloud with hook
+		got   *hook         // seed db with hook
+		want  *hook         // hook after synchronisation
 	}{
 		{
 			name: "synchronised",
@@ -61,16 +61,15 @@ func TestHook_Sync(t *testing.T) {
 				endpoint: "fake-host.org/xyz",
 				cloudID:  internal.String("123"),
 			},
-			wantUpdate: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := &fakeCloudClient{hook: tt.cloud}
-			err := tt.got.sync(context.Background(), client)
-			require.NoError(t, err)
+			db := &fakeDB{hook: tt.got}
+			synchr := &synchroniser{Logger: logr.Discard()}
+			require.NoError(t, synchr.sync(context.Background(), db, client, tt.got))
 			assert.Equal(t, tt.want, tt.got)
-			assert.Equal(t, tt.wantUpdate, client.gotUpdate)
 		})
 	}
 }
