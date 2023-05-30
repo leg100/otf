@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"runtime"
 
 	"github.com/leg100/otf/internal"
-	"github.com/shirou/gopsutil/host"
 )
 
 const HashicorpReleasesHost = "releases.hashicorp.com"
@@ -74,18 +74,13 @@ func (d *terraformDownloader) download(ctx context.Context, version string, w io
 }
 
 func (d *terraformDownloader) src(version string) string {
-	hostStat, _ := host.Info()
-
-	if hostStat.KernelArch == "aarch64" {
-		hostStat.KernelArch = "arm64"
-	}
 	return (&url.URL{
 		Scheme: "https",
 		Host:   d.host,
 		Path: path.Join(
 			"terraform",
 			version,
-			fmt.Sprintf("terraform_%s_linux_%s.zip", version, hostStat.KernelArch)),
+			fmt.Sprintf("terraform_%s_%s_%s.zip", version, runtime.GOOS, runtime.GOARCH)),
 	}).String()
 }
 
