@@ -53,7 +53,7 @@ install:
 install-latest-release:
 	{ \
 	set -ex ;\
-	ZIP_FILE=$$(mktemp -t otf) ;\
+	ZIP_FILE=$$(mktemp) ;\
 	RELEASE_URL=$$(curl -s https://api.github.com/repos/leg100/otf/releases/latest | \
 		jq -r '.assets[] | select(.name | test("otfd_.*_linux_amd64.zip$$")) | .browser_download_url') ;\
 	curl -Lo $$ZIP_FILE $$RELEASE_URL ;\
