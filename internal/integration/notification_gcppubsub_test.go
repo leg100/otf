@@ -66,6 +66,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	got = append(got, <-received)
 	got = append(got, <-received)
 	got = append(got, <-received)
+	got = append(got, <-received)
 
 	// keep a record of whether a match was found for each expected status
 	matches := map[internal.RunStatus]bool{
