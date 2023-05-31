@@ -12,14 +12,14 @@ import (
 )
 
 type (
-	// Subdaemon is an automonous system subordinate to the main daemon (otfd).
-	Subdaemon struct {
+	// Subsystem is an automonous system subordinate to the main daemon (otfd).
+	Subsystem struct {
 		// Name of subsystem
 		Name string
-		// Subsystem is the underlying the operation the subdaemon invokes.
-		Subsystem
-		// Backoff and retry initialization the subsystem in the event of an error
-		BackoffRetry bool
+		// System is the underlying system to be invoked and supervised.
+		System Startable
+		// Backoff and restart subsystem in the event of an error
+		BackoffRestart bool
 		// Exclusive: permit only one instance of this subsystem on an OTF
 		// cluster
 		Exclusive bool
@@ -30,15 +30,14 @@ type (
 		LockID *int64
 		logr.Logger
 	}
-	// Subsystem is the operation the subsystem should start and
-	// supervise, re-starting if necessary.
-	Subsystem interface {
+	// Startable is a blocking process that closes the started channel once it
+	// has successfully started.
+	Startable interface {
 		Start(ctx context.Context, started chan struct{}) error
 	}
 )
 
-func (s *Subdaemon) Start(ctx context.Context, g *errgroup.Group) error {
-	s.V(1).Info("starting subdaemon", "name", s.Name)
+func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	if s.Exclusive {
 		if s.LockID == nil {
 			return errors.New("exclusive subsystem must have non-nil lock ID")
@@ -57,13 +56,13 @@ func (s *Subdaemon) Start(ctx context.Context, g *errgroup.Group) error {
 		if s.Exclusive {
 			// block on getting an exclusive lock
 			return s.WaitAndLock(ctx, *s.LockID, func() error {
-				return s.Subsystem.Start(ctx, started)
+				return s.System.Start(ctx, started)
 			})
 		} else {
-			return s.Subsystem.Start(ctx, started)
+			return s.System.Start(ctx, started)
 		}
 	}
-	if s.BackoffRetry {
+	if s.BackoffRestart {
 		// Backoff and retry whenever operation returns an error. If context is
 		// cancelled then it'll stop retrying and return the context error.
 		policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
@@ -77,7 +76,11 @@ func (s *Subdaemon) Start(ctx context.Context, g *errgroup.Group) error {
 	} else {
 		g.Go(op)
 	}
-	s.V(1).Info("waiting on subdaemon", "name", s.Name)
+	// Don't wait for an exclusive system to start because it may be waiting for
+	// a lock to become free (i.e. another otfd node is already running the system).
+	if s.Exclusive {
+		return nil
+	}
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

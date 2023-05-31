@@ -378,24 +378,24 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	}
 	d.V(0).Info("set system hostname", "hostname", d.Hostname())
 
-	subdaemons := []*internal.Subdaemon{
+	subsystems := []*internal.Subsystem{
 		{
-			Name:         "broker",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Subsystem:    d.Broker,
+			Name:           "broker",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			System:         d.Broker,
 		},
 		{
-			Name:         "proxy",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Subsystem:    d.LogsService,
+			Name:           "proxy",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			System:         d.LogsService,
 		},
 		{
-			Name:         "spawner",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Subsystem: &run.Spawner{
+			Name:           "spawner",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			System: &run.Spawner{
 				Logger:                      d.Logger.WithValues("component", "spawner"),
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
@@ -405,10 +405,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
-			Name:         "publisher",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Subsystem: &module.Publisher{
+			Name:           "publisher",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			System: &module.Publisher{
 				Logger:             d.Logger.WithValues("component", "publisher"),
 				VCSProviderService: d.VCSProviderService,
 				ModuleService:      d.ModuleService,
@@ -416,13 +416,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
-			Name:         "reporter",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Exclusive:    true,
-			DB:           d.DB,
-			LockID:       internal.Int64(run.ReporterLockID),
-			Subsystem: &run.Reporter{
+			Name:           "reporter",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			Exclusive:      true,
+			DB:             d.DB,
+			LockID:         internal.Int64(run.ReporterLockID),
+			System: &run.Reporter{
 				Logger:                      d.Logger.WithValues("component", "reporter"),
 				VCSProviderService:          d.VCSProviderService,
 				Subscriber:                  d.Broker,
@@ -432,13 +432,13 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
-			Name:         "notifier",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Exclusive:    true,
-			DB:           d.DB,
-			LockID:       internal.Int64(notifications.LockID),
-			Subsystem: notifications.NewNotifier(notifications.NotifierOptions{
+			Name:           "notifier",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			Exclusive:      true,
+			DB:             d.DB,
+			LockID:         internal.Int64(notifications.LockID),
+			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:           d.Logger,
 				Subscriber:       d.Broker,
 				HostnameService:  d.HostnameService,
@@ -448,14 +448,14 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		},
 	}
 	if !d.DisableScheduler {
-		subdaemons = append(subdaemons, &internal.Subdaemon{
-			Name:         "scheduler",
-			BackoffRetry: true,
-			Logger:       d.Logger,
-			Exclusive:    true,
-			DB:           d.DB,
-			LockID:       internal.Int64(scheduler.LockID),
-			Subsystem: scheduler.NewScheduler(scheduler.Options{
+		subsystems = append(subsystems, &internal.Subsystem{
+			Name:           "scheduler",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			Exclusive:      true,
+			DB:             d.DB,
+			LockID:         internal.Int64(scheduler.LockID),
+			System: scheduler.NewScheduler(scheduler.Options{
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
@@ -464,7 +464,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			}),
 		})
 	}
-	for _, ss := range subdaemons {
+	for _, ss := range subsystems {
 		if err := ss.Start(ctx, g); err != nil {
 			return err
 		}
