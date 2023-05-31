@@ -65,7 +65,7 @@ func TestSpawner(t *testing.T) {
 			services := &fakeSpawnerServices{
 				workspaces: []*workspace.Workspace{tt.ws},
 			}
-			spawner := spawner{
+			spawner := Spawner{
 				ConfigurationVersionService: services,
 				WorkspaceService:            services,
 				VCSProviderService:          services,

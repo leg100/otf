@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/slog"
-	"gopkg.in/cenkalti/backoff.v1"
 )
 
 const (
@@ -69,6 +68,15 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 	}
 }
 
+func NewBrokerSubsystem(logger logr.Logger, db internal.DB, broker *Broker) *internal.Subsystem {
+	return &internal.Subsystem{
+		Name:               "broker",
+		BackoffRetry:       true,
+		Logger:             logger,
+		SubsystemOperation: broker,
+	}
+}
+
 // Start the pubsub daemon; listen to notifications from postgres and forward to
 // local pubsub broker. The listening channel is closed once the broker has
 // started listening; from this point onwards published messages will be
@@ -84,36 +92,32 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 		return err
 	}
 	close(isListening) // close semaphore to indicate broker is now listening
-	b.Info("listening for events")
+	b.V(2).Info("listening for events")
 
-	op := func() error {
-		for {
-			notification, err := conn.Conn().WaitForNotification(ctx)
-			if err != nil {
-				select {
-				case <-ctx.Done():
-					// parent has decided to shutdown so exit without error
-					return nil
-				default:
-					b.Error(err, "waiting for postgres notification")
-					return err
-				}
+	for {
+		notification, err := conn.Conn().WaitForNotification(ctx)
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				// parent has decided to shutdown so exit without error
+				return nil
+			default:
+				b.Error(err, "waiting for postgres notification")
+				return err
 			}
-			var pge pgevent
-			if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
-				b.Error(err, "unmarshaling postgres notification")
-				continue
-			}
-			event, err := b.convert(ctx, pge)
-			if err != nil {
-				b.Error(err, "converting postgres notification into event", "notification", pge)
-				continue
-			}
-			b.localPublish(event)
 		}
+		var pge pgevent
+		if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
+			b.Error(err, "unmarshaling postgres notification")
+			continue
+		}
+		event, err := b.convert(ctx, pge)
+		if err != nil {
+			b.Error(err, "converting postgres notification into event", "notification", pge)
+			continue
+		}
+		b.localPublish(event)
 	}
-	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-	return backoff.RetryNotify(op, policy, nil)
 }
 
 // Publish sends an event to subscribers.

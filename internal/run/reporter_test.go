@@ -49,7 +49,7 @@ func TestReporter_HandleRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := make(chan cloud.SetStatusOptions, 1)
-			reporter := &reporter{
+			reporter := &Reporter{
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCSProviderService:          &fakeReporterVCSProviderService{got: got},

@@ -19,8 +19,6 @@ type (
 		GetNotificationConfiguration(ctx context.Context, id string) (*Config, error)
 		ListNotificationConfigurations(ctx context.Context, workspaceID string) ([]*Config, error)
 		DeleteNotificationConfiguration(ctx context.Context, id string) error
-
-		StartNotifier(ctx context.Context) error
 	}
 
 	service struct {
@@ -55,16 +53,6 @@ func NewService(opts Options) *service {
 	// Register with broker so that it can relay events
 	opts.Register("notification_configurations", svc.db)
 	return &svc
-}
-
-func (s *service) StartNotifier(ctx context.Context) error {
-	return start(ctx, notifierOptions{
-		Logger:           s.Logger,
-		Subscriber:       s.PubSubService,
-		WorkspaceService: s.WorkspaceService,
-		HostnameService:  s.HostnameService,
-		db:               s.db,
-	})
 }
 
 func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {

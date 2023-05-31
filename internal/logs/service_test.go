@@ -160,7 +160,7 @@ func TestTail(t *testing.T) {
 
 func fakeService(existing internal.Chunk) *service {
 	return &service{
-		proxy:         &fakeTailProxy{chunk: existing},
+		chunkproxy:    &fakeTailProxy{chunk: existing},
 		PubSubService: newFakePubSubService(),
 		Logger:        logr.Discard(),
 		run:           &fakeAuthorizer{},

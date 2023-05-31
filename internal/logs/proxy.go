@@ -40,7 +40,7 @@ func newProxy(opts Options) *proxy {
 
 // Start chunk proxy daemon, which keeps the cache up-to-date with logs
 // published across the cluster.
-func (p *proxy) Start(ctx context.Context) error {
+func (p *proxy) Start(ctx context.Context, started chan struct{}) error {
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
 	// it may have missed updates, potentially rendering the cache stale.
@@ -48,6 +48,7 @@ func (p *proxy) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	close(started)
 
 	for event := range sub {
 		chunk, ok := event.Payload.(internal.Chunk)

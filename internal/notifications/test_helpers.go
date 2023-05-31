@@ -31,8 +31,8 @@ type (
 	}
 )
 
-func newTestNotifier(t *testing.T, f clientFactory, configs ...*Config) *notifier {
-	return &notifier{
+func newTestNotifier(t *testing.T, f clientFactory, configs ...*Config) *Notifier {
+	return &Notifier{
 		Logger:           logr.Discard(),
 		WorkspaceService: &fakeWorkspaceService{},
 		HostnameService:  &fakeHostnameService{},

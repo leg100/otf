@@ -4,19 +4,17 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
-	"gopkg.in/cenkalti/backoff.v1"
 )
 
-// lockID guarantees only one scheduler on a cluster is running at any
+// LockID guarantees only one scheduler on a cluster is running at any
 // time.
-const lockID int64 = 5577006791947779410
+const LockID int64 = 5577006791947779410
 
 type (
 	// scheduler performs two principle tasks :
@@ -46,46 +44,33 @@ type (
 	RunService       run.Service
 )
 
-// Start constructs and initialises the scheduler.
-// start starts the scheduler daemon. Should be invoked in a go routine.
-func Start(ctx context.Context, opts Options) error {
-	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "scheduler"})
-
-	sched := &scheduler{
+func NewScheduler(opts Options) *scheduler {
+	return &scheduler{
 		Logger:           opts.Logger.WithValues("component", "scheduler"),
 		WorkspaceService: opts.WorkspaceService,
 		RunService:       opts.RunService,
 		Subscriber:       opts.Subscriber,
-		queues:           make(map[string]eventHandler),
 		queueFactory:     queueMaker{},
 	}
-	sched.V(2).Info("started")
-
-	op := func() error {
-		// block on getting an exclusive lock
-		return opts.WaitAndLock(ctx, lockID, func() error {
-			return sched.reinitialize(ctx)
-		})
-	}
-	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-		sched.Error(err, "restarting scheduler")
-	})
 }
 
 // reinitialize retrieves workspaces and runs from the DB and listens to events,
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
-func (s *scheduler) reinitialize(ctx context.Context) error {
+func (s *scheduler) Start(ctx context.Context, started chan struct{}) error {
 	// Unsubscribe Subscribe() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// Reset queues each time scheduler starts
+	s.queues = make(map[string]eventHandler)
 
 	// subscribe to run events and workspace unlock events
 	sub, err := s.Subscribe(ctx, "scheduler-")
 	if err != nil {
 		return err
 	}
+	close(started)
 
 	// retrieve existing workspaces, page by page
 	workspaces := []*workspace.Workspace{}

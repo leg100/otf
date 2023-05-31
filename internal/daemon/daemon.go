@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -379,101 +378,94 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	}
 	d.V(0).Info("set system hostname", "hostname", d.Hostname())
 
-	// Run pubsub broker and wait for it to start listening
-	isListening := make(chan struct{})
-	g.Go(func() error { return d.Broker.Start(ctx, isListening) })
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(time.Second):
-		return fmt.Errorf("timed out waiting for broker to start")
-	case <-isListening:
+	subsystems := []*internal.Subsystem{
+		{
+			Name:               "broker",
+			BackoffRetry:       true,
+			Logger:             d.Logger,
+			SubsystemOperation: d.Broker,
+		},
+		{
+			Name:               "proxy",
+			BackoffRetry:       true,
+			Logger:             d.Logger,
+			SubsystemOperation: d.LogsService,
+		},
+		{
+			Name:         "spawner",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			SubsystemOperation: &run.Spawner{
+				Logger:                      d.Logger.WithValues("component", "spawner"),
+				ConfigurationVersionService: d.ConfigurationVersionService,
+				WorkspaceService:            d.WorkspaceService,
+				VCSProviderService:          d.VCSProviderService,
+				RunService:                  d.RunService,
+			},
+		},
+		{
+			Name:         "publisher",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			SubsystemOperation: &module.Publisher{
+				Logger:             d.Logger.WithValues("component", "publisher"),
+				VCSProviderService: d.VCSProviderService,
+				ModuleService:      d.ModuleService,
+			},
+		},
+		{
+			Name:         "reporter",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			Exclusive:    true,
+			DB:           d.DB,
+			LockID:       internal.Int64(run.ReporterLockID),
+			SubsystemOperation: &run.Reporter{
+				Logger:                      d.Logger.WithValues("component", "reporter"),
+				VCSProviderService:          d.VCSProviderService,
+				Subscriber:                  d.Broker,
+				HostnameService:             d.HostnameService,
+				ConfigurationVersionService: d.ConfigurationVersionService,
+				WorkspaceService:            d.WorkspaceService,
+			},
+		},
+		{
+			Name:         "notifier",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			Exclusive:    true,
+			DB:           d.DB,
+			LockID:       internal.Int64(notifications.LockID),
+			SubsystemOperation: notifications.NewNotifier(notifications.NotifierOptions{
+				Logger:           d.Logger,
+				Subscriber:       d.Broker,
+				HostnameService:  d.HostnameService,
+				WorkspaceService: d.WorkspaceService,
+			}),
+		},
 	}
-
-	// Run logs caching proxy
-	g.Go(func() error { return d.StartProxy(ctx) })
-
 	if !d.DisableScheduler {
-		// Run scheduler - if there is another scheduler running already then
-		// this'll wait until the other scheduler exits.
-		g.Go(func() error {
-			err := scheduler.Start(ctx, scheduler.Options{
+		subsystems = append(subsystems, &internal.Subsystem{
+			Name:         "scheduler",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			Exclusive:    true,
+			DB:           d.DB,
+			LockID:       internal.Int64(scheduler.LockID),
+			SubsystemOperation: scheduler.NewScheduler(scheduler.Options{
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
 				DB:               d.DB,
 				Subscriber:       d,
-			})
-			if err != nil {
-				d.Error(err, "scheduler terminated prematurely")
-				return fmt.Errorf("scheduler terminated: %w", err)
-			}
-			d.V(2).Info("scheduler gracefully shutdown")
-			return nil
+			}),
 		})
 	}
-
-	// Run run-spawner
-	g.Go(func() error {
-		err := run.StartSpawner(ctx, run.SpawnerOptions{
-			Logger:                      d.Logger,
-			ConfigurationVersionService: d.ConfigurationVersionService,
-			WorkspaceService:            d.WorkspaceService,
-			VCSProviderService:          d.VCSProviderService,
-			RunService:                  d.RunService,
-			Subscriber:                  d.Broker,
-		})
-		if err != nil {
-			return fmt.Errorf("spawner terminated: %w", err)
+	for _, ss := range subsystems {
+		if err := ss.Start(ctx, g); err != nil {
+			return err
 		}
-		d.V(2).Info("spawner gracefully shutdown")
-		return nil
-	})
-
-	// Run module publisher
-	g.Go(func() error {
-		err := module.StartPublisher(ctx, module.PublisherOptions{
-			Logger:             d.Logger,
-			VCSProviderService: d.VCSProviderService,
-			ModuleService:      d.ModuleService,
-			Subscriber:         d.Broker,
-		})
-		if err != nil {
-			return fmt.Errorf("module publisher terminated: %w", err)
-		}
-		d.V(2).Info("publisher gracefully shutdown")
-		return nil
-	})
-
-	// Run PR reporter - if there is another reporter running already then
-	// this'll wait until the other reporter exits.
-	g.Go(func() error {
-		err := run.StartReporter(ctx, run.ReporterOptions{
-			Logger:                      d.Logger,
-			ConfigurationVersionService: d.ConfigurationVersionService,
-			WorkspaceService:            d.WorkspaceService,
-			VCSProviderService:          d.VCSProviderService,
-			HostnameService:             d.HostnameService,
-			Subscriber:                  d.Broker,
-			DB:                          d.DB,
-		})
-		if err != nil {
-			d.Error(err, "reporter terminated prematurely")
-			return fmt.Errorf("reporter terminated: %w", err)
-		}
-		d.V(2).Info("reporter gracefully shutdown")
-		return nil
-	})
-
-	// Run notifier - if there is another notifier running already then
-	// this'll wait until the other one exits.
-	g.Go(func() error {
-		if err := d.StartNotifier(ctx); err != nil {
-			return fmt.Errorf("notifier terminated: %w", err)
-		}
-		d.V(2).Info("notifier gracefully shutdown")
-		return nil
-	})
+	}
 
 	// Run local agent in background
 	g.Go(func() error {
