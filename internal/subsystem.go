@@ -9,10 +9,8 @@ import (
 )
 
 type (
-	Subsystem interface {
-		Initialize(context.Context) error
-	}
-	SubsystemWrapper struct {
+	// Subsystem is an automonous system subordinate to the daemon (otfd).
+	Subsystem struct {
 		// Name of subsystem
 		Name string
 		// Backoff and retry initialization the subsystem in the event of an error
@@ -25,21 +23,31 @@ type (
 		DB
 		// Cluster-unique lock ID. Must be non-nil if Exclusive is true.
 		LockID *int64
-		// Subsystem that this wrapper wraps
-		Subsystem
 		logr.Logger
+		// SubsystemOperation is the underlying the operation that this
+		// subsystem invokes.
+		SubsystemOperation
+	}
+	// SubsystemOperation is the operation the subsystem should initialize and
+	// supervise, re-initializing if necessary.
+	SubsystemOperation interface {
+		Start(context.Context) error
 	}
 )
 
-func (s *SubsystemWrapper) Start(ctx context.Context) error {
+func (s *Subsystem) Start(ctx context.Context) error {
+	// Confer all privileges to subsystem and identify subsystem in service
+	// endpoint calls.
+	ctx = AddSubjectToContext(ctx, &Superuser{Username: s.Name})
+
 	op := func() error {
 		if s.Exclusive {
 			// block on getting an exclusive lock
 			return s.WaitAndLock(ctx, *s.LockID, func() error {
-				return s.Initialize(ctx)
+				return s.Start(ctx)
 			})
 		} else {
-			return s.Initialize(ctx)
+			return s.Start(ctx)
 		}
 	}
 	if s.BackoffRetry {

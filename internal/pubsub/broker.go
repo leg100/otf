@@ -185,7 +185,6 @@ func (b *Broker) unsubscribe(name string) {
 
 // localPublish publishes an event to subscribers on the local node
 func (b *Broker) localPublish(event Event) {
-
 	for name, sub := range b.subs {
 		// record sub's chan size
 		b.mu.Lock()
@@ -196,8 +195,9 @@ func (b *Broker) localPublish(event Event) {
 		case sub <- event:
 			continue
 		default:
-			// sub channel is full; forceably unsubscribe; the client will have
-			// to re-subscribe.
+			// subscription channel is full; forceably unsubscribe and let the client
+			// re-subscribe.
+			b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", len(sub))
 			b.unsubscribe(name)
 		}
 	}
