@@ -1,9 +1,10 @@
-package internal
+package daemon
 
 import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
@@ -32,7 +33,7 @@ func TestSubsystem(t *testing.T) {
 			}
 			if tt.exclusive {
 				sub.DB = &fakeWaitAndLock{}
-				sub.LockID = Int64(123)
+				sub.LockID = internal.Int64(123)
 			}
 			err := sub.Start(ctx, &errgroup.Group{})
 			require.NoError(t, err)
@@ -43,7 +44,7 @@ func TestSubsystem(t *testing.T) {
 type (
 	fakeStartable   struct{}
 	fakeWaitAndLock struct {
-		DB
+		internal.DB
 	}
 )
 

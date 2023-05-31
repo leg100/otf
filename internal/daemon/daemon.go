@@ -378,7 +378,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	}
 	d.V(0).Info("set system hostname", "hostname", d.Hostname())
 
-	subsystems := []*internal.Subsystem{
+	subsystems := []*Subsystem{
 		{
 			Name:           "broker",
 			BackoffRestart: true,
@@ -448,7 +448,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		},
 	}
 	if !d.DisableScheduler {
-		subsystems = append(subsystems, &internal.Subsystem{
+		subsystems = append(subsystems, &Subsystem{
 			Name:           "scheduler",
 			BackoffRestart: true,
 			Logger:         d.Logger,

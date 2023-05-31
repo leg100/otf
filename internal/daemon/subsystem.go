@@ -1,4 +1,4 @@
-package internal
+package daemon
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -25,7 +26,7 @@ type (
 		Exclusive bool
 		// DB for obtaining cluster-wide lock. Must be non-nil if Exclusive is
 		// true.
-		DB
+		internal.DB
 		// Cluster-unique lock ID. Must be non-nil if Exclusive is true.
 		LockID *int64
 		logr.Logger
@@ -49,7 +50,7 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 
 	// Confer all privileges to subsystem and identify subsystem in service
 	// endpoint calls.
-	ctx = AddSubjectToContext(ctx, &Superuser{Username: s.Name})
+	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: s.Name})
 
 	started := make(chan struct{})
 	op := func() error {
