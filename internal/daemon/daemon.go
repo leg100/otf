@@ -378,39 +378,41 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	}
 	d.V(0).Info("set system hostname", "hostname", d.Hostname())
 
-	subsystems := []*internal.Subsystem{
+	subdaemons := []*internal.Subdaemon{
 		{
-			Name:               "broker",
-			BackoffRetry:       true,
-			Logger:             d.Logger,
-			SubsystemOperation: d.Broker,
+			Name:         "broker",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			Subsystem:    d.Broker,
 		},
 		{
-			Name:               "proxy",
-			BackoffRetry:       true,
-			Logger:             d.Logger,
-			SubsystemOperation: d.LogsService,
+			Name:         "proxy",
+			BackoffRetry: true,
+			Logger:       d.Logger,
+			Subsystem:    d.LogsService,
 		},
 		{
 			Name:         "spawner",
 			BackoffRetry: true,
 			Logger:       d.Logger,
-			SubsystemOperation: &run.Spawner{
+			Subsystem: &run.Spawner{
 				Logger:                      d.Logger.WithValues("component", "spawner"),
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
 				VCSProviderService:          d.VCSProviderService,
 				RunService:                  d.RunService,
+				Subscriber:                  d.Broker,
 			},
 		},
 		{
 			Name:         "publisher",
 			BackoffRetry: true,
 			Logger:       d.Logger,
-			SubsystemOperation: &module.Publisher{
+			Subsystem: &module.Publisher{
 				Logger:             d.Logger.WithValues("component", "publisher"),
 				VCSProviderService: d.VCSProviderService,
 				ModuleService:      d.ModuleService,
+				Subscriber:         d.Broker,
 			},
 		},
 		{
@@ -420,7 +422,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive:    true,
 			DB:           d.DB,
 			LockID:       internal.Int64(run.ReporterLockID),
-			SubsystemOperation: &run.Reporter{
+			Subsystem: &run.Reporter{
 				Logger:                      d.Logger.WithValues("component", "reporter"),
 				VCSProviderService:          d.VCSProviderService,
 				Subscriber:                  d.Broker,
@@ -436,23 +438,24 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			Exclusive:    true,
 			DB:           d.DB,
 			LockID:       internal.Int64(notifications.LockID),
-			SubsystemOperation: notifications.NewNotifier(notifications.NotifierOptions{
+			Subsystem: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:           d.Logger,
 				Subscriber:       d.Broker,
 				HostnameService:  d.HostnameService,
 				WorkspaceService: d.WorkspaceService,
+				DB:               d.DB,
 			}),
 		},
 	}
 	if !d.DisableScheduler {
-		subsystems = append(subsystems, &internal.Subsystem{
+		subdaemons = append(subdaemons, &internal.Subdaemon{
 			Name:         "scheduler",
 			BackoffRetry: true,
 			Logger:       d.Logger,
 			Exclusive:    true,
 			DB:           d.DB,
 			LockID:       internal.Int64(scheduler.LockID),
-			SubsystemOperation: scheduler.NewScheduler(scheduler.Options{
+			Subsystem: scheduler.NewScheduler(scheduler.Options{
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
@@ -461,7 +464,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			}),
 		})
 	}
-	for _, ss := range subsystems {
+	for _, ss := range subdaemons {
 		if err := ss.Start(ctx, g); err != nil {
 			return err
 		}

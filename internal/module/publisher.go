@@ -28,6 +28,7 @@ func (p *Publisher) Start(ctx context.Context, started chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	close(started)
 
 	for event := range sub {
 		// skip non-vcs events

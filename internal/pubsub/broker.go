@@ -68,15 +68,6 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 	}
 }
 
-func NewBrokerSubsystem(logger logr.Logger, db internal.DB, broker *Broker) *internal.Subsystem {
-	return &internal.Subsystem{
-		Name:               "broker",
-		BackoffRetry:       true,
-		Logger:             logger,
-		SubsystemOperation: broker,
-	}
-}
-
 // Start the pubsub daemon; listen to notifications from postgres and forward to
 // local pubsub broker. The listening channel is closed once the broker has
 // started listening; from this point onwards published messages will be
