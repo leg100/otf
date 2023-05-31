@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"runtime"
 
 	"github.com/leg100/otf/internal"
 )
@@ -79,7 +80,7 @@ func (d *terraformDownloader) src(version string) string {
 		Path: path.Join(
 			"terraform",
 			version,
-			fmt.Sprintf("terraform_%s_linux_amd64.zip", version)),
+			fmt.Sprintf("terraform_%s_%s_%s.zip", version, runtime.GOOS, runtime.GOARCH)),
 	}).String()
 }
 
