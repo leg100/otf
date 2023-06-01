@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/slog"
-	"gopkg.in/cenkalti/backoff.v1"
 )
 
 const (
@@ -32,9 +31,9 @@ type (
 	Broker struct {
 		logr.Logger
 
-		channel     string    // postgres notification channel name
-		pool        pool      // pool from which to acquire a dedicated connection to postgres
-		islistening chan bool // semaphore that's closed once broker is listening
+		channel     string        // postgres notification channel name
+		pool        pool          // pool from which to acquire a dedicated connection to postgres
+		islistening chan struct{} // semaphore that's closed once broker is listening
 
 		subs    map[string]chan Event       // subscriptions
 		metrics map[string]prometheus.Gauge // metric for each subscription
@@ -61,7 +60,7 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 	return &Broker{
 		Logger:      logger.WithValues("component", "broker"),
 		pool:        db,
-		islistening: make(chan bool),
+		islistening: make(chan struct{}),
 		channel:     defaultChannel,
 		subs:        make(map[string]chan Event),
 		metrics:     make(map[string]prometheus.Gauge),
@@ -73,7 +72,7 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 // local pubsub broker. The listening channel is closed once the broker has
 // started listening; from this point onwards published messages will be
 // forwarded.
-func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
+func (b *Broker) Start(ctx context.Context) error {
 	conn, err := b.pool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -83,37 +82,37 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 	if _, err := conn.Exec(ctx, "listen "+b.channel); err != nil {
 		return err
 	}
-	close(isListening) // close semaphore to indicate broker is now listening
-	b.Info("listening for events")
+	b.V(2).Info("listening for events")
+	close(b.islistening) // close semaphore to indicate broker is now listening
 
-	op := func() error {
-		for {
-			notification, err := conn.Conn().WaitForNotification(ctx)
-			if err != nil {
-				select {
-				case <-ctx.Done():
-					// parent has decided to shutdown so exit without error
-					return nil
-				default:
-					b.Error(err, "waiting for postgres notification")
-					return err
-				}
+	for {
+		notification, err := conn.Conn().WaitForNotification(ctx)
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				// parent has decided to shutdown so exit without error
+				return nil
+			default:
+				b.Error(err, "waiting for postgres notification")
+				return err
 			}
-			var pge pgevent
-			if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
-				b.Error(err, "unmarshaling postgres notification")
-				continue
-			}
-			event, err := b.convert(ctx, pge)
-			if err != nil {
-				b.Error(err, "converting postgres notification into event", "notification", pge)
-				continue
-			}
-			b.localPublish(event)
 		}
+		var pge pgevent
+		if err := json.Unmarshal([]byte(notification.Payload), &pge); err != nil {
+			b.Error(err, "unmarshaling postgres notification")
+			continue
+		}
+		event, err := b.convert(ctx, pge)
+		if err != nil {
+			b.Error(err, "converting postgres notification into event", "notification", pge)
+			continue
+		}
+		b.localPublish(event)
 	}
-	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-	return backoff.RetryNotify(op, policy, nil)
+}
+
+func (b *Broker) Started() <-chan struct{} {
+	return b.islistening
 }
 
 // Publish sends an event to subscribers.
@@ -155,38 +154,51 @@ func (b *Broker) Subscribe(ctx context.Context, prefix string) (<-chan Event, er
 		return nil, fmt.Errorf("registering metric for subscriber: %s: %w", name, err)
 	}
 
-	// when the context is done remove the subscriber
+	// when the context is canceled remove the subscriber
 	go func() {
 		<-ctx.Done()
-
-		totalSubscribers.Dec()
-
-		b.mu.Lock()
-		defer b.mu.Unlock()
-
-		close(sub)
-		delete(b.subs, name)
-
-		prometheus.Unregister(b.metrics[name])
-		delete(b.metrics, name)
+		b.unsubscribe(name)
 	}()
 
 	return sub, nil
 }
 
-// localPublish publishes an event to subscribers on the local node
-func (b *Broker) localPublish(event Event) {
+func (b *Broker) unsubscribe(name string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	sub, ok := b.subs[name]
+	if !ok {
+		// already unsubscribed
+		return
+	}
+
+	totalSubscribers.Dec()
+
+	close(sub)
+	delete(b.subs, name)
+
+	prometheus.Unregister(b.metrics[name])
+	delete(b.metrics, name)
+}
+
+// localPublish publishes an event to subscribers on the local node
+func (b *Broker) localPublish(event Event) {
 	for name, sub := range b.subs {
 		// record sub's chan size
+		b.mu.Lock()
 		b.metrics[name].Set(float64(len(sub)))
+		b.mu.Unlock()
 
-		// TODO: detect full channel using 'select...default:' and if full, close
-		// the channel. Subs can re-subscribe if they wish (will have to
-		// re-engineer subs first to handle this accordingly).
-		sub <- event
+		select {
+		case sub <- event:
+			continue
+		default:
+			// subscription channel is full; forceably unsubscribe and let the client
+			// re-subscribe.
+			b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", len(sub))
+			b.unsubscribe(name)
+		}
 	}
 }
 

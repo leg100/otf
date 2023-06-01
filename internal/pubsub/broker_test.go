@@ -38,3 +38,21 @@ func TestBroker_Publish_Local(t *testing.T) {
 
 	assert.Equal(t, event, <-sub)
 }
+
+func TestBroker_UnsubscribeFullSubscriber(t *testing.T) {
+	ctx := context.Background()
+	broker := NewBroker(logr.Discard(), &fakePool{})
+
+	_, err := broker.Subscribe(ctx, "")
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(broker.subs))
+
+	// deliberating publish more than subBufferSize events to trigger broker to
+	// unsubscribe the sub
+	for i := 0; i < subBufferSize+1; i++ {
+		broker.localPublish(Event{
+			Type: EventType("test"),
+		})
+	}
+	assert.Equal(t, 0, len(broker.subs))
+}

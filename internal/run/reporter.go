@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
@@ -13,16 +12,15 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/workspace"
-	"gopkg.in/cenkalti/backoff.v1"
 )
 
-// reporterLockID is a unique ID guaranteeing only one reporter on a cluster is running at any time.
-const reporterLockID int64 = 179366396344335597
+// ReporterLockID is a unique ID guaranteeing only one reporter on a cluster is running at any time.
+const ReporterLockID int64 = 179366396344335597
 
 type (
-	// reporter reports back to VCS providers the current status of VCS-triggered
+	// Reporter reports back to VCS providers the current status of VCS-triggered
 	// runs.
-	reporter struct {
+	Reporter struct {
 		logr.Logger
 		pubsub.Subscriber
 		VCSProviderService
@@ -38,42 +36,11 @@ type (
 
 		logr.Logger
 		internal.DB
-		pubsub.Subscriber
-		internal.HostnameService
 	}
 )
 
-// StartReporter starts a reporter.
-func StartReporter(ctx context.Context, opts ReporterOptions) error {
-	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "reporter"})
-
-	rptr := &reporter{
-		Logger:                      opts.Logger.WithValues("component", "reporter"),
-		Subscriber:                  opts.Subscriber,
-		HostnameService:             opts.HostnameService,
-		ConfigurationVersionService: opts.ConfigurationVersionService,
-		WorkspaceService:            opts.WorkspaceService,
-		VCSProviderService:          opts.VCSProviderService,
-	}
-
-	op := func() error {
-		// block on getting an exclusive lock
-		err := opts.WaitAndLock(ctx, reporterLockID, func() error {
-			return rptr.start(ctx)
-		})
-		if ctx.Err() != nil {
-			return nil // exit
-		}
-		return err // retry
-	}
-	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-	return backoff.RetryNotify(op, policy, func(err error, _ time.Duration) {
-		rptr.Error(err, "restarting reporter")
-	})
-}
-
-// start starts the reporter daemon. Should be invoked in a go routine.
-func (r *reporter) start(ctx context.Context) error {
+// Start starts the reporter daemon. Should be invoked in a go routine.
+func (r *Reporter) Start(ctx context.Context) error {
 	// Unsubscribe whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -101,7 +68,7 @@ func (r *reporter) start(ctx context.Context) error {
 	return nil
 }
 
-func (r *reporter) handleRun(ctx context.Context, run *Run) error {
+func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
 	if err != nil {
 		return err

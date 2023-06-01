@@ -17,18 +17,19 @@ type (
 		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
 		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
 		internal.PutChunkService
-		StartProxy(ctx context.Context) error
+		Start(context.Context) error
 	}
 
 	service struct {
 		logr.Logger
 		pubsub.PubSubService // subscribe to tail log updates
 
-		run   internal.Authorizer
-		proxy chunkproxy
+		run internal.Authorizer
 
 		api *api
 		web *webHandlers
+
+		chunkproxy
 	}
 
 	chunkproxy interface {
@@ -52,7 +53,7 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:        opts.Logger,
 		PubSubService: opts.Broker,
-		proxy:         newProxy(opts),
+		chunkproxy:    newProxy(opts),
 		run:           opts.RunAuthorizer,
 	}
 	svc.api = &api{
@@ -72,15 +73,11 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) StartProxy(ctx context.Context) error {
-	return s.proxy.Start(ctx)
-}
-
 // GetChunk reads a chunk of logs for a phase.
 //
 // NOTE: unauthenticated - access granted only via signed URL
 func (s *service) GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error) {
-	logs, err := s.proxy.get(ctx, opts)
+	logs, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {
 		s.Error(err, "reading logs", "id", opts.RunID, "offset", opts.Offset)
 		return internal.Chunk{}, err
@@ -96,7 +93,7 @@ func (s *service) PutChunk(ctx context.Context, opts internal.PutChunkOptions) e
 		return err
 	}
 
-	if err := s.proxy.put(ctx, opts); err != nil {
+	if err := s.chunkproxy.put(ctx, opts); err != nil {
 		s.Error(err, "writing logs", "id", opts.RunID, "phase", opts.Phase, "offset", opts.Offset)
 		return err
 	}
@@ -120,7 +117,7 @@ func (s *service) Tail(ctx context.Context, opts internal.GetChunkOptions) (<-ch
 		return nil, err
 	}
 
-	chunk, err := s.proxy.get(ctx, opts)
+	chunk, err := s.chunkproxy.get(ctx, opts)
 	if err != nil {
 		s.Error(err, "tailing logs", "id", opts.RunID, "offset", opts.Offset, "subject", subject)
 		return nil, err

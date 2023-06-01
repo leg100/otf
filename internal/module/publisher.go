@@ -13,13 +13,8 @@ import (
 )
 
 type (
-	// publisher publishes new versions of terraform modules from VCS tags
-	publisher struct {
-		vcsprovider.VCSProviderService
-		ModuleService
-	}
-
-	PublisherOptions struct {
+	// Publisher publishes new versions of terraform modules from VCS tags
+	Publisher struct {
 		logr.Logger
 		pubsub.Subscriber
 		vcsprovider.VCSProviderService
@@ -27,18 +22,11 @@ type (
 	}
 )
 
-// StartPublisher starts handling VCS events and publishing modules accordingly
-func StartPublisher(ctx context.Context, opts PublisherOptions) error {
-	opts.V(2).Info("started module publisher")
-
-	sub, err := opts.Subscribe(ctx, "module-publisher-")
+// Start starts handling VCS events and publishing modules accordingly
+func (p *Publisher) Start(ctx context.Context) error {
+	sub, err := p.Subscribe(ctx, "module-publisher-")
 	if err != nil {
 		return err
-	}
-
-	p := &publisher{
-		VCSProviderService: opts.VCSProviderService,
-		ModuleService:      opts.ModuleService,
 	}
 
 	for event := range sub {
@@ -47,14 +35,14 @@ func StartPublisher(ctx context.Context, opts PublisherOptions) error {
 			continue
 		}
 		if err := p.handleEvent(ctx, event.Payload); err != nil {
-			opts.Error(err, "handling vcs event")
+			p.Error(err, "handling vcs event")
 		}
 	}
 	return nil
 }
 
 // PublishFromEvent publishes a module version in response to a vcs event.
-func (p *publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error {
+func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error {
 	// only publish when new tagEvent is created
 	tagEvent, ok := event.(cloud.VCSTagEvent)
 	if !ok {

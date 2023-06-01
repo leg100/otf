@@ -14,41 +14,23 @@ import (
 )
 
 type (
-	// spawner spawns new runs in response to vcs events
-	spawner struct {
+	// Spawner spawns new runs in response to vcs events
+	Spawner struct {
 		logr.Logger
 
 		ConfigurationVersionService
 		WorkspaceService
 		VCSProviderService
 		RunService
-	}
-
-	SpawnerOptions struct {
-		logr.Logger
-
 		pubsub.Subscriber
-
-		ConfigurationVersionService
-		WorkspaceService
-		VCSProviderService
-		RunService
 	}
 )
 
-// StartSpawner starts the run spawner.
-func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
-	sub, err := opts.Subscriber.Subscribe(ctx, "run-spawner")
+// Start the run spawner.
+func (s *Spawner) Start(ctx context.Context) error {
+	sub, err := s.Subscribe(ctx, "run-spawner")
 	if err != nil {
 		return err
-	}
-
-	s := &spawner{
-		Logger:                      opts.Logger.WithValues("component", "spawner"),
-		ConfigurationVersionService: opts.ConfigurationVersionService,
-		WorkspaceService:            opts.WorkspaceService,
-		VCSProviderService:          opts.VCSProviderService,
-		RunService:                  opts.RunService,
 	}
 
 	for event := range sub {
@@ -63,7 +45,7 @@ func StartSpawner(ctx context.Context, opts SpawnerOptions) error {
 	return nil
 }
 
-func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
+func (s *Spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	var (
 		repoID                uuid.UUID
 		isPullRequest         bool
@@ -91,14 +73,14 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		isPullRequest = true
 	}
 
-	h.Info("spawning run", "repo_id", repoID)
+	s.Info("spawning run", "repo_id", repoID)
 
-	workspaces, err := h.ListWorkspacesByRepoID(ctx, repoID)
+	workspaces, err := s.ListWorkspacesByRepoID(ctx, repoID)
 	if err != nil {
 		return err
 	}
 	if len(workspaces) == 0 {
-		h.Info("no connected workspaces found")
+		s.Info("no connected workspaces found")
 		return nil
 	}
 
@@ -110,7 +92,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	}
 	providerID := workspaces[0].Connection.VCSProviderID
 
-	client, err := h.GetVCSClient(ctx, providerID)
+	client, err := s.GetVCSClient(ctx, providerID)
 	if err != nil {
 		return err
 	}
@@ -150,7 +132,7 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 			// Should never happen...
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
-		cv, err := h.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+		cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
 			Speculative: internal.Bool(isPullRequest),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string
@@ -168,10 +150,10 @@ func (h *spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		if err != nil {
 			return err
 		}
-		if err := h.UploadConfig(ctx, cv.ID, tarball); err != nil {
+		if err := s.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		_, err = h.CreateRun(ctx, ws.ID, RunCreateOptions{
+		_, err = s.CreateRun(ctx, ws.ID, RunCreateOptions{
 			ConfigurationVersionID: internal.String(cv.ID),
 		})
 		if err != nil {
