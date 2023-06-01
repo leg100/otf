@@ -124,7 +124,11 @@ func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 			return err
 		}
 
-		// optionally save image in the docs directory too
+		//
+		// additionally, save the screenshot image in the docs directory too,
+		// but only if a path is specified AND the relevant env var is
+		// specified.
+		//
 		if len(docPath) == 0 {
 			return nil
 		}
