@@ -2,6 +2,7 @@
 
 {{ define "pre-content" }}
   <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_list.css" }}">
 {{ end }}
 
 {{ define "content-header-title" }}workspaces{{ end }}
@@ -16,7 +17,11 @@
 {{ end }}
 
 {{ define "content" }}
-    <form id="tag-filter-form" action="{{ workspacesPath .Organization }}" method="GET">
+  <form method="GET">
+    <div id="filters-container">
+      <div class="field" class="search-container">
+        <input type="search" name="search[name]" required placeholder="search workspaces">
+      </div>
       <div class="workspace-tags-list">
         {{ range $k, $v := .TagFilters }}
           <div>
@@ -27,7 +32,8 @@
           </div>
         {{ end }}
       </div>
-    </form>
+    </div>
+  </form>
   {{ template "content-list" . }}
 {{ end }}
 

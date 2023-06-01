@@ -187,6 +187,7 @@ func (b *Broker) localPublish(event Event) {
 	for name, sub := range b.subs {
 		// record sub's chan size
 		b.mu.Lock()
+		b.Info("XXXXXX---- " + name + " ----XXXXXX")
 		b.metrics[name].Set(float64(len(sub)))
 		b.mu.Unlock()
 

@@ -9,19 +9,16 @@
 {{ end }}
 
 {{ define "content" }}
-  <div id="content-list" class="content-list">
-    {{ range .Items }}
-      <div class="item">
-        <div class="item-heading">
-        <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
-        </div>
-        <div class="item-content">
-          {{ template "identifier" . }}
-        </div>
-      </div>
-    {{ else }}
-      No organizations found.
-    {{ end }}
-    {{ template "page-navigation-links" . }}
+  {{ template "content-list" . }}
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item">
+    <div class="item-heading">
+    <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
+    </div>
+    <div class="item-content">
+      {{ template "identifier" . }}
+    </div>
   </div>
 {{ end }}
