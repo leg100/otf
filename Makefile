@@ -168,6 +168,10 @@ migrate-status: install-goose
 serve-docs:
 	mkdocs serve -a localhost:9999
 
+.PHONY: doc-screenshots
+doc-screenshots: # update documentation screenshots
+	OTF_DOC_SCREENSHOTS=true go test ./internal/integration/... -count 1
+
 # Create tunnel between local server and cloudflare - useful for testing
 # webhooks, e.g. a github webhook sending events to local server.
 .PHONY: tunnel
