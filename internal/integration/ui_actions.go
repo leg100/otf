@@ -123,17 +123,29 @@ func screenshot(t *testing.T, docPath ...string) chromedp.ActionFunc {
 		if err != nil {
 			return err
 		}
-		// optionally save image in the docs directory too
-		if len(docPath) > 0 {
-			fname := path.Join("..", "..", "docs", "images", docPath[0]+".png")
-			err = os.MkdirAll(filepath.Dir(fname), 0o755)
-			if err != nil {
-				return err
-			}
-			err = os.WriteFile(fname, image, 0o644)
-			if err != nil {
-				return err
-			}
+
+		//
+		// additionally, save the screenshot image in the docs directory too,
+		// but only if a path is specified AND the relevant env var is
+		// specified.
+		//
+		if len(docPath) == 0 {
+			return nil
+		}
+		if docScreenshots, ok := os.LookupEnv("OTF_DOC_SCREENSHOTS"); !ok {
+			return nil
+		} else if docScreenshots != "true" {
+			return nil
+		}
+
+		fname = path.Join("..", "..", "docs", "images", docPath[0]+".png")
+		err = os.MkdirAll(filepath.Dir(fname), 0o755)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(fname, image, 0o644)
+		if err != nil {
+			return err
 		}
 		return nil
 	}
