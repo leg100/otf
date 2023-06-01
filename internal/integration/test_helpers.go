@@ -50,6 +50,10 @@ func workspaceURL(hostname, org, name string) string {
 	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
 }
 
+func workspacesURL(hostname, org string) string {
+	return "https://" + hostname + "/app/organizations/" + org + "/workspaces"
+}
+
 func organizationURL(hostname, org string) string {
 	return "https://" + hostname + "/app/organizations/" + org
 }

@@ -19,8 +19,8 @@
 {{ define "content" }}
   <form method="GET">
     <div id="filters-container">
-      <div class="field" class="search-container">
-        <input type="search" name="search[name]" required placeholder="search workspaces">
+      <div class="field">
+        <input type="search" name="search[name]" value="{{ .Params.Search }}" placeholder="search workspaces">
       </div>
       <div class="workspace-tags-list">
         {{ range $k, $v := .TagFilters }}

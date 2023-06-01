@@ -102,11 +102,13 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
 		TagFilters map[string]bool
+		Params     ListOptions
 	}{
 		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
 		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
 		WorkspaceList:         workspaces,
 		TagFilters:            tagfilters(),
+		Params:                params,
 	})
 }
 
