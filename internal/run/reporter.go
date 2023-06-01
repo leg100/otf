@@ -40,7 +40,7 @@ type (
 )
 
 // Start starts the reporter daemon. Should be invoked in a go routine.
-func (r *Reporter) Start(ctx context.Context, started chan struct{}) error {
+func (r *Reporter) Start(ctx context.Context) error {
 	// Unsubscribe whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -50,7 +50,6 @@ func (r *Reporter) Start(ctx context.Context, started chan struct{}) error {
 	if err != nil {
 		return err
 	}
-	close(started)
 
 	for event := range sub {
 		run, ok := event.Payload.(*Run)

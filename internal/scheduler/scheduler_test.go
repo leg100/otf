@@ -19,7 +19,7 @@ func TestScheduler(t *testing.T) {
 
 		ws := &workspace.Workspace{ID: "ws-123"}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil)
-		go scheduler.Start(ctx, nil)
+		go scheduler.Start(ctx)
 
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, 1, len(scheduler.queues))
@@ -32,7 +32,7 @@ func TestScheduler(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
 		event := pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}
 		scheduler, got := newTestScheduler(nil, nil, event)
-		go scheduler.Start(ctx, nil)
+		go scheduler.Start(ctx)
 		assert.Equal(t, event, <-got)
 		assert.Equal(t, 1, len(scheduler.queues))
 	})
@@ -47,7 +47,7 @@ func TestScheduler(t *testing.T) {
 		// necessary so that we can synchronise test below
 		sync := pubsub.Event{Payload: &workspace.Workspace{ID: "ws-123"}}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil, del, sync)
-		go scheduler.Start(ctx, nil)
+		go scheduler.Start(ctx)
 
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, sync, <-got)
@@ -61,7 +61,7 @@ func TestScheduler(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
 		r := &run.Run{WorkspaceID: "ws-123"}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, []*run.Run{r})
-		go scheduler.Start(ctx, nil)
+		go scheduler.Start(ctx)
 
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: r}, <-got)
@@ -74,7 +74,7 @@ func TestScheduler(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
 		event := pubsub.Event{Payload: &run.Run{WorkspaceID: "ws-123"}}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, nil, event)
-		go scheduler.Start(ctx, nil)
+		go scheduler.Start(ctx)
 
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, event, <-got)
@@ -88,7 +88,7 @@ func TestScheduler(t *testing.T) {
 		run1 := &run.Run{WorkspaceID: "ws-123"}
 		run2 := &run.Run{WorkspaceID: "ws-123"}
 		scheduler, got := newTestScheduler([]*workspace.Workspace{ws}, []*run.Run{run1, run2})
-		go scheduler.Start(ctx, nil)
+		go scheduler.Start(ctx)
 
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventWorkspaceCreated, Payload: ws}, <-got)
 		assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: run2}, <-got)

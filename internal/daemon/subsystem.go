@@ -3,7 +3,6 @@ package daemon
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -31,10 +30,10 @@ type (
 		LockID *int64
 		logr.Logger
 	}
-	// Startable is a blocking process that closes the started channel once it
-	// has successfully started.
+	// Startable is a blocking process that is started at least once, and upon error,
+	// may need re-starting.
 	Startable interface {
-		Start(ctx context.Context, started chan struct{}) error
+		Start(ctx context.Context) error
 	}
 )
 
@@ -52,15 +51,14 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	// endpoint calls.
 	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: s.Name})
 
-	started := make(chan struct{})
 	op := func() error {
 		if s.Exclusive {
 			// block on getting an exclusive lock
 			return s.WaitAndLock(ctx, *s.LockID, func() error {
-				return s.System.Start(ctx, started)
+				return s.System.Start(ctx)
 			})
 		} else {
-			return s.System.Start(ctx, started)
+			return s.System.Start(ctx)
 		}
 	}
 	if s.BackoffRestart {
@@ -70,25 +68,12 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 		g.Go(func() error {
 			return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
 				// re-open semaphore
-				started = make(chan struct{})
 				s.Error(err, "restarting "+s.Name)
 			})
 		})
 	} else {
 		g.Go(op)
 	}
-	// Don't wait for an exclusive system to start because it may be waiting for
-	// a lock to become free (i.e. another otfd node is already running the system).
-	if s.Exclusive {
-		return nil
-	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timed out waiting for %s to start", s.Name)
-	case <-started:
-		s.V(1).Info("started subdaemon", "name", s.Name)
-		return nil
-	}
+	s.V(1).Info("started subsystem", "name", s.Name)
+	return nil
 }

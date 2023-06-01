@@ -57,7 +57,7 @@ func NewScheduler(opts Options) *scheduler {
 // reinitialize retrieves workspaces and runs from the DB and listens to events,
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
-func (s *scheduler) Start(ctx context.Context, started chan struct{}) error {
+func (s *scheduler) Start(ctx context.Context) error {
 	// Unsubscribe Subscribe() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -70,7 +70,6 @@ func (s *scheduler) Start(ctx context.Context, started chan struct{}) error {
 	if err != nil {
 		return err
 	}
-	close(started)
 
 	// retrieve existing workspaces, page by page
 	workspaces := []*workspace.Workspace{}

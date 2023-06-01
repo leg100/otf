@@ -27,12 +27,11 @@ type (
 )
 
 // Start the run spawner.
-func (s *Spawner) Start(ctx context.Context, started chan struct{}) error {
+func (s *Spawner) Start(ctx context.Context) error {
 	sub, err := s.Subscribe(ctx, "run-spawner")
 	if err != nil {
 		return err
 	}
-	close(started)
 
 	for event := range sub {
 		// skip non-vcs events

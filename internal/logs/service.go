@@ -17,7 +17,7 @@ type (
 		GetChunk(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
 		Tail(ctx context.Context, opts internal.GetChunkOptions) (<-chan internal.Chunk, error)
 		internal.PutChunkService
-		Start(context.Context, chan struct{}) error
+		Start(context.Context) error
 	}
 
 	service struct {
@@ -33,7 +33,7 @@ type (
 	}
 
 	chunkproxy interface {
-		Start(ctx context.Context, started chan struct{}) error
+		Start(ctx context.Context) error
 		get(ctx context.Context, opts internal.GetChunkOptions) (internal.Chunk, error)
 		put(ctx context.Context, opts internal.PutChunkOptions) error
 	}

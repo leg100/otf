@@ -31,9 +31,9 @@ type (
 	Broker struct {
 		logr.Logger
 
-		channel     string    // postgres notification channel name
-		pool        pool      // pool from which to acquire a dedicated connection to postgres
-		islistening chan bool // semaphore that's closed once broker is listening
+		channel     string        // postgres notification channel name
+		pool        pool          // pool from which to acquire a dedicated connection to postgres
+		islistening chan struct{} // semaphore that's closed once broker is listening
 
 		subs    map[string]chan Event       // subscriptions
 		metrics map[string]prometheus.Gauge // metric for each subscription
@@ -60,7 +60,7 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 	return &Broker{
 		Logger:      logger.WithValues("component", "broker"),
 		pool:        db,
-		islistening: make(chan bool),
+		islistening: make(chan struct{}),
 		channel:     defaultChannel,
 		subs:        make(map[string]chan Event),
 		metrics:     make(map[string]prometheus.Gauge),
@@ -72,7 +72,7 @@ func NewBroker(logger logr.Logger, db pool) *Broker {
 // local pubsub broker. The listening channel is closed once the broker has
 // started listening; from this point onwards published messages will be
 // forwarded.
-func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
+func (b *Broker) Start(ctx context.Context) error {
 	conn, err := b.pool.Acquire(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to acquire postgres connection: %w", err)
@@ -82,8 +82,8 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 	if _, err := conn.Exec(ctx, "listen "+b.channel); err != nil {
 		return err
 	}
-	close(isListening) // close semaphore to indicate broker is now listening
 	b.V(2).Info("listening for events")
+	close(b.islistening) // close semaphore to indicate broker is now listening
 
 	for {
 		notification, err := conn.Conn().WaitForNotification(ctx)
@@ -109,6 +109,10 @@ func (b *Broker) Start(ctx context.Context, isListening chan struct{}) error {
 		}
 		b.localPublish(event)
 	}
+}
+
+func (b *Broker) Started() <-chan struct{} {
+	return b.islistening
 }
 
 // Publish sends an event to subscribers.

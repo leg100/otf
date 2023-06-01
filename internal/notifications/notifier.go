@@ -47,7 +47,7 @@ func NewNotifier(opts NotifierOptions) *Notifier {
 }
 
 // Start the notifier daemon. Should be started in a go-routine.
-func (s *Notifier) Start(ctx context.Context, started chan struct{}) error {
+func (s *Notifier) Start(ctx context.Context) error {
 	// Unsubscribe Subscribe() whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -57,7 +57,6 @@ func (s *Notifier) Start(ctx context.Context, started chan struct{}) error {
 	if err != nil {
 		return err
 	}
-	close(started)
 
 	// populate cache with existing notification configs
 	cache, err := newCache(ctx, s.db, &defaultFactory{})

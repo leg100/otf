@@ -48,8 +48,7 @@ type (
 	}
 )
 
-func (f *fakeStartable) Start(ctx context.Context, started chan struct{}) error {
-	close(started)
+func (f *fakeStartable) Start(ctx context.Context) error {
 	return nil
 }
 

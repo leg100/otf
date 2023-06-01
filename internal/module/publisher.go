@@ -23,12 +23,11 @@ type (
 )
 
 // Start starts handling VCS events and publishing modules accordingly
-func (p *Publisher) Start(ctx context.Context, started chan struct{}) error {
+func (p *Publisher) Start(ctx context.Context) error {
 	sub, err := p.Subscribe(ctx, "module-publisher-")
 	if err != nil {
 		return err
 	}
-	close(started)
 
 	for event := range sub {
 		// skip non-vcs events
