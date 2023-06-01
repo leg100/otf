@@ -184,21 +184,28 @@ func (b *Broker) unsubscribe(name string) {
 
 // localPublish publishes an event to subscribers on the local node
 func (b *Broker) localPublish(event Event) {
+	var fullSubscribers []string
+
+	b.mu.Lock()
 	for name, sub := range b.subs {
 		// record sub's chan size
-		b.mu.Lock()
 		b.metrics[name].Set(float64(len(sub)))
-		b.mu.Unlock()
 
 		select {
 		case sub <- event:
 			continue
 		default:
-			// subscription channel is full; forceably unsubscribe and let the client
-			// re-subscribe.
-			b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", len(sub))
-			b.unsubscribe(name)
+			// could not publish event to subscriber because their buffer is
+			// full, so add them to a list for action below
+			fullSubscribers = append(fullSubscribers, name)
 		}
+	}
+	b.mu.Unlock()
+
+	// forceably unsubscribe full subscribers and let the client re-subscribe.
+	for _, name := range fullSubscribers {
+		b.Error(nil, "unsubscribing full subscriber", "sub", name, "queue_length", subBufferSize)
+		b.unsubscribe(name)
 	}
 }
 
