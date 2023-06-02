@@ -29,6 +29,11 @@ func htmlPanic(format string, a ...any) {
 // page they tried to access so it can return them there after login.
 func SendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
 	SetCookie(w, pathCookie, r.URL.String(), nil)
+	// Force ajax requests to reload entire page
+	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
+		w.Header().Add("HX-Refresh", "true")
+		return
+	}
 	http.Redirect(w, r, paths.Login(), http.StatusFound)
 }
 
