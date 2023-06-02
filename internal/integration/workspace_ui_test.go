@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/chromedp/cdproto/cdp"
@@ -40,17 +41,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// and workspace-2 should not be visible
 		chromedp.WaitNotPresent(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
 		// clear search term
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
-		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, strings.Repeat(kb.Delete, len("workspace-1")), chromedp.BySearch),
 		// now workspace-2 should be visible.
 		chromedp.WaitVisible(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
 	})
