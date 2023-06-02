@@ -1,0 +1,11 @@
+{{ define "workspace-item" }}
+  <div class="item" id="item-workspace-{{ .Name }}">
+    <div class="item-heading">
+      <a class="status" href="{{ workspacePath .ID }}">{{ .Name }}</a>
+      {{ with .LatestRun }}
+        {{ template "run-status" . }}
+      {{ end }}
+    </div>
+    {{ template "identifier" . }}
+  </div>
+{{ end }}

@@ -1,4 +1,4 @@
-{{ define "run_listing" }}
+{{ define "run-listing" }}
   {{/* watch for updates to listed runs as well as newly created runs */}}
   <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}">
     {{/* if a new run is created then reload entire run listing */}}

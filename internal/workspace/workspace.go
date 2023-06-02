@@ -115,7 +115,7 @@ type (
 	// Workspaces
 	ListOptions struct {
 		internal.ListOptions          // Pagination
-		Prefix               string   `schema:"search[name],omitempty"`
+		Search               string   `schema:"search[name],omitempty"`
 		Tags                 []string `schema:"search[tags],omitempty"`
 		Organization         *string  `schema:"organization_name,required"`
 	}

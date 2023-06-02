@@ -66,7 +66,7 @@ func TestPagination(t *testing.T) {
 func TestListOptions(t *testing.T) {
 	opts := ListOptions{}
 	assert.Equal(t, 0, opts.GetOffset())
-	assert.Equal(t, 10, opts.GetLimit())
+	assert.Equal(t, 100, opts.GetLimit())
 
 	opts = ListOptions{PageNumber: 1, PageSize: 20}
 	assert.Equal(t, 0, opts.GetOffset())
