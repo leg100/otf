@@ -20,7 +20,7 @@
   <form method="GET">
     <div id="filters-container">
       <div class="field">
-        <input type="search" name="search[name]" value="{{ .Params.Search }}" placeholder="search workspaces">
+        <input type="search" name="search[name]" value="{{ .Params.Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
       </div>
       <div class="workspace-tags-list">
         {{ range $k, $v := .TagFilters }}
@@ -34,17 +34,7 @@
       </div>
     </div>
   </form>
-  {{ template "content-list" . }}
-{{ end }}
-
-{{ define "content-list-item" }}
-  <div class="item" id="item-workspace-{{ .Name }}">
-    <div class="item-heading">
-      <a class="status" href="{{ workspacePath .ID }}">{{ .Name }}</a>
-      {{ with .LatestRun }}
-        {{ template "run-status" . }}
-      {{ end }}
-    </div>
-    {{ template "identifier" . }}
+  <div id="workspace-listing-container">
+    {{ template "workspace-listing" . }}
   </div>
 {{ end }}

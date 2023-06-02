@@ -97,7 +97,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
-	h.Render("workspace_list.tmpl", w, struct {
+	response := struct {
 		organization.OrganizationPage
 		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
@@ -109,7 +109,16 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		WorkspaceList:         workspaces,
 		TagFilters:            tagfilters(),
 		Params:                params,
-	})
+	}
+
+	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
+		if err := h.RenderTemplate("workspace_listing.tmpl", w, response); err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		h.Render("workspace_list.tmpl", w, response)
+	}
 }
 
 func (h *webHandlers) newWorkspace(w http.ResponseWriter, r *http.Request) {

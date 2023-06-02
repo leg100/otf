@@ -7,6 +7,7 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/kb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,6 +37,22 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 			assert.Equal(t, 2, len(workspaceItems))
 			return nil
 		}),
+		// and workspace-2 should not be visible
+		chromedp.WaitNotPresent(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
+		// clear search term
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, kb.Delete, chromedp.BySearch),
+		// now workspace-2 should be visible.
+		chromedp.WaitVisible(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
 	})
 	require.NoError(t, err)
 }
