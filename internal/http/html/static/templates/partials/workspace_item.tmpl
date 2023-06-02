@@ -1,8 +1,4 @@
-{{ define "workspace-listing" }}
-  {{ template "content-list" . }}
-{{ end }}
-
-{{ define "content-list-item" }}
+{{ define "workspace-item" }}
   <div class="item" id="item-workspace-{{ .Name }}">
     <div class="item-heading">
       <a class="status" href="{{ workspacePath .ID }}">{{ .Name }}</a>

@@ -35,6 +35,10 @@
     </div>
   </form>
   <div id="workspace-listing-container">
-    {{ template "workspace-listing" . }}
+    {{ template "content-list" . }}
   </div>
+{{ end }}
+
+{{ define "content-list-item" }}
+  {{ template "workspace-item" . }}
 {{ end }}

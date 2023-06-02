@@ -1,1 +1,5 @@
-{{ template "workspace-listing" . }}
+{{ template "content-list" . }}
+
+{{ define "content-list-item" }}
+  {{ template "workspace-item" . }}
+{{ end }}
