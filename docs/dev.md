@@ -54,7 +54,7 @@ After you make changes to the queries run the following make task to invoke `pgg
 
 ## HTML path helpers
 
-Rails-style path helpers are generated using `go generate`. The path specifications are maintaining in `./http/html/paths/gen.go`. After making changes to the specs run the following make task to generate the helpers:
+Rails-style path helpers are generated using `go generate`. The path specifications are maintained in `./http/html/paths/gen.go`. After making changes to the specs run the following make task to generate the helpers:
 
 * `make paths`
 
