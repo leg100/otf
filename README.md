@@ -1,6 +1,6 @@
 ![OTF logo](/readme_inkscape_logo.png)
 
-OTF is an open source alternative to Terraform Enterprise. Includes SSO, team management, agents, and as many applies as you can throw hardware at.
+OTF is an open source alternative to Terraform Enterprise. Includes SSO, team management, agents, and no per-resource pricing.
 
 Docs: https://docs.otf.ninja/
 
@@ -8,11 +8,11 @@ Docs: https://docs.otf.ninja/
 
 ## Quickstart Demo
 
-To quickly try out otf you can sign into the demo server using your github account:
+To quickly try out OTF you can sign into the demo server using your github account:
 
 https://demo.otf.ninja
 
-Once signed in you'll notice any github organization and team memberships are synchronised across automatically. Additionally, an organization matching your username is created.
+Once you're signed in, create an organization and make a note of its name - you'll be using it below.
 
 Now we'll login to the account in your terminal. You'll need terraform installed.
 
@@ -24,7 +24,7 @@ Setup local credentials:
 terraform login demo.otf.ninja
 ```
 
-Confirm with `yes` to proceed and you'll be asked to give consent to allow `terraform` to access your account on OTF. After you give consent, you should be notified that you can close the browser and return to the terminal.
+Confirm with `yes` to proceed and you'll be asked to give consent for `terraform` to access your account on OTF. After you give consent, you should be notified that you can close the browser and return to the terminal.
 
 In the terminal `terraform login` should have printed out confirmation of success:
 
@@ -95,4 +95,4 @@ You've reached the end of this quickstart demo. See the [docs](https://docs.otf.
 
 ## Legal
 
-otf is in no way affiliated with Hashicorp. Terraform and Terraform Enterprise are trademarks of Hashicorp.
+OTF is in no way affiliated with Hashicorp. Terraform and Terraform Enterprise are trademarks of Hashicorp.
