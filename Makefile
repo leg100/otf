@@ -193,3 +193,7 @@ actions:
 .PHONY: install-linter
 install-linter:
 	go install honnef.co/go/tools/cmd/staticcheck@latest
+
+.PHONY: apigen
+apigen:
+	ogen -target ./internal/apigen -package apigen -clean openapi.yml

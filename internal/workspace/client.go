@@ -6,12 +6,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/apigen"
 )
 
 type Client struct {
-	internal.JSONAPIClient
+	*otfhttp.Client
 }
 
 // GetWorkspaceByName retrieves a workspace by organization and
@@ -75,61 +75,56 @@ func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*Work
 
 // UpdateWorkspace updates the settings of an existing workspace.
 func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options UpdateOptions) (*Workspace, error) {
-	// Pre-emptively validate options
-	if err := (&Workspace{}).Update(options); err != nil {
-		return nil, err
+	var req apigen.UpdateWorkspace
+	if options.ExecutionMode != nil {
+		req.ExecutionMode = apigen.OptUpdateWorkspaceExecutionMode{
+			Set:   true,
+			Value: apigen.UpdateWorkspaceExecutionMode(*options.ExecutionMode),
+		}
 	}
-
-	path := fmt.Sprintf("workspaces/%s", workspaceID)
-	req, err := c.NewRequest("PATCH", path, &types.WorkspaceUpdateOptions{
-		ExecutionMode: (*string)(options.ExecutionMode),
+	from, err := c.Client.UpdateWorkspace(ctx, req, apigen.UpdateWorkspaceParams{
+		ID: workspaceID,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
-		return nil, err
-	}
-
-	return unmarshalJSONAPI(w), nil
+	return c.toWorkspace(from), nil
 }
 
 func (c *Client) LockWorkspace(ctx context.Context, workspaceID string, runID *string) (*Workspace, error) {
-	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
-	req, err := c.NewRequest("POST", path, nil)
+	from, err := c.Client.LockWorkspace(ctx, apigen.ForceUnlockWorkspaceParams{
+		ID: workspaceID,
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
-		return nil, err
-	}
-
-	return unmarshalJSONAPI(w), nil
+	return c.toWorkspace(from), nil
 }
 
 func (c *Client) UnlockWorkspace(ctx context.Context, workspaceID string, runID *string, force bool) (*Workspace, error) {
-	var u string
+	var (
+		from *apigen.Workspace
+		err  error
+	)
 	if force {
-		u = fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
+		from, err = c.Client.ForceUnlockWorkspace(ctx, apigen.ForceUnlockWorkspaceParams{
+			ID: workspaceID,
+		})
 	} else {
-		u = fmt.Sprintf("workspaces/%s/actions/force-unlock", workspaceID)
+		from, err = c.Client.UnlockWorkspace(ctx, apigen.UnlockWorkspaceParams{
+			ID: workspaceID,
+		})
 	}
-	req, err := c.NewRequest("POST", u, nil)
 	if err != nil {
 		return nil, err
 	}
+	return c.toWorkspace(from), nil
+}
 
-	w := &types.Workspace{}
-	err = c.Do(ctx, req, w)
-	if err != nil {
-		return nil, err
+func (c *Client) toWorkspace(from *apigen.Workspace) *Workspace {
+	return &Workspace{
+		Name:      from.Name,
+		ID:        from.ID,
+		AutoApply: from.AutoApply,
 	}
-
-	return unmarshalJSONAPI(w), nil
 }

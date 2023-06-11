@@ -1,0 +1,425 @@
+openapi: 3.0.3
+servers:
+  - url: /api
+info:
+  version: 1.0.0
+  title: OTF schema
+  description: "Schema for OTF API"
+  contact:
+    name: Louis Garman
+    email: "louisgarman@gmail.com"
+    url: https://docs.otf.ninja
+tags:
+  - name: organization
+  - name: workspace
+paths:
+  /organizations:
+    post:
+      description: Create a new organization
+      operationId: createOrganization
+      tags:
+        - organization
+      requestBody:
+        description: Create a new organization
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewOrganization'
+      responses:
+        '201':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/organizations/{name}':
+    get:
+      tags:
+        - organization
+      description: organization response
+      operationId: getOrganization
+      parameters:
+        - name: name
+          in: path
+          description: Name of organization to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '404':
+          description: Organization not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - organization
+      description: delete an organization
+      operationId: deleteOrganization
+      parameters:
+        - name: name
+          in: path
+          description: Name of organization to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: successful operation
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/workspaces/{id}':
+    get:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: getWorkspace
+      parameters:
+        - name: id
+          in: path
+          description: ID of workspace to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: updateWorkspace
+      parameters:
+        - name: id
+          in: path
+          description: ID of workspace to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Update workspace
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkspace'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - workspace
+      description: delete an workspace
+      operationId: deleteWorkspace
+      parameters:
+        - name: id
+          in: path
+          description: Name of workspace to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: successful operation
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/workspaces/{id}/actions/lock':
+    post:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: lockWorkspace
+      parameters:
+        - name: id
+          in: path
+          description: ID of workspace to lock
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/workspaces/{id}/actions/unlock':
+    post:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: unlockWorkspace
+      parameters:
+        - name: id
+          in: path
+          description: ID of workspace to unlock
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/workspaces/{id}/actions/force-unlock':
+    post:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: forceUnlockWorkspace
+      parameters:
+        - name: id
+          in: path
+          description: ID of workspace to unlock by force
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/organization/{organization}/workspaces':
+    get:
+      tags:
+        - workspace
+      description: workspace responses
+      operationId: listWorkspaces
+      parameters:
+        - name: organization
+          in: path
+          description: The organization name of the workspaces to list
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/pageNumber'
+        - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: organization not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/organizations/{organization}/workspaces/{name}':
+    get:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: getWorkspaceByName
+      parameters:
+        - name: organization
+          in: path
+          description: Name of workspace's organization
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of workspace to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - workspace
+      description: workspace response
+      operationId: updateWorkspaceByName
+      parameters:
+        - name: organization
+          in: path
+          description: Name of workspace's organization
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of workspace to update
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '404':
+          description: workspace not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  parameters:
+    pageNumber:
+      in: query
+      name: page[number]
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+      description: The page number to request
+    pageSize:
+      in: query
+      name: page[size]
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 100
+      description: The number of items to be returned per page
+  schemas:
+    Organization:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    NewOrganization:
+      required:
+        - name
+      properties:
+        name:
+          type: string
+      type: object
+    Workspace:
+      required:
+        - id
+        - name
+        - autoApply
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        autoApply:
+          type: boolean
+      type: object
+    UpdateWorkspace:
+      properties:
+        executionMode:
+          type: string
+          enum:
+            - local
+            - remote
+            - agent
+      type: object
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
