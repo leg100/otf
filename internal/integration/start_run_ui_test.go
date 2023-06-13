@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,15 +20,15 @@ func TestStartRunUI(t *testing.T) {
 	_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 	// now we have a config version, start a run with the plan-and-apply
-	// strategy
+	// operation
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
-		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, "plan-and-apply"),
+		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation),
 	})
 	require.NoError(t, err)
 
-	// now destroy resources with the destroy-all strategy
+	// now destroy resources with the destroy-all operation
 	okDialog(t, browser)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		// go to workspace page

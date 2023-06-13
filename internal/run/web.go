@@ -28,7 +28,7 @@ type (
 	}
 
 	runStarter interface {
-		startRun(ctx context.Context, workspaceID string, strategy runStrategy) (*Run, error)
+		startRun(ctx context.Context, workspaceID string, op Operation) (*Run, error)
 	}
 
 	logsdb interface {
@@ -232,15 +232,15 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string      `schema:"workspace_id,required"`
-		Strategy    runStrategy `schema:"strategy,required"`
+		WorkspaceID string    `schema:"workspace_id,required"`
+		Operation   Operation `schema:"operation,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, params.Strategy)
+	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, params.Operation)
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)

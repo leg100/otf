@@ -26,7 +26,7 @@ func TestStartRun(t *testing.T) {
 			cv:        cv,
 		})
 
-		got, err := starter.startRun(ctx, ws.ID, planOnly)
+		got, err := starter.startRun(ctx, ws.ID, PlanOnlyOperation)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -43,7 +43,7 @@ func TestStartRun(t *testing.T) {
 			provider:  provider,
 		})
 
-		got, err := starter.startRun(ctx, ws.ID, planOnly)
+		got, err := starter.startRun(ctx, ws.ID, PlanOnlyOperation)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -60,6 +60,10 @@ type (
 		VCSProviderService
 		ConfigurationVersionService
 		RunService
+	}
+
+	fakeStartRunCloudClient struct {
+		cloud.Client
 	}
 )
 
@@ -84,10 +88,6 @@ func (f *fakeStarterService) GetLatestConfigurationVersion(context.Context, stri
 	return f.cv, nil
 }
 
-func (f *fakeStarterService) CloneConfigurationVersion(context.Context, string, configversion.ConfigurationVersionCreateOptions) (*configversion.ConfigurationVersion, error) {
-	return f.cv, nil
-}
-
 func (f *fakeStarterService) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
@@ -98,10 +98,6 @@ func (f *fakeStarterService) GetVCSClient(context.Context, string) (cloud.Client
 
 func (f *fakeStarterService) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
 	return f.run, nil
-}
-
-type fakeStartRunCloudClient struct {
-	cloud.Client
 }
 
 func (f *fakeStartRunCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
