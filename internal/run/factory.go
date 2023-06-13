@@ -12,8 +12,7 @@ type factory struct {
 	WorkspaceService
 }
 
-// NewRun constructs a new run at the beginning of its lifecycle using the
-// provided options.
+// NewRun constructs a new run using the provided options.
 func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
 	ws, err := f.GetWorkspace(ctx, workspaceID)
 	if err != nil {
@@ -30,5 +29,34 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
-	return NewRun(cv, ws, opts), nil
+	return newRun(cv, ws, opts), nil
 }
+
+func (f *factory) createConfigVersionFromVCS(ws *Workspace) (*ConfigurationVersion, error) {
+	if ws.Connection == nil {
+		return nil, workspace.ErrNoVCSConnection
+	}
+	client, err := rs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	if err != nil {
+		return nil, err
+	}
+	// use workspace branch if set
+	var ref *string
+	if ws.Branch != "" {
+		ref = &ws.Branch
+	}
+	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+		Repo: ws.Connection.Repo,
+		Ref:  ref,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
+	}
+	cv, err = rs.CreateConfigurationVersion(ctx, ws.ID, configOptions)
+	if err != nil {
+		return nil, err
+	}
+	if err := rs.UploadConfig(ctx, cv.ID, tarball); err != nil {
+		return nil, err
+	}
+

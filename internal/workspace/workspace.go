@@ -23,6 +23,8 @@ const (
 	DefaultTerraformVersion = "1.4.6"
 )
 
+var ErrNoVCSConnection = errors.New("workspace is not connected to a vcs repo")
+
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
