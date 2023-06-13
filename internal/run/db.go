@@ -38,7 +38,7 @@ type (
 		AppliedChanges         *pggen.Report                 `json:"applied_changes"`
 		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
-		Speculative            bool                          `json:"speculative"`
+		PlanOnly               bool                          `json:"plan_only"`
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 		Latest                 bool                          `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
@@ -200,8 +200,8 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
 	}
 	speculative := "%"
-	if opts.Speculative != nil {
-		speculative = strconv.FormatBool(*opts.Speculative)
+	if opts.PlanOnly != nil {
+		speculative = strconv.FormatBool(*opts.PlanOnly)
 	}
 	db.FindRunsBatch(batch, pggen.FindRunsParams{
 		OrganizationNames: []string{organization},
@@ -349,7 +349,7 @@ func (result pgresult) toRun() *Run {
 		ReplaceAddrs:           result.ReplaceAddrs,
 		TargetAddrs:            result.TargetAddrs,
 		AutoApply:              result.AutoApply,
-		Speculative:            result.Speculative,
+		PlanOnly:               result.PlanOnly,
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest,
 		Organization:           result.OrganizationName.String,

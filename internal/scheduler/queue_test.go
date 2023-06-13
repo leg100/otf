@@ -79,7 +79,7 @@ func TestQueue(t *testing.T) {
 
 	t.Run("speculative run", func(t *testing.T) {
 		ws := &workspace.Workspace{ID: "ws-123"}
-		run := &run.Run{Status: internal.RunPending, WorkspaceID: "ws-123", Speculative: true}
+		run := &run.Run{Status: internal.RunPending, WorkspaceID: "ws-123", PlanOnly: true}
 		app := newFakeQueueApp(ws, run)
 		q := newTestQueue(app, ws)
 

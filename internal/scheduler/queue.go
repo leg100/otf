@@ -58,7 +58,7 @@ func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
 			}
 		}
 	case *run.Run:
-		if payload.Speculative {
+		if payload.PlanOnly {
 			if payload.Status == internal.RunPending {
 				// immediately enqueue onto global queue
 				_, err := q.EnqueuePlan(ctx, payload.ID)
