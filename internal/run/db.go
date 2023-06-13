@@ -62,6 +62,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			ReplaceAddrs:           run.ReplaceAddrs,
 			TargetAddrs:            run.TargetAddrs,
 			AutoApply:              run.AutoApply,
+			PlanOnly:               run.PlanOnly,
 			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
 			WorkspaceID:            sql.String(run.WorkspaceID),
 		})
@@ -199,16 +200,16 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 	if len(opts.Statuses) > 0 {
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
 	}
-	speculative := "%"
+	planOnly := "%"
 	if opts.PlanOnly != nil {
-		speculative = strconv.FormatBool(*opts.PlanOnly)
+		planOnly = strconv.FormatBool(*opts.PlanOnly)
 	}
 	db.FindRunsBatch(batch, pggen.FindRunsParams{
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
-		Speculative:       []string{speculative},
+		PlanOnly:          []string{planOnly},
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
@@ -217,7 +218,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
-		Speculative:       []string{speculative},
+		PlanOnly:          []string{planOnly},
 	})
 
 	results := db.SendBatch(ctx, batch)
