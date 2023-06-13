@@ -858,6 +858,22 @@ func (s *Server) handleListWorkspacesRequest(args [1]string, argsEscaped bool, w
 					Name: "organization",
 					In:   "path",
 				}: params.Organization,
+				{
+					Name: "page[number]",
+					In:   "query",
+				}: params.PageNumber,
+				{
+					Name: "page[size]",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "search[name]",
+					In:   "query",
+				}: params.SearchName,
+				{
+					Name: "search[tags]",
+					In:   "query",
+				}: params.SearchTags,
 			},
 			Raw: r,
 		}

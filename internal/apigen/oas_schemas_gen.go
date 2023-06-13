@@ -90,6 +90,10 @@ type GetWorkspaceNotFound struct{}
 
 func (*GetWorkspaceNotFound) getWorkspaceRes() {}
 
+type ListWorkspaces []Workspace
+
+func (*ListWorkspaces) listWorkspacesRes() {}
+
 // ListWorkspacesNotFound is response for ListWorkspaces operation.
 type ListWorkspacesNotFound struct{}
 
@@ -113,6 +117,98 @@ func (s *NewOrganization) GetName() string {
 // SetName sets the value of Name.
 func (s *NewOrganization) SetName(val string) {
 	s.Name = val
+}
+
+// NewOptInt returns new OptInt with value set to v.
+func NewOptInt(v int) OptInt {
+	return OptInt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt is optional int.
+type OptInt struct {
+	Value int
+	Set   bool
+}
+
+// IsSet returns true if OptInt was set.
+func (o OptInt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt) Reset() {
+	var v int
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt) SetTo(v int) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt) Get() (v int, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptString returns new OptString with value set to v.
+func NewOptString(v string) OptString {
+	return OptString{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptString is optional string.
+type OptString struct {
+	Value string
+	Set   bool
+}
+
+// IsSet returns true if OptString was set.
+func (o OptString) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptString) Reset() {
+	var v string
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptString) SetTo(v string) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptString) Get() (v string, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewOptUpdateWorkspaceExecutionMode returns new OptUpdateWorkspaceExecutionMode with value set to v.
@@ -298,7 +394,6 @@ func (s *Workspace) SetAutoApply(val bool) {
 func (*Workspace) forceUnlockWorkspaceRes()  {}
 func (*Workspace) getWorkspaceByNameRes()    {}
 func (*Workspace) getWorkspaceRes()          {}
-func (*Workspace) listWorkspacesRes()        {}
 func (*Workspace) lockWorkspaceRes()         {}
 func (*Workspace) unlockWorkspaceRes()       {}
 func (*Workspace) updateWorkspaceByNameRes() {}

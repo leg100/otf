@@ -140,7 +140,7 @@ func encodeGetWorkspaceByNameResponse(response GetWorkspaceByNameRes, w http.Res
 
 func encodeListWorkspacesResponse(response ListWorkspacesRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *Workspace:
+	case *ListWorkspaces:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		span.SetStatus(codes.Ok, http.StatusText(200))

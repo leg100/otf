@@ -8,6 +8,14 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+func (s ListWorkspaces) Validate() error {
+	alias := ([]Workspace)(s)
+	if alias == nil {
+		return errors.New("nil is invalid value")
+	}
+	return nil
+}
+
 func (s *UpdateWorkspace) Validate() error {
 	var failures []validate.FieldError
 	if err := func() error {

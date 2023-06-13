@@ -559,7 +559,7 @@ func decodeListWorkspacesResponse(resp *http.Response) (res ListWorkspacesRes, _
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Workspace
+			var response ListWorkspaces
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

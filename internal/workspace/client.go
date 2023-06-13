@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/leg100/otf/internal/api/types"
@@ -57,20 +56,22 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspa
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*WorkspaceList, error) {
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
-	req, err := c.NewRequest("GET", u, &options)
+func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (list *WorkspaceList, err error) {
+	req := apigen.ListWorkspacesParams{
+		Organization: *options.Organization,
+		SearchTags:   options.Tags,
+	}
+	if options.PageNumber != 0 {
+		req.PageNumber = apigen.OptInt{Set: true, Value: options.PageNumber}
+	}
+	if options.PageSize != 0 {
+		req.PageSize = apigen.OptInt{Set: true, Value: options.PageSize}
+	}
+	from, err := c.Client.ListWorkspaces(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-
-	wl := &types.WorkspaceList{}
-	err = c.Do(ctx, req, wl)
-	if err != nil {
-		return nil, err
-	}
-
-	return unmarshalListJSONAPI(wl), nil
+	for _, fromWorkspace := range from.
 }
 
 // UpdateWorkspace updates the settings of an existing workspace.

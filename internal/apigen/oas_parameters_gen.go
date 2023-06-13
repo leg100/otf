@@ -469,6 +469,14 @@ func decodeGetWorkspaceByNameParams(args [2]string, argsEscaped bool, r *http.Re
 type ListWorkspacesParams struct {
 	// The organization name of the workspaces to list.
 	Organization string
+	// The page number to request.
+	PageNumber OptInt
+	// The number of items to be returned per page.
+	PageSize OptInt
+	// Search workspace by name.
+	SearchName OptString
+	// Search workspace by tags.
+	SearchTags []string
 }
 
 func unpackListWorkspacesParams(packed middleware.Parameters) (params ListWorkspacesParams) {
@@ -479,10 +487,47 @@ func unpackListWorkspacesParams(packed middleware.Parameters) (params ListWorksp
 		}
 		params.Organization = packed[key].(string)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page[number]",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageNumber = v.(OptInt)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page[size]",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "search[name]",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.SearchName = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "search[tags]",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.SearchTags = v.([]string)
+		}
+	}
 	return params
 }
 
 func decodeListWorkspacesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListWorkspacesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: organization.
 	if err := func() error {
 		param := args[0]
@@ -525,6 +570,225 @@ func decodeListWorkspacesParams(args [1]string, argsEscaped bool, r *http.Reques
 		return params, &ogenerrors.DecodeParamError{
 			Name: "organization",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: page[number].
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page[number]",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageNumberVal int
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageNumberVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageNumber.SetTo(paramsDotPageNumberVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.PageNumber.Set {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+						}).Validate(int64(params.PageNumber.Value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page[number]",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page[size].
+	{
+		val := int(100)
+		params.PageSize.SetTo(val)
+	}
+	// Decode query: page[size].
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page[size]",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.PageSize.Set {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           100,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+						}).Validate(int64(params.PageSize.Value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page[size]",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: search[name].
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "search[name]",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSearchNameVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSearchNameVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SearchName.SetTo(paramsDotSearchNameVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "search[name]",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: search[tags].
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "search[tags]",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotSearchTagsVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotSearchTagsVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.SearchTags = append(params.SearchTags, paramsDotSearchTagsVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "search[tags]",
+			In:   "query",
 			Err:  err,
 		}
 	}
