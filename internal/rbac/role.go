@@ -64,6 +64,7 @@ var (
 			UnlockWorkspaceAction: true,
 			CreateVariableAction:  true,
 			UpdateVariableAction:  true,
+			DeleteVariableAction:  true,
 			// includes WorkspacePlanRole perms too (see below)
 		},
 	}
