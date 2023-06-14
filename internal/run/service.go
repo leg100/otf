@@ -122,6 +122,7 @@ func NewService(opts Options) *service {
 	svc.factory = &factory{
 		opts.ConfigurationVersionService,
 		opts.WorkspaceService,
+		opts.VCSProviderService,
 	}
 
 	svc.web = &webHandlers{
@@ -130,12 +131,6 @@ func NewService(opts Options) *service {
 		logsdb:           db,
 		logger:           opts.Logger,
 		svc:              &svc,
-		starter: &starter{
-			ConfigurationVersionService: opts.ConfigurationVersionService,
-			WorkspaceService:            opts.WorkspaceService,
-			VCSProviderService:          opts.VCSProviderService,
-			RunService:                  &svc,
-		},
 	}
 
 	// Register with broker so that it can relay run events

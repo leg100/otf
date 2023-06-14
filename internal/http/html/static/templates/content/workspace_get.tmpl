@@ -30,6 +30,7 @@
       <div class="actions-container">
         <h5>Actions</h5>
         <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
+          <input type="hidden" name="connected" value="{{ ne .Workspace.Connection nil }}">
           <select name="operation" id="start-run-operation" onchange="this.form.submit()">
             <option value="" selected>-- start run --</option>
             <option value="plan-only">plan only</option>

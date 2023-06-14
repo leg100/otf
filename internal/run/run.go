@@ -23,6 +23,10 @@ const (
 	// vcs repo.
 	PullVCSMagicString = "__pull_vcs__"
 
+	PlanOnlyOperation     Operation = "plan-only"
+	PlanAndApplyOperation Operation = "plan-and-apply"
+	DestroyAllOperation   Operation = "destroy-all"
+
 	// defaultRefresh specifies that the state be refreshed prior to running a
 	// plan
 	defaultRefresh = true
@@ -32,6 +36,9 @@ var ErrInvalidRunStateTransition = errors.New("invalid run state transition")
 
 type (
 	PlanFormat string
+
+	// Run operation specifies the terraform execution mode.
+	Operation string
 
 	// Run is a terraform run.
 	Run struct {

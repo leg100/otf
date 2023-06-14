@@ -40,7 +40,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	r.HandleFunc("/workspaces/{workspace_id}/runs", h.list).Methods("GET")
-	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.startRun).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/start-run", h.createRun).Methods("POST")
 	r.HandleFunc("/runs/{run_id}", h.get).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/widget", h.getWidget).Methods("GET")
 	r.HandleFunc("/runs/{run_id}/delete", h.delete).Methods("POST")
@@ -52,6 +52,37 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 	// this handles the link the terraform CLI shows during a plan/apply.
 	r.HandleFunc("/{organization_name}/{workspace_id}/runs/{run_id}", h.get).Methods("GET")
+}
+
+func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID string    `schema:"workspace_id,required"`
+		Operation   Operation `schema:"operation,required"`
+		Connected   bool      `schema:"connected,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	opts := RunCreateOptions{
+		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
+		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
+	}
+	// if run's workspace is connected to a VCS repo then pull config from
+	// the repo
+	if params.Connected {
+		opts.ConfigurationVersionID = internal.String(PullVCSMagicString)
+	}
+
+	run, err := h.svc.CreateRun(r.Context(), params.WorkspaceID, opts)
+	if err != nil {
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
@@ -228,26 +259,6 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, paths.Run(runID), http.StatusFound)
-}
-
-func (h *webHandlers) startRun(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		WorkspaceID string    `schema:"workspace_id,required"`
-		Operation   Operation `schema:"operation,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	run, err := h.starter.startRun(r.Context(), params.WorkspaceID, params.Operation)
-	if err != nil {
-		html.FlashError(w, err.Error())
-		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
-		return
-	}
-
-	http.Redirect(w, r, paths.Run(run.ID), http.StatusFound)
 }
 
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
