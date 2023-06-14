@@ -19,10 +19,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 	ws := daemon.createWorkspace(t, ctx, nil)
 	tfConfig := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
 
-	var (
-		runListingBefore []*cdp.Node
-		runListingAfter  []*cdp.Node
-	)
+	var runListingAfter []*cdp.Node
 	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
@@ -46,7 +43,5 @@ func TestIntegration_RunListUI(t *testing.T) {
 		chromedp.WaitVisible(`//*[@class='item']//*[@class='status status-planned_and_finished']`, chromedp.BySearch),
 	})
 	require.NoError(t, err)
-
-	assert.Equal(t, 0, len(runListingBefore))
 	assert.Equal(t, 1, len(runListingAfter))
 }
