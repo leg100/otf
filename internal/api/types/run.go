@@ -81,6 +81,9 @@ type RunCreateOptions struct {
 	// set.  https://jsonapi.org/format/#crud-creating
 	Type string `jsonapi:"primary,runs"`
 
+	// PlanOnly specifies if this is a speculative, plan-only run that Terraform cannot apply.
+	PlanOnly *bool `jsonapi:"attr,plan-only,omitempty"`
+
 	// Specifies if this plan is a destroy plan, which will destroy all
 	// provisioned resources.
 	IsDestroy *bool `jsonapi:"attribute" json:"is-destroy,omitempty"`

@@ -15,9 +15,6 @@ type (
 
 	Service interface {
 		CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-		// CloneConfigurationVersion creates a new configuration version using the
-		// config tarball of an existing configuration version.
-		CloneConfigurationVersion(ctx context.Context, cvID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 		GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
 		GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
 		ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
@@ -81,29 +78,6 @@ func (s *service) CreateConfigurationVersion(ctx context.Context, workspaceID st
 		return nil, err
 	}
 	s.V(1).Info("created configuration version", "id", cv.ID, "subject", subject)
-	return cv, nil
-}
-
-func (s *service) CloneConfigurationVersion(ctx context.Context, cvID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
-	cv, err := s.GetConfigurationVersion(ctx, cvID)
-	if err != nil {
-		return nil, err
-	}
-
-	cv, err = s.CreateConfigurationVersion(ctx, cv.WorkspaceID, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := s.DownloadConfig(ctx, cvID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.UploadConfig(ctx, cv.ID, config); err != nil {
-		return nil, err
-	}
-
 	return cv, nil
 }
 

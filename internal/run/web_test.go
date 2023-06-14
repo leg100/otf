@@ -75,7 +75,7 @@ func TestWebHandlers_StartRun(t *testing.T) {
 	run := &Run{ID: "run-1"}
 	h := newTestWebHandlers(t, withRuns(run))
 
-	q := "/?workspace_id=run-123&strategy=plan-only"
+	q := "/?workspace_id=run-123&operation=plan-only"
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	h.startRun(w, r)

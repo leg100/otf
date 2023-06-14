@@ -145,7 +145,7 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org1",
-				opts: run.RunListOptions{Organization: internal.String(ws1.Organization), Speculative: internal.Bool(false)},
+				opts: run.RunListOptions{Organization: internal.String(ws1.Organization), PlanOnly: internal.Bool(false)},
 				want: func(t *testing.T, l *run.RunList) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
@@ -154,7 +154,7 @@ func TestRun(t *testing.T) {
 			},
 			{
 				name: "filter out speculative runs in org2",
-				opts: run.RunListOptions{Organization: internal.String(ws2.Organization), Speculative: internal.Bool(false)},
+				opts: run.RunListOptions{Organization: internal.String(ws2.Organization), PlanOnly: internal.Bool(false)},
 				want: func(t *testing.T, l *run.RunList) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))

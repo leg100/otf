@@ -88,6 +88,6 @@ func (f *fakeWebServices) GetRun(ctx context.Context, runID string) (*Run, error
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) startRun(ctx context.Context, workspaceID string, strategy runStrategy) (*Run, error) {
+func (f *fakeWebServices) startRun(context.Context, string, Operation) (*Run, error) {
 	return f.runs[0], nil
 }

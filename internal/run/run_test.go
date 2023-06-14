@@ -12,7 +12,7 @@ import (
 
 func TestRun_States(t *testing.T) {
 	t.Run("pending", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 
 		require.Equal(t, internal.RunPending, run.Status)
 		require.Equal(t, PhasePending, run.Plan.Status)
@@ -20,7 +20,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 
 		require.NoError(t, run.EnqueuePlan())
 
@@ -30,7 +30,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start plan", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunPlanQueued
 
 		require.NoError(t, run.Start(internal.PlanPhase))
@@ -41,7 +41,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunPlanning
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
@@ -52,7 +52,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with errors", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunPlanning
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{Errored: true}))
@@ -63,7 +63,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunPlanning
 
 		run.Plan.ResourceReport = &ResourceReport{Additions: 1}
@@ -76,7 +76,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes on run with autoapply enabled", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{
 			AutoApply: internal.Bool(true),
 		})
 		run.Status = internal.RunPlanning
@@ -91,7 +91,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue apply", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunPlanned
 
 		require.NoError(t, run.EnqueueApply())
@@ -101,7 +101,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start apply", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunApplyQueued
 
 		require.NoError(t, run.Start(internal.ApplyPhase))
@@ -111,7 +111,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunApplying
 
 		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{}))
@@ -121,7 +121,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply with errors", func(t *testing.T) {
-		run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunApplying
 
 		require.NoError(t, run.Finish(internal.ApplyPhase, PhaseFinishOptions{Errored: true}))
@@ -132,7 +132,7 @@ func TestRun_States(t *testing.T) {
 }
 
 func TestRun_Cancel_Pending(t *testing.T) {
-	run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+	run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 	enqueue, err := run.Cancel()
 	require.NoError(t, err)
 	assert.False(t, enqueue)
@@ -140,7 +140,7 @@ func TestRun_Cancel_Pending(t *testing.T) {
 }
 
 func TestRun_Cancel_Planning(t *testing.T) {
-	run := NewRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+	run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 	run.Status = internal.RunPlanning
 	enqueue, err := run.Cancel()
 	require.NoError(t, err)

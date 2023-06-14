@@ -47,7 +47,7 @@ type (
 		PositionInQueue        int                     `json:"position_in_queue"`
 		TargetAddrs            []string                `json:"target_addrs"`
 		AutoApply              bool                    `json:"auto_apply"`
-		Speculative            bool                    `json:"speculative"`
+		PlanOnly               bool                    `json:"plan_only"`
 		Status                 internal.RunStatus      `json:"status"`
 		StatusTimestamps       []RunStatusTimestamp    `json:"status_timestamps"`
 		WorkspaceID            string                  `json:"workspace_id"`
@@ -72,7 +72,7 @@ type (
 	}
 
 	// RunCreateOptions represents the options for creating a new run. See
-	// dto.RunCreateOptions for further detail.
+	// api/types/RunCreateOptions for documentation on each field.
 	RunCreateOptions struct {
 		IsDestroy   *bool
 		Refresh     *bool
@@ -91,6 +91,10 @@ type (
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
+		// PlanOnly specifies if this is a speculative, plan-only run that
+		// Terraform cannot apply. Takes precedence over whether the
+		// configuration version is marked as speculative or not.
+		PlanOnly *bool
 	}
 
 	// RunListOptions are options for paginating and filtering a list of runs
@@ -104,8 +108,8 @@ type (
 		Organization *string `schema:"organization_name,omitempty"`
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
-		// Filter by speculative or non-speculative
-		Speculative *bool `schema:"-"`
+		// Filter by plan-only runs
+		PlanOnly *bool `schema:"-"`
 		// A list of relations to include. See available resources:
 		// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 		Include *string `schema:"include,omitempty"`
@@ -118,8 +122,8 @@ type (
 	}
 )
 
-// NewRun creates a new run with defaults.
-func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
+// newRun creates a new run with defaults.
+func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
 		CreatedAt:              internal.CurrentTimestamp(),
@@ -127,7 +131,7 @@ func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 		Organization:           ws.Organization,
 		ConfigurationVersionID: cv.ID,
 		WorkspaceID:            ws.ID,
-		Speculative:            cv.Speculative,
+		PlanOnly:               cv.Speculative,
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		TargetAddrs:            opts.TargetAddrs,
 		ExecutionMode:          ws.ExecutionMode,
@@ -149,6 +153,9 @@ func NewRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 	if opts.AutoApply != nil {
 		run.AutoApply = *opts.AutoApply
 	}
+	if opts.PlanOnly != nil {
+		run.PlanOnly = *opts.PlanOnly
+	}
 	if cv.IngressAttributes != nil {
 		run.Commit = &cv.IngressAttributes.CommitSHA
 	}
@@ -161,10 +168,6 @@ func (r *Run) Queued() bool {
 
 func (r *Run) HasChanges() bool {
 	return r.Plan.HasChanges()
-}
-
-func (r *Run) PlanOnly() bool {
-	return r.Status == internal.RunPlannedAndFinished
 }
 
 // HasApply determines whether the run has started applying yet.
@@ -337,7 +340,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 		r.updateStatus(internal.RunPlanned)
 		r.Plan.UpdateStatus(PhaseFinished)
 
-		if !r.HasChanges() || r.Speculative {
+		if !r.HasChanges() || r.PlanOnly {
 			r.updateStatus(internal.RunPlannedAndFinished)
 			r.Apply.UpdateStatus(PhaseUnreachable)
 		} else if r.AutoApply {

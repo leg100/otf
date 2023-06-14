@@ -179,7 +179,7 @@
         <button id="queue-destroy-plan-button" class="delete" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
           Queue destroy plan
         </button>
-        <input name="strategy" value="destroy-all" type="hidden">
+        <input name="operation" value="destroy-all" type="hidden">
       </form>
       <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
         <button id="delete-workspace-button" class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">

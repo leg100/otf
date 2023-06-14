@@ -10,6 +10,7 @@ INSERT INTO runs (
     replace_addrs,
     target_addrs,
     auto_apply,
+    plan_only,
     configuration_version_id,
     workspace_id
 ) VALUES (
@@ -23,6 +24,7 @@ INSERT INTO runs (
     pggen.arg('replace_addrs'),
     pggen.arg('target_addrs'),
     pggen.arg('auto_apply'),
+    pggen.arg('plan_only'),
     pggen.arg('configuration_version_id'),
     pggen.arg('workspace_id')
 );
@@ -57,7 +59,7 @@ SELECT
     applies.report AS applied_changes,
     runs.configuration_version_id,
     runs.workspace_id,
-    configuration_versions.speculative,
+    runs.plan_only,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -90,11 +92,11 @@ JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 WHERE
-    workspaces.organization_name             LIKE ANY(pggen.arg('organization_names'))
-AND workspaces.workspace_id                  LIKE ANY(pggen.arg('workspace_ids'))
-AND workspaces.name                          LIKE ANY(pggen.arg('workspace_names'))
-AND runs.status                              LIKE ANY(pggen.arg('statuses'))
-AND configuration_versions.speculative::text LIKE ANY(pggen.arg('speculative'))
+    workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
+AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
+AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
+AND runs.status                  LIKE ANY(pggen.arg('statuses'))
+AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
 ORDER BY runs.created_at DESC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
@@ -103,13 +105,12 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 SELECT count(*)
 FROM runs
 JOIN workspaces             USING(workspace_id)
-JOIN configuration_versions USING(configuration_version_id)
 WHERE
-    workspaces.organization_name             LIKE ANY(pggen.arg('organization_names'))
-AND workspaces.workspace_id                  LIKE ANY(pggen.arg('workspace_ids'))
-AND workspaces.name                          LIKE ANY(pggen.arg('workspace_names'))
-AND runs.status                              LIKE ANY(pggen.arg('statuses'))
-AND configuration_versions.speculative::text LIKE ANY(pggen.arg('speculative'))
+    workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
+AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
+AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
+AND runs.status                  LIKE ANY(pggen.arg('statuses'))
+AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
 ;
 
 -- name: FindRunByID :one
@@ -131,7 +132,7 @@ SELECT
     applies.report AS applied_changes,
     runs.configuration_version_id,
     runs.workspace_id,
-    configuration_versions.speculative,
+    runs.plan_only,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -185,7 +186,7 @@ SELECT
     applies.report AS applied_changes,
     runs.configuration_version_id,
     runs.workspace_id,
-    configuration_versions.speculative,
+    runs.plan_only,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
