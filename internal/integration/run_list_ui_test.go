@@ -29,7 +29,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		// navigate to runs page
 		chromedp.Click(`//a[text()='runs']`, chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
-		// should be no items listed
+		// should be no runs listed
 		matchText(t, `//div[@id='content-list']`, `No items currently exist.`),
 		chromedp.ActionFunc(func(context.Context) error {
 			// meanwhile, execute a terraform cli init and plan
@@ -39,7 +39,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		}),
 		// should be one run listed
 		chromedp.Nodes(`//div[@id='content-list']//*[@class='item']`, &runListingAfter, chromedp.BySearch),
-		// and its status should 'planned and finished'
+		// and its status should be 'planned and finished'
 		chromedp.WaitVisible(`//*[@class='item']//*[@class='status status-planned_and_finished']`, chromedp.BySearch),
 	})
 	require.NoError(t, err)
