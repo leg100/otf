@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -71,13 +72,27 @@ func TestRuns_CancelHandler(t *testing.T) {
 	testutils.AssertRedirect(t, w, paths.Runs("ws-1"))
 }
 
-func TestWebHandlers_StartRun(t *testing.T) {
-	run := &Run{ID: "run-1"}
-	h := newTestWebHandlers(t, withRuns(run))
+func TestWebHandlers_CreateRun_Connected(t *testing.T) {
+	h := newTestWebHandlers(t,
+		withRuns(&Run{ID: "run-1"}),
+		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &repo.Connection{}}),
+	)
 
-	q := "/?workspace_id=run-123&operation=plan-only"
+	q := "/?workspace_id=run-123&operation=plan-only&connected=true"
 	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
-	h.startRun(w, r)
+	h.createRun(w, r)
+	testutils.AssertRedirect(t, w, paths.Run("run-1"))
+}
+
+func TestWebHandlers_CreateRun_Unconnected(t *testing.T) {
+	h := newTestWebHandlers(t,
+		withRuns(&Run{ID: "run-1"}),
+	)
+
+	q := "/?workspace_id=run-123&operation=plan-only&connected=false"
+	r := httptest.NewRequest("POST", q, nil)
+	w := httptest.NewRecorder()
+	h.createRun(w, r)
 	testutils.AssertRedirect(t, w, paths.Run("run-1"))
 }
