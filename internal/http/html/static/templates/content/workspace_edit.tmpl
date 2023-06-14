@@ -179,6 +179,7 @@
         <button id="queue-destroy-plan-button" class="delete" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
           Queue destroy plan
         </button>
+        <input type="hidden" name="connected" value="{{ ne .Workspace.Connection nil }}">
         <input name="operation" value="destroy-all" type="hidden">
       </form>
       <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">

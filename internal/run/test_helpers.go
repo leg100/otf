@@ -71,6 +71,10 @@ func (f *fakeWebServices) GetWorkspace(context.Context, string) (*workspace.Work
 	return f.ws, nil
 }
 
+func (f *fakeWebServices) CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+	return f.runs[0], nil
+}
+
 func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	return &RunList{
 		Items:      f.runs,
