@@ -30,5 +30,5 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
-	return NewRun(cv, ws, opts), nil
+	return newRun(cv, ws, opts), nil
 }

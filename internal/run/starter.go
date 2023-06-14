@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	planOnly     runStrategy = "plan-only"
-	planAndApply runStrategy = "plan-and-apply"
-	destroyAll   runStrategy = "destroy-all"
+	PlanOnlyOperation     Operation = "plan-only"
+	PlanAndApplyOperation Operation = "plan-and-apply"
+	DestroyAllOperation   Operation = "destroy-all"
 )
 
 type (
@@ -26,24 +26,25 @@ type (
 		RunService
 	}
 
-	runStrategy string
+	// Run operation specifies the terraform execution mode.
+	Operation string
 )
 
-func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy runStrategy) (*Run, error) {
+func (rs *starter) startRun(ctx context.Context, workspaceID string, op Operation) (*Run, error) {
 	var (
-		speculative bool
-		destroy     bool
+		planOnly bool
+		destroy  bool
 	)
 
-	switch strategy {
-	case planOnly:
-		speculative = true
-	case planAndApply:
-		speculative = false
-	case destroyAll:
+	switch op {
+	case PlanOnlyOperation:
+		planOnly = true
+	case PlanAndApplyOperation:
+		planOnly = false
+	case DestroyAllOperation:
 		destroy = true
 	default:
-		return nil, fmt.Errorf("invalid strategy: %s", strategy)
+		return nil, fmt.Errorf("invalid run operation: %s", op)
 	}
 
 	ws, err := rs.GetWorkspace(ctx, workspaceID)
@@ -52,9 +53,6 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy ru
 	}
 
 	var cv *configversion.ConfigurationVersion
-	configOptions := configversion.ConfigurationVersionCreateOptions{
-		Speculative: &speculative,
-	}
 	if ws.Connection != nil {
 		client, err := rs.GetVCSClient(ctx, ws.Connection.VCSProviderID)
 		if err != nil {
@@ -72,7 +70,7 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy ru
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 		}
-		cv, err = rs.CreateConfigurationVersion(ctx, ws.ID, configOptions)
+		cv, err = rs.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -80,15 +78,11 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy ru
 			return nil, err
 		}
 	} else {
-		latest, err := rs.GetLatestConfigurationVersion(ctx, ws.ID)
+		cv, err = rs.GetLatestConfigurationVersion(ctx, ws.ID)
 		if err != nil {
 			if errors.Is(err, internal.ErrResourceNotFound) {
 				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")
 			}
-			return nil, err
-		}
-		cv, err = rs.CloneConfigurationVersion(ctx, latest.ID, configOptions)
-		if err != nil {
 			return nil, err
 		}
 	}
@@ -96,5 +90,6 @@ func (rs *starter) startRun(ctx context.Context, workspaceID string, strategy ru
 	return rs.CreateRun(ctx, workspaceID, RunCreateOptions{
 		ConfigurationVersionID: internal.String(cv.ID),
 		IsDestroy:              &destroy,
+		PlanOnly:               &planOnly,
 	})
 }

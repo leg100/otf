@@ -71,6 +71,7 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 		ConfigurationVersionID: configurationVersionID,
 		TargetAddrs:            opts.TargetAddrs,
 		ReplaceAddrs:           opts.ReplaceAddrs,
+		PlanOnly:               opts.PlanOnly,
 	})
 	if err != nil {
 		Error(w, err)

@@ -25,7 +25,7 @@ func TestFactory(t *testing.T) {
 
 		assert.Equal(t, internal.RunPending, got.Status)
 		assert.NotZero(t, got.CreatedAt)
-		assert.False(t, got.Speculative)
+		assert.False(t, got.PlanOnly)
 		assert.True(t, got.Refresh)
 		assert.False(t, got.AutoApply)
 	})
@@ -39,7 +39,19 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, "", RunCreateOptions{})
 		require.NoError(t, err)
 
-		assert.True(t, got.Speculative)
+		assert.True(t, got.PlanOnly)
+	})
+
+	t.Run("plan-only run", func(t *testing.T) {
+		f := testFactory(
+			&workspace.Workspace{},
+			&configversion.ConfigurationVersion{},
+		)
+
+		got, err := f.NewRun(ctx, "", RunCreateOptions{PlanOnly: internal.Bool(true)})
+		require.NoError(t, err)
+
+		assert.True(t, got.PlanOnly)
 	})
 
 	t.Run("workspace auto-apply", func(t *testing.T) {

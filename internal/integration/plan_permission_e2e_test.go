@@ -66,8 +66,8 @@ func TestIntegration_PlanPermission(t *testing.T) {
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
-		// select strategy for run
-		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-only", chromedp.BySearch),
+		// select operation for run
+		chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only", chromedp.BySearch),
 		screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),

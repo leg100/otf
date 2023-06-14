@@ -17,6 +17,7 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/require"
 )
@@ -210,13 +211,13 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 }
 
 // startRunTasks starts a run via the UI
-func startRunTasks(t *testing.T, hostname, organization, workspaceName, strategy string) chromedp.Tasks {
+func startRunTasks(t *testing.T, hostname, organization, workspaceName string, op run.Operation) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
 		screenshot(t, "connected_workspace_main_page"),
-		// select strategy for run
-		chromedp.SetValue(`//select[@id="start-run-strategy"]`, strategy, chromedp.BySearch),
+		// select operation for run
+		chromedp.SetValue(`//select[@id="start-run-operation"]`, string(op), chromedp.BySearch),
 		screenshot(t, "run_page_started"),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
