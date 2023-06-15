@@ -94,6 +94,11 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
+	ws, err := a.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
+	if err != nil {
+		Error(w, err)
+		return
+	}
 	svl, err := a.ListStateVersions(r.Context(), opts)
 	if err != nil {
 		Error(w, err)

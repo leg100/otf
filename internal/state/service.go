@@ -29,7 +29,7 @@ type (
 		// DownloadCurrentState downloads the current (latest) state for the given
 		// workspace.
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
-		ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+		ListStateVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error)
 		GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
 		GetStateVersion(ctx context.Context, versionID string) (*Version, error)
 		DeleteStateVersion(ctx context.Context, versionID string) error
