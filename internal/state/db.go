@@ -16,7 +16,7 @@ type (
 		internal.DB
 
 		createVersion(context.Context, *Version) error
-		listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error)
+		listVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error)
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		getState(ctx context.Context, versionID string) ([]byte, error)
@@ -72,25 +72,24 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error) {
 	batch := &pgx.Batch{}
 
-	db.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
-		WorkspaceName:    sql.String(opts.Workspace),
-		OrganizationName: sql.String(opts.Organization),
-		Limit:            opts.GetLimit(),
-		Offset:           opts.GetOffset(),
+	db.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
+		WorkspaceID: sql.String(workspaceID),
+		Limit:       opts.GetLimit(),
+		Offset:      opts.GetOffset(),
 	})
-	db.CountStateVersionsByWorkspaceNameBatch(batch, sql.String(opts.Workspace), sql.String(opts.Organization))
+	db.CountStateVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
 
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindStateVersionsByWorkspaceNameScan(results)
+	rows, err := db.FindStateVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := db.CountStateVersionsByWorkspaceNameScan(results)
+	count, err := db.CountStateVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +101,7 @@ func (db *pgdb) listVersions(ctx context.Context, opts StateVersionListOptions) 
 
 	return &VersionList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts, count),
 	}, nil
 }
 

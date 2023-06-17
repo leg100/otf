@@ -218,7 +218,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
-		WorkspaceService:    workspaceService,
 		Cache:               cache,
 	})
 	variableService := variable.NewService(variable.Options{

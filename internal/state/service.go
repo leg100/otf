@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/workspace"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -18,8 +17,7 @@ func cacheKey(svID string) string { return fmt.Sprintf("%s.json", svID) }
 
 type (
 	// Alias services so they don't conflict when nested together in struct
-	WorkspaceService = workspace.Service
-	StateService     = Service
+	StateService = Service
 
 	// Service is the application Service for state
 	Service interface {
@@ -44,7 +42,6 @@ type (
 	// service provides access to state and state versions
 	service struct {
 		logr.Logger
-		WorkspaceService
 
 		db        *pgdb
 		cache     internal.Cache // cache state file
@@ -56,7 +53,6 @@ type (
 	Options struct {
 		logr.Logger
 
-		WorkspaceService
 		WorkspaceAuthorizer internal.Authorizer
 
 		internal.Cache
@@ -74,12 +70,11 @@ type (
 func NewService(opts Options) *service {
 	db := &pgdb{opts.DB}
 	svc := service{
-		Logger:           opts.Logger,
-		WorkspaceService: opts.WorkspaceService,
-		cache:            opts.Cache,
-		db:               db,
-		workspace:        opts.WorkspaceAuthorizer,
-		factory:          &factory{db},
+		Logger:    opts.Logger,
+		cache:     opts.Cache,
+		db:        db,
+		workspace: opts.WorkspaceAuthorizer,
+		factory:   &factory{db},
 	}
 	return &svc
 }
@@ -115,22 +110,18 @@ func (a *service) DownloadCurrentState(ctx context.Context, workspaceID string) 
 	return a.DownloadState(ctx, v.ID)
 }
 
-func (a *service) ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*VersionList, error) {
-	workspace, err := a.GetWorkspaceByName(ctx, opts.Organization, opts.Workspace)
-	if err != nil {
-		return nil, err
-	}
-	subject, err := a.workspace.CanAccess(ctx, rbac.ListStateVersionsAction, workspace.ID)
+func (a *service) ListStateVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error) {
+	subject, err := a.workspace.CanAccess(ctx, rbac.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	svl, err := a.db.listVersions(ctx, opts)
+	svl, err := a.db.listVersions(ctx, workspaceID, opts)
 	if err != nil {
-		a.Error(err, "listing state versions", "organization", opts.Organization, "workspace", opts.Workspace, "subject", subject)
+		a.Error(err, "listing state versions", "workspace", workspaceID, "subject", subject)
 		return nil, err
 	}
-	a.V(9).Info("listed state versions", "organization", opts.Organization, "workspace", opts.Workspace, "subject", subject)
+	a.V(9).Info("listed state versions", "workspace", workspaceID, "subject", subject)
 	return svl, nil
 }
 

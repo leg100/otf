@@ -552,19 +552,19 @@ type Querier interface {
 	// InsertStateVersionScan scans the result of an executed InsertStateVersionBatch query.
 	InsertStateVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindStateVersionsByWorkspaceName(ctx context.Context, params FindStateVersionsByWorkspaceNameParams) ([]FindStateVersionsByWorkspaceNameRow, error)
-	// FindStateVersionsByWorkspaceNameBatch enqueues a FindStateVersionsByWorkspaceName query into batch to be executed
+	FindStateVersionsByWorkspaceID(ctx context.Context, params FindStateVersionsByWorkspaceIDParams) ([]FindStateVersionsByWorkspaceIDRow, error)
+	// FindStateVersionsByWorkspaceIDBatch enqueues a FindStateVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindStateVersionsByWorkspaceNameBatch(batch genericBatch, params FindStateVersionsByWorkspaceNameParams)
-	// FindStateVersionsByWorkspaceNameScan scans the result of an executed FindStateVersionsByWorkspaceNameBatch query.
-	FindStateVersionsByWorkspaceNameScan(results pgx.BatchResults) ([]FindStateVersionsByWorkspaceNameRow, error)
+	FindStateVersionsByWorkspaceIDBatch(batch genericBatch, params FindStateVersionsByWorkspaceIDParams)
+	// FindStateVersionsByWorkspaceIDScan scans the result of an executed FindStateVersionsByWorkspaceIDBatch query.
+	FindStateVersionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindStateVersionsByWorkspaceIDRow, error)
 
-	CountStateVersionsByWorkspaceName(ctx context.Context, workspaceName pgtype.Text, organizationName pgtype.Text) (int, error)
-	// CountStateVersionsByWorkspaceNameBatch enqueues a CountStateVersionsByWorkspaceName query into batch to be executed
+	CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int, error)
+	// CountStateVersionsByWorkspaceIDBatch enqueues a CountStateVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
-	CountStateVersionsByWorkspaceNameBatch(batch genericBatch, workspaceName pgtype.Text, organizationName pgtype.Text)
-	// CountStateVersionsByWorkspaceNameScan scans the result of an executed CountStateVersionsByWorkspaceNameBatch query.
-	CountStateVersionsByWorkspaceNameScan(results pgx.BatchResults) (int, error)
+	CountStateVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// CountStateVersionsByWorkspaceIDScan scans the result of an executed CountStateVersionsByWorkspaceIDBatch query.
+	CountStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (int, error)
 
 	FindStateVersionByID(ctx context.Context, id pgtype.Text) (FindStateVersionByIDRow, error)
 	// FindStateVersionByIDBatch enqueues a FindStateVersionByID query into batch to be executed
@@ -1392,11 +1392,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findStateVersionsByWorkspaceNameSQL, findStateVersionsByWorkspaceNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindStateVersionsByWorkspaceName': %w", err)
+	if _, err := p.Prepare(ctx, findStateVersionsByWorkspaceIDSQL, findStateVersionsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindStateVersionsByWorkspaceID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, countStateVersionsByWorkspaceNameSQL, countStateVersionsByWorkspaceNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountStateVersionsByWorkspaceName': %w", err)
+	if _, err := p.Prepare(ctx, countStateVersionsByWorkspaceIDSQL, countStateVersionsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountStateVersionsByWorkspaceID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findStateVersionByIDSQL, findStateVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionByID': %w", err)

@@ -51,10 +51,10 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				return err
 			}
 
-			for {
-				list, err := a.ListStateVersions(cmd.Context())
+			for page := 1; ; page++ {
+				list, err := a.ListStateVersions(cmd.Context(), workspace.ID, internal.ListOptions{PageNumber: page})
 				if err != nil {
-					return err
+					return fmt.Errorf("listing state versions: %w", err)
 				}
 				for _, sv := range list.Items {
 					fmt.Fprintf(out, sv.ID)
@@ -66,7 +66,6 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				if list.NextPage() == nil {
 					break
 				}
-				opts.PageNumber = *list.NextPage()
 			}
 			return nil
 		},

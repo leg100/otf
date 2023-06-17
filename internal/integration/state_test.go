@@ -75,10 +75,7 @@ func TestIntegration_StateService(t *testing.T) {
 		sv1 := svc.createStateVersion(t, ctx, ws)
 		sv2 := svc.createStateVersion(t, ctx, ws)
 
-		got, err := svc.ListStateVersions(ctx, state.StateVersionListOptions{
-			Workspace:    ws.Name,
-			Organization: ws.Organization,
-		})
+		got, err := svc.ListStateVersions(ctx, ws.ID, internal.ListOptions{})
 		require.NoError(t, err)
 		assert.Contains(t, got.Items, sv1)
 		assert.Contains(t, got.Items, sv2)
@@ -89,10 +86,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("list not found error", func(t *testing.T) {
 		svc := setup(t, nil)
 
-		_, err := svc.ListStateVersions(ctx, state.StateVersionListOptions{
-			Workspace:    "ws-999",
-			Organization: "acme-corp",
-		})
+		_, err := svc.ListStateVersions(ctx, "ws-does-not-exist", internal.ListOptions{})
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
