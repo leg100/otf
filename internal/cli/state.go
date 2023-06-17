@@ -52,7 +52,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 			}
 
 			for {
-				list, err := a.ListStateVersions(cmd.Context(), opts)
+				list, err := a.ListStateVersions(cmd.Context())
 				if err != nil {
 					return err
 				}

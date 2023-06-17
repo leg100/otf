@@ -99,7 +99,7 @@ func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	svl, err := a.ListStateVersions(r.Context(), opts)
+	svl, err := a.ListStateVersions(r.Context(), ws.ID, opts.ListOptions)
 	if err != nil {
 		Error(w, err)
 		return
