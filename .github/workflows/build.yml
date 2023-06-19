@@ -32,18 +32,18 @@ jobs:
       -
         name: Chrome versions
         run: |
-          headless_shell --version
-          headless-shell --version
-          chromium --version
-          chromium-browser --version
-          google-chrome --version
-          google-chrome-stable --version
-          google-chrome-beta --version
-          google-chrome-unstable --version
-          /usr/bin/google-chrome --version
-          /usr/local/bin/chrome --version
-          /snap/bin/chromium --version
-          chrome --version
+          headless_shell --version || true
+          headless-shell --version || true
+          chromium --version || true
+          chromium-browser --version || true
+          google-chrome --version || true
+          google-chrome-stable --version || true
+          google-chrome-beta --version || true
+          google-chrome-unstable --version || true
+          /usr/bin/google-chrome --version || true
+          /usr/local/bin/chrome --version || true
+          /snap/bin/chromium --version || true
+          chrome --version || true
       -
         name: API tests
         run: make go-tfe-tests
