@@ -23,7 +23,7 @@ func TestLockFile(t *testing.T) {
 	org := svc.createOrganization(t, ctx)
 
 	// in a browser, create workspace
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),

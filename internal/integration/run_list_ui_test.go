@@ -20,7 +20,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 	tfConfig := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
 
 	var runListingAfter []*cdp.Node
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		// navigate to workspace page

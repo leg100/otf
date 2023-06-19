@@ -50,7 +50,7 @@ func TestTerraformLogin(t *testing.T) {
 	e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
 	u, _, _ := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
 
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		// navigate to auth url captured from terraform login output

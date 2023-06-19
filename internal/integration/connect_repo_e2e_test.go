@@ -27,7 +27,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	user, ctx := daemon.createUserCtx(t, ctx)
 	org := daemon.createOrganization(t, ctx)
 
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),

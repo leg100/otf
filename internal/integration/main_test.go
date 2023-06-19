@@ -1,10 +1,19 @@
 package integration
 
 import (
+	"context"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"testing"
+
+	"github.com/chromedp/chromedp"
+)
+
+var (
+	allocator context.Context
+	browser   context.Context
 )
 
 func TestMain(m *testing.M) {
@@ -49,6 +58,35 @@ func TestMain(m *testing.M) {
 	// CHECKPOINT_DISABLE is set, because the checkpoint would otherwise handle
 	// creating that directory first.
 	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
+
+	// Setup chromedp browser driver. Headless mode determines whether browser
+	// window is displayed (false) or not (true).
+	headless := true
+	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
+		var err error
+		headless, err = strconv.ParseBool(v)
+		if err != nil {
+			panic("cannot parse OTF_E2E_HEADLESS")
+		}
+	}
+
+	// Must create an allocator before creating the browser
+	var cancel context.CancelFunc
+	allocator, cancel = chromedp.NewExecAllocator(context.Background(),
+		append(chromedp.DefaultExecAllocatorOptions[:],
+			chromedp.Flag("headless", headless),
+			chromedp.Flag("hide-scrollbars", true),
+			chromedp.Flag("mute-audio", true),
+			chromedp.Flag("ignore-certificate-errors", true),
+			chromedp.Flag("disable-gpu", true),
+		)...)
+	defer cancel()
+
+	// Create browser instance to be shared betwen tests. Each test creates
+	// isolated tabs within the browser.
+	browser, cancel = chromedp.NewContext(allocator)
+	defer cancel()
+	_ = chromedp.Run(browser)
 
 	os.Exit(m.Run())
 }

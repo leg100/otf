@@ -73,7 +73,7 @@ resource "null_resource" "tags_e2e" {}
 	}
 
 	// test UI management of tags
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),

@@ -21,7 +21,7 @@ func TestStartRunUI(t *testing.T) {
 
 	// now we have a config version, start a run with the plan-and-apply
 	// operation
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation),

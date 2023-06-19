@@ -27,7 +27,7 @@ func TestWeb(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		// create workspace

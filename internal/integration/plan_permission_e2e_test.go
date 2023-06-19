@@ -34,7 +34,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Open browser and using owner's credentials create a workspace and assign plan
 	// role to the engineer's team.
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),

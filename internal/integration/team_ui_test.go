@@ -18,7 +18,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 	org := svc.createOrganization(t, ownerCtx)
 	newbie := svc.createUser(t, ctx)
 
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),

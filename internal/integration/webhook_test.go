@@ -35,7 +35,7 @@ func TestWebhook(t *testing.T) {
 	org := svc.createOrganization(t, ctx)
 
 	// create and connect first workspace
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),

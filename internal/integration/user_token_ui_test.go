@@ -15,7 +15,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	// Create org and its owner
 	svc := setup(t, nil)
 	user, userCtx := svc.createUserCtx(t, ctx)
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, userCtx, svc.Hostname(), user.Username, svc.Secret),

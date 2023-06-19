@@ -30,7 +30,7 @@ func TestModuleE2E(t *testing.T) {
 	org := svc.createOrganization(t, ctx)
 
 	var moduleURL string // captures url for module page
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),

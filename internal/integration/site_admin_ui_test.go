@@ -21,7 +21,7 @@ func TestSiteAdminUI(t *testing.T) {
 
 	var orgLocation string
 
-	browser := createBrowserCtx(t)
+	browser := createTabCtx(t)
 	// Click OK on any browser javascript dialog boxes that pop up
 	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
