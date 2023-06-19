@@ -14,7 +14,7 @@ import (
 func createTabCtx(t *testing.T) context.Context {
 	t.Helper()
 
-	ctx, cancel := chromedp.NewContext(browser, chromedp.WithNewBrowserContext())
+	ctx, cancel := chromedp.NewContext(browser)
 	t.Cleanup(cancel)
 
 	return ctx
