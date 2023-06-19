@@ -30,6 +30,21 @@ jobs:
         name: Vet check
         run: make vet
       -
+        name: Chrome versions
+        run: |
+          headless_shell --version
+          headless-shell --version
+          chromium --version
+          chromium-browser --version
+          google-chrome --version
+          google-chrome-stable --version
+          google-chrome-beta --version
+          google-chrome-unstable --version
+          /usr/bin/google-chrome --version
+          /usr/local/bin/chrome --version
+          /snap/bin/chromium --version
+          chrome --version
+      -
         name: API tests
         run: make go-tfe-tests
       -
