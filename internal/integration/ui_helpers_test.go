@@ -17,8 +17,10 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,10 +31,13 @@ var (
 )
 
 // newSession adds a user session to the browser cookie jar
-func newSession(t *testing.T, ctx context.Context, hostname, username string, secret []byte) chromedp.Action {
+func newSession(t *testing.T, ctx context.Context, username string, secret []byte) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
-		token := tokens.NewTestSessionJWT(t, username, secret, time.Hour)
-		return network.SetCookie("session", token).WithDomain(hostname).Do(ctx)
+		key, err := jwk.FromRaw(secret)
+		require.NoError(t, err)
+		token, err := tokens.NewSessionToken(key, username, internal.CurrentTimestamp().Add(time.Hour))
+		require.NoError(t, err)
+		return network.SetCookie("session", token).Do(ctx)
 	})
 }
 

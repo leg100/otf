@@ -58,18 +58,18 @@ func NewTestSessionJWT(t *testing.T, username string, secret []byte, lifetime ti
 	return NewTestJWT(t, secret, userSessionKind, lifetime, "sub", username)
 }
 
-func NewTestJWT(t *testing.T, secret []byte, kind kind, lifetime time.Duration, claims ...string) string {
+func NewTestJWT(t *testing.T, secret []byte, kind Kind, lifetime time.Duration, claims ...string) string {
 	t.Helper()
 
 	claimsMap := make(map[string]string, len(claims)/2)
 	for i := 0; i < len(claims); i += 2 {
 		claimsMap[claims[i]] = claims[i+1]
 	}
-	token, err := newToken(newTokenOptions{
+	token, err := NewToken(NewTokenOptions{
 		key:    newTestJWK(t, secret),
-		kind:   kind,
-		expiry: internal.Time(time.Now().Add(lifetime)),
-		claims: claimsMap,
+		Kind:   kind,
+		Expiry: internal.Time(time.Now().Add(lifetime)),
+		Claims: claimsMap,
 	})
 	require.NoError(t, err)
 	return string(token)

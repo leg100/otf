@@ -1,12 +1,9 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/module"
 	"github.com/stretchr/testify/assert"
@@ -16,12 +13,8 @@ import (
 func TestModule(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 
 		_, err := svc.CreateModule(ctx, module.CreateOptions{
 			Name:         uuid.NewString(),
@@ -32,9 +25,8 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("create connected module", func(t *testing.T) {
-		svc := setup(t, nil, github.WithRepo("leg100/terraform-aws-stuff"))
+		svc, org, ctx := setup(t, nil, github.WithRepo("leg100/terraform-aws-stuff"))
 
-		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 		mod := svc.createModule(t, ctx, org)
 
@@ -57,7 +49,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.GetModule(ctx, module.GetModuleOptions{
@@ -71,7 +63,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.GetModuleByID(ctx, want.ID)
@@ -81,7 +73,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		module1 := svc.createModule(t, ctx, org)
 		module2 := svc.createModule(t, ctx, org)
@@ -98,7 +90,7 @@ func TestModule(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createModule(t, ctx, nil)
 
 		got, err := svc.DeleteModule(ctx, want.ID)

@@ -40,9 +40,9 @@ func TestGithubLogin(t *testing.T) {
 			},
 		},
 	}
-	svc := setup(t, &cfg, github.WithUser(&user))
+	svc, _, _ := setup(t, &cfg, github.WithUser(&user))
 
-	browser := createTabCtx(t)
+	browser := createBrowserCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		// go to login page
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),

@@ -16,13 +16,11 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	t.Parallel()
 
 	// Create org and its owner
-	svc := setup(t, nil)
-	_, ownerCtx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ownerCtx)
+	svc, org, ownerCtx := setup(t, nil)
 	ws := svc.createWorkspace(t, ownerCtx, org)
 
 	// Create user and add as member of guests team
-	guest := svc.createUser(t, ctx)
+	guest, guestCtx := svc.createUserCtx(t, ctx)
 	guests := svc.createTeam(t, ownerCtx, org)
 	err := svc.AddTeamMembership(ownerCtx, auth.TeamMembershipOptions{
 		TeamID:   guests.ID,
@@ -34,9 +32,6 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	// permissions across the workspace's organization.
 	err = svc.SetPermission(ownerCtx, ws.ID, guests.Name, rbac.WorkspaceReadRole)
 	require.NoError(t, err)
-
-	// Now we'll carry out various actions as the guest
-	_, guestCtx := svc.getUserCtx(t, ctx, guest.Username)
 
 	// Guest should be able to get org
 	_, err = svc.GetOrganization(guestCtx, org.Name)

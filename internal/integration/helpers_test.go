@@ -14,7 +14,7 @@ import (
 func createTabCtx(t *testing.T) context.Context {
 	t.Helper()
 
-	ctx, cancel := chromedp.NewContext(browser)
+	ctx, cancel := chromedp.NewContext(sharedBrowser)
 	t.Cleanup(cancel)
 
 	return ctx
@@ -23,7 +23,7 @@ func createTabCtx(t *testing.T) context.Context {
 func createBrowserCtx(t *testing.T) context.Context {
 	t.Helper()
 
-	ctx, cancel := chromedp.NewContext(allocator)
+	ctx, cancel := chromedp.NewContext(sharedBrowser, chromedp.WithNewBrowserContext())
 	t.Cleanup(cancel)
 
 	return ctx

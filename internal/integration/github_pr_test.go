@@ -19,13 +19,13 @@ func TestIntegration_GithubPR(t *testing.T) {
 	// create an otf daemon with a fake github backend, serve up a repo and its
 	// contents via tarball.
 	repo := cloud.NewTestRepo()
-	daemon := setup(t, nil,
+	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 
 	// create workspace connected to github repo
-	provider := daemon.createVCSProvider(t, ctx, nil)
+	provider := daemon.createVCSProvider(t, ctx, org)
 	_, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
 		Name:         internal.String("workspace-1"),
 		Organization: &provider.Organization,

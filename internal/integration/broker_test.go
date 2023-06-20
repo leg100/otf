@@ -22,8 +22,8 @@ func TestBroker(t *testing.T) {
 
 	// simulate a cluster of two otfd nodes sharing a database
 	connstr := sql.NewTestDB(t)
-	local := setup(t, &config{Config: daemon.Config{Database: connstr}})
-	remote := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	local, localOrg, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	remote, _, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
 	localsub, err := local.Subscribe(ctx, "")
 	require.NoError(t, err)
@@ -31,9 +31,7 @@ func TestBroker(t *testing.T) {
 	require.NoError(t, err)
 
 	// sends event via local broker
-	org := local.createOrganization(t, ctx)
-
-	want := pubsub.NewCreatedEvent(org)
+	want := pubsub.NewCreatedEvent(localOrg)
 	// receive event on local broker
 	assert.Equal(t, want, <-localsub)
 	// receive event on remote broker (via postgres)

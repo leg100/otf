@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	cdpbrowser "github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
@@ -15,20 +14,12 @@ import (
 func TestAgentTokenUI(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, _ := setup(t, nil)
 
 	var clipboardContent any
-	clipboardReadPermission := cdpbrowser.PermissionDescriptor{Name: "clipboard-read"}
-	clipboardWritePermission := cdpbrowser.PermissionDescriptor{Name: "clipboard-write"}
 
-	browser := createBrowserCtx(t)
-	okDialog(t, browser)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		cdpbrowser.SetPermission(&clipboardReadPermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),
-		cdpbrowser.SetPermission(&clipboardWritePermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
+	tab := createTabCtx(t)
+	err := chromedp.Run(tab, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org main menu
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),

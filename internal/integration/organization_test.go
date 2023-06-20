@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,11 +16,8 @@ import (
 func TestOrganization(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 		org, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 			Name: internal.String(uuid.NewString()),
@@ -54,7 +50,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("update name", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
@@ -70,7 +66,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		_ = svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
 
@@ -97,7 +93,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("filter list by names", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want1 := svc.createOrganization(t, ctx)
 		want2 := svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
@@ -111,19 +107,19 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("new user should see zero orgs", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		_ = svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
 
-		_, ctx := svc.createUserCtx(t, ctx)
+		_, newUserCtx := svc.createUserCtx(t, ctx)
 
-		got, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{})
+		got, err := svc.ListOrganizations(newUserCtx, organization.OrganizationListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(got.Items))
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createOrganization(t, ctx)
 
 		got, err := svc.GetOrganization(ctx, want.Name)
@@ -133,7 +129,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
@@ -147,7 +143,7 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 
 		err := svc.DeleteOrganization(ctx, "does-not-exist")
 		assert.Equal(t, internal.ErrResourceNotFound, err)

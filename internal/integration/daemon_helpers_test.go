@@ -47,8 +47,8 @@ type (
 	}
 )
 
-// setup configures and starts an otfd daemon for an integration test
-func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDaemon {
+// setup an integration test with a daemon, organization, and a user context.
+func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDaemon, *organization.Organization, context.Context) {
 	t.Helper()
 
 	if cfg == nil {
@@ -110,10 +110,17 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	return &testDaemon{
+	daemon := &testDaemon{
 		Daemon:     d,
 		TestServer: githubServer,
 	}
+
+	// now daemon is running, create user and organization, and a user context.
+	sharedUser, err := daemon.CreateUser(ctx, sharedUsername)
+	require.NoError(t, err, "creating shared user")
+	ctx = internal.AddSubjectToContext(ctx, sharedUser)
+	org := daemon.createOrganization(t, ctx)
+	return daemon, org, ctx
 }
 
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {

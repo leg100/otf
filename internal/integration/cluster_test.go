@@ -25,11 +25,8 @@ func TestCluster(t *testing.T) {
 
 	// start two daemons, one for user, one for agent, both sharing a db
 	connstr := sql.NewTestDB(t)
-	otfd1 := setup(t, &config{Config: daemon.Config{Database: connstr}})
-	otfd2 := setup(t, &config{Config: daemon.Config{Database: connstr}})
-
-	_, ctx := otfd1.createUserCtx(t, ctx)
-	org := otfd1.createOrganization(t, ctx)
+	otfd1, org, ctx := setup(t, &config{Config: daemon.Config{Database: connstr}})
+	otfd2, _, _ := setup(t, &config{Config: daemon.Config{Database: connstr}})
 
 	// start agent, instructing it to connect to otfd2,
 	// add --debug flag, which dumps info that this test relies upon

@@ -40,7 +40,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		})
 	}()
 
-	daemon := setup(t, nil)
+	daemon, _, ctx := setup(t, nil)
 
 	ws := daemon.createWorkspace(t, ctx, nil)
 	_, err = daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{

@@ -16,11 +16,10 @@ func TestIntegration_Events(t *testing.T) {
 
 	// disable the scheduler so that the run below doesn't get scheduled and
 	// change state before we test for equality with the received event.
-	daemon := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+	daemon, org, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 	sub, err := daemon.Subscribe(ctx, "")
 	require.NoError(t, err)
 
-	org := daemon.createOrganization(t, ctx)
 	ws := daemon.createWorkspace(t, ctx, org)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 	run := daemon.createRun(t, ctx, ws, cv)

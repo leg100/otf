@@ -12,14 +12,11 @@ import (
 func TestAutoApply(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	// create workspace and enable auto-apply
 	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, t.Name()),
 		chromedp.Tasks{
 			// go to workspace

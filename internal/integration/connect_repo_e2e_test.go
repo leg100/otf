@@ -20,16 +20,13 @@ func TestConnectRepoE2E(t *testing.T) {
 	// contents via tarball. And register a callback to test receipt of commit
 	// statuses
 	repo := cloud.NewTestRepo()
-	daemon := setup(t, nil,
+	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
-	user, ctx := daemon.createUserCtx(t, ctx)
-	org := daemon.createOrganization(t, ctx)
 
 	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
 		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),

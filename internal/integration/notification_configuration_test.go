@@ -16,9 +16,8 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Parallel()
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, org, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
 		nc, err := svc.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
@@ -36,7 +35,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		got, err := svc.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
@@ -50,7 +49,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
@@ -66,7 +65,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		got, err := svc.GetNotificationConfiguration(ctx, nc.ID)
@@ -76,7 +75,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
@@ -97,7 +96,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// event triggers: when a workspace is deleted, its notification
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
 
 		org := svc.createOrganization(t, ctx)

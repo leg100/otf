@@ -21,18 +21,15 @@ func TestModuleE2E(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.
 	repo := cloud.NewTestModuleRepo("aws", "mod")
-	svc := setup(t, nil,
+	svc, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
 
 	var moduleURL string // captures url for module page
 	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 		// publish module
 		chromedp.Tasks{

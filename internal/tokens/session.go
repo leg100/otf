@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
 type (
@@ -20,6 +21,19 @@ type (
 	}
 )
 
+func NewSessionToken(key jwk.Key, username string, expiry time.Time) (string, error) {
+	token, err := NewToken(NewTokenOptions{
+		key:     key,
+		Subject: username,
+		Kind:    userSessionKind,
+		Expiry:  &expiry,
+	})
+	if err != nil {
+		return "", err
+	}
+	return string(token), nil
+}
+
 func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts StartSessionOptions) error {
 	if opts.Username == nil {
 		return fmt.Errorf("missing username")
@@ -28,12 +42,7 @@ func (a *service) StartSession(w http.ResponseWriter, r *http.Request, opts Star
 	if opts.Expiry != nil {
 		expiry = *opts.Expiry
 	}
-	token, err := newToken(newTokenOptions{
-		key:     a.key,
-		subject: *opts.Username,
-		kind:    userSessionKind,
-		expiry:  &expiry,
-	})
+	token, err := NewSessionToken(a.key, *opts.Username, expiry)
 	if err != nil {
 		return err
 	}
