@@ -25,7 +25,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),

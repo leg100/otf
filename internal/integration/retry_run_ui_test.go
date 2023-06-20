@@ -35,7 +35,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	}
 
 	// open browser, go to run, and click retry
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		chromedp.Navigate(runURL(daemon.Hostname(), r.ID)),
 		// run should be in planned and finished state

@@ -32,7 +32,7 @@ func TestWritePermissionE2E(t *testing.T) {
 
 	// Open browser, using owner's credentials create workspace and assign write
 	// permissions to the engineer's team.
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),

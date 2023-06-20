@@ -18,9 +18,7 @@ import (
 func TestIntegration_TagsE2E(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	user, ctx := daemon.createUserCtx(t, ctx)
-	org := daemon.createOrganization(t, ctx)
+	daemon, org, ctx := setup(t, nil)
 
 	// create a root module with a cloud backend configured to use workspaces
 	// with foo and bar tags.
@@ -39,7 +37,7 @@ resource "null_resource" "tags_e2e" {}
 `, daemon.Hostname(), org.Name))
 
 	// run terraform init
-	_, token := daemon.createToken(t, ctx, user)
+	_, token := daemon.createToken(t, ctx, nil)
 	e, tferr, err := expect.SpawnWithArgs(
 		[]string{"terraform", "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
@@ -73,9 +71,8 @@ resource "null_resource" "tags_e2e" {}
 	}
 
 	// test UI management of tags
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),
 		// confirm workspace page lists both tags
 		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'foo')]`),

@@ -15,7 +15,7 @@ func TestAutoApply(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// create workspace and enable auto-apply
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, t.Name()),
 		chromedp.Tasks{

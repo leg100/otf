@@ -18,41 +18,45 @@ func TestUser(t *testing.T) {
 	// perform all actions as superuser
 	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
+	// Tests the --site-admins functionality, promoting a number of users to the
+	// role of site admin when starting the daemon.
 	t.Run("set site admins", func(t *testing.T) {
 		connstr := sql.NewTestDB(t)
-		svc := setup(t, &config{Config: daemon.Config{
+		svc, _, _ := setup(t, &config{Config: daemon.Config{
 			Database:   connstr,
 			SiteAdmins: []string{"bob", "alice", "sue"},
 		}})
 
 		areSiteAdmins := func(want bool) {
 			for _, username := range []string{"bob", "alice", "sue"} {
-				admin, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String(username)})
+				admin, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String(username)})
 				require.NoError(t, err)
 				assert.Equal(t, want, admin.IsSiteAdmin())
 			}
 		}
 		areSiteAdmins(true)
 
-		// Start another daemon with *no* site admins specified and verify that
-		// bob, alice and sue are no longer site admins.
+		// Start another daemon with *no* site admins specified, which should
+		// relegate the users back to normal users.
 		t.Run("reset", func(t *testing.T) {
-			svc = setup(t, &config{Config: daemon.Config{
+			svc, _, _ = setup(t, &config{Config: daemon.Config{
 				Database: connstr,
 			}})
 			areSiteAdmins(false)
 		})
 	})
 
+	// Create a user and a user token and test retrieving the user using their ID, username and
+	// token.
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 
 		org1 := svc.createOrganization(t, ctx)
 		org2 := svc.createOrganization(t, ctx)
 		team1 := svc.createTeam(t, ctx, org1)
 		team2 := svc.createTeam(t, ctx, org2)
 
-		user := svc.createUser(t, ctx,
+		user := svc.createUser(t, adminCtx,
 			auth.WithTeams(team1, team2))
 
 		token1, _ := svc.createToken(t, ctx, user)
@@ -91,13 +95,13 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc := setup(t, nil)
-		_, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String("does-not-exist")})
+		svc, _, _ := setup(t, nil)
+		_, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String("does-not-exist")})
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("list users", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 		user1 := svc.createUser(t, ctx)
 		user2 := svc.createUser(t, ctx)
 		user3 := svc.createUser(t, ctx)
@@ -120,7 +124,7 @@ func TestUser(t *testing.T) {
 	// but performing de-duplication too so that users are not listed more than
 	// once.
 	t.Run("list organization users", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 		// create owners team consisting of one owner
 		owner, userCtx := svc.createUserCtx(t, ctx)
 		org := svc.createOrganization(t, userCtx)
@@ -130,7 +134,7 @@ func TestUser(t *testing.T) {
 		// create developers team
 		developers := svc.createTeam(t, ctx, org)
 
-		// add dev user to both teams
+		// create dev user and add to both teams
 		dev := svc.createUser(t, ctx, auth.WithTeams(owners, developers))
 
 		// create guest user, member of no team

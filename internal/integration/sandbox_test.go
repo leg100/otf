@@ -22,14 +22,12 @@ func TestSandbox(t *testing.T) {
 	}
 	require.NoError(t, err)
 
-	daemon := setup(t, &config{Config: daemon.Config{
+	daemon, org, ctx := setup(t, &config{Config: daemon.Config{
 		AgentConfig: &agent.Config{
 			Sandbox: true,
 			Debug:   true,
 		},
 	}})
-	_, ctx := daemon.createUserCtx(t, ctx)
-	org := daemon.createOrganization(t, ctx)
 
 	// create terraform config
 	config := newRootModule(t, daemon.Hostname(), org.Name, "dev")

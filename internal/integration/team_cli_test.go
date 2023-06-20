@@ -10,19 +10,18 @@ import (
 func TestTeamCLI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	_, ownerCtx := daemon.createUserCtx(t, ctx)
+	daemon, _, ctx := setup(t, nil)
 
 	// create organization
-	out := daemon.otfcli(t, ownerCtx, "organizations", "new", "acme-corp")
+	out := daemon.otfcli(t, ctx, "organizations", "new", "acme-corp")
 	require.Equal(t, "Successfully created organization acme-corp\n", out)
 
 	// create developers team
-	out = daemon.otfcli(t, ownerCtx, "teams", "new", "devs", "--organization", "acme-corp")
+	out = daemon.otfcli(t, ctx, "teams", "new", "devs", "--organization", "acme-corp")
 	require.Equal(t, "Successfully created team devs\n", out)
 
 	// create user via cli
-	out = daemon.otfcli(t, ctx, "users", "new", "bobby")
+	out = daemon.otfcli(t, adminCtx, "users", "new", "bobby")
 	require.Equal(t, "Successfully created user bobby\n", out)
 
 	// add user to developers

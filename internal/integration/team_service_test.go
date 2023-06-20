@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -14,12 +13,8 @@ import (
 func TestIntegation_TeamService(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 
 		team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
 			Name:         uuid.NewString(),
@@ -37,7 +32,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
 		_, err := svc.UpdateTeam(ctx, team.ID, auth.UpdateTeamOptions{
@@ -58,7 +53,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
 		got, err := svc.GetTeam(ctx, team.Organization, team.Name)
@@ -68,7 +63,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createTeam(t, ctx, nil)
 
 		got, err := svc.GetTeamByID(ctx, want.ID)
@@ -78,7 +73,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team1 := svc.createTeam(t, ctx, org)
 		team2 := svc.createTeam(t, ctx, org)
@@ -93,7 +88,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("list members", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 
 		team := svc.createTeam(t, ctx, org)
@@ -112,7 +107,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, nil)
 
 		err := svc.DeleteTeam(ctx, team.ID)
@@ -120,7 +115,7 @@ func TestIntegation_TeamService(t *testing.T) {
 	})
 
 	t.Run("disallow deleting owners team", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx) // creates owners team
 
 		owners, err := svc.GetTeam(ctx, org.Name, "owners")

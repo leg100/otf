@@ -22,7 +22,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	org := daemon.createOrganization(t, ctx)
 
 	var workspaceItems []*cdp.Node
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),

@@ -28,7 +28,7 @@ func TestModuleE2E(t *testing.T) {
 	)
 
 	var moduleURL string // captures url for module page
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 		// publish module

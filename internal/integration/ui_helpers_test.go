@@ -31,9 +31,9 @@ var (
 )
 
 // newSession adds a user session to the browser cookie jar
-func newSession(t *testing.T, ctx context.Context, username string, secret []byte) chromedp.Action {
+func newSession(t *testing.T, username string) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
-		key, err := jwk.FromRaw(secret)
+		key, err := jwk.FromRaw(sharedSecret)
 		require.NoError(t, err)
 		token, err := tokens.NewSessionToken(key, username, internal.CurrentTimestamp().Add(time.Hour))
 		require.NoError(t, err)

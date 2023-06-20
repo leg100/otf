@@ -330,7 +330,7 @@ func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID str
 func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*tokens.UserToken, []byte) {
 	t.Helper()
 
-	// If user is provided then add it to context. Otherwise the context is
+	// If user is provided then add them to context. Otherwise the context is
 	// expected to contain a user if authz is to succeed.
 	if user != nil {
 		ctx = internal.AddSubjectToContext(ctx, user)

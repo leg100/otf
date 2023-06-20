@@ -13,18 +13,14 @@ import (
 func TestIntegration_TeamUI(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	owner, ownerCtx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ownerCtx)
-	newbie := svc.createUser(t, ctx)
+	daemon, org, _ := setup(t, nil)
+	newbie := daemon.createUser(t, adminCtx)
 
-	browser := createTabCtx(t)
-	okDialog(t, browser)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),
+	tab := createTab(t)
+	err := chromedp.Run(tab, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// go to teams listing
 			chromedp.Click(`//a[text()='teams']`, chromedp.NodeVisible),

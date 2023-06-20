@@ -29,7 +29,7 @@ func TestIntegration_OIDC(t *testing.T) {
 
 	svc, _, _ := setup(t, &cfg)
 
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		// go to login page
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),

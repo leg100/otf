@@ -20,7 +20,7 @@ func TestVariableE2E(t *testing.T) {
 	org := svc.createOrganization(t, ctx)
 
 	// Create variable in browser
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	// Click OK on any browser javascript dialog boxes that pop up
 	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{

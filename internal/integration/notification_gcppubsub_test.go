@@ -20,6 +20,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
 
 	t.Parallel()
+	ctx := context.Background()
 
 	client, err := pubsub.NewClient(ctx, "abc123")
 	require.NoError(t, err)

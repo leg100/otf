@@ -42,7 +42,7 @@ var (
 	envs []string
 
 	// Context conferring site admin privileges
-	ctx = internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+	adminCtx = internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 )
 
 func TestMain(m *testing.M) {
@@ -158,11 +158,11 @@ func doMain(m *testing.M) (int, error) {
 		return 0, fmt.Errorf("creating shared browser: %w", err)
 	}
 	// Click OK on any browser javascript dialog boxes that pop up
-	chromedp.ListenTarget(ctx, func(ev any) {
+	chromedp.ListenTarget(sharedBrowser, func(ev any) {
 		switch ev.(type) {
 		case *page.EventJavascriptDialogOpening:
 			go func() {
-				_ = chromedp.Run(ctx, page.HandleJavaScriptDialog(true))
+				_ = chromedp.Run(sharedBrowser, page.HandleJavaScriptDialog(true))
 			}()
 		}
 	})

@@ -15,13 +15,13 @@ import (
 func TestSiteAdminUI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, &config{Config: daemon.Config{
+	daemon, _, _ := setup(t, &config{Config: daemon.Config{
 		SiteToken: "abc123",
 	}})
 
 	var orgLocation string
 
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	// Click OK on any browser javascript dialog boxes that pop up
 	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{

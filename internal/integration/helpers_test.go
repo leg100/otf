@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTabCtx(t *testing.T) context.Context {
+func createTab(t *testing.T) context.Context {
 	t.Helper()
 
 	ctx, cancel := chromedp.NewContext(sharedBrowser)

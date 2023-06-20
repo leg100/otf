@@ -1,12 +1,10 @@
 package integration
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
@@ -16,15 +14,13 @@ import (
 func TestSession(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("start", func(t *testing.T) {
-		svc := setup(t, nil)
-		want := svc.createUser(t, ctx)
+		svc, _, ctx := setup(t, nil)
+		want, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
-		err := svc.StartSession(w, r, tokens.StartSessionOptions{
+		err = svc.StartSession(w, r, tokens.StartSessionOptions{
 			Username: &want.Username,
 		})
 		require.NoError(t, err)

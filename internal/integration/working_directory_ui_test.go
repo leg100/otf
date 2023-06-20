@@ -21,7 +21,7 @@ func TestWorkingDirectory(t *testing.T) {
 	org := daemon.createOrganization(t, ctx)
 
 	// create workspace and set working directory
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
 		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),

@@ -13,17 +13,15 @@ import (
 func TestStartRunUI(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
+	svc, _, ctx := setup(t, nil)
 
-	user, ctx := svc.createUserCtx(t, ctx)
 	ws := svc.createWorkspace(t, ctx, nil)
 	_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 	// now we have a config version, start a run with the plan-and-apply
 	// operation
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation),
 	})
 	require.NoError(t, err)

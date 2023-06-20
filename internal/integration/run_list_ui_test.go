@@ -14,15 +14,13 @@ import (
 func TestIntegration_RunListUI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	user, ctx := daemon.createUserCtx(t, ctx)
+	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)
 	tfConfig := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
 
 	var runListingAfter []*cdp.Node
-	browser := createTabCtx(t)
+	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		// navigate to workspace page
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), ws.Organization, ws.Name)),
 		chromedp.WaitReady(`body`),

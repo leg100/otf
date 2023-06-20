@@ -15,15 +15,12 @@ import (
 func TestIntegration_PlanPermission(t *testing.T) {
 	t.Parallel()
 
-	// Create org and its owner
-	svc, org, ownerCtx := setup(t, nil)
-	owner, err := auth.UserFromContext(ownerCtx)
-	require.NoError(t, err)
+	svc, org, ctx := setup(t, nil)
 
 	// Create user and add as member of engineers team
-	engineer, engineerCtx := svc.createUserCtx(t, ctx)
-	team := svc.createTeam(t, ownerCtx, org)
-	err = svc.AddTeamMembership(ownerCtx, auth.TeamMembershipOptions{
+	engineer, engineerCtx := svc.createUserCtx(t, adminCtx)
+	team := svc.createTeam(t, ctx, org)
+	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 		TeamID:   team.ID,
 		Username: engineer.Username,
 	})
@@ -32,11 +29,10 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	// create some terraform configuration
 	configPath := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
 
-	// Open browser and using owner's credentials create a workspace and assign plan
-	// role to the engineer's team.
-	browser := createBrowserCtx(t)
-	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ownerCtx, owner.Username, svc.Secret),
+	// Open tab and create a workspace and assign plan role to the
+	// engineer's team.
+	tab := createTab(t)
+	err = chromedp.Run(tab, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "plan"),
 	})
@@ -60,9 +56,10 @@ func TestIntegration_PlanPermission(t *testing.T) {
 		assert.Contains(t, string(out), "Error: Insufficient rights to apply changes")
 	}
 
-	// Now demonstrate UI access by starting a plan via the UI.
+	// Now demonstrate engineer can start a plan via the UI.
+	browser := createBrowserCtx(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, engineer.Username, svc.Secret),
+		newSession(t, engineer.Username),
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
