@@ -1,11 +1,8 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
-	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/stretchr/testify/require"
@@ -14,13 +11,9 @@ import (
 func TestRepo(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create multiple connections", func(t *testing.T) {
-		svc := setup(t, nil, github.WithRepo("test/dummy"))
+		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
 
-		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
 		mod1 := svc.createModule(t, ctx, org)

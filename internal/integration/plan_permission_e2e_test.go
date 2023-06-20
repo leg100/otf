@@ -16,14 +16,14 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	t.Parallel()
 
 	// Create org and its owner
-	svc := setup(t, nil)
-	owner, ownerCtx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ownerCtx)
+	svc, org, ownerCtx := setup(t, nil)
+	owner, err := auth.UserFromContext(ownerCtx)
+	require.NoError(t, err)
 
 	// Create user and add as member of engineers team
 	engineer, engineerCtx := svc.createUserCtx(t, ctx)
 	team := svc.createTeam(t, ownerCtx, org)
-	err := svc.AddTeamMembership(ownerCtx, auth.TeamMembershipOptions{
+	err = svc.AddTeamMembership(ownerCtx, auth.TeamMembershipOptions{
 		TeamID:   team.ID,
 		Username: engineer.Username,
 	})
@@ -34,9 +34,9 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Open browser and using owner's credentials create a workspace and assign plan
 	// role to the engineer's team.
-	browser := createTabCtx(t)
+	browser := createBrowserCtx(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),
+		newSession(t, ownerCtx, owner.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "plan"),
 	})
@@ -62,7 +62,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Now demonstrate UI access by starting a plan via the UI.
 	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), engineer.Username, svc.Secret),
+		newSession(t, ctx, engineer.Username, svc.Secret),
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),

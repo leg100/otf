@@ -14,8 +14,7 @@ import (
 func TestIntegration_RetryRunUI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	user, ctx := daemon.createUserCtx(t, ctx)
+	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.ConfigurationVersionCreateOptions{
 		Speculative: internal.Bool(true),
@@ -38,7 +37,6 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	// open browser, go to run, and click retry
 	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		chromedp.Navigate(runURL(daemon.Hostname(), r.ID)),
 		// run should be in planned and finished state
 		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`, chromedp.BySearch),

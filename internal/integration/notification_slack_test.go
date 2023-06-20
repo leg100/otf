@@ -18,7 +18,7 @@ func TestIntegration_NotificationSlack(t *testing.T) {
 	t.Parallel()
 
 	url, got := newSlackServer(t)
-	daemon := setup(t, nil)
+	daemon, _, ctx := setup(t, nil)
 
 	ws := daemon.createWorkspace(t, ctx, nil)
 	_, err := daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{

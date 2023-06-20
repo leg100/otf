@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/require"
 )
@@ -14,9 +13,8 @@ import (
 func TestCompleteRun(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
+	svc, _, ctx := setup(t, nil)
 
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

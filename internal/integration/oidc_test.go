@@ -27,7 +27,7 @@ func TestIntegration_OIDC(t *testing.T) {
 		},
 	}
 
-	svc := setup(t, &cfg)
+	svc, _, _ := setup(t, &cfg)
 
 	browser := createTabCtx(t)
 	err := chromedp.Run(browser, chromedp.Tasks{

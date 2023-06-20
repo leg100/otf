@@ -22,11 +22,10 @@ func TestIntegration_RunAPI(t *testing.T) {
 
 	// setup daemon along with fake github repo
 	repo := cloud.NewTestRepo()
-	daemon := setup(t, nil,
+	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
-	org := daemon.createOrganization(t, ctx)
 	sub := daemon.createSubscriber(t, ctx)
 	_, token := daemon.createToken(t, ctx, nil)
 
