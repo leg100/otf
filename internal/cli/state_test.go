@@ -78,7 +78,7 @@ func TestCLI_State(t *testing.T) {
 		cmd.SetOut(&got)
 		require.NoError(t, cmd.Execute())
 
-		assert.Equal(t, testutils.CompactJSON(t, string(want)), testutils.CompactJSON(t, got.String()))
+		assert.JSONEq(t, string(want), got.String())
 	})
 
 	t.Run("rollback", func(t *testing.T) {
