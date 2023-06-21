@@ -2,11 +2,7 @@ package state
 
 import "encoding/json"
 
-const (
-	DefaultStateVersion = 4
-)
-
-// File is the terraform state File contents
+// File is the terraform state file contents
 type File struct {
 	Version int
 	Serial  int64

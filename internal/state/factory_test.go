@@ -34,17 +34,17 @@ func TestFactory(t *testing.T) {
 
 			assert.Equal(t, "foo", got.Outputs["foo"].Name)
 			assert.Equal(t, "string", got.Outputs["foo"].Type)
-			assert.Equal(t, `"stringy"`, got.Outputs["foo"].Value)
+			assert.JSONEq(t, `"stringy"`, string(got.Outputs["foo"].Value))
 			assert.True(t, got.Outputs["foo"].Sensitive)
 
 			assert.Equal(t, "bar", got.Outputs["bar"].Name)
 			assert.Equal(t, "tuple", got.Outputs["bar"].Type)
-			assert.Equal(t, `["item1","item2"]`, testutils.CompactJSON(t, got.Outputs["bar"].Value))
+			assert.JSONEq(t, `["item1","item2"]`, string(got.Outputs["bar"].Value))
 			assert.False(t, got.Outputs["bar"].Sensitive)
 
 			assert.Equal(t, "baz", got.Outputs["baz"].Name)
 			assert.Equal(t, "object", got.Outputs["baz"].Type)
-			assert.Equal(t, `{"key1":"value1","key2":"value2"}`, testutils.CompactJSON(t, got.Outputs["baz"].Value))
+			assert.JSONEq(t, `{"key1":"value1","key2":"value2"}`, string(got.Outputs["baz"].Value))
 			assert.False(t, got.Outputs["baz"].Sensitive)
 		})
 	})

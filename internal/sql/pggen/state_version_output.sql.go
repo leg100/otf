@@ -32,7 +32,7 @@ type InsertStateVersionOutputParams struct {
 	Name           pgtype.Text
 	Sensitive      bool
 	Type           pgtype.Text
-	Value          pgtype.Text
+	Value          []byte
 	StateVersionID pgtype.Text
 }
 
@@ -70,7 +70,7 @@ type FindStateVersionOutputByIDRow struct {
 	Name                 pgtype.Text `json:"name"`
 	Sensitive            bool        `json:"sensitive"`
 	Type                 pgtype.Text `json:"type"`
-	Value                pgtype.Text `json:"value"`
+	Value                []byte      `json:"value"`
 	StateVersionID       pgtype.Text `json:"state_version_id"`
 }
 

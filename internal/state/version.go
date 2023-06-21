@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -30,7 +31,7 @@ type (
 		ID             string
 		Name           string
 		Type           string
-		Value          string
+		Value          json.RawMessage
 		Sensitive      bool
 		StateVersionID string
 	}
