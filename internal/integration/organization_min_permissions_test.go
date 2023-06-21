@@ -19,7 +19,7 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	ws := svc.createWorkspace(t, ctx, org)
 
 	// Create user and add as member of guests team
-	guest, guestCtx := svc.createUserCtx(t, adminCtx)
+	guest, guestCtx := svc.createUserCtx(t)
 	guests := svc.createTeam(t, ctx, org)
 	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 		TeamID:   guests.ID,

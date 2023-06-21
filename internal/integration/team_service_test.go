@@ -93,9 +93,9 @@ func TestIntegation_TeamService(t *testing.T) {
 
 		team := svc.createTeam(t, ctx, org)
 		otherteam := svc.createTeam(t, ctx, org)
-		user1 := svc.createUser(t, ctx)
-		user2 := svc.createUser(t, ctx, auth.WithTeams(team))
-		user3 := svc.createUser(t, ctx, auth.WithTeams(team, otherteam))
+		user1 := svc.createUser(t)
+		user2 := svc.createUser(t, auth.WithTeams(team))
+		user3 := svc.createUser(t, auth.WithTeams(team, otherteam))
 
 		got, err := svc.ListTeamMembers(ctx, team.ID)
 		require.NoError(t, err)

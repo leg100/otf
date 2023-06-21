@@ -13,8 +13,7 @@ import (
 func TestIntegration_WorkspacePermissionsService(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	t.Run("set permission", func(t *testing.T) {
 		ws := svc.createWorkspace(t, ctx, org)

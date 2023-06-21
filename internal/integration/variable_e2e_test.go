@@ -15,16 +15,11 @@ import (
 func TestVariableE2E(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	// Create variable in browser
 	browser := createTab(t)
-	// Click OK on any browser javascript dialog boxes that pop up
-	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace

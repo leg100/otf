@@ -19,6 +19,7 @@ func TestAgentTokenUI(t *testing.T) {
 	var clipboardContent any
 
 	tab := createTab(t)
+	okDialog(t, tab)
 	err := chromedp.Run(tab, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org main menu

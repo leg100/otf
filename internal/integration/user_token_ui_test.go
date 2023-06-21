@@ -12,13 +12,9 @@ import (
 func TestIntegration_UserTokenUI(t *testing.T) {
 	t.Parallel()
 
-	// Create org and its owner
-	svc := setup(t, nil)
-	user, userCtx := svc.createUserCtx(t, ctx)
+	svc, _, _ := setup(t, nil)
 	browser := createTab(t)
-	okDialog(t, browser)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, userCtx, svc.Hostname(), user.Username, svc.Secret),
 		// go to profile
 		chromedp.Navigate("https://" + svc.Hostname() + "/app/profile"),
 		chromedp.WaitReady(`body`),

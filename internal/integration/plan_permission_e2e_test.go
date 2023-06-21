@@ -18,7 +18,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// Create user and add as member of engineers team
-	engineer, engineerCtx := svc.createUserCtx(t, adminCtx)
+	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
 	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 		TeamID:   team.ID,

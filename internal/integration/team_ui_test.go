@@ -14,7 +14,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 	t.Parallel()
 
 	daemon, org, _ := setup(t, nil)
-	newbie := daemon.createUser(t, adminCtx)
+	newbie := daemon.createUser(t)
 
 	tab := createTab(t)
 	err := chromedp.Run(tab, chromedp.Tasks{

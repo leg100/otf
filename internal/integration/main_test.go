@@ -13,7 +13,6 @@ import (
 
 	cdpbrowser "github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
@@ -35,6 +34,7 @@ var (
 	// a shared secret which signs the shared user session
 	sharedSecret []byte
 
+	// permissions for chrome's clipboard
 	clipboardReadPermission  = cdpbrowser.PermissionDescriptor{Name: "clipboard-read"}
 	clipboardWritePermission = cdpbrowser.PermissionDescriptor{Name: "clipboard-write"}
 
@@ -48,7 +48,8 @@ var (
 func TestMain(m *testing.M) {
 	code, err := doMain(m)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to setup integration tests: %w\n", err)
+		fmt.Fprintf(os.Stderr, "failed to setup integration tests: %s\n", err.Error())
+		os.Exit(1)
 	}
 	os.Exit(code)
 }
@@ -66,7 +67,7 @@ func doMain(m *testing.M) (int, error) {
 	}
 	unset, err := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
 	if err != nil {
-		return 0, fmt.Errorf("setting SSL_CERT_FILE: %w", err)
+		return 0, err
 	}
 	defer unset()
 
@@ -81,7 +82,7 @@ func doMain(m *testing.M) (int, error) {
 	defer os.RemoveAll(homeDir)
 	unset, err = setenv("HOME", homeDir)
 	if err != nil {
-		return 0, fmt.Errorf("setting HOME: %w", err)
+		return 0, err
 	}
 	defer unset()
 
@@ -95,6 +96,9 @@ func doMain(m *testing.M) (int, error) {
 
 	// Instruct terraform CLI to skip checks for new versions.
 	unset, err = setenv("CHECKPOINT_DISABLE", "true")
+	if err != nil {
+		return 0, err
+	}
 	defer unset()
 
 	// Ensure ~/.terraform.d exists - 'terraform login' has a bug whereby it tries to
@@ -151,21 +155,15 @@ func doMain(m *testing.M) (int, error) {
 			if err != nil {
 				return err
 			}
-			return network.SetCookie("session", token).Do(ctx)
+			if err := network.SetCookie("session", token).WithDomain("127.0.0.1").Do(ctx); err != nil {
+				return fmt.Errorf("setting session cookie: %w", err)
+			}
+			return nil
 		}),
 	})
 	if err != nil {
 		return 0, fmt.Errorf("creating shared browser: %w", err)
 	}
-	// Click OK on any browser javascript dialog boxes that pop up
-	chromedp.ListenTarget(sharedBrowser, func(ev any) {
-		switch ev.(type) {
-		case *page.EventJavascriptDialogOpening:
-			go func() {
-				_ = chromedp.Run(sharedBrowser, page.HandleJavaScriptDialog(true))
-			}()
-		}
-	})
 
 	return m.Run(), nil
 }
@@ -176,7 +174,7 @@ func doMain(m *testing.M) (int, error) {
 func setenv(name, value string) (func(), error) {
 	err := os.Setenv(name, value)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("setting %s=%s: %w", name, value, err)
 	}
 	envs = append(envs, name+"="+value)
 	return func() {

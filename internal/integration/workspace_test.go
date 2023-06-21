@@ -19,9 +19,8 @@ func TestWorkspace(t *testing.T) {
 	t.Parallel()
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, org, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
 
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
@@ -44,9 +43,8 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("create connected workspace", func(t *testing.T) {
-		svc := setup(t, nil, github.WithRepo("test/dummy"))
+		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
 
-		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
@@ -74,9 +72,8 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("deleting connected workspace also deletes webhook", func(t *testing.T) {
-		svc := setup(t, nil, github.WithRepo("test/dummy"))
+		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
 
-		org := svc.createOrganization(t, ctx)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 		ws, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
@@ -99,9 +96,8 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("connect workspace", func(t *testing.T) {
-		svc := setup(t, nil, github.WithRepo("test/dummy"))
+		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))
 
-		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
@@ -125,9 +121,8 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, org, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
@@ -147,7 +142,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("get by id", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createWorkspace(t, ctx, nil)
 
 		got, err := svc.GetWorkspace(ctx, want.ID)
@@ -156,7 +151,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("get by name", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createWorkspace(t, ctx, nil)
 
 		got, err := svc.GetWorkspaceByName(ctx, want.Organization, want.Name)
@@ -165,8 +160,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
 		wsTagged, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
@@ -258,8 +252,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list by tag", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		ws1, err := svc.CreateWorkspace(ctx, workspace.CreateOptions{
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
@@ -310,8 +303,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("list by user", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		ws1 := svc.createWorkspace(t, ctx, org)
 		ws2 := svc.createWorkspace(t, ctx, org)
 
@@ -319,8 +311,8 @@ func TestWorkspace(t *testing.T) {
 		team2 := svc.createTeam(t, ctx, org)
 		_ = svc.SetPermission(ctx, ws1.ID, team1.Name, rbac.WorkspacePlanRole)
 		_ = svc.SetPermission(ctx, ws2.ID, team2.Name, rbac.WorkspacePlanRole)
-		user1 := svc.createUser(t, ctx, auth.WithTeams(team1, team2))
-		user2 := svc.createUser(t, ctx)
+		user1 := svc.createUser(t, auth.WithTeams(team1, team2))
+		user2 := svc.createUser(t)
 
 		tests := []struct {
 			name string
@@ -386,8 +378,7 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("lock", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
 
 		got, err := svc.LockWorkspace(ctx, ws.ID, nil)
@@ -402,9 +393,8 @@ func TestWorkspace(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, org, ctx := setup(t, nil)
 		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
 		ws := svc.createWorkspace(t, ctx, org)
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
 		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)

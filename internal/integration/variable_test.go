@@ -1,11 +1,9 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,11 +12,8 @@ import (
 func TestVariable(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
@@ -30,7 +25,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		v := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.UpdateVariable(ctx, v.ID, variable.UpdateVariableOptions{
@@ -42,7 +37,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		v1 := svc.createVariable(t, ctx, ws)
 		v2 := svc.createVariable(t, ctx, ws)
@@ -57,7 +52,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.GetVariable(ctx, want.ID)
@@ -67,7 +62,7 @@ func TestVariable(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
 		got, err := svc.DeleteVariable(ctx, want.ID)

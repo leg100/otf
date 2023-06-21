@@ -17,14 +17,11 @@ import (
 func TestIntegration_WorkspaceUI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	user, ctx := daemon.createUserCtx(t, ctx)
-	org := daemon.createOrganization(t, ctx)
+	daemon, org, _ := setup(t, nil)
 
 	var workspaceItems []*cdp.Node
 	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-12"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),

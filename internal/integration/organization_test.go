@@ -111,7 +111,7 @@ func TestOrganization(t *testing.T) {
 		_ = svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, ctx)
 
-		_, newUserCtx := svc.createUserCtx(t, ctx)
+		_, newUserCtx := svc.createUserCtx(t)
 
 		got, err := svc.ListOrganizations(newUserCtx, organization.OrganizationListOptions{})
 		require.NoError(t, err)

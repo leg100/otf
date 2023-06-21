@@ -13,9 +13,10 @@ import (
 func TestWeb(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
+	user, err := auth.UserFromContext(ctx)
+	require.NoError(t, err)
+
 	team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
 		Organization: org.Name,
 		Name:         "devops",
@@ -29,7 +30,6 @@ func TestWeb(t *testing.T) {
 
 	browser := createTab(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		// create workspace
 		createWorkspace(t, svc.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team

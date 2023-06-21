@@ -14,14 +14,12 @@ func TestWritePermissionE2E(t *testing.T) {
 	t.Parallel()
 
 	// Create user and org, and user becomes owner of the org
-	svc := setup(t, nil)
-	owner, ownerCtx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ownerCtx)
+	svc, org, ctx := setup(t, nil)
 
 	// Create engineer user and team and make member of a team
-	engineer, engineerCtx := svc.createUserCtx(t, ctx)
-	team := svc.createTeam(t, ownerCtx, org)
-	err := svc.AddTeamMembership(ownerCtx, auth.TeamMembershipOptions{
+	engineer, engineerCtx := svc.createUserCtx(t)
+	team := svc.createTeam(t, ctx, org)
+	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 		TeamID:   team.ID,
 		Username: engineer.Username,
 	})
@@ -30,11 +28,10 @@ func TestWritePermissionE2E(t *testing.T) {
 	// create terraform config
 	config := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
 
-	// Open browser, using owner's credentials create workspace and assign write
-	// permissions to the engineer's team.
+	// Open browser, create workspace and assign write permissions to the
+	// engineer's team.
 	browser := createTab(t)
 	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "write"),
 	})

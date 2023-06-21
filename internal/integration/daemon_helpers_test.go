@@ -25,7 +25,6 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -59,9 +58,9 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	if cfg.Database == "" {
 		cfg.Database = sql.NewTestDB(t)
 	}
-	// Setup secret if not specified
+	// Use shared secret if one is not specified
 	if cfg.Secret == nil {
-		cfg.Secret = testutils.NewSecret(t)
+		cfg.Secret = sharedSecret
 	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
@@ -191,19 +190,23 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 	return module
 }
 
-func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
+// createUser is always invoked with the site admin context because only they
+// are authorized to create users.
+func (s *testDaemon) createUser(t *testing.T, opts ...auth.NewUserOption) *auth.User {
 	t.Helper()
 
-	user, err := s.CreateUser(ctx, "user-"+internal.GenerateRandomString(4), opts...)
+	user, err := s.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
 
-func (s *testDaemon) createUserCtx(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) (*auth.User, context.Context) {
+// createUserCtx is always invoked with the site admin context because only they
+// are authorized to create users.
+func (s *testDaemon) createUserCtx(t *testing.T, opts ...auth.NewUserOption) (*auth.User, context.Context) {
 	t.Helper()
 
-	user := s.createUser(t, ctx, opts...)
-	return user, internal.AddSubjectToContext(ctx, user)
+	user := s.createUser(t, opts...)
+	return user, internal.AddSubjectToContext(context.Background(), user)
 }
 
 func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *auth.User {

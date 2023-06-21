@@ -26,18 +26,15 @@ func TestWebhook(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
-	svc := setup(t, nil,
+	svc, org, _ := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
 
 	// create and connect first workspace
 	browser := createTab(t)
 	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 
 		createWorkspace(t, svc.Hostname(), org.Name, "workspace-1"),

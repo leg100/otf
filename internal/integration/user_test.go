@@ -56,8 +56,7 @@ func TestUser(t *testing.T) {
 		team1 := svc.createTeam(t, ctx, org1)
 		team2 := svc.createTeam(t, ctx, org2)
 
-		user := svc.createUser(t, adminCtx,
-			auth.WithTeams(team1, team2))
+		user := svc.createUser(t, auth.WithTeams(team1, team2))
 
 		token1, _ := svc.createToken(t, ctx, user)
 		_, _ = svc.createToken(t, ctx, user)
@@ -102,9 +101,9 @@ func TestUser(t *testing.T) {
 
 	t.Run("list users", func(t *testing.T) {
 		svc, _, _ := setup(t, nil)
-		user1 := svc.createUser(t, ctx)
-		user2 := svc.createUser(t, ctx)
-		user3 := svc.createUser(t, ctx)
+		user1 := svc.createUser(t)
+		user2 := svc.createUser(t)
+		user3 := svc.createUser(t)
 		admin := svc.getUser(t, ctx, auth.SiteAdminUsername)
 
 		got, err := svc.ListUsers(ctx)
@@ -126,7 +125,7 @@ func TestUser(t *testing.T) {
 	t.Run("list organization users", func(t *testing.T) {
 		svc, _, _ := setup(t, nil)
 		// create owners team consisting of one owner
-		owner, userCtx := svc.createUserCtx(t, ctx)
+		owner, userCtx := svc.createUserCtx(t)
 		org := svc.createOrganization(t, userCtx)
 		owner = svc.getUser(t, ctx, owner.Username) // refresh user to update team membership
 		owners := svc.getTeam(t, ctx, org.Name, "owners")
@@ -135,10 +134,10 @@ func TestUser(t *testing.T) {
 		developers := svc.createTeam(t, ctx, org)
 
 		// create dev user and add to both teams
-		dev := svc.createUser(t, ctx, auth.WithTeams(owners, developers))
+		dev := svc.createUser(t, auth.WithTeams(owners, developers))
 
 		// create guest user, member of no team
-		guest := svc.createUser(t, ctx)
+		guest := svc.createUser(t)
 
 		got, err := svc.ListOrganizationUsers(ctx, org.Name)
 		require.NoError(t, err)
@@ -151,8 +150,8 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
-		user := svc.createUser(t, ctx)
+		svc, _, _ := setup(t, nil)
+		user := svc.createUser(t)
 
 		err := svc.DeleteUser(ctx, user.Username)
 		require.NoError(t, err)
@@ -162,10 +161,10 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
-		user := svc.createUser(t, ctx)
+		user := svc.createUser(t)
 
 		err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 			Username: user.Username,
@@ -180,10 +179,10 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("remove team membership", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
-		user := svc.createUser(t, ctx, auth.WithTeams(team))
+		user := svc.createUser(t, auth.WithTeams(team))
 
 		err := svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
 			Username: user.Username,
@@ -198,7 +197,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("cannot remove last owner", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 		// automatically creates owners team with site admin as owner
 		org := svc.createOrganization(t, ctx)
 
