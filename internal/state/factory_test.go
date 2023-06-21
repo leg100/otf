@@ -34,18 +34,32 @@ func TestFactory(t *testing.T) {
 
 			assert.Equal(t, "foo", got.Outputs["foo"].Name)
 			assert.Equal(t, "string", got.Outputs["foo"].Type)
-			assert.JSONEq(t, `"stringy"`, string(got.Outputs["foo"].Value))
 			assert.True(t, got.Outputs["foo"].Sensitive)
+			// check value is both correct type and value
+			var foo string
+			err := json.Unmarshal(got.Outputs["foo"].Value, &foo)
+			require.NoError(t, err)
+			assert.Equal(t, "stringy", foo)
 
 			assert.Equal(t, "bar", got.Outputs["bar"].Name)
 			assert.Equal(t, "tuple", got.Outputs["bar"].Type)
 			assert.JSONEq(t, `["item1","item2"]`, string(got.Outputs["bar"].Value))
 			assert.False(t, got.Outputs["bar"].Sensitive)
+			// check value is both correct type and value
+			var bar []string
+			err = json.Unmarshal(got.Outputs["bar"].Value, &bar)
+			require.NoError(t, err)
+			assert.Equal(t, []string{"item1", "item2"}, bar)
 
 			assert.Equal(t, "baz", got.Outputs["baz"].Name)
 			assert.Equal(t, "object", got.Outputs["baz"].Type)
-			assert.JSONEq(t, `{"key1":"value1","key2":"value2"}`, string(got.Outputs["baz"].Value))
 			assert.False(t, got.Outputs["baz"].Sensitive)
+			// check value is both correct type and value
+			var baz map[string]string
+			err = json.Unmarshal(got.Outputs["baz"].Value, &baz)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]string{"key1": "value1", "key2": "value2"}, baz)
+
 		})
 	})
 
