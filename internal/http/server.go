@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	ModuleV1Prefix = "/v1/modules"
-	APIPrefixV2    = "/api/v2"
+	ModuleV1Prefix = "/v1/modules/"
+	APIPrefixV2    = "/api/v2/"
 
 	// shutdownTimeout is the time given for outstanding requests to finish
 	// before shutdown.
