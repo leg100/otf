@@ -27,19 +27,21 @@ var (
 	WorkspaceReadRole = Role{
 		name: "read",
 		permissions: map[Action]bool{
-			ListRunsAction:                     true,
-			GetPlanFileAction:                  true,
-			GetWorkspaceAction:                 true,
-			GetStateVersionAction:              true,
-			DownloadStateAction:                true,
-			DownloadConfigurationVersionAction: true,
-			GetRunAction:                       true,
-			GetConfigurationVersionAction:      true,
-			ListVariablesAction:                true,
-			GetVariableAction:                  true,
-			WatchAction:                        true,
-			ListWorkspaceTags:                  true,
-			TailLogsAction:                     true,
+			ListRunsAction:                       true,
+			GetPlanFileAction:                    true,
+			GetWorkspaceAction:                   true,
+			GetStateVersionAction:                true,
+			DownloadStateAction:                  true,
+			DownloadConfigurationVersionAction:   true,
+			GetRunAction:                         true,
+			GetConfigurationVersionAction:        true,
+			ListVariablesAction:                  true,
+			GetVariableAction:                    true,
+			WatchAction:                          true,
+			ListWorkspaceTags:                    true,
+			TailLogsAction:                       true,
+			ListNotificationConfigurationsAction: true,
+			GetNotificationConfigurationAction:   true,
 		},
 	}
 
@@ -59,12 +61,15 @@ var (
 	WorkspaceWriteRole = Role{
 		name: "write",
 		permissions: map[Action]bool{
-			ApplyRunAction:        true,
-			LockWorkspaceAction:   true,
-			UnlockWorkspaceAction: true,
-			CreateVariableAction:  true,
-			UpdateVariableAction:  true,
-			DeleteVariableAction:  true,
+			ApplyRunAction:                        true,
+			LockWorkspaceAction:                   true,
+			UnlockWorkspaceAction:                 true,
+			CreateVariableAction:                  true,
+			UpdateVariableAction:                  true,
+			DeleteVariableAction:                  true,
+			CreateNotificationConfigurationAction: true,
+			UpdateNotificationConfigurationAction: true,
+			DeleteNotificationConfigurationAction: true,
 			// includes WorkspacePlanRole perms too (see below)
 		},
 	}
@@ -74,7 +79,6 @@ var (
 	WorkspaceAdminRole = Role{
 		name: "admin",
 		permissions: map[Action]bool{
-			GetConfigurationVersionAction:  true,
 			SetWorkspacePermissionAction:   true,
 			UnsetWorkspacePermissionAction: true,
 			DeleteWorkspaceAction:          true,
