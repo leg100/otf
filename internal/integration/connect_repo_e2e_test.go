@@ -25,8 +25,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
 		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
@@ -34,7 +33,6 @@ func TestConnectRepoE2E(t *testing.T) {
 		// the fake github server
 		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation),
 	})
-	require.NoError(t, err)
 
 	// Now we test the webhook functionality by sending an event to the daemon
 	// (which would usually be triggered by a git push to github). The event
@@ -45,7 +43,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	daemon.SendEvent(t, github.PushEvent, push)
 
 	// commit-triggered run should appear as latest run on workspace
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
@@ -53,7 +51,6 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 
 	// github should receive three pending status updates followed by a final
 	// update with details of planned resources
@@ -67,8 +64,7 @@ func TestConnectRepoE2E(t *testing.T) {
 
 	// Clean up after ourselves by disconnecting the workspace and deleting the
 	// workspace and vcs provider
-	okDialog(t, browser)
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
@@ -102,5 +98,4 @@ func TestConnectRepoE2E(t *testing.T) {
 		screenshot(t),
 		matchText(t, ".flash-success", "deleted provider: github"),
 	})
-	require.NoError(t, err)
 }

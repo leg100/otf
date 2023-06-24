@@ -7,7 +7,6 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_RunListUI demonstrates listing runs via the UI.
@@ -19,8 +18,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 	tfConfig := newRootModule(t, daemon.Hostname(), ws.Organization, ws.Name)
 
 	var runListingAfter []*cdp.Node
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// navigate to workspace page
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), ws.Organization, ws.Name)),
 		chromedp.WaitReady(`body`),
@@ -40,6 +38,5 @@ func TestIntegration_RunListUI(t *testing.T) {
 		// and its status should be 'planned and finished'
 		chromedp.WaitVisible(`//*[@class='item']//*[@class='status status-planned_and_finished']`, chromedp.BySearch),
 	})
-	require.NoError(t, err)
 	assert.Equal(t, 1, len(runListingAfter))
 }

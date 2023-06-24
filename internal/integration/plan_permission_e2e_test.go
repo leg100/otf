@@ -31,12 +31,10 @@ func TestIntegration_PlanPermission(t *testing.T) {
 
 	// Open tab and create a workspace and assign plan role to the
 	// engineer's team.
-	tab := createTab(t)
-	err = chromedp.Run(tab, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "plan"),
 	})
-	require.NoError(t, err)
 
 	// As engineer, run terraform init, and plan. This should succeed because
 	// the engineer has been assigned the plan role.

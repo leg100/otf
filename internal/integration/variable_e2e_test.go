@@ -18,8 +18,7 @@ func TestVariableE2E(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// Create variable in browser
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
@@ -50,7 +49,6 @@ func TestVariableE2E(t *testing.T) {
 			screenshot(t),
 		},
 	})
-	require.NoError(t, err)
 
 	// write some terraform config that declares and outputs the variable
 	root := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
@@ -63,7 +61,7 @@ output "foo" {
   value = var.foo
 }
 `
-	err = os.WriteFile(filepath.Join(root, "foo.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "foo.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
@@ -74,7 +72,7 @@ output "foo" {
 	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
 			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
@@ -116,5 +114,4 @@ output "foo" {
 			matchText(t, ".flash-success", "deleted variable: foo"),
 		},
 	})
-	require.NoError(t, err)
 }

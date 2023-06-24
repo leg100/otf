@@ -71,8 +71,7 @@ resource "null_resource" "tags_e2e" {}
 	}
 
 	// test UI management of tags
-	browser := createTab(t)
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),
 		// confirm workspace page lists both tags
 		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'foo')]`),
@@ -102,5 +101,4 @@ resource "null_resource" "tags_e2e" {}
 		// confirm workspace listing contains tagged workspace
 		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`, chromedp.NodeVisible),
 	})
-	require.NoError(t, err)
 }

@@ -30,12 +30,10 @@ func TestWritePermissionE2E(t *testing.T) {
 
 	// Open browser, create workspace and assign write permissions to the
 	// engineer's team.
-	browser := createTab(t)
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-test-workspace", team.Name, "write"),
 	})
-	require.NoError(t, err)
 
 	// As engineer, run terraform init
 	_ = svc.tfcli(t, engineerCtx, "init", config)

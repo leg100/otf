@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/run"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_RetryRunUI demonstrates retrying a run via the UI
@@ -35,8 +34,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	}
 
 	// open browser, go to run, and click retry
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(runURL(daemon.Hostname(), r.ID)),
 		// run should be in planned and finished state
 		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`, chromedp.BySearch),
@@ -53,5 +51,4 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 		chromedp.WaitReady(`//button[text()='retry run']`, chromedp.BySearch),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 }

@@ -15,8 +15,7 @@ func TestAutoApply(t *testing.T) {
 	svc, org, ctx := setup(t, nil)
 
 	// create workspace and enable auto-apply
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, t.Name()),
 		chromedp.Tasks{
 			// go to workspace
@@ -35,7 +34,6 @@ func TestAutoApply(t *testing.T) {
 			matchText(t, ".flash-success", "updated workspace"),
 		},
 	})
-	require.NoError(t, err)
 
 	// create terraform config
 	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())

@@ -10,18 +10,16 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_WorkspaceUI demonstrates management of workspaces via the UI.
 func TestIntegration_WorkspaceUI(t *testing.T) {
 	t.Parallel()
 
-	daemon, org, _ := setup(t, nil)
+	daemon, org, ctx := setup(t, nil)
 
 	var workspaceItems []*cdp.Node
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-12"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),
@@ -44,5 +42,4 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// now workspace-2 should be visible (updated via ajax)
 		chromedp.WaitVisible(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
 	})
-	require.NoError(t, err)
 }

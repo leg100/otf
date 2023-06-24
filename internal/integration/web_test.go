@@ -28,8 +28,7 @@ func TestWeb(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	browser := createTab(t)
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// create workspace
 		createWorkspace(t, svc.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team
@@ -76,5 +75,4 @@ func TestWeb(t *testing.T) {
 			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
 		},
 	})
-	require.NoError(t, err)
 }

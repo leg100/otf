@@ -19,8 +19,7 @@ func TestWorkingDirectory(t *testing.T) {
 	daemon, org, ctx := setup(t, nil)
 
 	// create workspace and set working directory
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
 		chromedp.Tasks{
 			// go to workspace
@@ -40,13 +39,12 @@ func TestWorkingDirectory(t *testing.T) {
 			matchText(t, ".flash-success", "updated workspace"),
 		},
 	})
-	require.NoError(t, err)
 
 	// create root module along with a sub-directory containing the config we're
 	// going to test
 	root := newRootModule(t, daemon.Hostname(), org.Name, "my-workspace")
 	subdir := path.Join(root, "subdir")
-	err = os.Mkdir(subdir, 0o755)
+	err := os.Mkdir(subdir, 0o755)
 	require.NoError(t, err)
 	config := `
 resource "null_resource" "subdir" {}

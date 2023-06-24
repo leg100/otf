@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	oauth2github "golang.org/x/oauth2/github"
 )
@@ -42,8 +41,7 @@ func TestGithubLogin(t *testing.T) {
 	}
 	svc, _, _ := setup(t, &cfg, github.WithUser(&user))
 
-	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, nil, chromedp.Tasks{
 		// go to login page
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),
 		screenshot(t, "github_login_button"),
@@ -53,5 +51,4 @@ func TestGithubLogin(t *testing.T) {
 		// check login confirmation message
 		matchText(t, ".content > p", "You are logged in as bobby"),
 	})
-	require.NoError(t, err)
 }

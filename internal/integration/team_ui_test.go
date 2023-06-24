@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_TeamUI demonstrates managing teams and team members via the
@@ -13,11 +12,10 @@ import (
 func TestIntegration_TeamUI(t *testing.T) {
 	t.Parallel()
 
-	daemon, org, _ := setup(t, nil)
+	daemon, org, ctx := setup(t, nil)
 	newbie := daemon.createUser(t)
 
-	tab := createTab(t)
-	err := chromedp.Run(tab, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
@@ -43,5 +41,4 @@ func TestIntegration_TeamUI(t *testing.T) {
 			matchText(t, ".flash-success", "removed team member: "+newbie.Username),
 		},
 	})
-	require.NoError(t, err)
 }

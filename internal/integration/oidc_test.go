@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/daemon"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_OIDC demonstrates logging in using OIDC
@@ -29,8 +28,7 @@ func TestIntegration_OIDC(t *testing.T) {
 
 	svc, _, _ := setup(t, &cfg)
 
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, nil, chromedp.Tasks{
 		// go to login page
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),
 		screenshot(t, "oidc_login_button"),
@@ -40,5 +38,4 @@ func TestIntegration_OIDC(t *testing.T) {
 		// check login confirmation message
 		matchText(t, ".content > p", "You are logged in as bobby"),
 	})
-	require.NoError(t, err)
 }

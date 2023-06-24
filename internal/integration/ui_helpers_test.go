@@ -14,7 +14,6 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
@@ -311,21 +310,6 @@ func reloadUntilVisible(sel string) chromedp.Action {
 			if err != nil {
 				return err
 			}
-		}
-	})
-}
-
-// okDialog - Click OK on any browser javascript dialog boxes that pop up
-func okDialog(t *testing.T, ctx context.Context) {
-	t.Helper()
-
-	chromedp.ListenTarget(ctx, func(ev any) {
-		switch ev.(type) {
-		case *page.EventJavascriptDialogOpening:
-			go func() {
-				err := chromedp.Run(ctx, page.HandleJavaScriptDialog(true))
-				require.NoError(t, err)
-			}()
 		}
 	})
 }

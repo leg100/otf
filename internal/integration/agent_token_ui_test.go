@@ -7,20 +7,17 @@ import (
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestAgentTokenUI demonstrates managing agent tokens via the UI.
 func TestAgentTokenUI(t *testing.T) {
 	t.Parallel()
 
-	svc, org, _ := setup(t, nil)
+	svc, org, ctx := setup(t, nil)
 
 	var clipboardContent any
 
-	tab := createTab(t)
-	okDialog(t, tab)
-	err := chromedp.Run(tab, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org main menu
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
@@ -50,7 +47,6 @@ func TestAgentTokenUI(t *testing.T) {
 			matchText(t, ".flash-success", "Deleted token: my-new-agent-token"),
 		},
 	})
-	require.NoError(t, err)
 
 	// clipboard should contained agent token (base64 encoded JWT) and no white
 	// space.

@@ -7,26 +7,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"testing"
-	"time"
 
-	cdpbrowser "github.com/chromedp/cdproto/browser"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/tokens"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/leg100/otf/internal/testbrowser"
 )
 
 var (
-	// shared browser allocator
-	allocator context.Context
-
-	// shared browser context
-	sharedBrowser context.Context
-
 	// a user with this username is created at the very beginning and the
 	// shared browser is seeded with a session belonging to this user
 	sharedUsername = "mr-tester"
@@ -34,15 +22,14 @@ var (
 	// a shared secret which signs the shared user session
 	sharedSecret []byte
 
-	// permissions for chrome's clipboard
-	clipboardReadPermission  = cdpbrowser.PermissionDescriptor{Name: "clipboard-read"}
-	clipboardWritePermission = cdpbrowser.PermissionDescriptor{Name: "clipboard-write"}
-
 	// shared environment variables for individual tests to use
 	envs []string
 
 	// Context conferring site admin privileges
 	adminCtx = internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+
+	// pool of web browsers
+	browser *testbrowser.Pool
 )
 
 func TestMain(m *testing.M) {
@@ -108,30 +95,7 @@ func doMain(m *testing.M) (int, error) {
 	// creating that directory first.
 	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
 
-	// Setup chromedp browser driver. Headless mode determines whether browser
-	// window is displayed (false) or not (true).
-	headless := true
-	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
-		var err error
-		headless, err = strconv.ParseBool(v)
-		if err != nil {
-			return 0, fmt.Errorf("parsing OTF_E2E_HEADLESS: %w", err)
-		}
-	}
-
-	// Must create an allocator before creating the browser
-	var cancel context.CancelFunc
-	allocator, cancel = chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", headless),
-			chromedp.Flag("hide-scrollbars", true),
-			chromedp.Flag("mute-audio", true),
-			chromedp.Flag("ignore-certificate-errors", true),
-			chromedp.Flag("disable-gpu", true),
-		)...)
-	defer cancel()
-
-	// Create a secret with which to (1) create a user session token and (2)
+	// Create a secret with which to (1) create user session tokens and (2)
 	// for assignment to daemons so that the token passes verification
 	sharedSecret = make([]byte, 16)
 	_, err = rand.Read(sharedSecret)
@@ -139,31 +103,13 @@ func doMain(m *testing.M) (int, error) {
 		return 0, err
 	}
 
-	// Create browser instance for sharing between tests, and seed with a
-	// session cookie.
-	sharedBrowser, cancel = chromedp.NewContext(allocator)
-	defer cancel()
-	err = chromedp.Run(sharedBrowser, chromedp.Tasks{
-		cdpbrowser.SetPermission(&clipboardReadPermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),
-		cdpbrowser.SetPermission(&clipboardWritePermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			key, err := jwk.FromRaw(sharedSecret)
-			if err != nil {
-				return err
-			}
-			token, err := tokens.NewSessionToken(key, sharedUsername, internal.CurrentTimestamp().Add(time.Hour))
-			if err != nil {
-				return err
-			}
-			if err := network.SetCookie("session", token).WithDomain("127.0.0.1").Do(ctx); err != nil {
-				return fmt.Errorf("setting session cookie: %w", err)
-			}
-			return nil
-		}),
-	})
+	// Setup pool of browsers
+	pool, cleanup, err := testbrowser.NewPool(sharedSecret)
 	if err != nil {
-		return 0, fmt.Errorf("creating shared browser: %w", err)
+		return 0, err
 	}
+	defer cleanup()
+	browser = pool
 
 	return m.Run(), nil
 }

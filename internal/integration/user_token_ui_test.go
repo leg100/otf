@@ -5,16 +5,14 @@ import (
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_UserTokenUI demonstrates managing user tokens via the UI.
 func TestIntegration_UserTokenUI(t *testing.T) {
 	t.Parallel()
 
-	svc, _, _ := setup(t, nil)
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	svc, _, ctx := setup(t, nil)
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to profile
 		chromedp.Navigate("https://" + svc.Hostname() + "/app/profile"),
 		chromedp.WaitReady(`body`),
@@ -36,5 +34,4 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		screenshot(t),
 		matchText(t, ".flash-success", "Deleted token"),
 	})
-	require.NoError(t, err)
 }

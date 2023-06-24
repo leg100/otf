@@ -5,7 +5,6 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/run"
-	"github.com/stretchr/testify/require"
 )
 
 // TestStartRunUI tests starting a run via the Web UI before confirming and
@@ -20,15 +19,10 @@ func TestStartRunUI(t *testing.T) {
 
 	// now we have a config version, start a run with the plan-and-apply
 	// operation
-	browser := createTab(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation),
-	})
-	require.NoError(t, err)
+	browser.Run(t, ctx, startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation))
 
 	// now destroy resources with the destroy-all operation
-	okDialog(t, browser)
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
 		screenshot(t, "workspace_page"),
@@ -65,5 +59,4 @@ func TestStartRunUI(t *testing.T) {
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 }
