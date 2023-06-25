@@ -18,11 +18,9 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.ConfigurationVersionCreateOptions{
 		Speculative: internal.Bool(true),
 	})
-	sub := daemon.createSubscriber(t, ctx)
-
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv)
-	for event := range sub {
+	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
 			if r.Status == internal.RunErrored {
 				t.Fatal("run unexpectedly errored")

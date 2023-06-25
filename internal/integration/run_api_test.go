@@ -26,7 +26,6 @@ func TestIntegration_RunAPI(t *testing.T) {
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
-	sub := daemon.createSubscriber(t, ctx)
 	_, token := daemon.createToken(t, ctx, nil)
 
 	tfeClient, err := tfe.NewClient(&tfe.Config{
@@ -62,7 +61,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// wait for run to reach planned status
-		for event := range sub {
+		for event := range daemon.sub {
 			if r, ok := event.Payload.(*run.Run); ok {
 				switch r.Status {
 				case internal.RunErrored:

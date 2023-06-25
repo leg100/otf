@@ -18,6 +18,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const headlessEnvVar = "OTF_E2E_HEADLESS"
+
+var poolSize = runtime.GOMAXPROCS(0)
+
 // Pool of browsers
 type Pool struct {
 	pool chan *browser
@@ -36,11 +40,11 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 	// Headless mode determines whether browser window is displayed (false) or
 	// not (true).
 	headless := true
-	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
+	if v, ok := os.LookupEnv(headlessEnvVar); ok {
 		var err error
 		headless, err = strconv.ParseBool(v)
 		if err != nil {
-			return nil, nil, fmt.Errorf("parsing OTF_E2E_HEADLESS: %w", err)
+			return nil, nil, fmt.Errorf("parsing %s: %w", headlessEnvVar, err)
 		}
 	}
 
@@ -54,17 +58,17 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 		)...)
 
 	p := Pool{
-		pool:      make(chan *browser, runtime.GOMAXPROCS(0)),
+		pool:      make(chan *browser, poolSize),
 		key:       key,
 		allocator: allocator,
 	}
-	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+	for i := 0; i < poolSize; i++ {
 		p.pool <- nil
 	}
 
 	// Terminate all provisioned browsers and then terminate their allocator
 	cleanup := func() {
-		for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+		for i := 0; i < poolSize; i++ {
 			if b := <-p.pool; b != nil {
 				b.cancel()
 			}
@@ -80,26 +84,34 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 	if b == nil {
 		b = newBrowser(t, p.allocator)
 	}
-	t.Cleanup(func() {
-		p.pool <- b
-	})
+	// return browser back to pool after this method finishes
+	defer func() { p.pool <- b }()
 
-	chromedp.Run(b.ctx, chromedp.ActionFunc(func(c context.Context) error {
+	err := chromedp.Run(b.ctx, chromedp.ActionFunc(func(c context.Context) error {
 		// Always clear cookies first in case a previous test has left some behind
-		network.ClearBrowserCookies().Do(b.ctx)
-
+		if err := network.ClearBrowserCookies().Do(c); err != nil {
+			return err
+		}
 		if user != nil {
 			// Seed a session cookie for the given user context
 			user, err := auth.UserFromContext(user)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			token, err := tokens.NewSessionToken(p.key, user.Username, internal.CurrentTimestamp().Add(time.Hour))
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			err = network.SetCookie("session", token).WithDomain("127.0.0.1").Do(c)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 		return nil
 	}))
+	require.NoError(t, err)
 
-	err := chromedp.Run(b.ctx, actions...)
+	err = chromedp.Run(b.ctx, actions...)
 	require.NoError(t, err)
 }

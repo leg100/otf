@@ -391,14 +391,6 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 	return token
 }
 
-func (s *testDaemon) createSubscriber(t *testing.T, ctx context.Context) <-chan pubsub.Event {
-	t.Helper()
-
-	sub, err := s.Subscribe(ctx, "")
-	require.NoError(t, err)
-	return sub
-}
-
 // startAgent starts an external agent, configuring it with the given
 // organization and configuring it to connect to the daemon.
 func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization string, cfg agent.ExternalConfig) {

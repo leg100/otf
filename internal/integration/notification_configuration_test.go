@@ -74,18 +74,16 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
 		nc := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-svc.sub)
 
 		err := svc.DeleteNotificationConfiguration(ctx, nc.ID)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-svc.sub)
 
 		_, err = svc.GetNotificationConfiguration(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
@@ -95,26 +93,23 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// event triggers: when a workspace is deleted, its notification
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-
-		org := svc.createOrganization(t, ctx)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		svc, org, ctx := setup(t, nil)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
 
 		ws := svc.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
 
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-svc.sub)
 
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-svc.sub)
 
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-svc.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-svc.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-svc.sub)
 	})
 }
