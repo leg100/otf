@@ -60,16 +60,16 @@ func TestIntegration_PlanPermission(t *testing.T) {
 		chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// select operation for run
-		chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only", chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only"),
 		screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
-		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
 		chromedp.WaitReady(`#plan-status.phase-status-finished`),
 		screenshot(t),
 		// wait for run to enter planned-and-finished state
-		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),

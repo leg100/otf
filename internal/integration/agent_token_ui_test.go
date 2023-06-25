@@ -37,7 +37,7 @@ func TestAgentTokenUI(t *testing.T) {
 			screenshot(t),
 			matchRegex(t, ".flash-success", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
 			// click clipboard icon to copy token into clipboard
-			chromedp.Click(`//div[@class='flash flash-success']//img[@class='clipboard-icon']`, chromedp.BySearch),
+			chromedp.Click(`//div[@class='flash flash-success']//img[@class='clipboard-icon']`),
 			chromedp.Evaluate(`window.navigator.clipboard.readText()`, &clipboardContent, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 				return p.WithAwaitPromise(true)
 			}),
