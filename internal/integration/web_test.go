@@ -13,16 +13,16 @@ import (
 func TestWeb(t *testing.T) {
 	t.Parallel()
 
-	svc, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t, nil)
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 
-	team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
+	team, err := daemon.CreateTeam(ctx, auth.CreateTeamOptions{
 		Organization: org.Name,
 		Name:         "devops",
 	})
 	require.NoError(t, err)
-	err = svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
+	err = daemon.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 		TeamID:   team.ID,
 		Username: user.Username,
 	})
@@ -30,11 +30,11 @@ func TestWeb(t *testing.T) {
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		// create workspace
-		createWorkspace(t, svc.Hostname(), org.Name, "my-workspace"),
+		createWorkspace(t, daemon.Hostname(), org.Name, "my-workspace"),
 		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
@@ -51,11 +51,11 @@ func TestWeb(t *testing.T) {
 			matchText(t, ".flash-success", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
-		addWorkspacePermission(t, svc.Hostname(), org.Name, "my-workspace", "devops", "write"),
+		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", "devops", "write"),
 		// list users
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
@@ -65,7 +65,7 @@ func TestWeb(t *testing.T) {
 		// list team members
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),

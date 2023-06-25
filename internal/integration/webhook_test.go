@@ -40,8 +40,6 @@ func TestWebhook(t *testing.T) {
 		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"),
 	})
 
-	t.Log("connected")
-
 	// webhook should now have been registered with github
 	require.True(t, daemon.HasWebhook())
 

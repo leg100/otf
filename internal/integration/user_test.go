@@ -40,7 +40,6 @@ func TestUser(t *testing.T) {
 			}})
 			areSiteAdmins(false)
 		})
-		t.Log("done")
 	})
 
 	// Create a user and a user token and test retrieving the user using their ID, username and
