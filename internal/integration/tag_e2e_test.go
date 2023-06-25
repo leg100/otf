@@ -84,7 +84,7 @@ resource "null_resource" "tags_e2e" {}
 		screenshot(t),
 		matchText(t, ".flash-success", "removed tag: bar"),
 		// add new tag
-		chromedp.Focus("input#new-tag-name", chromedp.NodeVisible),
+		chromedp.Focus("input#new-tag-name", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("baz"),
 		chromedp.Click(`//button[text()='Add new tag']`, chromedp.NodeVisible),
 		screenshot(t),

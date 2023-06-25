@@ -30,13 +30,13 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(organizationURL(hostname, org)),
 		chromedp.WaitReady(`body`),
-		chromedp.Click("#menu-item-workspaces > a"),
+		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
 		chromedp.Click("#new-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
-		chromedp.Focus("input#name", chromedp.NodeVisible),
+		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText(name),
-		chromedp.Click("#create-workspace-button", chromedp.NodeVisible),
+		chromedp.Click("#create-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
 		matchText(t, ".flash-success", "created workspace: "+name),
 	}
@@ -155,8 +155,8 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 		matchText(t, "#permissions-owners td:first-child", "owners"),
 		matchText(t, "#permissions-owners td:last-child", "admin"),
 		// assign role to team
-		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role, chromedp.BySearch),
-		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role),
+		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team),
 		// scroll to bottom so that permissions are visible in screenshot
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
@@ -169,7 +169,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 			return nil
 		}),
 		screenshot(t, "workspace_permissions"),
-		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
+		chromedp.Click("#permissions-add-button", chromedp.NodeVisible, chromedp.ByQuery),
 		screenshot(t),
 		matchText(t, ".flash-success", "updated workspace permissions"),
 	}
@@ -181,19 +181,19 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 		chromedp.Navigate(organizationURL(hostname, org)),
 		screenshot(t, "organization_main_menu"),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible, chromedp.ByQuery),
 		screenshot(t, "vcs_providers_list"),
 		// click 'New Github VCS Provider' button
 		chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
 		screenshot(t, "new_github_vcs_provider_form"),
 		// enter fake github token and name
-		chromedp.Focus("input#token", chromedp.NodeVisible),
+		chromedp.Focus("input#token", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("fake-github-personal-token"),
-		chromedp.Focus("input#name"),
+		chromedp.Focus("input#name", chromedp.ByQuery),
 		input.InsertText(name),
 		screenshot(t),
 		// submit form to create provider
-		chromedp.Submit("input#token"),
+		chromedp.Submit("input#token", chromedp.ByQuery),
 		screenshot(t),
 		matchText(t, ".flash-success", "created provider: github"),
 	}
@@ -206,31 +206,31 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		chromedp.Navigate(workspaceURL(hostname, organization, workspaceName)),
 		screenshot(t, "connected_workspace_main_page"),
 		// select operation for run
-		chromedp.SetValue(`//select[@id="start-run-operation"]`, string(op), chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="start-run-operation"]`, string(op)),
 		screenshot(t, "run_page_started"),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
-		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
 		chromedp.WaitReady(`#plan-status.phase-status-finished`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitReady(`//*[@class='status status-planned']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-planned']`),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t, "run_page_planned_state"),
 		// run widget should show discard button
-		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
+		chromedp.WaitReady(`//button[@id='run-discard-button']`),
 		screenshot(t),
 		// click 'apply' button once it becomes visible
-		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible),
 		screenshot(t),
 		// confirm apply begins and ends
-		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
-		chromedp.WaitReady(`#apply-status.phase-status-finished`),
+		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),
+		chromedp.WaitReady(`#apply-status.phase-status-finished`, chromedp.ByQuery),
 		// confirm run ends in applied state
-		chromedp.WaitReady(`//*[@class='status status-applied']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-applied']`),
 		// run widget should show apply summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),

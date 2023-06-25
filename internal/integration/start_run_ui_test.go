@@ -30,31 +30,31 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		screenshot(t),
 		// click 'queue destroy plan' button
-		chromedp.Click(`//button[@id='queue-destroy-plan-button']`, chromedp.BySearch),
+		chromedp.Click(`//button[@id='queue-destroy-plan-button']`),
 		screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
-		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
-		chromedp.WaitReady(`#plan-status.phase-status-finished`),
+		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitReady(`//*[@class='status status-planned']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-planned']`),
 		screenshot(t),
 		// run widget should show plan summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 		// run widget should show discard button
-		chromedp.WaitReady(`//button[@id='run-discard-button']`, chromedp.BySearch),
+		chromedp.WaitReady(`//button[@id='run-discard-button']`),
 		screenshot(t),
 		// click 'confirm & apply' button once it becomes visible
-		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible),
 		screenshot(t),
 		// confirm apply begins and ends
-		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
-		chromedp.WaitReady(`#apply-status.phase-status-finished`),
+		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),
+		chromedp.WaitReady(`#apply-status.phase-status-finished`, chromedp.ByQuery),
 		// confirm run ends in applied state
-		chromedp.WaitReady(`//*[@class='status status-applied']`, chromedp.BySearch),
+		chromedp.WaitReady(`//*[@class='status status-applied']`),
 		// run widget should show apply summary
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),

@@ -26,20 +26,20 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.Navigate(workspacesURL(daemon.Hostname(), org.Name)),
 		chromedp.WaitReady(`body`),
 		// search for 'workspace-1' which should produce two results
-		chromedp.Focus(`input[type="search"]`, chromedp.NodeVisible),
+		chromedp.Focus(`input[type="search"]`, chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("workspace-1"),
-		chromedp.Submit(`input[type="search"]`),
+		chromedp.Submit(`input[type="search"]`, chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
-		chromedp.Nodes(`//*[@class="item"]`, &workspaceItems, chromedp.BySearch),
+		chromedp.Nodes(`//*[@class="item"]`, &workspaceItems),
 		chromedp.ActionFunc(func(c context.Context) error {
 			assert.Equal(t, 2, len(workspaceItems))
 			return nil
 		}),
 		// and workspace-2 should not be visible
-		chromedp.WaitNotPresent(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
+		chromedp.WaitNotPresent(`//*[@id="item-workspace-workspace-2"]`),
 		// clear search term
-		chromedp.SendKeys(`input[type="search"]`, strings.Repeat(kb.Delete, len("workspace-1")), chromedp.BySearch),
+		chromedp.SendKeys(`input[type="search"]`, strings.Repeat(kb.Delete, len("workspace-1")), chromedp.ByQuery),
 		// now workspace-2 should be visible (updated via ajax)
-		chromedp.WaitVisible(`//*[@id="item-workspace-workspace-2"]`, chromedp.BySearch),
+		chromedp.WaitVisible(`//*[@id="item-workspace-workspace-2"]`),
 	})
 }

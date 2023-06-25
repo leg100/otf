@@ -57,7 +57,7 @@ func TestWeb(t *testing.T) {
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
-			chromedp.Click("#users > a", chromedp.NodeVisible),
+			chromedp.Click("#users > a", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
 			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
 		},
@@ -67,9 +67,9 @@ func TestWeb(t *testing.T) {
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
-			chromedp.Click("#teams > a", chromedp.NodeVisible),
+			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
 			// select owners team
-			chromedp.Click("#item-team-owners a", chromedp.NodeVisible),
+			chromedp.Click("#item-team-owners a", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
 			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
 		},
