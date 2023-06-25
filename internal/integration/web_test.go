@@ -14,8 +14,7 @@ func TestWeb(t *testing.T) {
 	t.Parallel()
 
 	daemon, org, ctx := setup(t, nil)
-	user, err := auth.UserFromContext(ctx)
-	require.NoError(t, err)
+	user := userFromContext(t, ctx)
 
 	team, err := daemon.CreateTeam(ctx, auth.CreateTeamOptions{
 		Organization: org.Name,

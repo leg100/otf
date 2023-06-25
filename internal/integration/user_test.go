@@ -98,8 +98,7 @@ func TestUser(t *testing.T) {
 
 	t.Run("list users", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
-		user1, err := auth.UserFromContext(ctx)
-		require.NoError(t, err)
+		user1 := userFromContext(t, ctx)
 		user2 := svc.createUser(t)
 		user3 := svc.createUser(t)
 		// only admin can retrieve its own user account
@@ -124,9 +123,7 @@ func TestUser(t *testing.T) {
 	t.Run("list organization users", func(t *testing.T) {
 		// automatically creates owners team consisting of one owner
 		svc, org, ctx := setup(t, nil)
-		owner, err := auth.UserFromContext(ctx)
-		require.NoError(t, err)
-		owner = svc.getUser(t, adminCtx, owner.Username) // refresh user to update team membership
+		owner := userFromContext(t, ctx)
 		owners := svc.getTeam(t, ctx, org.Name, "owners")
 
 		// create developers team
@@ -199,8 +196,7 @@ func TestUser(t *testing.T) {
 	t.Run("cannot remove last owner", func(t *testing.T) {
 		// automatically creates org and owners team
 		svc, org, ctx := setup(t, nil)
-		owner, err := auth.UserFromContext(ctx)
-		require.NoError(t, err)
+		owner := userFromContext(t, ctx)
 
 		owners, err := svc.GetTeam(ctx, org.Name, "owners")
 		require.NoError(t, err)

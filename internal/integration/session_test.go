@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,11 +15,10 @@ func TestSession(t *testing.T) {
 
 	t.Run("start", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
-		want, err := auth.UserFromContext(ctx)
-		require.NoError(t, err)
+		want := userFromContext(t, ctx)
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/?", nil)
-		err = svc.StartSession(w, r, tokens.StartSessionOptions{
+		err := svc.StartSession(w, r, tokens.StartSessionOptions{
 			Username: &want.Username,
 		})
 		require.NoError(t, err)
@@ -29,8 +27,7 @@ func TestSession(t *testing.T) {
 
 		t.Run("authenticate", func(t *testing.T) {
 			upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				got, err := auth.UserFromContext(r.Context())
-				require.NoError(t, err)
+				got := userFromContext(t, ctx)
 				assert.Equal(t, want.Username, got.Username)
 			})
 			w := httptest.NewRecorder()

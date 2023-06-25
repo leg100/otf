@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
@@ -18,8 +17,7 @@ func TestOrganization(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		svc, defaultOrg, ctx := setup(t, nil)
-		user, err := auth.UserFromContext(ctx)
-		require.NoError(t, err)
+		user := userFromContext(t, ctx)
 		org, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})

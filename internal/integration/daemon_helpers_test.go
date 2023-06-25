@@ -441,8 +441,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	t.Helper()
 
 	// Create user token expressly for the terraform cli
-	user, err := auth.UserFromContext(ctx)
-	require.NoError(t, err)
+	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
 	cmdargs := []string{command, "-no-color"}
@@ -461,15 +460,14 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	t.Helper()
 
 	// Create user token expressly for the otf cli
-	user, err := auth.UserFromContext(ctx)
-	require.NoError(t, err)
+	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
 	cmdargs := []string{"--address", s.Hostname(), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer
-	err = (&cli.CLI{}).Run(ctx, cmdargs, &buf)
+	err := (&cli.CLI{}).Run(ctx, cmdargs, &buf)
 	require.NoError(t, err)
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())

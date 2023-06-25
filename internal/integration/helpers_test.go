@@ -1,11 +1,13 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/leg100/otf/internal/auth"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,4 +58,10 @@ func createRootModule(t *testing.T, tfconfig string) string {
 	require.NoError(t, err)
 
 	return root
+}
+
+func userFromContext(t *testing.T, ctx context.Context) *auth.User {
+	user, err := auth.UserFromContext(ctx)
+	require.NoError(t, err)
+	return user
 }
