@@ -5,7 +5,6 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/run"
-	"github.com/stretchr/testify/require"
 )
 
 // TestStartRunUI tests starting a run via the Web UI before confirming and
@@ -13,24 +12,17 @@ import (
 func TestStartRunUI(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
+	svc, _, ctx := setup(t, nil)
 
-	user, ctx := svc.createUserCtx(t, ctx)
 	ws := svc.createWorkspace(t, ctx, nil)
 	_ = svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
 
 	// now we have a config version, start a run with the plan-and-apply
 	// operation
-	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
-		startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation),
-	})
-	require.NoError(t, err)
+	browser.Run(t, ctx, startRunTasks(t, svc.Hostname(), ws.Organization, ws.Name, run.PlanAndApplyOperation))
 
 	// now destroy resources with the destroy-all operation
-	okDialog(t, browser)
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
 		screenshot(t, "workspace_page"),
@@ -67,5 +59,4 @@ func TestStartRunUI(t *testing.T) {
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 }

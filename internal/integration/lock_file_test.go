@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,17 +17,10 @@ import (
 func TestLockFile(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	// in a browser, create workspace
-	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
-		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
-	})
-	require.NoError(t, err)
+	browser.Run(t, ctx, createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"))
 
 	// create root module with only a variable and no resources - this should
 	// result in *no* lock file being created.
@@ -49,7 +41,7 @@ variable "foo" {
 	default = "bar"
 }
 `, svc.Hostname(), org.Name, "my-test-workspace"))
-	err = os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// verify terraform init and plan run without error

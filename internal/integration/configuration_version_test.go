@@ -1,12 +1,10 @@
 package integration
 
 import (
-	"context"
 	"os"
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,11 +13,8 @@ import (
 func TestConfigurationVersion(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
 		_, err := svc.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
@@ -27,7 +22,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("upload config", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 		tarball, err := os.ReadFile("./testdata/tarball.tar.gz")
 		require.NoError(t, err)
@@ -48,7 +43,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		got, err := svc.GetConfigurationVersion(ctx, want.ID)
@@ -57,7 +52,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("get latest", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		got, err := svc.GetLatestConfigurationVersion(ctx, want.WorkspaceID)
@@ -66,7 +61,7 @@ func TestConfigurationVersion(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		cv1 := svc.createConfigurationVersion(t, ctx, ws, nil)
 		cv2 := svc.createConfigurationVersion(t, ctx, ws, nil)

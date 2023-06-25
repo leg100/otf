@@ -12,35 +12,35 @@ import (
 const (
 	defaultSessionExpiry = 24 * time.Hour
 
-	userSessionKind kind = "user_session"
-	runTokenKind    kind = "run_token"
-	agentTokenKind  kind = "agent_token"
-	userTokenKind   kind = "user_token"
+	userSessionKind Kind = "user_session"
+	runTokenKind    Kind = "run_token"
+	agentTokenKind  Kind = "agent_token"
+	userTokenKind   Kind = "user_token"
 )
 
 type (
-	// the kind of authentication token: user session, user token, agent token, etc
-	kind string
+	// the Kind of authentication token: user session, user token, agent token, etc
+	Kind string
 
-	newTokenOptions struct {
+	NewTokenOptions struct {
 		key     jwk.Key
-		kind    kind
-		subject string
-		expiry  *time.Time
-		claims  map[string]string
+		Kind    Kind
+		Subject string
+		Expiry  *time.Time
+		Claims  map[string]string
 	}
 )
 
-func newToken(opts newTokenOptions) ([]byte, error) {
+func NewToken(opts NewTokenOptions) ([]byte, error) {
 	builder := jwt.NewBuilder().
-		Subject(opts.subject).
-		Claim("kind", opts.kind).
+		Subject(opts.Subject).
+		Claim("kind", opts.Kind).
 		IssuedAt(time.Now())
-	for k, v := range opts.claims {
+	for k, v := range opts.Claims {
 		builder = builder.Claim(k, v)
 	}
-	if opts.expiry != nil {
-		builder = builder.Expiration(*opts.expiry)
+	if opts.Expiry != nil {
+		builder = builder.Expiration(*opts.Expiry)
 	}
 	token, err := builder.Build()
 	if err != nil {

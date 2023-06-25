@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
@@ -15,11 +14,8 @@ import (
 func TestLogs(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("upload chunk", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		err := svc.PutChunk(ctx, internal.PutChunkOptions{
@@ -31,7 +27,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("reject empty chunk", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		err := svc.PutChunk(ctx, internal.PutChunkOptions{
@@ -42,7 +38,7 @@ func TestLogs(t *testing.T) {
 	})
 
 	t.Run("get chunk", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		run := svc.createRun(t, ctx, nil, nil)
 
 		err := svc.PutChunk(ctx, internal.PutChunkOptions{
@@ -131,17 +127,15 @@ func TestClusterLogs(t *testing.T) {
 
 	// simulate a cluster of two otfd nodes
 	connstr := sql.NewTestDB(t)
-	local := setup(t, &config{Config: daemon.Config{
+	local, _, ctx := setup(t, &config{Config: daemon.Config{
 		Database:         connstr,
 		DisableScheduler: true, // don't start run
 	}})
-	remote := setup(t, &config{Config: daemon.Config{
+	remote, _, _ := setup(t, &config{Config: daemon.Config{
 		Database:         connstr,
 		DisableScheduler: true, // don't start run
 	}})
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(func() { cancel() })
 

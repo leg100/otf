@@ -10,13 +10,13 @@ import (
 func TestUserCLI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
+	daemon, _, _ := setup(t, nil)
 
 	// create user via cli
-	out := daemon.otfcli(t, ctx, "users", "new", "bobby")
+	out := daemon.otfcli(t, adminCtx, "users", "new", "bobby")
 	require.Equal(t, "Successfully created user bobby\n", out)
 
 	// delete user via cli
-	out = daemon.otfcli(t, ctx, "users", "delete", "bobby")
+	out = daemon.otfcli(t, adminCtx, "users", "delete", "bobby")
 	require.Equal(t, "Successfully deleted user bobby\n", out)
 }

@@ -140,7 +140,7 @@ func (m *middleware) validateBearer(ctx context.Context, bearer string) (interna
 	if !ok {
 		return nil, fmt.Errorf("missing claim: kind")
 	}
-	switch kind(kindClaim.(string)) {
+	switch Kind(kindClaim.(string)) {
 	case agentTokenKind:
 		return m.GetAgentToken(ctx, parsed.Subject())
 	case userTokenKind:

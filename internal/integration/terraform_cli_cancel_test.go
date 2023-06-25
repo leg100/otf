@@ -19,9 +19,7 @@ import (
 func TestIntegration_TerraformCLICancel(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	// Canceling a run is not straight-forward, because to do so reliably the
 	// terraform plan should be interrupted precisely when it is in mid-flow,
@@ -44,7 +42,7 @@ data "http" "wait" {
 	svc.tfcli(t, ctx, "init", config)
 
 	// Invoke terraform plan
-	_, token := svc.createToken(t, ctx, user)
+	_, token := svc.createToken(t, ctx, nil)
 	e, tferr, err := expect.SpawnWithArgs(
 		[]string{"terraform", "-chdir=" + config, "plan", "-no-color"},
 		time.Minute,

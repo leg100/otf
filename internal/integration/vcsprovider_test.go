@@ -1,12 +1,9 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,12 +12,8 @@ import (
 func TestVCSProvider(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 
 		_, err := svc.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 			Organization: org.Name,
@@ -32,7 +25,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createVCSProvider(t, ctx, nil)
 
 		got, err := svc.GetVCSProvider(ctx, want.ID)
@@ -42,8 +35,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		provider1 := svc.createVCSProvider(t, ctx, org)
 		provider2 := svc.createVCSProvider(t, ctx, org)
 		provider3 := svc.createVCSProvider(t, ctx, org)
@@ -57,7 +49,7 @@ func TestVCSProvider(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createVCSProvider(t, ctx, nil)
 
 		got, err := svc.DeleteVCSProvider(ctx, want.ID)

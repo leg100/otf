@@ -18,7 +18,7 @@ import (
 func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
+	svc, _, ctx := setup(t, nil)
 	sv := svc.createStateVersion(t, ctx, nil)
 	_, token := svc.createToken(t, ctx, nil)
 

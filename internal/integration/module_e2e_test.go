@@ -21,18 +21,14 @@ func TestModuleE2E(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.
 	repo := cloud.NewTestModuleRepo("aws", "mod")
-	svc := setup(t, nil,
+	svc, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
 
 	var moduleURL string // captures url for module page
-	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
+	browser.Run(t, ctx, chromedp.Tasks{
 		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 		// publish module
 		chromedp.Tasks{
@@ -61,7 +57,6 @@ func TestModuleE2E(t *testing.T) {
 			chromedp.Location(&moduleURL),
 		},
 	})
-	require.NoError(t, err)
 
 	// Now we test the webhook functionality by sending an event to the daemon
 	// (which would usually be triggered by a git push to github). The event
@@ -73,20 +68,18 @@ func TestModuleE2E(t *testing.T) {
 	svc.SendEvent(t, github.PushEvent, []byte(push))
 
 	// v1.0.0 should appear as latest module on workspace
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to module
 		chromedp.Navigate(moduleURL),
 		screenshot(t),
 		reloadUntilVisible(`//select[@id="version"]/option[@selected]`),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 
 	// Now run terraform with some config that sources the module. First we need
 	// a workspace...
 	workspaceName := "module-test"
-	err = chromedp.Run(browser, createWorkspace(t, svc.Hostname(), org.Name, workspaceName))
-	require.NoError(t, err)
+	browser.Run(t, ctx, createWorkspace(t, svc.Hostname(), org.Name, workspaceName))
 
 	// generate some terraform config that sources our module
 	root := newRootModule(t, svc.Hostname(), org.Name, workspaceName)
@@ -96,7 +89,7 @@ module "mod" {
   version = "1.0.0"
 }
 `, svc.Hostname(), org.Name, "mod", "aws")
-	err = os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply

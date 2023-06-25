@@ -7,7 +7,6 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestSiteAdminUI demonstrates signing into the web app as a site admin, using
@@ -15,16 +14,14 @@ import (
 func TestSiteAdminUI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, &config{Config: daemon.Config{
+	daemon, _, _ := setup(t, &config{Config: daemon.Config{
 		SiteToken: "abc123",
 	}})
 
 	var orgLocation string
 
-	browser := createBrowserCtx(t)
 	// Click OK on any browser javascript dialog boxes that pop up
-	okDialog(t, browser)
-	err := chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, nil, chromedp.Tasks{
 		// login as site admin
 		chromedp.Navigate("https://" + daemon.Hostname() + "/login"),
 		screenshot(t, "no_authenticators_site_admin_login"),
@@ -67,7 +64,6 @@ func TestSiteAdminUI(t *testing.T) {
 		screenshot(t),
 		matchText(t, ".flash-success", "deleted organization: newly-named-org"),
 	})
-	require.NoError(t, err)
 
 	assert.Equal(t, organizationURL(daemon.Hostname(), "my-new-org"), orgLocation)
 }

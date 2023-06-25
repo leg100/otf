@@ -7,24 +7,20 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/run"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_RetryRunUI demonstrates retrying a run via the UI
 func TestIntegration_RetryRunUI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	user, ctx := daemon.createUserCtx(t, ctx)
+	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)
 	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, &configversion.ConfigurationVersionCreateOptions{
 		Speculative: internal.Bool(true),
 	})
-	sub := daemon.createSubscriber(t, ctx)
-
 	// create a run and wait for it reach planned-and-finished state
 	r := daemon.createRun(t, ctx, ws, cv)
-	for event := range sub {
+	for event := range daemon.sub {
 		if r, ok := event.Payload.(*run.Run); ok {
 			if r.Status == internal.RunErrored {
 				t.Fatal("run unexpectedly errored")
@@ -36,9 +32,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 	}
 
 	// open browser, go to run, and click retry
-	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, daemon.Hostname(), user.Username, daemon.Secret),
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(runURL(daemon.Hostname(), r.ID)),
 		// run should be in planned and finished state
 		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`, chromedp.BySearch),
@@ -55,5 +49,4 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 		chromedp.WaitReady(`//button[text()='retry run']`, chromedp.BySearch),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 }

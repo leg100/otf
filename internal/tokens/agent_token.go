@@ -55,11 +55,11 @@ func NewAgentToken(opts NewAgentTokenOptions) (*AgentToken, []byte, error) {
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	}
-	token, err := newToken(newTokenOptions{
+	token, err := NewToken(NewTokenOptions{
 		key:     opts.key,
-		subject: at.ID,
-		kind:    agentTokenKind,
-		claims: map[string]string{
+		Subject: at.ID,
+		Kind:    agentTokenKind,
+		Claims: map[string]string{
 			"organization": opts.Organization,
 		},
 	})

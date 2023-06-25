@@ -84,12 +84,12 @@ func (a *service) CreateRunToken(ctx context.Context, opts CreateRunTokenOptions
 		expiry = *opts.Expiry
 	}
 
-	token, err := newToken(newTokenOptions{
+	token, err := NewToken(NewTokenOptions{
 		key:     a.key,
-		subject: *opts.RunID,
-		kind:    runTokenKind,
-		expiry:  &expiry,
-		claims: map[string]string{
+		Subject: *opts.RunID,
+		Kind:    runTokenKind,
+		Expiry:  &expiry,
+		Claims: map[string]string{
 			"organization": *opts.Organization,
 		},
 	})

@@ -191,8 +191,8 @@ comma. For example:
 otfd --site-admins bob@example.com,alice@example.com
 ```
 
-The users must exist on the system. Any users that were previously promoted and
-are no longer specified with this flag are demoted.
+Any users that were previously promoted and are no longer specified with this
+flag are demoted.
 
 ## `--site-token`
 

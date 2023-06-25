@@ -13,12 +13,9 @@ import (
 
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,27 +25,19 @@ var (
 	screenshotMutex  sync.Mutex
 )
 
-// newSession adds a user session to the browser cookie jar
-func newSession(t *testing.T, ctx context.Context, hostname, username string, secret []byte) chromedp.Action {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		token := tokens.NewTestSessionJWT(t, username, secret, time.Hour)
-		return network.SetCookie("session", token).WithDomain(hostname).Do(ctx)
-	})
-}
-
 // createWorkspace creates a workspace via the UI
 func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(organizationURL(hostname, org)),
-		screenshot(t),
-		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
-		screenshot(t),
+		chromedp.WaitReady(`body`),
+		chromedp.Click("#menu-item-workspaces > a"),
+		chromedp.WaitReady(`body`),
 		chromedp.Click("#new-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
-		screenshot(t),
+		chromedp.WaitReady(`body`),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
 		input.InsertText(name),
-		chromedp.Click("#create-workspace-button"),
-		screenshot(t),
+		chromedp.Click("#create-workspace-button", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
 		matchText(t, ".flash-success", "created workspace: "+name),
 	}
 }
@@ -306,21 +295,6 @@ func reloadUntilVisible(sel string) chromedp.Action {
 			if err != nil {
 				return err
 			}
-		}
-	})
-}
-
-// okDialog - Click OK on any browser javascript dialog boxes that pop up
-func okDialog(t *testing.T, ctx context.Context) {
-	t.Helper()
-
-	chromedp.ListenTarget(ctx, func(ev any) {
-		switch ev.(type) {
-		case *page.EventJavascriptDialogOpening:
-			go func() {
-				err := chromedp.Run(ctx, page.HandleJavaScriptDialog(true))
-				require.NoError(t, err)
-			}()
 		}
 	})
 }

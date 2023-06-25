@@ -25,6 +25,13 @@ type (
 		SessionRemember int                `json:"session_remember"`
 		SessionTimeout  int                `json:"session_timeout"`
 	}
+
+	// dbListOptions represents the options for listing organizations via the
+	// database.
+	dbListOptions struct {
+		names []string // filter organizations by name if non-nil
+		internal.ListOptions
+	}
 )
 
 // GetByID implements pubsub.Getter
@@ -66,23 +73,19 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 	return org, err
 }
 
-func (db *pgdb) list(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
-	// optionally filter by organization name
-	var names []string
-	if opts.Names != nil {
-		names = opts.Names
-	} else {
-		names = []string{"%"} // return all organizations
+func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*OrganizationList, error) {
+	if opts.names == nil {
+		opts.names = []string{"%"} // return all organizations
 	}
 
 	batch := &pgx.Batch{}
 
 	db.FindOrganizationsBatch(batch, pggen.FindOrganizationsParams{
-		Names:  names,
+		Names:  opts.names,
 		Limit:  opts.GetLimit(),
 		Offset: opts.GetOffset(),
 	})
-	db.CountOrganizationsBatch(batch, names)
+	db.CountOrganizationsBatch(batch, opts.names)
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 

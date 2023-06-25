@@ -20,6 +20,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
 
 	t.Parallel()
+	ctx := context.Background()
 
 	client, err := pubsub.NewClient(ctx, "abc123")
 	require.NoError(t, err)
@@ -40,7 +41,7 @@ func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 		})
 	}()
 
-	daemon := setup(t, nil)
+	daemon, _, ctx := setup(t, nil)
 
 	ws := daemon.createWorkspace(t, ctx, nil)
 	_, err = daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{

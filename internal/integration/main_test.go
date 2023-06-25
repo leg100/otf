@@ -1,13 +1,43 @@
 package integration
 
 import (
+	"context"
+	"crypto/rand"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
+
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/testbrowser"
+)
+
+var (
+	// a shared secret which signs the shared user session
+	sharedSecret []byte
+
+	// shared environment variables for individual tests to use
+	envs []string
+
+	// Context conferring site admin privileges
+	adminCtx = internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
+
+	// pool of web browsers
+	browser *testbrowser.Pool
 )
 
 func TestMain(m *testing.M) {
+	code, err := doMain(m)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to setup integration tests: %s\n", err.Error())
+		os.Exit(1)
+	}
+	os.Exit(code)
+}
+
+func doMain(m *testing.M) (int, error) {
 	// The otfd daemon spawned in an integration test uses a self-signed cert.
 	// The following environment variable instructs any Go program spawned in a
 	// test, e.g. the terraform CLI, the otf agent, etc, to trust the
@@ -15,8 +45,13 @@ func TestMain(m *testing.M) {
 	// * Assign the *absolute* path to the SSL cert because Go program's working
 	// directory may differ from the integration test directory.
 	wd, err := os.Getwd()
-	panicIfError(err)
-	unset := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
+	if err != nil {
+		return 0, fmt.Errorf("retrieving working directory: %w", err)
+	}
+	unset, err := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
+	if err != nil {
+		return 0, err
+	}
 	defer unset()
 
 	// Create dedicated home directory for duration of integration tests.
@@ -24,11 +59,14 @@ func TestMain(m *testing.M) {
 	// in the home directory and we do not want to pollute the user's home
 	// directory.
 	homeDir, err := os.MkdirTemp("", "")
-	panicIfError(err)
-	defer func() {
-		os.RemoveAll(homeDir)
-	}()
-	unset = setenv("HOME", homeDir)
+	if err != nil {
+		return 0, fmt.Errorf("making dedicated home directory: %w", err)
+	}
+	defer os.RemoveAll(homeDir)
+	unset, err = setenv("HOME", homeDir)
+	if err != nil {
+		return 0, err
+	}
 	defer unset()
 
 	// If HTTPS_PROXY has been defined then add it to the authoritative list of
@@ -40,7 +78,10 @@ func TestMain(m *testing.M) {
 	}
 
 	// Instruct terraform CLI to skip checks for new versions.
-	unset = setenv("CHECKPOINT_DISABLE", "true")
+	unset, err = setenv("CHECKPOINT_DISABLE", "true")
+	if err != nil {
+		return 0, err
+	}
 	defer unset()
 
 	// Ensure ~/.terraform.d exists - 'terraform login' has a bug whereby it tries to
@@ -50,25 +91,35 @@ func TestMain(m *testing.M) {
 	// creating that directory first.
 	os.MkdirAll(path.Join(os.Getenv("HOME"), ".terraform.d"), 0o755)
 
-	os.Exit(m.Run())
-}
-
-func panicIfError(err error) {
+	// Create a secret with which to (1) create user session tokens and (2)
+	// for assignment to daemons so that the token passes verification
+	sharedSecret = make([]byte, 16)
+	_, err = rand.Read(sharedSecret)
 	if err != nil {
-		panic(err.Error())
+		return 0, err
 	}
+
+	// Setup pool of browsers
+	pool, cleanup, err := testbrowser.NewPool(sharedSecret)
+	if err != nil {
+		return 0, err
+	}
+	defer cleanup()
+	browser = pool
+
+	return m.Run(), nil
 }
 
 // setenv sets an environment variable and returns a func to unset the variable.
 // The environment variable is added to a shared slice, envs, for individual
 // tests to use.
-func setenv(name, value string) func() {
+func setenv(name, value string) (func(), error) {
 	err := os.Setenv(name, value)
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("setting %s=%s: %w", name, value, err)
 	}
 	envs = append(envs, name+"="+value)
 	return func() {
 		os.Unsetenv(name)
-	}
+	}, nil
 }

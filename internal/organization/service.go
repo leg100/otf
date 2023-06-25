@@ -103,10 +103,9 @@ func (s *service) ListOrganizations(ctx context.Context, opts OrganizationListOp
 		return nil, err
 	}
 	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
-		return s.db.list(ctx, opts)
+		return s.db.list(ctx, dbListOptions{ListOptions: opts.ListOptions})
 	}
-	opts.Names = subject.Organizations()
-	return s.db.list(ctx, opts)
+	return s.db.list(ctx, dbListOptions{ListOptions: opts.ListOptions, names: subject.Organizations()})
 }
 
 func (s *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {

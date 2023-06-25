@@ -1,11 +1,9 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
@@ -20,11 +18,8 @@ import (
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 
 		_, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
@@ -37,7 +32,7 @@ func TestRun(t *testing.T) {
 	t.Run("create run using config from repo", func(t *testing.T) {
 		// setup daemon along with fake github repo
 		repo := cloud.NewTestRepo()
-		daemon := setup(t, nil,
+		daemon, _, ctx := setup(t, nil,
 			github.WithRepo(repo),
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		)
@@ -60,7 +55,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		svc := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		run := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.EnqueuePlan(ctx, run.ID)
@@ -73,7 +68,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("cancel run", func(t *testing.T) {
-		svc := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		run := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.Cancel(ctx, run.ID)
@@ -89,7 +84,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		want := svc.createRun(t, ctx, nil, nil)
 
 		got, err := svc.GetRun(ctx, want.ID)
@@ -99,7 +94,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
+		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 
 		ws1 := svc.createWorkspace(t, ctx, nil)
 		ws2 := svc.createWorkspace(t, ctx, nil)
@@ -196,7 +191,9 @@ func TestRun(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := svc.ListRuns(ctx, tt.opts)
+				// call endpoint using admin to avoid authz errors (particularly
+				// when listing runs across a site).
+				got, err := svc.ListRuns(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, got)
