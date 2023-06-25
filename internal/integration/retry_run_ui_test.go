@@ -44,7 +44,7 @@ func TestIntegration_RetryRunUI(t *testing.T) {
 		chromedp.WaitReady(`body`),
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
-		chromedp.WaitReady(`#plan-status.phase-status-finished`),
+		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
 		// confirm retry button re-appears
 		chromedp.WaitReady(`//button[text()='retry run']`),
 		screenshot(t),

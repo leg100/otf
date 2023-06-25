@@ -23,7 +23,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		chromedp.Click(`//button[@id='new-user-token-button']`, chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
 		// enter description for new token and submit
-		chromedp.Focus("input#description", chromedp.NodeVisible),
+		chromedp.Focus("input#description", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("my new token"),
 		screenshot(t, "user_token_enter_description"),
 		chromedp.Click(`//button[text()='Create token']`, chromedp.NodeVisible),

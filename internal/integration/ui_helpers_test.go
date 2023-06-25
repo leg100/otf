@@ -169,7 +169,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 			return nil
 		}),
 		screenshot(t, "workspace_permissions"),
-		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
+		chromedp.Click("#permissions-add-button", chromedp.NodeVisible, chromedp.ByQuery),
 		screenshot(t),
 		matchText(t, ".flash-success", "updated workspace permissions"),
 	}
@@ -181,19 +181,19 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 		chromedp.Navigate(organizationURL(hostname, org)),
 		screenshot(t, "organization_main_menu"),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible, chromedp.ByQuery),
 		screenshot(t, "vcs_providers_list"),
 		// click 'New Github VCS Provider' button
 		chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
 		screenshot(t, "new_github_vcs_provider_form"),
 		// enter fake github token and name
-		chromedp.Focus("input#token", chromedp.NodeVisible),
+		chromedp.Focus("input#token", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("fake-github-personal-token"),
-		chromedp.Focus("input#name"),
+		chromedp.Focus("input#name", chromedp.ByQuery),
 		input.InsertText(name),
 		screenshot(t),
 		// submit form to create provider
-		chromedp.Submit("input#token"),
+		chromedp.Submit("input#token", chromedp.ByQuery),
 		screenshot(t),
 		matchText(t, ".flash-success", "created provider: github"),
 	}
@@ -228,7 +228,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),
-		chromedp.WaitReady(`#apply-status.phase-status-finished`),
+		chromedp.WaitReady(`#apply-status.phase-status-finished`, chromedp.ByQuery),
 		// confirm run ends in applied state
 		chromedp.WaitReady(`//*[@class='status status-applied']`),
 		// run widget should show apply summary

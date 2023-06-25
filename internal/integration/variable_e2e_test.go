@@ -31,15 +31,15 @@ func TestVariableE2E(t *testing.T) {
 			chromedp.Click(`//button[text()='Add variable']`, chromedp.NodeVisible),
 			screenshot(t),
 			// enter key
-			chromedp.Focus("input#key", chromedp.NodeVisible),
+			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("foo"),
 			screenshot(t),
 			// enter value
-			chromedp.Focus("textarea#value", chromedp.NodeVisible),
+			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("bar"),
 			screenshot(t),
 			// select terraform variable category
-			chromedp.Click("input#terraform", chromedp.NodeVisible),
+			chromedp.Click("input#terraform", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
 			// submit form
 			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
@@ -98,7 +98,7 @@ output "foo" {
 			chromedp.Click(`//a[text()='foo']`, chromedp.NodeVisible),
 			screenshot(t),
 			// update value
-			chromedp.Focus("textarea#value", chromedp.NodeVisible),
+			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("topsecret"),
 			screenshot(t, "variables_entering_top_secret"),
 			// submit form

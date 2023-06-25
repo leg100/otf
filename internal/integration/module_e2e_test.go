@@ -36,7 +36,7 @@ func TestModuleE2E(t *testing.T) {
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// go to modules
-			chromedp.Click("#modules > a", chromedp.NodeVisible),
+			chromedp.Click("#modules > a", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t, "modules_list"),
 			// click publish button
 			chromedp.Click(`//button[text()='Publish']`, chromedp.NodeVisible),

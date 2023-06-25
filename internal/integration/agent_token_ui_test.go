@@ -23,13 +23,13 @@ func TestAgentTokenUI(t *testing.T) {
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// go to list of agent tokens
-			chromedp.Click("#agent_tokens > a", chromedp.NodeVisible),
+			chromedp.Click("#agent_tokens > a", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
 			// go to new agent token page
 			chromedp.Click(`//button[text()='New Agent Token']`, chromedp.NodeVisible),
 			screenshot(t),
 			// enter description for new agent token
-			chromedp.Focus("input#description", chromedp.NodeVisible),
+			chromedp.Focus("input#description", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("my-new-agent-token"),
 			screenshot(t),
 			// submit form
