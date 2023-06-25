@@ -1,6 +1,8 @@
 services:
   postgres:
     image: postgres:14-alpine
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -25,7 +27,7 @@ services:
   pubsub:
     image: google/cloud-sdk:emulators
     ports:
-      - "8087:8085"
+      - "8085:8085"
     stop_signal: SIGINT
     command: gcloud beta emulators pubsub start --project=abc123 --host-port=0.0.0.0:8085
   otfd:
