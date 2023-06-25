@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf/internal"
@@ -14,9 +13,6 @@ import (
 
 func TestUser(t *testing.T) {
 	t.Parallel()
-
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	// Tests the --site-admins functionality, promoting a number of users to the
 	// role of site admin when starting the daemon.
@@ -44,6 +40,7 @@ func TestUser(t *testing.T) {
 			}})
 			areSiteAdmins(false)
 		})
+		t.Log("done")
 	})
 
 	// Create a user and a user token and test retrieving the user using their ID, username and
@@ -80,7 +77,8 @@ func TestUser(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := svc.GetUser(ctx, tt.spec)
+				// only admin can retrieve user info
+				got, err := svc.GetUser(adminCtx, tt.spec)
 				require.NoError(t, err)
 
 				assert.Equal(t, got.ID, user.ID)
@@ -100,16 +98,18 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("list users", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
-		user1 := svc.createUser(t)
+		svc, _, ctx := setup(t, nil)
+		user1, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
 		user2 := svc.createUser(t)
 		user3 := svc.createUser(t)
-		admin := svc.getUser(t, ctx, auth.SiteAdminUsername)
+		// only admin can retrieve its own user account
+		admin := svc.getUser(t, adminCtx, auth.SiteAdminUsername)
 
 		got, err := svc.ListUsers(ctx)
 		require.NoError(t, err)
 
-		assert.Equal(t, 4, len(got), got)
+		assert.Equal(t, 4, len(got))
 		assert.Contains(t, got, user1)
 		assert.Contains(t, got, user2)
 		assert.Contains(t, got, user3)
@@ -123,11 +123,11 @@ func TestUser(t *testing.T) {
 	// but performing de-duplication too so that users are not listed more than
 	// once.
 	t.Run("list organization users", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
-		// create owners team consisting of one owner
-		owner, userCtx := svc.createUserCtx(t)
-		org := svc.createOrganization(t, userCtx)
-		owner = svc.getUser(t, ctx, owner.Username) // refresh user to update team membership
+		// automatically creates owners team consisting of one owner
+		svc, org, ctx := setup(t, nil)
+		owner, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
+		owner = svc.getUser(t, adminCtx, owner.Username) // refresh user to update team membership
 		owners := svc.getTeam(t, ctx, org.Name, "owners")
 
 		// create developers team
@@ -153,15 +153,16 @@ func TestUser(t *testing.T) {
 		svc, _, _ := setup(t, nil)
 		user := svc.createUser(t)
 
-		err := svc.DeleteUser(ctx, user.Username)
+		// only admin can delete user
+		err := svc.DeleteUser(adminCtx, user.Username)
 		require.NoError(t, err)
 
-		_, err = svc.GetUser(ctx, auth.UserSpec{Username: internal.String(user.Username)})
+		_, err = svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String(user.Username)})
 		assert.Equal(t, err, internal.ErrResourceNotFound)
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t)
@@ -172,14 +173,14 @@ func TestUser(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String(user.Username)})
+		got, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String(user.Username)})
 		require.NoError(t, err)
 
 		assert.Contains(t, got.Teams, team)
 	})
 
 	t.Run("remove team membership", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		org := svc.createOrganization(t, ctx)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t, auth.WithTeams(team))
@@ -190,22 +191,23 @@ func TestUser(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		got, err := svc.GetUser(ctx, auth.UserSpec{Username: internal.String(user.Username)})
+		got, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String(user.Username)})
 		require.NoError(t, err)
 
 		assert.NotContains(t, got.Teams, team)
 	})
 
 	t.Run("cannot remove last owner", func(t *testing.T) {
-		svc, _, _ := setup(t, nil)
-		// automatically creates owners team with site admin as owner
-		org := svc.createOrganization(t, ctx)
+		// automatically creates org and owners team
+		svc, org, ctx := setup(t, nil)
+		owner, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
 
 		owners, err := svc.GetTeam(ctx, org.Name, "owners")
 		require.NoError(t, err)
 
 		err = svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
-			Username: auth.SiteAdminUsername,
+			Username: owner.Username,
 			TeamID:   owners.ID,
 		})
 		assert.Equal(t, auth.ErrCannotDeleteOnlyOwner, err)

@@ -17,8 +17,9 @@ func TestOrganization(t *testing.T) {
 	t.Parallel()
 
 	t.Run("create", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
+		svc, defaultOrg, ctx := setup(t, nil)
+		user, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
 		org, err := svc.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})
@@ -39,30 +40,28 @@ func TestOrganization(t *testing.T) {
 				members, err := svc.ListTeamMembers(ctx, owners.ID)
 				require.NoError(t, err)
 				if assert.Equal(t, 1, len(members)) {
-					assert.Equal(t, auth.SiteAdminUsername, members[0].Username)
+					assert.Equal(t, user.Username, members[0].Username)
 				}
 			})
 		})
-
-		t.Run("receive event", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		t.Run("receive events", func(t *testing.T) {
+			assert.Equal(t, pubsub.NewCreatedEvent(defaultOrg), <-svc.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
 		})
 	})
 
 	t.Run("update name", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		daemon, org, ctx := setup(t, nil)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 
 		want := uuid.NewString()
-		updated, err := svc.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
+		updated, err := daemon.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
 			Name: internal.String(want),
 		})
 		require.NoError(t, err)
 
 		assert.Equal(t, want, updated.Name)
-		assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-sub)
+		assert.Equal(t, pubsub.NewUpdatedEvent(updated), <-daemon.sub)
 	})
 
 	t.Run("list with pagination", func(t *testing.T) {
@@ -92,13 +91,12 @@ func TestOrganization(t *testing.T) {
 		})
 	})
 
-	t.Run("filter list by names", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		want1 := svc.createOrganization(t, ctx)
+	t.Run("list user's organizations", func(t *testing.T) {
+		svc, want1, ctx := setup(t, nil)
 		want2 := svc.createOrganization(t, ctx)
-		_ = svc.createOrganization(t, ctx)
+		_ = svc.createOrganization(t, adminCtx) // org not belonging to user
 
-		got, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{Names: []string{want1.Name, want2.Name}})
+		got, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(got.Items))
@@ -129,23 +127,23 @@ func TestOrganization(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		daemon, org, ctx := setup(t, nil)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 
-		err := svc.DeleteOrganization(ctx, org.Name)
+		err := daemon.DeleteOrganization(ctx, org.Name)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&organization.Organization{ID: org.ID}), <-daemon.sub)
 
-		_, err = svc.GetOrganization(ctx, org.Name)
+		_, err = daemon.GetOrganization(ctx, org.Name)
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("delete non-existent org", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 
-		err := svc.DeleteOrganization(ctx, "does-not-exist")
+		// delete using site admin otherwise a not authorized error is returned
+		// to normal users
+		err := svc.DeleteOrganization(adminCtx, "does-not-exist")
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 }

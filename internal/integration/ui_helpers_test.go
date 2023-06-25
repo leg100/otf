@@ -13,13 +13,9 @@ import (
 
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
-	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
-	"github.com/leg100/otf/internal/tokens"
-	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,17 +24,6 @@ var (
 	screenshotRecord map[string]int
 	screenshotMutex  sync.Mutex
 )
-
-// newSession adds a user session to the browser cookie jar
-func newSession(t *testing.T, username string) chromedp.Action {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		key, err := jwk.FromRaw(sharedSecret)
-		require.NoError(t, err)
-		token, err := tokens.NewSessionToken(key, username, internal.CurrentTimestamp().Add(time.Hour))
-		require.NoError(t, err)
-		return network.SetCookie("session", token).Do(ctx)
-	})
-}
 
 // createWorkspace creates a workspace via the UI
 func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {

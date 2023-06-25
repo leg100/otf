@@ -55,9 +55,7 @@ func TestIntegration_PlanPermission(t *testing.T) {
 	}
 
 	// Now demonstrate engineer can start a plan via the UI.
-	browser := createBrowserCtx(t)
-	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, engineer.Username),
+	browser.Run(t, engineerCtx, chromedp.Tasks{
 		// go to workspace page
 		chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
@@ -77,5 +75,4 @@ func TestIntegration_PlanPermission(t *testing.T) {
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	})
-	require.NoError(t, err)
 }

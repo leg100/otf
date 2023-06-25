@@ -15,10 +15,6 @@ import (
 )
 
 var (
-	// a user with this username is created at the very beginning and the
-	// shared browser is seeded with a session belonging to this user
-	sharedUsername = "mr-tester"
-
 	// a shared secret which signs the shared user session
 	sharedSecret []byte
 

@@ -64,8 +64,10 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 
 	// Terminate all provisioned browsers and then terminate their allocator
 	cleanup := func() {
-		for b := range p.pool {
-			b.cancel()
+		for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+			if b := <-p.pool; b != nil {
+				b.cancel()
+			}
 		}
 		cancelAllocator()
 	}
@@ -78,20 +80,25 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 	if b == nil {
 		b = newBrowser(t, p.allocator)
 	}
-	t.Cleanup(func() { p.pool <- b })
+	t.Cleanup(func() {
+		p.pool <- b
+	})
 
-	// Always clear cookies first in case a previous test has left some behind
-	network.ClearBrowserCookies().Do(b.ctx)
+	chromedp.Run(b.ctx, chromedp.ActionFunc(func(c context.Context) error {
+		// Always clear cookies first in case a previous test has left some behind
+		network.ClearBrowserCookies().Do(b.ctx)
 
-	if user != nil {
-		// Seed a session cookie for the given user context
-		user, err := auth.UserFromContext(user)
-		require.NoError(t, err)
-		token, err := tokens.NewSessionToken(p.key, user.Username, internal.CurrentTimestamp().Add(time.Hour))
-		require.NoError(t, err)
-		err = network.SetCookie("session", token).WithDomain("127.0.0.1").Do(b.ctx)
-		require.NoError(t, err)
-	}
+		if user != nil {
+			// Seed a session cookie for the given user context
+			user, err := auth.UserFromContext(user)
+			require.NoError(t, err)
+			token, err := tokens.NewSessionToken(p.key, user.Username, internal.CurrentTimestamp().Add(time.Hour))
+			require.NoError(t, err)
+			err = network.SetCookie("session", token).WithDomain("127.0.0.1").Do(c)
+			require.NoError(t, err)
+		}
+		return nil
+	}))
 
 	err := chromedp.Run(b.ctx, actions...)
 	require.NoError(t, err)

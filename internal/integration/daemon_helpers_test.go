@@ -33,16 +33,20 @@ import (
 )
 
 type (
-	// daemon for integration tests
+	// daemon for integration test
 	testDaemon struct {
 		*daemon.Daemon
-
+		// stub github server for test to use.
 		*github.TestServer
+		// event subscription for test to use.
+		sub <-chan pubsub.Event
 	}
 
 	// configures the daemon for integration tests
 	config struct {
 		daemon.Config
+		// skip creation of default organization
+		skipDefaultOrganization bool
 	}
 )
 
@@ -109,17 +113,30 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
+	sub, err := d.Subscribe(ctx, "")
+	require.NoError(t, err)
+
 	daemon := &testDaemon{
 		Daemon:     d,
 		TestServer: githubServer,
+		sub:        sub,
 	}
 
-	// now daemon is running, create user and organization, and a user context.
-	sharedUser, err := daemon.CreateUser(ctx, sharedUsername)
-	require.NoError(t, err, "creating shared user")
-	ctx = internal.AddSubjectToContext(ctx, sharedUser)
-	org := daemon.createOrganization(t, ctx)
-	return daemon, org, ctx
+	// create a dedicated user account and context for test to use.
+	testUser, testUserCtx := daemon.createUserCtx(t)
+
+	var org *organization.Organization
+	if !cfg.skipDefaultOrganization {
+		// create organization for test to use. Consume the created event too so
+		// that tests that consume events don't receive this event.
+		org = daemon.createOrganization(t, testUserCtx)
+		// re-fetch user so that its ownership of the above org is included
+		testUser = daemon.getUser(t, adminCtx, testUser.Username)
+		// and re-add to context
+		testUserCtx = internal.AddSubjectToContext(ctx, testUser)
+	}
+
+	return daemon, org, testUserCtx
 }
 
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {

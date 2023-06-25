@@ -1,33 +1,13 @@
 package integration
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 )
-
-func createTab(t *testing.T) context.Context {
-	t.Helper()
-
-	ctx, cancel := chromedp.NewContext(sharedBrowser)
-	t.Cleanup(cancel)
-
-	return ctx
-}
-
-func createBrowserCtx(t *testing.T) context.Context {
-	t.Helper()
-
-	ctx, cancel := chromedp.NewContext(sharedBrowser, chromedp.WithNewBrowserContext())
-	t.Cleanup(cancel)
-
-	return ctx
-}
 
 func runURL(hostname, runID string) string {
 	return "https://" + hostname + "/app/runs/" + runID

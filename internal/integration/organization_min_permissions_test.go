@@ -19,13 +19,15 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	ws := svc.createWorkspace(t, ctx, org)
 
 	// Create user and add as member of guests team
-	guest, guestCtx := svc.createUserCtx(t)
+	guest := svc.createUser(t)
 	guests := svc.createTeam(t, ctx, org)
 	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 		TeamID:   guests.ID,
 		Username: guest.Username,
 	})
 	require.NoError(t, err)
+	// Refresh guest user context to include new team membership
+	_, guestCtx := svc.getUserCtx(t, adminCtx, guest.Username)
 
 	// Assign read role to guests team. Guests now receive a minimum set of
 	// permissions across the workspace's organization.

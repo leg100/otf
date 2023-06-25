@@ -16,10 +16,9 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Parallel()
 
 	t.Run("create", func(t *testing.T) {
-		svc, org, ctx := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-		ws := svc.createWorkspace(t, ctx, org)
-		nc, err := svc.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		daemon, org, ctx := setup(t, nil)
+		ws := daemon.createWorkspace(t, ctx, org)
+		nc, err := daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
 			Name:            internal.String("testing"),
@@ -28,9 +27,9 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-daemon.sub)
 		})
 	})
 

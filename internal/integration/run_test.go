@@ -191,7 +191,9 @@ func TestRun(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got, err := svc.ListRuns(ctx, tt.opts)
+				// call endpoint using admin to avoid authz errors (particularly
+				// when listing runs across a site).
+				got, err := svc.ListRuns(adminCtx, tt.opts)
 				require.NoError(t, err)
 
 				tt.want(t, got)
