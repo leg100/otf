@@ -30,13 +30,13 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(organizationURL(hostname, org)),
 		chromedp.WaitReady(`body`),
-		chromedp.Click("#menu-item-workspaces > a"),
+		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
 		chromedp.Click("#new-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
-		chromedp.Focus("input#name", chromedp.NodeVisible),
+		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText(name),
-		chromedp.Click("#create-workspace-button", chromedp.NodeVisible),
+		chromedp.Click("#create-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.WaitReady(`body`),
 		matchText(t, ".flash-success", "created workspace: "+name),
 	}

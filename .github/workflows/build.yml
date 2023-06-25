@@ -33,6 +33,13 @@ jobs:
         name: API tests
         run: make go-tfe-tests
       -
+        # chromium breaks browser-based tests:
+        # https://github.com/chromedp/chromedp/issues/1325#issuecomment-1606114185
+        name: Remove chromium
+        run: |
+          sudo rm /usr/bin/chromium
+          sudo rm /usr/bin/chromium-browser
+      -
         name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}

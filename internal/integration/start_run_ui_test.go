@@ -36,7 +36,7 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`body`),
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
 		screenshot(t),
-		chromedp.WaitReady(`#plan-status.phase-status-finished`),
+		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
 		screenshot(t),
 		// wait for run to enter planned state
 		chromedp.WaitReady(`//*[@class='status status-planned']`, chromedp.BySearch),
@@ -52,7 +52,7 @@ func TestStartRunUI(t *testing.T) {
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
-		chromedp.WaitReady(`#apply-status.phase-status-finished`),
+		chromedp.WaitReady(`#apply-status.phase-status-finished`, chromedp.ByQuery),
 		// confirm run ends in applied state
 		chromedp.WaitReady(`//*[@class='status status-applied']`, chromedp.BySearch),
 		// run widget should show apply summary
