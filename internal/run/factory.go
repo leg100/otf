@@ -23,12 +23,18 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
+	// TODO(@leg100): remove PullVCSMagicString because (c)(ii) triggers the
+	// same behaviour.
+	//
 	// There are three possibilities for the ConfigurationVersionID value:
 	// (a) equals PullVCSMagicString in which case a config version is first
 	// created from the contents of the vcs repo connected to the workspace
 	// (b) non-nil, in which case it is deemed to be a configuration version id
 	// and an existing config version with that ID is retrieved.
-	// (c) nil, in which the latest config version is retrieved.
+	// (c) nil, in which it depends whether the workspace is connected to a vcs
+	// repo:
+	// 	(i) not connected: the latest config version is retrieved.
+	// 	(ii) connected: same behaviour as (a): vcs repo contents are retrieved.
 	var cv *configversion.ConfigurationVersion
 	if opts.ConfigurationVersionID != nil {
 		if *opts.ConfigurationVersionID == PullVCSMagicString {
@@ -36,8 +42,10 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		} else {
 			cv, err = f.GetConfigurationVersion(ctx, *opts.ConfigurationVersionID)
 		}
-	} else {
+	} else if ws.Connection == nil {
 		cv, err = f.GetLatestConfigurationVersion(ctx, workspaceID)
+	} else {
+		cv, err = f.createConfigVersionFromVCS(ctx, ws)
 	}
 	if err != nil {
 		return nil, err

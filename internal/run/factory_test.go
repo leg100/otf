@@ -83,7 +83,7 @@ func TestFactory(t *testing.T) {
 		assert.True(t, got.AutoApply)
 	})
 
-	t.Run("pull from vcs", func(t *testing.T) {
+	t.Run("magic string - pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
 			&workspace.Workspace{
 				Connection: &repo.Connection{},
@@ -94,6 +94,22 @@ func TestFactory(t *testing.T) {
 		got, err := f.NewRun(ctx, "", RunCreateOptions{
 			ConfigurationVersionID: internal.String(PullVCSMagicString),
 		})
+		require.NoError(t, err)
+
+		// fake config version service sets the config version ID to "created"
+		// if it was newly created
+		assert.Equal(t, "created", got.ConfigurationVersionID)
+	})
+
+	t.Run("pull from vcs", func(t *testing.T) {
+		f := newTestFactory(
+			&workspace.Workspace{
+				Connection: &repo.Connection{},
+			},
+			&configversion.ConfigurationVersion{},
+		)
+
+		got, err := f.NewRun(ctx, "", RunCreateOptions{})
 		require.NoError(t, err)
 
 		// fake config version service sets the config version ID to "created"
