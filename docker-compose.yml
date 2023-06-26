@@ -27,7 +27,7 @@ services:
   pubsub:
     image: google/cloud-sdk:emulators
     ports:
-      - "8087:8085"
+      - "8085:8085"
     stop_signal: SIGINT
     command: gcloud beta emulators pubsub start --project=abc123 --host-port=0.0.0.0:8085
   otfd:
