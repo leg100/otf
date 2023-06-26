@@ -2,6 +2,7 @@ table.variables {
   text-align: left;
   font-size: 0.9em;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 table.variables thead {
@@ -21,4 +22,20 @@ table.variables td:last-child {
 
 table.variables tbody tr {
   border-bottom: 1px solid #dce0e6;
+}
+
+.row-key {
+  width: 30%;
+}
+
+.row-value {
+  width: 50%;
+}
+
+.row-category {
+  width: 10%;
+}
+
+.row-delete-button {
+  width: 10%;
 }
