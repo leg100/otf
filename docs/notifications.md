@@ -41,4 +41,4 @@ Additionally, attributes are added to each message:
 |`otf.ninja/v1/workspace.id`|`<workspace_id>`|
 |`otf.ninja/v1/tags/<tag_name>`|`true`|
 
-Attributes permit you to [filter messages from a subscription](https://cloud.google.com/pubsub/docs/subscription-message-filter#filtering_syntax) in GCP
+Attributes permit you to [filter messages from a subscription](https://cloud.google.com/pubsub/docs/subscription-message-filter#filtering_syntax) in GCP.
