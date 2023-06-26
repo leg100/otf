@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/testbrowser"
+	"github.com/leg100/otf/internal/testcompose"
 )
 
 var (
@@ -45,6 +46,40 @@ func doMain(m *testing.M) (int, error) {
 		}
 	}
 
+	// Start external services
+	if err := testcompose.Up(); err != nil {
+		return 0, fmt.Errorf("starting external services: %w", err)
+	}
+
+	// Set env vars for external services
+	externalEnvs := map[testcompose.Service]string{
+		testcompose.Postgres: "OTF_TEST_DATABASE_URL",
+		testcompose.Squid:    "HTTPS_PROXY",
+		testcompose.PubSub:   "PUBSUB_EMULATOR_HOST",
+	}
+	for svc, env := range externalEnvs {
+		host, err := testcompose.GetHost(svc)
+		if err != nil {
+			return 0, fmt.Errorf("getting postgres host: %w", err)
+		}
+		unset, err := setenv("OTF_TEST_DATABASE_URL", host)
+		if err != nil {
+			return 0, err
+		}
+		defer unset()
+	}
+
+	// Set env var for caching proxy
+	squid, err := testcompose.SquidHost()
+	if err != nil {
+		return 0, fmt.Errorf("getting squid host: %w", err)
+	}
+	unset, err = setenv("HTTPS_PROXY", squid)
+	if err != nil {
+		return 0, err
+	}
+	defer unset()
+
 	// The otfd daemon spawned in an integration test uses a self-signed cert.
 	// The following environment variable instructs any Go program spawned in a
 	// test, e.g. the terraform CLI, the otf agent, etc, to trust the
@@ -55,7 +90,7 @@ func doMain(m *testing.M) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("retrieving working directory: %w", err)
 	}
-	unset, err := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
+	unset, err = setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
 	if err != nil {
 		return 0, err
 	}
