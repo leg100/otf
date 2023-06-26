@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"regexp"
 
@@ -70,6 +71,7 @@ func newPubSubClient(cfg *Config) (*pubsubClient, error) {
 	}, nil
 }
 
+// Publish a notification to a gcp pub/sub topic.
 func (c *pubsubClient) Publish(ctx context.Context, n *notification) error {
 	payload, err := n.genericPayload()
 	if err != nil {
@@ -79,8 +81,22 @@ func (c *pubsubClient) Publish(ctx context.Context, n *notification) error {
 	if err != nil {
 		return err
 	}
+
+	// add workspace metadata to allow subscribers to filter messages:
+	//
+	// https://cloud.google.com/pubsub/docs/subscription-message-filter#filtering_syntax
+	attrs := map[string]string{
+		"otf.ninja/v1/workspace.name": n.workspace.Name,
+		"otf.ninja/v1/workspace.id":   n.workspace.ID,
+	}
+	for _, tag := range n.workspace.Tags {
+		key := fmt.Sprintf("otf.ninja/v1/tags/%s", tag)
+		attrs[key] = "true"
+	}
+
 	c.topic.Publish(ctx, &pubsub.Message{
-		Data: data,
+		Attributes: attrs,
+		Data:       data,
 	})
 	return nil
 }

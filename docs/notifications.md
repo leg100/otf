@@ -32,3 +32,13 @@ necessary permissions to publish messages to the configured topic.
 The payload of the messages is the same as that [documented for the `generic`
 destination
 type](https://developer.hashicorp.com/terraform/cloud-docs/api-docs/notification-configurations#run-notification-payload) (using the JSON format).
+
+Additionally, attributes are added to each message:
+
+|key|value|
+|-|-|
+|`otf.ninja/v1/workspace.name`|`<workspace_name>`|
+|`otf.ninja/v1/workspace.id`|`<workspace_id>`|
+|`otf.ninja/v1/tags/<tag_name>`|`true`|
+
+Attributes permit you to [filter messages from a subscription](https://cloud.google.com/pubsub/docs/subscription-message-filter#filtering_syntax) in GCP.
