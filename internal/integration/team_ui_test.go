@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_TeamUI demonstrates managing teams and team members via the
@@ -13,18 +12,13 @@ import (
 func TestIntegration_TeamUI(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	owner, ownerCtx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ownerCtx)
-	newbie := svc.createUser(t, ctx)
+	daemon, org, ctx := setup(t, nil)
+	newbie := daemon.createUser(t)
 
-	browser := createBrowserCtx(t)
-	okDialog(t, browser)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ownerCtx, svc.Hostname(), owner.Username, svc.Secret),
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to org
-			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// go to teams listing
 			chromedp.Click(`//a[text()='teams']`, chromedp.NodeVisible),
@@ -33,7 +27,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 			chromedp.Click(`//div[@class='content-list']//a[text()='owners']`, chromedp.NodeVisible),
 			screenshot(t, "owners_team_page"),
 			// select newbie as new team member
-			chromedp.SetValue(`//select[@id="select-add-member"]`, newbie.Username, chromedp.BySearch),
+			chromedp.SetValue(`//select[@id="select-add-member"]`, newbie.Username),
 			screenshot(t),
 			// submit
 			chromedp.Click(`//button[text()='Add member']`, chromedp.NodeVisible),
@@ -47,5 +41,4 @@ func TestIntegration_TeamUI(t *testing.T) {
 			matchText(t, ".flash-success", "removed team member: "+newbie.Username),
 		},
 	})
-	require.NoError(t, err)
 }

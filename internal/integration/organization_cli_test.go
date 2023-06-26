@@ -10,8 +10,7 @@ import (
 func TestOrganizationCLI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	_, ctx := daemon.createUserCtx(t, ctx)
+	daemon, _, ctx := setup(t, nil)
 
 	// create organization
 	out := daemon.otfcli(t, ctx, "organizations", "new", "acme-corp")

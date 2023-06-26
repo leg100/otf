@@ -18,10 +18,10 @@ func TestUserToken(t *testing.T) {
 	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, _ := setup(t, nil)
 		// create user and then add them to context so that it is their token
 		// that is created.
-		ctx := internal.AddSubjectToContext(ctx, svc.createUser(t, ctx))
+		ctx := internal.AddSubjectToContext(ctx, svc.createUser(t))
 		_, _, err := svc.CreateUserToken(ctx, tokens.CreateUserTokenOptions{
 			Description: "lorem ipsum...",
 		})
@@ -29,15 +29,10 @@ func TestUserToken(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
-		user := svc.createUser(t, ctx)
-		// create user and then add them to context so that it is their token
-		// that is created.
-		ctx := internal.AddSubjectToContext(ctx, user)
-
-		svc.createToken(t, ctx, user)
-		svc.createToken(t, ctx, user)
-		svc.createToken(t, ctx, user)
+		svc, _, ctx := setup(t, nil)
+		svc.createToken(t, ctx, nil)
+		svc.createToken(t, ctx, nil)
+		svc.createToken(t, ctx, nil)
 
 		got, err := svc.ListUserTokens(ctx)
 		require.NoError(t, err)
@@ -46,12 +41,8 @@ func TestUserToken(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
-		user := svc.createUser(t, ctx)
-		// create user and then add them to context so that it is their token
-		// that is created.
-		ctx := internal.AddSubjectToContext(ctx, user)
-		token, _ := svc.createToken(t, ctx, user)
+		svc, _, ctx := setup(t, nil)
+		token, _ := svc.createToken(t, ctx, nil)
 
 		err := svc.DeleteUserToken(ctx, token.ID)
 		require.NoError(t, err)

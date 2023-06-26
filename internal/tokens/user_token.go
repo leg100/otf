@@ -49,10 +49,10 @@ func NewUserToken(opts NewUserTokenOptions) (*UserToken, []byte, error) {
 		Description: opts.Description,
 		Username:    opts.Username,
 	}
-	token, err := newToken(newTokenOptions{
+	token, err := NewToken(NewTokenOptions{
 		key:     opts.key,
-		subject: ut.ID,
-		kind:    userTokenKind,
+		Subject: ut.ID,
+		Kind:    userTokenKind,
 	})
 	if err != nil {
 		return nil, nil, err

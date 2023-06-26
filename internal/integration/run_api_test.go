@@ -22,12 +22,10 @@ func TestIntegration_RunAPI(t *testing.T) {
 
 	// setup daemon along with fake github repo
 	repo := cloud.NewTestRepo()
-	daemon := setup(t, nil,
+	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
-	org := daemon.createOrganization(t, ctx)
-	sub := daemon.createSubscriber(t, ctx)
 	_, token := daemon.createToken(t, ctx, nil)
 
 	tfeClient, err := tfe.NewClient(&tfe.Config{
@@ -63,7 +61,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// wait for run to reach planned status
-		for event := range sub {
+		for event := range daemon.sub {
 			if r, ok := event.Payload.(*run.Run); ok {
 				switch r.Status {
 				case internal.RunErrored:

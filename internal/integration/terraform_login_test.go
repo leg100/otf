@@ -21,8 +21,7 @@ import (
 func TestTerraformLogin(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
+	svc, _, ctx := setup(t, nil)
 
 	out, err := os.CreateTemp(t.TempDir(), "terraform-login.out")
 	require.NoError(t, err)
@@ -50,9 +49,7 @@ func TestTerraformLogin(t *testing.T) {
 	e.Expect(regexp.MustCompile(`Open the following URL to access the login page for 127.0.0.1:[0-9]+:`), -1)
 	u, _, _ := e.Expect(regexp.MustCompile(`https://.*\n.*`), -1)
 
-	browser := createBrowserCtx(t)
-	err = chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
+	browser.Run(t, ctx, chromedp.Tasks{
 		// navigate to auth url captured from terraform login output
 		chromedp.Navigate(strings.TrimSpace(u)),
 		screenshot(t, "terraform_login_consent"),
@@ -61,7 +58,6 @@ func TestTerraformLogin(t *testing.T) {
 		screenshot(t, "terraform_login_flow_complete"),
 		matchText(t, "//body/p", "The login server has returned an authentication code to Terraform."),
 	})
-	require.NoError(t, err)
 
 	e.Expect(regexp.MustCompile(`Success! Terraform has obtained and saved an API token.`), -1)
 

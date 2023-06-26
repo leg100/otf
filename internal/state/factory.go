@@ -142,7 +142,7 @@ func newVersion(opts newVersionOptions) (Version, error) {
 			ID:             internal.NewID("wsout"),
 			Name:           k,
 			Type:           hclType,
-			Value:          string(v.Value),
+			Value:          v.Value,
 			Sensitive:      v.Sensitive,
 			StateVersionID: sv.ID,
 		}

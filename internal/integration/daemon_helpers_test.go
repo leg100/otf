@@ -25,7 +25,6 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -34,21 +33,25 @@ import (
 )
 
 type (
-	// daemon for integration tests
+	// daemon for integration test
 	testDaemon struct {
 		*daemon.Daemon
-
+		// stub github server for test to use.
 		*github.TestServer
+		// event subscription for test to use.
+		sub <-chan pubsub.Event
 	}
 
 	// configures the daemon for integration tests
 	config struct {
 		daemon.Config
+		// skip creation of default organization
+		skipDefaultOrganization bool
 	}
 )
 
-// setup configures and starts an otfd daemon for an integration test
-func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDaemon {
+// setup an integration test with a daemon, organization, and a user context.
+func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDaemon, *organization.Organization, context.Context) {
 	t.Helper()
 
 	if cfg == nil {
@@ -59,9 +62,9 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 	if cfg.Database == "" {
 		cfg.Database = sql.NewTestDB(t)
 	}
-	// Setup secret if not specified
+	// Use shared secret if one is not specified
 	if cfg.Secret == nil {
-		cfg.Secret = testutils.NewSecret(t)
+		cfg.Secret = sharedSecret
 	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
@@ -110,10 +113,30 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) *testDae
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	return &testDaemon{
+	sub, err := d.Subscribe(ctx, "")
+	require.NoError(t, err)
+
+	daemon := &testDaemon{
 		Daemon:     d,
 		TestServer: githubServer,
+		sub:        sub,
 	}
+
+	// create a dedicated user account and context for test to use.
+	testUser, testUserCtx := daemon.createUserCtx(t)
+
+	var org *organization.Organization
+	if !cfg.skipDefaultOrganization {
+		// create organization for test to use. Consume the created event too so
+		// that tests that consume events don't receive this event.
+		org = daemon.createOrganization(t, testUserCtx)
+		// re-fetch user so that its ownership of the above org is included
+		testUser = daemon.getUser(t, adminCtx, testUser.Username)
+		// and re-add to context
+		testUserCtx = internal.AddSubjectToContext(ctx, testUser)
+	}
+
+	return daemon, org, testUserCtx
 }
 
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
@@ -184,19 +207,23 @@ func (s *testDaemon) createModule(t *testing.T, ctx context.Context, org *organi
 	return module
 }
 
-func (s *testDaemon) createUser(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) *auth.User {
+// createUser is always invoked with the site admin context because only they
+// are authorized to create users.
+func (s *testDaemon) createUser(t *testing.T, opts ...auth.NewUserOption) *auth.User {
 	t.Helper()
 
-	user, err := s.CreateUser(ctx, "user-"+internal.GenerateRandomString(4), opts...)
+	user, err := s.CreateUser(adminCtx, "user-"+internal.GenerateRandomString(4), opts...)
 	require.NoError(t, err)
 	return user
 }
 
-func (s *testDaemon) createUserCtx(t *testing.T, ctx context.Context, opts ...auth.NewUserOption) (*auth.User, context.Context) {
+// createUserCtx is always invoked with the site admin context because only they
+// are authorized to create users.
+func (s *testDaemon) createUserCtx(t *testing.T, opts ...auth.NewUserOption) (*auth.User, context.Context) {
 	t.Helper()
 
-	user := s.createUser(t, ctx, opts...)
-	return user, internal.AddSubjectToContext(ctx, user)
+	user := s.createUser(t, opts...)
+	return user, internal.AddSubjectToContext(context.Background(), user)
 }
 
 func (s *testDaemon) getUser(t *testing.T, ctx context.Context, username string) *auth.User {
@@ -323,7 +350,7 @@ func (s *testDaemon) getCurrentState(t *testing.T, ctx context.Context, wsID str
 func (s *testDaemon) createToken(t *testing.T, ctx context.Context, user *auth.User) (*tokens.UserToken, []byte) {
 	t.Helper()
 
-	// If user is provided then add it to context. Otherwise the context is
+	// If user is provided then add them to context. Otherwise the context is
 	// expected to contain a user if authz is to succeed.
 	if user != nil {
 		ctx = internal.AddSubjectToContext(ctx, user)
@@ -362,14 +389,6 @@ func (s *testDaemon) createAgentToken(t *testing.T, ctx context.Context, organiz
 	})
 	require.NoError(t, err)
 	return token
-}
-
-func (s *testDaemon) createSubscriber(t *testing.T, ctx context.Context) <-chan pubsub.Event {
-	t.Helper()
-
-	sub, err := s.Subscribe(ctx, "")
-	require.NoError(t, err)
-	return sub
 }
 
 // startAgent starts an external agent, configuring it with the given
@@ -422,8 +441,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	t.Helper()
 
 	// Create user token expressly for the terraform cli
-	user, err := auth.UserFromContext(ctx)
-	require.NoError(t, err)
+	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
 	cmdargs := []string{command, "-no-color"}
@@ -442,15 +460,14 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 	t.Helper()
 
 	// Create user token expressly for the otf cli
-	user, err := auth.UserFromContext(ctx)
-	require.NoError(t, err)
+	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
 	cmdargs := []string{"--address", s.Hostname(), "--token", string(token)}
 	cmdargs = append(cmdargs, args...)
 
 	var buf bytes.Buffer
-	err = (&cli.CLI{}).Run(ctx, cmdargs, &buf)
+	err := (&cli.CLI{}).Run(ctx, cmdargs, &buf)
 	require.NoError(t, err)
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())

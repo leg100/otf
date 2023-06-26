@@ -5,20 +5,14 @@ import (
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
-	"github.com/stretchr/testify/require"
 )
 
 // TestIntegration_UserTokenUI demonstrates managing user tokens via the UI.
 func TestIntegration_UserTokenUI(t *testing.T) {
 	t.Parallel()
 
-	// Create org and its owner
-	svc := setup(t, nil)
-	user, userCtx := svc.createUserCtx(t, ctx)
-	browser := createBrowserCtx(t)
-	okDialog(t, browser)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, userCtx, svc.Hostname(), user.Username, svc.Secret),
+	svc, _, ctx := setup(t, nil)
+	browser.Run(t, ctx, chromedp.Tasks{
 		// go to profile
 		chromedp.Navigate("https://" + svc.Hostname() + "/app/profile"),
 		chromedp.WaitReady(`body`),
@@ -29,7 +23,7 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		chromedp.Click(`//button[@id='new-user-token-button']`, chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
 		// enter description for new token and submit
-		chromedp.Focus("input#description", chromedp.NodeVisible),
+		chromedp.Focus("input#description", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("my new token"),
 		screenshot(t, "user_token_enter_description"),
 		chromedp.Click(`//button[text()='Create token']`, chromedp.NodeVisible),
@@ -40,5 +34,4 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		screenshot(t),
 		matchText(t, ".flash-success", "Deleted token"),
 	})
-	require.NoError(t, err)
 }

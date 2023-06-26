@@ -16,11 +16,9 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	t.Parallel()
 
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
-		ws := svc.createWorkspace(t, ctx, org)
-		nc, err := svc.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
+		daemon, org, ctx := setup(t, nil)
+		ws := daemon.createWorkspace(t, ctx, org)
+		nc, err := daemon.CreateNotificationConfiguration(ctx, ws.ID, notifications.CreateConfigOptions{
 			DestinationType: notifications.DestinationGeneric,
 			Enabled:         internal.Bool(true),
 			Name:            internal.String("testing"),
@@ -29,14 +27,14 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run("receive events", func(t *testing.T) {
-			assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(ws), <-daemon.sub)
+			assert.Equal(t, pubsub.NewCreatedEvent(nc), <-daemon.sub)
 		})
 	})
 
 	t.Run("update", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		got, err := svc.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
@@ -50,7 +48,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
@@ -66,7 +64,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
 		got, err := svc.GetNotificationConfiguration(ctx, nc.ID)
@@ -76,18 +74,16 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, org)
 		nc := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc), <-svc.sub)
 
 		err := svc.DeleteNotificationConfiguration(ctx, nc.ID)
 		require.NoError(t, err)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc.ID}), <-svc.sub)
 
 		_, err = svc.GetNotificationConfiguration(ctx, nc.ID)
 		require.True(t, errors.Is(err, internal.ErrResourceNotFound))
@@ -97,26 +93,23 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 	// event triggers: when a workspace is deleted, its notification
 	// configurations should be deleted too and events should be sent out.
 	t.Run("cascade delete", func(t *testing.T) {
-		svc := setup(t, nil)
-		sub := svc.createSubscriber(t, ctx)
-
-		org := svc.createOrganization(t, ctx)
-		assert.Equal(t, pubsub.NewCreatedEvent(org), <-sub)
+		svc, org, ctx := setup(t, nil)
+		assert.Equal(t, pubsub.NewCreatedEvent(org), <-svc.sub)
 
 		ws := svc.createWorkspace(t, ctx, org)
-		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(ws), <-svc.sub)
 
 		nc1 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc1), <-svc.sub)
 
 		nc2 := svc.createNotificationConfig(t, ctx, ws)
-		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-sub)
+		assert.Equal(t, pubsub.NewCreatedEvent(nc2), <-svc.sub)
 
 		_, err := svc.DeleteWorkspace(ctx, ws.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-sub)
-		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&workspace.Workspace{ID: ws.ID}), <-svc.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc1.ID}), <-svc.sub)
+		assert.Equal(t, pubsub.NewDeletedEvent(&notifications.Config{ID: nc2.ID}), <-svc.sub)
 	})
 }

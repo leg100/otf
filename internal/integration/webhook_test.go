@@ -26,51 +26,43 @@ func TestWebhook(t *testing.T) {
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
-	svc := setup(t, nil,
+	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
 
 	// create and connect first workspace
-	browser := createBrowserCtx(t)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
-		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
+	browser.Run(t, ctx, chromedp.Tasks{
+		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 
-		createWorkspace(t, svc.Hostname(), org.Name, "workspace-1"),
-		connectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-1"),
+		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"),
 	})
-	require.NoError(t, err)
 
 	// webhook should now have been registered with github
-	require.True(t, svc.HasWebhook())
+	require.True(t, daemon.HasWebhook())
 
 	// create and connect second workspace
-	err = chromedp.Run(browser, chromedp.Tasks{
-		createWorkspace(t, svc.Hostname(), org.Name, "workspace-2"),
-		connectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-2"),
+	browser.Run(t, ctx, chromedp.Tasks{
+		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2"),
 	})
-	require.NoError(t, err)
 
 	// second workspace re-uses same webhook on github
-	require.True(t, svc.HasWebhook())
+	require.True(t, daemon.HasWebhook())
 
 	// disconnect second workspace
-	err = chromedp.Run(browser, disconnectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-2"))
-	require.NoError(t, err)
+	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2"))
 
 	// first workspace is still connected, so webhook should still be configured
 	// on github
-	require.True(t, svc.HasWebhook())
+	require.True(t, daemon.HasWebhook())
 
 	// disconnect first workspace
-	err = chromedp.Run(browser, disconnectWorkspaceTasks(t, svc.Hostname(), org.Name, "workspace-1"))
-	require.NoError(t, err)
+	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"))
 
 	// No more workspaces are connected to repo, so webhook should have been
 	// deleted
-	require.False(t, svc.HasWebhook())
+	require.False(t, daemon.HasWebhook())
 }

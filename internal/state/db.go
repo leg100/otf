@@ -61,7 +61,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 				Name:           sql.String(svo.Name),
 				Sensitive:      svo.Sensitive,
 				Type:           sql.String(svo.Type),
-				Value:          sql.String(svo.Value),
+				Value:          svo.Value,
 				StateVersionID: sql.String(v.ID),
 			})
 			if err != nil {

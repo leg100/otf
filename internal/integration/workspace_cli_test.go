@@ -13,8 +13,7 @@ import (
 func TestIntegration_WorkspaceCLI(t *testing.T) {
 	t.Parallel()
 
-	daemon := setup(t, nil)
-	_, ctx := daemon.createUserCtx(t, ctx)
+	daemon, _, ctx := setup(t, nil)
 
 	// create organization
 	org := daemon.createOrganization(t, ctx)

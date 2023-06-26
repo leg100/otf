@@ -5,42 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
-	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/stretchr/testify/require"
 )
-
-func createBrowserCtx(t *testing.T) context.Context {
-	t.Helper()
-
-	headless := true
-	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
-		var err error
-		headless, err = strconv.ParseBool(v)
-		if err != nil {
-			panic("cannot parse OTF_E2E_HEADLESS")
-		}
-	}
-
-	// must create an allocator before creating the browser
-	allocator, cancel := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", headless),
-			chromedp.Flag("hide-scrollbars", true),
-			chromedp.Flag("mute-audio", true),
-			chromedp.Flag("ignore-certificate-errors", true),
-			chromedp.Flag("disable-gpu", true),
-		)...)
-	t.Cleanup(cancel)
-
-	// now create the browser
-	ctx, cancel := chromedp.NewContext(allocator)
-	t.Cleanup(cancel)
-
-	return ctx
-}
 
 func runURL(hostname, runID string) string {
 	return "https://" + hostname + "/app/runs/" + runID
@@ -89,4 +58,10 @@ func createRootModule(t *testing.T, tfconfig string) string {
 	require.NoError(t, err)
 
 	return root
+}
+
+func userFromContext(t *testing.T, ctx context.Context) *auth.User {
+	user, err := auth.UserFromContext(ctx)
+	require.NoError(t, err)
+	return user
 }

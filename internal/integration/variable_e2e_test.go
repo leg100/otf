@@ -15,16 +15,10 @@ import (
 func TestVariableE2E(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	// Create variable in browser
-	browser := createBrowserCtx(t)
-	// Click OK on any browser javascript dialog boxes that pop up
-	okDialog(t, browser)
-	err := chromedp.Run(browser, chromedp.Tasks{
-		newSession(t, ctx, svc.Hostname(), user.Username, svc.Secret),
+	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, svc.Hostname(), org.Name, "my-test-workspace"),
 		chromedp.Tasks{
 			// go to workspace
@@ -37,15 +31,15 @@ func TestVariableE2E(t *testing.T) {
 			chromedp.Click(`//button[text()='Add variable']`, chromedp.NodeVisible),
 			screenshot(t),
 			// enter key
-			chromedp.Focus("input#key", chromedp.NodeVisible),
+			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("foo"),
 			screenshot(t),
 			// enter value
-			chromedp.Focus("textarea#value", chromedp.NodeVisible),
+			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("bar"),
 			screenshot(t),
 			// select terraform variable category
-			chromedp.Click("input#terraform", chromedp.NodeVisible),
+			chromedp.Click("input#terraform", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t),
 			// submit form
 			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
@@ -55,7 +49,6 @@ func TestVariableE2E(t *testing.T) {
 			screenshot(t),
 		},
 	})
-	require.NoError(t, err)
 
 	// write some terraform config that declares and outputs the variable
 	root := newRootModule(t, svc.Hostname(), org.Name, "my-test-workspace")
@@ -68,7 +61,7 @@ output "foo" {
   value = var.foo
 }
 `
-	err = os.WriteFile(filepath.Join(root, "foo.tf"), []byte(config), 0o600)
+	err := os.WriteFile(filepath.Join(root, "foo.tf"), []byte(config), 0o600)
 	require.NoError(t, err)
 
 	// run terraform init, plan, and apply
@@ -79,7 +72,7 @@ output "foo" {
 	require.Contains(t, out, `foo = "bar"`)
 
 	// Edit variable and delete it
-	err = chromedp.Run(browser, chromedp.Tasks{
+	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Tasks{
 			// go to workspace
 			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
@@ -105,7 +98,7 @@ output "foo" {
 			chromedp.Click(`//a[text()='foo']`, chromedp.NodeVisible),
 			screenshot(t),
 			// update value
-			chromedp.Focus("textarea#value", chromedp.NodeVisible),
+			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("topsecret"),
 			screenshot(t, "variables_entering_top_secret"),
 			// submit form
@@ -121,5 +114,4 @@ output "foo" {
 			matchText(t, ".flash-success", "deleted variable: foo"),
 		},
 	})
-	require.NoError(t, err)
 }

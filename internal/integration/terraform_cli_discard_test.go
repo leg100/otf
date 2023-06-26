@@ -18,16 +18,14 @@ import (
 func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 	t.Parallel()
 
-	svc := setup(t, nil)
-	user, ctx := svc.createUserCtx(t, ctx)
-	org := svc.createOrganization(t, ctx)
+	svc, org, ctx := setup(t, nil)
 
 	// create some config and run terraform init
 	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
 	svc.tfcli(t, ctx, "init", configPath)
 
 	// Create user token expressly for terraform apply
-	_, token := svc.createToken(t, ctx, user)
+	_, token := svc.createToken(t, ctx, nil)
 
 	// Invoke terraform apply
 	e, tferr, err := expect.SpawnWithArgs(

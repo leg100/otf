@@ -34,6 +34,11 @@ func Timestamptz(t time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t, Status: pgtype.Present}
 }
 
+// JSON converts a []byte into a postgres JSON type
+func JSON(b []byte) pgtype.JSON {
+	return pgtype.JSON{Bytes: b, Status: pgtype.Present}
+}
+
 func Error(err error) error {
 	var pgErr *pgconn.PgError
 	switch {

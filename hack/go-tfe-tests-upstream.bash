@@ -12,7 +12,12 @@ export GO_TFE_REPO=github.com/hashicorp/go-tfe@latest
 
 tests=()
 tests+=('TestStateVersionOutputsRead')
-tests+=('TestOrganizationTags')
+tests+=('TestOrganizationTagsList/with_no_query_params')
+tests+=('TestOrganizationTagsList/with_no_param_Filter')
+# TODO: uncomment this once support is added for tag substring querying
+#tests+=('TestOrganizationTagsList/with_no_param_Query')
+tests+=('TestOrganizationTagsDelete')
+tests+=('TestOrganizationTagsAddWorkspace')
 tests+=('TestWorkspaces_(Add|Remove)Tags')
 tests+=('TestWorkspacesList/when_searching_using_a_tag')
 tests+=('TestNotificationConfigurationCreate/with_a')

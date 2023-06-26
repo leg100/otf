@@ -1,12 +1,10 @@
 package integration
 
 import (
-	"context"
 	"os"
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,11 +13,8 @@ import (
 func TestIntegration_StateService(t *testing.T) {
 	t.Parallel()
 
-	// perform all actions as superuser
-	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
-
 	t.Run("create", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		file, err := os.ReadFile("./testdata/terraform.tfstate")
 		require.NoError(t, err)
@@ -32,7 +27,7 @@ func TestIntegration_StateService(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		want := svc.createStateVersion(t, ctx, nil)
 
 		got, err := svc.GetStateVersion(ctx, want.ID)
@@ -42,7 +37,7 @@ func TestIntegration_StateService(t *testing.T) {
 	})
 
 	t.Run("get not found error", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 
 		_, err := svc.GetStateVersion(ctx, "sv-99999")
 		require.Equal(t, internal.ErrResourceNotFound, err)
@@ -51,7 +46,7 @@ func TestIntegration_StateService(t *testing.T) {
 	// Get current creates two state versions and checks the second one is made
 	// the current state version for a workspace.
 	t.Run("get current", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		_ = svc.createStateVersion(t, ctx, ws)
 		want := svc.createStateVersion(t, ctx, ws)
@@ -63,14 +58,14 @@ func TestIntegration_StateService(t *testing.T) {
 	})
 
 	t.Run("get current not found error", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 
 		_, err := svc.GetCurrentStateVersion(ctx, "ws-99999")
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("list", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		sv1 := svc.createStateVersion(t, ctx, ws)
 		sv2 := svc.createStateVersion(t, ctx, ws)
@@ -84,14 +79,14 @@ func TestIntegration_StateService(t *testing.T) {
 	// Listing state versions for a non-existent workspace should produce an
 	// error
 	t.Run("list not found error", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 
 		_, err := svc.ListStateVersions(ctx, "ws-does-not-exist", internal.ListOptions{})
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		svc := setup(t, nil)
+		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 		want := svc.createStateVersion(t, ctx, ws)
 		current := svc.createStateVersion(t, ctx, ws)
