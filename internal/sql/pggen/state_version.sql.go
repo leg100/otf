@@ -57,28 +57,25 @@ func (q *DBQuerier) InsertStateVersionScan(results pgx.BatchResults) (pgconn.Com
 	return cmdTag, err
 }
 
-const findStateVersionsByWorkspaceNameSQL = `SELECT
+const findStateVersionsByWorkspaceIDSQL = `SELECT
     state_versions.*,
     array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
-JOIN workspaces USING (workspace_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
-WHERE workspaces.name               = $1
-AND   workspaces.organization_name  = $2
+WHERE workspace_id = $1
 GROUP BY state_versions.state_version_id
 ORDER BY created_at DESC
-LIMIT $3
-OFFSET $4
+LIMIT $2
+OFFSET $3
 ;`
 
-type FindStateVersionsByWorkspaceNameParams struct {
-	WorkspaceName    pgtype.Text
-	OrganizationName pgtype.Text
-	Limit            int
-	Offset           int
+type FindStateVersionsByWorkspaceIDParams struct {
+	WorkspaceID pgtype.Text
+	Limit       int
+	Offset      int
 }
 
-type FindStateVersionsByWorkspaceNameRow struct {
+type FindStateVersionsByWorkspaceIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
 	Serial              int                   `json:"serial"`
@@ -87,91 +84,89 @@ type FindStateVersionsByWorkspaceNameRow struct {
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 }
 
-// FindStateVersionsByWorkspaceName implements Querier.FindStateVersionsByWorkspaceName.
-func (q *DBQuerier) FindStateVersionsByWorkspaceName(ctx context.Context, params FindStateVersionsByWorkspaceNameParams) ([]FindStateVersionsByWorkspaceNameRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionsByWorkspaceName")
-	rows, err := q.conn.Query(ctx, findStateVersionsByWorkspaceNameSQL, params.WorkspaceName, params.OrganizationName, params.Limit, params.Offset)
+// FindStateVersionsByWorkspaceID implements Querier.FindStateVersionsByWorkspaceID.
+func (q *DBQuerier) FindStateVersionsByWorkspaceID(ctx context.Context, params FindStateVersionsByWorkspaceIDParams) ([]FindStateVersionsByWorkspaceIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionsByWorkspaceID")
+	rows, err := q.conn.Query(ctx, findStateVersionsByWorkspaceIDSQL, params.WorkspaceID, params.Limit, params.Offset)
 	if err != nil {
-		return nil, fmt.Errorf("query FindStateVersionsByWorkspaceName: %w", err)
+		return nil, fmt.Errorf("query FindStateVersionsByWorkspaceID: %w", err)
 	}
 	defer rows.Close()
-	items := []FindStateVersionsByWorkspaceNameRow{}
+	items := []FindStateVersionsByWorkspaceIDRow{}
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
-		var item FindStateVersionsByWorkspaceNameRow
+		var item FindStateVersionsByWorkspaceIDRow
 		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
-			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceName row: %w", err)
+			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceID row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
-			return nil, fmt.Errorf("assign FindStateVersionsByWorkspaceName row: %w", err)
+			return nil, fmt.Errorf("assign FindStateVersionsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindStateVersionsByWorkspaceName rows: %w", err)
+		return nil, fmt.Errorf("close FindStateVersionsByWorkspaceID rows: %w", err)
 	}
 	return items, err
 }
 
-// FindStateVersionsByWorkspaceNameBatch implements Querier.FindStateVersionsByWorkspaceNameBatch.
-func (q *DBQuerier) FindStateVersionsByWorkspaceNameBatch(batch genericBatch, params FindStateVersionsByWorkspaceNameParams) {
-	batch.Queue(findStateVersionsByWorkspaceNameSQL, params.WorkspaceName, params.OrganizationName, params.Limit, params.Offset)
+// FindStateVersionsByWorkspaceIDBatch implements Querier.FindStateVersionsByWorkspaceIDBatch.
+func (q *DBQuerier) FindStateVersionsByWorkspaceIDBatch(batch genericBatch, params FindStateVersionsByWorkspaceIDParams) {
+	batch.Queue(findStateVersionsByWorkspaceIDSQL, params.WorkspaceID, params.Limit, params.Offset)
 }
 
-// FindStateVersionsByWorkspaceNameScan implements Querier.FindStateVersionsByWorkspaceNameScan.
-func (q *DBQuerier) FindStateVersionsByWorkspaceNameScan(results pgx.BatchResults) ([]FindStateVersionsByWorkspaceNameRow, error) {
+// FindStateVersionsByWorkspaceIDScan implements Querier.FindStateVersionsByWorkspaceIDScan.
+func (q *DBQuerier) FindStateVersionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindStateVersionsByWorkspaceIDRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindStateVersionsByWorkspaceNameBatch: %w", err)
+		return nil, fmt.Errorf("query FindStateVersionsByWorkspaceIDBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindStateVersionsByWorkspaceNameRow{}
+	items := []FindStateVersionsByWorkspaceIDRow{}
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
-		var item FindStateVersionsByWorkspaceNameRow
+		var item FindStateVersionsByWorkspaceIDRow
 		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
-			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceNameBatch row: %w", err)
+			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceIDBatch row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
-			return nil, fmt.Errorf("assign FindStateVersionsByWorkspaceName row: %w", err)
+			return nil, fmt.Errorf("assign FindStateVersionsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindStateVersionsByWorkspaceNameBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindStateVersionsByWorkspaceIDBatch rows: %w", err)
 	}
 	return items, err
 }
 
-const countStateVersionsByWorkspaceNameSQL = `SELECT count(*)
+const countStateVersionsByWorkspaceIDSQL = `SELECT count(*)
 FROM state_versions
-JOIN workspaces USING (workspace_id)
-WHERE workspaces.name                 = $1
-AND   workspaces.organization_name    = $2
+WHERE workspace_id = $1
 ;`
 
-// CountStateVersionsByWorkspaceName implements Querier.CountStateVersionsByWorkspaceName.
-func (q *DBQuerier) CountStateVersionsByWorkspaceName(ctx context.Context, workspaceName pgtype.Text, organizationName pgtype.Text) (int, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "CountStateVersionsByWorkspaceName")
-	row := q.conn.QueryRow(ctx, countStateVersionsByWorkspaceNameSQL, workspaceName, organizationName)
+// CountStateVersionsByWorkspaceID implements Querier.CountStateVersionsByWorkspaceID.
+func (q *DBQuerier) CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "CountStateVersionsByWorkspaceID")
+	row := q.conn.QueryRow(ctx, countStateVersionsByWorkspaceIDSQL, workspaceID)
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query CountStateVersionsByWorkspaceName: %w", err)
+		return item, fmt.Errorf("query CountStateVersionsByWorkspaceID: %w", err)
 	}
 	return item, nil
 }
 
-// CountStateVersionsByWorkspaceNameBatch implements Querier.CountStateVersionsByWorkspaceNameBatch.
-func (q *DBQuerier) CountStateVersionsByWorkspaceNameBatch(batch genericBatch, workspaceName pgtype.Text, organizationName pgtype.Text) {
-	batch.Queue(countStateVersionsByWorkspaceNameSQL, workspaceName, organizationName)
+// CountStateVersionsByWorkspaceIDBatch implements Querier.CountStateVersionsByWorkspaceIDBatch.
+func (q *DBQuerier) CountStateVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(countStateVersionsByWorkspaceIDSQL, workspaceID)
 }
 
-// CountStateVersionsByWorkspaceNameScan implements Querier.CountStateVersionsByWorkspaceNameScan.
-func (q *DBQuerier) CountStateVersionsByWorkspaceNameScan(results pgx.BatchResults) (int, error) {
+// CountStateVersionsByWorkspaceIDScan implements Querier.CountStateVersionsByWorkspaceIDScan.
+func (q *DBQuerier) CountStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (int, error) {
 	row := results.QueryRow()
 	var item int
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan CountStateVersionsByWorkspaceNameBatch row: %w", err)
+		return item, fmt.Errorf("scan CountStateVersionsByWorkspaceIDBatch row: %w", err)
 	}
 	return item, nil
 }

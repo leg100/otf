@@ -174,7 +174,7 @@ func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAge
 	return f.agentToken, nil
 }
 
-func (f *fakeClient) ListStateVersions(ctx context.Context, opts state.StateVersionListOptions) (*state.VersionList, error) {
+func (f *fakeClient) ListStateVersions(context.Context, string, internal.ListOptions) (*state.VersionList, error) {
 	return f.stateVersionList, nil
 }
 

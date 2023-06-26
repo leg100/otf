@@ -24,13 +24,17 @@ func (a *api) addStateHandlers(r *mux.Router) {
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version", a.getCurrentVersion).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.rollbackVersion).Methods("PATCH")
 	r.HandleFunc("/state-versions/{id}", a.getVersion).Methods("GET")
-	r.HandleFunc("/state-versions", a.listVersions).Methods("GET")
+	r.HandleFunc("/state-versions", a.listVersionsByName).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/download", a.downloadState).Methods("GET")
 	r.HandleFunc("/state-versions/{id}", a.deleteVersion).Methods("DELETE")
 
 	r.HandleFunc("/workspaces/{workspace_id}/current-state-version-outputs", a.getCurrentVersionOutputs).Methods("GET")
 	r.HandleFunc("/state-versions/{id}/outputs", a.listOutputs).Methods("GET")
 	r.HandleFunc("/state-version-outputs/{id}", a.getOutput).Methods("GET")
+
+	// specific to OTF
+	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.listVersions).Methods("GET")
+
 }
 
 func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -88,13 +92,35 @@ func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
 	a.writeResponse(w, r, sv, withCode(http.StatusCreated))
 }
 
-func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
+func (a *api) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 	var opts state.StateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		Error(w, err)
 		return
 	}
-	svl, err := a.ListStateVersions(r.Context(), opts)
+	ws, err := a.GetWorkspaceByName(r.Context(), opts.Organization, opts.Workspace)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+	svl, err := a.ListStateVersions(r.Context(), ws.ID, opts.ListOptions)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+	a.writeResponse(w, r, svl)
+}
+
+func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		internal.ListOptions
+	}
+	if err := decode.All(&params, r); err != nil {
+		Error(w, err)
+		return
+	}
+	svl, err := a.ListStateVersions(r.Context(), params.WorkspaceID, params.ListOptions)
 	if err != nil {
 		Error(w, err)
 		return
