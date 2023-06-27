@@ -8,7 +8,7 @@ import (
 
 // TestOrganizationCLI tests managing organizations via the CLI
 func TestOrganizationCLI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 

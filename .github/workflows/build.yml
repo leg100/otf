@@ -43,8 +43,6 @@ jobs:
         name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres?sslmode=disable
-          PUBSUB_EMULATOR_HOST: "localhost:8085"
         run: make test
       -
         name: Archive browser screenshots

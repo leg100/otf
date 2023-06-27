@@ -14,7 +14,7 @@ import (
 
 // TestIntegration_WorkspaceUI demonstrates management of workspaces via the UI.
 func TestIntegration_WorkspaceUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
 

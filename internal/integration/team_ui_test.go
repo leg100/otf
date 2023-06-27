@@ -10,7 +10,7 @@ import (
 // TestIntegration_TeamUI demonstrates managing teams and team members via the
 // UI.
 func TestIntegration_TeamUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
 	newbie := daemon.createUser(t)

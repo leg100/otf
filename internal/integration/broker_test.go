@@ -11,7 +11,7 @@ import (
 
 // TestBroker demonstrates publishing and subscribing of events via postgres.
 func TestBroker(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// simulate a cluster of two otfd nodes sharing a database
 	cfg := config{

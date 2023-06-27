@@ -15,7 +15,7 @@ import (
 // has to then generates hashes for linux, etc. It is notorious for causing
 // difficulties for users and it's no different for OTF.
 func TestLockFile(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

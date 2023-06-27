@@ -9,7 +9,7 @@ import (
 
 // TestIntegration_UserTokenUI demonstrates managing user tokens via the UI.
 func TestIntegration_UserTokenUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, _, ctx := setup(t, nil)
 	browser.Run(t, ctx, chromedp.Tasks{

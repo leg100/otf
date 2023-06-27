@@ -13,7 +13,7 @@ import (
 )
 
 func TestIntegration_NotificationConfigurationService(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
 		daemon, org, ctx := setup(t, nil)

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/testbrowser"
+	"github.com/leg100/otf/internal/testcompose"
 )
 
 var (
@@ -45,6 +46,45 @@ func doMain(m *testing.M) (int, error) {
 		}
 	}
 
+	// Start external services
+	if err := testcompose.Up(); err != nil {
+		return 0, fmt.Errorf("starting external services: %w", err)
+	}
+
+	// get postgres host and set environment variable
+	host, err := testcompose.GetHost(testcompose.Postgres)
+	if err != nil {
+		return 0, fmt.Errorf("getting postgres host: %w", err)
+	}
+	postgresURL := fmt.Sprintf("postgres://postgres:postgres@%s/postgres", host)
+	unset, err := setenv("OTF_TEST_DATABASE_URL", postgresURL)
+	if err != nil {
+		return 0, err
+	}
+	defer unset()
+
+	// get squid host and set environment variable
+	squid, err := testcompose.GetHost(testcompose.Squid)
+	if err != nil {
+		return 0, fmt.Errorf("getting squid host: %w", err)
+	}
+	unset, err = setenv("HTTPS_PROXY", squid)
+	if err != nil {
+		return 0, err
+	}
+	defer unset()
+
+	// get pubsub emulator host and set environment variable
+	pubsub, err := testcompose.GetHost(testcompose.PubSub)
+	if err != nil {
+		return 0, fmt.Errorf("getting squid host: %w", err)
+	}
+	unset, err = setenv("PUBSUB_EMULATOR_HOST", pubsub)
+	if err != nil {
+		return 0, err
+	}
+	defer unset()
+
 	// The otfd daemon spawned in an integration test uses a self-signed cert.
 	// The following environment variable instructs any Go program spawned in a
 	// test, e.g. the terraform CLI, the otf agent, etc, to trust the
@@ -55,7 +95,7 @@ func doMain(m *testing.M) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("retrieving working directory: %w", err)
 	}
-	unset, err := setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
+	unset, err = setenv("SSL_CERT_FILE", filepath.Join(wd, "./fixtures/cert.pem"))
 	if err != nil {
 		return 0, err
 	}
@@ -75,14 +115,6 @@ func doMain(m *testing.M) (int, error) {
 		return 0, err
 	}
 	defer unset()
-
-	// If HTTPS_PROXY has been defined then add it to the authoritative list of
-	// environment variables so that processes, particularly terraform, spawed
-	// in tests use the proxy. This can be very useful for caching repeated
-	// downloads of terraform providers during tests.
-	if proxy, ok := os.LookupEnv("HTTPS_PROXY"); ok {
-		envs = append(envs, "HTTPS_PROXY="+proxy)
-	}
 
 	// Instruct terraform CLI to skip checks for new versions.
 	unset, err = setenv("CHECKPOINT_DISABLE", "true")

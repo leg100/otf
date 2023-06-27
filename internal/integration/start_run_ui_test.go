@@ -10,7 +10,7 @@ import (
 // TestStartRunUI tests starting a run via the Web UI before confirming and
 // applying the run.
 func TestStartRunUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, _, ctx := setup(t, nil)
 

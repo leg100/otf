@@ -15,7 +15,7 @@ import (
 // TestIntegration_NotificationSlack demonstrates run events triggering the
 // sending of notifications to a slack channel.
 func TestIntegration_NotificationSlack(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	url, got := newSlackServer(t)
 	daemon, _, ctx := setup(t, nil)

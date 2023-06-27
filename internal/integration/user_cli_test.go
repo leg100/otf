@@ -8,7 +8,7 @@ import (
 
 // TestUserCLI tests managing user accounts via the CLI
 func TestUserCLI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, _ := setup(t, nil)
 

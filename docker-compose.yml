@@ -2,19 +2,36 @@ services:
   postgres:
     image: postgres:14-alpine
     ports:
-      - "5433:5432"
+      - 5432
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 3
-    command: -c fsync=off
+    # * setting high max_connections number avoids the error when running large number of
+    #   integration tests in parallel:
+    #
+    #   FATAL: sorry, too many clients already
+    #
+    # * disabling fsync dramatically improves integration test speed
+    #
+    # NOTE: neither setting is appropriate for a production deployment
+    command: -c fsync=off -c max_connections=999
     environment:
      - POSTGRES_PASSWORD=postgres
+  # Terraform-based tests spawn `terraform`. These tests retrieve providers from
+  # the internet which can consume quite a lot of bandwidth and slow down the tests
+  # significantly. To cache these providers we use the squid caching
+  # proxy (http://www.squid-cache.org/).
+  #
+  # It is configured to use
+  # [SSL-bumping](https://wiki.squid-cache.org/Features/SslBump), which permits
+  # caching content transported via SSL (`terraform` retrieves providers only via
+  # SSL).
   squid:
     image: leg100/squid
     ports:
-      - "3128:3128"
+      - 3128
     healthcheck:
       test: ["CMD-SHELL", "nc -zw1 localhost 3128"]
       interval: 5s
@@ -27,7 +44,7 @@ services:
   pubsub:
     image: google/cloud-sdk:emulators
     ports:
-      - "8085:8085"
+      - 8085
     stop_signal: SIGINT
     command: gcloud beta emulators pubsub start --project=abc123 --host-port=0.0.0.0:8085
   otfd:
@@ -38,14 +55,14 @@ services:
       squid:
         condition: service_healthy
     ports:
-      - "8833:8080"
+      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "http://localhost:8080/healthz"]
       interval: 5s
       timeout: 5s
       retries: 3
     environment:
-      - OTF_DATABASE=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - OTF_DATABASE=postgres://postgres:postgres@postgres/postgres?sslmode=disable
       - OTF_SECRET=6b07b57377755b07cf61709780ee7484
       - OTF_SITE_TOKEN=site-token
       - OTF_SSL=true

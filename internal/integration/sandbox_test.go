@@ -14,7 +14,7 @@ import (
 // TestSandbox demonstrates the sandbox feature, whereby terraform apply is run
 // within an isolated environment.
 func TestSandbox(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	_, err := exec.LookPath("bwrap")
 	if errors.Is(err, exec.ErrNotFound) {

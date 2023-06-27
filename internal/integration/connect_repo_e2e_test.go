@@ -14,7 +14,7 @@ import (
 // TestConnectRepoE2E demonstrates connecting a workspace to a VCS repository, pushing a
 // git commit which triggers a run on the workspace.
 func TestConnectRepoE2E(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// create an otf daemon with a fake github backend, serve up a repo and its
 	// contents via tarball. And register a callback to test receipt of commit

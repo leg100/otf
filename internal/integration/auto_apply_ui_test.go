@@ -10,7 +10,7 @@ import (
 // TestAutoApply tests auto-apply functionality, using the UI to enable
 // auto-apply on a workspace first before invoking 'terraform apply'.
 func TestAutoApply(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

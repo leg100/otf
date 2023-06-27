@@ -16,7 +16,7 @@ import (
 // TestModuleE2E tests publishing a module, first via the UI and then via a webhook
 // event, and then invokes a terraform run that sources the module.
 func TestModuleE2E(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.

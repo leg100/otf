@@ -9,7 +9,7 @@ import (
 )
 
 func TestIntegration_TagService(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("add tags to workspace", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)

@@ -19,7 +19,7 @@ import (
 // TestTerraformLogin demonstrates using `terraform login` to retrieve
 // credentials.
 func TestTerraformLogin(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, _, ctx := setup(t, nil)
 

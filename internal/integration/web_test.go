@@ -11,7 +11,7 @@ import (
 
 // TestWeb is a random walkthrough of the Web UI
 func TestWeb(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
 	user := userFromContext(t, ctx)

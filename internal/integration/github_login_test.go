@@ -13,7 +13,7 @@ import (
 
 // TestGithubLogin demonstrates logging into the UI via Github OAuth.
 func TestGithubLogin(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// Start daemon with a stub github server populated with a user.
 	cfg := config{

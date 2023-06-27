@@ -13,7 +13,7 @@ import (
 )
 
 func TestOrganization(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
 		svc, defaultOrg, ctx := setup(t, nil)

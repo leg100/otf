@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestDB should not be called directly but via the 'integration' package (Hence
+// why this file is suffixed with '_' to prevent Go from detecting it as a test
+// file).
 func TestDB(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)

@@ -11,7 +11,7 @@ import (
 
 // TestAgentTokenUI demonstrates managing agent tokens via the UI.
 func TestAgentTokenUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

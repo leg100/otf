@@ -13,7 +13,7 @@ import (
 // TestVariableE2E tests adding, updating and deleting workspace variables via the
 // UI, and tests that variables are made available to runs.
 func TestVariableE2E(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

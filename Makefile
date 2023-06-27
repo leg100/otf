@@ -75,11 +75,6 @@ compose-rm:
 postgres:
 	docker compose up -d postgres
 
-# Run squid via docker compose
-.PHONY: squid
-squid:
-	docker compose up -d squid
-
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:

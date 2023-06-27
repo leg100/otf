@@ -16,7 +16,7 @@ import (
 
 // TestIntegration_TagsE2E demonstrates end-to-end usage of workspace tags.
 func TestIntegration_TagsE2E(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
 
