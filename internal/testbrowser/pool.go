@@ -80,6 +80,8 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 }
 
 func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Action) {
+	t.Helper()
+
 	b := <-p.pool
 	if b == nil {
 		b = newBrowser(t, p.allocator)
@@ -106,7 +108,6 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 			if err != nil {
 				return err
 			}
-			return nil
 		}
 		return nil
 	}))

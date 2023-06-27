@@ -77,28 +77,28 @@ resource "null_resource" "tags_e2e" {}
 		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'foo')]`),
 		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'bar')]`),
 		// go to tag settings
-		chromedp.Click(`//a[@id='tags-add-remove-link']`, chromedp.NodeVisible),
+		chromedp.Click(`//a[@id='tags-add-remove-link']`),
 		screenshot(t),
 		// remove bar tag
-		chromedp.Click(`//button[@id='button-remove-tag-bar']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[@id='button-remove-tag-bar']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "removed tag: bar"),
+		matchText(t, ".flash-success", "removed tag: bar", chromedp.ByQuery),
 		// add new tag
-		chromedp.Focus("input#new-tag-name", chromedp.NodeVisible, chromedp.ByQuery),
+		chromedp.Focus("input#new-tag-name", chromedp.ByQuery),
 		input.InsertText("baz"),
-		chromedp.Click(`//button[text()='Add new tag']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='Add new tag']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "created tag: baz"),
+		matchText(t, ".flash-success", "created tag: baz", chromedp.ByQuery),
 		// go to workspace listing
-		chromedp.Click(`//div[@class='content-header-title']//a[text()='workspaces']`, chromedp.NodeVisible),
+		chromedp.Click(`//div[@class='content-header-title']//a[text()='workspaces']`),
 		screenshot(t),
 		// filter by tag foo
-		chromedp.Click(`//label[@for='workspace-tag-filter-foo']`, chromedp.NodeVisible),
+		chromedp.Click(`//label[@for='workspace-tag-filter-foo']`),
 		screenshot(t),
 		// filter by tag bar
-		chromedp.Click(`//label[@for='workspace-tag-filter-baz']`, chromedp.NodeVisible),
+		chromedp.Click(`//label[@for='workspace-tag-filter-baz']`),
 		screenshot(t),
 		// confirm workspace listing contains tagged workspace
-		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`, chromedp.NodeVisible),
+		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`),
 	})
 }

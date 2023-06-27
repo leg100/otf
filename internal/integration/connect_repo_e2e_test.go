@@ -69,21 +69,21 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		chromedp.Click(`//a[text()='settings']`),
 		screenshot(t),
 		// click disconnect button
-		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`),
 		screenshot(t),
 		// confirm disconnected
-		matchText(t, ".flash-success", "disconnected workspace from repo"),
+		matchText(t, ".flash-success", "disconnected workspace from repo", chromedp.ByQuery),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		chromedp.Click(`//a[text()='settings']`),
 		screenshot(t),
 		// delete workspace
-		chromedp.Click(`//button[@id='delete-workspace-button']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[@id='delete-workspace-button']`),
 		screenshot(t),
 		// confirm deletion
-		matchText(t, ".flash-success", "deleted workspace: my-test-workspace"),
+		matchText(t, ".flash-success", "deleted workspace: my-test-workspace", chromedp.ByQuery),
 		//
 		// delete vcs provider
 		//
@@ -91,11 +91,11 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 		screenshot(t),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+		chromedp.Click("#vcs_providers > a"),
 		screenshot(t),
 		// click delete button for one and only vcs provider
-		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='delete']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "deleted provider: github"),
+		matchText(t, ".flash-success", "deleted provider: github", chromedp.ByQuery),
 	})
 }

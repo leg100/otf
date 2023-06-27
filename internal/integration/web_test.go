@@ -36,18 +36,18 @@ func TestWeb(t *testing.T) {
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
-			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#teams > a", chromedp.ByQuery),
 			screenshot(t),
 			// select devops team
-			chromedp.Click("#item-team-devops a", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#item-team-devops a", chromedp.ByQuery),
 			screenshot(t),
 			// tick checkbox for workspace manager role
-			chromedp.Click("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#manage_workspaces", chromedp.ByQuery),
 			// submit form
 			chromedp.Submit("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t, "team_permissions_added_workspace_manager"),
 			// confirm permissions updated
-			matchText(t, ".flash-success", "team permissions updated"),
+			matchText(t, ".flash-success", "team permissions updated", chromedp.ByQuery),
 		},
 		// add write permission on workspace to devops team
 		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", "devops", "write"),
@@ -57,9 +57,9 @@ func TestWeb(t *testing.T) {
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list users
-			chromedp.Click("#users > a", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#users > a", chromedp.ByQuery),
 			screenshot(t),
-			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
+			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username, chromedp.ByQuery),
 		},
 		// list team members
 		chromedp.Tasks{
@@ -67,11 +67,11 @@ func TestWeb(t *testing.T) {
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// list teams
-			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#teams > a", chromedp.ByQuery),
 			// select owners team
-			chromedp.Click("#item-team-owners a", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#item-team-owners a", chromedp.ByQuery),
 			screenshot(t),
-			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username),
+			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username, chromedp.ByQuery),
 		},
 	})
 }

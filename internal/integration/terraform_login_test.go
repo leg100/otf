@@ -54,9 +54,9 @@ func TestTerraformLogin(t *testing.T) {
 		chromedp.Navigate(strings.TrimSpace(u)),
 		screenshot(t, "terraform_login_consent"),
 		// give consent
-		chromedp.Click(`//button[text()='Accept']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='Accept']`),
 		screenshot(t, "terraform_login_flow_complete"),
-		matchText(t, "//body/p", "The login server has returned an authentication code to Terraform."),
+		matchText(t, `//body/p`, `The login server has returned an authentication code to Terraform.`),
 	})
 
 	e.Expect(regexp.MustCompile(`Success! Terraform has obtained and saved an API token.`), -1)

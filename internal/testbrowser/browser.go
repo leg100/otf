@@ -23,7 +23,7 @@ type browser struct {
 }
 
 func newBrowser(t *testing.T, allocator context.Context) *browser {
-	ctx, cancel := chromedp.NewContext(allocator)
+	ctx, cancel := chromedp.NewContext(allocator, chromedp.WithDebugf(t.Logf))
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		cdpbrowser.SetPermission(&clipboardReadPermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),
 		cdpbrowser.SetPermission(&clipboardWritePermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),

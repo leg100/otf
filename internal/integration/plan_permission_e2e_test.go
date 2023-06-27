@@ -63,10 +63,9 @@ func TestIntegration_PlanPermission(t *testing.T) {
 		chromedp.SetValue(`//select[@id="start-run-operation"]`, "plan-only"),
 		screenshot(t),
 		// confirm plan begins and ends
-		chromedp.WaitReady(`body`),
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
-		chromedp.WaitReady(`#plan-status.phase-status-finished`),
+		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
 		screenshot(t),
 		// wait for run to enter planned-and-finished state
 		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`),

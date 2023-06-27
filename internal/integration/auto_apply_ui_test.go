@@ -22,16 +22,16 @@ func TestAutoApply(t *testing.T) {
 			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, t.Name())),
 			screenshot(t),
 			// go to workspace settings
-			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='settings']`),
 			screenshot(t),
 			// enable auto-apply
-			chromedp.Click("input#auto_apply", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("input#auto_apply", chromedp.ByQuery),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save changes']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Save changes']`),
 			screenshot(t),
 			// confirm workspace updated
-			matchText(t, ".flash-success", "updated workspace"),
+			matchText(t, ".flash-success", "updated workspace", chromedp.ByQuery),
 		},
 	})
 
