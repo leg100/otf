@@ -11,6 +11,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func integrationTest(t *testing.T) {
+	// An integration test can take a while to run so it be run in parallel to
+	// other integration tests
+	t.Parallel()
+
+	// Skip long-running integration tests if user has passed -short flag
+	if testing.Short() {
+		t.Skip()
+	}
+}
+
 func runURL(hostname, runID string) string {
 	return "https://" + hostname + "/app/runs/" + runID
 }

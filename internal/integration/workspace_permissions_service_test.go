@@ -11,7 +11,7 @@ import (
 )
 
 func TestIntegration_WorkspacePermissionsService(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

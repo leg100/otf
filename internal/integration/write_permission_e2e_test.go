@@ -11,7 +11,7 @@ import (
 // TestWritePermissionE2E demonstrates a user with write permissions on a workspace interacting
 // with the workspace via the terraform CLI.
 func TestWritePermissionE2E(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// Create user and org, and user becomes owner of the org
 	svc, org, ctx := setup(t, nil)

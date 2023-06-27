@@ -11,7 +11,7 @@ import (
 )
 
 func TestIntegation_TeamService(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)

@@ -12,7 +12,7 @@ import (
 )
 
 func TestLogs(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("upload chunk", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
@@ -123,7 +123,7 @@ func TestLogs(t *testing.T) {
 
 // TestClusterLogs tests the relaying of logs across a cluster of otfd nodes.
 func TestClusterLogs(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// simulate a cluster of two otfd nodes
 	connstr := sql.NewTestDB(t)

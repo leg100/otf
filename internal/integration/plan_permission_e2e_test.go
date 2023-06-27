@@ -13,7 +13,7 @@ import (
 // 'plan' role to a team and what they can and cannot do with that role via the
 // CLI and via the UI.
 func TestIntegration_PlanPermission(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

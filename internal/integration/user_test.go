@@ -12,7 +12,7 @@ import (
 )
 
 func TestUser(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// Tests the --site-admins functionality, promoting a number of users to the
 	// role of site admin when starting the daemon.

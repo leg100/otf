@@ -12,7 +12,7 @@ import (
 )
 
 func TestUserToken(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// perform all actions as superuser
 	ctx := internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)

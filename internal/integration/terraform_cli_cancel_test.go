@@ -17,7 +17,7 @@ import (
 // TestIntegration_TerraformCLICancel demonstrates a user canceling a run via
 // the terraform CLI.
 func TestIntegration_TerraformCLICancel(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

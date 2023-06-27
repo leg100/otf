@@ -9,7 +9,7 @@ import (
 )
 
 func TestRepo(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("create multiple connections", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil, github.WithRepo("test/dummy"))

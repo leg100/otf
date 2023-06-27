@@ -11,7 +11,7 @@ import (
 // TestIntegration_Events demonstrates events are triggered and successfully
 // received by a subscriber.
 func TestIntegration_Events(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// disable the scheduler so that the run below doesn't get scheduled and
 	// change state before we test for equality with the received event.

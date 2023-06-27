@@ -18,7 +18,7 @@ import (
 // by the `go-tfe` integration tests, i.e. behaviours that are specific to
 // OTF.
 func TestIntegration_RunAPI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// setup daemon along with fake github repo
 	repo := cloud.NewTestRepo()

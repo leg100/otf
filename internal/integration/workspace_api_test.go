@@ -16,7 +16,7 @@ import (
 // TestIntegration_WorkspaceAPI tests the option to retrieve latest state
 // outputs alongside a workspace from the API.
 func TestIntegration_WorkspaceAPI_IncludeOutputs(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, _, ctx := setup(t, nil)
 	sv := svc.createStateVersion(t, ctx, nil)

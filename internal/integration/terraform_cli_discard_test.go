@@ -16,7 +16,7 @@ import (
 // TestIntegration_TerraformCLIDiscard demonstrates a user discarding a run via
 // the terraform CLI.
 func TestIntegration_TerraformCLIDiscard(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

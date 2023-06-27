@@ -11,7 +11,7 @@ import (
 
 // TestCompleteRun tests a terraform run from start to finish.
 func TestCompleteRun(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 

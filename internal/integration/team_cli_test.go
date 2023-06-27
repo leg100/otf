@@ -8,7 +8,7 @@ import (
 
 // TestTeamCLI tests managing teams via the CLI
 func TestTeamCLI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 

@@ -11,7 +11,7 @@ import (
 )
 
 func TestSession(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("start", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)

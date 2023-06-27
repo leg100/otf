@@ -51,30 +51,35 @@ func doMain(m *testing.M) (int, error) {
 		return 0, fmt.Errorf("starting external services: %w", err)
 	}
 
-	// Set env vars for external services
-	externalEnvs := map[testcompose.Service]string{
-		testcompose.Postgres: "OTF_TEST_DATABASE_URL",
-		testcompose.Squid:    "HTTPS_PROXY",
-		testcompose.PubSub:   "PUBSUB_EMULATOR_HOST",
+	// get postgres host and set environment variable
+	host, err := testcompose.GetHost(testcompose.Postgres)
+	if err != nil {
+		return 0, fmt.Errorf("getting postgres host: %w", err)
 	}
-	for svc, env := range externalEnvs {
-		host, err := testcompose.GetHost(svc)
-		if err != nil {
-			return 0, fmt.Errorf("getting postgres host: %w", err)
-		}
-		unset, err := setenv("OTF_TEST_DATABASE_URL", host)
-		if err != nil {
-			return 0, err
-		}
-		defer unset()
+	postgresURL := fmt.Sprintf("postgres://postgres:postgres@%s/postgres", host)
+	unset, err := setenv("OTF_TEST_DATABASE_URL", postgresURL)
+	if err != nil {
+		return 0, err
 	}
+	defer unset()
 
-	// Set env var for caching proxy
-	squid, err := testcompose.SquidHost()
+	// get squid host and set environment variable
+	squid, err := testcompose.GetHost(testcompose.Squid)
 	if err != nil {
 		return 0, fmt.Errorf("getting squid host: %w", err)
 	}
 	unset, err = setenv("HTTPS_PROXY", squid)
+	if err != nil {
+		return 0, err
+	}
+	defer unset()
+
+	// get pubsub emulator host and set environment variable
+	pubsub, err := testcompose.GetHost(testcompose.PubSub)
+	if err != nil {
+		return 0, fmt.Errorf("getting squid host: %w", err)
+	}
+	unset, err = setenv("PUBSUB_EMULATOR_HOST", pubsub)
 	if err != nil {
 		return 0, err
 	}
@@ -110,14 +115,6 @@ func doMain(m *testing.M) (int, error) {
 		return 0, err
 	}
 	defer unset()
-
-	// If HTTPS_PROXY has been defined then add it to the authoritative list of
-	// environment variables so that processes, particularly terraform, spawed
-	// in tests use the proxy. This can be very useful for caching repeated
-	// downloads of terraform providers during tests.
-	if proxy, ok := os.LookupEnv("HTTPS_PROXY"); ok {
-		envs = append(envs, "HTTPS_PROXY="+proxy)
-	}
 
 	// Instruct terraform CLI to skip checks for new versions.
 	unset, err = setenv("CHECKPOINT_DISABLE", "true")

@@ -21,7 +21,7 @@ import (
 // processes successfully, e.g. relaying of logs from the agent through to the
 // TF CLI
 func TestCluster(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// start two daemons, one for user, one for agent, both sharing a db
 	connstr := sql.NewTestDB(t)

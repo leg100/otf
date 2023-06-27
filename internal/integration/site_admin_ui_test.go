@@ -12,7 +12,7 @@ import (
 // TestSiteAdminUI demonstrates signing into the web app as a site admin, using
 // their super powers to create and delete an organization.
 func TestSiteAdminUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, _ := setup(t, &config{Config: daemon.Config{
 		SiteToken: "abc123",

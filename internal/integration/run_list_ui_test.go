@@ -11,7 +11,7 @@ import (
 
 // TestIntegration_RunListUI demonstrates listing runs via the UI.
 func TestIntegration_RunListUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)
@@ -21,10 +21,8 @@ func TestIntegration_RunListUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		// navigate to workspace page
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), ws.Organization, ws.Name)),
-		chromedp.WaitReady(`body`),
 		// navigate to runs page
 		chromedp.Click(`//a[text()='runs']`, chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
 		// should be no runs listed
 		matchText(t, `//div[@id='content-list']`, `No items currently exist.`),
 		chromedp.ActionFunc(func(context.Context) error {
@@ -34,7 +32,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 			return nil
 		}),
 		// should be one run listed
-		chromedp.Nodes(`//div[@id='content-list']//*[@class='item']`, &runListingAfter),
+		chromedp.Nodes(`//div[@id='content-list']//*[@class='item']`, &runListingAfter, chromedp.NodeVisible),
 		// and its status should be 'planned and finished'
 		chromedp.WaitVisible(`//*[@class='item']//*[@class='status status-planned_and_finished']`),
 	})

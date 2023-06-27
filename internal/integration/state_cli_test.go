@@ -12,7 +12,7 @@ import (
 
 // TestIntegration_StateCLI demonstrates managing state via the CLI
 func TestIntegration_StateCLI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 

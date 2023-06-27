@@ -14,7 +14,7 @@ import (
 // WorkingDirectory tests setting a working directory on a workspace and checks
 // that terraform runs use configuration from that directory.
 func TestWorkingDirectory(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, org, ctx := setup(t, nil)
 

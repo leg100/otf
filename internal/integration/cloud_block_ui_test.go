@@ -13,7 +13,7 @@ import (
 //
 // https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
 func TestCloudBlock(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 

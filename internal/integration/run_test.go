@@ -16,7 +16,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	t.Run("create", func(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})

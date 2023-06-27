@@ -13,7 +13,7 @@ import (
 // a role on a workspace in the organization - that they receive a minimum set
 // of permissions across the organization.
 func TestIntegration_MinimumPermissions(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	svc, org, ctx := setup(t, nil)
 	ws := svc.createWorkspace(t, ctx, org)

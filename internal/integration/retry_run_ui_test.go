@@ -11,7 +11,7 @@ import (
 
 // TestIntegration_RetryRunUI demonstrates retrying a run via the UI
 func TestIntegration_RetryRunUI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 	ws := daemon.createWorkspace(t, ctx, nil)

@@ -11,7 +11,7 @@ import (
 
 // TestIntegration_OIDC demonstrates logging in using OIDC
 func TestIntegration_OIDC(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// Start daemon with a stub github server populated with a user.
 	cfg := config{

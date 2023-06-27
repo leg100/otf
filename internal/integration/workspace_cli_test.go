@@ -11,7 +11,7 @@ import (
 
 // TestIntegration_WorkspaceCLI tests managing workspaces via the otf CLI
 func TestIntegration_WorkspaceCLI(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	daemon, _, ctx := setup(t, nil)
 

@@ -19,7 +19,7 @@ import (
 // triggering workspace runs and publishing module versions in tested in other
 // E2E tests.
 func TestWebhook(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	repo := cloud.NewTestRepo()
 

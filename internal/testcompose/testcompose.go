@@ -26,7 +26,7 @@ var ports = map[Service]int{
 
 func Up() error {
 	// --wait implies -d, which detaches the containers
-	args := []string{"compose", "up", "--wait", "--wait-timeout", "60"}
+	args := []string{"compose", "-p", "otf", "up", "--wait", "--wait-timeout", "60"}
 	args = append(args, string(Postgres), string(Squid), string(PubSub))
 	cmd := exec.Command("docker", args...)
 
@@ -55,7 +55,7 @@ func GetHost(svc Service) (string, error) {
 		return "", fmt.Errorf("getting port info for %s: %s: %w", svc, buferr.String(), err)
 	}
 
-	parts := strings.Split(bufout.String(), ":")
+	parts := strings.Split(strings.TrimSpace(bufout.String()), ":")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("unexpected output from %v: %v", args, parts)
 	}

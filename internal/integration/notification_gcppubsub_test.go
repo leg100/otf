@@ -19,7 +19,7 @@ import (
 func TestIntegration_NotificationGCPPubSub(t *testing.T) {
 	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
 
-	t.Parallel()
+	integrationTest(t)
 	ctx := context.Background()
 
 	client, err := pubsub.NewClient(ctx, "abc123")

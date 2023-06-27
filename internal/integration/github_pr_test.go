@@ -14,7 +14,7 @@ import (
 // TestIntegration_GithubPR demonstrates the spawning of runs in response to
 // opening and updating a pull-request on github.
 func TestIntegration_GithubPR(t *testing.T) {
-	t.Parallel()
+	integrationTest(t)
 
 	// create an otf daemon with a fake github backend, serve up a repo and its
 	// contents via tarball.
