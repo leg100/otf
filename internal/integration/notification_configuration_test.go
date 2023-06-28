@@ -58,7 +58,7 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 				URL: internal.String("http://otf.ninja/notifications"),
 			})
 			require.NoError(t, err)
-			assert.Equal(t, "http://otf.ninja/notifications", got.URL)
+			assert.Equal(t, internal.String("http://otf.ninja/notifications"), got.URL)
 		})
 	})
 
