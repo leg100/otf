@@ -37,14 +37,29 @@ func TestIntegration_NotificationConfigurationService(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		nc := svc.createNotificationConfig(t, ctx, nil)
 
-		got, err := svc.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
-			Name:    internal.String("new-name"),
-			Enabled: internal.Bool(false),
+		t.Run("name", func(t *testing.T) {
+			got, err := svc.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
+				Name: internal.String("new-name"),
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "new-name", got.Name)
 		})
-		require.NoError(t, err)
 
-		assert.Equal(t, "new-name", got.Name)
-		assert.False(t, got.Enabled)
+		t.Run("disable", func(t *testing.T) {
+			got, err := svc.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
+				Enabled: internal.Bool(false),
+			})
+			require.NoError(t, err)
+			assert.False(t, got.Enabled)
+		})
+
+		t.Run("url", func(t *testing.T) {
+			got, err := svc.UpdateNotificationConfiguration(ctx, nc.ID, notifications.UpdateConfigOptions{
+				URL: internal.String("http://otf.ninja/notifications"),
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "http://otf.ninja/notifications", got.URL)
+		})
 	})
 
 	t.Run("list", func(t *testing.T) {
