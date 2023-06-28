@@ -167,7 +167,7 @@ func (c *Config) update(opts UpdateConfigOptions) error {
 		c.Triggers = opts.Triggers
 	}
 	if opts.URL != nil {
-		return fmt.Errorf("updating url is unsupported")
+		c.URL = opts.URL
 	}
 	return nil
 }

@@ -89,6 +89,11 @@ func (s *Notifier) handleConfig(ctx context.Context, cfg *Config, eventType pubs
 	switch eventType {
 	case pubsub.CreatedEvent:
 		return s.add(cfg)
+	case pubsub.UpdatedEvent:
+		if err := s.remove(cfg.ID); err != nil {
+			return err
+		}
+		return s.add(cfg)
 	case pubsub.DeletedEvent:
 		return s.remove(cfg.ID)
 	default:

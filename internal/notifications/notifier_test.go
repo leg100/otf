@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,4 +98,30 @@ func TestNotifier_handleRun_multiple(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, planningRun, <-published)
 	assert.Equal(t, planningRun, <-published)
+}
+
+func TestNotifier_handleConfig(t *testing.T) {
+	ctx := context.Background()
+	notifier := newTestNotifier(t, &fakeFactory{})
+
+	// Add config, should result in cache size of 1
+	config1 := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj1/topic1", TriggerPlanning)
+	err := notifier.handleConfig(ctx, config1, pubsub.CreatedEvent)
+	require.NoError(t, err)
+	assert.Len(t, notifier.cache.configs, 1)
+	assert.Len(t, notifier.cache.clients, 1)
+
+	// Update config url, cache size should still be 1
+	updated := newTestConfig(t, "ws-123", DestinationGCPPubSub, "gcppubsub://proj2/topic2", TriggerPlanning)
+	updated.ID = config1.ID
+	err = notifier.handleConfig(ctx, updated, pubsub.UpdatedEvent)
+	require.NoError(t, err)
+	assert.Len(t, notifier.cache.configs, 1)
+	assert.Len(t, notifier.cache.clients, 1)
+
+	// Remove config, cache size should be 0
+	err = notifier.handleConfig(ctx, updated, pubsub.DeletedEvent)
+	require.NoError(t, err)
+	assert.Len(t, notifier.cache.configs, 0)
+	assert.Len(t, notifier.cache.clients, 0)
 }
