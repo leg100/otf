@@ -33,6 +33,7 @@ type (
 		organization.OrganizationService
 		state.StateService
 		workspace.WorkspaceService
+		auth.TeamService
 
 		*runLogsURLGenerator
 	}
@@ -86,7 +87,7 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 	case *auth.User:
 		payload = m.toUser(v)
 	case *auth.Team:
-		payload = m.toTeam(v)
+		payload, marshalOpts, err = m.toTeam(v, r)
 	case *workspace.TagList:
 		payload, marshalOpts = m.toTags(v)
 	default:
