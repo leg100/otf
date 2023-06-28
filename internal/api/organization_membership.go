@@ -22,43 +22,10 @@ func (a *api) addOrganizationMembershipHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/organization-memberships", a.inviteUser).Methods("POST")
-	r.HandleFunc("/organizations/{organization_name}/organization-memberships", a.listMemberships).Methods("GET")
 	r.HandleFunc("/organization-memberships/{id}", a.deleteMembership).Methods("DELETE")
 }
 
 func (a *api) inviteUser(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
-		Error(w, err)
-		return
-	}
-	var params types.OrganizationMembershipCreateOptions
-	if err := unmarshal(r.Body, &params); err != nil {
-		Error(w, err)
-		return
-	}
-
-	membership := &types.OrganizationMembership{
-		ID: internal.NewID("ou"),
-		User: &types.User{
-			ID: internal.NewID("user"),
-		},
-		Organization: &types.Organization{
-			Name: org,
-		},
-	}
-
-	b, err := jsonapi.Marshal(membership)
-	if err != nil {
-		Error(w, err)
-		return
-	}
-	w.Header().Set("Content-type", mediaType)
-	w.WriteHeader(http.StatusCreated)
-	w.Write(b)
-}
-
-func (a *api) listMemberships(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		Error(w, err)
