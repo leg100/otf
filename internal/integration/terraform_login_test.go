@@ -38,7 +38,7 @@ func TestTerraformLogin(t *testing.T) {
 		// expect.Verbose(testing.Verbose()),
 		expect.Tee(out),
 		expect.SetEnv(
-			append(envs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
+			append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
 		),
 	)
 	require.NoError(t, err)

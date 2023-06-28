@@ -48,7 +48,7 @@ data "http" "wait" {
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.SetEnv(
-			append(envs, internal.CredentialEnv(svc.Hostname(), token)),
+			append(sharedEnvs, internal.CredentialEnv(svc.Hostname(), token)),
 		),
 	)
 	require.NoError(t, err)

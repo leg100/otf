@@ -3,6 +3,7 @@ package sql
 import (
 	"embed"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/pressly/goose/v3"
@@ -10,10 +11,17 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-//go:embed migrations/*.sql
-var migrations embed.FS
+var (
+	mu sync.Mutex
+
+	//go:embed migrations/*.sql
+	migrations embed.FS
+)
 
 func migrate(logger logr.Logger, connStr string) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	goose.SetLogger(&gooseLogger{logger})
 
 	goose.SetBaseFS(migrations)
