@@ -15,6 +15,7 @@ func (a *api) addTeamHandlers(r *mux.Router) {
 
 	r.HandleFunc("/organizations/{organization_name}/teams", a.createTeam).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/teams/{team_name}", a.getTeam).Methods("GET")
+	r.HandleFunc("/teams/{team_id}", a.getTeamByID).Methods("GET")
 	r.HandleFunc("/teams/{team_id}", a.deleteTeam).Methods("DELETE")
 }
 
@@ -52,6 +53,22 @@ func (a *api) getTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	team, err := a.GetTeam(r.Context(), *params.Organization, *params.Name)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	a.writeResponse(w, r, team)
+}
+
+func (a *api) getTeamByID(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("team_id", r)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	team, err := a.GetTeamByID(r.Context(), id)
 	if err != nil {
 		Error(w, err)
 		return
