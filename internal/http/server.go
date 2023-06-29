@@ -97,9 +97,13 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	// Prometheus metrics
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 
-	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
 		w.Write(healthzPayload)
+	})
+	r.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "application/json")
+		w.Write([]byte(`{"status":"OK"}`))
 	})
 
 	r.HandleFunc(path.Join(APIPrefixV2, "ping"), func(w http.ResponseWriter, r *http.Request) {
