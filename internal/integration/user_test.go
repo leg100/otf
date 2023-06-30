@@ -164,8 +164,8 @@ func TestUser(t *testing.T) {
 		user := svc.createUser(t)
 
 		err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-			Username: user.Username,
-			TeamID:   team.ID,
+			Usernames: []string{user.Username},
+			TeamID:    team.ID,
 		})
 		require.NoError(t, err)
 
@@ -182,8 +182,8 @@ func TestUser(t *testing.T) {
 		user := svc.createUser(t, auth.WithTeams(team))
 
 		err := svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
-			Username: user.Username,
-			TeamID:   team.ID,
+			Usernames: []string{user.Username},
+			TeamID:    team.ID,
 		})
 		require.NoError(t, err)
 
@@ -202,8 +202,8 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 
 		err = svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
-			Username: owner.Username,
-			TeamID:   owners.ID,
+			Usernames: []string{owner.Username},
+			TeamID:    owners.ID,
 		})
 		assert.Equal(t, auth.ErrCannotDeleteOnlyOwner, err)
 	})

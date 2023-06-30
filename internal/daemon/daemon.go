@@ -290,6 +290,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		ConfigurationVersionService: configService,
 		AuthService:                 authService,
 		TokensService:               tokensService,
+		TeamService:                 authService,
 		VariableService:             variableService,
 		NotificationService:         notificationService,
 		Signer:                      signer,

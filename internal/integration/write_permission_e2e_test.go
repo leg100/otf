@@ -20,8 +20,8 @@ func TestWritePermissionE2E(t *testing.T) {
 	engineer, engineerCtx := svc.createUserCtx(t)
 	team := svc.createTeam(t, ctx, org)
 	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:   team.ID,
-		Username: engineer.Username,
+		TeamID:    team.ID,
+		Usernames: []string{engineer.Username},
 	})
 	require.NoError(t, err)
 

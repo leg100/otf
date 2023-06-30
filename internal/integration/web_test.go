@@ -22,8 +22,8 @@ func TestWeb(t *testing.T) {
 	})
 	require.NoError(t, err)
 	err = daemon.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:   team.ID,
-		Username: user.Username,
+		TeamID:    team.ID,
+		Usernames: []string{user.Username},
 	})
 	require.NoError(t, err)
 

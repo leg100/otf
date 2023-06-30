@@ -2,7 +2,7 @@
 
 # Run go-tfe tests against otfd. It's recommended you first start otfd and
 # postgres using docker compose before running this script. This script
-# expects to find otfd running on port 8833 which is the port the docker
+# expects to find otfd running on port 8080 which is the port the docker
 # compose otfd listens on.
 #
 # Either specify tests as arguments or a default subset of tests will be run.

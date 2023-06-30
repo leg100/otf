@@ -111,9 +111,9 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 			return fmt.Errorf("creating owners team: %w", err)
 		}
 		err = s.AuthService.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-			TeamID:   owners.ID,
-			Username: creator.Username,
-			Tx:       tx,
+			TeamID:    owners.ID,
+			Usernames: []string{creator.Username},
+			Tx:        tx,
 		})
 		if err != nil {
 			return fmt.Errorf("adding owner to owners team: %w", err)

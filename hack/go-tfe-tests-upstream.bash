@@ -26,6 +26,9 @@ tests+=('TestNotificationConfigurationDelete')
 tests+=('TestNotificationConfigurationUpdate/with_options')
 tests+=('TestNotificationConfigurationUpdate/without_options')
 tests+=('TestNotificationConfigurationUpdate/^when')
+tests+=('TestTeamMembersAddByUsername')
+tests+=('TestTeamMembersRemoveByUsernames')
+tests+=('TestTeamMembersList')
 all=$(join_by '|' "${tests[@]}")
 
 ./hack/go-tfe-tests.bash $all

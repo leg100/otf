@@ -182,13 +182,20 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
-	var params TeamMembershipOptions
+	var params struct {
+		TeamID   string `schema:"team_id,required"`
+		Username string `schema:"username,required"`
+	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := h.svc.AddTeamMembership(r.Context(), params); err != nil {
+	err := h.svc.AddTeamMembership(r.Context(), TeamMembershipOptions{
+		TeamID:    params.TeamID,
+		Usernames: []string{params.Username},
+	})
+	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -198,13 +205,20 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) removeTeamMember(w http.ResponseWriter, r *http.Request) {
-	var params TeamMembershipOptions
+	var params struct {
+		TeamID   string `schema:"team_id,required"`
+		Username string `schema:"username,required"`
+	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := h.svc.RemoveTeamMembership(r.Context(), params); err != nil {
+	err := h.svc.RemoveTeamMembership(r.Context(), TeamMembershipOptions{
+		TeamID:    params.TeamID,
+		Usernames: []string{params.Username},
+	})
+	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
