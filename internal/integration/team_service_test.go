@@ -36,10 +36,10 @@ func TestIntegation_TeamService(t *testing.T) {
 		team := svc.createTeam(t, ctx, nil)
 
 		_, err := svc.UpdateTeam(ctx, team.ID, auth.UpdateTeamOptions{
-			OrganizationAccess: auth.OrganizationAccess{
-				ManageWorkspaces: true,
-				ManageVCS:        true,
-				ManageModules:    true,
+			OrganizationAccessOptions: auth.OrganizationAccessOptions{
+				ManageWorkspaces: internal.Bool(true),
+				ManageVCS:        internal.Bool(true),
+				ManageModules:    internal.Bool(true),
 			},
 		})
 		require.NoError(t, err)

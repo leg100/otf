@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -59,15 +58,8 @@ func (a *api) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// unsupported parameters
-	if params.Visibility != nil && *params.Visibility != "organization" {
-		Error(w, fmt.Errorf("only organization visibility is supported"))
-		return
-	}
-
 	team, err := a.UpdateTeam(r.Context(), id, auth.UpdateTeamOptions{
-		Name:         *params.Name,
-		Organization: *params.Organization,
+		Name: params.Name,
 	})
 	if err != nil {
 		Error(w, err)
