@@ -129,6 +129,7 @@ sql: install-pggen
 		--acronym vcs \
 		--acronym http \
 		--acronym tls \
+		--acronym sso \
 		--acronym hcl
 	goimports -w ./internal/sql/pggen
 	go fmt ./internal/sql/pggen

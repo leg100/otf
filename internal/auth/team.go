@@ -15,6 +15,11 @@ type (
 		Organization string
 
 		Access OrganizationAccess
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		Visibility string
+		SSOTeamID  *string
 	}
 
 	CreateTeamOptions struct {
@@ -30,10 +35,20 @@ type (
 	OrganizationAccess struct {
 		ManageWorkspaces bool `schema:"manage_workspaces"` // admin access on all workspaces
 		ManageVCS        bool `schema:"manage_vcs"`        // manage VCS providers
-		ManageRegistry   bool `schema:"manage_registry"`   // manage module and provider registry
+		ManageModules    bool `schema:"manage_modules"`    // manage module registry
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		ManageProviders       bool
+		ManagePolicies        bool
+		ManagePolicyOverrides bool
 	}
 
 	UpdateTeamOptions struct {
+		Name       *string
+		SSOTeamID  *string
+		Visibility *string
+
 		OrganizationAccess
 	}
 )
@@ -58,6 +73,9 @@ func (t *Team) IsOwners() bool {
 func (t *Team) Update(opts UpdateTeamOptions) error {
 	t.Access.ManageWorkspaces = opts.ManageWorkspaces
 	t.Access.ManageVCS = opts.ManageVCS
-	t.Access.ManageRegistry = opts.ManageRegistry
+	t.Access.ManageModules = opts.ManageModules
+	t.Access.ManageProviders = opts.ManageProviders
+	t.Access.ManagePolicies = opts.ManagePolicies
+	t.Access.ManagePolicyOverrides = opts.ManagePolicyOverrides
 	return nil
 }

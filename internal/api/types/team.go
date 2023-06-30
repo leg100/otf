@@ -36,13 +36,46 @@ type (
 		CanUpdateMembership bool `jsonapi:"attribute" json:"can-update-membership"`
 	}
 
-	// CreateTeamOptions represents the options for creating a
-	// user.
-	CreateTeamOptions struct {
-		Type               string                     `jsonapi:"primary,teams"`
-		Name               *string                    `jsonapi:"attribute" json:"name"`
-		Organization       *string                    `schema:"organization_name,required"`
+	// TeamCreateOptions represents the options for creating a team.
+	TeamCreateOptions struct {
+		// Type is a public field utilized by JSON:API to
+		// set the resource type via the field tag.
+		// It is not a user-defined value and does not need to be set.
+		// https://jsonapi.org/format/#crud-creating
+		Type string `jsonapi:"primary,teams"`
+
+		// Name of the team.
+		Name *string `jsonapi:"attribute" json:"name"`
+
+		// Optional: Unique Identifier to control team membership via SAML
+		SSOTeamID *string `jsonapi:"attribute" json:"sso-team-id,omitempty"`
+
+		// The team's organization access
 		OrganizationAccess *OrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
+
+		// The team's visibility ("secret", "organization")
+		Visibility *string `jsonapi:"attribute" json:"visibility,omitempty"`
+	}
+
+	// TeamUpdateOptions represents the options for updating a team.
+	TeamUpdateOptions struct {
+		// Type is a public field utilized by JSON:API to
+		// set the resource type via the field tag.
+		// It is not a user-defined value and does not need to be set.
+		// https://jsonapi.org/format/#crud-creating
+		Type string `jsonapi:"primary,teams"`
+
+		// Optional: New name for the team
+		Name *string `jsonapi:"attribute" json:"name,omitempty"`
+
+		// Optional: Unique Identifier to control team membership via SAML
+		SSOTeamID *string `jsonapi:"attribute" json:"sso-team-id,omitempty"`
+
+		// Optional: The team's organization access
+		OrganizationAccess *OrganizationAccessOptions `jsonapi:"attribute" json:"organization-access,omitempty"`
+
+		// Optional: The team's visibility ("secret", "organization")
+		Visibility *string `jsonapi:"attribute" json:"visibility,omitempty"`
 	}
 
 	// OrganizationAccessOptions represents the organization access options of a team.

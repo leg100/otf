@@ -37,7 +37,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 		_, err = tx.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
 			PermissionManageWorkspaces: team.OrganizationAccess().ManageWorkspaces,
 			PermissionManageVCS:        team.OrganizationAccess().ManageVCS,
-			PermissionManageRegistry:   team.OrganizationAccess().ManageRegistry,
+			PermissionManageModules:    team.OrganizationAccess().ManageModules,
 			TeamID:                     sql.String(teamID),
 		})
 		if err != nil {

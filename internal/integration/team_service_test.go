@@ -39,7 +39,7 @@ func TestIntegation_TeamService(t *testing.T) {
 			OrganizationAccess: auth.OrganizationAccess{
 				ManageWorkspaces: true,
 				ManageVCS:        true,
-				ManageRegistry:   true,
+				ManageModules:    true,
 			},
 		})
 		require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestIntegation_TeamService(t *testing.T) {
 
 		assert.True(t, got.OrganizationAccess().ManageWorkspaces)
 		assert.True(t, got.OrganizationAccess().ManageVCS)
-		assert.True(t, got.OrganizationAccess().ManageRegistry)
+		assert.True(t, got.OrganizationAccess().ManageModules)
 	})
 
 	t.Run("get", func(t *testing.T) {

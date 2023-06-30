@@ -86,7 +86,7 @@ func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOp
 // CreateTeam creates a team via HTTP/JSONAPI.
 func (c *Client) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
 	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
-	req, err := c.NewRequest("POST", u, &types.CreateTeamOptions{
+	req, err := c.NewRequest("POST", u, &types.TeamCreateOptions{
 		Name: internal.String(opts.Name),
 	})
 	if err != nil {

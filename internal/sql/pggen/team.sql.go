@@ -15,25 +15,49 @@ const insertTeamSQL = `INSERT INTO teams (
     team_id,
     name,
     created_at,
-    organization_name
+    organization_name,
+    visibility,
+    sso_team_id,
+    permission_manage_workspaces,
+    permission_manage_vcs,
+    permission_manage_modules,
+    permission_manage_providers,
+    permission_manage_policies,
+    permission_manage_policy_overrides
 ) VALUES (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12
 );`
 
 type InsertTeamParams struct {
-	ID               pgtype.Text
-	Name             pgtype.Text
-	CreatedAt        pgtype.Timestamptz
-	OrganizationName pgtype.Text
+	ID                              pgtype.Text
+	Name                            pgtype.Text
+	CreatedAt                       pgtype.Timestamptz
+	OrganizationName                pgtype.Text
+	Visibility                      pgtype.Text
+	SSOTeamID                       pgtype.Text
+	PermissionManageWorkspaces      bool
+	PermissionManageVCS             bool
+	PermissionManageModules         bool
+	PermissionManageProviders       bool
+	PermissionManagePolicies        bool
+	PermissionManagePolicyOverrides bool
 }
 
 // InsertTeam implements Querier.InsertTeam.
 func (q *DBQuerier) InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertTeam")
-	cmdTag, err := q.conn.Exec(ctx, insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationName)
+	cmdTag, err := q.conn.Exec(ctx, insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationName, params.Visibility, params.SSOTeamID, params.PermissionManageWorkspaces, params.PermissionManageVCS, params.PermissionManageModules, params.PermissionManageProviders, params.PermissionManagePolicies, params.PermissionManagePolicyOverrides)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertTeam: %w", err)
 	}
@@ -42,7 +66,7 @@ func (q *DBQuerier) InsertTeam(ctx context.Context, params InsertTeamParams) (pg
 
 // InsertTeamBatch implements Querier.InsertTeamBatch.
 func (q *DBQuerier) InsertTeamBatch(batch genericBatch, params InsertTeamParams) {
-	batch.Queue(insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationName)
+	batch.Queue(insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationName, params.Visibility, params.SSOTeamID, params.PermissionManageWorkspaces, params.PermissionManageVCS, params.PermissionManageModules, params.PermissionManageProviders, params.PermissionManagePolicies, params.PermissionManagePolicyOverrides)
 }
 
 // InsertTeamScan implements Querier.InsertTeamScan.
@@ -60,13 +84,18 @@ WHERE organization_name = $1
 ;`
 
 type FindTeamsByOrgRow struct {
-	TeamID                     pgtype.Text        `json:"team_id"`
-	Name                       pgtype.Text        `json:"name"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
-	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	OrganizationName           pgtype.Text        `json:"organization_name"`
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
 }
 
 // FindTeamsByOrg implements Querier.FindTeamsByOrg.
@@ -80,7 +109,7 @@ func (q *DBQuerier) FindTeamsByOrg(ctx context.Context, organizationName pgtype.
 	items := []FindTeamsByOrgRow{}
 	for rows.Next() {
 		var item FindTeamsByOrgRow
-		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 			return nil, fmt.Errorf("scan FindTeamsByOrg row: %w", err)
 		}
 		items = append(items, item)
@@ -106,7 +135,7 @@ func (q *DBQuerier) FindTeamsByOrgScan(results pgx.BatchResults) ([]FindTeamsByO
 	items := []FindTeamsByOrgRow{}
 	for rows.Next() {
 		var item FindTeamsByOrgRow
-		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 			return nil, fmt.Errorf("scan FindTeamsByOrgBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -124,13 +153,18 @@ AND   organization_name = $2
 ;`
 
 type FindTeamByNameRow struct {
-	TeamID                     pgtype.Text        `json:"team_id"`
-	Name                       pgtype.Text        `json:"name"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
-	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	OrganizationName           pgtype.Text        `json:"organization_name"`
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
 }
 
 // FindTeamByName implements Querier.FindTeamByName.
@@ -138,7 +172,7 @@ func (q *DBQuerier) FindTeamByName(ctx context.Context, name pgtype.Text, organi
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByName")
 	row := q.conn.QueryRow(ctx, findTeamByNameSQL, name, organizationName)
 	var item FindTeamByNameRow
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("query FindTeamByName: %w", err)
 	}
 	return item, nil
@@ -153,7 +187,7 @@ func (q *DBQuerier) FindTeamByNameBatch(batch genericBatch, name pgtype.Text, or
 func (q *DBQuerier) FindTeamByNameScan(results pgx.BatchResults) (FindTeamByNameRow, error) {
 	row := results.QueryRow()
 	var item FindTeamByNameRow
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("scan FindTeamByNameBatch row: %w", err)
 	}
 	return item, nil
@@ -165,13 +199,18 @@ WHERE team_id = $1
 ;`
 
 type FindTeamByIDRow struct {
-	TeamID                     pgtype.Text        `json:"team_id"`
-	Name                       pgtype.Text        `json:"name"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
-	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	OrganizationName           pgtype.Text        `json:"organization_name"`
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
 }
 
 // FindTeamByID implements Querier.FindTeamByID.
@@ -179,7 +218,7 @@ func (q *DBQuerier) FindTeamByID(ctx context.Context, teamID pgtype.Text) (FindT
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByID")
 	row := q.conn.QueryRow(ctx, findTeamByIDSQL, teamID)
 	var item FindTeamByIDRow
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("query FindTeamByID: %w", err)
 	}
 	return item, nil
@@ -194,7 +233,7 @@ func (q *DBQuerier) FindTeamByIDBatch(batch genericBatch, teamID pgtype.Text) {
 func (q *DBQuerier) FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error) {
 	row := results.QueryRow()
 	var item FindTeamByIDRow
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("scan FindTeamByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -207,13 +246,18 @@ FOR UPDATE OF t
 ;`
 
 type FindTeamByIDForUpdateRow struct {
-	TeamID                     pgtype.Text        `json:"team_id"`
-	Name                       pgtype.Text        `json:"name"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
-	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	OrganizationName           pgtype.Text        `json:"organization_name"`
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
 }
 
 // FindTeamByIDForUpdate implements Querier.FindTeamByIDForUpdate.
@@ -221,7 +265,7 @@ func (q *DBQuerier) FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Tex
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findTeamByIDForUpdateSQL, teamID)
 	var item FindTeamByIDForUpdateRow
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("query FindTeamByIDForUpdate: %w", err)
 	}
 	return item, nil
@@ -236,7 +280,7 @@ func (q *DBQuerier) FindTeamByIDForUpdateBatch(batch genericBatch, teamID pgtype
 func (q *DBQuerier) FindTeamByIDForUpdateScan(results pgx.BatchResults) (FindTeamByIDForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindTeamByIDForUpdateRow
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageModules, &item.OrganizationName, &item.SSOTeamID, &item.Visibility, &item.PermissionManagePolicies, &item.PermissionManagePolicyOverrides, &item.PermissionManageProviders); err != nil {
 		return item, fmt.Errorf("scan FindTeamByIDForUpdateBatch row: %w", err)
 	}
 	return item, nil
@@ -244,23 +288,35 @@ func (q *DBQuerier) FindTeamByIDForUpdateScan(results pgx.BatchResults) (FindTea
 
 const updateTeamByIDSQL = `UPDATE teams
 SET
-    permission_manage_workspaces = $1,
-    permission_manage_vcs = $2,
-    permission_manage_registry = $3
-WHERE team_id = $4
+    name = $1,
+    visibility = $2,
+    sso_team_id = $3,
+    permission_manage_workspaces = $4,
+    permission_manage_vcs = $5,
+    permission_manage_modules = $6,
+    permission_manage_providers = $7,
+    permission_manage_policies = $8,
+    permission_manage_policy_overrides = $9
+WHERE team_id = $10
 RETURNING team_id;`
 
 type UpdateTeamByIDParams struct {
-	PermissionManageWorkspaces bool
-	PermissionManageVCS        bool
-	PermissionManageRegistry   bool
-	TeamID                     pgtype.Text
+	Name                            pgtype.Text
+	Visibility                      pgtype.Text
+	SSOTeamID                       pgtype.Text
+	PermissionManageWorkspaces      bool
+	PermissionManageVCS             bool
+	PermissionManageModules         bool
+	PermissionManageProviders       bool
+	PermissionManagePolicies        bool
+	PermissionManagePolicyOverrides bool
+	TeamID                          pgtype.Text
 }
 
 // UpdateTeamByID implements Querier.UpdateTeamByID.
 func (q *DBQuerier) UpdateTeamByID(ctx context.Context, params UpdateTeamByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateTeamByID")
-	row := q.conn.QueryRow(ctx, updateTeamByIDSQL, params.PermissionManageWorkspaces, params.PermissionManageVCS, params.PermissionManageRegistry, params.TeamID)
+	row := q.conn.QueryRow(ctx, updateTeamByIDSQL, params.Name, params.Visibility, params.SSOTeamID, params.PermissionManageWorkspaces, params.PermissionManageVCS, params.PermissionManageModules, params.PermissionManageProviders, params.PermissionManagePolicies, params.PermissionManagePolicyOverrides, params.TeamID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateTeamByID: %w", err)
@@ -270,7 +326,7 @@ func (q *DBQuerier) UpdateTeamByID(ctx context.Context, params UpdateTeamByIDPar
 
 // UpdateTeamByIDBatch implements Querier.UpdateTeamByIDBatch.
 func (q *DBQuerier) UpdateTeamByIDBatch(batch genericBatch, params UpdateTeamByIDParams) {
-	batch.Queue(updateTeamByIDSQL, params.PermissionManageWorkspaces, params.PermissionManageVCS, params.PermissionManageRegistry, params.TeamID)
+	batch.Queue(updateTeamByIDSQL, params.Name, params.Visibility, params.SSOTeamID, params.PermissionManageWorkspaces, params.PermissionManageVCS, params.PermissionManageModules, params.PermissionManageProviders, params.PermissionManagePolicies, params.PermissionManagePolicyOverrides, params.TeamID)
 }
 
 // UpdateTeamByIDScan implements Querier.UpdateTeamByIDScan.

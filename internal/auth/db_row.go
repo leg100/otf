@@ -32,13 +32,18 @@ func (row userRow) toUser() *User {
 
 // teamRow represents the result of a database query for a team.
 type teamRow struct {
-	TeamID                     pgtype.Text        `json:"team_id"`
-	Name                       pgtype.Text        `json:"name"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
-	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	OrganizationName           pgtype.Text        `json:"organization_name"`
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
 }
 
 func (row teamRow) toTeam() *Team {
@@ -50,7 +55,7 @@ func (row teamRow) toTeam() *Team {
 		Access: OrganizationAccess{
 			ManageWorkspaces: row.PermissionManageWorkspaces,
 			ManageVCS:        row.PermissionManageVCS,
-			ManageRegistry:   row.PermissionManageRegistry,
+			ManageModules:    row.PermissionManageModules,
 		},
 	}
 }

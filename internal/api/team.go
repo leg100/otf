@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -16,21 +17,55 @@ func (a *api) addTeamHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/teams", a.createTeam).Methods("POST")
 	r.HandleFunc("/organizations/{organization_name}/teams/{team_name}", a.getTeam).Methods("GET")
 	r.HandleFunc("/teams/{team_id}", a.getTeamByID).Methods("GET")
+	r.HandleFunc("/teams/{team_id}", a.updateTeam).Methods("PATCH")
 	r.HandleFunc("/teams/{team_id}", a.deleteTeam).Methods("DELETE")
 }
 
 func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
-	var params types.CreateTeamOptions
-	if err := decode.Route(&params, r); err != nil {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
 		Error(w, err)
 		return
 	}
+
+	var params types.TeamCreateOptions
 	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
 
 	team, err := a.CreateTeam(r.Context(), auth.CreateTeamOptions{
+		Name:         *params.Name,
+		Organization: org,
+	})
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	a.writeResponse(w, r, team, withCode(http.StatusCreated))
+}
+
+func (a *api) updateTeam(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("team_id", r)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	var params types.TeamUpdateOptions
+	if err := unmarshal(r.Body, &params); err != nil {
+		Error(w, err)
+		return
+	}
+
+	// unsupported parameters
+	if params.Visibility != nil && *params.Visibility != "organization" {
+		Error(w, fmt.Errorf("only organization visibility is supported"))
+		return
+	}
+
+	team, err := a.UpdateTeam(r.Context(), id, auth.UpdateTeamOptions{
 		Name:         *params.Name,
 		Organization: *params.Organization,
 	})
@@ -39,7 +74,7 @@ func (a *api) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.writeResponse(w, r, team, withCode(http.StatusCreated))
+	a.writeResponse(w, r, team)
 }
 
 func (a *api) getTeam(w http.ResponseWriter, r *http.Request) {
