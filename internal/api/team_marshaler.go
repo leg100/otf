@@ -10,6 +10,11 @@ import (
 )
 
 func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team, []jsonapi.MarshalOption, error) {
+	to := &types.Team{
+		ID:   from.ID,
+		Name: from.Name,
+	}
+
 	// Support including related resources:
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/teams#available-related-resources
@@ -25,13 +30,11 @@ func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team
 				}
 				for _, user := range users {
 					include = append(include, m.toUser(user))
+					to.Users = append(to.Users, m.toUser(user))
 				}
 				opts = append(opts, jsonapi.MarshalInclude(include...))
 			}
 		}
 	}
-	return &types.Team{
-		ID:   from.ID,
-		Name: from.Name,
-	}, opts, nil
+	return to, opts, nil
 }

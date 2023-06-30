@@ -47,6 +47,7 @@ type (
 		workspace.WorkspaceService
 		configversion.ConfigurationVersionService
 		auth.AuthService
+		auth.TeamService
 		tokens.TokensService
 		variable.VariableService
 		notifications.NotificationService
@@ -75,6 +76,7 @@ func New(opts Options) *api {
 			WorkspaceService:    opts.WorkspaceService,
 			RunService:          opts.RunService,
 			StateService:        opts.StateService,
+			TeamService:         opts.TeamService,
 			runLogsURLGenerator: &runLogsURLGenerator{opts.Signer},
 		},
 		maxConfigSize: opts.MaxConfigSize,
