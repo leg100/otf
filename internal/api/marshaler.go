@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -90,6 +91,10 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 		payload, marshalOpts, err = m.toTeam(v, r)
 	case *workspace.TagList:
 		payload, marshalOpts = m.toTags(v)
+	case *vcsprovider.VCSProvider:
+		payload = m.toOAuthClient(v)
+	case []*vcsprovider.VCSProvider:
+		payload = m.toOAuthClientList(v)
 	default:
 		Error(w, fmt.Errorf("cannot marshal unknown type: %T", v))
 		return
