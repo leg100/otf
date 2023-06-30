@@ -84,9 +84,9 @@ func (a *CLI) addTeamMembershipCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:           "add-user [username]",
-		Short:         "Add user to team",
-		Args:          cobra.ExactArgs(1),
+		Use:           "add-users [username|...]",
+		Short:         "Add users to team",
+		Args:          cobra.MinimumNArgs(1),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,13 +95,13 @@ func (a *CLI) addTeamMembershipCommand() *cobra.Command {
 				return err
 			}
 			err = a.AddTeamMembership(cmd.Context(), auth.TeamMembershipOptions{
-				Username: args[0],
-				TeamID:   team.ID,
+				Usernames: args,
+				TeamID:    team.ID,
 			})
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args[0], name)
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully added %s to %s\n", args, name)
 			return nil
 		},
 	}
@@ -121,9 +121,9 @@ func (a *CLI) deleteTeamMembershipCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:           "del-user [username]",
-		Short:         "Delete user from team",
-		Args:          cobra.ExactArgs(1),
+		Use:           "del-users [username|...]",
+		Short:         "Delete users from team",
+		Args:          cobra.MinimumNArgs(1),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -132,13 +132,13 @@ func (a *CLI) deleteTeamMembershipCommand() *cobra.Command {
 				return err
 			}
 			err = a.RemoveTeamMembership(cmd.Context(), auth.TeamMembershipOptions{
-				Username: args[0],
-				TeamID:   team.ID,
+				Usernames: args,
+				TeamID:    team.ID,
 			})
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args[0], name)
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully removed %s from %s\n", args, name)
 			return nil
 		},
 	}

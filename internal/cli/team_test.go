@@ -37,22 +37,22 @@ func TestTeam_AddMembership(t *testing.T) {
 	team := &auth.Team{Name: "owners", Organization: "acme-corp"}
 	cmd := fakeApp(withTeam(team)).addTeamMembershipCommand()
 
-	cmd.SetArgs([]string{"bobby", "--organization", "acme-corp", "--team", "owners"})
+	cmd.SetArgs([]string{"bobby", "sally", "--organization", "acme-corp", "--team", "owners"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
 
-	assert.Equal(t, "Successfully added bobby to owners\n", got.String())
+	assert.Equal(t, "Successfully added [bobby sally] to owners\n", got.String())
 }
 
 func TestTeam_RemoveMembership(t *testing.T) {
 	team := &auth.Team{Name: "owners", Organization: "acme-corp"}
 	cmd := fakeApp(withTeam(team)).deleteTeamMembershipCommand()
 
-	cmd.SetArgs([]string{"bobby", "--organization", "acme-corp", "--team", "owners"})
+	cmd.SetArgs([]string{"bobby", "sally", "--organization", "acme-corp", "--team", "owners"})
 	got := bytes.Buffer{}
 	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
 
-	assert.Equal(t, "Successfully removed bobby from owners\n", got.String())
+	assert.Equal(t, "Successfully removed [bobby sally] from owners\n", got.String())
 }

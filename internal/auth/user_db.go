@@ -23,7 +23,7 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 			return sql.Error(err)
 		}
 		for _, team := range user.Teams {
-			_, err = tx.InsertTeamMembership(ctx, sql.String(user.Username), sql.String(team.ID))
+			_, err = tx.InsertTeamMembership(ctx, []string{user.Username}, sql.String(team.ID))
 			if err != nil {
 				return sql.Error(err)
 			}
@@ -94,16 +94,16 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	}
 }
 
-func (db *pgdb) addTeamMembership(ctx context.Context, username, teamID string) error {
-	_, err := db.InsertTeamMembership(ctx, sql.String(username), sql.String(teamID))
+func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
+	_, err := db.InsertTeamMembership(ctx, usernames, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) removeTeamMembership(ctx context.Context, username, teamID string) error {
-	_, err := db.DeleteTeamMembership(ctx, sql.String(username), sql.String(teamID))
+func (db *pgdb) removeTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
+	_, err := db.DeleteTeamMembership(ctx, usernames, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}

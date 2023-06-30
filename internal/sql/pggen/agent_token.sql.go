@@ -734,19 +734,19 @@ type Querier interface {
 	// DeleteTeamByIDScan scans the result of an executed DeleteTeamByIDBatch query.
 	DeleteTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertTeamMembership(ctx context.Context, username pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error)
+	InsertTeamMembership(ctx context.Context, usernames []string, teamID pgtype.Text) ([]pgtype.Text, error)
 	// InsertTeamMembershipBatch enqueues a InsertTeamMembership query into batch to be executed
 	// later by the batch.
-	InsertTeamMembershipBatch(batch genericBatch, username pgtype.Text, teamID pgtype.Text)
+	InsertTeamMembershipBatch(batch genericBatch, usernames []string, teamID pgtype.Text)
 	// InsertTeamMembershipScan scans the result of an executed InsertTeamMembershipBatch query.
-	InsertTeamMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertTeamMembershipScan(results pgx.BatchResults) ([]pgtype.Text, error)
 
-	DeleteTeamMembership(ctx context.Context, username pgtype.Text, teamID pgtype.Text) (pgtype.Text, error)
+	DeleteTeamMembership(ctx context.Context, usernames []string, teamID pgtype.Text) ([]pgtype.Text, error)
 	// DeleteTeamMembershipBatch enqueues a DeleteTeamMembership query into batch to be executed
 	// later by the batch.
-	DeleteTeamMembershipBatch(batch genericBatch, username pgtype.Text, teamID pgtype.Text)
+	DeleteTeamMembershipBatch(batch genericBatch, usernames []string, teamID pgtype.Text)
 	// DeleteTeamMembershipScan scans the result of an executed DeleteTeamMembershipBatch query.
-	DeleteTeamMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
+	DeleteTeamMembershipScan(results pgx.BatchResults) ([]pgtype.Text, error)
 
 	InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error)
 	// InsertTokenBatch enqueues a InsertToken query into batch to be executed

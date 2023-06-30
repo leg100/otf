@@ -90,6 +90,7 @@ func (a *api) AddHandlers(r *mux.Router) {
 	a.addConfigHandlers(r)
 	a.addUserHandlers(r)
 	a.addTeamHandlers(r)
+	a.addTeamMembershipHandlers(r)
 	a.addVariableHandlers(r)
 	a.addTokenHandlers(r)
 	a.addNotificationHandlers(r)

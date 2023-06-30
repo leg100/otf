@@ -22,9 +22,9 @@ type (
 		SetSiteAdmins(ctx context.Context, usernames ...string) error
 	}
 	TeamMembershipOptions struct {
-		Username string `schema:"username,required"`
-		TeamID   string `schema:"team_id,required"`
-		Tx       internal.DB
+		Usernames []string
+		TeamID    string
+		Tx        internal.DB
 	}
 )
 
@@ -119,11 +119,11 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 		return err
 	}
 
-	if err := db.addTeamMembership(ctx, opts.Username, opts.TeamID); err != nil {
-		a.Error(err, "adding team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
+	if err := db.addTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+		a.Error(err, "adding team membership", "user", opts.Usernames, "team", opts.TeamID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("added team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
+	a.V(0).Info("added team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
 
 	return nil
 }
@@ -157,11 +157,11 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 		}
 	}
 
-	if err := db.removeTeamMembership(ctx, opts.Username, opts.TeamID); err != nil {
-		a.Error(err, "removing team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
+	if err := db.removeTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+		a.Error(err, "removing team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
 		return err
 	}
-	a.V(0).Info("removed team membership", "user", opts.Username, "team", opts.TeamID, "subject", subject)
+	a.V(0).Info("removed team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
 
 	return nil
 }
