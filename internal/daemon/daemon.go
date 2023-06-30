@@ -293,6 +293,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TeamService:                 authService,
 		VariableService:             variableService,
 		NotificationService:         notificationService,
+		VCSProviderService:          vcsProviderService,
 		Signer:                      signer,
 		MaxConfigSize:               cfg.MaxConfigSize,
 	})

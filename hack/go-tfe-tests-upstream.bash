@@ -10,6 +10,9 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 
 export GO_TFE_REPO=github.com/hashicorp/go-tfe@latest
 
+# necessary for TestOAuthClients* tests
+export OAUTH_CLIENT_GITHUB_TOKEN="my-secret-github-token"
+
 tests=()
 tests+=('TestStateVersionOutputsRead')
 tests+=('TestOrganizationTagsList/with_no_query_params')
@@ -29,6 +32,9 @@ tests+=('TestNotificationConfigurationUpdate/^when')
 tests+=('TestTeamMembersAddByUsername')
 tests+=('TestTeamMembersRemoveByUsernames')
 tests+=('TestTeamMembersList')
+tests+=('TestOAuthClientsCreate$')
+tests+=('TestOAuthClientsRead')
+tests+=('TestOAuthClientsList')
 all=$(join_by '|' "${tests[@]}")
 
 ./hack/go-tfe-tests.bash $all
