@@ -8,17 +8,20 @@ import (
 )
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
-	params := pggen.InsertTeamParams{
-		ID:               sql.String(team.ID),
-		Name:             sql.String(team.Name),
-		CreatedAt:        sql.Timestamptz(team.CreatedAt),
-		OrganizationName: sql.String(team.Organization),
-		Visibility:       sql.String(team.Visibility),
-	}
-	if team.SSOTeamID != nil {
-		params.SSOTeamID = sql.String(*team.SSOTeamID)
-	}
-	_, err := db.InsertTeam(ctx, params)
+	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
+		ID:                              sql.String(team.ID),
+		Name:                            sql.String(team.Name),
+		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
+		OrganizationName:                sql.String(team.Organization),
+		Visibility:                      sql.String(team.Visibility),
+		SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
+		PermissionManageWorkspaces:      team.Access.ManageWorkspaces,
+		PermissionManageVCS:             team.Access.ManageVCS,
+		PermissionManageModules:         team.Access.ManageModules,
+		PermissionManageProviders:       team.Access.ManageProviders,
+		PermissionManagePolicies:        team.Access.ManagePolicies,
+		PermissionManagePolicyOverrides: team.Access.ManagePolicyOverrides,
+	})
 	return sql.Error(err)
 }
 
@@ -40,11 +43,16 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 		}
 		// persist update
 		_, err = tx.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
-			PermissionManageWorkspaces: team.OrganizationAccess().ManageWorkspaces,
-			PermissionManageVCS:        team.OrganizationAccess().ManageVCS,
-			PermissionManageModules:    team.OrganizationAccess().ManageModules,
-			TeamID:                     sql.String(teamID),
-			Visibility:                 sql.String(team.Visibility),
+			TeamID:                          sql.String(teamID),
+			Name:                            sql.String(team.Name),
+			Visibility:                      sql.String(team.Visibility),
+			SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
+			PermissionManageWorkspaces:      team.Access.ManageWorkspaces,
+			PermissionManageVCS:             team.Access.ManageVCS,
+			PermissionManageModules:         team.Access.ManageModules,
+			PermissionManageProviders:       team.Access.ManageProviders,
+			PermissionManagePolicies:        team.Access.ManagePolicies,
+			PermissionManagePolicyOverrides: team.Access.ManagePolicyOverrides,
 		})
 		if err != nil {
 			return err

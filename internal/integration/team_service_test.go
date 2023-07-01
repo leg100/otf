@@ -16,16 +16,14 @@ func TestIntegation_TeamService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 
-		team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
-			Name:         uuid.NewString(),
-			Organization: org.Name,
+		team, err := svc.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
-				Name:         team.Name,
-				Organization: org.Name,
+			_, err := svc.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+				Name: internal.String(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})

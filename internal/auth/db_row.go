@@ -47,15 +47,23 @@ type teamRow struct {
 }
 
 func (row teamRow) toTeam() *Team {
-	return &Team{
+	to := Team{
 		ID:           row.TeamID.String,
 		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Name:         row.Name.String,
 		Organization: row.OrganizationName.String,
+		Visibility:   row.Visibility.String,
 		Access: OrganizationAccess{
-			ManageWorkspaces: row.PermissionManageWorkspaces,
-			ManageVCS:        row.PermissionManageVCS,
-			ManageModules:    row.PermissionManageModules,
+			ManageWorkspaces:      row.PermissionManageWorkspaces,
+			ManageVCS:             row.PermissionManageVCS,
+			ManageModules:         row.PermissionManageModules,
+			ManageProviders:       row.PermissionManageProviders,
+			ManagePolicies:        row.PermissionManagePolicies,
+			ManagePolicyOverrides: row.PermissionManagePolicyOverrides,
 		},
 	}
+	if row.SSOTeamID.Status == pgtype.Present {
+		to.SSOTeamID = &row.SSOTeamID.String
+	}
+	return &to
 }

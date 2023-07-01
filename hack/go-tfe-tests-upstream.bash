@@ -36,6 +36,11 @@ tests+=('TestOAuthClientsCreate$')
 tests+=('TestOAuthClientsRead')
 tests+=('TestOAuthClientsList')
 tests+=('TestOAuthClientsDelete')
+tests+=('TestTeamsList')
+tests+=('TestTeamsCreate')
+tests+=('TestTeamsRead')
+tests+=('TestTeamsUpdate$')
+tests+=('TestTeamsDelete')
 all=$(join_by '|' "${tests[@]}")
 
 ./hack/go-tfe-tests.bash $all

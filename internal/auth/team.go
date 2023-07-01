@@ -24,11 +24,16 @@ type (
 
 	CreateTeamOptions struct {
 		// Name of team to create
-		Name string `schema:"name,required"`
-		// Organization in which to creat team
-		Organization string `schema:"organization_name,required"`
+		Name *string `schema:"name,required"`
 		// Database transaction within which to create team. Optional.
 		Tx internal.DB
+
+		OrganizationAccessOptions
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		SSOTeamID  *string
+		Visibility *string
 	}
 
 	// OrganizationAccess defines a team's organization access.
@@ -67,14 +72,43 @@ type (
 	}
 )
 
-func NewTeam(opts CreateTeamOptions) *Team {
-	team := Team{
-		ID:           internal.NewID("team"),
-		Name:         opts.Name,
-		CreatedAt:    internal.CurrentTimestamp(),
-		Organization: opts.Organization,
+func newTeam(organization string, opts CreateTeamOptions) (*Team, error) {
+	// required parameters
+	if opts.Name == nil {
+		return nil, &internal.MissingParameterError{Parameter: "name"}
 	}
-	return &team
+	// default parameters
+	if opts.Visibility == nil {
+		opts.Visibility = internal.String("secret")
+	}
+
+	team := &Team{
+		ID:           internal.NewID("team"),
+		Name:         *opts.Name,
+		CreatedAt:    internal.CurrentTimestamp(),
+		Organization: organization,
+		SSOTeamID:    opts.SSOTeamID,
+		Visibility:   *opts.Visibility,
+	}
+	if opts.ManageWorkspaces != nil {
+		team.Access.ManageWorkspaces = *opts.ManageWorkspaces
+	}
+	if opts.ManageVCS != nil {
+		team.Access.ManageVCS = *opts.ManageVCS
+	}
+	if opts.ManageModules != nil {
+		team.Access.ManageModules = *opts.ManageModules
+	}
+	if opts.ManageProviders != nil {
+		team.Access.ManageProviders = *opts.ManageProviders
+	}
+	if opts.ManagePolicies != nil {
+		team.Access.ManagePolicies = *opts.ManagePolicies
+	}
+	if opts.ManagePolicyOverrides != nil {
+		team.Access.ManagePolicyOverrides = *opts.ManagePolicyOverrides
+	}
+	return team, nil
 }
 
 func (t *Team) String() string                         { return t.Name }

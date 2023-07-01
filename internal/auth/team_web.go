@@ -38,16 +38,21 @@ func (h *webHandlers) newTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) createTeam(w http.ResponseWriter, r *http.Request) {
-	var opts CreateTeamOptions
-	if err := decode.All(&opts, r); err != nil {
+	var params struct {
+		Name         *string
+		Organization *string `schema:"organization_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	team, err := h.svc.CreateTeam(r.Context(), opts)
+	team, err := h.svc.CreateTeam(r.Context(), *params.Organization, CreateTeamOptions{
+		Name: params.Name,
+	})
 	if err == internal.ErrResourceAlreadyExists {
-		html.FlashError(w, "team already exists: "+opts.Name)
-		http.Redirect(w, r, paths.NewTeam(opts.Organization), http.StatusFound)
+		html.FlashError(w, "team already exists")
+		http.Redirect(w, r, paths.NewTeam(*params.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {

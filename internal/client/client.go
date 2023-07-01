@@ -72,7 +72,7 @@ type (
 		AddTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error
 		RemoveTeamMembership(ctx context.Context, opts auth.TeamMembershipOptions) error
 
-		CreateTeam(ctx context.Context, opts auth.CreateTeamOptions) (*auth.Team, error)
+		CreateTeam(ctx context.Context, organization string, opts auth.CreateTeamOptions) (*auth.Team, error)
 		GetTeam(ctx context.Context, organization, team string) (*auth.Team, error)
 		DeleteTeam(ctx context.Context, teamID string) error
 

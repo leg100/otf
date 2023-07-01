@@ -10,7 +10,7 @@ import (
 var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
 
 type TeamService interface {
-	CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
+	CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error)
 	GetTeam(ctx context.Context, organization, team string) (*Team, error)
 	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
@@ -21,23 +21,26 @@ type TeamService interface {
 
 // CreateTeam creates a team. If Tx in opts is non-nil then the team is created
 // within that database transaction.
-func (a *service) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, opts.Organization)
+func (a *service) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.CreateTeamAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	team := NewTeam(opts)
+	team, err := newTeam(organization, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	db := a.db
 	if opts.Tx != nil {
 		db = newDB(opts.Tx, a.db.Logger)
 	}
 	if err := db.createTeam(ctx, team); err != nil {
-		a.Error(err, "creating team", "name", opts.Name, "organization", opts.Organization, "subject", subject)
+		a.Error(err, "creating team", "name", opts.Name, "organization", organization, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created team", "name", opts.Name, "organization", opts.Organization, "subject", subject)
+	a.V(0).Info("created team", "name", opts.Name, "organization", organization, "subject", subject)
 
 	return team, nil
 }

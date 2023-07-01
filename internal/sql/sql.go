@@ -19,6 +19,14 @@ func String(s string) pgtype.Text {
 	return pgtype.Text{String: s, Status: pgtype.Present}
 }
 
+// StringPtr converts a go-string pointer into a postgres nullable string
+func StringPtr(s *string) pgtype.Text {
+	if s != nil {
+		return pgtype.Text{String: *s, Status: pgtype.Present}
+	}
+	return pgtype.Text{Status: pgtype.Null}
+}
+
 // NullString returns a postgres null string
 func NullString() pgtype.Text {
 	return pgtype.Text{Status: pgtype.Null}

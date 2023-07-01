@@ -9,7 +9,7 @@ type (
 		Visibility         string              `jsonapi:"attribute" json:"visibility"`
 		Permissions        *TeamPermissions    `jsonapi:"attribute" json:"permissions"`
 		UserCount          int                 `jsonapi:"attribute" json:"users-count"`
-		SSOTeamID          string              `jsonapi:"attribute" json:"sso-team-id"`
+		SSOTeamID          *string             `jsonapi:"attribute" json:"sso-team-id"`
 
 		// Relations
 		Users []*User `jsonapi:"relationship" json:"users"`
