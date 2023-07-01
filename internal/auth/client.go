@@ -84,10 +84,14 @@ func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOp
 }
 
 // CreateTeam creates a team via HTTP/JSONAPI.
-func (c *Client) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
-	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
-	req, err := c.NewRequest("POST", u, &types.CreateTeamOptions{
-		Name: internal.String(opts.Name),
+func (c *Client) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
+	// validate params
+	if _, err := newTeam(organization, opts); err != nil {
+		return nil, err
+	}
+	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization))
+	req, err := c.NewRequest("POST", u, &types.TeamCreateOptions{
+		Name: opts.Name,
 	})
 	if err != nil {
 		return nil, err

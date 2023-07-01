@@ -118,7 +118,7 @@ func (f *fakeClient) RemoveTeamMembership(context.Context, auth.TeamMembershipOp
 	return nil
 }
 
-func (f *fakeClient) CreateTeam(context.Context, auth.CreateTeamOptions) (*auth.Team, error) {
+func (f *fakeClient) CreateTeam(context.Context, string, auth.CreateTeamOptions) (*auth.Team, error) {
 	return f.team, nil
 }
 

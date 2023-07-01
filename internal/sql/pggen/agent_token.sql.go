@@ -1715,13 +1715,18 @@ type StateVersionOutputs struct {
 
 // Teams represents the Postgres composite type "teams".
 type Teams struct {
-	TeamID                     pgtype.Text        `json:"team_id"`
-	Name                       pgtype.Text        `json:"name"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
-	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	OrganizationName           pgtype.Text        `json:"organization_name"`
+	TeamID                          pgtype.Text        `json:"team_id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	PermissionManageWorkspaces      bool               `json:"permission_manage_workspaces"`
+	PermissionManageVCS             bool               `json:"permission_manage_vcs"`
+	PermissionManageModules         bool               `json:"permission_manage_modules"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	PermissionManagePolicies        bool               `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides bool               `json:"permission_manage_policy_overrides"`
+	PermissionManageProviders       bool               `json:"permission_manage_providers"`
 }
 
 // Users represents the Postgres composite type "users".
@@ -1961,8 +1966,13 @@ func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"permission_manage_workspaces", "bool", &pgtype.Bool{}},
 		compositeField{"permission_manage_vcs", "bool", &pgtype.Bool{}},
-		compositeField{"permission_manage_registry", "bool", &pgtype.Bool{}},
+		compositeField{"permission_manage_modules", "bool", &pgtype.Bool{}},
 		compositeField{"organization_name", "text", &pgtype.Text{}},
+		compositeField{"sso_team_id", "text", &pgtype.Text{}},
+		compositeField{"visibility", "text", &pgtype.Text{}},
+		compositeField{"permission_manage_policies", "bool", &pgtype.Bool{}},
+		compositeField{"permission_manage_policy_overrides", "bool", &pgtype.Bool{}},
+		compositeField{"permission_manage_providers", "bool", &pgtype.Bool{}},
 	)
 }
 

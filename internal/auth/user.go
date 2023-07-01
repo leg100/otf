@@ -149,7 +149,7 @@ func (u *User) CanAccessOrganization(action rbac.Action, org string) bool {
 					return true
 				}
 			}
-			if team.Access.ManageRegistry {
+			if team.Access.ManageModules {
 				if rbac.VCSManagerRole.IsAllowed(action) {
 					return true
 				}

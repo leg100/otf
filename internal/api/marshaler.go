@@ -89,6 +89,8 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 		payload = m.toUser(v)
 	case *auth.Team:
 		payload, marshalOpts, err = m.toTeam(v, r)
+	case []*auth.Team:
+		payload, marshalOpts, err = m.toTeamList(v, r)
 	case *workspace.TagList:
 		payload, marshalOpts = m.toTags(v)
 	case *vcsprovider.VCSProvider:

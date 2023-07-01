@@ -9,10 +9,18 @@ import (
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
-		ID:               sql.String(team.ID),
-		Name:             sql.String(team.Name),
-		CreatedAt:        sql.Timestamptz(team.CreatedAt),
-		OrganizationName: sql.String(team.Organization),
+		ID:                              sql.String(team.ID),
+		Name:                            sql.String(team.Name),
+		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
+		OrganizationName:                sql.String(team.Organization),
+		Visibility:                      sql.String(team.Visibility),
+		SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
+		PermissionManageWorkspaces:      team.Access.ManageWorkspaces,
+		PermissionManageVCS:             team.Access.ManageVCS,
+		PermissionManageModules:         team.Access.ManageModules,
+		PermissionManageProviders:       team.Access.ManageProviders,
+		PermissionManagePolicies:        team.Access.ManagePolicies,
+		PermissionManagePolicyOverrides: team.Access.ManagePolicyOverrides,
 	})
 	return sql.Error(err)
 }
@@ -35,10 +43,16 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 		}
 		// persist update
 		_, err = tx.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
-			PermissionManageWorkspaces: team.OrganizationAccess().ManageWorkspaces,
-			PermissionManageVCS:        team.OrganizationAccess().ManageVCS,
-			PermissionManageRegistry:   team.OrganizationAccess().ManageRegistry,
-			TeamID:                     sql.String(teamID),
+			TeamID:                          sql.String(teamID),
+			Name:                            sql.String(team.Name),
+			Visibility:                      sql.String(team.Visibility),
+			SSOTeamID:                       sql.StringPtr(team.SSOTeamID),
+			PermissionManageWorkspaces:      team.Access.ManageWorkspaces,
+			PermissionManageVCS:             team.Access.ManageVCS,
+			PermissionManageModules:         team.Access.ManageModules,
+			PermissionManageProviders:       team.Access.ManageProviders,
+			PermissionManagePolicies:        team.Access.ManagePolicies,
+			PermissionManagePolicyOverrides: team.Access.ManagePolicyOverrides,
 		})
 		if err != nil {
 			return err

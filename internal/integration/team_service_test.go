@@ -16,16 +16,14 @@ func TestIntegation_TeamService(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, org, ctx := setup(t, nil)
 
-		team, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
-			Name:         uuid.NewString(),
-			Organization: org.Name,
+		team, err := svc.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("already exists error", func(t *testing.T) {
-			_, err := svc.CreateTeam(ctx, auth.CreateTeamOptions{
-				Name:         team.Name,
-				Organization: org.Name,
+			_, err := svc.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+				Name: internal.String(team.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
 		})
@@ -36,10 +34,10 @@ func TestIntegation_TeamService(t *testing.T) {
 		team := svc.createTeam(t, ctx, nil)
 
 		_, err := svc.UpdateTeam(ctx, team.ID, auth.UpdateTeamOptions{
-			OrganizationAccess: auth.OrganizationAccess{
-				ManageWorkspaces: true,
-				ManageVCS:        true,
-				ManageRegistry:   true,
+			OrganizationAccessOptions: auth.OrganizationAccessOptions{
+				ManageWorkspaces: internal.Bool(true),
+				ManageVCS:        internal.Bool(true),
+				ManageModules:    internal.Bool(true),
 			},
 		})
 		require.NoError(t, err)
@@ -49,7 +47,7 @@ func TestIntegation_TeamService(t *testing.T) {
 
 		assert.True(t, got.OrganizationAccess().ManageWorkspaces)
 		assert.True(t, got.OrganizationAccess().ManageVCS)
-		assert.True(t, got.OrganizationAccess().ManageRegistry)
+		assert.True(t, got.OrganizationAccess().ManageModules)
 	})
 
 	t.Run("get", func(t *testing.T) {

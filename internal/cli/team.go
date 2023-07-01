@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/spf13/cobra"
 )
@@ -31,9 +32,8 @@ func (a *CLI) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.CreateTeam(cmd.Context(), auth.CreateTeamOptions{
-				Organization: organization,
-				Name:         args[0],
+			team, err := a.CreateTeam(cmd.Context(), organization, auth.CreateTeamOptions{
+				Name: internal.String(args[0]),
 			})
 			if err != nil {
 				return err

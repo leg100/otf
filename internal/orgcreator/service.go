@@ -102,10 +102,9 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 			Organization: *opts.Name,
 		})
 
-		owners, err := s.AuthService.CreateTeam(ctx, auth.CreateTeamOptions{
-			Name:         "owners",
-			Organization: org.Name,
-			Tx:           tx,
+		owners, err := s.AuthService.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+			Name: internal.String("owners"),
+			Tx:   tx,
 		})
 		if err != nil {
 			return fmt.Errorf("creating owners team: %w", err)
