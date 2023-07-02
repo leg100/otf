@@ -25,7 +25,7 @@ type (
 		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
 		ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
 		IsDestroy              bool                          `json:"is_destroy"`
-		PositionInQueue        int                           `json:"position_in_queue"`
+		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
 		Refresh                bool                          `json:"refresh"`
 		RefreshOnly            bool                          `json:"refresh_only"`
 		Status                 pgtype.Text                   `json:"status"`
@@ -56,6 +56,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			ID:                     sql.String(run.ID),
 			CreatedAt:              sql.Timestamptz(run.CreatedAt),
 			IsDestroy:              run.IsDestroy,
+			PositionInQueue:        sql.Int4(0),
 			Refresh:                run.Refresh,
 			RefreshOnly:            run.RefreshOnly,
 			Status:                 sql.String(string(run.Status)),
@@ -159,9 +160,9 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report ResourceReport) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
 		RunID:        sql.String(runID),
-		Additions:    report.Additions,
-		Changes:      report.Changes,
-		Destructions: report.Destructions,
+		Additions:    sql.Int4(report.Additions),
+		Changes:      sql.Int4(report.Changes),
+		Destructions: sql.Int4(report.Destructions),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -172,9 +173,9 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report Resou
 func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report ResourceReport) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
-		Additions:    report.Additions,
-		Changes:      report.Changes,
-		Destructions: report.Destructions,
+		Additions:    sql.Int4(report.Additions),
+		Changes:      sql.Int4(report.Changes),
+		Destructions: sql.Int4(report.Destructions),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -210,8 +211,8 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
-		Limit:             opts.GetLimit(),
-		Offset:            opts.GetOffset(),
+		Limit:             sql.Int8(opts.GetLimit()),
+		Offset:            sql.Int8(opts.GetOffset()),
 	})
 	db.CountRunsBatch(batch, pggen.CountRunsParams{
 		OrganizationNames: []string{organization},
@@ -240,7 +241,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 
 	return &RunList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
 	}, nil
 }
 
@@ -342,7 +343,7 @@ func (result pgresult) toRun() *Run {
 		ID:                     result.RunID.String,
 		CreatedAt:              result.CreatedAt.Time.UTC(),
 		IsDestroy:              result.IsDestroy,
-		PositionInQueue:        result.PositionInQueue,
+		PositionInQueue:        int(result.PositionInQueue.Int),
 		Refresh:                result.Refresh,
 		RefreshOnly:            result.RefreshOnly,
 		Status:                 internal.RunStatus(result.Status.String),
@@ -361,14 +362,14 @@ func (result pgresult) toRun() *Run {
 			PhaseType:        internal.PlanPhase,
 			Status:           PhaseStatus(result.PlanStatus.String),
 			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
-			ResourceReport:   (*ResourceReport)(result.PlannedChanges),
+			ResourceReport:   reportFromDB(result.PlannedChanges),
 		},
 		Apply: Phase{
 			RunID:            result.RunID.String,
 			PhaseType:        internal.ApplyPhase,
 			Status:           PhaseStatus(result.ApplyStatus.String),
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
-			ResourceReport:   (*ResourceReport)(result.AppliedChanges),
+			ResourceReport:   reportFromDB(result.AppliedChanges),
 		},
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {

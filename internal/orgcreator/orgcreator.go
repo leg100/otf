@@ -21,9 +21,15 @@ type (
 	// OrganizationCreateOptions represents the options for creating an
 	// organization. See dto.OrganizationCreateOptions for more details.
 	OrganizationCreateOptions struct {
-		Name            *string `schema:"name,required"`
-		SessionRemember *int
-		SessionTimeout  *int
+		Name *string `schema:"name,required"`
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		Email                      *string
+		CollaboratorAuthPolicy     *string
+		SessionRemember            *int
+		SessionTimeout             *int
+		AllowForceDeleteWorkspaces *bool
 	}
 )
 
@@ -32,18 +38,21 @@ func NewOrganization(opts OrganizationCreateOptions) (*organization.Organization
 		return nil, err
 	}
 	org := organization.Organization{
-		Name:            *opts.Name,
-		CreatedAt:       internal.CurrentTimestamp(),
-		UpdatedAt:       internal.CurrentTimestamp(),
-		ID:              internal.NewID("org"),
-		SessionTimeout:  DefaultSessionTimeout,
-		SessionRemember: DefaultSessionExpiration,
+		Name:                   *opts.Name,
+		CreatedAt:              internal.CurrentTimestamp(),
+		UpdatedAt:              internal.CurrentTimestamp(),
+		ID:                     internal.NewID("org"),
+		Email:                  opts.Email,
+		CollaboratorAuthPolicy: opts.CollaboratorAuthPolicy,
 	}
 	if opts.SessionTimeout != nil {
-		org.SessionTimeout = *opts.SessionTimeout
+		org.SessionTimeout = opts.SessionTimeout
 	}
 	if opts.SessionRemember != nil {
-		org.SessionRemember = *opts.SessionRemember
+		org.SessionRemember = opts.SessionRemember
+	}
+	if opts.AllowForceDeleteWorkspaces != nil {
+		org.AllowForceDeleteWorkspaces = *opts.AllowForceDeleteWorkspaces
 	}
 	return &org, nil
 }

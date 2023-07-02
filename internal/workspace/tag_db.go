@@ -16,7 +16,7 @@ type (
 		TagID            pgtype.Text `json:"tag_id"`
 		Name             pgtype.Text `json:"name"`
 		OrganizationName pgtype.Text `json:"organization_name"`
-		InstanceCount    int         `json:"instance_count"`
+		InstanceCount    pgtype.Int8 `json:"instance_count"`
 	}
 )
 
@@ -26,7 +26,7 @@ func (r tagresult) toTag() *Tag {
 		ID:            r.TagID.String,
 		Name:          r.Name.String,
 		Organization:  r.OrganizationName.String,
-		InstanceCount: r.InstanceCount,
+		InstanceCount: int(r.InstanceCount.Int),
 	}
 }
 
@@ -35,8 +35,8 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	db.FindTagsBatch(batch, pggen.FindTagsParams{
 		OrganizationName: sql.String(organization),
-		Limit:            opts.GetLimit(),
-		Offset:           opts.GetOffset(),
+		Limit:            sql.Int8(opts.GetLimit()),
+		Offset:           sql.Int8(opts.GetOffset()),
 	})
 	db.CountTagsBatch(batch, sql.String(organization))
 	results := db.SendBatch(ctx, batch)
@@ -58,7 +58,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	return &TagList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
 	}, nil
 }
 
@@ -132,8 +132,8 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	db.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       opts.GetLimit(),
-		Offset:      opts.GetOffset(),
+		Limit:       sql.Int8(opts.GetLimit()),
+		Offset:      sql.Int8(opts.GetOffset()),
 	})
 	db.CountTagsBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
@@ -155,7 +155,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	return &TagList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
 	}, nil
 }
 

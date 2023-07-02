@@ -140,15 +140,15 @@ OFFSET $3
 
 type FindTagsParams struct {
 	OrganizationName pgtype.Text
-	Limit            int
-	Offset           int
+	Limit            pgtype.Int8
+	Offset           pgtype.Int8
 }
 
 type FindTagsRow struct {
 	TagID            pgtype.Text `json:"tag_id"`
 	Name             pgtype.Text `json:"name"`
 	OrganizationName pgtype.Text `json:"organization_name"`
-	InstanceCount    int         `json:"instance_count"`
+	InstanceCount    pgtype.Int8 `json:"instance_count"`
 }
 
 // FindTags implements Querier.FindTags.
@@ -215,15 +215,15 @@ OFFSET $3
 
 type FindWorkspaceTagsParams struct {
 	WorkspaceID pgtype.Text
-	Limit       int
-	Offset      int
+	Limit       pgtype.Int8
+	Offset      pgtype.Int8
 }
 
 type FindWorkspaceTagsRow struct {
 	TagID            pgtype.Text `json:"tag_id"`
 	Name             pgtype.Text `json:"name"`
 	OrganizationName pgtype.Text `json:"organization_name"`
-	InstanceCount    int         `json:"instance_count"`
+	InstanceCount    pgtype.Int8 `json:"instance_count"`
 }
 
 // FindWorkspaceTags implements Querier.FindWorkspaceTags.
@@ -290,7 +290,7 @@ type FindTagByNameRow struct {
 	TagID            pgtype.Text `json:"tag_id"`
 	Name             pgtype.Text `json:"name"`
 	OrganizationName pgtype.Text `json:"organization_name"`
-	InstanceCount    int         `json:"instance_count"`
+	InstanceCount    pgtype.Int8 `json:"instance_count"`
 }
 
 // FindTagByName implements Querier.FindTagByName.
@@ -335,7 +335,7 @@ type FindTagByIDRow struct {
 	TagID            pgtype.Text `json:"tag_id"`
 	Name             pgtype.Text `json:"name"`
 	OrganizationName pgtype.Text `json:"organization_name"`
-	InstanceCount    int         `json:"instance_count"`
+	InstanceCount    pgtype.Int8 `json:"instance_count"`
 }
 
 // FindTagByID implements Querier.FindTagByID.
@@ -370,10 +370,10 @@ WHERE t.organization_name = $1
 ;`
 
 // CountTags implements Querier.CountTags.
-func (q *DBQuerier) CountTags(ctx context.Context, organizationName pgtype.Text) (int, error) {
+func (q *DBQuerier) CountTags(ctx context.Context, organizationName pgtype.Text) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountTags")
 	row := q.conn.QueryRow(ctx, countTagsSQL, organizationName)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountTags: %w", err)
 	}
@@ -386,9 +386,9 @@ func (q *DBQuerier) CountTagsBatch(batch genericBatch, organizationName pgtype.T
 }
 
 // CountTagsScan implements Querier.CountTagsScan.
-func (q *DBQuerier) CountTagsScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountTagsScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountTagsBatch row: %w", err)
 	}
@@ -401,10 +401,10 @@ WHERE wt.workspace_id = $1
 ;`
 
 // CountWorkspaceTags implements Querier.CountWorkspaceTags.
-func (q *DBQuerier) CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (int, error) {
+func (q *DBQuerier) CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspaceTags")
 	row := q.conn.QueryRow(ctx, countWorkspaceTagsSQL, workspaceID)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountWorkspaceTags: %w", err)
 	}
@@ -417,9 +417,9 @@ func (q *DBQuerier) CountWorkspaceTagsBatch(batch genericBatch, workspaceID pgty
 }
 
 // CountWorkspaceTagsScan implements Querier.CountWorkspaceTagsScan.
-func (q *DBQuerier) CountWorkspaceTagsScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountWorkspaceTagsScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountWorkspaceTagsBatch row: %w", err)
 	}

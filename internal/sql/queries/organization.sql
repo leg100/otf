@@ -1,3 +1,26 @@
+-- name: InsertOrganization :exec
+INSERT INTO organizations (
+    organization_id,
+    created_at,
+    updated_at,
+    name,
+    email,
+    collaborator_auth_policy,
+    session_remember,
+    session_timeout,
+    allow_force_delete_workspaces
+) VALUES (
+    pggen.arg('id'),
+    pggen.arg('created_at'),
+    pggen.arg('updated_at'),
+    pggen.arg('name'),
+    pggen.arg('email'),
+    pggen.arg('collaborator_auth_policy'),
+    pggen.arg('session_remember'),
+    pggen.arg('session_timeout'),
+    pggen.arg('allow_force_delete_workspaces')
+);
+
 -- name: FindOrganizationNameByWorkspaceID :one
 SELECT organization_name
 FROM workspaces
@@ -31,29 +54,15 @@ FROM organizations
 WHERE name LIKE ANY(pggen.arg('names'))
 ;
 
--- name: InsertOrganization :exec
-INSERT INTO organizations (
-    organization_id,
-    created_at,
-    updated_at,
-    name,
-    session_remember,
-    session_timeout
-) VALUES (
-    pggen.arg('id'),
-    pggen.arg('created_at'),
-    pggen.arg('updated_at'),
-    pggen.arg('name'),
-    pggen.arg('session_remember'),
-    pggen.arg('session_timeout')
-);
-
 -- name: UpdateOrganizationByName :one
 UPDATE organizations
 SET
     name = pggen.arg('new_name'),
+    email = pggen.arg('email'),
+    collaborator_auth_policy = pggen.arg('collaborator_auth_policy'),
     session_remember = pggen.arg('session_remember'),
     session_timeout = pggen.arg('session_timeout'),
+    allow_force_delete_workspaces = pggen.arg('allow_force_delete_workspaces'),
     updated_at = pggen.arg('updated_at')
 WHERE name = pggen.arg('name')
 RETURNING organization_id;

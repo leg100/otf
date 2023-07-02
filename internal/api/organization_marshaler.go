@@ -6,15 +6,23 @@ import (
 	"github.com/leg100/otf/internal/organization"
 )
 
-func (m *jsonapiMarshaler) toOrganization(org *organization.Organization) *types.Organization {
-	return &types.Organization{
-		Name:            org.Name,
-		CreatedAt:       org.CreatedAt,
-		ExternalID:      org.ID,
-		Permissions:     &types.DefaultOrganizationPermissions,
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
+func (m *jsonapiMarshaler) toOrganization(from *organization.Organization) *types.Organization {
+	to := &types.Organization{
+		Name:                       from.Name,
+		CreatedAt:                  from.CreatedAt,
+		ExternalID:                 from.ID,
+		Permissions:                &types.DefaultOrganizationPermissions,
+		SessionRemember:            from.SessionRemember,
+		SessionTimeout:             from.SessionTimeout,
+		AllowForceDeleteWorkspaces: from.AllowForceDeleteWorkspaces,
 	}
+	if from.Email != nil {
+		to.Email = *from.Email
+	}
+	if from.CollaboratorAuthPolicy != nil {
+		to.CollaboratorAuthPolicy = types.AuthPolicyType(*from.CollaboratorAuthPolicy)
+	}
+	return to
 }
 
 func (m *jsonapiMarshaler) toOrganizationList(from *organization.OrganizationList) (to []*types.Organization, opts []jsonapi.MarshalOption) {

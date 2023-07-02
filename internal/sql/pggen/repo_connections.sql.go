@@ -60,10 +60,10 @@ WHERE webhook_id = $1
 ;`
 
 // CountRepoConnectionsByID implements Querier.CountRepoConnectionsByID.
-func (q *DBQuerier) CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (int, error) {
+func (q *DBQuerier) CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountRepoConnectionsByID")
 	row := q.conn.QueryRow(ctx, countRepoConnectionsByIDSQL, webhookID)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountRepoConnectionsByID: %w", err)
 	}
@@ -76,9 +76,9 @@ func (q *DBQuerier) CountRepoConnectionsByIDBatch(batch genericBatch, webhookID 
 }
 
 // CountRepoConnectionsByIDScan implements Querier.CountRepoConnectionsByIDScan.
-func (q *DBQuerier) CountRepoConnectionsByIDScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountRepoConnectionsByIDBatch row: %w", err)
 	}

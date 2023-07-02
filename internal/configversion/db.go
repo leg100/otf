@@ -73,8 +73,8 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       opts.GetLimit(),
-		Offset:      opts.GetOffset(),
+		Limit:       sql.Int8(opts.GetLimit()),
+		Offset:      sql.Int8(opts.GetOffset()),
 	})
 	db.CountConfigurationVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
@@ -96,7 +96,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 
 	return &ConfigurationVersionList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
 	}, nil
 }
 

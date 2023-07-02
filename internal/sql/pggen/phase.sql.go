@@ -72,14 +72,14 @@ type InsertLogChunkParams struct {
 	RunID  pgtype.Text
 	Phase  pgtype.Text
 	Chunk  []byte
-	Offset int
+	Offset pgtype.Int4
 }
 
 // InsertLogChunk implements Querier.InsertLogChunk.
-func (q *DBQuerier) InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (int, error) {
+func (q *DBQuerier) InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (pgtype.Int4, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertLogChunk")
 	row := q.conn.QueryRow(ctx, insertLogChunkSQL, params.RunID, params.Phase, params.Chunk, params.Offset)
-	var item int
+	var item pgtype.Int4
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query InsertLogChunk: %w", err)
 	}
@@ -92,9 +92,9 @@ func (q *DBQuerier) InsertLogChunkBatch(batch genericBatch, params InsertLogChun
 }
 
 // InsertLogChunkScan implements Querier.InsertLogChunkScan.
-func (q *DBQuerier) InsertLogChunkScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) InsertLogChunkScan(results pgx.BatchResults) (pgtype.Int4, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int4
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan InsertLogChunkBatch row: %w", err)
 	}
@@ -150,15 +150,15 @@ WHERE chunk_id = $1
 ;`
 
 type FindLogChunkByIDRow struct {
-	ChunkID int         `json:"chunk_id"`
+	ChunkID pgtype.Int4 `json:"chunk_id"`
 	RunID   pgtype.Text `json:"run_id"`
 	Phase   pgtype.Text `json:"phase"`
 	Chunk   []byte      `json:"chunk"`
-	Offset  int         `json:"offset"`
+	Offset  pgtype.Int4 `json:"offset"`
 }
 
 // FindLogChunkByID implements Querier.FindLogChunkByID.
-func (q *DBQuerier) FindLogChunkByID(ctx context.Context, chunkID int) (FindLogChunkByIDRow, error) {
+func (q *DBQuerier) FindLogChunkByID(ctx context.Context, chunkID pgtype.Int4) (FindLogChunkByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindLogChunkByID")
 	row := q.conn.QueryRow(ctx, findLogChunkByIDSQL, chunkID)
 	var item FindLogChunkByIDRow
@@ -169,7 +169,7 @@ func (q *DBQuerier) FindLogChunkByID(ctx context.Context, chunkID int) (FindLogC
 }
 
 // FindLogChunkByIDBatch implements Querier.FindLogChunkByIDBatch.
-func (q *DBQuerier) FindLogChunkByIDBatch(batch genericBatch, chunkID int) {
+func (q *DBQuerier) FindLogChunkByIDBatch(batch genericBatch, chunkID pgtype.Int4) {
 	batch.Queue(findLogChunkByIDSQL, chunkID)
 }
 

@@ -28,12 +28,12 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 		RunID:  sql.String(opts.RunID),
 		Phase:  sql.String(string(opts.Phase)),
 		Chunk:  opts.Data,
-		Offset: opts.Offset,
+		Offset: sql.Int4(opts.Offset),
 	})
 	if err != nil {
 		return "", sql.Error(err)
 	}
-	return strconv.Itoa(id), nil
+	return strconv.Itoa(int(id.Int)), nil
 }
 
 // GetByID implements pubsub.Getter
@@ -45,7 +45,7 @@ func (db *pgdb) GetByID(ctx context.Context, chunkID string, action pubsub.DBAct
 	if err != nil {
 		return nil, err
 	}
-	chunk, err := db.FindLogChunkByID(ctx, id)
+	chunk, err := db.FindLogChunkByID(ctx, sql.Int4(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -54,6 +54,6 @@ func (db *pgdb) GetByID(ctx context.Context, chunkID string, action pubsub.DBAct
 		RunID:  chunk.RunID.String,
 		Phase:  internal.PhaseType(chunk.Phase.String),
 		Data:   chunk.Chunk,
-		Offset: chunk.Offset,
+		Offset: int(chunk.Offset.Int),
 	}, nil
 }

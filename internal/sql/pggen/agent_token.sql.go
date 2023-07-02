@@ -90,12 +90,12 @@ type Querier interface {
 	// FindConfigurationVersionsByWorkspaceIDScan scans the result of an executed FindConfigurationVersionsByWorkspaceIDBatch query.
 	FindConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindConfigurationVersionsByWorkspaceIDRow, error)
 
-	CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int, error)
+	CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Int8, error)
 	// CountConfigurationVersionsByWorkspaceIDBatch enqueues a CountConfigurationVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
 	CountConfigurationVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// CountConfigurationVersionsByWorkspaceIDScan scans the result of an executed CountConfigurationVersionsByWorkspaceIDBatch query.
-	CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (int, error)
+	CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	// FindConfigurationVersionByID finds a configuration_version by its id.
 	//
@@ -298,6 +298,13 @@ type Querier interface {
 	// DeleteNotificationConfigurationByIDScan scans the result of an executed DeleteNotificationConfigurationByIDBatch query.
 	DeleteNotificationConfigurationByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
+	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
+	// later by the batch.
+	InsertOrganizationBatch(batch genericBatch, params InsertOrganizationParams)
+	// InsertOrganizationScan scans the result of an executed InsertOrganizationBatch query.
+	InsertOrganizationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -333,19 +340,12 @@ type Querier interface {
 	// FindOrganizationsScan scans the result of an executed FindOrganizationsBatch query.
 	FindOrganizationsScan(results pgx.BatchResults) ([]FindOrganizationsRow, error)
 
-	CountOrganizations(ctx context.Context, names []string) (int, error)
+	CountOrganizations(ctx context.Context, names []string) (pgtype.Int8, error)
 	// CountOrganizationsBatch enqueues a CountOrganizations query into batch to be executed
 	// later by the batch.
 	CountOrganizationsBatch(batch genericBatch, names []string)
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
-	CountOrganizationsScan(results pgx.BatchResults) (int, error)
-
-	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
-	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
-	// later by the batch.
-	InsertOrganizationBatch(batch genericBatch, params InsertOrganizationParams)
-	// InsertOrganizationScan scans the result of an executed InsertOrganizationBatch query.
-	InsertOrganizationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	CountOrganizationsScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	UpdateOrganizationByName(ctx context.Context, params UpdateOrganizationByNameParams) (pgtype.Text, error)
 	// UpdateOrganizationByNameBatch enqueues a UpdateOrganizationByName query into batch to be executed
@@ -368,12 +368,12 @@ type Querier interface {
 	// InsertPhaseStatusTimestampScan scans the result of an executed InsertPhaseStatusTimestampBatch query.
 	InsertPhaseStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (int, error)
+	InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (pgtype.Int4, error)
 	// InsertLogChunkBatch enqueues a InsertLogChunk query into batch to be executed
 	// later by the batch.
 	InsertLogChunkBatch(batch genericBatch, params InsertLogChunkParams)
 	// InsertLogChunkScan scans the result of an executed InsertLogChunkBatch query.
-	InsertLogChunkScan(results pgx.BatchResults) (int, error)
+	InsertLogChunkScan(results pgx.BatchResults) (pgtype.Int4, error)
 
 	// FindLogs retrieves all the logs for the given run and phase.
 	//
@@ -384,10 +384,10 @@ type Querier interface {
 	// FindLogsScan scans the result of an executed FindLogsBatch query.
 	FindLogsScan(results pgx.BatchResults) ([]byte, error)
 
-	FindLogChunkByID(ctx context.Context, chunkID int) (FindLogChunkByIDRow, error)
+	FindLogChunkByID(ctx context.Context, chunkID pgtype.Int4) (FindLogChunkByIDRow, error)
 	// FindLogChunkByIDBatch enqueues a FindLogChunkByID query into batch to be executed
 	// later by the batch.
-	FindLogChunkByIDBatch(batch genericBatch, chunkID int)
+	FindLogChunkByIDBatch(batch genericBatch, chunkID pgtype.Int4)
 	// FindLogChunkByIDScan scans the result of an executed FindLogChunkByIDBatch query.
 	FindLogChunkByIDScan(results pgx.BatchResults) (FindLogChunkByIDRow, error)
 
@@ -447,12 +447,12 @@ type Querier interface {
 	// InsertRepoConnectionScan scans the result of an executed InsertRepoConnectionBatch query.
 	InsertRepoConnectionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (int, error)
+	CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (pgtype.Int8, error)
 	// CountRepoConnectionsByIDBatch enqueues a CountRepoConnectionsByID query into batch to be executed
 	// later by the batch.
 	CountRepoConnectionsByIDBatch(batch genericBatch, webhookID pgtype.UUID)
 	// CountRepoConnectionsByIDScan scans the result of an executed CountRepoConnectionsByIDBatch query.
-	CountRepoConnectionsByIDScan(results pgx.BatchResults) (int, error)
+	CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceConnectionByIDRow, error)
 	// DeleteWorkspaceConnectionByIDBatch enqueues a DeleteWorkspaceConnectionByID query into batch to be executed
@@ -489,12 +489,12 @@ type Querier interface {
 	// FindRunsScan scans the result of an executed FindRunsBatch query.
 	FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error)
 
-	CountRuns(ctx context.Context, params CountRunsParams) (int, error)
+	CountRuns(ctx context.Context, params CountRunsParams) (pgtype.Int8, error)
 	// CountRunsBatch enqueues a CountRuns query into batch to be executed
 	// later by the batch.
 	CountRunsBatch(batch genericBatch, params CountRunsParams)
 	// CountRunsScan scans the result of an executed CountRunsBatch query.
-	CountRunsScan(results pgx.BatchResults) (int, error)
+	CountRunsScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	FindRunByID(ctx context.Context, runID pgtype.Text) (FindRunByIDRow, error)
 	// FindRunByIDBatch enqueues a FindRunByID query into batch to be executed
@@ -559,12 +559,12 @@ type Querier interface {
 	// FindStateVersionsByWorkspaceIDScan scans the result of an executed FindStateVersionsByWorkspaceIDBatch query.
 	FindStateVersionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindStateVersionsByWorkspaceIDRow, error)
 
-	CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int, error)
+	CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Int8, error)
 	// CountStateVersionsByWorkspaceIDBatch enqueues a CountStateVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
 	CountStateVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// CountStateVersionsByWorkspaceIDScan scans the result of an executed CountStateVersionsByWorkspaceIDBatch query.
-	CountStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (int, error)
+	CountStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	FindStateVersionByID(ctx context.Context, id pgtype.Text) (FindStateVersionByIDRow, error)
 	// FindStateVersionByIDBatch enqueues a FindStateVersionByID query into batch to be executed
@@ -657,19 +657,19 @@ type Querier interface {
 	// FindTagByIDScan scans the result of an executed FindTagByIDBatch query.
 	FindTagByIDScan(results pgx.BatchResults) (FindTagByIDRow, error)
 
-	CountTags(ctx context.Context, organizationName pgtype.Text) (int, error)
+	CountTags(ctx context.Context, organizationName pgtype.Text) (pgtype.Int8, error)
 	// CountTagsBatch enqueues a CountTags query into batch to be executed
 	// later by the batch.
 	CountTagsBatch(batch genericBatch, organizationName pgtype.Text)
 	// CountTagsScan scans the result of an executed CountTagsBatch query.
-	CountTagsScan(results pgx.BatchResults) (int, error)
+	CountTagsScan(results pgx.BatchResults) (pgtype.Int8, error)
 
-	CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (int, error)
+	CountWorkspaceTags(ctx context.Context, workspaceID pgtype.Text) (pgtype.Int8, error)
 	// CountWorkspaceTagsBatch enqueues a CountWorkspaceTags query into batch to be executed
 	// later by the batch.
 	CountWorkspaceTagsBatch(batch genericBatch, workspaceID pgtype.Text)
 	// CountWorkspaceTagsScan scans the result of an executed CountWorkspaceTagsBatch query.
-	CountWorkspaceTagsScan(results pgx.BatchResults) (int, error)
+	CountWorkspaceTagsScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	DeleteTag(ctx context.Context, tagID pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
 	// DeleteTagBatch enqueues a DeleteTag query into batch to be executed
@@ -986,12 +986,12 @@ type Querier interface {
 	// FindWorkspacesScan scans the result of an executed FindWorkspacesBatch query.
 	FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error)
 
-	CountWorkspaces(ctx context.Context, params CountWorkspacesParams) (int, error)
+	CountWorkspaces(ctx context.Context, params CountWorkspacesParams) (pgtype.Int8, error)
 	// CountWorkspacesBatch enqueues a CountWorkspaces query into batch to be executed
 	// later by the batch.
 	CountWorkspacesBatch(batch genericBatch, params CountWorkspacesParams)
 	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
-	CountWorkspacesScan(results pgx.BatchResults) (int, error)
+	CountWorkspacesScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	FindWorkspacesByWebhookID(ctx context.Context, webhookID pgtype.UUID) ([]FindWorkspacesByWebhookIDRow, error)
 	// FindWorkspacesByWebhookIDBatch enqueues a FindWorkspacesByWebhookID query into batch to be executed
@@ -1007,12 +1007,12 @@ type Querier interface {
 	// FindWorkspacesByUsernameScan scans the result of an executed FindWorkspacesByUsernameBatch query.
 	FindWorkspacesByUsernameScan(results pgx.BatchResults) ([]FindWorkspacesByUsernameRow, error)
 
-	CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (int, error)
+	CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (pgtype.Int8, error)
 	// CountWorkspacesByUsernameBatch enqueues a CountWorkspacesByUsername query into batch to be executed
 	// later by the batch.
 	CountWorkspacesByUsernameBatch(batch genericBatch, organizationName pgtype.Text, username pgtype.Text)
 	// CountWorkspacesByUsernameScan scans the result of an executed CountWorkspacesByUsernameBatch query.
-	CountWorkspacesByUsernameScan(results pgx.BatchResults) (int, error)
+	CountWorkspacesByUsernameScan(results pgx.BatchResults) (pgtype.Int8, error)
 
 	FindWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
@@ -1284,6 +1284,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteNotificationConfigurationByIDSQL, deleteNotificationConfigurationByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteNotificationConfigurationByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
 	}
@@ -1301,9 +1304,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, countOrganizationsSQL, countOrganizationsSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountOrganizations': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateOrganizationByNameSQL, updateOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateOrganizationByName': %w", err)
@@ -1672,9 +1672,9 @@ type RepoConnections struct {
 
 // Report represents the Postgres composite type "report".
 type Report struct {
-	Additions    int `json:"additions"`
-	Changes      int `json:"changes"`
-	Destructions int `json:"destructions"`
+	Additions    pgtype.Int4 `json:"additions"`
+	Changes      pgtype.Int4 `json:"changes"`
+	Destructions pgtype.Int4 `json:"destructions"`
 }
 
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
@@ -1690,7 +1690,7 @@ type Runs struct {
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 	ForceCancelAvailableAt pgtype.Timestamptz `json:"force_cancel_available_at"`
 	IsDestroy              bool               `json:"is_destroy"`
-	PositionInQueue        int                `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4        `json:"position_in_queue"`
 	Refresh                bool               `json:"refresh"`
 	RefreshOnly            bool               `json:"refresh_only"`
 	ReplaceAddrs           []string           `json:"replace_addrs"`

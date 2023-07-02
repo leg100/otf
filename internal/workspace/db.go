@@ -208,8 +208,8 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 		OrganizationNames: []string{organization},
 		Search:            sql.String(opts.Search),
 		Tags:              tags,
-		Limit:             opts.GetLimit(),
-		Offset:            opts.GetOffset(),
+		Limit:             sql.Int8(opts.GetLimit()),
+		Offset:            sql.Int8(opts.GetOffset()),
 	})
 	db.CountWorkspacesBatch(batch, pggen.CountWorkspacesParams{
 		Search:            sql.String(opts.Search),
@@ -239,7 +239,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, count),
+		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
 	}, nil
 }
 
@@ -267,8 +267,8 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	db.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
 		Username:         sql.String(username),
-		Limit:            opts.GetLimit(),
-		Offset:           opts.GetOffset(),
+		Limit:            sql.Int8(opts.GetLimit()),
+		Offset:           sql.Int8(opts.GetOffset()),
 	})
 	db.CountWorkspacesByUsernameBatch(batch, sql.String(organization), sql.String(username))
 	results := db.SendBatch(ctx, batch)
@@ -294,7 +294,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts, count),
+		Pagination: internal.NewPagination(opts, int(count.Int)),
 	}, nil
 }
 

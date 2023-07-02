@@ -86,9 +86,9 @@ RETURNING run_id
 ;`
 
 type UpdatePlannedChangesByIDParams struct {
-	Additions    int
-	Changes      int
-	Destructions int
+	Additions    pgtype.Int4
+	Changes      pgtype.Int4
+	Destructions pgtype.Int4
 	RunID        pgtype.Text
 }
 
