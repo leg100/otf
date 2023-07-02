@@ -119,8 +119,8 @@ sql: install-pggen
 		--query-glob 'internal/sql/queries/*.sql' \
 		--output-dir ./internal/sql/pggen \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
-		--go-type 'int4=int' \
-		--go-type 'int8=int' \
+		--go-type 'int4=github.com/jackc/pgtype.Int4' \
+		--go-type 'int8=github.com/jackc/pgtype.Int8' \
 		--go-type 'bool=bool' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \

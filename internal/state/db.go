@@ -35,7 +35,7 @@ type (
 	pgRow struct {
 		StateVersionID      pgtype.Text                 `json:"state_version_id"`
 		CreatedAt           pgtype.Timestamptz          `json:"created_at"`
-		Serial              int                         `json:"serial"`
+		Serial              pgtype.Int4                 `json:"serial"`
 		State               []byte                      `json:"state"`
 		WorkspaceID         pgtype.Text                 `json:"workspace_id"`
 		StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
@@ -47,7 +47,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 			ID:          sql.String(v.ID),
 			CreatedAt:   sql.Timestamptz(v.CreatedAt),
-			Serial:      int(v.Serial),
+			Serial:      sql.Int4(int(v.Serial)),
 			State:       v.State,
 			WorkspaceID: sql.String(v.WorkspaceID),
 		})
@@ -77,8 +77,8 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts inter
 
 	db.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       opts.GetLimit(),
-		Offset:      opts.GetOffset(),
+		Limit:       sql.Int8(opts.GetLimit()),
+		Offset:      sql.Int8(opts.GetOffset()),
 	})
 	db.CountStateVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
 
@@ -101,7 +101,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts inter
 
 	return &VersionList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts, count),
+		Pagination: internal.NewPagination(opts, int(count.Int)),
 	}, nil
 }
 
@@ -159,7 +159,7 @@ func (row pgRow) toVersion() *Version {
 	sv := Version{
 		ID:          row.StateVersionID.String,
 		CreatedAt:   row.CreatedAt.Time.UTC(),
-		Serial:      int64(row.Serial),
+		Serial:      int64(row.Serial.Int),
 		State:       row.State,
 		WorkspaceID: row.WorkspaceID.String,
 		Outputs:     make(OutputList, len(row.StateVersionOutputs)),

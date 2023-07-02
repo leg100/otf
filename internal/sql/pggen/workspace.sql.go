@@ -157,8 +157,8 @@ type FindWorkspacesParams struct {
 	Search            pgtype.Text
 	OrganizationNames []string
 	Tags              []string
-	Limit             int
-	Offset            int
+	Limit             pgtype.Int8
+	Offset            pgtype.Int8
 }
 
 type FindWorkspacesRow struct {
@@ -294,10 +294,10 @@ type CountWorkspacesParams struct {
 }
 
 // CountWorkspaces implements Querier.CountWorkspaces.
-func (q *DBQuerier) CountWorkspaces(ctx context.Context, params CountWorkspacesParams) (int, error) {
+func (q *DBQuerier) CountWorkspaces(ctx context.Context, params CountWorkspacesParams) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspaces")
 	row := q.conn.QueryRow(ctx, countWorkspacesSQL, params.Search, params.OrganizationNames, params.Tags)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountWorkspaces: %w", err)
 	}
@@ -310,9 +310,9 @@ func (q *DBQuerier) CountWorkspacesBatch(batch genericBatch, params CountWorkspa
 }
 
 // CountWorkspacesScan implements Querier.CountWorkspacesScan.
-func (q *DBQuerier) CountWorkspacesScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountWorkspacesScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountWorkspacesBatch row: %w", err)
 	}
@@ -488,8 +488,8 @@ OFFSET $4
 type FindWorkspacesByUsernameParams struct {
 	OrganizationName pgtype.Text
 	Username         pgtype.Text
-	Limit            int
-	Offset           int
+	Limit            pgtype.Int8
+	Offset           pgtype.Int8
 }
 
 type FindWorkspacesByUsernameRow struct {
@@ -619,10 +619,10 @@ AND   u.username          = $2
 ;`
 
 // CountWorkspacesByUsername implements Querier.CountWorkspacesByUsername.
-func (q *DBQuerier) CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (int, error) {
+func (q *DBQuerier) CountWorkspacesByUsername(ctx context.Context, organizationName pgtype.Text, username pgtype.Text) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspacesByUsername")
 	row := q.conn.QueryRow(ctx, countWorkspacesByUsernameSQL, organizationName, username)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountWorkspacesByUsername: %w", err)
 	}
@@ -635,9 +635,9 @@ func (q *DBQuerier) CountWorkspacesByUsernameBatch(batch genericBatch, organizat
 }
 
 // CountWorkspacesByUsernameScan implements Querier.CountWorkspacesByUsernameScan.
-func (q *DBQuerier) CountWorkspacesByUsernameScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountWorkspacesByUsernameScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountWorkspacesByUsernameBatch row: %w", err)
 	}

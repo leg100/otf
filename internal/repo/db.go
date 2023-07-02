@@ -128,7 +128,11 @@ func (db *pgdb) deleteConnection(ctx context.Context, opts DisconnectOptions) (h
 }
 
 func (db *pgdb) countConnections(ctx context.Context, hookID uuid.UUID) (int, error) {
-	return db.CountRepoConnectionsByID(ctx, sql.UUID(hookID))
+	result, err := db.CountRepoConnectionsByID(ctx, sql.UUID(hookID))
+	if err != nil {
+		return 0, err
+	}
+	return int(result.Int), nil
 }
 
 func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {

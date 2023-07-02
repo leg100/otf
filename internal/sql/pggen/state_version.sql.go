@@ -28,7 +28,7 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
 type InsertStateVersionParams struct {
 	ID          pgtype.Text
 	CreatedAt   pgtype.Timestamptz
-	Serial      int
+	Serial      pgtype.Int4
 	State       []byte
 	WorkspaceID pgtype.Text
 }
@@ -71,14 +71,14 @@ OFFSET $3
 
 type FindStateVersionsByWorkspaceIDParams struct {
 	WorkspaceID pgtype.Text
-	Limit       int
-	Offset      int
+	Limit       pgtype.Int8
+	Offset      pgtype.Int8
 }
 
 type FindStateVersionsByWorkspaceIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
-	Serial              int                   `json:"serial"`
+	Serial              pgtype.Int4           `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -146,10 +146,10 @@ WHERE workspace_id = $1
 ;`
 
 // CountStateVersionsByWorkspaceID implements Querier.CountStateVersionsByWorkspaceID.
-func (q *DBQuerier) CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (int, error) {
+func (q *DBQuerier) CountStateVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountStateVersionsByWorkspaceID")
 	row := q.conn.QueryRow(ctx, countStateVersionsByWorkspaceIDSQL, workspaceID)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountStateVersionsByWorkspaceID: %w", err)
 	}
@@ -162,9 +162,9 @@ func (q *DBQuerier) CountStateVersionsByWorkspaceIDBatch(batch genericBatch, wor
 }
 
 // CountStateVersionsByWorkspaceIDScan implements Querier.CountStateVersionsByWorkspaceIDScan.
-func (q *DBQuerier) CountStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountStateVersionsByWorkspaceIDScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountStateVersionsByWorkspaceIDBatch row: %w", err)
 	}
@@ -183,7 +183,7 @@ GROUP BY state_versions.state_version_id
 type FindStateVersionByIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
-	Serial              int                   `json:"serial"`
+	Serial              pgtype.Int4           `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -236,7 +236,7 @@ GROUP BY sv.state_version_id
 type FindCurrentStateVersionByWorkspaceIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
-	Serial              int                   `json:"serial"`
+	Serial              pgtype.Int4           `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`

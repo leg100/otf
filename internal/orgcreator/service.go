@@ -83,12 +83,14 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 
 	err = s.db.Tx(ctx, func(tx internal.DB) error {
 		_, err := tx.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-			ID:              sql.String(org.ID),
-			CreatedAt:       sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:       sql.Timestamptz(org.UpdatedAt),
-			Name:            sql.String(org.Name),
-			SessionRemember: org.SessionRemember,
-			SessionTimeout:  org.SessionTimeout,
+			ID:                     sql.String(org.ID),
+			CreatedAt:              sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
+			Name:                   sql.String(org.Name),
+			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
+			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
+			Email:                  sql.StringPtr(org.Email),
+			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
 		})
 		if err != nil {
 			return sql.Error(err)

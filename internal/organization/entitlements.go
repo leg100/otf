@@ -22,9 +22,12 @@ func defaultEntitlements(organizationID string) Entitlements {
 	return Entitlements{
 		ID:                    organizationID,
 		Agents:                true,
+		AuditLogging:          true,
+		CostEstimation:        true,
 		Operations:            true,
 		PrivateModuleRegistry: true,
 		SSO:                   true,
+		Sentinel:              true,
 		StateStorage:          true,
 		Teams:                 true,
 		VCSIntegrations:       true,

@@ -45,7 +45,7 @@ type InsertRunParams struct {
 	ID                     pgtype.Text
 	CreatedAt              pgtype.Timestamptz
 	IsDestroy              bool
-	PositionInQueue        int
+	PositionInQueue        pgtype.Int4
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 pgtype.Text
@@ -187,8 +187,8 @@ type FindRunsParams struct {
 	WorkspaceNames    []string
 	Statuses          []string
 	PlanOnly          []string
-	Limit             int
-	Offset            int
+	Limit             pgtype.Int8
+	Offset            pgtype.Int8
 }
 
 type FindRunsRow struct {
@@ -196,7 +196,7 @@ type FindRunsRow struct {
 	CreatedAt              pgtype.Timestamptz      `json:"created_at"`
 	ForceCancelAvailableAt pgtype.Timestamptz      `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4             `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
 	Status                 pgtype.Text             `json:"status"`
@@ -335,10 +335,10 @@ type CountRunsParams struct {
 }
 
 // CountRuns implements Querier.CountRuns.
-func (q *DBQuerier) CountRuns(ctx context.Context, params CountRunsParams) (int, error) {
+func (q *DBQuerier) CountRuns(ctx context.Context, params CountRunsParams) (pgtype.Int8, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountRuns")
 	row := q.conn.QueryRow(ctx, countRunsSQL, params.OrganizationNames, params.WorkspaceIds, params.WorkspaceNames, params.Statuses, params.PlanOnly)
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query CountRuns: %w", err)
 	}
@@ -351,9 +351,9 @@ func (q *DBQuerier) CountRunsBatch(batch genericBatch, params CountRunsParams) {
 }
 
 // CountRunsScan implements Querier.CountRunsScan.
-func (q *DBQuerier) CountRunsScan(results pgx.BatchResults) (int, error) {
+func (q *DBQuerier) CountRunsScan(results pgx.BatchResults) (pgtype.Int8, error) {
 	row := results.QueryRow()
-	var item int
+	var item pgtype.Int8
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan CountRunsBatch row: %w", err)
 	}
@@ -418,7 +418,7 @@ type FindRunByIDRow struct {
 	CreatedAt              pgtype.Timestamptz      `json:"created_at"`
 	ForceCancelAvailableAt pgtype.Timestamptz      `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4             `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
 	Status                 pgtype.Text             `json:"status"`
@@ -574,7 +574,7 @@ type FindRunByIDForUpdateRow struct {
 	CreatedAt              pgtype.Timestamptz      `json:"created_at"`
 	ForceCancelAvailableAt pgtype.Timestamptz      `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
+	PositionInQueue        pgtype.Int4             `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
 	Status                 pgtype.Text             `json:"status"`

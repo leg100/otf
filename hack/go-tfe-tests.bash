@@ -10,7 +10,7 @@
 set -e
 
 GO_TFE_REPO="${GO_TFE_REPO:-github.com/leg100/go-tfe@otf}"
-TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Lock|Unlock|ForceUnlock|Read\$|ReadByID)|Organizations(Create|List|Read|Update)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions|TeamsRead)}"
+TESTS="${@:-Test(Variables|Workspaces(Create|List|Update|Delete|Lock|Unlock|ForceUnlock|Read\$|ReadByID)|StateVersion|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
 export TFE_ADDRESS="${TFE_ADDRESS:-https://localhost:8080}"
 # go-tfe tests perform privileged operations (e.g. creating organizations), so

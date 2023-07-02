@@ -25,8 +25,20 @@ type (
 	CreateTeamOptions struct {
 		// Name of team to create
 		Name *string `schema:"name,required"`
+
+		OrganizationAccessOptions
+
+		// TFE fields that OTF does not support but persists merely to pass the
+		// go-tfe integration tests
+		SSOTeamID  *string
+		Visibility *string
+
 		// Database transaction within which to create team. Optional.
 		Tx internal.DB
+	}
+
+	UpdateTeamOptions struct {
+		Name *string
 
 		OrganizationAccessOptions
 
@@ -61,14 +73,6 @@ type (
 		ManageProviders       *bool
 		ManagePolicies        *bool
 		ManagePolicyOverrides *bool
-	}
-
-	UpdateTeamOptions struct {
-		Name       *string
-		SSOTeamID  *string
-		Visibility *string
-
-		OrganizationAccessOptions
 	}
 )
 

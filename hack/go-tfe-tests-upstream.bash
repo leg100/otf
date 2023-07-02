@@ -14,6 +14,7 @@ export GO_TFE_REPO=github.com/hashicorp/go-tfe@latest
 export OAUTH_CLIENT_GITHUB_TOKEN="my-secret-github-token"
 
 tests=()
+tests+=('TestOrganizations')
 tests+=('TestStateVersionOutputsRead')
 tests+=('TestOrganizationTagsList/with_no_query_params')
 tests+=('TestOrganizationTagsList/with_no_param_Filter')
