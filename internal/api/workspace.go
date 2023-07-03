@@ -155,7 +155,7 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Search:       params.Search,
 		Organization: &organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
-		Tags:         strings.Split(params.Tags, ","),
+		Tags:         strings.FieldsFunc(params.Tags, func(r rune) bool { return r == ',' }),
 	})
 	if err != nil {
 		Error(w, err)
