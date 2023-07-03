@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/api/types"
@@ -152,9 +153,9 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	wsl, err := a.ListWorkspaces(r.Context(), workspace.ListOptions{
 		Search:       params.Search,
-		Tags:         params.Tags,
 		Organization: &organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
+		Tags:         strings.Split(params.Tags, ","),
 	})
 	if err != nil {
 		Error(w, err)

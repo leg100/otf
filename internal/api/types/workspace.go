@@ -97,10 +97,10 @@ type WorkspaceListOptions struct {
 	Search string `schema:"search[name],omitempty"`
 
 	// Optional: A search string (comma-separated tag names) used to filter the results.
-	Tags []string `schema:"search[tags],omitempty"`
+	Tags string `schema:"search[tags],omitempty"`
 
 	// Optional: A search string (comma-separated tag names to exclude) used to filter the results.
-	ExcludeTags []string `schema:"search[exclude-tags],omitempty"`
+	ExcludeTags string `schema:"search[exclude-tags],omitempty"`
 
 	// Optional: A search on substring matching to filter the results.
 	WildcardName string `schema:"search[wildcard-name],omitempty"`
