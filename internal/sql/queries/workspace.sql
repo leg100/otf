@@ -93,14 +93,18 @@ OFFSET pggen.arg('offset')
 ;
 
 -- name: CountWorkspaces :one
-SELECT count(distinct(w.workspace_id))
-FROM workspaces w
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
-WHERE w.name              LIKE '%' || pggen.arg('search') || '%'
-AND   w.organization_name LIKE ANY(pggen.arg('organization_names'))
-AND   CASE WHEN cardinality(pggen.arg('tags')::text[]) > 0 THEN t.name LIKE ANY(pggen.arg('tags'))
-      ELSE 1 = 1
-      END
+WITH
+    workspaces AS (
+        SELECT w.workspace_id
+        FROM workspaces w
+        LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
+        WHERE w.name              LIKE '%' || pggen.arg('search') || '%'
+        AND   w.organization_name LIKE ANY(pggen.arg('organization_names'))
+        GROUP BY w.workspace_id
+        HAVING array_agg(t.name) @> pggen.arg('tags')
+    )
+SELECT count(*)
+FROM workspaces
 ;
 
 -- name: FindWorkspacesByWebhookID :many

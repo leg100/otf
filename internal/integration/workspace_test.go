@@ -278,6 +278,9 @@ func TestWorkspace(t *testing.T) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
+
+					// check pagination metadata
+					assert.Equal(t, 2, l.TotalCount)
 				},
 			},
 			{
@@ -286,6 +289,9 @@ func TestWorkspace(t *testing.T) {
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Contains(t, l.Items, ws2)
+
+					// check pagination metadata
+					assert.Equal(t, 1, l.TotalCount)
 				},
 			},
 		}

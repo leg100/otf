@@ -277,14 +277,18 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	return items, err
 }
 
-const countWorkspacesSQL = `SELECT count(distinct(w.workspace_id))
-FROM workspaces w
-LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
-WHERE w.name              LIKE '%' || $1 || '%'
-AND   w.organization_name LIKE ANY($2)
-AND   CASE WHEN cardinality($3::text[]) > 0 THEN t.name LIKE ANY($3)
-      ELSE 1 = 1
-      END
+const countWorkspacesSQL = `WITH
+    workspaces AS (
+        SELECT w.workspace_id
+        FROM workspaces w
+        LEFT JOIN (workspace_tags wt JOIN tags t USING (tag_id)) ON w.workspace_id = wt.workspace_id
+        WHERE w.name              LIKE '%' || $1 || '%'
+        AND   w.organization_name LIKE ANY($2)
+        GROUP BY w.workspace_id
+        HAVING array_agg(t.name) @> $3
+    )
+SELECT count(*)
+FROM workspaces
 ;`
 
 type CountWorkspacesParams struct {
