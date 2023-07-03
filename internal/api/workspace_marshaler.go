@@ -105,7 +105,7 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 
 func (m *jsonapiMarshaler) toWorkspaceList(from *workspace.WorkspaceList, r *http.Request) (to []*types.Workspace, marshalOpts []jsonapi.MarshalOption, err error) {
 	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
-		"meta": (*types.Pagination)(from.Pagination),
+		"pagination": (*types.Pagination)(from.Pagination),
 	})
 	marshalOpts = append(marshalOpts, jsonapi.MarshalOption(meta))
 	for _, ws := range from.Items {

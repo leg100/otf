@@ -63,7 +63,7 @@ func (m *jsonapiMarshaler) toTeamList(from []*auth.Team, r *http.Request) (to []
 	}
 	from, pagination := resource.Paginate(from, listOptions)
 	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
-		"meta": (*types.Pagination)(pagination),
+		"pagination": (*types.Pagination)(pagination),
 	})
 	opts = append(opts, jsonapi.MarshalOption(meta))
 
