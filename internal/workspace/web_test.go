@@ -231,7 +231,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	)
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1", nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
@@ -241,7 +241,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2", nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
@@ -251,7 +251,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3", nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)

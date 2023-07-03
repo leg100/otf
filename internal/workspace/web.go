@@ -77,6 +77,9 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
+		Search:       params.Search,
+		Tags:         params.Tags,
+		Organization: params.Organization,
 		ListOptions: resource.ListOptions{
 			PageNumber: params.PageNumber,
 			PageSize:   html.PageSize,

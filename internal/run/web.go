@@ -88,8 +88,8 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		resource.ListOptions
 		WorkspaceID string `schema:"workspace_id,required"`
+		PageNumber  int    `schema:"page[number]"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -102,8 +102,11 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
-		ListOptions: params.ListOptions,
 		WorkspaceID: &params.WorkspaceID,
+		ListOptions: resource.ListOptions{
+			PageNumber: params.PageNumber,
+			PageSize:   html.PageSize,
+		},
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)

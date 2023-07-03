@@ -22,7 +22,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		svc := newFakeWeb(t, &fakeService{orgs: orgs}, false)
 
 		t.Run("first page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
+			r := httptest.NewRequest("GET", "/?page[number]=1", nil)
 			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
@@ -32,7 +32,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		})
 
 		t.Run("second page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
+			r := httptest.NewRequest("GET", "/?page[number]=2", nil)
 			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
@@ -42,7 +42,7 @@ func TestWeb_ListHandler(t *testing.T) {
 		})
 
 		t.Run("last page", func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
+			r := httptest.NewRequest("GET", "/?page[number]=3", nil)
 			r = r.WithContext(internal.AddSubjectToContext(context.Background(), &internal.Superuser{}))
 			w := httptest.NewRecorder()
 			svc.list(w, r)
