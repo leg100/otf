@@ -89,6 +89,29 @@ type WorkspacePermissions struct {
 	CanUpdateVariable bool `json:"can-update-variable"`
 }
 
+// WorkspaceListOptions represents the options for listing workspaces.
+type WorkspaceListOptions struct {
+	ListOptions
+
+	// Optional: A search string (partial workspace name) used to filter the results.
+	Search string `schema:"search[name],omitempty"`
+
+	// Optional: A search string (comma-separated tag names) used to filter the results.
+	Tags []string `schema:"search[tags],omitempty"`
+
+	// Optional: A search string (comma-separated tag names to exclude) used to filter the results.
+	ExcludeTags []string `schema:"search[exclude-tags],omitempty"`
+
+	// Optional: A search on substring matching to filter the results.
+	WildcardName string `schema:"search[wildcard-name],omitempty"`
+
+	// Optional: A filter string to list all the workspaces linked to a given project id in the organization.
+	ProjectID string `schema:"filter[project][id],omitempty"`
+
+	// Optional: A list of relations to include. See available resources https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
+	// Include []WSIncludeOpt `url:"include,omitempty"`
+}
+
 // WorkspaceCreateOptions represents the options for creating a new workspace.
 type WorkspaceCreateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via

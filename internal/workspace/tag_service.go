@@ -253,7 +253,7 @@ func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]st
 			}
 
 			if err := tx.tagWorkspace(ctx, ws.ID, id); err != nil {
-				return fmt.Errorf("tagging workspace %s with tag %s: %w", ws.ID, id, err)
+				return err
 			}
 			added = append(added, name)
 		}

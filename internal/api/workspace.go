@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -138,13 +139,17 @@ func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params workspace.ListOptions
+	var params types.WorkspaceListOptions
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
 	}
 
-	wsl, err := a.ListWorkspaces(r.Context(), params)
+	wsl, err := a.ListWorkspaces(r.Context(), workspace.ListOptions{
+		Search:      params.Search,
+		Tags:        params.Tags,
+		PageOptions: resource.PageOptions(params.ListOptions),
+	})
 	if err != nil {
 		Error(w, err)
 		return
