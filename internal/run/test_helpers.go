@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -78,7 +79,7 @@ func (f *fakeWebServices) CreateRun(ctx context.Context, workspaceID string, opt
 func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	return &RunList{
 		Items:      f.runs,
-		Pagination: internal.NewPagination(opts.ListOptions, len(f.runs)),
+		Pagination: resource.NewPagination(opts.ListOptions, int64(len(f.runs))),
 	}, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -33,7 +34,7 @@ type (
 	// database.
 	dbListOptions struct {
 		names []string // filter organizations by name if non-nil
-		internal.ListOptions
+		resource.ListOptions
 	}
 )
 
@@ -88,8 +89,8 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*OrganizationList
 
 	db.FindOrganizationsBatch(batch, pggen.FindOrganizationsParams{
 		Names:  opts.names,
-		Limit:  sql.Int8(opts.GetLimit()),
-		Offset: sql.Int8(opts.GetOffset()),
+		Limit:  opts.GetLimit(),
+		Offset: opts.GetOffset(),
 	})
 	db.CountOrganizationsBatch(batch, opts.names)
 	results := db.SendBatch(ctx, batch)
@@ -111,7 +112,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*OrganizationList
 
 	return &OrganizationList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
+		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
 	}, nil
 }
 

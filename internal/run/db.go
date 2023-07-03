@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/workspace"
@@ -211,8 +212,8 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
-		Limit:             sql.Int8(opts.GetLimit()),
-		Offset:            sql.Int8(opts.GetOffset()),
+		Limit:             opts.GetLimit(),
+		Offset:            opts.GetOffset(),
 	})
 	db.CountRunsBatch(batch, pggen.CountRunsParams{
 		OrganizationNames: []string{organization},
@@ -241,7 +242,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 
 	return &RunList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
+		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
 	}, nil
 }
 

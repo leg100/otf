@@ -199,7 +199,7 @@ func TestRun(t *testing.T) {
 				want: func(t *testing.T, l *run.RunList) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
-					assert.Equal(t, 2, l.TotalCount())
+					assert.Equal(t, 2, l.TotalCount)
 				},
 			},
 			{
@@ -208,7 +208,7 @@ func TestRun(t *testing.T) {
 				want: func(t *testing.T, l *run.RunList) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))
-					assert.Equal(t, 0, l.TotalCount())
+					assert.Equal(t, 0, l.TotalCount)
 				},
 			},
 		}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -40,13 +41,13 @@ type (
 	// ListTagsOptions are options for paginating and filtering a list of
 	// tags
 	ListTagsOptions struct {
-		internal.ListOptions
+		resource.ListOptions
 	}
 
 	// ListWorkspaceTagsOptions are options for paginating and filtering a list of
 	// workspace tags
 	ListWorkspaceTagsOptions struct {
-		internal.ListOptions
+		resource.ListOptions
 	}
 )
 
@@ -207,10 +208,10 @@ func (s *service) listAllTags(ctx context.Context, organization string) ([]*Tag,
 			return nil, err
 		}
 		tags = append(tags, page.Items...)
-		if page.NextPage() == nil {
+		if page.NextPage == nil {
 			break
 		}
-		opts.PageNumber = *page.NextPage()
+		opts.PageNumber = *page.NextPage
 	}
 	return tags, nil
 }

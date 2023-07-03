@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 )
 
 func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team, []jsonapi.MarshalOption, error) {
@@ -57,26 +57,15 @@ func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team
 }
 
 func (m *jsonapiMarshaler) toTeamList(from []*auth.Team, r *http.Request) (to []*types.Team, opts []jsonapi.MarshalOption, err error) {
-	var listOptions internal.ListOptions
-	if err := decode.All(&listOptions, r); err != nil {
+	var listOptions resource.ListOptions
+	if err := decode.Query(&listOptions, r.URL.Query()); err != nil {
 		return nil, nil, err
 	}
-	pagination := internal.NewPagination(listOptions, len(from))
-	opts = []jsonapi.MarshalOption{toMarshalOption(pagination)}
-
-	// trim the start
-	start := listOptions.SanitizedPageSize() * (listOptions.SanitizedPageNumber() - 1)
-	if start > len(from) {
-		// paging is out-of-range: return empty list
-		return to, opts, nil
-	}
-	from = from[start:]
-
-	// trim the end
-	end := listOptions.SanitizedPageSize() * listOptions.SanitizedPageNumber()
-	if len(from) > end {
-		from = from[:(end - 1)]
-	}
+	from, pagination := resource.Paginate(from, listOptions)
+	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
+		"meta": (*types.Pagination)(pagination),
+	})
+	opts = append(opts, jsonapi.MarshalOption(meta))
 
 	to = make([]*types.Team, len(from))
 	for i, fromTeam := range from {

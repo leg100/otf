@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +53,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 			}
 
 			for page := 1; ; page++ {
-				list, err := a.ListStateVersions(cmd.Context(), workspace.ID, internal.ListOptions{PageNumber: page})
+				list, err := a.ListStateVersions(cmd.Context(), workspace.ID, resource.ListOptions{PageNumber: page})
 				if err != nil {
 					return fmt.Errorf("listing state versions: %w", err)
 				}
@@ -63,7 +64,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 					}
 					fmt.Fprintln(out)
 				}
-				if list.NextPage() == nil {
+				if list.NextPage == nil {
 					break
 				}
 			}

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 )
 
 func (a *api) addConfigHandlers(r *mux.Router) {
@@ -69,7 +70,7 @@ func (a *api) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 func (a *api) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		WorkspaceID          string `schema:"workspace_id,required"`
-		internal.ListOptions        // Pagination
+		resource.ListOptions        // Pagination
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {

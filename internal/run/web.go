@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -87,7 +88,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		internal.ListOptions
+		resource.ListOptions
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {

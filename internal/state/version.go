@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -23,7 +23,7 @@ type (
 
 	// VersionList represents a list of state versions.
 	VersionList struct {
-		*internal.Pagination
+		*resource.Pagination
 		Items []*Version
 	}
 

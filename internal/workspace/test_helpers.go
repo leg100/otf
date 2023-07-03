@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
 )
@@ -112,7 +113,7 @@ func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions)
 func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
 	return &WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: internal.NewPagination(opts.ListOptions, len(f.workspaces)),
+		Pagination: resource.NewPagination(opts.ListOptions, int64(len(f.workspaces))),
 	}, nil
 }
 

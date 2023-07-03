@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -16,7 +17,7 @@ type (
 		internal.DB
 
 		createVersion(context.Context, *Version) error
-		listVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error)
+		listVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error)
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		getState(ctx context.Context, versionID string) ([]byte, error)
@@ -72,13 +73,13 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       sql.Int8(opts.GetLimit()),
-		Offset:      sql.Int8(opts.GetOffset()),
+		Limit:       opts.GetLimit(),
+		Offset:      opts.GetOffset(),
 	})
 	db.CountStateVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
 
@@ -101,7 +102,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts inter
 
 	return &VersionList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts, int(count.Int)),
+		Pagination: resource.NewPagination(opts, count.Int),
 	}, nil
 }
 

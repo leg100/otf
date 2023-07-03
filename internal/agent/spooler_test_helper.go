@@ -3,9 +3,9 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 )
 
@@ -19,7 +19,7 @@ type fakeSpoolerApp struct {
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error) {
 	return &run.RunList{
 		Items:      a.runs,
-		Pagination: internal.NewPagination(internal.ListOptions{}, len(a.runs)),
+		Pagination: resource.NewPagination(resource.ListOptions{}, int64(len(a.runs))),
 	}, nil
 }
 

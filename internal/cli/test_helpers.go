@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
@@ -141,7 +142,7 @@ func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*works
 func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error) {
 	return &workspace.WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.workspaces)),
+		Pagination: resource.NewPagination(resource.ListOptions{}, int64(len(f.workspaces))),
 	}, nil
 }
 
@@ -174,7 +175,7 @@ func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAge
 	return f.agentToken, nil
 }
 
-func (f *fakeClient) ListStateVersions(context.Context, string, internal.ListOptions) (*state.VersionList, error) {
+func (f *fakeClient) ListStateVersions(context.Context, string, resource.ListOptions) (*state.VersionList, error) {
 	return f.stateVersionList, nil
 }
 

@@ -15,12 +15,9 @@ import (
 
 func TestWeb_ListHandler(t *testing.T) {
 	t.Run("pagination", func(t *testing.T) {
-		orgs := []*Organization{
-			NewTestOrganization(t),
-			NewTestOrganization(t),
-			NewTestOrganization(t),
-			NewTestOrganization(t),
-			NewTestOrganization(t),
+		orgs := make([]*Organization, 201)
+		for i := 1; i <= 201; i++ {
+			orgs[i-1] = NewTestOrganization(t)
 		}
 		svc := newFakeWeb(t, &fakeService{orgs: orgs}, false)
 
@@ -51,7 +48,7 @@ func TestWeb_ListHandler(t *testing.T) {
 			svc.list(w, r)
 			assert.Equal(t, 200, w.Code)
 			assert.Contains(t, w.Body.String(), "Previous Page")
-			assert.NotContains(t, w.Body.String(), "Next Page")
+			assert.NotContains(t, w.Body.String(), "Next Page", w.Body.String())
 		})
 	})
 

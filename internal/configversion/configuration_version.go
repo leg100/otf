@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const (
@@ -39,7 +40,7 @@ type (
 
 	// ConfigurationVersionList represents a list of configuration versions.
 	ConfigurationVersionList struct {
-		*internal.Pagination
+		*resource.Pagination
 		Items []*ConfigurationVersion
 	}
 
@@ -91,7 +92,7 @@ type (
 		// A list of relations to include
 		Include *string `schema:"include"`
 
-		internal.ListOptions
+		resource.ListOptions
 	}
 
 	IngressAttributes struct {

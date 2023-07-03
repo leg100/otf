@@ -99,10 +99,10 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 			return fmt.Errorf("retrieving queued runs: %w", err)
 		}
 		existing = append(existing, page.Items...)
-		if page.NextPage() == nil {
+		if page.NextPage == nil {
 			break
 		}
-		listOpts.PageNumber = *page.NextPage()
+		listOpts.PageNumber = *page.NextPage
 	}
 
 	s.V(2).Info("retrieved queued runs", "total", len(existing))

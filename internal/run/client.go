@@ -99,13 +99,13 @@ func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, e
 		return nil, err
 	}
 
-	wl := &types.RunList{}
-	err = c.Do(ctx, req, wl)
+	rl := &types.RunList{}
+	err = c.Do(ctx, req, rl)
 	if err != nil {
 		return nil, err
 	}
 
-	return newListFromJSONAPI(wl), nil
+	return newListFromJSONAPI(rl), nil
 }
 
 func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {

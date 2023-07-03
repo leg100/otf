@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
@@ -65,7 +66,7 @@ type (
 		RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error)
 		DeleteStateVersion(ctx context.Context, svID string) error
 		DownloadState(ctx context.Context, svID string) ([]byte, error)
-		ListStateVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*state.VersionList, error)
+		ListStateVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*state.VersionList, error)
 
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error

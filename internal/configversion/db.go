@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -73,8 +74,8 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       sql.Int8(opts.GetLimit()),
-		Offset:      sql.Int8(opts.GetOffset()),
+		Limit:       opts.GetLimit(),
+		Offset:      opts.GetOffset(),
 	})
 	db.CountConfigurationVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
@@ -96,7 +97,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 
 	return &ConfigurationVersionList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
+		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
 	}, nil
 }
 

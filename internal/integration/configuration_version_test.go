@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -78,7 +79,7 @@ func TestConfigurationVersion(t *testing.T) {
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 2, len(got.Items))
-					assert.Equal(t, 2, got.TotalCount())
+					assert.Equal(t, 2, got.TotalCount)
 					assert.Contains(t, got.Items, cv1)
 					assert.Contains(t, got.Items, cv2)
 				},
@@ -86,22 +87,22 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}},
+				opts:        configversion.ConfigurationVersionListOptions{ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
-					assert.Equal(t, 2, got.TotalCount())
+					assert.Equal(t, 2, got.TotalCount)
 				},
 			},
 			{
 				name:        "stray pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: internal.ListOptions{PageNumber: 999, PageSize: 10}},
+				opts:        configversion.ConfigurationVersionListOptions{ListOptions: resource.ListOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					// Zero items but total count should ignore pagination
 					assert.Equal(t, 0, len(got.Items))
-					assert.Equal(t, 2, got.TotalCount())
+					assert.Equal(t, 2, got.TotalCount)
 				},
 			},
 			{

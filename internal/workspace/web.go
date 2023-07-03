@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -64,13 +65,23 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params ListOptions
+	var params struct {
+		Search       string   `schema:"search[name],omitempty"`
+		Tags         []string `schema:"search[tags],omitempty"`
+		Organization *string  `schema:"organization_name,required"`
+		PageNumber   int      `schema:"page[number]"`
+	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), params)
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
+		ListOptions: resource.ListOptions{
+			PageNumber: params.PageNumber,
+			PageSize:   html.PageSize,
+		},
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,13 +113,13 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		CreateWorkspaceAction rbac.Action
 		*WorkspaceList
 		TagFilters map[string]bool
-		Params     ListOptions
+		Search     string
 	}{
 		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
 		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
 		WorkspaceList:         workspaces,
 		TagFilters:            tagfilters(),
-		Params:                params,
+		Search:                params.Search,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
@@ -435,9 +446,9 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID          string `schema:"workspace_id,required"`
-		VCSProviderID        string `schema:"vcs_provider_id,required"`
-		internal.ListOptions        // Pagination
+		WorkspaceID   string `schema:"workspace_id,required"`
+		VCSProviderID string `schema:"vcs_provider_id,required"`
+
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -456,7 +467,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	repos, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
-		PageSize: 100,
+		PageSize: html.PageSize,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)

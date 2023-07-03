@@ -26,7 +26,10 @@ func (m *jsonapiMarshaler) toOrganization(from *organization.Organization) *type
 }
 
 func (m *jsonapiMarshaler) toOrganizationList(from *organization.OrganizationList) (to []*types.Organization, opts []jsonapi.MarshalOption) {
-	opts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
+	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
+		"meta": (*types.Pagination)(from.Pagination),
+	})
+	opts = append(opts, jsonapi.MarshalOption(meta))
 	for _, item := range from.Items {
 		to = append(to, m.toOrganization(item))
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,21 +69,21 @@ func TestOrganization(t *testing.T) {
 		_ = svc.createOrganization(t, ctx)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: internal.ListOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: resource.ListOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))

@@ -40,10 +40,10 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 				for _, ws := range list.Items {
 					fmt.Fprintln(cmd.OutOrStdout(), ws.Name)
 				}
-				if list.NextPage() == nil {
+				if list.NextPage == nil {
 					break
 				}
-				opts.PageNumber = *list.NextPage()
+				opts.PageNumber = *list.NextPage
 			}
 
 			return nil

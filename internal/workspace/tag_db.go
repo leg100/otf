@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -35,8 +36,8 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	db.FindTagsBatch(batch, pggen.FindTagsParams{
 		OrganizationName: sql.String(organization),
-		Limit:            sql.Int8(opts.GetLimit()),
-		Offset:           sql.Int8(opts.GetOffset()),
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
 	})
 	db.CountTagsBatch(batch, sql.String(organization))
 	results := db.SendBatch(ctx, batch)
@@ -58,7 +59,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	return &TagList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
+		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
 	}, nil
 }
 
@@ -132,8 +133,8 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	db.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       sql.Int8(opts.GetLimit()),
-		Offset:      sql.Int8(opts.GetOffset()),
+		Limit:       opts.GetLimit(),
+		Offset:      opts.GetOffset(),
 	})
 	db.CountTagsBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
@@ -155,7 +156,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	return &TagList{
 		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
+		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
 	}, nil
 }
 

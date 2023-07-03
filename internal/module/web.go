@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -187,7 +188,7 @@ func (h *webHandlers) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	// Retrieve repos and filter according to required naming format
 	// '<something>-<name>-<provider>'
 	results, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
-		PageSize: internal.MaxPageSize,
+		PageSize: resource.MaxPageSize,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)

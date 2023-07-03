@@ -118,7 +118,7 @@ func (m *jsonapiMarshaler) writeResponse(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// WithCode is a helper func for writing an HTTP status code to a response
+// withCode is a helper func for writing an HTTP status code to a response
 // stream. For use with writeResponse.
 func withCode(code int) func(w http.ResponseWriter) {
 	return func(w http.ResponseWriter) {

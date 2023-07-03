@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 )
 
@@ -114,7 +115,7 @@ func (a *api) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		internal.ListOptions
+		resource.ListOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)

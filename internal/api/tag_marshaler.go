@@ -17,6 +17,9 @@ func (m *jsonapiMarshaler) toTags(from *workspace.TagList) (to []*types.Organiza
 			},
 		})
 	}
-	opts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
+	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
+		"meta": (*types.Pagination)(from.Pagination),
+	})
+	opts = append(opts, jsonapi.MarshalOption(meta))
 	return
 }

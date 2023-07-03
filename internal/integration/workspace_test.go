@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -216,7 +217,7 @@ func TestWorkspace(t *testing.T) {
 			},
 			{
 				name: "paginated results ordered by updated_at",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect wsTagged to be listed
@@ -225,16 +226,16 @@ func TestWorkspace(t *testing.T) {
 					if !ws2.UpdatedAt.Equal(wsTagged.UpdatedAt) {
 						assert.Equal(t, wsTagged, l.Items[0])
 					}
-					assert.Equal(t, 3, l.TotalCount())
+					assert.Equal(t, 3, l.TotalCount)
 				},
 			},
 			{
 				name: "stray pagination",
-				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: internal.ListOptions{PageNumber: 999, PageSize: 10}},
+				opts: workspace.ListOptions{Organization: internal.String(org.Name), ListOptions: resource.ListOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
-					assert.Equal(t, 3, l.TotalCount())
+					assert.Equal(t, 3, l.TotalCount)
 				},
 			},
 		}
@@ -351,7 +352,7 @@ func TestWorkspace(t *testing.T) {
 				user: user1,
 				opts: workspace.ListOptions{
 					Organization: internal.String(org.Name),
-					ListOptions:  internal.ListOptions{PageNumber: 1, PageSize: 1},
+					ListOptions:  resource.ListOptions{PageNumber: 1, PageSize: 1},
 				},
 				want: func(t *testing.T, l *workspace.WorkspaceList) {
 					assert.Equal(t, 1, len(l.Items))
@@ -361,7 +362,7 @@ func TestWorkspace(t *testing.T) {
 					if !ws1.UpdatedAt.Equal(ws2.UpdatedAt) {
 						assert.Equal(t, ws2, l.Items[0])
 					}
-					assert.Equal(t, 2, l.TotalCount())
+					assert.Equal(t, 2, l.TotalCount)
 				},
 			},
 		}

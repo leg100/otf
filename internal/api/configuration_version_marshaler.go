@@ -45,5 +45,8 @@ func (m *jsonapiMarshaler) toConfigurationVersionList(from *configversion.Config
 		}
 		to = append(to, cv)
 	}
-	return to, []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}, nil
+	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
+		"meta": (*types.Pagination)(from.Pagination),
+	})
+	return to, []jsonapi.MarshalOption{meta}, nil
 }

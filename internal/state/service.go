@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -27,7 +28,7 @@ type (
 		// DownloadCurrentState downloads the current (latest) state for the given
 		// workspace.
 		DownloadCurrentState(ctx context.Context, workspaceID string) ([]byte, error)
-		ListStateVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error)
+		ListStateVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error)
 		GetCurrentStateVersion(ctx context.Context, workspaceID string) (*Version, error)
 		GetStateVersion(ctx context.Context, versionID string) (*Version, error)
 		DeleteStateVersion(ctx context.Context, versionID string) error
@@ -61,7 +62,7 @@ type (
 
 	// StateVersionListOptions represents the options for listing state versions.
 	StateVersionListOptions struct {
-		internal.ListOptions
+		resource.ListOptions
 		Organization string `schema:"filter[organization][name],required"`
 		Workspace    string `schema:"filter[workspace][name],required"`
 	}
@@ -110,7 +111,7 @@ func (a *service) DownloadCurrentState(ctx context.Context, workspaceID string) 
 	return a.DownloadState(ctx, v.ID)
 }
 
-func (a *service) ListStateVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error) {
+func (a *service) ListStateVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error) {
 	subject, err := a.workspace.CanAccess(ctx, rbac.ListStateVersionsAction, workspaceID)
 	if err != nil {
 		return nil, err
