@@ -139,6 +139,11 @@ func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		Error(w, err)
+		return
+	}
 	var params types.WorkspaceListOptions
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
@@ -146,9 +151,10 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wsl, err := a.ListWorkspaces(r.Context(), workspace.ListOptions{
-		Search:      params.Search,
-		Tags:        params.Tags,
-		PageOptions: resource.PageOptions(params.ListOptions),
+		Search:       params.Search,
+		Tags:         params.Tags,
+		Organization: &organization,
+		PageOptions:  resource.PageOptions(params.ListOptions),
 	})
 	if err != nil {
 		Error(w, err)
