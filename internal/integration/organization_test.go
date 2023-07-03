@@ -69,21 +69,21 @@ func TestOrganization(t *testing.T) {
 		_ = svc.createOrganization(t, ctx)
 
 		t.Run("page one, two items per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 2}})
+			orgs, err := svc.ListOrganizations(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 2}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 2, len(orgs.Items))
 		})
 
 		t.Run("page one, one item per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 1}})
+			orgs, err := svc.ListOrganizations(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
 		})
 
 		t.Run("page two, one item per page", func(t *testing.T) {
-			orgs, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{ListOptions: resource.ListOptions{PageNumber: 2, PageSize: 1}})
+			orgs, err := svc.ListOrganizations(ctx, organization.ListOptions{PageOptions: resource.PageOptions{PageNumber: 2, PageSize: 1}})
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, len(orgs.Items))
@@ -95,7 +95,7 @@ func TestOrganization(t *testing.T) {
 		want2 := svc.createOrganization(t, ctx)
 		_ = svc.createOrganization(t, adminCtx) // org not belonging to user
 
-		got, err := svc.ListOrganizations(ctx, organization.OrganizationListOptions{})
+		got, err := svc.ListOrganizations(ctx, organization.ListOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(got.Items))
@@ -110,7 +110,7 @@ func TestOrganization(t *testing.T) {
 
 		_, newUserCtx := svc.createUserCtx(t)
 
-		got, err := svc.ListOrganizations(newUserCtx, organization.OrganizationListOptions{})
+		got, err := svc.ListOrganizations(newUserCtx, organization.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(got.Items))
 	})

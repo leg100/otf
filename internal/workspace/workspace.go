@@ -121,7 +121,7 @@ type (
 		Tags         []string
 		Organization *string
 
-		resource.ListOptions
+		resource.PageOptions
 	}
 
 	ConnectOptions struct {

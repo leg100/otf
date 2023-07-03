@@ -24,9 +24,9 @@ type (
 		TotalCount   int  `json:"total-count"`
 	}
 
-	// ListOptions is used to specify pagination options when making API requests.
+	// PageOptions are used to specify pagination options when making API requests.
 	// Pagination allows breaking up large result sets into chunks, or "pages".
-	ListOptions struct {
+	PageOptions struct {
 		// The page number to request. The results vary based on the PageSize.
 		PageNumber int `schema:"page[number],omitempty"`
 		// The number of elements returned in a single page.
@@ -34,7 +34,7 @@ type (
 	}
 )
 
-func NewPagination(opts ListOptions, count int64) *Pagination {
+func NewPagination(opts PageOptions, count int64) *Pagination {
 	opts = opts.normalize()
 
 	pagination := Pagination{
@@ -59,7 +59,7 @@ func NewPagination(opts ListOptions, count int64) *Pagination {
 // Paginate paginates a slice of resources, returning a slice for the current
 // page and a pagination meta object. The slice should be the entire result set,
 // and r should contain pagination query parameters.
-func Paginate[S comparable](from []S, opts ListOptions) ([]S, *Pagination) {
+func Paginate[S comparable](from []S, opts PageOptions) ([]S, *Pagination) {
 	pagination := NewPagination(opts, int64(len(from)))
 	opts = opts.normalize()
 
@@ -80,18 +80,18 @@ func Paginate[S comparable](from []S, opts ListOptions) ([]S, *Pagination) {
 }
 
 // GetOffset calculates the offset for use in SQL queries.
-func (o ListOptions) GetOffset() pgtype.Int8 {
+func (o PageOptions) GetOffset() pgtype.Int8 {
 	o = o.normalize()
 	return sql.Int8((o.PageNumber - 1) * o.PageSize)
 }
 
 // GetLimit calculates the limit for use in SQL queries.
-func (o ListOptions) GetLimit() pgtype.Int8 {
+func (o PageOptions) GetLimit() pgtype.Int8 {
 	return sql.Int8(o.normalize().PageSize)
 }
 
 // normalize page number and size
-func (o ListOptions) normalize() ListOptions {
+func (o PageOptions) normalize() PageOptions {
 	if o.PageNumber < 1 {
 		o.PageNumber = 1
 	}

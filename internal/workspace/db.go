@@ -240,7 +240,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 
 	return &WorkspaceList{
 		Items:      items,
-		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
+		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
 	}, nil
 }
 
@@ -262,7 +262,7 @@ func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*WorkspaceList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{

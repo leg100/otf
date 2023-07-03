@@ -29,10 +29,10 @@ func NewTestOrganization(t *testing.T) *Organization {
 	}
 }
 
-func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
+func (f *fakeService) ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
 	return &OrganizationList{
 		Items:      f.orgs,
-		Pagination: resource.NewPagination(opts.ListOptions, int64(len(f.orgs))),
+		Pagination: resource.NewPagination(opts.PageOptions, int64(len(f.orgs))),
 	}, nil
 }
 

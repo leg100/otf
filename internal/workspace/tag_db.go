@@ -59,7 +59,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 
 	return &TagList{
 		Items:      items,
-		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
+		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
 	}, nil
 }
 
@@ -156,7 +156,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 
 	return &TagList{
 		Items:      items,
-		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
+		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
 	}, nil
 }
 

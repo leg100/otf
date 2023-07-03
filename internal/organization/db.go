@@ -34,7 +34,7 @@ type (
 	// database.
 	dbListOptions struct {
 		names []string // filter organizations by name if non-nil
-		resource.ListOptions
+		resource.PageOptions
 	}
 )
 
@@ -112,7 +112,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*OrganizationList
 
 	return &OrganizationList{
 		Items:      items,
-		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
+		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
 	}, nil
 }
 

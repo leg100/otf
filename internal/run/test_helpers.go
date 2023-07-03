@@ -79,7 +79,7 @@ func (f *fakeWebServices) CreateRun(ctx context.Context, workspaceID string, opt
 func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
 	return &RunList{
 		Items:      f.runs,
-		Pagination: resource.NewPagination(opts.ListOptions, int64(len(f.runs))),
+		Pagination: resource.NewPagination(opts.PageOptions, int64(len(f.runs))),
 	}, nil
 }
 

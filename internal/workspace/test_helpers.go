@@ -113,7 +113,7 @@ func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions)
 func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
 	return &WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: resource.NewPagination(opts.ListOptions, int64(len(f.workspaces))),
+		Pagination: resource.NewPagination(opts.PageOptions, int64(len(f.workspaces))),
 	}, nil
 }
 

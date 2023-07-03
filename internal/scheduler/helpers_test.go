@@ -48,14 +48,14 @@ type fakeSchedulerServices struct {
 func (f *fakeSchedulerServices) ListRuns(context.Context, run.RunListOptions) (*run.RunList, error) {
 	return &run.RunList{
 		Items:      f.runs,
-		Pagination: resource.NewPagination(resource.ListOptions{}, int64(len(f.runs))),
+		Pagination: resource.NewPagination(resource.PageOptions{}, int64(len(f.runs))),
 	}, nil
 }
 
 func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.ListOptions) (*workspace.WorkspaceList, error) {
 	return &workspace.WorkspaceList{
 		Items:      f.workspaces,
-		Pagination: resource.NewPagination(resource.ListOptions{}, int64(len(f.workspaces))),
+		Pagination: resource.NewPagination(resource.PageOptions{}, int64(len(f.workspaces))),
 	}, nil
 }
 

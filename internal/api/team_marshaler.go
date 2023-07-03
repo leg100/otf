@@ -57,7 +57,7 @@ func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team
 }
 
 func (m *jsonapiMarshaler) toTeamList(from []*auth.Team, r *http.Request) (to []*types.Team, opts []jsonapi.MarshalOption, err error) {
-	var listOptions resource.ListOptions
+	var listOptions resource.PageOptions
 	if err := decode.Query(&listOptions, r.URL.Query()); err != nil {
 		return nil, nil, err
 	}

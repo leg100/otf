@@ -107,7 +107,7 @@ type (
 
 	// RunListOptions are options for paginating and filtering a list of runs
 	RunListOptions struct {
-		resource.ListOptions
+		resource.PageOptions
 		// Filter by run statuses (with an implicit OR condition)
 		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by workspace ID

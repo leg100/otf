@@ -210,7 +210,7 @@ func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*Worksp
 				return nil, err
 			}
 			if user, ok := subject.(*auth.User); ok {
-				return s.db.listByUsername(ctx, user.Username, *opts.Organization, opts.ListOptions)
+				return s.db.listByUsername(ctx, user.Username, *opts.Organization, opts.PageOptions)
 			}
 		} else if err != nil {
 			return nil, err

@@ -97,7 +97,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 
 	return &ConfigurationVersionList{
 		Items:      items,
-		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
+		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
 	}, nil
 }
 

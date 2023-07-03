@@ -19,7 +19,7 @@ type fakeSpoolerApp struct {
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error) {
 	return &run.RunList{
 		Items:      a.runs,
-		Pagination: resource.NewPagination(resource.ListOptions{}, int64(len(a.runs))),
+		Pagination: resource.NewPagination(resource.PageOptions{}, int64(len(a.runs))),
 	}, nil
 }
 

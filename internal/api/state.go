@@ -104,7 +104,7 @@ func (a *api) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		Error(w, err)
 		return
 	}
-	svl, err := a.ListStateVersions(r.Context(), ws.ID, opts.ListOptions)
+	svl, err := a.ListStateVersions(r.Context(), ws.ID, opts.PageOptions)
 	if err != nil {
 		Error(w, err)
 		return
@@ -115,13 +115,13 @@ func (a *api) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 func (a *api) listVersions(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string `schema:"workspace_id,required"`
-		resource.ListOptions
+		resource.PageOptions
 	}
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
 	}
-	svl, err := a.ListStateVersions(r.Context(), params.WorkspaceID, params.ListOptions)
+	svl, err := a.ListStateVersions(r.Context(), params.WorkspaceID, params.PageOptions)
 	if err != nil {
 		Error(w, err)
 		return

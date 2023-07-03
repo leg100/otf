@@ -103,7 +103,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
 		WorkspaceID: &params.WorkspaceID,
-		ListOptions: resource.ListOptions{
+		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
 			PageSize:   html.PageSize,
 		},

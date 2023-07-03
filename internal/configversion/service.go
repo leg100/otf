@@ -87,7 +87,7 @@ func (s *service) ListConfigurationVersions(ctx context.Context, workspaceID str
 		return nil, err
 	}
 
-	cvl, err := s.db.ListConfigurationVersions(ctx, workspaceID, ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+	cvl, err := s.db.ListConfigurationVersions(ctx, workspaceID, ConfigurationVersionListOptions{PageOptions: opts.PageOptions})
 	if err != nil {
 		s.Error(err, "listing configuration versions")
 		return nil, err

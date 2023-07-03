@@ -53,7 +53,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 			}
 
 			for page := 1; ; page++ {
-				list, err := a.ListStateVersions(cmd.Context(), workspace.ID, resource.ListOptions{PageNumber: page})
+				list, err := a.ListStateVersions(cmd.Context(), workspace.ID, resource.PageOptions{PageNumber: page})
 				if err != nil {
 					return fmt.Errorf("listing state versions: %w", err)
 				}

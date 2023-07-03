@@ -242,7 +242,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 
 	return &RunList{
 		Items:      items,
-		Pagination: resource.NewPagination(opts.ListOptions, count.Int),
+		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
 	}, nil
 }
 

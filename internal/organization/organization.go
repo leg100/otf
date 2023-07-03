@@ -32,8 +32,8 @@ type (
 	}
 
 	// ListOptions represents the options for listing organizations.
-	OrganizationListOptions struct {
-		resource.ListOptions
+	ListOptions struct {
+		resource.PageOptions
 	}
 
 	// UpdateOptions represents the options for updating an

@@ -75,7 +75,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	// retrieve existing workspaces, page by page
 	workspaces := []*workspace.Workspace{}
 	workspaceListOpts := workspace.ListOptions{
-		ListOptions: resource.ListOptions{PageSize: resource.MaxPageSize},
+		PageOptions: resource.PageOptions{PageSize: resource.MaxPageSize},
 	}
 	for {
 		page, err := s.ListWorkspaces(ctx, workspaceListOpts)
@@ -92,7 +92,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	runs := []*run.Run{}
 	runListOpts := run.RunListOptions{
 		Statuses:    internal.IncompleteRun,
-		ListOptions: resource.ListOptions{PageSize: resource.MaxPageSize},
+		PageOptions: resource.PageOptions{PageSize: resource.MaxPageSize},
 	}
 	for {
 		page, err := s.ListRuns(ctx, runListOpts)

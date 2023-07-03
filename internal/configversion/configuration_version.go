@@ -92,7 +92,7 @@ type (
 		// A list of relations to include
 		Include *string `schema:"include"`
 
-		resource.ListOptions
+		resource.PageOptions
 	}
 
 	IngressAttributes struct {

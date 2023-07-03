@@ -10,13 +10,13 @@ import (
 func TestPagination(t *testing.T) {
 	tests := []struct {
 		name  string
-		opts  ListOptions
+		opts  PageOptions
 		count int64
 		want  *Pagination
 	}{
 		{
 			name:  "one page",
-			opts:  ListOptions{PageNumber: 1, PageSize: 20},
+			opts:  PageOptions{PageNumber: 1, PageSize: 20},
 			count: 5,
 			want: &Pagination{
 				CurrentPage:  1,
@@ -28,7 +28,7 @@ func TestPagination(t *testing.T) {
 		},
 		{
 			name:  "multiple pages",
-			opts:  ListOptions{PageNumber: 3, PageSize: 20},
+			opts:  PageOptions{PageNumber: 3, PageSize: 20},
 			count: 101,
 			want: &Pagination{
 				CurrentPage:  3,
@@ -40,7 +40,7 @@ func TestPagination(t *testing.T) {
 		},
 		{
 			name:  "no results",
-			opts:  ListOptions{PageNumber: 1, PageSize: 20},
+			opts:  PageOptions{PageNumber: 1, PageSize: 20},
 			count: 0,
 			want: &Pagination{
 				CurrentPage:  1,
@@ -68,13 +68,13 @@ func TestPaginate(t *testing.T) {
 	}
 	tests := []struct {
 		name           string
-		opts           ListOptions
+		opts           PageOptions
 		want           []int
 		wantPagination Pagination
 	}{
 		{
 			"default",
-			ListOptions{},
+			PageOptions{},
 			[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			Pagination{
 				CurrentPage: 1,
@@ -85,7 +85,7 @@ func TestPaginate(t *testing.T) {
 		},
 		{
 			"second page",
-			ListOptions{PageSize: 10, PageNumber: 2},
+			PageOptions{PageSize: 10, PageNumber: 2},
 			[]int{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			Pagination{
 				CurrentPage:  2,
@@ -97,7 +97,7 @@ func TestPaginate(t *testing.T) {
 		},
 		{
 			"last page",
-			ListOptions{PageSize: 10, PageNumber: 11},
+			PageOptions{PageSize: 10, PageNumber: 11},
 			[]int{101},
 			Pagination{
 				CurrentPage:  11,
@@ -108,7 +108,7 @@ func TestPaginate(t *testing.T) {
 		},
 		{
 			"out of range",
-			ListOptions{PageSize: 10, PageNumber: 99},
+			PageOptions{PageSize: 10, PageNumber: 99},
 			[]int{},
 			Pagination{
 				CurrentPage:  99,

@@ -70,7 +70,7 @@ func (a *api) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 func (a *api) listConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		WorkspaceID          string `schema:"workspace_id,required"`
-		resource.ListOptions        // Pagination
+		resource.PageOptions        // Pagination
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
@@ -79,7 +79,7 @@ func (a *api) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	cvl, err := a.ListConfigurationVersions(r.Context(), params.WorkspaceID, configversion.ConfigurationVersionListOptions{
-		ListOptions: params.ListOptions,
+		PageOptions: params.PageOptions,
 	})
 	if err != nil {
 		Error(w, err)

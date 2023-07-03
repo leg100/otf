@@ -57,8 +57,8 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organizations, err := a.svc.ListOrganizations(r.Context(), OrganizationListOptions{
-		ListOptions: resource.ListOptions{
+	organizations, err := a.svc.ListOrganizations(r.Context(), ListOptions{
+		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
 			PageSize:   html.PageSize,
 		},

@@ -87,7 +87,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: resource.ListOptions{PageNumber: 1, PageSize: 1}},
+				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
@@ -97,7 +97,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "stray pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: resource.ListOptions{PageNumber: 999, PageSize: 10}},
+				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
 				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
 					require.NoError(t, err)
 					// Zero items but total count should ignore pagination

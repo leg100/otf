@@ -49,7 +49,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 	return newFromJSONAPI(&sv), nil
 }
 
-func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error) {
+func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*VersionList, error) {
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(workspaceID))
 	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {

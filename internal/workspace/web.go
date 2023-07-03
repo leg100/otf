@@ -80,7 +80,7 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Search:       params.Search,
 		Tags:         params.Tags,
 		Organization: params.Organization,
-		ListOptions: resource.ListOptions{
+		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,
 			PageSize:   html.PageSize,
 		},

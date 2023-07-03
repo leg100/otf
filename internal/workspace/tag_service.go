@@ -41,13 +41,13 @@ type (
 	// ListTagsOptions are options for paginating and filtering a list of
 	// tags
 	ListTagsOptions struct {
-		resource.ListOptions
+		resource.PageOptions
 	}
 
 	// ListWorkspaceTagsOptions are options for paginating and filtering a list of
 	// workspace tags
 	ListWorkspaceTagsOptions struct {
-		resource.ListOptions
+		resource.PageOptions
 	}
 )
 
@@ -224,7 +224,7 @@ func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]st
 	err := db.lockTags(ctx, func(tx *pgdb) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
-				return err
+				return fmt.Errorf("invalid tag: %w", err)
 			}
 
 			id := t.ID
@@ -235,7 +235,7 @@ func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]st
 				if errors.Is(err, internal.ErrResourceNotFound) {
 					id = internal.NewID("tag")
 					if err := tx.addTag(ctx, ws.Organization, name, id); err != nil {
-						return err
+						return fmt.Errorf("adding tag: %s %w", name, err)
 					}
 				} else if err != nil {
 					return err
@@ -253,7 +253,7 @@ func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]st
 			}
 
 			if err := tx.tagWorkspace(ctx, ws.ID, id); err != nil {
-				return err
+				return fmt.Errorf("tagging workspace %s with tag %s: %w", ws.ID, id, err)
 			}
 			added = append(added, name)
 		}

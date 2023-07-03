@@ -17,7 +17,7 @@ type (
 		internal.DB
 
 		createVersion(context.Context, *Version) error
-		listVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error)
+		listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*VersionList, error)
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		getState(ctx context.Context, versionID string) ([]byte, error)
@@ -73,7 +73,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.ListOptions) (*VersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*VersionList, error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
