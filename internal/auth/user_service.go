@@ -128,7 +128,7 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 	return nil
 }
 
-// RemoveTeamMembership removes a user from a team. If opts.Tx is non-nil then database
+// RemoveTeamMembership removes users from a team. If opts.Tx is non-nil then database
 // queries are made within that transaction.
 func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
 	db := a.db
@@ -136,7 +136,7 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 		db = newDB(opts.Tx, a.db.Logger)
 	}
 
-	team, err := db.getTeamByID(ctx, opts.TeamID)
+	team, err := db.getTeamForUpdate(ctx, opts.TeamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", opts.TeamID)
 		return err
@@ -147,12 +147,13 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 		return err
 	}
 
+	// check whether all members of the owners group are going to be deleted
+	// (which is not allowed)
 	if team.Name == "owners" {
-		owners, err := a.ListTeamMembers(ctx, team.ID)
-		if err != nil {
+		if owners, err := db.listTeamMembers(ctx, team.ID); err != nil {
+			a.Error(err, "removing team membership: listing team members", "team_id", team.ID, "subject", subject)
 			return err
-		}
-		if len(owners) == 1 {
+		} else if len(owners) <= len(opts.Usernames) {
 			return ErrCannotDeleteOnlyOwner
 		}
 	}
