@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -27,7 +28,7 @@ type (
 		UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error)
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
-		ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error)
+		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
 		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
 		//
 		// TODO: rename to ListConnectedWorkspaces
@@ -192,7 +193,7 @@ func (s *service) GetWorkspaceByName(ctx context.Context, organization, workspac
 	return ws, nil
 }
 
-func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
+func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")

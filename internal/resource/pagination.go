@@ -32,7 +32,39 @@ type (
 		// The number of elements returned in a single page.
 		PageSize int `schema:"page[size],omitempty"`
 	}
+
+	Page[T any] struct {
+		Items []T
+		*Pagination
+	}
 )
+
+func NewPage[T any](resources []T, opts PageOptions, count int64) *Page[T] {
+	return &Page[T]{
+		Items:      resources,
+		Pagination: NewPagination(opts, count),
+	}
+}
+
+// Paginate paginates a slice of resources, returning a slice for the current
+// page and a pagination meta object. The slice should be the entire result set.
+func Paginate[S comparable](resources []S, opts PageOptions) *Page[S] {
+	opts = opts.normalize()
+	count := int64(len(resources))
+
+	// remove items outside the current page
+	if end := opts.PageSize * opts.PageNumber; len(resources) > end {
+		resources = resources[:end]
+	}
+	start := opts.PageSize * (opts.PageNumber - 1)
+	if start > len(resources) {
+		// paging is out-of-range: return empty list
+		return &Page[S]{}
+	}
+	resources = resources[start:]
+
+	return NewPage[S](resources, opts, count)
+}
 
 func NewPagination(opts PageOptions, count int64) *Pagination {
 	opts = opts.normalize()
@@ -54,29 +86,6 @@ func NewPagination(opts PageOptions, count int64) *Pagination {
 	}
 
 	return &pagination
-}
-
-// Paginate paginates a slice of resources, returning a slice for the current
-// page and a pagination meta object. The slice should be the entire result set,
-// and r should contain pagination query parameters.
-func Paginate[S comparable](from []S, opts PageOptions) ([]S, *Pagination) {
-	pagination := NewPagination(opts, int64(len(from)))
-	opts = opts.normalize()
-
-	// remove items outside the current page
-	end := opts.PageSize * opts.PageNumber
-	if len(from) > end {
-		from = from[:end]
-	}
-
-	start := opts.PageSize * (opts.PageNumber - 1)
-	if start > len(from) {
-		// paging is out-of-range: return empty list
-		return []S{}, pagination
-	}
-	from = from[start:]
-
-	return from, pagination
 }
 
 // GetOffset calculates the offset for use in SQL queries.

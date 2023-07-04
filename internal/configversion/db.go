@@ -70,7 +70,7 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn fu
 	})
 }
 
-func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error) {
+func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error) {
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
@@ -95,10 +95,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 		items = append(items, pgRow(r).toConfigVersion())
 	}
 
-	return &ConfigurationVersionList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, count.Int), nil
 }
 
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {

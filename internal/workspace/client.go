@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
@@ -57,7 +58,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*Workspa
 	return unmarshalJSONAPI(w), nil
 }
 
-func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*WorkspaceList, error) {
+func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*resource.Page[*Workspace], error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
 	req, err := c.NewRequest("GET", u, &options)
 	if err != nil {
@@ -65,8 +66,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*Work
 	}
 
 	wl := &types.WorkspaceList{}
-	err = c.Do(ctx, req, wl)
-	if err != nil {
+	if err = c.Do(ctx, req, wl); err != nil {
 		return nil, err
 	}
 

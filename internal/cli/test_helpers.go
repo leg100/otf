@@ -23,7 +23,7 @@ type (
 		workspaces       []*workspace.Workspace
 		run              *run.Run
 		stateVersion     *state.Version
-		stateVersionList *state.VersionList
+		stateVersionList *resource.Page[*state.Version]
 		state            []byte
 		agentToken       []byte
 		tarball          []byte
@@ -71,7 +71,7 @@ func withStateVersion(sv *state.Version) fakeOption {
 	}
 }
 
-func withStateVersionList(svl *state.VersionList) fakeOption {
+func withStateVersionList(svl *resource.Page[*state.Version]) fakeOption {
 	return func(c *fakeClient) {
 		c.stateVersionList = svl
 	}
@@ -139,11 +139,8 @@ func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*works
 	return f.workspaces[0], nil
 }
 
-func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error) {
-	return &workspace.WorkspaceList{
-		Items:      f.workspaces,
-		Pagination: resource.NewPagination(resource.PageOptions{}, int64(len(f.workspaces))),
-	}, nil
+func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error) {
+	return resource.Paginate(f.workspaces, opts.PageOptions), nil
 }
 
 func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error) {
@@ -175,7 +172,7 @@ func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAge
 	return f.agentToken, nil
 }
 
-func (f *fakeClient) ListStateVersions(context.Context, string, resource.PageOptions) (*state.VersionList, error) {
+func (f *fakeClient) ListStateVersions(context.Context, string, resource.PageOptions) (*resource.Page[*state.Version], error) {
 	return f.stateVersionList, nil
 }
 

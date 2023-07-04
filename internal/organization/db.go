@@ -80,7 +80,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 	return org, err
 }
 
-func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*OrganizationList, error) {
+func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
 	if opts.names == nil {
 		opts.names = []string{"%"} // return all organizations
 	}
@@ -110,10 +110,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*OrganizationList
 		items = append(items, row(r).toOrganization())
 	}
 
-	return &OrganizationList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, count.Int), nil
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {

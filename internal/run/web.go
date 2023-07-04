@@ -115,10 +115,10 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		workspace.WorkspacePage
-		*RunList
+		*resource.Page[*Run]
 	}{
 		WorkspacePage: workspace.NewPage(r, "runs", ws),
-		RunList:       runs,
+		Page:          runs,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {

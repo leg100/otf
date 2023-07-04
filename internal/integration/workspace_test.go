@@ -172,12 +172,12 @@ func TestWorkspace(t *testing.T) {
 		tests := []struct {
 			name string
 			opts workspace.ListOptions
-			want func(*testing.T, *workspace.WorkspaceList)
+			want func(*testing.T, *resource.Page[*workspace.Workspace])
 		}{
 			{
 				name: "filter by org",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 3, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
@@ -188,7 +188,7 @@ func TestWorkspace(t *testing.T) {
 				// test workspaces are named `workspace-<random 6 alphanumerals>`, so prefix with 14
 				// characters to be pretty damn sure only ws1 is selected.
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: ws1.Name[:14]},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, ws1, l.Items[0])
 				},
@@ -196,7 +196,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "filter by tag",
 				opts: workspace.ListOptions{Tags: []string{"foo", "bar"}},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Equal(t, wsTagged, l.Items[0])
 				},
@@ -204,21 +204,21 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "filter by non-existent org",
 				opts: workspace.ListOptions{Organization: internal.String("non-existent")},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter by non-existent name regex",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), Search: "xyz"},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "paginated results ordered by updated_at",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect wsTagged to be listed
 					// first...unless - and this happens very occasionally - the
@@ -232,7 +232,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "stray pagination",
 				opts: workspace.ListOptions{Organization: internal.String(org.Name), PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					// zero results but count should ignore pagination
 					assert.Equal(t, 0, len(l.Items))
 					assert.Equal(t, 3, l.TotalCount)
@@ -269,12 +269,12 @@ func TestWorkspace(t *testing.T) {
 		tests := []struct {
 			name string
 			tags []string
-			want func(*testing.T, *workspace.WorkspaceList)
+			want func(*testing.T, *resource.Page[*workspace.Workspace])
 		}{
 			{
 				name: "foo",
 				tags: []string{"foo"},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
@@ -286,7 +286,7 @@ func TestWorkspace(t *testing.T) {
 			{
 				name: "foo and bar",
 				tags: []string{"foo", "bar"},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					assert.Contains(t, l.Items, ws2)
 
@@ -325,13 +325,13 @@ func TestWorkspace(t *testing.T) {
 			name string
 			user *auth.User
 			opts workspace.ListOptions
-			want func(*testing.T, *workspace.WorkspaceList)
+			want func(*testing.T, *resource.Page[*workspace.Workspace])
 		}{
 			{
 				name: "show both workspaces",
 				user: user1,
 				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, ws1)
 					assert.Contains(t, l.Items, ws2)
@@ -341,7 +341,7 @@ func TestWorkspace(t *testing.T) {
 				name: "query non-existent org",
 				user: user1,
 				opts: workspace.ListOptions{Organization: internal.String("acme-corp")},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
@@ -349,7 +349,7 @@ func TestWorkspace(t *testing.T) {
 				name: "user with no perms",
 				user: user2,
 				opts: workspace.ListOptions{Organization: internal.String(org.Name)},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
@@ -360,7 +360,7 @@ func TestWorkspace(t *testing.T) {
 					Organization: internal.String(org.Name),
 					PageOptions:  resource.PageOptions{PageNumber: 1, PageSize: 1},
 				},
-				want: func(t *testing.T, l *workspace.WorkspaceList) {
+				want: func(t *testing.T, l *resource.Page[*workspace.Workspace]) {
 					assert.Equal(t, 1, len(l.Items))
 					// results are in descending order so we expect ws2 to be listed
 					// first...unless - and this happens very occasionally - the

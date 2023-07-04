@@ -17,7 +17,7 @@ type (
 		internal.DB
 
 		createVersion(context.Context, *Version) error
-		listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*VersionList, error)
+		listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error)
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		getState(ctx context.Context, versionID string) ([]byte, error)
@@ -73,7 +73,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*VersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
@@ -100,10 +100,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resou
 		items = append(items, pgRow(r).toVersion())
 	}
 
-	return &VersionList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts, count.Int),
-	}, nil
+	return resource.NewPage(items, opts, count.Int), nil
 }
 
 func (db *pgdb) getVersion(ctx context.Context, svID string) (*Version, error) {

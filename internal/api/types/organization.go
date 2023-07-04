@@ -36,12 +36,6 @@ type Organization struct {
 	// DefaultProject *Project `jsonapi:"relation,default-project"`
 }
 
-// OrganizationList JSON-API representation
-type OrganizationList struct {
-	*Pagination
-	Items []*Organization
-}
-
 // OrganizationPermissions represents the organization permissions.
 type OrganizationPermissions struct {
 	CanCreateTeam               bool `json:"can-create-team"`

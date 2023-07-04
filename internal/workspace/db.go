@@ -191,7 +191,7 @@ func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	return db.get(ctx, workspaceID)
 }
 
-func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -238,10 +238,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 		items = append(items, ws)
 	}
 
-	return &WorkspaceList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, count.Int), nil
 }
 
 func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
@@ -262,7 +259,7 @@ func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*WorkspaceList, error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{
@@ -293,10 +290,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 		items = append(items, ws)
 	}
 
-	return &WorkspaceList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts, count.Int),
-	}, nil
+	return resource.NewPage(items, opts, count.Int), nil
 }
 
 func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error) {

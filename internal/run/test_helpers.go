@@ -76,11 +76,8 @@ func (f *fakeWebServices) CreateRun(ctx context.Context, workspaceID string, opt
 	return f.runs[0], nil
 }
 
-func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
-	return &RunList{
-		Items:      f.runs,
-		Pagination: resource.NewPagination(opts.PageOptions, int64(len(f.runs))),
-	}, nil
+func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
+	return resource.Paginate(f.runs, opts.PageOptions), nil
 }
 
 func (f *fakeWebServices) GetLogs(context.Context, string, internal.PhaseType) ([]byte, error) {

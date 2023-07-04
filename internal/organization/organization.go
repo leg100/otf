@@ -25,12 +25,6 @@ type (
 		AllowForceDeleteWorkspaces bool
 	}
 
-	// OrganizationList represents a list of Organizations.
-	OrganizationList struct {
-		*resource.Pagination
-		Items []*Organization
-	}
-
 	// ListOptions represents the options for listing organizations.
 	ListOptions struct {
 		resource.PageOptions

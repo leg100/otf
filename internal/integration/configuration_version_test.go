@@ -71,12 +71,12 @@ func TestConfigurationVersion(t *testing.T) {
 			name        string
 			workspaceID string
 			opts        configversion.ConfigurationVersionListOptions
-			want        func(*testing.T, *configversion.ConfigurationVersionList, error)
+			want        func(*testing.T, *resource.Page[*configversion.ConfigurationVersion], error)
 		}{
 			{
 				name:        "no pagination",
 				workspaceID: ws.ID,
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 2, len(got.Items))
 					assert.Equal(t, 2, got.TotalCount)
@@ -88,7 +88,7 @@ func TestConfigurationVersion(t *testing.T) {
 				name:        "pagination",
 				workspaceID: ws.ID,
 				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
 					assert.Equal(t, 2, got.TotalCount)
@@ -98,7 +98,7 @@ func TestConfigurationVersion(t *testing.T) {
 				name:        "stray pagination",
 				workspaceID: ws.ID,
 				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					// Zero items but total count should ignore pagination
 					assert.Equal(t, 0, len(got.Items))
@@ -108,7 +108,7 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "query non-existent workspace",
 				workspaceID: "ws-non-existent",
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					assert.Equal(t, internal.ErrResourceNotFound, err)
 				},
 			},

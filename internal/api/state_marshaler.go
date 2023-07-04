@@ -40,18 +40,6 @@ func (m *jsonapiMarshaler) toState(from *state.Version, r *http.Request) (*types
 	return to, opts
 }
 
-func (m *jsonapiMarshaler) toStateList(from *state.VersionList, r *http.Request) (to []*types.StateVersion, opts []jsonapi.MarshalOption) {
-	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
-		"pagination": (*types.Pagination)(from.Pagination),
-	})
-	opts = append(opts, jsonapi.MarshalOption(meta))
-	for _, item := range from.Items {
-		sv, _ := m.toState(item, r)
-		to = append(to, sv)
-	}
-	return
-}
-
 func (*jsonapiMarshaler) toOutput(from *state.Output) *types.StateVersionOutput {
 	to := &types.StateVersionOutput{
 		ID:        from.ID,
@@ -64,11 +52,4 @@ func (*jsonapiMarshaler) toOutput(from *state.Output) *types.StateVersionOutput 
 		to.Value = nil
 	}
 	return to
-}
-
-func (m *jsonapiMarshaler) toOutputList(from state.OutputList) (to []*types.StateVersionOutput) {
-	for _, v := range from {
-		to = append(to, m.toOutput(v))
-	}
-	return
 }

@@ -29,11 +29,3 @@ func (m *jsonapiMarshaler) toOAuthClient(from *vcsprovider.VCSProvider) *types.O
 	}
 	return to
 }
-
-func (m *jsonapiMarshaler) toOAuthClientList(from []*vcsprovider.VCSProvider) []*types.OAuthClient {
-	to := make([]*types.OAuthClient, len(from))
-	for i, fromProvider := range from {
-		to[i] = m.toOAuthClient(fromProvider)
-	}
-	return to
-}

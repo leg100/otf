@@ -7,8 +7,6 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/resource"
 )
 
 func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team, []jsonapi.MarshalOption, error) {
@@ -53,27 +51,5 @@ func (m *jsonapiMarshaler) toTeam(from *auth.Team, r *http.Request) (*types.Team
 			}
 		}
 	}
-	return to, opts, nil
-}
-
-func (m *jsonapiMarshaler) toTeamList(from []*auth.Team, r *http.Request) (to []*types.Team, opts []jsonapi.MarshalOption, err error) {
-	var listOptions resource.PageOptions
-	if err := decode.Query(&listOptions, r.URL.Query()); err != nil {
-		return nil, nil, err
-	}
-	from, pagination := resource.Paginate(from, listOptions)
-	meta := jsonapi.MarshalMeta(map[string]*types.Pagination{
-		"pagination": (*types.Pagination)(pagination),
-	})
-	opts = append(opts, jsonapi.MarshalOption(meta))
-
-	to = make([]*types.Team, len(from))
-	for i, fromTeam := range from {
-		to[i], _, err = m.toTeam(fromTeam, r)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
 	return to, opts, nil
 }

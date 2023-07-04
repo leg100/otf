@@ -83,12 +83,12 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 
 	a.Render("organization_list.tmpl", w, struct {
 		html.SitePage
-		*OrganizationList
+		*resource.Page[*Organization]
 		CanCreate bool
 	}{
-		SitePage:         html.NewSitePage(r, "organizations"),
-		OrganizationList: organizations,
-		CanCreate:        canCreate,
+		SitePage:  html.NewSitePage(r, "organizations"),
+		Page:      organizations,
+		CanCreate: canCreate,
 	})
 }
 

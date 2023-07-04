@@ -114,13 +114,13 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		organization.OrganizationPage
 		CreateWorkspaceAction rbac.Action
-		*WorkspaceList
+		*resource.Page[*Workspace]
 		TagFilters map[string]bool
 		Search     string
 	}{
 		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
 		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
-		WorkspaceList:         workspaces,
+		Page:                  workspaces,
 		TagFilters:            tagfilters(),
 		Search:                params.Search,
 	}

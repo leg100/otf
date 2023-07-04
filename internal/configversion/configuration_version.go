@@ -38,12 +38,6 @@ type (
 		IngressAttributes *IngressAttributes
 	}
 
-	// ConfigurationVersionList represents a list of configuration versions.
-	ConfigurationVersionList struct {
-		*resource.Pagination
-		Items []*ConfigurationVersion
-	}
-
 	// ConfigurationVersionCreateOptions represents the options for creating a
 	// configuration version. See jsonapi.ConfigurationVersionCreateOptions for more
 	// details.

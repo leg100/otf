@@ -184,7 +184,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Reso
 	return err
 }
 
-func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
 	batch := &pgx.Batch{}
 	organization := "%"
 	if opts.Organization != nil {
@@ -240,10 +240,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		items = append(items, pgresult(r).toRun())
 	}
 
-	return &RunList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, count.Int), nil
 }
 
 // GetRun retrieves a run using the get options

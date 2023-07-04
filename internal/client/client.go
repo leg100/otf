@@ -36,7 +36,7 @@ type (
 
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*workspace.Workspace, error)
-		ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error)
+		ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error)
 		UpdateWorkspace(ctx context.Context, workspaceID string, opts workspace.UpdateOptions) (*workspace.Workspace, error)
 
 		ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
@@ -50,7 +50,7 @@ type (
 		GetLockFile(ctx context.Context, id string) ([]byte, error)
 		UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 
-		ListRuns(ctx context.Context, opts run.RunListOptions) (*run.RunList, error)
+		ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error)
 		GetRun(ctx context.Context, id string) (*run.Run, error)
 
 		StartPhase(ctx context.Context, id string, phase internal.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)
@@ -66,7 +66,7 @@ type (
 		RollbackStateVersion(ctx context.Context, svID string) (*state.Version, error)
 		DeleteStateVersion(ctx context.Context, svID string) error
 		DownloadState(ctx context.Context, svID string) ([]byte, error)
-		ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*state.VersionList, error)
+		ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*state.Version], error)
 
 		CreateUser(ctx context.Context, username string, opts ...auth.NewUserOption) (*auth.User, error)
 		DeleteUser(ctx context.Context, username string) error

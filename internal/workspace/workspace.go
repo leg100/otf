@@ -66,12 +66,6 @@ type (
 
 	ExecutionMode string
 
-	// WorkspaceList is a list of workspaces.
-	WorkspaceList struct {
-		*resource.Pagination
-		Items []*Workspace
-	}
-
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
 		AllowDestroyPlan           *bool

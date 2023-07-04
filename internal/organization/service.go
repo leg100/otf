@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -17,7 +18,7 @@ type (
 	Service interface {
 		UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error)
+		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
 
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
@@ -97,7 +98,7 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 // Subject is an agent: return its organization
 // Subject is an organization token: return its organization
 // Subject is an team token: return its organization
-func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*OrganizationList, error) {
+func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
