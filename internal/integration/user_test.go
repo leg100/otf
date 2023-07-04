@@ -200,9 +200,12 @@ func TestUser(t *testing.T) {
 
 		owners, err := svc.GetTeam(ctx, org.Name, "owners")
 		require.NoError(t, err)
+		// add another owner
+		another := svc.createUser(t, auth.WithTeams(owners))
 
+		// try to delete both members from the owners team
 		err = svc.RemoveTeamMembership(ctx, auth.TeamMembershipOptions{
-			Usernames: []string{owner.Username},
+			Usernames: []string{owner.Username, another.Username},
 			TeamID:    owners.ID,
 		})
 		assert.Equal(t, auth.ErrCannotDeleteOnlyOwner, err)
