@@ -92,7 +92,11 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	// retrieve all tags and create map, with each entry determining whether
 	// listing is currently filtered by the tag or not.
-	tags, err := h.svc.listAllTags(r.Context(), *params.Organization)
+	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
+		return h.svc.ListTags(r.Context(), *params.Organization, ListTagsOptions{
+			PageOptions: opts,
+		})
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -275,7 +279,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tags, err := h.svc.listAllTags(r.Context(), workspace.Organization)
+	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
+		return h.svc.ListTags(r.Context(), workspace.Organization, ListTagsOptions{
+			PageOptions: opts,
+		})
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

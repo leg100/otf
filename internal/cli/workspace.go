@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,7 @@ func (a *CLI) workspaceCommand() *cobra.Command {
 }
 
 func (a *CLI) workspaceListCommand() *cobra.Command {
-	var opts workspace.ListOptions
+	var org string
 
 	cmd := &cobra.Command{
 		Use:           "list",
@@ -32,25 +33,24 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			for {
-				list, err := a.ListWorkspaces(cmd.Context(), opts)
-				if err != nil {
-					return err
-				}
-				for _, ws := range list.Items {
-					fmt.Fprintln(cmd.OutOrStdout(), ws.Name)
-				}
-				if list.NextPage == nil {
-					break
-				}
-				opts.PageNumber = *list.NextPage
+			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
+				return a.ListWorkspaces(cmd.Context(), workspace.ListOptions{
+					PageOptions:  opts,
+					Organization: &org,
+				})
+			})
+			if err != nil {
+				return fmt.Errorf("retrieving existing workspaces: %w", err)
+			}
+			for _, ws := range list {
+				fmt.Fprintln(cmd.OutOrStdout(), ws.Name)
 			}
 
 			return nil
 		},
 	}
 
-	opts.Organization = cmd.Flags().String("organization", "", "Organization workspace belongs to")
+	cmd.Flags().StringVar(&org, "organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

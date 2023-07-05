@@ -72,39 +72,26 @@ func (s *scheduler) Start(ctx context.Context) error {
 		return err
 	}
 
-	// retrieve existing workspaces, page by page
-	workspaces := []*workspace.Workspace{}
-	workspaceListOpts := workspace.ListOptions{
-		PageOptions: resource.PageOptions{PageSize: resource.MaxPageSize},
+	// retrieve all existing workspaces
+	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
+		return s.ListWorkspaces(ctx, workspace.ListOptions{
+			PageOptions: opts,
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("retrieving existing workspaces: %w", err)
 	}
-	for {
-		page, err := s.ListWorkspaces(ctx, workspaceListOpts)
-		if err != nil {
-			return fmt.Errorf("retrieving existing workspaces: %w", err)
-		}
-		workspaces = append(workspaces, page.Items...)
-		if page.NextPage == nil {
-			break
-		}
-		workspaceListOpts.PageNumber = *page.NextPage
+	// retrieve all incomplete runs
+	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
+		return s.ListRuns(ctx, run.RunListOptions{
+			Statuses:    internal.IncompleteRun,
+			PageOptions: opts,
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("retrieving incomplete runs: %w", err)
 	}
-	// retrieve runs incomplete runs, page by page
-	runs := []*run.Run{}
-	runListOpts := run.RunListOptions{
-		Statuses:    internal.IncompleteRun,
-		PageOptions: resource.PageOptions{PageSize: resource.MaxPageSize},
-	}
-	for {
-		page, err := s.ListRuns(ctx, runListOpts)
-		if err != nil {
-			return fmt.Errorf("retrieving incomplete runs: %w", err)
-		}
-		runs = append(runs, page.Items...)
-		if page.NextPage == nil {
-			break
-		}
-		runListOpts.PageNumber = *page.NextPage
-	}
+
 	// feed in existing runs and workspaces and then events to the scheduler for processing
 	queue := make(chan pubsub.Event)
 	go func() {

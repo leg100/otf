@@ -34,8 +34,6 @@ type (
 
 		// ListWorkspaceTags lists the tags for a workspace.
 		ListWorkspaceTags(ctx context.Context, workspaceID string, options ListWorkspaceTagsOptions) (*resource.Page[*Tag], error)
-
-		listAllTags(ctx context.Context, organization string) ([]*Tag, error)
 	}
 
 	// ListTagsOptions are options for paginating and filtering a list of
@@ -195,25 +193,6 @@ func (s *service) ListWorkspaceTags(ctx context.Context, workspaceID string, opt
 	}
 	s.V(9).Info("listed workspace tags", "workspace", workspaceID, "subject", subject)
 	return list, nil
-}
-
-func (s *service) listAllTags(ctx context.Context, organization string) ([]*Tag, error) {
-	var (
-		tags []*Tag
-		opts ListTagsOptions
-	)
-	for {
-		page, err := s.ListTags(ctx, organization, opts)
-		if err != nil {
-			return nil, err
-		}
-		tags = append(tags, page.Items...)
-		if page.NextPage == nil {
-			break
-		}
-		opts.PageNumber = *page.NextPage
-	}
-	return tags, nil
 }
 
 func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]string, error) {

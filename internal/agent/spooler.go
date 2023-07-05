@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -86,23 +87,16 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 		return err
 	}
 
-	listOpts := run.RunListOptions{
-		Statuses:     []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
-		Organization: s.Organization,
-	}
-
-	// retrieve existing runs, page by page
-	var existing []*run.Run
-	for {
-		page, err := s.ListRuns(ctx, listOpts)
-		if err != nil {
-			return fmt.Errorf("retrieving queued runs: %w", err)
-		}
-		existing = append(existing, page.Items...)
-		if page.NextPage == nil {
-			break
-		}
-		listOpts.PageNumber = *page.NextPage
+	// retrieve all existing runs
+	existing, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
+		return s.ListRuns(ctx, run.RunListOptions{
+			PageOptions:  opts,
+			Statuses:     []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
+			Organization: s.Organization,
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("retrieving queued runs: %w", err)
 	}
 
 	s.V(2).Info("retrieved queued runs", "total", len(existing))
