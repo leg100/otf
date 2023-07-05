@@ -13,7 +13,7 @@ import (
 type (
 	TagService interface {
 		// ListTags lists tags within an organization
-		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*TagList, error)
+		ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error)
 
 		// DeleteTags deletes tags from an organization
 		DeleteTags(ctx context.Context, organization string, tagIDs []string) error
@@ -33,7 +33,7 @@ type (
 		RemoveTags(ctx context.Context, workspaceID string, tags []TagSpec) error
 
 		// ListWorkspaceTags lists the tags for a workspace.
-		ListWorkspaceTags(ctx context.Context, workspaceID string, options ListWorkspaceTagsOptions) (*TagList, error)
+		ListWorkspaceTags(ctx context.Context, workspaceID string, options ListWorkspaceTagsOptions) (*resource.Page[*Tag], error)
 
 		listAllTags(ctx context.Context, organization string) ([]*Tag, error)
 	}
@@ -51,7 +51,7 @@ type (
 	}
 )
 
-func (s *service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*TagList, error) {
+func (s *service) ListTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.organization.CanAccess(ctx, rbac.ListTagsAction, organization)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 	return nil
 }
 
-func (s *service) ListWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*TagList, error) {
+func (s *service) ListWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	subject, err := s.CanAccess(ctx, rbac.ListWorkspaceTags, workspaceID)
 	if err != nil {
 		return nil, err

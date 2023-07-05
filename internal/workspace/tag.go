@@ -3,7 +3,6 @@ package workspace
 import (
 	"errors"
 
-	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/exp/slog"
 )
 
@@ -17,12 +16,6 @@ type (
 		Name          string // Meaningful symbol. Unique to an organization.
 		InstanceCount int    // Number of workspaces that have this tag
 		Organization  string // Organization this tag belongs to.
-	}
-
-	// TagList is a list of tags.
-	TagList struct {
-		*resource.Pagination
-		Items []*Tag
 	}
 
 	// TagSpec specifies a tag. Either ID or Name must be non-nil for it to

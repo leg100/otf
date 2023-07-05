@@ -31,7 +31,7 @@ func (r tagresult) toTag() *Tag {
 	}
 }
 
-func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*TagList, error) {
+func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	batch := &pgx.Batch{}
 
 	db.FindTagsBatch(batch, pggen.FindTagsParams{
@@ -57,10 +57,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 		items = append(items, tagresult(r).toTag())
 	}
 
-	return &TagList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, count.Int), nil
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []string) error {
@@ -128,7 +125,7 @@ func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID strin
 	return nil
 }
 
-func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*TagList, error) {
+func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
@@ -154,10 +151,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 		items = append(items, tagresult(r).toTag())
 	}
 
-	return &TagList{
-		Items:      items,
-		Pagination: resource.NewPagination(opts.PageOptions, count.Int),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, count.Int), nil
 }
 
 // lockTags tags table within a transaction, providing a callback within which

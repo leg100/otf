@@ -42,7 +42,7 @@ type (
 func NewPage[T any](resources []T, opts PageOptions, count int64) *Page[T] {
 	return &Page[T]{
 		Items:      resources,
-		Pagination: NewPagination(opts, count),
+		Pagination: newPagination(opts, count),
 	}
 }
 
@@ -66,7 +66,7 @@ func Paginate[S comparable](resources []S, opts PageOptions) *Page[S] {
 	return NewPage[S](resources, opts, count)
 }
 
-func NewPagination(opts PageOptions, count int64) *Pagination {
+func newPagination(opts PageOptions, count int64) *Pagination {
 	opts = opts.normalize()
 
 	pagination := Pagination{

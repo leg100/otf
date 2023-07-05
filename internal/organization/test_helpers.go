@@ -30,10 +30,7 @@ func NewTestOrganization(t *testing.T) *Organization {
 }
 
 func (f *fakeService) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
-	return &resource.Page[*Organization]{
-		Items:      f.orgs,
-		Pagination: resource.NewPagination(opts.PageOptions, int64(len(f.orgs))),
-	}, nil
+	return resource.Paginate(f.orgs, opts.PageOptions), nil
 }
 
 func (f *fakeService) DeleteOrganization(context.Context, string) error {
