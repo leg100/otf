@@ -14,6 +14,7 @@ type (
 	// PlanFile represents the schema of a plan file
 	PlanFile struct {
 		ResourceChanges []ResourceChange `json:"resource_changes"`
+		OutputChanges   []OutputChange   `json:"output_changes"`
 	}
 
 	// PlanFileOptions are options for the plan file API
@@ -23,6 +24,11 @@ type (
 
 	// ResourceChange represents a proposed change to a resource in a plan file
 	ResourceChange struct {
+		Change Change
+	}
+
+	// OutputChange represents a proposed change to an output in a plan file
+	OutputChange struct {
 		Change Change
 	}
 
