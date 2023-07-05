@@ -240,7 +240,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 		items = append(items, pgresult(r).toRun())
 	}
 
-	return resource.NewPage(items, opts.PageOptions, count.Int), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 // GetRun retrieves a run using the get options

@@ -17,7 +17,7 @@ type fakeSpoolerApp struct {
 }
 
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error) {
-	return resource.Paginate(a.runs, opts.PageOptions), nil
+	return resource.NewPage(a.runs, opts.PageOptions, nil), nil
 }
 
 func (a *fakeSpoolerApp) Watch(ctx context.Context, opts run.WatchOptions) (<-chan pubsub.Event, error) {

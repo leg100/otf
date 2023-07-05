@@ -140,7 +140,7 @@ func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*works
 }
 
 func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error) {
-	return resource.Paginate(f.workspaces, opts.PageOptions), nil
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
 }
 
 func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error) {

@@ -15,7 +15,13 @@ const (
 )
 
 type (
-	// Pagination is used to return the pagination details of an API request.
+	// Page is a segment of a result set.
+	Page[T any] struct {
+		Items []T
+		*Pagination
+	}
+
+	// Pagination provides metadata about a page.
 	Pagination struct {
 		CurrentPage  int  `json:"current-page"`
 		PreviousPage *int `json:"prev-page"`
@@ -24,51 +30,48 @@ type (
 		TotalCount   int  `json:"total-count"`
 	}
 
-	// PageOptions are used to specify pagination options when making API requests.
-	// Pagination allows breaking up large result sets into chunks, or "pages".
+	// PageOptions are used to request a specific page.
 	PageOptions struct {
 		// The page number to request. The results vary based on the PageSize.
 		PageNumber int `schema:"page[number],omitempty"`
 		// The number of elements returned in a single page.
 		PageSize int `schema:"page[size],omitempty"`
 	}
-
-	Page[T any] struct {
-		Items []T
-		*Pagination
-	}
 )
 
-func NewPage[T any](resources []T, opts PageOptions, count int64) *Page[T] {
+// NewPage constructs a page from a list of resources. If the list argument
+// represents the full result set then count should be nil; if count is non-nil
+// then the list is deemed to be a segment of a result set and count is the size
+// of the full result set. This latter case is useful, say, if a database has
+// already produced a segment of a full result set, e.g. using LIMIT and OFFSET.
+func NewPage[T any](resources []T, opts PageOptions, count *int64) *Page[T] {
+	opts = opts.normalize()
+
+	var metadata *Pagination
+
+	if count == nil {
+		metadata = newPagination(opts, int64(len(resources)))
+		// remove items outside the current page
+		if end := opts.PageSize * opts.PageNumber; len(resources) > end {
+			resources = resources[:end]
+		}
+		if start := opts.PageSize * (opts.PageNumber - 1); start > len(resources) {
+			// paging is out-of-range: return empty list
+			resources = []T{}
+		} else {
+			resources = resources[start:]
+		}
+	} else {
+		metadata = newPagination(opts, *count)
+	}
+
 	return &Page[T]{
 		Items:      resources,
-		Pagination: newPagination(opts, count),
+		Pagination: metadata,
 	}
-}
-
-// Paginate paginates a slice of resources, returning a slice for the current
-// page and a pagination meta object. The slice should be the entire result set.
-func Paginate[S comparable](resources []S, opts PageOptions) *Page[S] {
-	opts = opts.normalize()
-	count := int64(len(resources))
-
-	// remove items outside the current page
-	if end := opts.PageSize * opts.PageNumber; len(resources) > end {
-		resources = resources[:end]
-	}
-	start := opts.PageSize * (opts.PageNumber - 1)
-	if start > len(resources) {
-		// paging is out-of-range: return empty list
-		return NewPage[S]([]S{}, opts, count)
-	}
-	resources = resources[start:]
-
-	return NewPage[S](resources, opts, count)
 }
 
 func newPagination(opts PageOptions, count int64) *Pagination {
-	opts = opts.normalize()
-
 	pagination := Pagination{
 		CurrentPage: opts.PageNumber,
 		TotalCount:  int(count),

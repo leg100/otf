@@ -110,7 +110,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 		items = append(items, row(r).toOrganization())
 	}
 
-	return resource.NewPage(items, opts.PageOptions, count.Int), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {

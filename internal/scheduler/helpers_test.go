@@ -46,11 +46,11 @@ type fakeSchedulerServices struct {
 }
 
 func (f *fakeSchedulerServices) ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error) {
-	return resource.Paginate(f.runs, opts.PageOptions), nil
+	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
 func (f *fakeSchedulerServices) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error) {
-	return resource.Paginate(f.workspaces, opts.PageOptions), nil
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
 }
 
 func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan pubsub.Event, error) {

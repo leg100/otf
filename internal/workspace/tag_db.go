@@ -57,7 +57,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 		items = append(items, tagresult(r).toTag())
 	}
 
-	return resource.NewPage(items, opts.PageOptions, count.Int), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []string) error {
@@ -151,7 +151,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 		items = append(items, tagresult(r).toTag())
 	}
 
-	return resource.NewPage(items, opts.PageOptions, count.Int), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 // lockTags tags table within a transaction, providing a callback within which

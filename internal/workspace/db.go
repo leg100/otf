@@ -238,7 +238,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 		items = append(items, ws)
 	}
 
-	return resource.NewPage(items, opts.PageOptions, count.Int), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
@@ -290,7 +290,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 		items = append(items, ws)
 	}
 
-	return resource.NewPage(items, opts, count.Int), nil
+	return resource.NewPage(items, opts, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error) {

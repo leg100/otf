@@ -111,7 +111,7 @@ func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions)
 }
 
 func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
-	return resource.Paginate[*Workspace](f.workspaces, opts.PageOptions), nil
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
 }
 
 func (f *fakeWebService) GetWorkspace(context.Context, string) (*Workspace, error) {

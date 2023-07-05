@@ -100,7 +100,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resou
 		items = append(items, pgRow(r).toVersion())
 	}
 
-	return resource.NewPage(items, opts, count.Int), nil
+	return resource.NewPage(items, opts, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) getVersion(ctx context.Context, svID string) (*Version, error) {

@@ -26,13 +26,14 @@ func TestCLI_State(t *testing.T) {
 				fakeApp(
 					withWorkspaces(&workspace.Workspace{ID: "ws-123"}),
 					withStateVersion(&state.Version{ID: "sv-3", WorkspaceID: "ws-123"}),
-					withStateVersionList(resource.Paginate(
+					withStateVersionList(resource.NewPage(
 						[]*state.Version{
 							{ID: "sv-3"},
 							{ID: "sv-2"},
 							{ID: "sv-1"},
 						},
 						resource.PageOptions{},
+						nil,
 					)),
 				),
 				"sv-3 (current)\nsv-2\nsv-1\n",

@@ -95,7 +95,7 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 		items = append(items, pgRow(r).toConfigVersion())
 	}
 
-	return resource.NewPage(items, opts.PageOptions, count.Int), nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
