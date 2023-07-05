@@ -21,7 +21,7 @@ const (
 	DefaultFileTriggersEnabled = true
 
 	MinTerraformVersion     = "1.2.0"
-	DefaultTerraformVersion = "1.4.6"
+	DefaultTerraformVersion = "1.5.2"
 )
 
 var ErrNoVCSConnection = errors.New("workspace is not connected to a vcs repo")
