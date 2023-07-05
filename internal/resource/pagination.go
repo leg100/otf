@@ -71,6 +71,31 @@ func NewPage[T any](resources []T, opts PageOptions, count *int64) *Page[T] {
 	}
 }
 
+// ListAll is a helper for retrieving all pages. The provided fn should perform
+// an operation that retrieves a page at a time.
+func ListAll[T any](fn func(PageOptions) (*Page[T], error)) ([]T, error) {
+	var (
+		opts PageOptions
+		all  []T
+	)
+	for {
+		page, err := fn(opts)
+		if err != nil {
+			return nil, err
+		}
+		// should never happen...
+		if page == nil || page.Items == nil {
+			break
+		}
+		all = append(all, page.Items...)
+		if page.NextPage == nil {
+			break
+		}
+		opts.PageNumber = *page.NextPage
+	}
+	return all, nil
+}
+
 func newPagination(opts PageOptions, count int64) *Pagination {
 	pagination := Pagination{
 		CurrentPage: opts.PageNumber,
