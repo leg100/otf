@@ -234,7 +234,7 @@ func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert slice to page
+	// client expects a page of results, so convert outputs map to a page
 	page := resource.NewPage(maps.Values(sv.Outputs), params.PageOptions, nil)
 
 	a.writeResponse(w, r, page)
