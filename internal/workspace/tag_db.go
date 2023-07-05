@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -30,13 +31,13 @@ func (r tagresult) toTag() *Tag {
 	}
 }
 
-func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*TagList, error) {
+func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
 	batch := &pgx.Batch{}
 
 	db.FindTagsBatch(batch, pggen.FindTagsParams{
 		OrganizationName: sql.String(organization),
-		Limit:            sql.Int8(opts.GetLimit()),
-		Offset:           sql.Int8(opts.GetOffset()),
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
 	})
 	db.CountTagsBatch(batch, sql.String(organization))
 	results := db.SendBatch(ctx, batch)
@@ -56,10 +57,7 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 		items = append(items, tagresult(r).toTag())
 	}
 
-	return &TagList{
-		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []string) error {
@@ -127,13 +125,13 @@ func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID strin
 	return nil
 }
 
-func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*TagList, error) {
+func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
 		WorkspaceID: sql.String(workspaceID),
-		Limit:       sql.Int8(opts.GetLimit()),
-		Offset:      sql.Int8(opts.GetOffset()),
+		Limit:       opts.GetLimit(),
+		Offset:      opts.GetOffset(),
 	})
 	db.CountTagsBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
@@ -153,10 +151,7 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 		items = append(items, tagresult(r).toTag())
 	}
 
-	return &TagList{
-		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 // lockTags tags table within a transaction, providing a callback within which

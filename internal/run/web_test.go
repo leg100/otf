@@ -1,6 +1,7 @@
 package run
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"testing"
 
@@ -12,19 +13,17 @@ import (
 )
 
 func TestListRunsHandler(t *testing.T) {
+	runs := make([]*Run, 201)
+	for i := 1; i <= 201; i++ {
+		runs[i-1] = &Run{ID: fmt.Sprintf("run-%d", i)}
+	}
 	h := newTestWebHandlers(t,
 		withWorkspace(&workspace.Workspace{ID: "ws-123"}),
-		withRuns(
-			&Run{ID: "run-1"},
-			&Run{ID: "run-2"},
-			&Run{ID: "run-3"},
-			&Run{ID: "run-4"},
-			&Run{ID: "run-5"},
-		),
+		withRuns(runs...),
 	)
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1", nil)
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -33,7 +32,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2", nil)
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -42,7 +41,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3", nil)
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)

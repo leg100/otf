@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -24,15 +25,9 @@ type (
 		AllowForceDeleteWorkspaces bool
 	}
 
-	// OrganizationList represents a list of Organizations.
-	OrganizationList struct {
-		*internal.Pagination
-		Items []*Organization
-	}
-
 	// ListOptions represents the options for listing organizations.
-	OrganizationListOptions struct {
-		internal.ListOptions
+	ListOptions struct {
+		resource.PageOptions
 	}
 
 	// UpdateOptions represents the options for updating an

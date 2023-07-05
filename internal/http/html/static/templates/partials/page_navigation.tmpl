@@ -1,10 +1,10 @@
 {{ define "page-navigation-links" }}
   <div class="content-list-footer">
-    {{ if .PrevPage }}
-    <a href="{{ mergeQuery .CurrentURL .PrevPageQuery }}">Previous Page</a>
+    {{ with prevPageQuery .Pagination }}
+      <a href="{{ mergeQuery $.CurrentURL . }}">Previous Page</a>
     {{ end }}
-    {{ if .NextPage }}
-    <a href="{{ mergeQuery .CurrentURL .NextPageQuery }}">Next Page</a>
+    {{ with nextPageQuery .Pagination }}
+      <a href="{{ mergeQuery $.CurrentURL . }}">Next Page</a>
     {{ end }}
   </div>
 {{ end }}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,7 +71,7 @@ func TestIntegration_StateService(t *testing.T) {
 		sv1 := svc.createStateVersion(t, ctx, ws)
 		sv2 := svc.createStateVersion(t, ctx, ws)
 
-		got, err := svc.ListStateVersions(ctx, ws.ID, internal.ListOptions{})
+		got, err := svc.ListStateVersions(ctx, ws.ID, resource.PageOptions{})
 		require.NoError(t, err)
 		assert.Contains(t, got.Items, sv1)
 		assert.Contains(t, got.Items, sv2)
@@ -81,7 +82,7 @@ func TestIntegration_StateService(t *testing.T) {
 	t.Run("list not found error", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 
-		_, err := svc.ListStateVersions(ctx, "ws-does-not-exist", internal.ListOptions{})
+		_, err := svc.ListStateVersions(ctx, "ws-does-not-exist", resource.PageOptions{})
 		assert.Equal(t, internal.ErrResourceNotFound, err)
 	})
 

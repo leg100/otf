@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"golang.org/x/exp/slog"
 )
@@ -65,12 +66,6 @@ type (
 
 	ExecutionMode string
 
-	// WorkspaceList is a list of workspaces.
-	WorkspaceList struct {
-		*internal.Pagination
-		Items []*Workspace
-	}
-
 	// CreateOptions represents the options for creating a new workspace.
 	CreateOptions struct {
 		AllowDestroyPlan           *bool
@@ -116,10 +111,11 @@ type (
 	// ListOptions are options for paginating and filtering a list of
 	// Workspaces
 	ListOptions struct {
-		internal.ListOptions          // Pagination
-		Search               string   `schema:"search[name],omitempty"`
-		Tags                 []string `schema:"search[tags],omitempty"`
-		Organization         *string  `schema:"organization_name,required"`
+		Search       string
+		Tags         []string
+		Organization *string
+
+		resource.PageOptions
 	}
 
 	ConnectOptions struct {

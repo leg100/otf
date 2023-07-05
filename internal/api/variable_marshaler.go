@@ -5,7 +5,6 @@ import (
 	"github.com/leg100/otf/internal/variable"
 )
 
-// writeResponse encodes v as json:api and writes it to the body of the http response.
 func (m *jsonapiMarshaler) toVariable(from *variable.Variable) *types.Variable {
 	to := &types.Variable{
 		ID:          from.ID,
@@ -23,11 +22,4 @@ func (m *jsonapiMarshaler) toVariable(from *variable.Variable) *types.Variable {
 		to.Value = "" // scrub sensitive values
 	}
 	return to
-}
-
-func (m *jsonapiMarshaler) toVariableList(from []*variable.Variable) (to []*types.Variable) {
-	for _, v := range from {
-		to = append(to, m.toVariable(v))
-	}
-	return
 }

@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -221,17 +222,16 @@ func TestUpdateWorkspaceHandler(t *testing.T) {
 }
 
 func TestListWorkspacesHandler(t *testing.T) {
-	ws1 := &Workspace{ID: "ws-1"}
-	ws2 := &Workspace{ID: "ws-2"}
-	ws3 := &Workspace{ID: "ws-3"}
-	ws4 := &Workspace{ID: "ws-4"}
-	ws5 := &Workspace{ID: "ws-5"}
+	workspaces := make([]*Workspace, 201)
+	for i := 1; i <= 201; i++ {
+		workspaces[i-1] = &Workspace{ID: fmt.Sprintf("ws-%d", i)}
+	}
 	app := fakeWebHandlers(t,
-		withWorkspaces(ws1, ws2, ws3, ws4, ws5),
+		withWorkspaces(workspaces...),
 	)
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1", nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
@@ -241,7 +241,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2", nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
@@ -251,7 +251,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3", nil)
 		r = r.WithContext(internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin))
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)

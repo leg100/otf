@@ -20,7 +20,7 @@
   <form method="GET">
     <div id="filters-container">
       <div class="field">
-        <input type="search" name="search[name]" value="{{ .Params.Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
+        <input type="search" name="search[name]" value="{{ .Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
       </div>
       <div class="workspace-tags-list">
         {{ range $k, $v := .TagFilters }}

@@ -102,16 +102,3 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 
 	return to, opts, nil
 }
-
-func (m *jsonapiMarshaler) toWorkspaceList(from *workspace.WorkspaceList, r *http.Request) (to []*types.Workspace, marshalOpts []jsonapi.MarshalOption, err error) {
-	marshalOpts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
-	for _, ws := range from.Items {
-		item, itemOpts, err := m.toWorkspace(ws, r)
-		if err != nil {
-			return nil, nil, err
-		}
-		to = append(to, item)
-		marshalOpts = append(marshalOpts, itemOpts...)
-	}
-	return to, marshalOpts, nil
-}

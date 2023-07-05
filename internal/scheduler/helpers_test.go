@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -45,18 +45,12 @@ type fakeSchedulerServices struct {
 	RunService
 }
 
-func (f *fakeSchedulerServices) ListRuns(context.Context, run.RunListOptions) (*run.RunList, error) {
-	return &run.RunList{
-		Items:      f.runs,
-		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.runs)),
-	}, nil
+func (f *fakeSchedulerServices) ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error) {
+	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeSchedulerServices) ListWorkspaces(context.Context, workspace.ListOptions) (*workspace.WorkspaceList, error) {
-	return &workspace.WorkspaceList{
-		Items:      f.workspaces,
-		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.workspaces)),
-	}, nil
+func (f *fakeSchedulerServices) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error) {
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
 }
 
 func (f *fakeSchedulerServices) Subscribe(context.Context, string) (<-chan pubsub.Event, error) {

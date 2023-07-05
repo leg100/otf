@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/workspace"
@@ -183,7 +184,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Reso
 	return err
 }
 
-func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
 	batch := &pgx.Batch{}
 	organization := "%"
 	if opts.Organization != nil {
@@ -211,8 +212,8 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
-		Limit:             sql.Int8(opts.GetLimit()),
-		Offset:            sql.Int8(opts.GetOffset()),
+		Limit:             opts.GetLimit(),
+		Offset:            opts.GetOffset(),
 	})
 	db.CountRunsBatch(batch, pggen.CountRunsParams{
 		OrganizationNames: []string{organization},
@@ -239,10 +240,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, er
 		items = append(items, pgresult(r).toRun())
 	}
 
-	return &RunList{
-		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 // GetRun retrieves a run using the get options

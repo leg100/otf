@@ -144,19 +144,6 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 	return to, opts, nil
 }
 
-func (m jsonapiMarshaler) toRunList(from *run.RunList, r *http.Request) (to []*types.Run, opts []jsonapi.MarshalOption, err error) {
-	opts = []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}
-	for _, i := range from.Items {
-		run, itemOpts, err := m.toRun(i, r)
-		if err != nil {
-			return nil, nil, err
-		}
-		to = append(to, run)
-		opts = append(opts, itemOpts...)
-	}
-	return to, opts, nil
-}
-
 func (m *jsonapiMarshaler) toPhase(from run.Phase, r *http.Request) (any, error) {
 	switch from.PhaseType {
 	case internal.PlanPhase:

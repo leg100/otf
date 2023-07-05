@@ -3,11 +3,13 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -138,13 +140,23 @@ func (a *api) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params workspace.ListOptions
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+	var params types.WorkspaceListOptions
 	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
 	}
 
-	wsl, err := a.ListWorkspaces(r.Context(), params)
+	wsl, err := a.ListWorkspaces(r.Context(), workspace.ListOptions{
+		Search:       params.Search,
+		Organization: &organization,
+		PageOptions:  resource.PageOptions(params.ListOptions),
+		Tags:         strings.FieldsFunc(params.Tags, func(r rune) bool { return r == ',' }),
+	})
 	if err != nil {
 		Error(w, err)
 		return

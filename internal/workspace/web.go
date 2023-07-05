@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -64,13 +65,26 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 }
 
 func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	var params ListOptions
+	var params struct {
+		Search       string   `schema:"search[name],omitempty"`
+		Tags         []string `schema:"search[tags],omitempty"`
+		Organization *string  `schema:"organization_name,required"`
+		PageNumber   int      `schema:"page[number]"`
+	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	workspaces, err := h.svc.ListWorkspaces(r.Context(), params)
+	workspaces, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
+		Search:       params.Search,
+		Tags:         params.Tags,
+		Organization: params.Organization,
+		PageOptions: resource.PageOptions{
+			PageNumber: params.PageNumber,
+			PageSize:   html.PageSize,
+		},
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,7 +92,11 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	// retrieve all tags and create map, with each entry determining whether
 	// listing is currently filtered by the tag or not.
-	tags, err := h.svc.listAllTags(r.Context(), *params.Organization)
+	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
+		return h.svc.ListTags(r.Context(), *params.Organization, ListTagsOptions{
+			PageOptions: opts,
+		})
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -100,15 +118,15 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		organization.OrganizationPage
 		CreateWorkspaceAction rbac.Action
-		*WorkspaceList
+		*resource.Page[*Workspace]
 		TagFilters map[string]bool
-		Params     ListOptions
+		Search     string
 	}{
 		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
 		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
-		WorkspaceList:         workspaces,
+		Page:                  workspaces,
 		TagFilters:            tagfilters(),
-		Params:                params,
+		Search:                params.Search,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
@@ -261,7 +279,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tags, err := h.svc.listAllTags(r.Context(), workspace.Organization)
+	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
+		return h.svc.ListTags(r.Context(), workspace.Organization, ListTagsOptions{
+			PageOptions: opts,
+		})
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -435,9 +457,9 @@ func (h *webHandlers) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.R
 
 func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID          string `schema:"workspace_id,required"`
-		VCSProviderID        string `schema:"vcs_provider_id,required"`
-		internal.ListOptions        // Pagination
+		WorkspaceID   string `schema:"workspace_id,required"`
+		VCSProviderID string `schema:"vcs_provider_id,required"`
+
 		// TODO: filters, public/private, etc
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -456,7 +478,7 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	repos, err := client.ListRepositories(r.Context(), cloud.ListRepositoriesOptions{
-		PageSize: 100,
+		PageSize: html.PageSize,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
