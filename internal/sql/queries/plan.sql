@@ -16,11 +16,16 @@ RETURNING run_id
 
 -- name: UpdatePlannedChangesByID :one
 UPDATE plans
-SET report = (
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
-)
+SET resource_report = (
+        pggen.arg('resource_additions'),
+        pggen.arg('resource_changes'),
+        pggen.arg('resource_destructions')
+    ),
+    output_report = (
+        pggen.arg('output_additions'),
+        pggen.arg('output_changes'),
+        pggen.arg('output_destructions')
+    )
 WHERE run_id = pggen.arg('run_id')
 RETURNING run_id
 ;

@@ -44,7 +44,7 @@ func (q *DBQuerier) InsertApplyScan(results pgx.BatchResults) (pgconn.CommandTag
 }
 
 const updateAppliedChangesByIDSQL = `UPDATE applies
-SET report = (
+SET resource_report = (
     $1,
     $2,
     $3

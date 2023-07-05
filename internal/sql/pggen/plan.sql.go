@@ -76,26 +76,34 @@ func (q *DBQuerier) UpdatePlanStatusByIDScan(results pgx.BatchResults) (pgtype.T
 }
 
 const updatePlannedChangesByIDSQL = `UPDATE plans
-SET report = (
-    $1,
-    $2,
-    $3
-)
-WHERE run_id = $4
+SET resource_report = (
+        $1,
+        $2,
+        $3
+    ),
+    output_report = (
+        $4,
+        $5,
+        $6
+    )
+WHERE run_id = $7
 RETURNING run_id
 ;`
 
 type UpdatePlannedChangesByIDParams struct {
-	Additions    pgtype.Int4
-	Changes      pgtype.Int4
-	Destructions pgtype.Int4
-	RunID        pgtype.Text
+	ResourceAdditions    pgtype.Int4
+	ResourceChanges      pgtype.Int4
+	ResourceDestructions pgtype.Int4
+	OutputAdditions      pgtype.Int4
+	OutputChanges        pgtype.Int4
+	OutputDestructions   pgtype.Int4
+	RunID                pgtype.Text
 }
 
 // UpdatePlannedChangesByID implements Querier.UpdatePlannedChangesByID.
 func (q *DBQuerier) UpdatePlannedChangesByID(ctx context.Context, params UpdatePlannedChangesByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlannedChangesByID")
-	row := q.conn.QueryRow(ctx, updatePlannedChangesByIDSQL, params.Additions, params.Changes, params.Destructions, params.RunID)
+	row := q.conn.QueryRow(ctx, updatePlannedChangesByIDSQL, params.ResourceAdditions, params.ResourceChanges, params.ResourceDestructions, params.OutputAdditions, params.OutputChanges, params.OutputDestructions, params.RunID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdatePlannedChangesByID: %w", err)
@@ -105,7 +113,7 @@ func (q *DBQuerier) UpdatePlannedChangesByID(ctx context.Context, params UpdateP
 
 // UpdatePlannedChangesByIDBatch implements Querier.UpdatePlannedChangesByIDBatch.
 func (q *DBQuerier) UpdatePlannedChangesByIDBatch(batch genericBatch, params UpdatePlannedChangesByIDParams) {
-	batch.Queue(updatePlannedChangesByIDSQL, params.Additions, params.Changes, params.Destructions, params.RunID)
+	batch.Queue(updatePlannedChangesByIDSQL, params.ResourceAdditions, params.ResourceChanges, params.ResourceDestructions, params.OutputAdditions, params.OutputChanges, params.OutputDestructions, params.RunID)
 }
 
 // UpdatePlannedChangesByIDScan implements Querier.UpdatePlannedChangesByIDScan.

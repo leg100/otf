@@ -34,8 +34,9 @@ type (
 		ReplaceAddrs           []string                      `json:"replace_addrs"`
 		TargetAddrs            []string                      `json:"target_addrs"`
 		AutoApply              bool                          `json:"auto_apply"`
-		PlannedChanges         *pggen.Report                 `json:"planned_changes"`
-		AppliedChanges         *pggen.Report                 `json:"applied_changes"`
+		PlanResourceReport     *pggen.Report                 `json:"plan_resource_report"`
+		PlanOutputReport       *pggen.Report                 `json:"plan_output_report"`
+		ApplyResourceReport    *pggen.Report                 `json:"apply_resource_report"`
 		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 		PlanOnly               bool                          `json:"plan_only"`
@@ -157,12 +158,15 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 	return run, err
 }
 
-func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report ResourceReport) error {
+func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, output Report) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
-		RunID:        sql.String(runID),
-		Additions:    sql.Int4(report.Additions),
-		Changes:      sql.Int4(report.Changes),
-		Destructions: sql.Int4(report.Destructions),
+		RunID:                sql.String(runID),
+		ResourceAdditions:    sql.Int4(resource.Additions),
+		ResourceChanges:      sql.Int4(resource.Changes),
+		ResourceDestructions: sql.Int4(resource.Destructions),
+		OutputAdditions:      sql.Int4(output.Additions),
+		OutputChanges:        sql.Int4(output.Changes),
+		OutputDestructions:   sql.Int4(output.Destructions),
 	})
 	if err != nil {
 		return sql.Error(err)
@@ -170,7 +174,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, report Resou
 	return err
 }
 
-func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report ResourceReport) error {
+func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Report) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    sql.Int4(report.Additions),
@@ -362,14 +366,15 @@ func (result pgresult) toRun() *Run {
 			PhaseType:        internal.PlanPhase,
 			Status:           PhaseStatus(result.PlanStatus.String),
 			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
-			ResourceReport:   reportFromDB(result.PlannedChanges),
+			ResourceReport:   reportFromDB(result.PlanResourceReport),
+			OutputReport:     reportFromDB(result.PlanOutputReport),
 		},
 		Apply: Phase{
 			RunID:            result.RunID.String,
 			PhaseType:        internal.ApplyPhase,
 			Status:           PhaseStatus(result.ApplyStatus.String),
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
-			ResourceReport:   reportFromDB(result.AppliedChanges),
+			ResourceReport:   reportFromDB(result.ApplyResourceReport),
 		},
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {

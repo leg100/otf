@@ -22,13 +22,15 @@ var ErrPhaseAlreadyStarted = errors.New("phase already started")
 type (
 	// Phase is a section of work performed by a run.
 	Phase struct {
-		RunID string `json:"run_id"`
-
+		RunID              string `json:"run_id"`
 		internal.PhaseType `json:"phase"`
-		*ResourceReport    `json:"report"` // report of planned or applied resource changes
+		Status             PhaseStatus            `json:"status"`
+		StatusTimestamps   []PhaseStatusTimestamp `json:"status_timestamps"`
 
-		Status           PhaseStatus            `json:"status"` // current phase status
-		StatusTimestamps []PhaseStatusTimestamp `json:"status_timestamps"`
+		// report of planned or applied resource changes
+		ResourceReport *Report `json:"resource_report"`
+		// report of planned or applied output changes
+		OutputReport *Report `json:"output_report"`
 	}
 
 	PhaseStatus string
@@ -60,7 +62,14 @@ func NewPhase(runID string, t internal.PhaseType) Phase {
 
 func (p *Phase) HasChanges() bool {
 	if p.ResourceReport != nil {
-		return p.ResourceReport.HasChanges()
+		if p.ResourceReport.HasChanges() {
+			return true
+		}
+	}
+	if p.OutputReport != nil {
+		if p.OutputReport.HasChanges() {
+			return true
+		}
 	}
 	// no report has been published yet, which means there are no proposed
 	// changes yet.

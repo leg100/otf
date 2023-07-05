@@ -72,7 +72,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 					planned, err := daemon.GetRun(ctx, created.ID)
 					require.NoError(t, err)
 
-					assert.Equal(t, 2, planned.Plan.Additions)
+					assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)
 					return // success
 				}
 			}
@@ -113,7 +113,7 @@ func TestIntegration_RunAPI(t *testing.T) {
 					planned, err := daemon.GetRun(ctx, created.ID)
 					require.NoError(t, err)
 
-					assert.Equal(t, 2, planned.Plan.Additions)
+					assert.Equal(t, 2, planned.Plan.ResourceReport.Additions)
 					return // success
 				}
 			}

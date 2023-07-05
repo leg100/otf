@@ -33,6 +33,13 @@ func TestPlanFile(t *testing.T) {
 				},
 			},
 		},
+		OutputChanges: map[string]Change{
+			"random_string": {
+				Actions: []ChangeAction{
+					CreateAction,
+				},
+			},
+		},
 	}
 	assert.Equal(t, want, file)
 }
@@ -44,9 +51,13 @@ func TestPlanFile_Changes(t *testing.T) {
 	file := PlanFile{}
 	require.NoError(t, json.Unmarshal(data, &file))
 
-	changes := file.Changes()
+	resourceReport, outputReport := file.Summarize()
 
-	assert.Equal(t, 2, changes.Additions)
-	assert.Equal(t, 0, changes.Changes)
-	assert.Equal(t, 0, changes.Destructions)
+	assert.Equal(t, 2, resourceReport.Additions)
+	assert.Equal(t, 0, resourceReport.Changes)
+	assert.Equal(t, 0, resourceReport.Destructions)
+
+	assert.Equal(t, 1, outputReport.Additions)
+	assert.Equal(t, 0, outputReport.Changes)
+	assert.Equal(t, 0, outputReport.Destructions)
 }

@@ -62,11 +62,24 @@ func TestRun_States(t *testing.T) {
 		require.Equal(t, PhaseUnreachable, run.Apply.Status)
 	})
 
-	t.Run("finish plan with changes", func(t *testing.T) {
+	t.Run("finish plan with resource changes", func(t *testing.T) {
 		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
 		run.Status = internal.RunPlanning
 
-		run.Plan.ResourceReport = &ResourceReport{Additions: 1}
+		run.Plan.ResourceReport = &Report{Additions: 1}
+
+		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
+
+		require.Equal(t, internal.RunPlanned, run.Status)
+		require.Equal(t, PhaseFinished, run.Plan.Status)
+		require.Equal(t, PhasePending, run.Apply.Status)
+	})
+
+	t.Run("finish plan with output changes", func(t *testing.T) {
+		run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
+		run.Status = internal.RunPlanning
+
+		run.Plan.OutputReport = &Report{Additions: 1}
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 
@@ -81,7 +94,7 @@ func TestRun_States(t *testing.T) {
 		})
 		run.Status = internal.RunPlanning
 
-		run.Plan.ResourceReport = &ResourceReport{Additions: 1}
+		run.Plan.ResourceReport = &Report{Additions: 1}
 
 		require.NoError(t, run.Finish(internal.PlanPhase, PhaseFinishOptions{}))
 

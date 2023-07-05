@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseApplyOutputChanges(t *testing.T) {
-	want := ResourceReport{
+	want := Report{
 		Additions:    1,
 		Changes:      0,
 		Destructions: 0,
@@ -24,7 +24,7 @@ func TestParseApplyOutputChanges(t *testing.T) {
 }
 
 func TestParseApplyOutputNoChanges(t *testing.T) {
-	want := ResourceReport{
+	want := Report{
 		Additions:    0,
 		Changes:      0,
 		Destructions: 0,

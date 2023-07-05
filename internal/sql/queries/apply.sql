@@ -9,7 +9,7 @@ INSERT INTO applies (
 
 -- name: UpdateAppliedChangesByID :one
 UPDATE applies
-SET report = (
+SET resource_report = (
     pggen.arg('additions'),
     pggen.arg('changes'),
     pggen.arg('destructions')
