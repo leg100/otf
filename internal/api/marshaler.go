@@ -77,20 +77,22 @@ func (m *jsonapiMarshaler) convert(r *http.Request, v any) (any, []jsonapi.Marsh
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// Check if v is a page struct with both pagination and items fields
-	if pagination := dst.FieldByName("Pagination"); pagination.IsValid() {
-		items := dst.FieldByName("Items")
-		if !items.IsValid() {
-			return nil, nil, errors.New("page has a pagination field but no items field")
+	if dst.Kind() == reflect.Struct {
+		if pagination := dst.FieldByName("Pagination"); pagination.IsValid() {
+			items := dst.FieldByName("Items")
+			if !items.IsValid() {
+				return nil, nil, errors.New("page has a pagination field but no items field")
+			}
+			opts = []jsonapi.MarshalOption{
+				jsonapi.MarshalMeta(map[string]*types.Pagination{
+					"pagination": (*types.Pagination)(pagination.Addr().Elem().Interface().(*resource.Pagination)),
+				}),
+			}
+			// assign page items to destination for conversion below
+			dst = items
 		}
-		opts = []jsonapi.MarshalOption{
-			jsonapi.MarshalMeta(map[string]*types.Pagination{
-				"pagination": (*types.Pagination)(pagination.Addr().Interface().(*resource.Pagination)),
-			}),
-		}
-		// assign page items to destination for conversion below
-		dst = items
 	}
-	if reflect.TypeOf(dst).Kind() == reflect.Slice {
+	if dst.Kind() == reflect.Slice {
 		var payload []any
 		for i := 0; i < dst.Len(); i++ {
 			v, o, err := m.convert(r, dst.Index(i).Interface())

@@ -59,7 +59,7 @@ func Paginate[S comparable](resources []S, opts PageOptions) *Page[S] {
 	start := opts.PageSize * (opts.PageNumber - 1)
 	if start > len(resources) {
 		// paging is out-of-range: return empty list
-		return &Page[S]{}
+		return NewPage[S]([]S{}, opts, count)
 	}
 	resources = resources[start:]
 

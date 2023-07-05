@@ -45,11 +45,8 @@ type fakeSchedulerServices struct {
 	RunService
 }
 
-func (f *fakeSchedulerServices) ListRuns(context.Context, run.RunListOptions) (*resource.Page[*run.Run], error) {
-	return &run.RunList{
-		Items:      f.runs,
-		Pagination: resource.NewPagination(resource.PageOptions{}, int64(len(f.runs))),
-	}, nil
+func (f *fakeSchedulerServices) ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error) {
+	return resource.Paginate(f.runs, opts.PageOptions), nil
 }
 
 func (f *fakeSchedulerServices) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error) {
