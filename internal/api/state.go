@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
+	"golang.org/x/exp/maps"
 )
 
 // Implements TFC state versions API:
@@ -214,21 +215,29 @@ func (a *api) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.writeResponse(w, r, sv.Outputs)
+	a.writeResponse(w, r, maps.Values(sv.Outputs))
 }
 
 func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {
-	versionID, err := decode.Param("id", r)
+	var params struct {
+		StateVersionID string `schema:"id,required"`
+		resource.PageOptions
+	}
+	if err := decode.All(&params, r); err != nil {
+		Error(w, err)
+		return
+	}
+
+	sv, err := a.GetStateVersion(r.Context(), params.StateVersionID)
 	if err != nil {
 		Error(w, err)
 		return
 	}
-	sv, err := a.GetStateVersion(r.Context(), versionID)
-	if err != nil {
-		Error(w, err)
-		return
-	}
-	a.writeResponse(w, r, sv.Outputs)
+
+	// convert slice to page
+	page := resource.NewPage(maps.Values(sv.Outputs), params.PageOptions, nil)
+
+	a.writeResponse(w, r, page)
 }
 
 func (a *api) getOutput(w http.ResponseWriter, r *http.Request) {
