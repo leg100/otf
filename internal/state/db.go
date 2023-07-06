@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -16,7 +17,7 @@ type (
 		internal.DB
 
 		createVersion(context.Context, *Version) error
-		listVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error)
+		listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error)
 		getVersion(ctx context.Context, svID string) (*Version, error)
 		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
 		getState(ctx context.Context, versionID string) ([]byte, error)
@@ -35,7 +36,7 @@ type (
 	pgRow struct {
 		StateVersionID      pgtype.Text                 `json:"state_version_id"`
 		CreatedAt           pgtype.Timestamptz          `json:"created_at"`
-		Serial              int                         `json:"serial"`
+		Serial              pgtype.Int4                 `json:"serial"`
 		State               []byte                      `json:"state"`
 		WorkspaceID         pgtype.Text                 `json:"workspace_id"`
 		StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
@@ -47,7 +48,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 		_, err := db.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 			ID:          sql.String(v.ID),
 			CreatedAt:   sql.Timestamptz(v.CreatedAt),
-			Serial:      int(v.Serial),
+			Serial:      sql.Int4(int(v.Serial)),
 			State:       v.State,
 			WorkspaceID: sql.String(v.WorkspaceID),
 		})
@@ -72,7 +73,7 @@ func (db *pgdb) createVersion(ctx context.Context, v *Version) error {
 	})
 }
 
-func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error) {
+func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
@@ -99,10 +100,7 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts inter
 		items = append(items, pgRow(r).toVersion())
 	}
 
-	return &VersionList{
-		Items:      items,
-		Pagination: internal.NewPagination(opts, count),
-	}, nil
+	return resource.NewPage(items, opts, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) getVersion(ctx context.Context, svID string) (*Version, error) {
@@ -159,10 +157,10 @@ func (row pgRow) toVersion() *Version {
 	sv := Version{
 		ID:          row.StateVersionID.String,
 		CreatedAt:   row.CreatedAt.Time.UTC(),
-		Serial:      int64(row.Serial),
+		Serial:      int64(row.Serial.Int),
 		State:       row.State,
 		WorkspaceID: row.WorkspaceID.String,
-		Outputs:     make(OutputList, len(row.StateVersionOutputs)),
+		Outputs:     make(map[string]*Output, len(row.StateVersionOutputs)),
 	}
 	for _, r := range row.StateVersionOutputs {
 		sv.Outputs[r.Name.String] = outputRow(r).toOutput()

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,11 +29,8 @@ func NewTestOrganization(t *testing.T) *Organization {
 	}
 }
 
-func (f *fakeService) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
-	return &OrganizationList{
-		Items:      f.orgs,
-		Pagination: internal.NewPagination(opts.ListOptions, len(f.orgs)),
-	}, nil
+func (f *fakeService) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
+	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }
 
 func (f *fakeService) DeleteOrganization(context.Context, string) error {

@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -87,8 +88,8 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		internal.ListOptions
 		WorkspaceID string `schema:"workspace_id,required"`
+		PageNumber  int    `schema:"page[number]"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -101,8 +102,11 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
-		ListOptions: params.ListOptions,
 		WorkspaceID: &params.WorkspaceID,
+		PageOptions: resource.PageOptions{
+			PageNumber: params.PageNumber,
+			PageSize:   html.PageSize,
+		},
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -111,10 +115,10 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		workspace.WorkspacePage
-		*RunList
+		*resource.Page[*Run]
 	}{
 		WorkspacePage: workspace.NewPage(r, "runs", ws),
-		RunList:       runs,
+		Page:          runs,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {

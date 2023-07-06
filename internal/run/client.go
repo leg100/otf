@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -93,19 +94,18 @@ func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 	return nil
 }
 
-func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
 	req, err := c.NewRequest("GET", "runs", &opts)
 	if err != nil {
 		return nil, err
 	}
 
-	wl := &types.RunList{}
-	err = c.Do(ctx, req, wl)
-	if err != nil {
+	rl := &types.RunList{}
+	if err := c.Do(ctx, req, rl); err != nil {
 		return nil, err
 	}
 
-	return newListFromJSONAPI(wl), nil
+	return newListFromJSONAPI(rl), nil
 }
 
 func (c *Client) GetRun(ctx context.Context, runID string) (*Run, error) {

@@ -20,23 +20,25 @@ func TestTeamCLI(t *testing.T) {
 	out = daemon.otfcli(t, ctx, "teams", "new", "devs", "--organization", "acme-corp")
 	require.Equal(t, "Successfully created team devs\n", out)
 
-	// create user via cli
+	// create users via cli
 	out = daemon.otfcli(t, adminCtx, "users", "new", "bobby")
 	require.Equal(t, "Successfully created user bobby\n", out)
+	out = daemon.otfcli(t, adminCtx, "users", "new", "sally")
+	require.Equal(t, "Successfully created user sally\n", out)
 
-	// add user to developers
-	out = daemon.otfcli(t, ctx, "teams", "add-user", "bobby",
+	// add users to developers
+	out = daemon.otfcli(t, ctx, "teams", "add-users", "bobby", "sally",
 		"--organization", "acme-corp",
 		"--team", "devs",
 	)
-	require.Equal(t, "Successfully added bobby to devs\n", out)
+	require.Equal(t, "Successfully added [bobby sally] to devs\n", out)
 
-	// remove user from team
-	out = daemon.otfcli(t, ctx, "teams", "del-user", "bobby",
+	// remove users from team
+	out = daemon.otfcli(t, ctx, "teams", "del-users", "bobby", "sally",
 		"--organization", "acme-corp",
 		"--team", "devs",
 	)
-	require.Equal(t, "Successfully removed bobby from devs\n", out)
+	require.Equal(t, "Successfully removed [bobby sally] from devs\n", out)
 
 	// delete team
 	out = daemon.otfcli(t, ctx, "teams", "delete", "devs",

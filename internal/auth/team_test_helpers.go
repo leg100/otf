@@ -12,7 +12,11 @@ import (
 )
 
 func NewTestTeam(t *testing.T, organization string) *Team {
-	return NewTeam(CreateTeamOptions{uuid.NewString(), organization, nil})
+	team, err := newTeam(organization, CreateTeamOptions{
+		Name: internal.String(uuid.NewString()),
+	})
+	require.NoError(t, err)
+	return team
 }
 
 func CreateTestTeam(t *testing.T, db internal.DB, organization *organization.Organization) *Team {
@@ -34,5 +38,9 @@ func createTestTeam(t *testing.T, db *pgdb, organization string) *Team {
 }
 
 func newTestOwners(t *testing.T, organization string) *Team {
-	return NewTeam(CreateTeamOptions{"owners", organization, nil})
+	team, err := newTeam(organization, CreateTeamOptions{
+		Name: internal.String("owners"),
+	})
+	require.NoError(t, err)
+	return team
 }

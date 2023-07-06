@@ -22,8 +22,8 @@ func TestIntegration_MinimumPermissions(t *testing.T) {
 	guest := svc.createUser(t)
 	guests := svc.createTeam(t, ctx, org)
 	err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-		TeamID:   guests.ID,
-		Username: guest.Username,
+		TeamID:    guests.ID,
+		Usernames: []string{guest.Username},
 	})
 	require.NoError(t, err)
 	// Refresh guest user context to include new team membership

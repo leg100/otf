@@ -83,12 +83,14 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 
 	err = s.db.Tx(ctx, func(tx internal.DB) error {
 		_, err := tx.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-			ID:              sql.String(org.ID),
-			CreatedAt:       sql.Timestamptz(org.CreatedAt),
-			UpdatedAt:       sql.Timestamptz(org.UpdatedAt),
-			Name:            sql.String(org.Name),
-			SessionRemember: org.SessionRemember,
-			SessionTimeout:  org.SessionTimeout,
+			ID:                     sql.String(org.ID),
+			CreatedAt:              sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
+			Name:                   sql.String(org.Name),
+			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
+			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
+			Email:                  sql.StringPtr(org.Email),
+			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
 		})
 		if err != nil {
 			return sql.Error(err)
@@ -102,18 +104,17 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 			Organization: *opts.Name,
 		})
 
-		owners, err := s.AuthService.CreateTeam(ctx, auth.CreateTeamOptions{
-			Name:         "owners",
-			Organization: org.Name,
-			Tx:           tx,
+		owners, err := s.AuthService.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+			Name: internal.String("owners"),
+			Tx:   tx,
 		})
 		if err != nil {
 			return fmt.Errorf("creating owners team: %w", err)
 		}
 		err = s.AuthService.AddTeamMembership(ctx, auth.TeamMembershipOptions{
-			TeamID:   owners.ID,
-			Username: creator.Username,
-			Tx:       tx,
+			TeamID:    owners.ID,
+			Usernames: []string{creator.Username},
+			Tx:        tx,
 		})
 		if err != nil {
 			return fmt.Errorf("adding owner to owners team: %w", err)

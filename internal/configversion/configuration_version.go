@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const (
@@ -35,12 +36,6 @@ type (
 		StatusTimestamps  []ConfigurationVersionStatusTimestamp
 		WorkspaceID       string
 		IngressAttributes *IngressAttributes
-	}
-
-	// ConfigurationVersionList represents a list of configuration versions.
-	ConfigurationVersionList struct {
-		*internal.Pagination
-		Items []*ConfigurationVersion
 	}
 
 	// ConfigurationVersionCreateOptions represents the options for creating a
@@ -91,7 +86,7 @@ type (
 		// A list of relations to include
 		Include *string `schema:"include"`
 
-		internal.ListOptions
+		resource.PageOptions
 	}
 
 	IngressAttributes struct {

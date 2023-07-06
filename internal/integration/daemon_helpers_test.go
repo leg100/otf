@@ -249,9 +249,8 @@ func (s *testDaemon) createTeam(t *testing.T, ctx context.Context, org *organiza
 		org = s.createOrganization(t, ctx)
 	}
 
-	team, err := s.CreateTeam(ctx, auth.CreateTeamOptions{
-		Name:         "team-" + internal.GenerateRandomString(4),
-		Organization: org.Name,
+	team, err := s.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
+		Name: internal.String("team-" + internal.GenerateRandomString(4)),
 	})
 	require.NoError(t, err)
 	return team

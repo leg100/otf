@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -16,14 +16,14 @@ type (
 		ID          string
 		CreatedAt   time.Time
 		Serial      int64
-		State       []byte     // state file
-		Outputs     OutputList // state version has many outputs
-		WorkspaceID string     // state version belongs to a workspace
+		State       []byte             // state file
+		Outputs     map[string]*Output // state version has many outputs
+		WorkspaceID string             // state version belongs to a workspace
 	}
 
 	// VersionList represents a list of state versions.
 	VersionList struct {
-		*internal.Pagination
+		*resource.Pagination
 		Items []*Version
 	}
 
@@ -35,8 +35,6 @@ type (
 		Sensitive      bool
 		StateVersionID string
 	}
-
-	OutputList map[string]*Output
 
 	// CreateStateVersionOptions are options for creating a state version.
 	CreateStateVersionOptions struct {

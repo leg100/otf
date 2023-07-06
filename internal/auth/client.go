@@ -9,9 +9,14 @@ import (
 	"github.com/leg100/otf/internal/api/types"
 )
 
-type Client struct {
-	internal.JSONAPIClient
-}
+type (
+	Client struct {
+		internal.JSONAPIClient
+	}
+	teamMember struct {
+		Username string `jsonapi:"primary,users"`
+	}
+)
 
 // CreateUser creates a user via HTTP/JSONAPI. Options are ignored.
 func (c *Client) CreateUser(ctx context.Context, username string, _ ...NewUserOption) (*User, error) {
@@ -42,10 +47,15 @@ func (c *Client) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
-// AddTeamMembership adds a user to a team via HTTP.
+// AddTeamMembership adds users to a team via HTTP.
 func (c *Client) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(opts.TeamID), url.QueryEscape(opts.Username))
-	req, err := c.NewRequest("POST", u, nil)
+	var members []*teamMember
+	for _, name := range opts.Usernames {
+		members = append(members, &teamMember{Username: name})
+	}
+
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(opts.TeamID))
+	req, err := c.NewRequest("POST", u, members)
 	if err != nil {
 		return err
 	}
@@ -55,10 +65,15 @@ func (c *Client) AddTeamMembership(ctx context.Context, opts TeamMembershipOptio
 	return nil
 }
 
-// RemoveTeamMembership removes a user from a team via HTTP.
+// RemoveTeamMembership removes users from a team via HTTP.
 func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	u := fmt.Sprintf("teams/%s/memberships/%s", url.QueryEscape(opts.TeamID), url.QueryEscape(opts.Username))
-	req, err := c.NewRequest("DELETE", u, nil)
+	var members []*teamMember
+	for _, name := range opts.Usernames {
+		members = append(members, &teamMember{Username: name})
+	}
+
+	u := fmt.Sprintf("teams/%s/relationships/users", url.QueryEscape(opts.TeamID))
+	req, err := c.NewRequest("DELETE", u, members)
 	if err != nil {
 		return err
 	}
@@ -69,10 +84,14 @@ func (c *Client) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOp
 }
 
 // CreateTeam creates a team via HTTP/JSONAPI.
-func (c *Client) CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error) {
-	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(opts.Organization))
-	req, err := c.NewRequest("POST", u, &types.CreateTeamOptions{
-		Name: internal.String(opts.Name),
+func (c *Client) CreateTeam(ctx context.Context, organization string, opts CreateTeamOptions) (*Team, error) {
+	// validate params
+	if _, err := newTeam(organization, opts); err != nil {
+		return nil, err
+	}
+	u := fmt.Sprintf("organizations/%s/teams", url.QueryEscape(organization))
+	req, err := c.NewRequest("POST", u, &types.TeamCreateOptions{
+		Name: opts.Name,
 	})
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/leg100/otf/internal/workspace"
@@ -53,7 +54,7 @@ func TestIntegration_TagService(t *testing.T) {
 
 		t.Run("invalid tag spec", func(t *testing.T) {
 			err = svc.AddTags(ctx, ws.ID, []workspace.TagSpec{{}})
-			assert.Equal(t, workspace.ErrInvalidTagSpec, err)
+			assert.True(t, errors.Is(err, workspace.ErrInvalidTagSpec))
 		})
 	})
 

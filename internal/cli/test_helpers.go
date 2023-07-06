@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
@@ -22,7 +23,7 @@ type (
 		workspaces       []*workspace.Workspace
 		run              *run.Run
 		stateVersion     *state.Version
-		stateVersionList *state.VersionList
+		stateVersionList *resource.Page[*state.Version]
 		state            []byte
 		agentToken       []byte
 		tarball          []byte
@@ -70,7 +71,7 @@ func withStateVersion(sv *state.Version) fakeOption {
 	}
 }
 
-func withStateVersionList(svl *state.VersionList) fakeOption {
+func withStateVersionList(svl *resource.Page[*state.Version]) fakeOption {
 	return func(c *fakeClient) {
 		c.stateVersionList = svl
 	}
@@ -118,7 +119,7 @@ func (f *fakeClient) RemoveTeamMembership(context.Context, auth.TeamMembershipOp
 	return nil
 }
 
-func (f *fakeClient) CreateTeam(context.Context, auth.CreateTeamOptions) (*auth.Team, error) {
+func (f *fakeClient) CreateTeam(context.Context, string, auth.CreateTeamOptions) (*auth.Team, error) {
 	return f.team, nil
 }
 
@@ -138,11 +139,8 @@ func (f *fakeClient) GetWorkspaceByName(context.Context, string, string) (*works
 	return f.workspaces[0], nil
 }
 
-func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*workspace.WorkspaceList, error) {
-	return &workspace.WorkspaceList{
-		Items:      f.workspaces,
-		Pagination: internal.NewPagination(internal.ListOptions{}, len(f.workspaces)),
-	}, nil
+func (f *fakeClient) ListWorkspaces(ctx context.Context, opts workspace.ListOptions) (*resource.Page[*workspace.Workspace], error) {
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
 }
 
 func (f *fakeClient) ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error) {
@@ -174,7 +172,7 @@ func (f *fakeClient) CreateAgentToken(ctx context.Context, opts tokens.CreateAge
 	return f.agentToken, nil
 }
 
-func (f *fakeClient) ListStateVersions(context.Context, string, internal.ListOptions) (*state.VersionList, error) {
+func (f *fakeClient) ListStateVersions(context.Context, string, resource.PageOptions) (*resource.Page[*state.Version], error) {
 	return f.stateVersionList, nil
 }
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/configversion"
 )
@@ -35,15 +34,4 @@ func (m *jsonapiMarshaler) toConfigurationVersion(from *configversion.Configurat
 		}
 	}
 	return to, nil
-}
-
-func (m *jsonapiMarshaler) toConfigurationVersionList(from *configversion.ConfigurationVersionList) (to []*types.ConfigurationVersion, opts []jsonapi.MarshalOption, err error) {
-	for _, i := range from.Items {
-		cv, err := m.toConfigurationVersion(i)
-		if err != nil {
-			return nil, nil, err
-		}
-		to = append(to, cv)
-	}
-	return to, []jsonapi.MarshalOption{toMarshalOption(from.Pagination)}, nil
 }

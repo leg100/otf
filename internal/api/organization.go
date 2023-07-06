@@ -33,9 +33,12 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	org, err := a.CreateOrganization(r.Context(), orgcreator.OrganizationCreateOptions{
-		Name:            opts.Name,
-		SessionRemember: opts.SessionRemember,
-		SessionTimeout:  opts.SessionTimeout,
+		Name:                       opts.Name,
+		Email:                      opts.Email,
+		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
+		SessionRemember:            opts.SessionRemember,
+		SessionTimeout:             opts.SessionTimeout,
+		AllowForceDeleteWorkspaces: opts.AllowForceDeleteWorkspaces,
 	})
 	if err != nil {
 		Error(w, err)
@@ -62,7 +65,7 @@ func (a *api) getOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts organization.OrganizationListOptions
+	var opts organization.ListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		Error(w, err)
 		return
@@ -90,9 +93,11 @@ func (a *api) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	org, err := a.UpdateOrganization(r.Context(), name, organization.OrganizationUpdateOptions{
-		Name:            opts.Name,
-		SessionRemember: opts.SessionRemember,
-		SessionTimeout:  opts.SessionTimeout,
+		Name:                   opts.Name,
+		Email:                  opts.Email,
+		CollaboratorAuthPolicy: (*string)(opts.CollaboratorAuthPolicy),
+		SessionRemember:        opts.SessionRemember,
+		SessionTimeout:         opts.SessionTimeout,
 	})
 	if err != nil {
 		Error(w, err)

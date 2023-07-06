@@ -41,13 +41,13 @@
     <div class="field">
       <input
         type="checkbox"
-        name="manage_registry"
-        id="manage_registry"
+        name="manage_modules"
+        id="manage_modules"
         value="true"
-        {{ if or .Team.OrganizationAccess.ManageRegistry .Team.IsOwners }}checked{{ end }}
+        {{ if or .Team.OrganizationAccess.ManageModules .Team.IsOwners }}checked{{ end }}
         {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
       >
-      <label for="manage_registry">Manage Registry: Allows members to publish and delete modules within the organization.</label>
+      <label for="manage_modules">Manage Modules: Allows members to publish and delete modules within the organization.</label>
     </div>
     <div class="field">
       <button

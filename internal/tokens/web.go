@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // webHandlers provides handlers for the web UI
@@ -91,11 +92,11 @@ func (h *webHandlers) userTokens(w http.ResponseWriter, r *http.Request) {
 		html.SitePage
 		// list template expects pagination object but we don't paginate token
 		// listing
-		*internal.Pagination
+		*resource.Pagination
 		Items []*UserToken
 	}{
 		SitePage:   html.NewSitePage(r, "user tokens"),
-		Pagination: &internal.Pagination{},
+		Pagination: &resource.Pagination{},
 		Items:      tokens,
 	})
 }
@@ -196,11 +197,11 @@ func (h *webHandlers) listAgentTokens(w http.ResponseWriter, r *http.Request) {
 		organization.OrganizationPage
 		// list template expects pagination object but we don't paginate token
 		// listing
-		*internal.Pagination
+		*resource.Pagination
 		Items []*AgentToken
 	}{
 		OrganizationPage: organization.NewPage(r, "agent tokens", org),
-		Pagination:       &internal.Pagination{},
+		Pagination:       &resource.Pagination{},
 		Items:            tokens,
 	})
 }

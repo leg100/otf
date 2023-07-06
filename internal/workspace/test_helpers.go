@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
 )
@@ -109,11 +110,8 @@ func (f *fakeWebService) UpdateWorkspace(context.Context, string, UpdateOptions)
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
-	return &WorkspaceList{
-		Items:      f.workspaces,
-		Pagination: internal.NewPagination(opts.ListOptions, len(f.workspaces)),
-	}, nil
+func (f *fakeWebService) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
 }
 
 func (f *fakeWebService) GetWorkspace(context.Context, string) (*Workspace, error) {
@@ -136,16 +134,16 @@ func (f *fakeWebService) UnlockWorkspace(context.Context, string, *string, bool)
 	return f.workspaces[0], nil
 }
 
+func (f *fakeWebService) ListTags(context.Context, string, ListTagsOptions) (*resource.Page[*Tag], error) {
+	return nil, nil
+}
+
 func (f *fakeWebService) connect(context.Context, string, ConnectOptions) (*repo.Connection, error) {
 	return nil, nil
 }
 
 func (f *fakeWebService) disconnect(context.Context, string) error {
 	return nil
-}
-
-func (f *fakeWebService) listAllTags(ctx context.Context, organization string) ([]*Tag, error) {
-	return nil, nil
 }
 
 type fakeWebCloudClient struct {

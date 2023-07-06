@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -69,7 +70,7 @@ type (
 
 	// RunList represents a list of runs.
 	RunList struct {
-		*internal.Pagination
+		*resource.Pagination
 		Items []*Run
 	}
 
@@ -106,7 +107,7 @@ type (
 
 	// RunListOptions are options for paginating and filtering a list of runs
 	RunListOptions struct {
-		internal.ListOptions
+		resource.PageOptions
 		// Filter by run statuses (with an implicit OR condition)
 		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by workspace ID

@@ -109,6 +109,8 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster, devMode bool) (map[s
 	funcs["version"] = func() string { return internal.Version }
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	funcs["mergeQuery"] = mergeQuery
+	funcs["prevPageQuery"] = prevPageQuery
+	funcs["nextPageQuery"] = nextPageQuery
 	funcs["selected"] = selected
 	funcs["checked"] = checked
 	funcs["disabled"] = disabled

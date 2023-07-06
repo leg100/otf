@@ -19,6 +19,40 @@ func String(s string) pgtype.Text {
 	return pgtype.Text{String: s, Status: pgtype.Present}
 }
 
+// StringPtr converts a go-string pointer into a postgres nullable string
+func StringPtr(s *string) pgtype.Text {
+	if s != nil {
+		return pgtype.Text{String: *s, Status: pgtype.Present}
+	}
+	return pgtype.Text{Status: pgtype.Null}
+}
+
+// Int4 converts a go-int into a postgres non-null int4
+func Int4(s int) pgtype.Int4 {
+	return pgtype.Int4{Int: int32(s), Status: pgtype.Present}
+}
+
+// Int4Ptr converts a go-int pointer into a postgres nullable int4
+func Int4Ptr(s *int) pgtype.Int4 {
+	if s != nil {
+		return pgtype.Int4{Int: int32(*s), Status: pgtype.Present}
+	}
+	return pgtype.Int4{Status: pgtype.Null}
+}
+
+// Int8 converts a go-int into a postgres non-null int8
+func Int8(s int) pgtype.Int8 {
+	return pgtype.Int8{Int: int64(s), Status: pgtype.Present}
+}
+
+// Int8Ptr converts a go-int pointer into a postgres nullable int8
+func Int8Ptr(s *int) pgtype.Int8 {
+	if s != nil {
+		return pgtype.Int8{Int: int64(*s), Status: pgtype.Present}
+	}
+	return pgtype.Int8{Status: pgtype.Null}
+}
+
 // NullString returns a postgres null string
 func NullString() pgtype.Text {
 	return pgtype.Text{Status: pgtype.Null}

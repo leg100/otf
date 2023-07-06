@@ -11,6 +11,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // Client uses json-api according to the documented terraform cloud state
@@ -48,7 +49,7 @@ func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersion
 	return newFromJSONAPI(&sv), nil
 }
 
-func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts internal.ListOptions) (*VersionList, error) {
+func (c *Client) ListStateVersions(ctx context.Context, workspaceID string, opts resource.PageOptions) (*resource.Page[*Version], error) {
 	u := fmt.Sprintf("workspaces/%s/state-versions", url.QueryEscape(workspaceID))
 	req, err := c.NewRequest("GET", u, &opts)
 	if err != nil {
@@ -145,9 +146,9 @@ func newFromJSONAPI(from *types.StateVersion) *Version {
 }
 
 // newListFromJSONAPI constructs a state version list from a json:api struct
-func newListFromJSONAPI(from *types.StateVersionList) *VersionList {
-	to := VersionList{
-		Pagination: internal.NewPaginationFromJSONAPI(from.Pagination),
+func newListFromJSONAPI(from *types.StateVersionList) *resource.Page[*Version] {
+	to := resource.Page[*Version]{
+		Pagination: (*resource.Pagination)(from.Pagination),
 	}
 	for _, i := range from.Items {
 		to.Items = append(to.Items, newFromJSONAPI(i))

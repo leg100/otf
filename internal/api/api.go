@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/leg100/surl"
 )
@@ -32,6 +33,7 @@ type (
 		tokens.TokensService
 		variable.VariableService
 		notifications.NotificationService
+		vcsprovider.VCSProviderService
 
 		marshaler
 		internal.Verifier // for verifying signed urls
@@ -47,9 +49,11 @@ type (
 		workspace.WorkspaceService
 		configversion.ConfigurationVersionService
 		auth.AuthService
+		auth.TeamService
 		tokens.TokensService
 		variable.VariableService
 		notifications.NotificationService
+		vcsprovider.VCSProviderService
 
 		*surl.Signer
 
@@ -70,11 +74,13 @@ func New(opts Options) *api {
 		TokensService:               opts.TokensService,
 		VariableService:             opts.VariableService,
 		NotificationService:         opts.NotificationService,
+		VCSProviderService:          opts.VCSProviderService,
 		marshaler: &jsonapiMarshaler{
 			OrganizationService: opts.OrganizationService,
 			WorkspaceService:    opts.WorkspaceService,
 			RunService:          opts.RunService,
 			StateService:        opts.StateService,
+			TeamService:         opts.TeamService,
 			runLogsURLGenerator: &runLogsURLGenerator{opts.Signer},
 		},
 		maxConfigSize: opts.MaxConfigSize,
@@ -90,8 +96,10 @@ func (a *api) AddHandlers(r *mux.Router) {
 	a.addConfigHandlers(r)
 	a.addUserHandlers(r)
 	a.addTeamHandlers(r)
+	a.addTeamMembershipHandlers(r)
 	a.addVariableHandlers(r)
 	a.addTokenHandlers(r)
 	a.addNotificationHandlers(r)
 	a.addOrganizationMembershipHandlers(r)
+	a.addOAuthClientHandlers(r)
 }

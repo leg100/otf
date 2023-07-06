@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -17,7 +18,7 @@ type (
 	Service interface {
 		UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
-		ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
+		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
 
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
@@ -97,15 +98,15 @@ func (s *service) UpdateOrganization(ctx context.Context, name string, opts Orga
 // Subject is an agent: return its organization
 // Subject is an organization token: return its organization
 // Subject is an team token: return its organization
-func (s *service) ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error) {
+func (s *service) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if subject.CanAccessSite(rbac.ListOrganizationsAction) {
-		return s.db.list(ctx, dbListOptions{ListOptions: opts.ListOptions})
+		return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions})
 	}
-	return s.db.list(ctx, dbListOptions{ListOptions: opts.ListOptions, names: subject.Organizations()})
+	return s.db.list(ctx, dbListOptions{PageOptions: opts.PageOptions, names: subject.Organizations()})
 }
 
 func (s *service) GetOrganization(ctx context.Context, name string) (*Organization, error) {

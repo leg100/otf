@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type (
@@ -48,13 +49,20 @@ func (a *web) addHandlers(r *mux.Router) {
 }
 
 func (a *web) list(w http.ResponseWriter, r *http.Request) {
-	var opts OrganizationListOptions
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+	var params struct {
+		PageNumber int `schema:"page[number]"`
+	}
+	if err := decode.All(&params, r); err != nil {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	organizations, err := a.svc.ListOrganizations(r.Context(), opts)
+	organizations, err := a.svc.ListOrganizations(r.Context(), ListOptions{
+		PageOptions: resource.PageOptions{
+			PageNumber: params.PageNumber,
+			PageSize:   html.PageSize,
+		},
+	})
 	if err != nil {
 		a.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -75,14 +83,12 @@ func (a *web) list(w http.ResponseWriter, r *http.Request) {
 
 	a.Render("organization_list.tmpl", w, struct {
 		html.SitePage
-		*OrganizationList
-		OrganizationListOptions
+		*resource.Page[*Organization]
 		CanCreate bool
 	}{
-		SitePage:                html.NewSitePage(r, "organizations"),
-		OrganizationList:        organizations,
-		OrganizationListOptions: opts,
-		CanCreate:               canCreate,
+		SitePage:  html.NewSitePage(r, "organizations"),
+		Page:      organizations,
+		CanCreate: canCreate,
 	})
 }
 

@@ -1,18 +1,26 @@
--- name: InsertTeamMembership :exec
-INSERT INTO team_memberships (
-    username,
-    team_id
-) VALUES (
-    pggen.arg('username'),
-    pggen.arg('team_id')
-)
+-- name: InsertTeamMembership :many
+WITH
+    users AS (
+        SELECT username
+        FROM unnest(pggen.arg('usernames')::text[]) t(username)
+    )
+INSERT INTO team_memberships (username, team_id)
+SELECT username, pggen.arg('team_id')
+FROM users
+RETURNING username
 ;
 
--- name: DeleteTeamMembership :one
+-- name: DeleteTeamMembership :many
+WITH
+    users AS (
+        SELECT username
+        FROM unnest(pggen.arg('usernames')::text[]) t(username)
+    )
 DELETE
-FROM team_memberships
+FROM team_memberships tm
+USING users
 WHERE
-    username = pggen.arg('username') AND
-    team_id  = pggen.arg('team_id')
-RETURNING username
+    tm.username = users.username AND
+    tm.team_id  = pggen.arg('team_id')
+RETURNING tm.username
 ;
