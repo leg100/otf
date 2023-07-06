@@ -46,9 +46,9 @@ func TestGithubLogin(t *testing.T) {
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),
 		screenshot(t, "github_login_button"),
 		// login
-		chromedp.Click("a.login-button-github", chromedp.NodeVisible, chromedp.ByQuery),
+		chromedp.Click("a.login-button-github", chromedp.ByQuery),
 		screenshot(t),
 		// check login confirmation message
-		matchText(t, ".content > p", "You are logged in as bobby"),
+		matchText(t, `.content > p`, `You are logged in as bobby`, chromedp.ByQuery),
 	})
 }

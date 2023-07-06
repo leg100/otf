@@ -25,10 +25,10 @@ func TestVariableE2E(t *testing.T) {
 			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
-			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='variables']`),
 			screenshot(t),
 			// click add variable button
-			chromedp.Click(`//button[text()='Add variable']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Add variable']`),
 			screenshot(t),
 			// enter key
 			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
@@ -39,13 +39,13 @@ func TestVariableE2E(t *testing.T) {
 			input.InsertText("bar"),
 			screenshot(t),
 			// select terraform variable category
-			chromedp.Click("input#terraform", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("input#terraform", chromedp.ByQuery),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='save-variable-button']`),
 			screenshot(t),
 			// confirm variable added
-			matchText(t, ".flash-success", "added variable: foo"),
+			matchText(t, ".flash-success", "added variable: foo", chromedp.ByQuery),
 			screenshot(t),
 		},
 	})
@@ -78,40 +78,40 @@ output "foo" {
 			chromedp.Navigate(workspaceURL(svc.Hostname(), org.Name, "my-test-workspace")),
 			screenshot(t),
 			// go to variables
-			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='variables']`),
 			screenshot(t),
 			// edit variable
-			chromedp.Click(`//a[text()='foo']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='foo']`),
 			screenshot(t),
 			// make it a 'sensitive' variable
-			chromedp.Click("input#sensitive", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("input#sensitive", chromedp.ByQuery),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='save-variable-button']`),
 			screenshot(t),
 			// confirm variable updated
-			matchText(t, ".flash-success", "updated variable: foo"),
+			chromedp.WaitVisible(`//div[@class='flash flash-success'][contains(text(),"updated variable: foo")]`),
 			screenshot(t),
 			// confirm value is hidden (because it is sensitive)
-			matchText(t, `//table[@class='variables']/tbody/tr/td[2]`, "hidden"),
+			chromedp.WaitVisible(`//table[@class='variables']/tbody/tr/td[2]/span[text()="hidden"]`),
 			// edit variable again
-			chromedp.Click(`//a[text()='foo']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='foo']`),
 			screenshot(t),
 			// update value
 			chromedp.Focus("textarea#value", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("topsecret"),
 			screenshot(t, "variables_entering_top_secret"),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='save-variable-button']`),
 			screenshot(t),
 			// confirm variable updated
-			matchText(t, ".flash-success", "updated variable: foo"),
+			chromedp.WaitVisible(`//div[@class='flash flash-success'][contains(text(),"updated variable: foo")]`),
 			screenshot(t),
 			// delete variable
-			chromedp.Click(`//button[@id='delete-variable-button']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[@id='delete-variable-button']`),
 			screenshot(t),
 			// confirm variable deleted
-			matchText(t, ".flash-success", "deleted variable: foo"),
+			chromedp.WaitVisible(`//div[@class='flash flash-success'][contains(text(),"deleted variable: foo")]`),
 		},
 	})
 }

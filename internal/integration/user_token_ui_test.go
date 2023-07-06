@@ -15,23 +15,21 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		// go to profile
 		chromedp.Navigate("https://" + svc.Hostname() + "/app/profile"),
-		chromedp.WaitReady(`body`),
 		// go to user tokens
-		chromedp.Click(`//div[@id='user-tokens-link']/a`, chromedp.NodeVisible),
+		chromedp.Click(`//div[@id='user-tokens-link']/a`),
 		screenshot(t, "user_tokens"),
 		// go to new token
-		chromedp.Click(`//button[@id='new-user-token-button']`, chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
+		chromedp.Click(`//button[@id='new-user-token-button']`),
 		// enter description for new token and submit
 		chromedp.Focus("input#description", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("my new token"),
 		screenshot(t, "user_token_enter_description"),
-		chromedp.Click(`//button[text()='Create token']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='Create token']`),
 		screenshot(t, "user_token_created"),
 		matchRegex(t, ".flash-success", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
 		// delete the token
-		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='delete']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "Deleted token"),
+		matchText(t, ".flash-success", "Deleted token", chromedp.ByQuery),
 	})
 }

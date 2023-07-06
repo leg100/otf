@@ -36,22 +36,22 @@ func TestModuleE2E(t *testing.T) {
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			screenshot(t),
 			// go to modules
-			chromedp.Click("#modules > a", chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Click("#modules > a", chromedp.ByQuery),
 			screenshot(t, "modules_list"),
 			// click publish button
-			chromedp.Click(`//button[text()='Publish']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Publish']`),
 			screenshot(t, "modules_select_provider"),
 			// select provider
-			chromedp.Click(`//button[text()='connect']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='connect']`),
 			screenshot(t, "modules_select_repo"),
 			// connect to first repo in list (there should only be one)
-			chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
+			chromedp.Click(`//div[@class='content-list']//button[text()='connect']`),
 			screenshot(t, "modules_confirm"),
 			// confirm module details
-			chromedp.Click(`//button[text()='connect']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='connect']`),
 			screenshot(t, "newly_created_module_page"),
 			// flash message indicates success
-			matchText(t, ".flash-success", "published module: mod"),
+			matchText(t, `.flash-success`, `published module: mod`, chromedp.ByQuery),
 			// TODO: confirm versions are populated
 			// capture module url so we can visit it later
 			chromedp.Location(&moduleURL),

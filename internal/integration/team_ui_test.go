@@ -21,24 +21,24 @@ func TestIntegration_TeamUI(t *testing.T) {
 			chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 			screenshot(t),
 			// go to teams listing
-			chromedp.Click(`//a[text()='teams']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='teams']`),
 			screenshot(t),
 			// go to owners team page
-			chromedp.Click(`//div[@class='content-list']//a[text()='owners']`, chromedp.NodeVisible),
+			chromedp.Click(`//div[@class='content-list']//a[text()='owners']`),
 			screenshot(t, "owners_team_page"),
 			// select newbie as new team member
 			chromedp.SetValue(`//select[@id="select-add-member"]`, newbie.Username),
 			screenshot(t),
 			// submit
-			chromedp.Click(`//button[text()='Add member']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Add member']`),
 			screenshot(t),
 			// confirm newbie added
-			matchText(t, ".flash-success", "added team member: "+newbie.Username),
+			matchText(t, ".flash-success", "added team member: "+newbie.Username, chromedp.ByQuery),
 			// remove newbie from team
-			chromedp.Click(fmt.Sprintf(`//div[@id='item-user-%s']//button[@id='remove-member-button']`, newbie.Username), chromedp.NodeVisible),
+			chromedp.Click(fmt.Sprintf(`//div[@id='item-user-%s']//button[@id='remove-member-button']`, newbie.Username)),
 			screenshot(t),
 			// confirm newbie removed
-			matchText(t, ".flash-success", "removed team member: "+newbie.Username),
+			matchText(t, ".flash-success", "removed team member: "+newbie.Username, chromedp.ByQuery),
 		},
 	})
 }

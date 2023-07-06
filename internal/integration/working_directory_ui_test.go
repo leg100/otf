@@ -26,17 +26,17 @@ func TestWorkingDirectory(t *testing.T) {
 			chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-workspace")),
 			screenshot(t),
 			// go to workspace settings
-			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+			chromedp.Click(`//a[text()='settings']`),
 			screenshot(t),
 			// enter working directory
 			chromedp.Focus("input#working_directory", chromedp.NodeVisible),
 			input.InsertText("subdir"),
 			screenshot(t),
 			// submit form
-			chromedp.Click(`//button[text()='Save changes']`, chromedp.NodeVisible),
+			chromedp.Click(`//button[text()='Save changes']`),
 			screenshot(t),
 			// confirm workspace updated
-			matchText(t, ".flash-success", "updated workspace"),
+			matchText(t, ".flash-success", "updated workspace", chromedp.ByQuery),
 		},
 	})
 

@@ -38,7 +38,7 @@ func TestTerraformLogin(t *testing.T) {
 		// expect.Verbose(testing.Verbose()),
 		expect.Tee(out),
 		expect.SetEnv(
-			append(envs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
+			append(sharedEnvs, fmt.Sprintf("PATH=%s:%s", killBrowserPath, os.Getenv("PATH"))),
 		),
 	)
 	require.NoError(t, err)
@@ -54,9 +54,9 @@ func TestTerraformLogin(t *testing.T) {
 		chromedp.Navigate(strings.TrimSpace(u)),
 		screenshot(t, "terraform_login_consent"),
 		// give consent
-		chromedp.Click(`//button[text()='Accept']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='Accept']`),
 		screenshot(t, "terraform_login_flow_complete"),
-		matchText(t, "//body/p", "The login server has returned an authentication code to Terraform."),
+		matchText(t, `//body/p`, `The login server has returned an authentication code to Terraform.`),
 	})
 
 	e.Expect(regexp.MustCompile(`Success! Terraform has obtained and saved an API token.`), -1)

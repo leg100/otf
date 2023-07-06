@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	cdpbrowser "github.com/chromedp/cdproto/browser"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/require"
 )
@@ -29,17 +28,6 @@ func newBrowser(t *testing.T, allocator context.Context) *browser {
 		cdpbrowser.SetPermission(&clipboardWritePermission, cdpbrowser.PermissionSettingGranted).WithOrigin(""),
 	})
 	require.NoError(t, err)
-
-	// Click OK on any browser javascript dialog boxes that pop up
-	chromedp.ListenTarget(ctx, func(ev any) {
-		switch ev.(type) {
-		case *page.EventJavascriptDialogOpening:
-			go func() {
-				err := chromedp.Run(ctx, page.HandleJavaScriptDialog(true))
-				require.NoError(t, err)
-			}()
-		}
-	})
 
 	return &browser{ctx: ctx, cancel: cancel}
 }

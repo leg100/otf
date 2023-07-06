@@ -33,9 +33,9 @@ func TestIntegration_OIDC(t *testing.T) {
 		chromedp.Navigate("https://" + svc.Hostname() + "/login"),
 		screenshot(t, "oidc_login_button"),
 		// login
-		chromedp.Click("a.login-button-google", chromedp.NodeVisible),
+		chromedp.Click("a.login-button-google"),
 		screenshot(t),
 		// check login confirmation message
-		matchText(t, ".content > p", "You are logged in as bobby"),
+		matchText(t, ".content > p", "You are logged in as bobby", chromedp.ByQuery),
 	})
 }

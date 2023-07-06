@@ -22,7 +22,7 @@ func TestIntegration_RunListUI(t *testing.T) {
 		// navigate to workspace page
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), ws.Organization, ws.Name)),
 		// navigate to runs page
-		chromedp.Click(`//a[text()='runs']`, chromedp.NodeVisible),
+		chromedp.Click(`//a[text()='runs']`),
 		// should be no runs listed
 		matchText(t, `//div[@id='content-list']`, `No items currently exist.`),
 		chromedp.ActionFunc(func(context.Context) error {
