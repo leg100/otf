@@ -27,13 +27,12 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.Navigate(workspaceURL(svc.Hostname(), ws.Organization, ws.Name)),
 		screenshot(t, "workspace_page"),
 		// navigate to workspace settings
-		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		chromedp.Click(`//a[text()='settings']`),
 		screenshot(t),
 		// click 'queue destroy plan' button
 		chromedp.Click(`//button[@id='queue-destroy-plan-button']`),
 		screenshot(t),
 		// confirm plan begins and ends
-		chromedp.WaitReady(`body`),
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
 		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
@@ -45,10 +44,10 @@ func TestStartRunUI(t *testing.T) {
 		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 		// run widget should show discard button
-		chromedp.WaitReady(`//button[@id='run-discard-button']`),
+		chromedp.WaitVisible(`//button[@id='run-discard-button']`),
 		screenshot(t),
 		// click 'confirm & apply' button once it becomes visible
-		chromedp.Click(`//button[text()='apply']`, chromedp.NodeVisible),
+		chromedp.Click(`//button[text()='apply']`),
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),

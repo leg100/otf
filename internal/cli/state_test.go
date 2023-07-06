@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
@@ -26,14 +26,15 @@ func TestCLI_State(t *testing.T) {
 				fakeApp(
 					withWorkspaces(&workspace.Workspace{ID: "ws-123"}),
 					withStateVersion(&state.Version{ID: "sv-3", WorkspaceID: "ws-123"}),
-					withStateVersionList(&state.VersionList{
-						Pagination: &internal.Pagination{},
-						Items: []*state.Version{
+					withStateVersionList(resource.NewPage(
+						[]*state.Version{
 							{ID: "sv-3"},
 							{ID: "sv-2"},
 							{ID: "sv-1"},
 						},
-					}),
+						resource.PageOptions{},
+						nil,
+					)),
 				),
 				"sv-3 (current)\nsv-2\nsv-1\n",
 			},

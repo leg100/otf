@@ -1,9 +1,13 @@
 package html
 
 import (
+	"fmt"
 	"html/template"
 	"net/url"
 	"reflect"
+
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 // mergeQuery merges the query string into the given url, replacing any existing
@@ -23,6 +27,20 @@ func mergeQuery(u string, q string) (string, error) {
 	}
 	parsedURL.RawQuery = existingQuery.Encode()
 	return parsedURL.String(), nil
+}
+
+func prevPageQuery(p resource.Pagination) *string {
+	if p.PreviousPage == nil {
+		return nil
+	}
+	return internal.String(fmt.Sprintf("page[number]=%d", *p.PreviousPage))
+}
+
+func nextPageQuery(p resource.Pagination) *string {
+	if p.NextPage == nil {
+		return nil
+	}
+	return internal.String(fmt.Sprintf("page[number]=%d", *p.NextPage))
 }
 
 // insufficient returns form attributes that disable the form element and

@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"golang.org/x/exp/slog"
 )
 
@@ -90,7 +91,7 @@ type (
 		Organization string `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {
-		*internal.Pagination
+		*resource.Pagination
 		Items []*Module
 	}
 )

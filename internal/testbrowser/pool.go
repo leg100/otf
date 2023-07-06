@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
@@ -80,6 +81,8 @@ func NewPool(secret []byte) (*Pool, func(), error) {
 }
 
 func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Action) {
+	t.Helper()
+
 	b := <-p.pool
 	if b == nil {
 		b = newBrowser(t, p.allocator)
@@ -87,13 +90,28 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 	// return browser back to pool after this method finishes
 	defer func() { p.pool <- b }()
 
-	err := chromedp.Run(b.ctx, chromedp.ActionFunc(func(c context.Context) error {
-		// Always clear cookies first in case a previous test has left some behind
+	// create a dedicated tab for test
+	tab, cancel := chromedp.NewContext(b.ctx)
+	defer cancel()
+
+	// click OK on any browser javascript dialog boxes that pop up
+	chromedp.ListenTarget(tab, func(ev any) {
+		switch ev.(type) {
+		case *page.EventJavascriptDialogOpening:
+			go func() {
+				err := chromedp.Run(tab, page.HandleJavaScriptDialog(true))
+				require.NoError(t, err)
+			}()
+		}
+	})
+
+	// because browser is being re-used, cookies are cleared and a new session
+	// is created for the calling user.
+	resetAction := chromedp.ActionFunc(func(c context.Context) error {
 		if err := network.ClearBrowserCookies().Do(c); err != nil {
 			return err
 		}
 		if user != nil {
-			// Seed a session cookie for the given user context
 			user, err := auth.UserFromContext(user)
 			if err != nil {
 				return err
@@ -106,12 +124,10 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 			if err != nil {
 				return err
 			}
-			return nil
 		}
 		return nil
-	}))
-	require.NoError(t, err)
-
-	err = chromedp.Run(b.ctx, actions...)
+	})
+	actions = append(chromedp.Tasks{resetAction}, actions...)
+	err := chromedp.Run(tab, actions...)
 	require.NoError(t, err)
 }

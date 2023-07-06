@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
@@ -135,12 +136,12 @@ func TestRun(t *testing.T) {
 		tests := []struct {
 			name string
 			opts run.RunListOptions
-			want func(*testing.T, *run.RunList)
+			want func(*testing.T, *resource.Page[*run.Run])
 		}{
 			{
 				name: "unfiltered",
 				opts: run.RunListOptions{},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					// may match runs in the db belonging to organizations outside
 					// of this test
 					assert.GreaterOrEqual(t, len(l.Items), 4)
@@ -153,7 +154,7 @@ func TestRun(t *testing.T) {
 			{
 				name: "by organization name",
 				opts: run.RunListOptions{Organization: internal.String(ws1.Organization)},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -162,7 +163,7 @@ func TestRun(t *testing.T) {
 			{
 				name: "by workspace id",
 				opts: run.RunListOptions{WorkspaceID: internal.String(ws1.ID)},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -171,7 +172,7 @@ func TestRun(t *testing.T) {
 			{
 				name: "by workspace name and organization",
 				opts: run.RunListOptions{WorkspaceName: internal.String(ws1.Name), Organization: internal.String(ws1.Organization)},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -180,7 +181,7 @@ func TestRun(t *testing.T) {
 			{
 				name: "by pending status",
 				opts: run.RunListOptions{Organization: internal.String(ws1.Organization), Statuses: []internal.RunStatus{internal.RunPending}},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					assert.Equal(t, 2, len(l.Items))
 					assert.Contains(t, l.Items, run1)
 					assert.Contains(t, l.Items, run2)
@@ -189,26 +190,26 @@ func TestRun(t *testing.T) {
 			{
 				name: "by statuses - no match",
 				opts: run.RunListOptions{Organization: internal.String(ws1.Organization), Statuses: []internal.RunStatus{internal.RunPlanned}},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					assert.Equal(t, 0, len(l.Items))
 				},
 			},
 			{
 				name: "filter out speculative runs in org1",
 				opts: run.RunListOptions{Organization: internal.String(ws1.Organization), PlanOnly: internal.Bool(false)},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					// org1 has no speculative runs, so should return both runs
 					assert.Equal(t, 2, len(l.Items))
-					assert.Equal(t, 2, l.TotalCount())
+					assert.Equal(t, 2, l.TotalCount)
 				},
 			},
 			{
 				name: "filter out speculative runs in org2",
 				opts: run.RunListOptions{Organization: internal.String(ws2.Organization), PlanOnly: internal.Bool(false)},
-				want: func(t *testing.T, l *run.RunList) {
+				want: func(t *testing.T, l *resource.Page[*run.Run]) {
 					// org2 only has speculative runs, so should return zero
 					assert.Equal(t, 0, len(l.Items))
-					assert.Equal(t, 0, l.TotalCount())
+					assert.Equal(t, 0, l.TotalCount)
 				},
 			},
 		}

@@ -26,10 +26,3 @@ func (m *jsonapiMarshaler) toNotificationConfig(from *notifications.Config) *typ
 	}
 	return to
 }
-
-func (m *jsonapiMarshaler) toNotificationList(from []*notifications.Config) (to []*types.NotificationConfiguration) {
-	for _, v := range from {
-		to = append(to, m.toNotificationConfig(v))
-	}
-	return
-}

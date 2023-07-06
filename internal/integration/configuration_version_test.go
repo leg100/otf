@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,15 +71,15 @@ func TestConfigurationVersion(t *testing.T) {
 			name        string
 			workspaceID string
 			opts        configversion.ConfigurationVersionListOptions
-			want        func(*testing.T, *configversion.ConfigurationVersionList, error)
+			want        func(*testing.T, *resource.Page[*configversion.ConfigurationVersion], error)
 		}{
 			{
 				name:        "no pagination",
 				workspaceID: ws.ID,
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 2, len(got.Items))
-					assert.Equal(t, 2, got.TotalCount())
+					assert.Equal(t, 2, got.TotalCount)
 					assert.Contains(t, got.Items, cv1)
 					assert.Contains(t, got.Items, cv2)
 				},
@@ -86,28 +87,28 @@ func TestConfigurationVersion(t *testing.T) {
 			{
 				name:        "pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: internal.ListOptions{PageNumber: 1, PageSize: 1}},
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 1, PageSize: 1}},
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					assert.Equal(t, 1, len(got.Items))
-					assert.Equal(t, 2, got.TotalCount())
+					assert.Equal(t, 2, got.TotalCount)
 				},
 			},
 			{
 				name:        "stray pagination",
 				workspaceID: ws.ID,
-				opts:        configversion.ConfigurationVersionListOptions{ListOptions: internal.ListOptions{PageNumber: 999, PageSize: 10}},
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				opts:        configversion.ConfigurationVersionListOptions{PageOptions: resource.PageOptions{PageNumber: 999, PageSize: 10}},
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					require.NoError(t, err)
 					// Zero items but total count should ignore pagination
 					assert.Equal(t, 0, len(got.Items))
-					assert.Equal(t, 2, got.TotalCount())
+					assert.Equal(t, 2, got.TotalCount)
 				},
 			},
 			{
 				name:        "query non-existent workspace",
 				workspaceID: "ws-non-existent",
-				want: func(t *testing.T, got *configversion.ConfigurationVersionList, err error) {
+				want: func(t *testing.T, got *resource.Page[*configversion.ConfigurationVersion], err error) {
 					assert.Equal(t, internal.ErrResourceNotFound, err)
 				},
 			},

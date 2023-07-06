@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -190,7 +191,7 @@ func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	return db.get(ctx, workspaceID)
 }
 
-func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -208,8 +209,8 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 		OrganizationNames: []string{organization},
 		Search:            sql.String(opts.Search),
 		Tags:              tags,
-		Limit:             sql.Int8(opts.GetLimit()),
-		Offset:            sql.Int8(opts.GetOffset()),
+		Limit:             opts.GetLimit(),
+		Offset:            opts.GetOffset(),
 	})
 	db.CountWorkspacesBatch(batch, pggen.CountWorkspacesParams{
 		Search:            sql.String(opts.Search),
@@ -237,10 +238,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*WorkspaceList, err
 		items = append(items, ws)
 	}
 
-	return &WorkspaceList{
-		Items:      items,
-		Pagination: internal.NewPagination(opts.ListOptions, int(count.Int)),
-	}, nil
+	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error) {
@@ -261,14 +259,14 @@ func (db *pgdb) listByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace
 	return items, nil
 }
 
-func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts internal.ListOptions) (*WorkspaceList, error) {
+func (db *pgdb) listByUsername(ctx context.Context, username string, organization string, opts resource.PageOptions) (*resource.Page[*Workspace], error) {
 	batch := &pgx.Batch{}
 
 	db.FindWorkspacesByUsernameBatch(batch, pggen.FindWorkspacesByUsernameParams{
 		OrganizationName: sql.String(organization),
 		Username:         sql.String(username),
-		Limit:            sql.Int8(opts.GetLimit()),
-		Offset:           sql.Int8(opts.GetOffset()),
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
 	})
 	db.CountWorkspacesByUsernameBatch(batch, sql.String(organization), sql.String(username))
 	results := db.SendBatch(ctx, batch)
@@ -292,10 +290,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 		items = append(items, ws)
 	}
 
-	return &WorkspaceList{
-		Items:      items,
-		Pagination: internal.NewPagination(opts, int(count.Int)),
-	}, nil
+	return resource.NewPage(items, opts, internal.Int64(count.Int)), nil
 }
 
 func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error) {

@@ -65,7 +65,7 @@ func (a *api) getOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts organization.OrganizationListOptions
+	var opts organization.ListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		Error(w, err)
 		return

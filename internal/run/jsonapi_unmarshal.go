@@ -4,6 +4,7 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -39,9 +40,9 @@ func newFromJSONAPI(from *types.Run) *Run {
 }
 
 // newListFromJSONAPI constructs a run list from a json:api struct
-func newListFromJSONAPI(from *types.RunList) *RunList {
-	to := RunList{
-		Pagination: internal.NewPaginationFromJSONAPI(from.Pagination),
+func newListFromJSONAPI(from *types.RunList) *resource.Page[*Run] {
+	to := resource.Page[*Run]{
+		Pagination: (*resource.Pagination)(from.Pagination),
 	}
 	for _, i := range from.Items {
 		to.Items = append(to.Items, newFromJSONAPI(i))

@@ -21,7 +21,7 @@ var (
 	sharedSecret []byte
 
 	// shared environment variables for individual tests to use
-	envs []string
+	sharedEnvs []string
 
 	// Context conferring site admin privileges
 	adminCtx = internal.AddSubjectToContext(context.Background(), &auth.SiteAdmin)
@@ -157,8 +157,16 @@ func setenv(name, value string) (func(), error) {
 	if err != nil {
 		return nil, fmt.Errorf("setting %s=%s: %w", name, value, err)
 	}
-	envs = append(envs, name+"="+value)
+	sharedEnvs = append(sharedEnvs, name+"="+value)
 	return func() {
 		os.Unsetenv(name)
 	}, nil
+}
+
+// appendSharedEnvs appends environment variables to the shared environment
+// variables in a thread-safe manner.
+func appendSharedEnvs(envs ...string) []string {
+	dst := make([]string, len(sharedEnvs)+len(envs))
+	copy(dst, sharedEnvs)
+	return append(dst, envs...)
 }

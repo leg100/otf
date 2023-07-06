@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -26,7 +27,7 @@ type (
 	Service interface {
 		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 		GetRun(ctx context.Context, id string) (*Run, error)
-		ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
+		ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error)
 		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
 		// StartPhase starts a run phase.
 		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error)
@@ -189,7 +190,7 @@ func (s *service) GetByID(ctx context.Context, runID string, action pubsub.DBAct
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error) {
+func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
 	var (
 		subject internal.Subject
 		authErr error
@@ -215,15 +216,15 @@ func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*RunList, 
 		return nil, authErr
 	}
 
-	rl, err := s.db.ListRuns(ctx, opts)
+	page, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing runs", "subject", subject)
 		return nil, err
 	}
 
-	s.V(9).Info("listed runs", "count", len(rl.Items), "subject", subject)
+	s.V(9).Info("listed runs", "count", len(page.Items), "subject", subject)
 
-	return rl, nil
+	return page, nil
 }
 
 // enqueuePlan enqueues a plan for the run.
