@@ -108,13 +108,10 @@ AND   organization_name = pggen.arg('organization_name')
 RETURNING tag_id
 ;
 
--- we set this to :exec and not return anything because there is a
--- statement-level after-trigger for delete operations, and the trigger returns
--- null, which would cause this delete statement to fail
---
--- name: DeleteWorkspaceTag :exec
+-- name: DeleteWorkspaceTag :one
 DELETE
 FROM workspace_tags
 WHERE workspace_id  = pggen.arg('workspace_id')
 AND   tag_id        = pggen.arg('tag_id')
+RETURNING tag_id
 ;
