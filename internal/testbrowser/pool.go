@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
@@ -89,7 +90,21 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 	// return browser back to pool after this method finishes
 	defer func() { p.pool <- b }()
 
-	err := chromedp.Run(b.ctx, chromedp.ActionFunc(func(c context.Context) error {
+	ctx, cancel := chromedp.NewContext(b.ctx)
+	defer cancel()
+
+	// Click OK on any browser javascript dialog boxes that pop up
+	chromedp.ListenTarget(ctx, func(ev any) {
+		switch ev.(type) {
+		case *page.EventJavascriptDialogOpening:
+			go func() {
+				err := chromedp.Run(ctx, page.HandleJavaScriptDialog(true))
+				require.NoError(t, err)
+			}()
+		}
+	})
+
+	err := chromedp.Run(ctx, chromedp.ActionFunc(func(c context.Context) error {
 		// Always clear cookies first in case a previous test has left some behind
 		if err := network.ClearBrowserCookies().Do(c); err != nil {
 			return err
@@ -113,6 +128,6 @@ func (p *Pool) Run(t *testing.T, user context.Context, actions ...chromedp.Actio
 	}))
 	require.NoError(t, err)
 
-	err = chromedp.Run(b.ctx, actions...)
+	err = chromedp.Run(ctx, actions...)
 	require.NoError(t, err)
 }
