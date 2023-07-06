@@ -14,6 +14,7 @@ import (
 
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/run"
@@ -23,6 +24,28 @@ var (
 	// map test name to a count of number of screenshots taken
 	screenshotRecord map[string]int
 	screenshotMutex  sync.Mutex
+
+	// waitLoaded waits for a page to be fully loaded - this is important for
+	// the OTF UI, because the execution alpine.js is deferred and once it
+	// executes it meddles with the DOM, and only once that has finished should
+	// actions such as chromedp.Click be invoked. Otherwise the dreaded "-32000
+	// node not found" error arises.
+	waitLoaded = chromedp.ActionFunc(func(ctx context.Context) error {
+		ch := make(chan struct{})
+		lctx, cancel := context.WithCancel(ctx)
+		chromedp.ListenTarget(lctx, func(ev interface{}) {
+			if _, ok := ev.(*page.EventLoadEventFired); ok {
+				cancel()
+				close(ch)
+			}
+		})
+		select {
+		case <-ch:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
 )
 
 // createWorkspace creates a workspace via the UI
@@ -32,10 +55,13 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(organizationURL(hostname, org)),
 		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
+		waitLoaded,
 		chromedp.Click("#new-workspace-button", chromedp.ByQuery),
+		waitLoaded,
 		chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText(name),
 		chromedp.Click("#create-workspace-button", chromedp.ByQuery),
+		waitLoaded,
 		matchText(t, ".flash-success", "created workspace: "+name, chromedp.ByQuery),
 	}
 }
