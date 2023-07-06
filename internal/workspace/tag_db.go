@@ -85,14 +85,6 @@ func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error
 	return nil
 }
 
-func (db *pgdb) deleteTag(ctx context.Context, tag *Tag) error {
-	_, err := db.DeleteTag(ctx, sql.String(tag.ID), sql.String(tag.Organization))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
-}
-
 func (db *pgdb) findTagByName(ctx context.Context, organization, name string) (*Tag, error) {
 	tag, err := db.FindTagByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
@@ -152,15 +144,4 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 	}
 
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
-}
-
-// lockTags tags table within a transaction, providing a callback within which
-// caller can use the transaction.
-func (db *pgdb) lockTags(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx internal.DB) error {
-		if _, err := tx.Exec(ctx, "LOCK TABLE tags IN EXCLUSIVE MODE"); err != nil {
-			return err
-		}
-		return callback(&pgdb{tx})
-	})
 }

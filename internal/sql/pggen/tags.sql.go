@@ -463,18 +463,16 @@ const deleteWorkspaceTagSQL = `DELETE
 FROM workspace_tags
 WHERE workspace_id  = $1
 AND   tag_id        = $2
-RETURNING tag_id
 ;`
 
 // DeleteWorkspaceTag implements Querier.DeleteWorkspaceTag.
-func (q *DBQuerier) DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceTag")
-	row := q.conn.QueryRow(ctx, deleteWorkspaceTagSQL, workspaceID, tagID)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query DeleteWorkspaceTag: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceTagSQL, workspaceID, tagID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query DeleteWorkspaceTag: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // DeleteWorkspaceTagBatch implements Querier.DeleteWorkspaceTagBatch.
@@ -483,11 +481,10 @@ func (q *DBQuerier) DeleteWorkspaceTagBatch(batch genericBatch, workspaceID pgty
 }
 
 // DeleteWorkspaceTagScan implements Querier.DeleteWorkspaceTagScan.
-func (q *DBQuerier) DeleteWorkspaceTagScan(results pgx.BatchResults) (pgtype.Text, error) {
-	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan DeleteWorkspaceTagBatch row: %w", err)
+func (q *DBQuerier) DeleteWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec DeleteWorkspaceTagBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }

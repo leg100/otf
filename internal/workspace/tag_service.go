@@ -134,7 +134,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 		return fmt.Errorf("workspace not found; %s; %w", workspaceID, err)
 	}
 
-	err = s.db.lockTags(ctx, func(tx *pgdb) (err error) {
+	err = func() error {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err
@@ -143,7 +143,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 
 			switch {
 			case t.Name != "":
-				tag, err = tx.findTagByName(ctx, ws.Organization, t.Name)
+				tag, err = s.db.findTagByName(ctx, ws.Organization, t.Name)
 				if errors.Is(err, internal.ErrResourceNotFound) {
 					// ignore tags that cannot be found when specified by name
 					continue
@@ -151,27 +151,19 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 					return err
 				}
 			case t.ID != "":
-				tag, err = tx.findTagByID(ctx, ws.Organization, t.ID)
+				tag, err = s.db.findTagByID(ctx, ws.Organization, t.ID)
 				if err != nil {
 					return err
 				}
 			default:
 				return ErrInvalidTagSpec
 			}
-			if err := tx.deleteWorkspaceTag(ctx, workspaceID, tag.ID); err != nil {
+			if err := s.db.deleteWorkspaceTag(ctx, workspaceID, tag.ID); err != nil {
 				return fmt.Errorf("removing tag %s from workspace %s: %w", tag.ID, workspaceID, err)
-			}
-			// Delete tag if it is no longer associated with any workspaces. If
-			// that is the case then instance count should be 1, since its last
-			// workspace has just been deleted.
-			if tag.InstanceCount == 1 {
-				if err := tx.deleteTag(ctx, tag); err != nil {
-					return fmt.Errorf("deleting tag: %w", err)
-				}
 			}
 		}
 		return nil
-	})
+	}()
 	if err != nil {
 		s.Error(err, "removing tags", "workspace", workspaceID, "tags", TagSpecs(tags), "subject", subject)
 		return err
@@ -200,43 +192,40 @@ func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]st
 	// (i) if specified by name, create new tag if it does not exist and get its ID.
 	// (ii) add tag to workspace
 	var added []string
-	err := db.lockTags(ctx, func(tx *pgdb) (err error) {
-		for _, t := range tags {
-			if err := t.Valid(); err != nil {
-				return fmt.Errorf("invalid tag: %w", err)
-			}
-
-			id := t.ID
-			name := t.Name
-			switch {
-			case name != "":
-				existing, err := tx.findTagByName(ctx, ws.Organization, name)
-				if errors.Is(err, internal.ErrResourceNotFound) {
-					id = internal.NewID("tag")
-					if err := tx.addTag(ctx, ws.Organization, name, id); err != nil {
-						return fmt.Errorf("adding tag: %s %w", name, err)
-					}
-				} else if err != nil {
-					return err
-				} else {
-					id = existing.ID
-				}
-			case id != "":
-				existing, err := tx.findTagByID(ctx, ws.Organization, t.ID)
-				if err != nil {
-					return err
-				}
-				name = existing.Name
-			default:
-				return ErrInvalidTagSpec
-			}
-
-			if err := tx.tagWorkspace(ctx, ws.ID, id); err != nil {
-				return err
-			}
-			added = append(added, name)
+	for _, t := range tags {
+		if err := t.Valid(); err != nil {
+			return nil, fmt.Errorf("invalid tag: %w", err)
 		}
-		return nil
-	})
-	return added, err
+
+		id := t.ID
+		name := t.Name
+		switch {
+		case name != "":
+			existing, err := db.findTagByName(ctx, ws.Organization, name)
+			if errors.Is(err, internal.ErrResourceNotFound) {
+				id = internal.NewID("tag")
+				if err := db.addTag(ctx, ws.Organization, name, id); err != nil {
+					return nil, fmt.Errorf("adding tag: %s %w", name, err)
+				}
+			} else if err != nil {
+				return nil, err
+			} else {
+				id = existing.ID
+			}
+		case id != "":
+			existing, err := db.findTagByID(ctx, ws.Organization, t.ID)
+			if err != nil {
+				return nil, err
+			}
+			name = existing.Name
+		default:
+			return nil, ErrInvalidTagSpec
+		}
+
+		if err := db.tagWorkspace(ctx, ws.ID, id); err != nil {
+			return nil, err
+		}
+		added = append(added, name)
+	}
+	return added, nil
 }

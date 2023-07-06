@@ -678,12 +678,16 @@ type Querier interface {
 	// DeleteTagScan scans the result of an executed DeleteTagBatch query.
 	DeleteTagScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgtype.Text, error)
+	// we set this to :exec and not return anything because there is a
+	// statement-level after-trigger for delete operations, and the trigger returns
+	// null, which would cause this delete statement to fail
+	//
+	DeleteWorkspaceTag(ctx context.Context, workspaceID pgtype.Text, tagID pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspaceTagBatch enqueues a DeleteWorkspaceTag query into batch to be executed
 	// later by the batch.
 	DeleteWorkspaceTagBatch(batch genericBatch, workspaceID pgtype.Text, tagID pgtype.Text)
 	// DeleteWorkspaceTagScan scans the result of an executed DeleteWorkspaceTagBatch query.
-	DeleteWorkspaceTagScan(results pgx.BatchResults) (pgtype.Text, error)
+	DeleteWorkspaceTagScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error)
 	// InsertTeamBatch enqueues a InsertTeam query into batch to be executed

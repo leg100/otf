@@ -63,10 +63,10 @@ resource "null_resource" "tags_e2e" {}
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(got.Items))
-	if assert.Equal(t, 2, len(got.Items[0].Tags)) {
-		assert.Contains(t, got.Items[0].Tags, "foo")
-		assert.Contains(t, got.Items[0].Tags, "bar")
-	}
+	ws := got.Items[0]
+	require.Equal(t, 2, len(ws.Tags))
+	require.Contains(t, ws.Tags, "foo")
+	require.Contains(t, ws.Tags, "bar")
 
 	// test UI management of tags
 	browser.Run(t, ctx, chromedp.Tasks{
@@ -99,4 +99,18 @@ resource "null_resource" "tags_e2e" {}
 		// confirm workspace listing contains tagged workspace
 		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`),
 	})
+
+	// should be tags 'foo' and 'baz'
+	tags, err := daemon.ListTags(ctx, org.Name, workspace.ListTagsOptions{})
+	require.NoError(t, err)
+	assert.Len(t, tags.Items, 2)
+
+	// demonstrate deleting the workspace also deletes the tags from the system
+	_, err = daemon.DeleteWorkspace(ctx, ws.ID)
+	require.NoError(t, err)
+
+	// should be no tags
+	tags, err = daemon.ListTags(ctx, org.Name, workspace.ListTagsOptions{})
+	require.NoError(t, err)
+	assert.Len(t, tags.Items, 0)
 }
