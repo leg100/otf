@@ -61,19 +61,11 @@ func NewPhase(runID string, t internal.PhaseType) Phase {
 }
 
 func (p *Phase) HasChanges() bool {
-	if p.ResourceReport != nil {
-		if p.ResourceReport.HasChanges() {
-			return true
-		}
-	}
-	if p.OutputReport != nil {
-		if p.OutputReport.HasChanges() {
-			return true
-		}
-	}
-	// no report has been published yet, which means there are no proposed
-	// changes yet.
-	return false
+	var (
+		hasResourceChanges = p.ResourceReport != nil && p.ResourceReport.HasChanges()
+		hasOutputChanges   = p.OutputReport != nil && p.OutputReport.HasChanges()
+	)
+	return hasResourceChanges || hasOutputChanges
 }
 
 // StatusTimestamp looks up the timestamp for a status
