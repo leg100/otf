@@ -1,4 +1,11 @@
 -- +goose Up
+-- remove existing unreferenced tags
+DELETE
+FROM tags
+WHERE NOT EXISTS (
+    SELECT FROM workspace_tags wt
+    WHERE wt.tag_id = tags.tag_id
+);
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION delete_tags() RETURNS TRIGGER AS $$
 BEGIN
