@@ -283,7 +283,8 @@ func (s *testDaemon) createAndUploadConfigurationVersion(t *testing.T, ctx conte
 	cv := s.createConfigurationVersion(t, ctx, ws, opts)
 	tarball, err := os.ReadFile("./testdata/root.tar.gz")
 	require.NoError(t, err)
-	s.UploadConfig(ctx, cv.ID, tarball)
+	err = s.UploadConfig(ctx, cv.ID, tarball)
+	require.NoError(t, err)
 	return cv
 }
 

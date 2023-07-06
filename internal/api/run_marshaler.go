@@ -186,7 +186,7 @@ func (m *jsonapiMarshaler) toApply(apply run.Phase, r *http.Request) (*types.App
 	}, nil
 }
 
-func (m *jsonapiMarshaler) toResourceReport(from *run.ResourceReport) types.ResourceReport {
+func (m *jsonapiMarshaler) toResourceReport(from *run.Report) types.ResourceReport {
 	var to types.ResourceReport
 	if from != nil {
 		to.Additions = &from.Additions

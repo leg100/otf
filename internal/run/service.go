@@ -62,10 +62,6 @@ type (
 		DiscardRun(ctx context.Context, runID string) error
 		// ForceCancelRun forcefully cancels a run.
 		ForceCancelRun(ctx context.Context, runID string) error
-		// createReport creates a report of changes for the phase.
-		createReport(ctx context.Context, runID string, phase internal.PhaseType) (ResourceReport, error)
-		createPlanReport(ctx context.Context, runID string) (ResourceReport, error)
-		createApplyReport(ctx context.Context, runID string) (ResourceReport, error)
 
 		lockFileService
 
@@ -312,10 +308,10 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		return nil, err
 	}
 
-	var report ResourceReport
+	var resourceReport, outputReport Report
 	if !opts.Errored {
 		var err error
-		report, err = s.createReport(ctx, runID, phase)
+		resourceReport, outputReport, err = s.createReports(ctx, runID, phase)
 		if err != nil {
 			s.Error(err, "creating report", "id", runID, "phase", phase, "subject", subject)
 			opts.Errored = true
@@ -328,7 +324,7 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		s.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID, "report", report, "subject", subject)
+	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject)
 	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
@@ -522,44 +518,45 @@ func (s *service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 	return nil
 }
 
-// createReport creates a report of changes for the phase.
-func (s *service) createReport(ctx context.Context, runID string, phase internal.PhaseType) (ResourceReport, error) {
+// createReports creates reports of changes for the phase.
+func (s *service) createReports(ctx context.Context, runID string, phase internal.PhaseType) (resource Report, output Report, err error) {
 	switch phase {
 	case internal.PlanPhase:
-		return s.createPlanReport(ctx, runID)
+		resource, output, err = s.createPlanReports(ctx, runID)
 	case internal.ApplyPhase:
-		return s.createApplyReport(ctx, runID)
+		resource, err = s.createApplyReport(ctx, runID)
 	default:
-		return ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
+		return Report{}, Report{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
 	}
+	return resource, output, err
 }
 
-func (s *service) createPlanReport(ctx context.Context, runID string) (ResourceReport, error) {
+func (s *service) createPlanReports(ctx context.Context, runID string) (resources Report, outputs Report, err error) {
 	plan, err := s.GetPlanFile(ctx, runID, PlanFormatJSON)
 	if err != nil {
-		return ResourceReport{}, err
+		return Report{}, Report{}, err
 	}
-	report, err := CompilePlanReport(plan)
+	resourceReport, outputReport, err := CompilePlanReports(plan)
 	if err != nil {
-		return ResourceReport{}, err
+		return Report{}, Report{}, err
 	}
-	if err := s.db.CreatePlanReport(ctx, runID, report); err != nil {
-		return ResourceReport{}, err
+	if err := s.db.CreatePlanReport(ctx, runID, resourceReport, outputReport); err != nil {
+		return Report{}, Report{}, err
 	}
-	return report, nil
+	return resourceReport, outputReport, nil
 }
 
-func (s *service) createApplyReport(ctx context.Context, runID string) (ResourceReport, error) {
+func (s *service) createApplyReport(ctx context.Context, runID string) (Report, error) {
 	logs, err := s.db.GetLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
-		return ResourceReport{}, err
+		return Report{}, err
 	}
 	report, err := ParseApplyOutput(string(logs))
 	if err != nil {
-		return ResourceReport{}, err
+		return Report{}, err
 	}
 	if err := s.db.CreateApplyReport(ctx, runID, report); err != nil {
-		return ResourceReport{}, err
+		return Report{}, err
 	}
 	return report, nil
 }

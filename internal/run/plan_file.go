@@ -13,7 +13,8 @@ const (
 type (
 	// PlanFile represents the schema of a plan file
 	PlanFile struct {
-		ResourceChanges []ResourceChange `json:"resource_changes"`
+		ResourceChanges []ResourceChange  `json:"resource_changes"`
+		OutputChanges   map[string]Change `json:"output_changes"`
 	}
 
 	// PlanFileOptions are options for the plan file API
@@ -34,17 +35,29 @@ type (
 	ChangeAction string
 )
 
-// Changes provides a tally of the types of changes proposed in the plan file.
-func (pf *PlanFile) Changes() (tally ResourceReport) {
+// Summarize provides a tally of the types of changes proposed in the plan file.
+func (pf *PlanFile) Summarize() (resource, output Report) {
 	for _, rc := range pf.ResourceChanges {
 		for _, action := range rc.Change.Actions {
 			switch action {
 			case CreateAction:
-				tally.Additions++
+				resource.Additions++
 			case UpdateAction:
-				tally.Changes++
+				resource.Changes++
 			case DeleteAction:
-				tally.Destructions++
+				resource.Destructions++
+			}
+		}
+	}
+	for _, rc := range pf.OutputChanges {
+		for _, action := range rc.Actions {
+			switch action {
+			case CreateAction:
+				output.Additions++
+			case UpdateAction:
+				output.Changes++
+			case DeleteAction:
+				output.Destructions++
 			}
 		}
 	}
@@ -52,14 +65,15 @@ func (pf *PlanFile) Changes() (tally ResourceReport) {
 	return
 }
 
-// CompilePlanReport compiles a report of planned changes from a JSON
-// representation of a plan file.
-func CompilePlanReport(planJSON []byte) (ResourceReport, error) {
+// CompilePlanReports compiles reports of planned changes from a JSON
+// representation of a plan file: one report for planned *resources*, and
+// another for planned *outputs*.
+func CompilePlanReports(planJSON []byte) (resources Report, outputs Report, err error) {
 	planFile := PlanFile{}
 	if err := json.Unmarshal(planJSON, &planFile); err != nil {
-		return ResourceReport{}, err
+		return Report{}, Report{}, err
 	}
 
-	// Parse plan output
-	return planFile.Changes(), nil
+	resources, outputs = planFile.Summarize()
+	return resources, outputs, nil
 }
