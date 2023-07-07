@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type (
@@ -41,7 +42,7 @@ type (
 	Options struct {
 		logr.Logger
 		internal.Cache
-		internal.DB
+		*sql.DB
 		*pubsub.Broker
 		internal.Verifier
 

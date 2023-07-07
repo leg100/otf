@@ -80,15 +80,6 @@ func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 	return db.unmarshal(hookRow(result))
 }
 
-func (db *db) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
-	q := db.Conn(ctx)
-	result, err := q.FindWebhookByIDForUpdate(ctx, sql.UUID(id))
-	if err != nil {
-		return nil, sql.Error(err)
-	}
-	return db.unmarshal(hookRow(result))
-}
-
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
 	q := db.Conn(ctx)
 	_, err := q.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))

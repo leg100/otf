@@ -45,7 +45,7 @@ type (
 		Config
 		logr.Logger
 
-		internal.DB
+		*sql.DB
 		*pubsub.Broker
 
 		agent process
@@ -461,7 +461,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
-				DB:               d.DB,
 				Subscriber:       d,
 			}),
 		})

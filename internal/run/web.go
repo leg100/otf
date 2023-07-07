@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -21,8 +20,6 @@ type (
 	webHandlers struct {
 		html.Renderer
 		WorkspaceService
-
-		db pggen.Querier
 
 		logger  logr.Logger
 		starter runStarter

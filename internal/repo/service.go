@@ -64,7 +64,7 @@ func NewService(opts Options) *service {
 		db:           db,
 		factory:      factory,
 		handler:      handler,
-		synchroniser: &synchroniser{Logger: opts.Logger},
+		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
 	}
 }
 

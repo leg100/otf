@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,8 +57,9 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	)
 }
 
-func newTestDB(t *testing.T) *db {
+func newTestDB(t *testing.T, sqldb *sql.DB) *db {
 	return &db{
+		DB: sqldb,
 		factory: factory{
 			Service:         fakeCloudService{},
 			HostnameService: fakeHostnameService{},
@@ -90,10 +92,6 @@ func (f *fakeCloudClient) UpdateWebhook(context.Context, string, cloud.UpdateWeb
 	f.gotUpdate = true
 
 	return nil
-}
-
-func (f *fakeDB) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
-	return f.hook, nil
 }
 
 func (f *fakeDB) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {

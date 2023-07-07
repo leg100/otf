@@ -8,6 +8,8 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 var (
@@ -19,7 +21,20 @@ type (
 	// factory creates state versions - creation requires pre-requisite checking
 	// with the db, hence necessity for a factory.
 	factory struct {
-		db db
+		db factoryDB
+	}
+
+	factoryDB interface {
+		Tx(context.Context, func(context.Context, pggen.Querier) error) error
+
+		createVersion(context.Context, *Version) error
+		listVersions(context.Context, string, resource.PageOptions) (*resource.Page[*Version], error)
+		getVersion(ctx context.Context, svID string) (*Version, error)
+		getCurrentVersion(ctx context.Context, workspaceID string) (*Version, error)
+		getState(ctx context.Context, versionID string) ([]byte, error)
+		getOutput(ctx context.Context, outputID string) (*Output, error)
+		updateCurrentVersion(context.Context, string, string) error
+		deleteVersion(ctx context.Context, versionID string) error
 	}
 
 	// newVersionOptions are options for constructing a state version - options
@@ -31,7 +46,7 @@ type (
 	}
 )
 
-func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
+func (f *factory) create(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
 	if opts.State == nil {
 		return nil, &internal.MissingParameterError{Parameter: "state"}
 	}
@@ -39,8 +54,8 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 		return nil, &internal.MissingParameterError{Parameter: "workspace_id"}
 	}
 
-	var f File
-	if err := json.Unmarshal(opts.State, &f); err != nil {
+	var file File
+	if err := json.Unmarshal(opts.State, &file); err != nil {
 		return nil, err
 	}
 
@@ -50,11 +65,11 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 	if opts.Serial != nil {
 		serial = *opts.Serial
 	} else {
-		serial = f.Serial
+		serial = file.Serial
 	}
 
 	// Serial should be greater than or equal to current serial
-	current, err := fa.db.getCurrentVersion(ctx, *opts.WorkspaceID)
+	current, err := f.db.getCurrentVersion(ctx, *opts.WorkspaceID)
 	if errors.Is(err, internal.ErrResourceNotFound) {
 		// this is the first state version for workspace, so set current serial
 		// to a negative number to ensure tests below succeed.
@@ -82,27 +97,27 @@ func (fa *factory) create(ctx context.Context, opts CreateStateVersionOptions) (
 		return nil, err
 	}
 
-	if err := fa.createCurrent(ctx, &sv); err != nil {
+	if err := f.createCurrent(ctx, &sv); err != nil {
 		return nil, err
 	}
 	return &sv, nil
 }
 
 // Create a state version and update workspace's current state version.
-func (fa *factory) createCurrent(ctx context.Context, sv *Version) error {
-	return fa.db.tx(ctx, func(tx db) error {
-		if err := tx.createVersion(ctx, sv); err != nil {
+func (f *factory) createCurrent(ctx context.Context, sv *Version) error {
+	return f.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		if err := f.db.createVersion(ctx, sv); err != nil {
 			return err
 		}
-		if err := tx.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
+		if err := f.db.updateCurrentVersion(ctx, sv.WorkspaceID, sv.ID); err != nil {
 			return fmt.Errorf("updating current version: %w", err)
 		}
 		return nil
 	})
 }
 
-func (fa *factory) rollback(ctx context.Context, svID string) (*Version, error) {
-	sv, err := fa.db.getVersion(ctx, svID)
+func (f *factory) rollback(ctx context.Context, svID string) (*Version, error) {
+	sv, err := f.db.getVersion(ctx, svID)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +125,7 @@ func (fa *factory) rollback(ctx context.Context, svID string) (*Version, error) 
 	if err != nil {
 		return nil, err
 	}
-	if err := fa.createCurrent(ctx, clone); err != nil {
+	if err := f.createCurrent(ctx, clone); err != nil {
 		return nil, err
 	}
 	return clone, nil

@@ -15,6 +15,8 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/semver"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/surl"
 )
@@ -59,7 +61,7 @@ type (
 	Options struct {
 		logr.Logger
 
-		internal.DB
+		*sql.DB
 		internal.HostnameService
 		vcsprovider.VCSProviderService
 		*surl.Signer
@@ -131,8 +133,8 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 	})
 
 	// persist module to db and connect to repository
-	err = s.db.tx(ctx, func(tx *pgdb) error {
-		if err := tx.createModule(ctx, mod); err != nil {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+		if err := s.db.createModule(ctx, mod); err != nil {
 			return err
 		}
 		connection, err := s.repo.Connect(ctx, repo.ConnectOptions{
@@ -140,7 +142,6 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 			ResourceID:     mod.ID,
 			VCSProviderID:  opts.VCSProviderID,
 			RepoPath:       string(opts.Repo),
-			Tx:             tx,
 		})
 		if err != nil {
 			return err
@@ -299,19 +300,18 @@ func (s *service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 		return nil, err
 	}
 
-	err = s.db.tx(ctx, func(tx *pgdb) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
 			err := s.repo.Disconnect(ctx, repo.DisconnectOptions{
 				ConnectionType: repo.ModuleConnection,
 				ResourceID:     module.ID,
-				Tx:             tx,
 			})
 			if err != nil {
 				return err
 			}
 		}
-		return tx.delete(ctx, id)
+		return s.db.delete(ctx, id)
 	})
 	if err != nil {
 		s.Error(err, "deleting module", "subject", subject, "module", module)
@@ -378,11 +378,11 @@ func (s *service) uploadVersion(ctx context.Context, versionID string, tarball [
 	}
 
 	// save tarball, set status, and make it the latest version
-	err = s.db.tx(ctx, func(tx *pgdb) error {
-		if err := tx.saveTarball(ctx, versionID, tarball); err != nil {
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		if err := s.db.saveTarball(ctx, versionID, tarball); err != nil {
 			return err
 		}
-		err = tx.updateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
+		err = s.db.updateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
 			ID:     versionID,
 			Status: ModuleVersionStatusOK,
 		})
@@ -391,7 +391,7 @@ func (s *service) uploadVersion(ctx context.Context, versionID string, tarball [
 		}
 		// re-retrieve module so that includes the above version with updated
 		// status
-		module, err = tx.getModuleByID(ctx, module.ID)
+		module, err = s.db.getModuleByID(ctx, module.ID)
 		if err != nil {
 			return err
 		}

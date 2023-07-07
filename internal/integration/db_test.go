@@ -26,7 +26,7 @@ func TestWaitAndLock(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		func() {
-			err := db.WaitAndLock(ctx, 123, func() error { return nil })
+			err := db.WaitAndLock(ctx, 123, func(context.Context) error { return nil })
 			require.NoError(t, err)
 		}()
 	}
