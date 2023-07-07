@@ -4,34 +4,17 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-// db is a database of variables
-type db interface {
-	internal.DB
-
-	create(ctx context.Context, variable *Variable) error
-	list(ctx context.Context, workspaceID string) ([]*Variable, error)
-	get(ctx context.Context, variableID string) (*Variable, error)
-	update(ctx context.Context, variableID string, updateFn func(*Variable) error) (*Variable, error)
-	delete(ctx context.Context, variableID string) (*Variable, error)
-	tx(context.Context, func(db) error) error
-}
-
 // pgdb is a database of variables on postgres
 type pgdb struct {
-	internal.DB // provides access to generated SQL queries
-}
-
-func newPGDB(db internal.DB) *pgdb {
-	return &pgdb{db}
+	*sql.DB // provides access to generated SQL queries
 }
 
 func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
-	_, err := pdb.InsertVariable(ctx, pggen.InsertVariableParams{
+	_, err := pdb.Conn(ctx).InsertVariable(ctx, pggen.InsertVariableParams{
 		VariableID:  sql.String(v.ID),
 		Key:         sql.String(v.Key),
 		Value:       sql.String(v.Value),
@@ -49,9 +32,9 @@ func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
 
 func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variable) error) (*Variable, error) {
 	var variable *Variable
-	err := pdb.tx(ctx, func(tx db) error {
+	err := pdb.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		// retrieve variable
-		row, err := tx.FindVariableForUpdate(ctx, sql.String(variableID))
+		row, err := q.FindVariableForUpdate(ctx, sql.String(variableID))
 		if err != nil {
 			return err
 		}
@@ -62,7 +45,7 @@ func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variabl
 			return err
 		}
 		// persist variable
-		_, err = tx.UpdateVariableByID(ctx, pggen.UpdateVariableByIDParams{
+		_, err = q.UpdateVariableByID(ctx, pggen.UpdateVariableByIDParams{
 			VariableID:  sql.String(variableID),
 			Key:         sql.String(variable.Key),
 			Value:       sql.String(variable.Value),
@@ -77,7 +60,7 @@ func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variabl
 }
 
 func (pdb *pgdb) list(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	rows, err := pdb.FindVariables(ctx, sql.String(workspaceID))
+	rows, err := pdb.Conn(ctx).FindVariables(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -90,7 +73,7 @@ func (pdb *pgdb) list(ctx context.Context, workspaceID string) ([]*Variable, err
 }
 
 func (pdb *pgdb) get(ctx context.Context, variableID string) (*Variable, error) {
-	row, err := pdb.FindVariable(ctx, sql.String(variableID))
+	row, err := pdb.Conn(ctx).FindVariable(ctx, sql.String(variableID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -99,18 +82,11 @@ func (pdb *pgdb) get(ctx context.Context, variableID string) (*Variable, error) 
 }
 
 func (pdb *pgdb) delete(ctx context.Context, variableID string) (*Variable, error) {
-	row, err := pdb.DeleteVariableByID(ctx, sql.String(variableID))
+	row, err := pdb.Conn(ctx).DeleteVariableByID(ctx, sql.String(variableID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return pgRow(row).toVariable(), nil
-}
-
-// tx constructs a new pgdb within a transaction.
-func (pdb *pgdb) tx(ctx context.Context, callback func(db) error) error {
-	return pdb.Tx(ctx, func(tx internal.DB) error {
-		return callback(newPGDB(tx))
-	})
 }
 
 type pgRow struct {

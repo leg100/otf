@@ -12,9 +12,9 @@ import (
 // toggleLock toggles the workspace lock state in the DB.
 func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn func(*Workspace) error) (*Workspace, error) {
 	var ws *Workspace
-	err := db.tx(ctx, func(tx *pgdb) error {
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		// retrieve workspace
-		result, err := tx.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
 			return err
 		}
@@ -41,12 +41,11 @@ func (db *pgdb) toggleLock(ctx context.Context, workspaceID string, togglefn fun
 		} else {
 			return internal.ErrWorkspaceInvalidLock
 		}
-		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
+		_, err = q.UpdateWorkspaceLockByID(ctx, params)
 		if err != nil {
 			return sql.Error(err)
 		}
 		return nil
 	})
-	// return ws with new lock
 	return ws, err
 }

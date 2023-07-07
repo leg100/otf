@@ -15,16 +15,16 @@ type (
 	// synchroniser synchronises a hook with the vcs provider
 	synchroniser struct {
 		logr.Logger
+		syncdb
 	}
 
-	db interface {
-		getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error)
+	syncdb interface {
 		updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error
 	}
 )
 
 // sync should be called from within a tx to avoid inconsistent results.
-func (s *synchroniser) sync(ctx context.Context, db db, client cloud.Client, hook *hook) error {
+func (s *synchroniser) sync(ctx context.Context, client cloud.Client, hook *hook) error {
 	createAndSync := func() error {
 		cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
 			Repo:     hook.identifier,
@@ -36,7 +36,7 @@ func (s *synchroniser) sync(ctx context.Context, db db, client cloud.Client, hoo
 			return err
 		}
 		s.Info("created webhook", "webhook", hook)
-		if err := db.updateHookCloudID(ctx, hook.id, cloudID); err != nil {
+		if err := s.updateHookCloudID(ctx, hook.id, cloudID); err != nil {
 			return err
 		}
 		return nil

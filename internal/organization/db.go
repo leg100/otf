@@ -15,7 +15,7 @@ import (
 type (
 	// pgdb is a database of organizations on postgres
 	pgdb struct {
-		internal.DB // provides access to generated SQL queries
+		*sql.DB // provides access to generated SQL queries
 	}
 
 	row struct {
@@ -43,7 +43,7 @@ func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) 
 	if action == pubsub.DeleteDBAction {
 		return &Organization{ID: id}, nil
 	}
-	r, err := db.FindOrganizationByID(ctx, sql.String(id))
+	r, err := db.Conn(ctx).FindOrganizationByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -52,8 +52,8 @@ func (db *pgdb) GetByID(ctx context.Context, id string, action pubsub.DBAction) 
 
 func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error) {
 	var org *Organization
-	err := db.Tx(ctx, func(tx internal.DB) error {
-		result, err := tx.FindOrganizationByNameForUpdate(ctx, sql.String(name))
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		result, err := q.FindOrganizationByNameForUpdate(ctx, sql.String(name))
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 		if err := fn(org); err != nil {
 			return err
 		}
-		_, err = tx.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
+		_, err = q.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
 			Name:                       sql.String(name),
 			NewName:                    sql.String(org.Name),
 			Email:                      sql.StringPtr(org.Email),
@@ -81,26 +81,27 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 }
 
 func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*Organization], error) {
+	q := db.Conn(ctx)
 	if opts.names == nil {
 		opts.names = []string{"%"} // return all organizations
 	}
 
 	batch := &pgx.Batch{}
 
-	db.FindOrganizationsBatch(batch, pggen.FindOrganizationsParams{
+	q.FindOrganizationsBatch(batch, pggen.FindOrganizationsParams{
 		Names:  opts.names,
 		Limit:  opts.GetLimit(),
 		Offset: opts.GetOffset(),
 	})
-	db.CountOrganizationsBatch(batch, opts.names)
+	q.CountOrganizationsBatch(batch, opts.names)
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindOrganizationsScan(results)
+	rows, err := q.FindOrganizationsScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := db.CountOrganizationsScan(results)
+	count, err := q.CountOrganizationsScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func (db *pgdb) list(ctx context.Context, opts dbListOptions) (*resource.Page[*O
 }
 
 func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
-	r, err := db.FindOrganizationByName(ctx, sql.String(name))
+	r, err := db.Conn(ctx).FindOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -122,7 +123,7 @@ func (db *pgdb) get(ctx context.Context, name string) (*Organization, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context, name string) error {
-	_, err := db.DeleteOrganizationByName(ctx, sql.String(name))
+	_, err := db.Conn(ctx).DeleteOrganizationByName(ctx, sql.String(name))
 	if err != nil {
 		return sql.Error(err)
 	}

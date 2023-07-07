@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type (
@@ -43,7 +44,7 @@ type (
 
 	Options struct {
 		CloudService
-		internal.DB
+		*sql.DB
 		html.Renderer
 		logr.Logger
 	}

@@ -76,7 +76,7 @@ func JSON(b []byte) pgtype.JSON {
 func Error(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
-	case noRowsInResultError(err):
+	case NoRowsInResultError(err):
 		return internal.ErrResourceNotFound
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
@@ -91,7 +91,7 @@ func Error(err error) error {
 	}
 }
 
-func noRowsInResultError(err error) bool {
+func NoRowsInResultError(err error) bool {
 	for {
 		err = errors.Unwrap(err)
 		if err == nil {

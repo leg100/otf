@@ -21,8 +21,6 @@ type (
 		html.Renderer
 		WorkspaceService
 
-		logsdb
-
 		logger  logr.Logger
 		starter runStarter
 		svc     Service
@@ -30,10 +28,6 @@ type (
 
 	runStarter interface {
 		startRun(ctx context.Context, workspaceID string, op Operation) (*Run, error)
-	}
-
-	logsdb interface {
-		GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 	}
 )
 
@@ -150,12 +144,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.GetLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := h.svc.getLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.GetLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := h.svc.getLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -66,6 +67,8 @@ type (
 		lockFileService
 
 		internal.Authorizer // run authorizer
+
+		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 	}
 
 	service struct {
@@ -95,7 +98,7 @@ type (
 
 		logr.Logger
 		internal.Cache
-		internal.DB
+		*sql.DB
 		html.Renderer
 		*pubsub.Broker
 	}
@@ -125,7 +128,6 @@ func NewService(opts Options) *service {
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
 		WorkspaceService: opts.WorkspaceService,
-		logsdb:           db,
 		logger:           opts.Logger,
 		svc:              &svc,
 	}
@@ -547,7 +549,7 @@ func (s *service) createPlanReports(ctx context.Context, runID string) (resource
 }
 
 func (s *service) createApplyReport(ctx context.Context, runID string) (Report, error) {
-	logs, err := s.db.GetLogs(ctx, runID, internal.ApplyPhase)
+	logs, err := s.getLogs(ctx, runID, internal.ApplyPhase)
 	if err != nil {
 		return Report{}, err
 	}
@@ -559,4 +561,17 @@ func (s *service) createApplyReport(ctx context.Context, runID string) (Report, 
 		return Report{}, err
 	}
 	return report, nil
+}
+
+func (s *service) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+	data, err := s.db.Conn(ctx).FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
+	if err != nil {
+		// Don't consider no rows an error because logs may not have been
+		// uploaded yet.
+		if sql.NoRowsInResultError(err) {
+			return nil, nil
+		}
+		return nil, sql.Error(err)
+	}
+	return data, nil
 }

@@ -34,7 +34,6 @@ type (
 
 	Options struct {
 		logr.Logger
-		internal.DB
 		pubsub.Subscriber
 
 		WorkspaceService

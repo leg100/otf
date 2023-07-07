@@ -5,15 +5,14 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 // CreateUser persists a User to the DB.
 func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
-	return db.Tx(ctx, func(tx internal.DB) error {
-		_, err := tx.InsertUser(ctx, pggen.InsertUserParams{
+	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		_, err := q.InsertUser(ctx, pggen.InsertUserParams{
 			ID:        sql.String(user.ID),
 			Username:  sql.String(user.Username),
 			CreatedAt: sql.Timestamptz(user.CreatedAt),
@@ -23,7 +22,7 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 			return sql.Error(err)
 		}
 		for _, team := range user.Teams {
-			_, err = tx.InsertTeamMembership(ctx, []string{user.Username}, sql.String(team.ID))
+			_, err = q.InsertTeamMembership(ctx, []string{user.Username}, sql.String(team.ID))
 			if err != nil {
 				return sql.Error(err)
 			}
@@ -33,7 +32,7 @@ func (db *pgdb) CreateUser(ctx context.Context, user *User) error {
 }
 
 func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
-	result, err := db.FindUsers(ctx)
+	result, err := db.Conn(ctx).FindUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +44,7 @@ func (db *pgdb) listUsers(ctx context.Context) ([]*User, error) {
 }
 
 func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) ([]*User, error) {
-	result, err := db.FindUsersByOrganization(ctx, sql.String(organization))
+	result, err := db.Conn(ctx).FindUsersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +56,7 @@ func (db *pgdb) listOrganizationUsers(ctx context.Context, organization string) 
 }
 
 func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, error) {
-	result, err := db.FindUsersByTeamID(ctx, sql.String(teamID))
+	result, err := db.Conn(ctx).FindUsersByTeamID(ctx, sql.String(teamID))
 	if err != nil {
 		return nil, err
 	}
@@ -72,19 +71,19 @@ func (db *pgdb) listTeamMembers(ctx context.Context, teamID string) ([]*User, er
 // getUser retrieves a user from the DB, along with its sessions.
 func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 	if spec.UserID != nil {
-		result, err := db.FindUserByID(ctx, sql.String(*spec.UserID))
+		result, err := db.Conn(ctx).FindUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {
 			return nil, err
 		}
 		return userRow(result).toUser(), nil
 	} else if spec.Username != nil {
-		result, err := db.FindUserByUsername(ctx, sql.String(*spec.Username))
+		result, err := db.Conn(ctx).FindUserByUsername(ctx, sql.String(*spec.Username))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return userRow(result).toUser(), nil
 	} else if spec.AuthenticationTokenID != nil {
-		result, err := db.FindUserByAuthenticationTokenID(ctx, sql.String(*spec.AuthenticationTokenID))
+		result, err := db.Conn(ctx).FindUserByAuthenticationTokenID(ctx, sql.String(*spec.AuthenticationTokenID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -95,7 +94,7 @@ func (db *pgdb) getUser(ctx context.Context, spec UserSpec) (*User, error) {
 }
 
 func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
-	_, err := db.InsertTeamMembership(ctx, usernames, sql.String(teamID))
+	_, err := db.Conn(ctx).InsertTeamMembership(ctx, usernames, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -103,7 +102,7 @@ func (db *pgdb) addTeamMembership(ctx context.Context, teamID string, usernames 
 }
 
 func (db *pgdb) removeTeamMembership(ctx context.Context, teamID string, usernames ...string) error {
-	_, err := db.DeleteTeamMembership(ctx, usernames, sql.String(teamID))
+	_, err := db.Conn(ctx).DeleteTeamMembership(ctx, usernames, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -113,12 +112,12 @@ func (db *pgdb) removeTeamMembership(ctx context.Context, teamID string, usernam
 // DeleteUser deletes a user from the DB.
 func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 	if spec.UserID != nil {
-		_, err := db.DeleteUserByID(ctx, sql.String(*spec.UserID))
+		_, err := db.Conn(ctx).DeleteUserByID(ctx, sql.String(*spec.UserID))
 		if err != nil {
 			return sql.Error(err)
 		}
 	} else if spec.Username != nil {
-		_, err := db.DeleteUserByUsername(ctx, sql.String(*spec.Username))
+		_, err := db.Conn(ctx).DeleteUserByUsername(ctx, sql.String(*spec.Username))
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -133,15 +132,15 @@ func (db *pgdb) DeleteUser(ctx context.Context, spec UserSpec) error {
 // is returned.
 func (db *pgdb) setSiteAdmins(ctx context.Context, usernames ...string) (promoted []string, demoted []string, err error) {
 	var resetted, updated []pgtype.Text
-	err = db.Tx(ctx, func(tx internal.DB) (err error) {
+	err = db.Tx(ctx, func(ctx context.Context, q pggen.Querier) (err error) {
 		// First demote any existing site admins...
-		resetted, err = tx.ResetUserSiteAdmins(ctx)
+		resetted, err = q.ResetUserSiteAdmins(ctx)
 		if err != nil {
 			return err
 		}
 		// ...then promote any specified usernames
 		if len(usernames) > 0 {
-			updated, err = tx.UpdateUserSiteAdmins(ctx, usernames)
+			updated, err = q.UpdateUserSiteAdmins(ctx, usernames)
 			if err != nil {
 				return err
 			}

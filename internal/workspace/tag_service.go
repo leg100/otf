@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 type (
@@ -83,13 +84,13 @@ func (s *service) TagWorkspaces(ctx context.Context, tagID string, workspaceIDs 
 		return err
 	}
 
-	err = s.db.tx(ctx, func(tx *pgdb) error {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		for _, wid := range workspaceIDs {
 			_, err := s.CanAccess(ctx, rbac.TagWorkspacesAction, wid)
 			if err != nil {
 				return err
 			}
-			if err := tx.tagWorkspace(ctx, wid, tagID); err != nil {
+			if err := s.db.tagWorkspace(ctx, wid, tagID); err != nil {
 				return err
 			}
 		}
@@ -114,7 +115,7 @@ func (s *service) AddTags(ctx context.Context, workspaceID string, tags []TagSpe
 		return fmt.Errorf("workspace not found; %s; %w", workspaceID, err)
 	}
 
-	added, err := addTags(ctx, s.db, ws, tags)
+	added, err := s.addTags(ctx, ws, tags)
 	if err != nil {
 		s.Error(err, "adding tags", "workspace", workspaceID, "tags", TagSpecs(tags), "subject", subject)
 		return err
@@ -134,7 +135,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 		return fmt.Errorf("workspace not found; %s; %w", workspaceID, err)
 	}
 
-	err = func() error {
+	err = s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) (err error) {
 		for _, t := range tags {
 			if err := t.Valid(); err != nil {
 				return err
@@ -163,7 +164,7 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 			}
 		}
 		return nil
-	}()
+	})
 	if err != nil {
 		s.Error(err, "removing tags", "workspace", workspaceID, "tags", TagSpecs(tags), "subject", subject)
 		return err
@@ -187,45 +188,48 @@ func (s *service) ListWorkspaceTags(ctx context.Context, workspaceID string, opt
 	return list, nil
 }
 
-func addTags(ctx context.Context, db *pgdb, ws *Workspace, tags []TagSpec) ([]string, error) {
+func (s *service) addTags(ctx context.Context, ws *Workspace, tags []TagSpec) ([]string, error) {
 	// For each tag:
 	// (i) if specified by name, create new tag if it does not exist and get its ID.
 	// (ii) add tag to workspace
 	var added []string
-	for _, t := range tags {
-		if err := t.Valid(); err != nil {
-			return nil, fmt.Errorf("invalid tag: %w", err)
-		}
+	err := s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) (err error) {
+		for _, t := range tags {
+			if err := t.Valid(); err != nil {
+				return fmt.Errorf("invalid tag: %w", err)
+			}
 
-		id := t.ID
-		name := t.Name
-		switch {
-		case name != "":
-			existing, err := db.findTagByName(ctx, ws.Organization, name)
-			if errors.Is(err, internal.ErrResourceNotFound) {
-				id = internal.NewID("tag")
-				if err := db.addTag(ctx, ws.Organization, name, id); err != nil {
-					return nil, fmt.Errorf("adding tag: %s %w", name, err)
+			id := t.ID
+			name := t.Name
+			switch {
+			case name != "":
+				existing, err := s.db.findTagByName(ctx, ws.Organization, name)
+				if errors.Is(err, internal.ErrResourceNotFound) {
+					id = internal.NewID("tag")
+					if err := s.db.addTag(ctx, ws.Organization, name, id); err != nil {
+						return fmt.Errorf("adding tag: %s %w", name, err)
+					}
+				} else if err != nil {
+					return err
+				} else {
+					id = existing.ID
 				}
-			} else if err != nil {
-				return nil, err
-			} else {
-				id = existing.ID
+			case id != "":
+				existing, err := s.db.findTagByID(ctx, ws.Organization, t.ID)
+				if err != nil {
+					return err
+				}
+				name = existing.Name
+			default:
+				return ErrInvalidTagSpec
 			}
-		case id != "":
-			existing, err := db.findTagByID(ctx, ws.Organization, t.ID)
-			if err != nil {
-				return nil, err
-			}
-			name = existing.Name
-		default:
-			return nil, ErrInvalidTagSpec
-		}
 
-		if err := db.tagWorkspace(ctx, ws.ID, id); err != nil {
-			return nil, err
+			if err := s.db.tagWorkspace(ctx, ws.ID, id); err != nil {
+				return err
+			}
+			added = append(added, name)
 		}
-		added = append(added, name)
-	}
-	return added, nil
+		return nil
+	})
+	return added, err
 }

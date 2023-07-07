@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 type fakeDB struct {
 	current *Version // returned by getCurrentVersion
 	version *Version // returned by getVersion
-	db
+	factoryDB
 }
 
 func (f *fakeDB) getVersion(ctx context.Context, svID string) (*Version, error) {
@@ -26,14 +27,6 @@ func (f *fakeDB) getCurrentVersion(ctx context.Context, workspaceID string) (*Ve
 	return f.current, nil
 }
 
-func (f *fakeDB) createVersion(ctx context.Context, v *Version) error {
+func (f *fakeDB) Tx(context.Context, func(context.Context, pggen.Querier) error) error {
 	return nil
-}
-
-func (f *fakeDB) updateCurrentVersion(ctx context.Context, workspaceID, svID string) error {
-	return nil
-}
-
-func (f *fakeDB) tx(ctx context.Context, txfunc func(db) error) error {
-	return txfunc(f)
 }

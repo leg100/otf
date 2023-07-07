@@ -2,7 +2,6 @@
 package internal
 
 import (
-	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
 	"math/rand"
@@ -13,10 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 const (
@@ -36,27 +31,6 @@ var (
 	// A regular expression used to validate semantic versions (major.minor.patch).
 	ReSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 )
-
-// DB is the otf database. Services may wrap this and implement higher-level
-// queries.
-type DB interface {
-	// Tx provides a callback in which queries are run within a transaction.
-	Tx(ctx context.Context, tx func(DB) error) error
-	// Acquire dedicated connection from connection pool.
-	Acquire(ctx context.Context) (*pgxpool.Conn, error)
-	// Execute arbitrary SQL
-	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-	// Send batches of SQL queries over the wire.
-	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
-	// Wait for a session-level advisory lock to become available.
-	WaitAndLock(ctx context.Context, id int64, fn func() error) error
-
-	pggen.Querier // queries generated from SQL
-	Close()       // Close all connections in pool
-
-	// additional queries that wrap the generated queries
-	GetLogs(ctx context.Context, runID string, phase PhaseType) ([]byte, error)
-}
 
 // GetID retrieves the ID field of a struct contained in s. If s is not a struct,
 // or there is no ID field, then false is returned.

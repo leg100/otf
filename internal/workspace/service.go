@@ -15,6 +15,8 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -60,7 +62,7 @@ type (
 	}
 
 	Options struct {
-		internal.DB
+		*sql.DB
 		*pubsub.Broker
 		html.Renderer
 		organization.OrganizationService
@@ -113,8 +115,8 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		return nil, err
 	}
 
-	err = s.db.tx(ctx, func(tx *pgdb) error {
-		if err := tx.create(ctx, ws); err != nil {
+	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+		if err := s.db.create(ctx, ws); err != nil {
 			return err
 		}
 		// Optionally connect workspace to repo. This is done within a
@@ -123,7 +125,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		// workspace and fails, because it does not exist yet because the transaction
 		// has not yet completed.
 		if opts.ConnectOptions != nil {
-			conn, err := s.connectWithoutAuthz(ctx, ws.ID, tx, *opts.ConnectOptions)
+			conn, err := s.connectWithoutAuthz(ctx, ws.ID, *opts.ConnectOptions)
 			if err != nil {
 				return err
 			}
@@ -131,7 +133,7 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		}
 		// Optionally create tags within same transaction
 		if len(opts.Tags) > 0 {
-			added, err := addTags(ctx, tx, ws, opts.Tags)
+			added, err := s.addTags(ctx, ws, opts.Tags)
 			if err != nil {
 				return err
 			}
@@ -285,12 +287,12 @@ func (s *service) connect(ctx context.Context, workspaceID string, opts ConnectO
 		return nil, err
 	}
 
-	return s.connectWithoutAuthz(ctx, workspaceID, nil, opts)
+	return s.connectWithoutAuthz(ctx, workspaceID, opts)
 }
 
 // connectWithoutAuthz connects the workspace to a repo without checking whether
 // subject has authorization.
-func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, tx internal.DB, opts ConnectOptions) (*repo.Connection, error) {
+func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error) {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -300,7 +302,6 @@ func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, t
 		ResourceID:     workspaceID,
 		VCSProviderID:  opts.VCSProviderID,
 		RepoPath:       opts.RepoPath,
-		Tx:             tx,
 	})
 	if err != nil {
 		s.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)

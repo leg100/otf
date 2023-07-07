@@ -24,7 +24,6 @@ type (
 	TeamMembershipOptions struct {
 		Usernames []string
 		TeamID    string
-		Tx        internal.DB
 	}
 )
 
@@ -103,12 +102,7 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 // AddTeamMembership adds a user to a team. If opts.Tx is non-nil then database
 // queries are made within that transaction.
 func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	db := a.db
-	if opts.Tx != nil {
-		db = newDB(opts.Tx, a.db.Logger)
-	}
-
-	team, err := db.getTeamByID(ctx, opts.TeamID)
+	team, err := a.db.getTeamByID(ctx, opts.TeamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", opts.TeamID)
 		return err
@@ -119,7 +113,7 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 		return err
 	}
 
-	if err := db.addTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+	if err := a.db.addTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
 		a.Error(err, "adding team membership", "user", opts.Usernames, "team", opts.TeamID, "subject", subject)
 		return err
 	}
@@ -131,12 +125,7 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 // RemoveTeamMembership removes users from a team. If opts.Tx is non-nil then database
 // queries are made within that transaction.
 func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
-	db := a.db
-	if opts.Tx != nil {
-		db = newDB(opts.Tx, a.db.Logger)
-	}
-
-	team, err := db.getTeamForUpdate(ctx, opts.TeamID)
+	team, err := a.db.getTeamForUpdate(ctx, opts.TeamID)
 	if err != nil {
 		a.Error(err, "retrieving team", "team_id", opts.TeamID)
 		return err
@@ -150,7 +139,7 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 	// check whether all members of the owners group are going to be deleted
 	// (which is not allowed)
 	if team.Name == "owners" {
-		if owners, err := db.listTeamMembers(ctx, team.ID); err != nil {
+		if owners, err := a.db.listTeamMembers(ctx, team.ID); err != nil {
 			a.Error(err, "removing team membership: listing team members", "team_id", team.ID, "subject", subject)
 			return err
 		} else if len(owners) <= len(opts.Usernames) {
@@ -158,7 +147,7 @@ func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipO
 		}
 	}
 
-	if err := db.removeTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+	if err := a.db.removeTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
 		a.Error(err, "removing team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
 		return err
 	}

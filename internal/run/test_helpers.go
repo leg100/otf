@@ -58,7 +58,6 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	return &webHandlers{
 		Renderer:         renderer,
 		WorkspaceService: &svc,
-		logsdb:           &svc,
 		starter:          &svc,
 		svc:              &svc,
 	}
@@ -80,7 +79,7 @@ func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*r
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 
-func (f *fakeWebServices) GetLogs(context.Context, string, internal.PhaseType) ([]byte, error) {
+func (f *fakeWebServices) getLogs(context.Context, string, internal.PhaseType) ([]byte, error) {
 	return nil, nil
 }
 

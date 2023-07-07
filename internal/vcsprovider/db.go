@@ -12,17 +12,17 @@ import (
 
 // pgdb is a VCS provider database on postgres
 type pgdb struct {
-	internal.DB // provides access to generated SQL queries
+	*sql.DB // provides access to generated SQL queries
 	*factory
 }
 
-func newDB(db internal.DB, cloudService cloud.Service) *pgdb {
+func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
 	return &pgdb{db, &factory{cloudService}}
 }
 
 // CreateVCSProvider inserts an agent token, associating it with an organization
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	_, err := db.InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
+	_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
 		Token:            sql.String(provider.Token),
 		Name:             sql.String(provider.Name),
@@ -34,7 +34,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 }
 
 func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
-	row, err := db.FindVCSProvider(ctx, sql.String(id))
+	row, err := db.Conn(ctx).FindVCSProvider(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -42,7 +42,7 @@ func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 }
 
 func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	rows, err := db.FindVCSProviders(ctx, sql.String(organization))
+	rows, err := db.Conn(ctx).FindVCSProviders(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -59,7 +59,7 @@ func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, 
 
 // DeleteVCSProvider deletes an agent token.
 func (db *pgdb) delete(ctx context.Context, id string) error {
-	_, err := db.DeleteVCSProviderByID(ctx, sql.String(id))
+	_, err := db.Conn(ctx).DeleteVCSProviderByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}

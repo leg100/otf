@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -57,7 +58,7 @@ type (
 		WorkspaceAuthorizer internal.Authorizer
 
 		internal.Cache
-		internal.DB
+		*sql.DB
 	}
 
 	// StateVersionListOptions represents the options for listing state versions.

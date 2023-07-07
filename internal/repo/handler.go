@@ -23,7 +23,7 @@ type (
 		logr.Logger
 		pubsub.Publisher
 
-		db handlerDB
+		handlerDB
 	}
 
 	// handleDB is the database the handler interacts with
@@ -45,7 +45,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hook, err := h.db.getHookByID(r.Context(), opts.ID)
+	hook, err := h.getHookByID(r.Context(), opts.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

@@ -32,11 +32,7 @@ func (a *service) CreateTeam(ctx context.Context, organization string, opts Crea
 		return nil, err
 	}
 
-	db := a.db
-	if opts.Tx != nil {
-		db = newDB(opts.Tx, a.db.Logger)
-	}
-	if err := db.createTeam(ctx, team); err != nil {
+	if err := a.db.createTeam(ctx, team); err != nil {
 		a.Error(err, "creating team", "name", opts.Name, "organization", organization, "subject", subject)
 		return nil, err
 	}
