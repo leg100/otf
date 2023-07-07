@@ -8,6 +8,8 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -28,7 +30,8 @@ type (
 	service struct {
 		logr.Logger
 		vcsprovider.Service
-		db *pgdb
+
+		*db
 
 		*handler      // handles incoming vcs events
 		factory       // produce new hooks
@@ -40,7 +43,7 @@ type (
 
 		CloudService cloud.Service
 
-		internal.DB
+		*sql.DB
 		internal.HostnameService
 		pubsub.Publisher
 		VCSProviderService vcsprovider.Service
@@ -49,11 +52,11 @@ type (
 
 func NewService(opts Options) *service {
 	factory := newFactory(opts.HostnameService, opts.CloudService)
-	db := newPGDB(opts.DB, factory)
+	db := &db{opts.DB, factory}
 	handler := &handler{
 		Logger:    opts.Logger,
 		Publisher: opts.Publisher,
-		db:        db,
+		handlerDB: db,
 	}
 	return &service{
 		Logger:       opts.Logger,
@@ -88,25 +91,17 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		return nil, fmt.Errorf("constructing webhook: %w", err)
 	}
 
-	// allow caller to provide their own tx
-	var db *pgdb
-	if opts.Tx != nil {
-		db = newPGDB(opts.Tx, s.factory)
-	} else {
-		db = s.db
-	}
-
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err = db.lock(ctx, func(tx *pgdb) error {
-		hook, err = tx.getOrCreateHook(ctx, hook)
+	err = s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) error {
+		hook, err = s.db.getOrCreateHook(ctx, hook)
 		if err != nil {
 			return fmt.Errorf("getting or creating webhook: %w", err)
 		}
-		if err := s.sync(ctx, tx, client, hook); err != nil {
+		if err := s.sync(ctx, client, hook); err != nil {
 			return fmt.Errorf("synchronising webhook: %w", err)
 		}
-		return tx.createConnection(ctx, hook.id, opts)
+		return s.db.createConnection(ctx, hook.id, opts)
 	})
 	if err != nil {
 		return nil, err
@@ -122,23 +117,15 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 // NOTE: if the webhook cannot be deleted from the repo then this is not deemed
 // fatal and the hook is still deleted from the database.
 func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	// allow caller to provide their own tx
-	var db *pgdb
-	if opts.Tx != nil {
-		db = newPGDB(opts.Tx, s.factory)
-	} else {
-		db = s.db
-	}
-
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	return db.lock(ctx, func(tx *pgdb) error {
-		hookID, vcsProviderID, err := tx.deleteConnection(ctx, opts)
+	return s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) error {
+		hookID, vcsProviderID, err := s.db.deleteConnection(ctx, opts)
 		if err != nil {
 			return err
 		}
 
-		conns, err := tx.countConnections(ctx, hookID)
+		conns, err := s.db.countConnections(ctx, hookID)
 		if err != nil {
 			return err
 		}
@@ -148,7 +135,7 @@ func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error 
 
 		// no more connections; delete webhook from both db and VCS provider
 
-		hook, err := tx.deleteHook(ctx, hookID)
+		hook, err := s.db.deleteHook(ctx, hookID)
 		if err != nil {
 			return err
 		}

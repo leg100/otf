@@ -5,11 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,16 +56,8 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	)
 }
 
-func newTestDB(t *testing.T) *pgdb {
-	db, err := sql.New(context.Background(), sql.Options{
-		Logger:     logr.Discard(),
-		ConnString: sql.NewTestDB(t),
-	})
-	require.NoError(t, err)
-	t.Cleanup(db.Close)
-
-	return &pgdb{
-		DB: db,
+func newTestDB(t *testing.T) *db {
+	return &db{
 		factory: factory{
 			Service:         fakeCloudService{},
 			HostnameService: fakeHostnameService{},

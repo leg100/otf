@@ -67,8 +67,8 @@ func TestSynchroniser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := &fakeCloudClient{hook: tt.cloud}
 			db := &fakeDB{hook: tt.got}
-			synchr := &synchroniser{Logger: logr.Discard()}
-			require.NoError(t, synchr.sync(context.Background(), db, client, tt.got))
+			synchr := &synchroniser{Logger: logr.Discard(), syncdb: db}
+			require.NoError(t, synchr.sync(context.Background(), client, tt.got))
 			assert.Equal(t, tt.want, tt.got)
 		})
 	}

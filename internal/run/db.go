@@ -333,6 +333,19 @@ func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
 	})
 }
 
+func GetLogs(ctx context.Context, db pggen.Querier, runID string, phase internal.PhaseType) ([]byte, error) {
+	data, err := db.FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
+	if err != nil {
+		// Don't consider no rows an error because logs may not have been
+		// uploaded yet.
+		if sql.NoRowsInResultError(err) {
+			return nil, nil
+		}
+		return nil, sql.Error(err)
+	}
+	return data, nil
+}
+
 func convertStatusSliceToStringSlice(statuses []internal.RunStatus) (s []string) {
 	for _, status := range statuses {
 		s = append(s, string(status))

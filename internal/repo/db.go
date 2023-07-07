@@ -12,11 +12,11 @@ import (
 )
 
 type (
-	// pgdb is the repo database on postgres
-	pgdb struct {
-		internal.DB
+	db struct {
+		*sql.DB
 		factory
 	}
+
 	hookRow struct {
 		WebhookID  pgtype.UUID `json:"webhook_id"`
 		VCSID      pgtype.Text `json:"vcs_id"`
@@ -26,14 +26,24 @@ type (
 	}
 )
 
-func newPGDB(db internal.DB, f factory) *pgdb {
-	return &pgdb{db, f}
+func (db *db) unmarshal(row hookRow) (*hook, error) {
+	opts := newHookOpts{
+		id:         internal.UUID(row.WebhookID.Bytes),
+		secret:     internal.String(row.Secret.String),
+		identifier: row.Identifier.String,
+		cloud:      row.Cloud.String,
+	}
+	if row.VCSID.Status == pgtype.Present {
+		opts.cloudID = internal.String(row.VCSID.String)
+	}
+	return db.newHook(opts)
 }
 
 // getOrCreate gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
-func (db *pgdb) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
-	result, err := db.FindWebhookByRepo(ctx, sql.String(hook.identifier), sql.String(hook.cloud))
+func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.FindWebhookByRepo(ctx, sql.String(hook.identifier), sql.String(hook.cloud))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -54,38 +64,42 @@ func (db *pgdb) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) 
 	} else {
 		params.VCSID = pgtype.Text{Status: pgtype.Null}
 	}
-	insertResult, err := db.InsertWebhook(ctx, params)
+	insertResult, err := q.InsertWebhook(ctx, params)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return db.unmarshal(hookRow(insertResult))
 }
 
-func (db *pgdb) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
-	result, err := db.FindWebhookByID(ctx, sql.UUID(id))
+func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.FindWebhookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return db.unmarshal(hookRow(result))
 }
 
-func (db *pgdb) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
-	result, err := db.FindWebhookByIDForUpdate(ctx, sql.UUID(id))
+func (db *db) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.FindWebhookByIDForUpdate(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return db.unmarshal(hookRow(result))
 }
 
-func (db *pgdb) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
-	_, err := db.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
+func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
+	q := db.Conn(ctx)
+	_, err := q.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
 	if err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts ConnectOptions) error {
+func (db *db) createConnection(ctx context.Context, hookID uuid.UUID, opts ConnectOptions) error {
+	q := db.Conn(ctx)
 	params := pggen.InsertRepoConnectionParams{
 		WebhookID:     sql.UUID(hookID),
 		VCSProviderID: sql.String(opts.VCSProviderID),
@@ -102,22 +116,23 @@ func (db *pgdb) createConnection(ctx context.Context, hookID uuid.UUID, opts Con
 		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
 
-	if _, err := db.InsertRepoConnection(ctx, params); err != nil {
+	if _, err := q.InsertRepoConnection(ctx, params); err != nil {
 		return sql.Error(err)
 	}
 	return nil
 }
 
-func (db *pgdb) deleteConnection(ctx context.Context, opts DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
+func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (hookID uuid.UUID, vcsProviderID string, err error) {
+	q := db.Conn(ctx)
 	switch opts.ConnectionType {
 	case WorkspaceConnection:
-		result, err := db.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
+		result, err := q.DeleteWorkspaceConnectionByID(ctx, sql.String(opts.ResourceID))
 		if err != nil {
 			return uuid.UUID{}, "", sql.Error(err)
 		}
 		return result.WebhookID.Bytes, result.VCSProviderID.String, nil
 	case ModuleConnection:
-		result, err := db.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
+		result, err := q.DeleteModuleConnectionByID(ctx, sql.String(opts.ResourceID))
 		if err != nil {
 			return uuid.UUID{}, "", sql.Error(err)
 		}
@@ -127,43 +142,20 @@ func (db *pgdb) deleteConnection(ctx context.Context, opts DisconnectOptions) (h
 	}
 }
 
-func (db *pgdb) countConnections(ctx context.Context, hookID uuid.UUID) (int, error) {
-	result, err := db.CountRepoConnectionsByID(ctx, sql.UUID(hookID))
+func (db *db) countConnections(ctx context.Context, hookID uuid.UUID) (int, error) {
+	q := db.Conn(ctx)
+	result, err := q.CountRepoConnectionsByID(ctx, sql.UUID(hookID))
 	if err != nil {
 		return 0, err
 	}
 	return int(result.Int), nil
 }
 
-func (db *pgdb) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
-	result, err := db.DeleteWebhookByID(ctx, sql.UUID(id))
+func (db *db) deleteHook(ctx context.Context, id uuid.UUID) (*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.DeleteWebhookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 	return db.unmarshal(hookRow(result))
-}
-
-// lock webhooks table within a transaction, preventing anything else from
-// updating the table. Provides a callback within which caller can use the
-// transaction.
-func (db *pgdb) lock(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx internal.DB) error {
-		if _, err := tx.Exec(ctx, "LOCK TABLE tags IN EXCLUSIVE MODE"); err != nil {
-			return err
-		}
-		return callback(newPGDB(tx, db.factory))
-	})
-}
-
-func (db *pgdb) unmarshal(row hookRow) (*hook, error) {
-	opts := newHookOpts{
-		id:         internal.UUID(row.WebhookID.Bytes),
-		secret:     internal.String(row.Secret.String),
-		identifier: row.Identifier.String,
-		cloud:      row.Cloud.String,
-	}
-	if row.VCSID.Status == pgtype.Present {
-		opts.cloudID = internal.String(row.VCSID.String)
-	}
-	return db.newHook(opts)
 }

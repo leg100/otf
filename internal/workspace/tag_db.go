@@ -32,22 +32,23 @@ func (r tagresult) toTag() *Tag {
 }
 
 func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTagsOptions) (*resource.Page[*Tag], error) {
+	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	db.FindTagsBatch(batch, pggen.FindTagsParams{
+	q.FindTagsBatch(batch, pggen.FindTagsParams{
 		OrganizationName: sql.String(organization),
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
-	db.CountTagsBatch(batch, sql.String(organization))
+	q.CountTagsBatch(batch, sql.String(organization))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindTagsScan(results)
+	rows, err := q.FindTagsScan(results)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := db.CountTagsScan(results)
+	count, err := q.CountTagsScan(results)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -61,9 +62,9 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 }
 
 func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []string) error {
-	err := db.Tx(ctx, func(tx internal.DB) error {
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		for _, tid := range tagIDs {
-			_, err := tx.DeleteTag(ctx, sql.String(tid), sql.String(organization))
+			_, err := q.DeleteTag(ctx, sql.String(tid), sql.String(organization))
 			if err != nil {
 				return err
 			}
@@ -74,7 +75,7 @@ func (db *pgdb) deleteTags(ctx context.Context, organization string, tagIDs []st
 }
 
 func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error {
-	_, err := db.InsertTag(ctx, pggen.InsertTagParams{
+	_, err := db.Conn(ctx).InsertTag(ctx, pggen.InsertTagParams{
 		TagID:            sql.String(id),
 		Name:             sql.String(name),
 		OrganizationName: sql.String(organization),
@@ -86,7 +87,7 @@ func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error
 }
 
 func (db *pgdb) deleteTag(ctx context.Context, tag *Tag) error {
-	_, err := db.DeleteTag(ctx, sql.String(tag.ID), sql.String(tag.Organization))
+	_, err := db.Conn(ctx).DeleteTag(ctx, sql.String(tag.ID), sql.String(tag.Organization))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -94,7 +95,7 @@ func (db *pgdb) deleteTag(ctx context.Context, tag *Tag) error {
 }
 
 func (db *pgdb) findTagByName(ctx context.Context, organization, name string) (*Tag, error) {
-	tag, err := db.FindTagByName(ctx, sql.String(name), sql.String(organization))
+	tag, err := db.Conn(ctx).FindTagByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -102,7 +103,7 @@ func (db *pgdb) findTagByName(ctx context.Context, organization, name string) (*
 }
 
 func (db *pgdb) findTagByID(ctx context.Context, organization, id string) (*Tag, error) {
-	tag, err := db.FindTagByID(ctx, sql.String(id), sql.String(organization))
+	tag, err := db.Conn(ctx).FindTagByID(ctx, sql.String(id), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -110,7 +111,7 @@ func (db *pgdb) findTagByID(ctx context.Context, organization, id string) (*Tag,
 }
 
 func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID string) error {
-	_, err := db.InsertWorkspaceTag(ctx, sql.String(tagID), sql.String(workspaceID))
+	_, err := db.Conn(ctx).InsertWorkspaceTag(ctx, sql.String(tagID), sql.String(workspaceID))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -118,7 +119,7 @@ func (db *pgdb) tagWorkspace(ctx context.Context, workspaceID, tagID string) err
 }
 
 func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID string) error {
-	_, err := db.DeleteWorkspaceTag(ctx, sql.String(workspaceID), sql.String(tagID))
+	_, err := db.Conn(ctx).DeleteWorkspaceTag(ctx, sql.String(workspaceID), sql.String(tagID))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -126,22 +127,23 @@ func (db *pgdb) deleteWorkspaceTag(ctx context.Context, workspaceID, tagID strin
 }
 
 func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts ListWorkspaceTagsOptions) (*resource.Page[*Tag], error) {
+	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	db.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
+	q.FindWorkspaceTagsBatch(batch, pggen.FindWorkspaceTagsParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
-	db.CountTagsBatch(batch, sql.String(workspaceID))
+	q.CountTagsBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindWorkspaceTagsScan(results)
+	rows, err := q.FindWorkspaceTagsScan(results)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	count, err := db.CountWorkspaceTagsScan(results)
+	count, err := q.CountWorkspaceTagsScan(results)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -152,15 +154,4 @@ func (db *pgdb) listWorkspaceTags(ctx context.Context, workspaceID string, opts 
 	}
 
 	return resource.NewPage(items, opts.PageOptions, internal.Int64(count.Int)), nil
-}
-
-// lockTags tags table within a transaction, providing a callback within which
-// caller can use the transaction.
-func (db *pgdb) lockTags(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx internal.DB) error {
-		if _, err := tx.Exec(ctx, "LOCK TABLE tags IN EXCLUSIVE MODE"); err != nil {
-			return err
-		}
-		return callback(&pgdb{tx})
-	})
 }

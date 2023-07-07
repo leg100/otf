@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -21,7 +22,7 @@ type (
 		html.Renderer
 		WorkspaceService
 
-		logsdb
+		db pggen.Querier
 
 		logger  logr.Logger
 		starter runStarter
@@ -30,10 +31,6 @@ type (
 
 	runStarter interface {
 		startRun(ctx context.Context, workspaceID string, op Operation) (*Run, error)
-	}
-
-	logsdb interface {
-		GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 	}
 )
 
@@ -150,12 +147,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := h.GetLogs(r.Context(), run.ID, internal.PlanPhase)
+	planLogs, err := GetLogs(r.Context(), h.db, run.ID, internal.PlanPhase)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := h.GetLogs(r.Context(), run.ID, internal.ApplyPhase)
+	applyLogs, err := GetLogs(r.Context(), h.db, run.ID, internal.ApplyPhase)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
