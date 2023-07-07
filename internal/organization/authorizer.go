@@ -21,6 +21,6 @@ func (a *Authorizer) CanAccess(ctx context.Context, action rbac.Action, name str
 	if subj.CanAccessOrganization(action, name) {
 		return subj, nil
 	}
-	a.Error(nil, "unauthorized action", "organization", name, "action", action, "subject", subj)
+	a.Error(nil, "unauthorized action", "organization", name, "action", action.String(), "subject", subj)
 	return nil, internal.ErrAccessNotPermitted
 }

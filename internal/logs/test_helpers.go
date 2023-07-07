@@ -16,7 +16,7 @@ type (
 
 	fakeDB struct {
 		data []byte
-		db
+		proxydb
 	}
 
 	fakeTailProxy struct {
@@ -53,7 +53,7 @@ func (c *fakeCache) Get(key string) ([]byte, error) {
 	return val, nil
 }
 
-func (s *fakeDB) GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+func (s *fakeDB) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
 	return s.data, nil
 }
 

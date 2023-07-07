@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 )
@@ -26,7 +27,7 @@ type (
 	service struct {
 		logr.Logger
 
-		db
+		db *pgdb
 
 		workspace internal.Authorizer
 
@@ -37,7 +38,7 @@ type (
 		WorkspaceAuthorizer internal.Authorizer
 		WorkspaceService    workspace.Service
 
-		internal.DB
+		*sql.DB
 		html.Renderer
 		logr.Logger
 	}
@@ -47,7 +48,7 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:    opts.Logger,
 		workspace: opts.WorkspaceAuthorizer,
-		db:        newPGDB(opts.DB),
+		db:        &pgdb{opts.DB},
 	}
 
 	svc.web = &web{

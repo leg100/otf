@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,9 +13,9 @@ import (
 // TestDB should not be called directly but via the 'integration' package (Hence
 // why this file is suffixed with '_' to prevent Go from detecting it as a test
 // file).
-func TestDB(t *testing.T) {
+func TestDB(t *testing.T, sqldb *sql.DB) {
 	ctx := context.Background()
-	db := newTestDB(t)
+	db := newTestDB(t, sqldb)
 
 	t.Run("create hook", func(t *testing.T) {
 		want := newTestHook(t, db.factory, internal.String("123"))

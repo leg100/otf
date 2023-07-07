@@ -13,14 +13,14 @@ type (
 	// proxy is a caching proxy for log chunks
 	proxy struct {
 		cache internal.Cache
-		db    db
+		db    proxydb
 
 		pubsub.PubSubService
 		logr.Logger
 	}
 
-	db interface {
-		GetLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
+	proxydb interface {
+		getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error)
 		put(ctx context.Context, opts internal.PutChunkOptions) (string, error)
 	}
 )
@@ -64,7 +64,7 @@ func (p *proxy) Start(ctx context.Context) error {
 		} else {
 			if existing, err := p.cache.Get(key); err != nil {
 				// no cache entry; retrieve logs from db
-				logs, err = p.db.GetLogs(ctx, chunk.RunID, chunk.Phase)
+				logs, err = p.db.getLogs(ctx, chunk.RunID, chunk.Phase)
 				if err != nil {
 					return err
 				}
@@ -88,7 +88,7 @@ func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (interna
 	data, err := p.cache.Get(key)
 	if err != nil {
 		// fall back to retrieving from db...
-		data, err = p.db.GetLogs(ctx, opts.RunID, opts.Phase)
+		data, err = p.db.getLogs(ctx, opts.RunID, opts.Phase)
 		if err != nil {
 			return internal.Chunk{}, err
 		}

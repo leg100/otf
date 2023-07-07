@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ func NewTestTeam(t *testing.T, organization string) *Team {
 	return team
 }
 
-func CreateTestTeam(t *testing.T, db internal.DB, organization *organization.Organization) *Team {
+func CreateTestTeam(t *testing.T, db *sql.DB, organization *organization.Organization) *Team {
 	userDB := newDB(db, logr.Discard())
 	return createTestTeam(t, userDB, organization.Name)
 }

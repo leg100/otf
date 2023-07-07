@@ -13,12 +13,12 @@ import (
 )
 
 type pgdb struct {
-	internal.DB // provides access to generated SQL queries
+	*sql.DB // provides access to generated SQL queries
 }
 
 func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *ConfigurationVersion) error {
-	return db.tx(ctx, func(tx *pgdb) error {
-		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
+	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		_, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 			ID:            sql.String(cv.ID),
 			CreatedAt:     sql.Timestamptz(cv.CreatedAt),
 			AutoQueueRuns: cv.AutoQueueRuns,
@@ -33,7 +33,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 
 		if cv.IngressAttributes != nil {
 			ia := cv.IngressAttributes
-			_, err := tx.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
+			_, err := q.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
 				Identifier:             sql.String(ia.Repo),
@@ -47,7 +47,7 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 		}
 
 		// Insert timestamp for current status
-		if err := tx.insertCVStatusTimestamp(ctx, cv); err != nil {
+		if err := db.insertCVStatusTimestamp(ctx, cv); err != nil {
 			return fmt.Errorf("inserting configuration version status timestamp: %w", err)
 		}
 		return nil
@@ -55,15 +55,15 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 }
 
 func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn func(*ConfigurationVersion, ConfigUploader) error) error {
-	return db.tx(ctx, func(tx *pgdb) error {
+	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		// select ...for update
-		result, err := tx.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
+		result, err := q.FindConfigurationVersionByIDForUpdate(ctx, sql.String(id))
 		if err != nil {
 			return err
 		}
 		cv := pgRow(result).toConfigVersion()
 
-		if err := fn(cv, newConfigUploader(tx, cv.ID)); err != nil {
+		if err := fn(cv, newConfigUploader(q, cv.ID)); err != nil {
 			return err
 		}
 		return nil
@@ -71,21 +71,22 @@ func (db *pgdb) UploadConfigurationVersion(ctx context.Context, id string, fn fu
 }
 
 func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*resource.Page[*ConfigurationVersion], error) {
+	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
-	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
+	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
-	db.CountConfigurationVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
+	q.CountConfigurationVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindConfigurationVersionsByWorkspaceIDScan(results)
+	rows, err := q.FindConfigurationVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := db.CountConfigurationVersionsByWorkspaceIDScan(results)
+	count, err := q.CountConfigurationVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -99,14 +100,15 @@ func (db *pgdb) ListConfigurationVersions(ctx context.Context, workspaceID strin
 }
 
 func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
+	q := db.Conn(ctx)
 	if opts.ID != nil {
-		result, err := db.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
+		result, err := q.FindConfigurationVersionByID(ctx, sql.String(*opts.ID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
 		return pgRow(result).toConfigVersion(), nil
 	} else if opts.WorkspaceID != nil {
-		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID))
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, sql.String(*opts.WorkspaceID))
 		if err != nil {
 			return nil, sql.Error(err)
 		}
@@ -117,11 +119,11 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 }
 
 func (db *pgdb) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	return db.DownloadConfigurationVersion(ctx, sql.String(id))
+	return db.Conn(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
 }
 
 func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id string) error {
-	_, err := db.DeleteConfigurationVersionByID(ctx, sql.String(id))
+	_, err := db.Conn(ctx).DeleteConfigurationVersionByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -133,19 +135,12 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 	if err != nil {
 		return err
 	}
-	_, err = db.InsertConfigurationVersionStatusTimestamp(ctx, pggen.InsertConfigurationVersionStatusTimestampParams{
+	_, err = db.Conn(ctx).InsertConfigurationVersionStatusTimestamp(ctx, pggen.InsertConfigurationVersionStatusTimestampParams{
 		ID:        sql.String(cv.ID),
 		Status:    sql.String(string(cv.Status)),
 		Timestamp: sql.Timestamptz(sts),
 	})
 	return err
-}
-
-// tx constructs a new pgdb within a transaction.
-func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx internal.DB) error {
-		return callback(&pgdb{tx})
-	})
 }
 
 // pgRow represents the result of a database query for a

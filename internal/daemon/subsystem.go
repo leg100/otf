@@ -25,7 +25,7 @@ type (
 		Exclusive bool
 		// DB for obtaining cluster-wide lock. Must be non-nil if Exclusive is
 		// true.
-		internal.DB
+		DB subsystemDB
 		// Cluster-unique lock ID. Must be non-nil if Exclusive is true.
 		LockID *int64
 		logr.Logger
@@ -34,6 +34,10 @@ type (
 	// may need re-starting.
 	Startable interface {
 		Start(ctx context.Context) error
+	}
+
+	subsystemDB interface {
+		WaitAndLock(ctx context.Context, id int64, fn func(context.Context) error) error
 	}
 )
 
@@ -54,7 +58,7 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	op := func() error {
 		if s.Exclusive {
 			// block on getting an exclusive lock
-			return s.WaitAndLock(ctx, *s.LockID, func() error {
+			return s.DB.WaitAndLock(ctx, *s.LockID, func(ctx context.Context) error {
 				return s.System.Start(ctx)
 			})
 		} else {

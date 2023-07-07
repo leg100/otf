@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
@@ -58,16 +57,9 @@ func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	)
 }
 
-func newTestDB(t *testing.T) *pgdb {
-	db, err := sql.New(context.Background(), sql.Options{
-		Logger:     logr.Discard(),
-		ConnString: sql.NewTestDB(t),
-	})
-	require.NoError(t, err)
-	t.Cleanup(db.Close)
-
-	return &pgdb{
-		DB: db,
+func newTestDB(t *testing.T, sqldb *sql.DB) *db {
+	return &db{
+		DB: sqldb,
 		factory: factory{
 			Service:         fakeCloudService{},
 			HostnameService: fakeHostnameService{},
@@ -100,10 +92,6 @@ func (f *fakeCloudClient) UpdateWebhook(context.Context, string, cloud.UpdateWeb
 	f.gotUpdate = true
 
 	return nil
-}
-
-func (f *fakeDB) getHookByIDForUpdate(ctx context.Context, id uuid.UUID) (*hook, error) {
-	return f.hook, nil
 }
 
 func (f *fakeDB) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {

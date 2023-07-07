@@ -11,21 +11,19 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-const defaultMaxConnections = 10 // max conns avail in a pgx pool
+const (
+	// max conns avail in a pgx pool
+	defaultMaxConnections = 10
+)
 
 type (
 	// DB provides access to the postgres db as well as queries generated from
 	// SQL
 	DB struct {
-		*pgxpool.Pool         // db connection pool
-		pggen.Querier         // generated queries
-		conn          conn    // current connection
-		tx            *pgx.Tx // current transaction
-
+		*pgxpool.Pool // db connection pool
 		logr.Logger
 	}
 
@@ -35,14 +33,11 @@ type (
 		ConnString string
 	}
 
-	// conn abstracts a postgres connection, which could be a single connection,
-	// a pool of connections, or a transaction.
-	conn interface {
-		Begin(ctx context.Context) (pgx.Tx, error)
+	genericConnection interface {
+		BeginFunc(ctx context.Context, f func(pgx.Tx) error) error
+		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
 )
 
@@ -70,62 +65,76 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	}
 
 	return &DB{
-		Pool:    pool,
-		Querier: pggen.NewQuerier(pool),
-		conn:    pool,
-		Logger:  opts.Logger,
+		Pool:   pool,
+		Logger: opts.Logger,
 	}, nil
 }
 
-func (db *DB) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
-	return db.conn.Exec(ctx, sql, arguments...)
+// Conn provides pre-generated queries
+func (db *DB) Conn(ctx context.Context) *pggen.DBQuerier {
+	if conn, ok := fromContext(ctx); ok {
+		return pggen.NewQuerier(conn)
+	}
+	return pggen.NewQuerier(db.Pool)
+}
+
+// Tx provides the caller with a callback in which all operations are conducted
+// within a transaction.
+func (db *DB) Tx(ctx context.Context, callback func(context.Context, pggen.Querier) error) error {
+	var conn genericConnection = db.Pool
+
+	// Use connection from context if found
+	if ctxConn, ok := fromContext(ctx); ok {
+		conn = ctxConn
+	}
+
+	return conn.BeginFunc(ctx, func(tx pgx.Tx) error {
+		ctx = newContext(ctx, tx)
+		return callback(ctx, pggen.NewQuerier(tx))
+	})
 }
 
 // WaitAndLock obtains an exclusive session-level advisory lock. If another
 // session holds the lock with the given id then it'll wait until the other
 // session releases the lock. The given fn is called once the lock is obtained
 // and when the fn finishes the lock is released.
-func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func() error) (err error) {
+func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context) error) (err error) {
 	// A dedicated connection is obtained. Using a connection pool would cause
 	// problems because a lock must be released on the same connection on which
 	// it was obtained.
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
-		return err
-	}
-	defer func() {
-		_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
-		if err != nil {
-			db.Error(err, "unlocking session-level advisory lock")
-			return
+	return db.Pool.AcquireFunc(ctx, func(conn *pgxpool.Conn) error {
+		if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id); err != nil {
+			return err
 		}
-		err = closeErr
-	}()
-
-	if err = fn(); err != nil {
-		return err
-	}
-	return
+		defer func() {
+			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
+			if err != nil {
+				db.Error(err, "unlocking session-level advisory lock")
+				return
+			}
+			err = closeErr
+		}()
+		ctx = newContext(ctx, conn)
+		return fn(ctx)
+	})
 }
 
-// Tx provides the caller with a callback in which all operations are conducted
-// within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(internal.DB) error) error {
-	tx, err := db.conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+func (db *DB) Lock(ctx context.Context, table string, fn func(context.Context, pggen.Querier) error) error {
+	var conn genericConnection = db.Pool
 
-	if err := callback(&DB{db.Pool, pggen.NewQuerier(tx), tx, &tx, db.Logger}); err != nil {
-		return err
+	// Use connection from context if found
+	if ctxConn, ok := fromContext(ctx); ok {
+		conn = ctxConn
 	}
-	return tx.Commit(ctx)
+
+	return conn.BeginFunc(ctx, func(tx pgx.Tx) error {
+		ctx = newContext(ctx, tx)
+		sql := fmt.Sprintf("LOCK TABLE %s IN EXCLUSIVE MODE", table)
+		if _, err := tx.Exec(ctx, sql); err != nil {
+			return err
+		}
+		return fn(ctx, pggen.NewQuerier(tx))
+	})
 }
 
 func setDefaultMaxConnections(connString string, max int) (string, error) {

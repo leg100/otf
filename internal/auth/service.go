@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type (
@@ -28,7 +29,7 @@ type (
 	}
 
 	Options struct {
-		internal.DB
+		*sql.DB
 		html.Renderer
 		internal.HostnameService
 		logr.Logger

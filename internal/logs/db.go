@@ -13,7 +13,7 @@ import (
 
 // pgdb is a logs database on postgres
 type pgdb struct {
-	internal.DB // provides access to generated SQL queries
+	*sql.DB // provides access to generated SQL queries
 }
 
 // put persists a chunk of logs to the DB and returns the chunk updated with a
@@ -24,7 +24,7 @@ func (db *pgdb) put(ctx context.Context, opts internal.PutChunkOptions) (string,
 	if len(opts.Data) == 0 {
 		return "", fmt.Errorf("refusing to persist empty chunk")
 	}
-	id, err := db.InsertLogChunk(ctx, pggen.InsertLogChunkParams{
+	id, err := db.Conn(ctx).InsertLogChunk(ctx, pggen.InsertLogChunkParams{
 		RunID:  sql.String(opts.RunID),
 		Phase:  sql.String(string(opts.Phase)),
 		Chunk:  opts.Data,
@@ -45,7 +45,7 @@ func (db *pgdb) GetByID(ctx context.Context, chunkID string, action pubsub.DBAct
 	if err != nil {
 		return nil, err
 	}
-	chunk, err := db.FindLogChunkByID(ctx, sql.Int4(id))
+	chunk, err := db.Conn(ctx).FindLogChunkByID(ctx, sql.Int4(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -56,4 +56,17 @@ func (db *pgdb) GetByID(ctx context.Context, chunkID string, action pubsub.DBAct
 		Data:   chunk.Chunk,
 		Offset: int(chunk.Offset.Int),
 	}, nil
+}
+
+func (db *pgdb) getLogs(ctx context.Context, runID string, phase internal.PhaseType) ([]byte, error) {
+	data, err := db.Conn(ctx).FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
+	if err != nil {
+		// Don't consider no rows an error because logs may not have been
+		// uploaded yet.
+		if sql.NoRowsInResultError(err) {
+			return nil, nil
+		}
+		return nil, sql.Error(err)
+	}
+	return data, nil
 }

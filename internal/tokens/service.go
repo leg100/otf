@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
@@ -42,7 +43,7 @@ type (
 
 	Options struct {
 		logr.Logger
-		internal.DB
+		*sql.DB
 		html.Renderer
 		auth.AuthService
 		GoogleIAPConfig

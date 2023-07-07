@@ -43,15 +43,13 @@ func TestSubsystem(t *testing.T) {
 
 type (
 	fakeStartable   struct{}
-	fakeWaitAndLock struct {
-		internal.DB
-	}
+	fakeWaitAndLock struct{}
 )
 
 func (f *fakeStartable) Start(ctx context.Context) error {
 	return nil
 }
 
-func (f *fakeWaitAndLock) WaitAndLock(ctx context.Context, id int64, fn func() error) error {
-	return fn()
+func (f *fakeWaitAndLock) WaitAndLock(ctx context.Context, id int64, fn func(context.Context) error) error {
+	return fn(ctx)
 }

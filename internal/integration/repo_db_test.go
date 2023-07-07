@@ -12,5 +12,6 @@ func TestRepoDB(t *testing.T) {
 
 	// Call out to integration test situated within 'repo' package, which then
 	// calls private methods
-	repo.TestDB(t)
+	daemon, _, _ := setup(t, nil)
+	repo.TestDB(t, daemon.DB)
 }

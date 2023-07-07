@@ -32,9 +32,6 @@ type (
 		// go-tfe integration tests
 		SSOTeamID  *string
 		Visibility *string
-
-		// Database transaction within which to create team. Optional.
-		Tx internal.DB
 	}
 
 	UpdateTeamOptions struct {

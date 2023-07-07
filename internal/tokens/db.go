@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -12,7 +11,7 @@ import (
 type (
 	// pgdb stores authentication resources in a postgres database
 	pgdb struct {
-		internal.DB // provides access to generated SQL queries
+		*sql.DB // provides access to generated SQL queries
 	}
 
 	agentTokenRow struct {
@@ -28,7 +27,7 @@ type (
 //
 
 func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
-	_, err := db.InsertToken(ctx, pggen.InsertTokenParams{
+	_, err := db.Conn(ctx).InsertToken(ctx, pggen.InsertTokenParams{
 		TokenID:     sql.String(token.ID),
 		Description: sql.String(token.Description),
 		Username:    sql.String(token.Username),
@@ -38,7 +37,7 @@ func (db *pgdb) createUserToken(ctx context.Context, token *UserToken) error {
 }
 
 func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserToken, error) {
-	result, err := db.FindTokensByUsername(ctx, sql.String(username))
+	result, err := db.Conn(ctx).FindTokensByUsername(ctx, sql.String(username))
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +54,7 @@ func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserTok
 }
 
 func (db *pgdb) getUserToken(ctx context.Context, id string) (*UserToken, error) {
-	row, err := db.FindTokenByID(ctx, sql.String(id))
+	row, err := db.Conn(ctx).FindTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -68,7 +67,7 @@ func (db *pgdb) getUserToken(ctx context.Context, id string) (*UserToken, error)
 }
 
 func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
-	_, err := db.DeleteTokenByID(ctx, sql.String(id))
+	_, err := db.Conn(ctx).DeleteTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -80,7 +79,7 @@ func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
 //
 
 func (db *pgdb) createAgentToken(ctx context.Context, token *AgentToken) error {
-	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
+	_, err := db.Conn(ctx).InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
 		TokenID:          sql.String(token.ID),
 		Description:      sql.String(token.Description),
 		OrganizationName: sql.String(token.Organization),
@@ -90,7 +89,7 @@ func (db *pgdb) createAgentToken(ctx context.Context, token *AgentToken) error {
 }
 
 func (db *pgdb) getAgentTokenByID(ctx context.Context, id string) (*AgentToken, error) {
-	r, err := db.FindAgentTokenByID(ctx, sql.String(id))
+	r, err := db.Conn(ctx).FindAgentTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -98,7 +97,7 @@ func (db *pgdb) getAgentTokenByID(ctx context.Context, id string) (*AgentToken, 
 }
 
 func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error) {
-	rows, err := db.FindAgentTokens(ctx, sql.String(organization))
+	rows, err := db.Conn(ctx).FindAgentTokens(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -110,7 +109,7 @@ func (db *pgdb) listAgentTokens(ctx context.Context, organization string) ([]*Ag
 }
 
 func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {
-	_, err := db.DeleteAgentTokenByID(ctx, sql.String(id))
+	_, err := db.Conn(ctx).DeleteAgentTokenByID(ctx, sql.String(id))
 	if err != nil {
 		return sql.Error(err)
 	}
