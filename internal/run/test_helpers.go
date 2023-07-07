@@ -58,7 +58,6 @@ func newTestWebHandlers(t *testing.T, opts ...fakeWebServiceOption) *webHandlers
 	return &webHandlers{
 		Renderer:         renderer,
 		WorkspaceService: &svc,
-		logsdb:           &svc,
 		starter:          &svc,
 		svc:              &svc,
 	}

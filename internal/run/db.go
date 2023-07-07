@@ -17,7 +17,7 @@ import (
 type (
 	// pgdb is a database of runs on postgres
 	pgdb struct {
-		internal.DB // provides access to generated SQL queries
+		*sql.DB // provides access to generated SQL queries
 	}
 
 	// pgresult is the result of a database query for a run.
@@ -53,8 +53,8 @@ type (
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
-	return db.tx(ctx, func(tx *pgdb) error {
-		_, err := tx.InsertRun(ctx, pggen.InsertRunParams{
+	return db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		_, err := q.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     sql.String(run.ID),
 			CreatedAt:              sql.Timestamptz(run.CreatedAt),
 			IsDestroy:              run.IsDestroy,
@@ -72,21 +72,21 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
 		}
-		_, err = tx.InsertPlan(ctx, sql.String(run.ID), sql.String(string(run.Plan.Status)))
+		_, err = q.InsertPlan(ctx, sql.String(run.ID), sql.String(string(run.Plan.Status)))
 		if err != nil {
 			return fmt.Errorf("inserting plan: %w", err)
 		}
-		_, err = tx.InsertApply(ctx, sql.String(run.ID), sql.String(string(run.Apply.Status)))
+		_, err = q.InsertApply(ctx, sql.String(run.ID), sql.String(string(run.Apply.Status)))
 		if err != nil {
 			return fmt.Errorf("inserting apply: %w", err)
 		}
-		if err := tx.insertRunStatusTimestamp(ctx, run); err != nil {
+		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
+		if err := db.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
+		if err := db.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -96,9 +96,9 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 // UpdateStatus updates the run status as well as its plan and/or apply.
 func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) error) (*Run, error) {
 	var run *Run
-	err := db.tx(ctx, func(tx *pgdb) error {
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		// select ...for update
-		result, err := tx.FindRunByIDForUpdate(ctx, sql.String(runID))
+		result, err := q.FindRunByIDForUpdate(ctx, sql.String(runID))
 		if err != nil {
 			return sql.Error(err)
 		}
@@ -115,40 +115,40 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 		}
 
 		if run.Status != runStatus {
-			_, err := tx.UpdateRunStatus(ctx, sql.String(string(run.Status)), sql.String(run.ID))
+			_, err := q.UpdateRunStatus(ctx, sql.String(string(run.Status)), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
 
-			if err := tx.insertRunStatusTimestamp(ctx, run); err != nil {
+			if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 				return err
 			}
 		}
 
 		if run.Plan.Status != planStatus {
-			_, err := tx.UpdatePlanStatusByID(ctx, sql.String(string(run.Plan.Status)), sql.String(run.ID))
+			_, err := q.UpdatePlanStatusByID(ctx, sql.String(string(run.Plan.Status)), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
 
-			if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
+			if err := db.insertPhaseStatusTimestamp(ctx, run.Plan); err != nil {
 				return err
 			}
 		}
 
 		if run.Apply.Status != applyStatus {
-			_, err := tx.UpdateApplyStatusByID(ctx, sql.String(string(run.Apply.Status)), sql.String(run.ID))
+			_, err := q.UpdateApplyStatusByID(ctx, sql.String(string(run.Apply.Status)), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
 
-			if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
+			if err := db.insertPhaseStatusTimestamp(ctx, run.Apply); err != nil {
 				return err
 			}
 		}
 
 		if run.ForceCancelAvailableAt != forceCancelAvailableAt && run.ForceCancelAvailableAt != nil {
-			_, err := tx.UpdateRunForceCancelAvailableAt(ctx, sql.Timestamptz(*run.ForceCancelAvailableAt), sql.String(run.ID))
+			_, err := q.UpdateRunForceCancelAvailableAt(ctx, sql.Timestamptz(*run.ForceCancelAvailableAt), sql.String(run.ID))
 			if err != nil {
 				return err
 			}
@@ -160,7 +160,7 @@ func (db *pgdb) UpdateStatus(ctx context.Context, runID string, fn func(*Run) er
 }
 
 func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, output Report) error {
-	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
+	_, err := db.Conn(ctx).UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
 		RunID:                sql.String(runID),
 		ResourceAdditions:    sql.Int4(resource.Additions),
 		ResourceChanges:      sql.Int4(resource.Changes),
@@ -176,7 +176,7 @@ func (db *pgdb) CreatePlanReport(ctx context.Context, runID string, resource, ou
 }
 
 func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Report) error {
-	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
+	_, err := db.Conn(ctx).UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		RunID:        sql.String(runID),
 		Additions:    sql.Int4(report.Additions),
 		Changes:      sql.Int4(report.Changes),
@@ -189,6 +189,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Repo
 }
 
 func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
+	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 	organization := "%"
 	if opts.Organization != nil {
@@ -210,7 +211,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 	if opts.PlanOnly != nil {
 		planOnly = strconv.FormatBool(*opts.PlanOnly)
 	}
-	db.FindRunsBatch(batch, pggen.FindRunsParams{
+	q.FindRunsBatch(batch, pggen.FindRunsParams{
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
@@ -219,7 +220,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
-	db.CountRunsBatch(batch, pggen.CountRunsParams{
+	q.CountRunsBatch(batch, pggen.CountRunsParams{
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
@@ -230,11 +231,11 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := db.FindRunsScan(results)
+	rows, err := q.FindRunsScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := db.CountRunsScan(results)
+	count, err := q.CountRunsScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +250,7 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 
 // GetRun retrieves a run using the get options
 func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
-	result, err := db.FindRunByID(ctx, sql.String(runID))
+	result, err := db.Conn(ctx).FindRunByID(ctx, sql.String(runID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -258,12 +259,13 @@ func (db *pgdb) GetRun(ctx context.Context, runID string) (*Run, error) {
 
 // SetPlanFile writes a plan file to the db
 func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, format PlanFormat) error {
+	q := db.Conn(ctx)
 	switch format {
 	case PlanFormatBinary:
-		_, err := db.UpdatePlanBinByID(ctx, file, sql.String(runID))
+		_, err := q.UpdatePlanBinByID(ctx, file, sql.String(runID))
 		return err
 	case PlanFormatJSON:
-		_, err := db.UpdatePlanJSONByID(ctx, file, sql.String(runID))
+		_, err := q.UpdatePlanJSONByID(ctx, file, sql.String(runID))
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))
@@ -272,11 +274,12 @@ func (db *pgdb) SetPlanFile(ctx context.Context, runID string, file []byte, form
 
 // GetPlanFile retrieves a plan file for the run
 func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {
+	q := db.Conn(ctx)
 	switch format {
 	case PlanFormatBinary:
-		return db.GetPlanBinByID(ctx, sql.String(runID))
+		return q.GetPlanBinByID(ctx, sql.String(runID))
 	case PlanFormatJSON:
-		return db.GetPlanJSONByID(ctx, sql.String(runID))
+		return q.GetPlanJSONByID(ctx, sql.String(runID))
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
@@ -284,18 +287,18 @@ func (db *pgdb) GetPlanFile(ctx context.Context, runID string, format PlanFormat
 
 // GetLockFile retrieves the lock file for the run
 func (db *pgdb) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
-	return db.GetLockFileByID(ctx, sql.String(runID))
+	return db.Conn(ctx).GetLockFileByID(ctx, sql.String(runID))
 }
 
 // SetLockFile sets the lock file for the run
 func (db *pgdb) SetLockFile(ctx context.Context, runID string, lockFile []byte) error {
-	_, err := db.PutLockFile(ctx, lockFile, sql.String(runID))
+	_, err := db.Conn(ctx).PutLockFile(ctx, lockFile, sql.String(runID))
 	return err
 }
 
 // DeleteRun deletes a run from the DB
 func (db *pgdb) DeleteRun(ctx context.Context, id string) error {
-	_, err := db.DeleteRunByID(ctx, sql.String(id))
+	_, err := db.Conn(ctx).DeleteRunByID(ctx, sql.String(id))
 	return err
 }
 
@@ -304,7 +307,7 @@ func (db *pgdb) insertRunStatusTimestamp(ctx context.Context, run *Run) error {
 	if err != nil {
 		return err
 	}
-	_, err = db.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
+	_, err = db.Conn(ctx).InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
 		ID:        sql.String(run.ID),
 		Status:    sql.String(string(run.Status)),
 		Timestamp: sql.Timestamptz(ts),
@@ -317,33 +320,13 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	if err != nil {
 		return err
 	}
-	_, err = db.InsertPhaseStatusTimestamp(ctx, pggen.InsertPhaseStatusTimestampParams{
+	_, err = db.Conn(ctx).InsertPhaseStatusTimestamp(ctx, pggen.InsertPhaseStatusTimestampParams{
 		RunID:     sql.String(phase.RunID),
 		Phase:     sql.String(string(phase.PhaseType)),
 		Status:    sql.String(string(phase.Status)),
 		Timestamp: sql.Timestamptz(ts),
 	})
 	return err
-}
-
-// tx constructs a new pgdb within a transaction.
-func (db *pgdb) tx(ctx context.Context, callback func(*pgdb) error) error {
-	return db.Tx(ctx, func(tx internal.DB) error {
-		return callback(&pgdb{tx})
-	})
-}
-
-func GetLogs(ctx context.Context, db pggen.Querier, runID string, phase internal.PhaseType) ([]byte, error) {
-	data, err := db.FindLogs(ctx, sql.String(runID), sql.String(string(phase)))
-	if err != nil {
-		// Don't consider no rows an error because logs may not have been
-		// uploaded yet.
-		if sql.NoRowsInResultError(err) {
-			return nil, nil
-		}
-		return nil, sql.Error(err)
-	}
-	return data, nil
 }
 
 func convertStatusSliceToStringSlice(statuses []internal.RunStatus) (s []string) {

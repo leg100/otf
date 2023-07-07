@@ -147,12 +147,12 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing logs thus far received for each phase.
-	planLogs, err := GetLogs(r.Context(), h.db, run.ID, internal.PlanPhase)
+	planLogs, err := h.svc.getLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := GetLogs(r.Context(), h.db, run.ID, internal.ApplyPhase)
+	applyLogs, err := h.svc.getLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
