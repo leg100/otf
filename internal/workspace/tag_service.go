@@ -162,14 +162,6 @@ func (s *service) RemoveTags(ctx context.Context, workspaceID string, tags []Tag
 			if err := s.db.deleteWorkspaceTag(ctx, workspaceID, tag.ID); err != nil {
 				return fmt.Errorf("removing tag %s from workspace %s: %w", tag.ID, workspaceID, err)
 			}
-			// Delete tag if it is no longer associated with any workspaces. If
-			// that is the case then instance count should be 1, since its last
-			// workspace has just been deleted.
-			if tag.InstanceCount == 1 {
-				if err := s.db.deleteTag(ctx, tag); err != nil {
-					return fmt.Errorf("deleting tag: %w", err)
-				}
-			}
 		}
 		return nil
 	})

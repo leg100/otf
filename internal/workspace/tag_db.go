@@ -86,14 +86,6 @@ func (db *pgdb) addTag(ctx context.Context, organization, name, id string) error
 	return nil
 }
 
-func (db *pgdb) deleteTag(ctx context.Context, tag *Tag) error {
-	_, err := db.Conn(ctx).DeleteTag(ctx, sql.String(tag.ID), sql.String(tag.Organization))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
-}
-
 func (db *pgdb) findTagByName(ctx context.Context, organization, name string) (*Tag, error) {
 	tag, err := db.Conn(ctx).FindTagByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
