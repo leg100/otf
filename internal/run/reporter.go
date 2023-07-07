@@ -35,7 +35,6 @@ type (
 		VCSProviderService          VCSProviderService
 
 		logr.Logger
-		internal.DB
 	}
 )
 
