@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/surl"
 )
 
@@ -45,7 +46,7 @@ type (
 		WorkspaceAuthorizer internal.Authorizer
 
 		internal.Cache
-		internal.DB
+		*sql.DB
 		*surl.Signer
 	}
 )

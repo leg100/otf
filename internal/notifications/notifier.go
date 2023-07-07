@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -32,7 +33,7 @@ type (
 		pubsub.Subscriber
 		workspace.WorkspaceService // for retrieving workspace name
 		internal.HostnameService   // for including a link in the notification
-		internal.DB
+		*sql.DB
 	}
 )
 

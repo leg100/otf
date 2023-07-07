@@ -27,7 +27,7 @@ type (
 		logr.Logger
 		pubsub.Publisher
 
-		db   internal.DB
+		db   *sql.DB
 		site internal.Authorizer // authorize access to site
 		web  *web
 
@@ -37,7 +37,7 @@ type (
 	}
 
 	Options struct {
-		internal.DB
+		*sql.DB
 		pubsub.Publisher
 		html.Renderer
 		logr.Logger
@@ -81,8 +81,8 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	err = s.db.Tx(ctx, func(tx internal.DB) error {
-		_, err := tx.InsertOrganization(ctx, pggen.InsertOrganizationParams{
+	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 			ID:                     sql.String(org.ID),
 			CreatedAt:              sql.Timestamptz(org.CreatedAt),
 			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
@@ -106,7 +106,6 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 
 		owners, err := s.AuthService.CreateTeam(ctx, org.Name, auth.CreateTeamOptions{
 			Name: internal.String("owners"),
-			Tx:   tx,
 		})
 		if err != nil {
 			return fmt.Errorf("creating owners team: %w", err)
@@ -114,7 +113,6 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		err = s.AuthService.AddTeamMembership(ctx, auth.TeamMembershipOptions{
 			TeamID:    owners.ID,
 			Usernames: []string{creator.Username},
-			Tx:        tx,
 		})
 		if err != nil {
 			return fmt.Errorf("adding owner to owners team: %w", err)

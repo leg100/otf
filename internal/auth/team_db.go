@@ -8,7 +8,7 @@ import (
 )
 
 func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
-	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
+	_, err := db.Conn(ctx).InsertTeam(ctx, pggen.InsertTeamParams{
 		ID:                              sql.String(team.ID),
 		Name:                            sql.String(team.Name),
 		CreatedAt:                       sql.Timestamptz(team.CreatedAt),
@@ -27,11 +27,11 @@ func (db *pgdb) createTeam(ctx context.Context, team *Team) error {
 
 func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error) {
 	var team *Team
-	err := db.tx(ctx, func(tx *pgdb) error {
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 		var err error
 
 		// retrieve team
-		result, err := tx.FindTeamByIDForUpdate(ctx, sql.String(teamID))
+		result, err := q.FindTeamByIDForUpdate(ctx, sql.String(teamID))
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 			return err
 		}
 		// persist update
-		_, err = tx.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
+		_, err = q.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
 			TeamID:                          sql.String(teamID),
 			Name:                            sql.String(team.Name),
 			Visibility:                      sql.String(team.Visibility),
@@ -63,7 +63,7 @@ func (db *pgdb) UpdateTeam(ctx context.Context, teamID string, fn func(*Team) er
 }
 
 func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, error) {
-	result, err := db.FindTeamByName(ctx, sql.String(name), sql.String(organization))
+	result, err := db.Conn(ctx).FindTeamByName(ctx, sql.String(name), sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -71,7 +71,7 @@ func (db *pgdb) getTeam(ctx context.Context, name, organization string) (*Team, 
 }
 
 func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
-	result, err := db.FindTeamByID(ctx, sql.String(id))
+	result, err := db.Conn(ctx).FindTeamByID(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -79,7 +79,7 @@ func (db *pgdb) getTeamByID(ctx context.Context, id string) (*Team, error) {
 }
 
 func (db *pgdb) getTeamForUpdate(ctx context.Context, id string) (*Team, error) {
-	result, err := db.FindTeamByIDForUpdate(ctx, sql.String(id))
+	result, err := db.Conn(ctx).FindTeamByIDForUpdate(ctx, sql.String(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -87,7 +87,7 @@ func (db *pgdb) getTeamForUpdate(ctx context.Context, id string) (*Team, error) 
 }
 
 func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, error) {
-	result, err := db.FindTeamsByOrg(ctx, sql.String(organization))
+	result, err := db.Conn(ctx).FindTeamsByOrg(ctx, sql.String(organization))
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (db *pgdb) listTeams(ctx context.Context, organization string) ([]*Team, er
 }
 
 func (db *pgdb) deleteTeam(ctx context.Context, teamID string) error {
-	_, err := db.DeleteTeamByID(ctx, sql.String(teamID))
+	_, err := db.Conn(ctx).DeleteTeamByID(ctx, sql.String(teamID))
 	if err != nil {
 		return sql.Error(err)
 	}

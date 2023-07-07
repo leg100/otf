@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -32,7 +33,7 @@ type (
 	}
 
 	Options struct {
-		internal.DB
+		*sql.DB
 		*pubsub.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer

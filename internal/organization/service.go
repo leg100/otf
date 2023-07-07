@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/sql"
 )
 
 type (
@@ -36,7 +37,7 @@ type (
 	}
 
 	Options struct {
-		internal.DB
+		*sql.DB
 		*pubsub.Broker
 		html.Renderer
 		logr.Logger
