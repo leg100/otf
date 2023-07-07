@@ -1,11 +1,4 @@
 -- +goose Up
--- remove existing unreferenced tags
-DELETE
-FROM tags
-WHERE NOT EXISTS (
-    SELECT FROM workspace_tags wt
-    WHERE wt.tag_id = tags.tag_id
-);
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION delete_tags() RETURNS TRIGGER AS $$
 BEGIN
@@ -19,6 +12,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- +goose StatementEnd
+
+-- invoke trigger to remove existing unreferenced tags
+DELETE FROM workspace_tags WHERE tag_id = '--invalid-name--';
 
 CREATE TRIGGER delete_tags
 AFTER DELETE ON workspace_tags
