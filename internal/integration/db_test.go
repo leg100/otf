@@ -90,6 +90,7 @@ func TestTx(t *testing.T) {
 
 			return nil
 		})
+		require.NoError(t, err)
 
 		// this should fail because it is using a different ctx
 		_, err = db.Conn(ctx).FindOrganizationByID(txCtx, sql.String(org.ID))
