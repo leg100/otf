@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.52](https://github.com/leg100/otf/compare/v0.0.51...v0.0.52) (2023-07-08)
+
+
+### Bug Fixes
+
+* helm chart build needs brew eval ([fab2790](https://github.com/leg100/otf/commit/fab27907b76935bba0d1dbba360f0ac633a17195))
+
 ## [0.0.51](https://github.com/leg100/otf/compare/v0.0.50...v0.0.51) (2023-07-08)
 
 
