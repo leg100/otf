@@ -117,6 +117,7 @@ jobs:
           # bump patch in chart version
           yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/otf/Chart.yaml
           # render README.md to reflect updated version
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install norwoodj/tap/helm-docs
           make readme
           # create branch and commit
