@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0](https://github.com/leg100/otf/compare/v0.0.51...v0.1.0) (2023-07-08)
+
+
+### Features
+
+* my new feature ([05b25d4](https://github.com/leg100/otf/commit/05b25d4b8027295a54d12595eee062ece148b0b3))
+
 ## [0.0.51](https://github.com/leg100/otf/compare/v0.0.50...v0.0.51) (2023-07-08)
 
 
