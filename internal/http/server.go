@@ -83,10 +83,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	// Catch panics and return 500s
 	r.Use(gorillaHandlers.RecoveryHandler(gorillaHandlers.PrintRecoveryStack(true)))
 
-	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
-	// /runs. Uses an HTTP301.
-	r.StrictSlash(true)
-
 	r.Handle("/", http.RedirectHandler("/app/organizations", http.StatusFound))
 
 	// Serve static files
@@ -122,15 +118,22 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 		h.AddHandlers(svcRouter)
 	}
 
-	// Add tfp api version header to every api response
+	// Middleware to alter requests/responses
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// API requests/responses
 			if strings.HasPrefix(r.URL.Path, APIPrefixV2) {
+				// Add TFP API version header to every API response.
+				//
 				// Version 2.5 is the minimum version terraform requires for the
 				// newer 'cloud' configuration block:
 				// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
 				w.Header().Set("TFP-API-Version", "2.5")
 			}
+
+			// Remove trailing slash from all requests
+			r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
+
 			next.ServeHTTP(w, r)
 		})
 	})
