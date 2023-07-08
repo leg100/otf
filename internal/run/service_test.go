@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestService(t *testing.T) {
+func TestService_Watch(t *testing.T) {
 	// input event channel
 	in := make(chan pubsub.Event, 1)
 
@@ -24,7 +24,6 @@ func TestService(t *testing.T) {
 	// inject input event
 	want := pubsub.Event{
 		Payload: &Run{},
-		Type:    pubsub.EventRunCreated,
 	}
 	in <- want
 

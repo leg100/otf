@@ -41,13 +41,10 @@ type environment struct {
 func newEnvironment(
 	ctx context.Context,
 	logger logr.Logger,
-	svc client.Client,
+	agent *agent,
 	run *run.Run,
-	envs []string,
-	downloader Downloader,
-	cfg Config,
 ) (*environment, error) {
-	ws, err := svc.GetWorkspace(ctx, run.WorkspaceID)
+	ws, err := agent.GetWorkspace(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}
@@ -62,17 +59,17 @@ func newEnvironment(
 	// via an environment variable.
 	//
 	// NOTE: environment variable support is only available in terraform >= 1.2.0
-	token, err := svc.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
+	token, err := agent.CreateRunToken(ctx, tokens.CreateRunTokenOptions{
 		Organization: &ws.Organization,
 		RunID:        &run.ID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}
-	envs = append(envs, internal.CredentialEnv(svc.Hostname(), token))
+	envs := internal.SafeAppend(agent.envs, internal.CredentialEnv(agent.Hostname(), token))
 
 	// retrieve workspace variables and add them to the environment
-	variables, err := svc.ListVariables(ctx, run.WorkspaceID)
+	variables, err := agent.ListVariables(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace variables")
 	}
@@ -86,25 +83,25 @@ func newEnvironment(
 	writer := logs.NewPhaseWriter(ctx, logs.PhaseWriterOptions{
 		RunID:  run.ID,
 		Phase:  run.Phase(),
-		Writer: svc,
+		Writer: agent,
 	})
 
 	env := &environment{
 		Logger:     logger,
-		Client:     svc,
-		Downloader: downloader,
+		Client:     agent,
+		Downloader: agent,
 		out:        writer,
 		workdir:    wd,
 		variables:  variables,
 		ctx:        ctx,
 		runner:     &runner{out: writer},
 		executor: &executor{
-			Config:    cfg,
-			terraform: &terraformPathFinder{},
-			version:   ws.TerraformVersion,
-			out:       writer,
-			envs:      envs,
-			workdir:   wd,
+			Config:              agent.Config,
+			terraformPathFinder: agent.terraformPathFinder,
+			version:             ws.TerraformVersion,
+			out:                 writer,
+			envs:                envs,
+			workdir:             wd,
 		},
 	}
 

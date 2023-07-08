@@ -3,18 +3,12 @@ package workspace
 import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 )
 
 const (
 	UserLock LockKind = iota
 	RunLock
-)
-
-var (
-	EventLocked   pubsub.EventType = "workspace_locked"
-	EventUnlocked pubsub.EventType = "workspace_unlocked"
 )
 
 type (

@@ -5,13 +5,23 @@ import (
 	"path"
 )
 
-type terraform interface {
-	TerraformPath(version string) string
+var defaultTerraformBinDir = path.Join(os.TempDir(), "otf-terraform-bins")
+
+type (
+	terraformPathFinder struct {
+		dest string
+	}
+)
+
+func newTerraformPathFinder(dest string) terraformPathFinder {
+	if dest == "" {
+		dest = defaultTerraformBinDir
+	}
+	return terraformPathFinder{
+		dest: dest,
+	}
 }
 
-type terraformPathFinder struct{}
-
-// TerraformPath returns the path to a given version of the terraform binary
-func (*terraformPathFinder) TerraformPath(version string) string {
-	return path.Join(os.TempDir(), "otf-terraform-bins", version, "terraform")
+func (t terraformPathFinder) TerraformPath(version string) string {
+	return path.Join(t.dest, version, "terraform")
 }

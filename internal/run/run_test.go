@@ -144,19 +144,9 @@ func TestRun_States(t *testing.T) {
 	})
 }
 
-func TestRun_Cancel_Pending(t *testing.T) {
+func TestRun_Cancel(t *testing.T) {
 	run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
-	enqueue, err := run.Cancel()
+	err := run.Cancel()
 	require.NoError(t, err)
-	assert.False(t, enqueue)
-	assert.NotZero(t, run.ForceCancelAvailableAt)
-}
-
-func TestRun_Cancel_Planning(t *testing.T) {
-	run := newRun(&configversion.ConfigurationVersion{}, &workspace.Workspace{}, RunCreateOptions{})
-	run.Status = internal.RunPlanning
-	enqueue, err := run.Cancel()
-	require.NoError(t, err)
-	assert.True(t, enqueue)
 	assert.NotZero(t, run.ForceCancelAvailableAt)
 }

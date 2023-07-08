@@ -42,7 +42,7 @@ resource "null_resource" "tags_e2e" {}
 		[]string{"terraform", "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
-		expect.SetEnv(appendSharedEnvs(internal.CredentialEnv(daemon.Hostname(), token))),
+		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()

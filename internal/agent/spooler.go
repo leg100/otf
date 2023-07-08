@@ -105,7 +105,6 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	// whereas we want oldest first.
 	for i := len(existing) - 1; i >= 0; i-- {
 		s.handleEvent(pubsub.Event{
-			Type:    pubsub.EventRunStatusUpdate,
 			Payload: existing[i],
 		})
 	}
@@ -139,9 +138,9 @@ func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *run.Run) {
 
 	if run.Queued() {
 		s.queue <- run
-	} else if event == pubsub.EventRunCancel {
+	} else if run.Status == internal.RunCanceled {
 		s.cancelations <- cancelation{Run: run}
-	} else if event == pubsub.EventRunForceCancel {
+	} else if run.Status == internal.RunForceCanceled {
 		s.cancelations <- cancelation{Run: run, Forceful: true}
 	}
 }

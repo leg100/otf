@@ -71,7 +71,6 @@ func (s *service) CreateNotificationConfiguration(ctx context.Context, workspace
 		return nil, err
 	}
 	s.Info("creating notification config", "config", nc, "subject", subject)
-	s.Publish(pubsub.NewCreatedEvent(nc))
 	return nc, nil
 }
 
@@ -135,6 +134,5 @@ func (s *service) DeleteNotificationConfiguration(ctx context.Context, id string
 		return err
 	}
 	s.Info("deleted notification config", "config", nc, "subject", subject)
-	s.Publish(pubsub.NewDeletedEvent(nc))
 	return nil
 }

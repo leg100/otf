@@ -162,11 +162,3 @@ func setenv(name, value string) (func(), error) {
 		os.Unsetenv(name)
 	}, nil
 }
-
-// appendSharedEnvs appends environment variables to the shared environment
-// variables in a thread-safe manner.
-func appendSharedEnvs(envs ...string) []string {
-	dst := make([]string, len(sharedEnvs)+len(envs))
-	copy(dst, sharedEnvs)
-	return append(dst, envs...)
-}

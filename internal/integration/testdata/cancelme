@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+function cancelme() {
+    curl ${URL}/canceled
+    exit 1
+}
+
+trap cancelme INT
+
+echo "started"
+
+curl ${URL}/started
+
+while true; do sleep 1; done

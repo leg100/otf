@@ -30,7 +30,7 @@ func TestAPI_Watch(t *testing.T) {
 	// send one event and then close
 	in <- pubsub.Event{
 		Payload: &run.Run{ID: "run-123"},
-		Type:    pubsub.EventRunCreated,
+		Type:    pubsub.CreatedEvent,
 	}
 	close(in)
 
@@ -43,7 +43,7 @@ func TestAPI_Watch(t *testing.T) {
 		got = strings.TrimSpace(got)
 		parts := strings.Split(got, "\n")
 		if assert.Equal(t, 2, len(parts)) {
-			assert.Equal(t, "event: run_created", parts[1])
+			assert.Equal(t, "event: created", parts[1])
 			if assert.Regexp(t, `data: .*`, parts[0]) {
 				data := strings.TrimPrefix(parts[0], "data: ")
 				// base64 decode

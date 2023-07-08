@@ -104,21 +104,9 @@ func (p *proxy) get(ctx context.Context, opts internal.GetChunkOptions) (interna
 
 // put writes a chunk of data to the db
 func (p *proxy) put(ctx context.Context, opts internal.PutChunkOptions) error {
-	id, err := p.db.put(ctx, opts)
-	if err != nil {
-		return err
-	}
-	// make a chunk from the options and the id
-	chunk := internal.Chunk{
-		ID:     id,
-		RunID:  opts.RunID,
-		Phase:  opts.Phase,
-		Data:   opts.Data,
-		Offset: opts.Offset,
-	}
-	// publish chunk for caching
-	p.Publish(pubsub.Event{Type: pubsub.EventLogChunk, Payload: chunk})
-	return nil
+	// db triggers an event, which proxy listens for to populate its cache
+	_, err := p.db.put(ctx, opts)
+	return err
 }
 
 // cacheKey generates a key for caching log chunks.

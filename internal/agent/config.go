@@ -8,12 +8,13 @@ import (
 type (
 	// Config is configuration for an agent.
 	Config struct {
-		Organization *string // only process runs belonging to org
-		External     bool    // dedicated agent (true) or integrated into otfd (false)
-		Concurrency  int     // number of workers
-		Sandbox      bool    // isolate privileged ops within sandbox
-		Debug        bool    // toggle debug mode
-		PluginCache  bool    // toggle use of terraform's shared plugin cache
+		Organization    *string // only process runs belonging to org
+		External        bool    // dedicated agent (true) or integrated into otfd (false)
+		Concurrency     int     // number of workers
+		Sandbox         bool    // isolate privileged ops within sandbox
+		Debug           bool    // toggle debug mode
+		PluginCache     bool    // toggle use of terraform's shared plugin cache
+		TerraformBinDir string  // destination directory for terraform binaries
 	}
 	// ExternalConfig is configuration for an external agent
 	ExternalConfig struct {
