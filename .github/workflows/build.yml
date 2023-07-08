@@ -15,58 +15,72 @@ jobs:
     # You must use a Linux environment when using service containers or container jobs
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v3
-      -
-        name: Set up Go
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-      -
-        name: Lint check
+      - name: Lint check
         run: make install-linter lint
-      -
-        name: Vet check
+      - name: Vet check
         run: make vet
-      -
-        name: API tests
+      - name: API tests
         run: make go-tfe-tests
-      -
         # chromium breaks browser-based tests:
         # https://github.com/chromedp/chromedp/issues/1325#issuecomment-1606114185
-        name: Remove chromium
+      - name: Remove chromium
         run: |
           sudo rm /usr/bin/chromium
           sudo rm /usr/bin/chromium-browser
-      -
-        name: Tests
+      - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: make test
-      -
-        name: Archive browser screenshots
+      - name: Archive browser screenshots
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: e2e-screenshots
           path: internal/integration/screenshots/**/*.png
-      -
-        name: Login to docker hub
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u leg100 --password-stdin
-      -
-        name: Build bins and release
-        if: "startsWith(github.ref, 'refs/tags/v')"
-        uses: goreleaser/goreleaser-action@v2
+  release-please:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    outputs:
+      release_created: ${{ steps.release-please.outputs.release_created }}
+      tag_name: ${{ steps.release-please.outputs.tag_name }} # e.g. v1.0.0
+      version: ${{ steps.release-please.outputs.version }} # e.g. 1.0.0
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release-please
+        with:
+          release-type: go
+          command: manifest
+  release:
+    runs-on: ubuntu-latest
+    needs: [build, release-please]
+    if: needs.release-please.outputs.release_created
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: docker/login-action@v2
+        with:
+          username: leg100
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - uses: goreleaser/goreleaser-action@v2
         with:
           args: release --clean --skip-sign --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   docs:
     # only publish docs for new releases
-    if: "startsWith(github.ref, 'refs/tags/v')"
-    needs: build
+    if: needs.release-please.outputs.release_created
+    needs: [build,release-please]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -87,39 +101,39 @@ jobs:
           mike set-default latest -p
   charts:
     # only create otf-charts PR for new releases
-    if: "startsWith(github.ref, 'refs/tags/v')"
-    needs: build
+    if: needs.release-please.outputs.release_created
+    needs: [build,release-please]
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.OTF_CHARTS_TOKEN }}
           repository: leg100/otf-charts
-      -
-        name: Bump version
+      - name: Bump version
         run: |
-          # set app version to the value of the tag, stripping off the 'v'
-          tag=${{ github.ref_name }}
-          appVersion=${tag#v}
-          yq -i ".appVersion = \"${appVersion}\"" ./charts/otf/Chart.yaml
+          # set app version
+          yq -i ".appVersion = \"${{ needs.release-please.outputs.version }}\"" ./charts/otf/Chart.yaml
           # bump patch in chart version
           yq -i '.version |= (split(".") | .[-1] |= ((. tag = "!!int") + 1) | join("."))' ./charts/otf/Chart.yaml
+          # render README.md to reflect updated version
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install norwoodj/tap/helm-docs
+          make readme
           # create branch and commit
           git config --global user.email "chart-bumper@otf.ninja"
           git config --global user.name "Chart bumper"
-          git checkout -b new-otf-version-${{ github.ref_name }}
+          git checkout -b new-otf-version-${{ needs.release-please.outputs.version }}
           git add ./charts/otf/Chart.yaml
-          git commit -m "New otf version ${{ github.ref_name }}"
-          git push origin new-otf-version-${{ github.ref_name }}
-      -
-        name: Create pull request
+          git add ./README.md
+          git commit -m "New otf version ${{ needs.release-please.outputs.tag_name }}"
+          git push origin new-otf-version-${{ needs.release-please.outputs.tag_name }}
+      - name: Create pull request
         uses: repo-sync/pull-request@v2
         with:
           destination_repository: leg100/otf-charts
-          source_branch: new-otf-version-${{ github.ref_name }}
+          source_branch: new-otf-version-${{ needs.release-please.outputs.tag_name }}
           destination_branch: master
-          pr_title: "New OTF version: ${{ github.ref_name }}"
+          pr_title: "New OTF version: ${{ needs.release-please.outputs.tag_name }}"
           github_token: ${{ secrets.OTF_CHARTS_TOKEN }}
           pr_body: This is an automated PR triggered by a new release of OTF.

@@ -1,0 +1,18 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "go",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "changelog-sections": [
+           {"type":"feat","section":"Features","hidden":false},
+           {"type":"fix","section":"Bug Fixes","hidden":false},
+           {"type":"chore","section":"Miscellaneous","hidden":false}
+      ]
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
