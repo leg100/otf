@@ -24,8 +24,8 @@ func TestSpooler(t *testing.T) {
 	db := []*run.Run{run1, run2}
 	events := make(chan pubsub.Event, 3)
 	events <- pubsub.Event{Payload: run3}
-	events <- pubsub.Event{Type: pubsub.EventRunCancel, Payload: run4}
-	events <- pubsub.Event{Type: pubsub.EventRunForceCancel, Payload: run5}
+	events <- pubsub.Event{Payload: run4}
+	events <- pubsub.Event{Payload: run5}
 
 	spooler := newSpooler(
 		&fakeSpoolerApp{runs: db, events: events},
@@ -100,10 +100,9 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name: "handle cancelation",
 			event: pubsub.Event{
-				Type: pubsub.EventRunCancel,
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        internal.RunPlanning,
+					Status:        internal.RunCanceled,
 				},
 			},
 			wantCancelation: true,
@@ -111,10 +110,9 @@ func TestSpooler_handleEvent(t *testing.T) {
 		{
 			name: "handle forceful cancelation",
 			event: pubsub.Event{
-				Type: pubsub.EventRunForceCancel,
 				Payload: &run.Run{
 					ExecutionMode: workspace.RemoteExecutionMode,
-					Status:        internal.RunPlanning,
+					Status:        internal.RunForceCanceled,
 				},
 			},
 			wantForceCancelation: true,

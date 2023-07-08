@@ -17,14 +17,10 @@ const HashicorpReleasesHost = "releases.hashicorp.com"
 type (
 	// terraformDownloader downloads terraform binaries
 	terraformDownloader struct {
-		// server hosting binaries
-		host string
-		// used to lookup destination path for saving download
-		terraform
-		// client for downloading from server via http
-		client *http.Client
-		// mutex channel
-		mu chan struct{}
+		host                string        // server hosting binaries
+		terraformPathFinder               // used to lookup destination path for saving download
+		client              *http.Client  // client for downloading from server via http
+		mu                  chan struct{} // ensures only one download at a time
 	}
 
 	// Downloader downloads a specific version of a binary and returns its path
@@ -33,15 +29,15 @@ type (
 	}
 )
 
-func newTerraformDownloader() *terraformDownloader {
+func newTerraformDownloader(pathFinder terraformPathFinder) *terraformDownloader {
 	mu := make(chan struct{}, 1)
 	mu <- struct{}{}
 
 	return &terraformDownloader{
-		host:      HashicorpReleasesHost,
-		terraform: &terraformPathFinder{},
-		client:    &http.Client{},
-		mu:        mu,
+		host:                HashicorpReleasesHost,
+		terraformPathFinder: pathFinder,
+		client:              &http.Client{},
+		mu:                  mu,
 	}
 }
 

@@ -148,8 +148,6 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name, "organization", ws.Organization, "subject", subject)
 
-	s.Publish(pubsub.NewCreatedEvent(ws))
-
 	return ws, nil
 }
 
@@ -243,8 +241,6 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 
 	s.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
 
-	s.Publish(pubsub.NewUpdatedEvent(updated))
-
 	return updated, nil
 }
 
@@ -272,8 +268,6 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 		return nil, err
 	}
-
-	s.Publish(pubsub.NewDeletedEvent(ws))
 
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name, "subject", subject)
 

@@ -19,7 +19,7 @@ type (
 	// executor executes processes.
 	executor struct {
 		Config
-		terraform
+		terraformPathFinder
 
 		version string // terraform cli version
 		out     io.Writer

@@ -450,7 +450,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	cmd := exec.Command("terraform", cmdargs...)
 	cmd.Dir = configPath
 
-	cmd.Env = appendSharedEnvs(internal.CredentialEnv(s.Hostname(), token))
+	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.Hostname(), token))
 
 	out, err := cmd.CombinedOutput()
 	return string(out), err

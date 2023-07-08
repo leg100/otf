@@ -32,7 +32,7 @@ func TestIntegration_TerraformCLIDiscard(t *testing.T) {
 		[]string{"terraform", "-chdir=" + configPath, "apply", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
-		expect.SetEnv(appendSharedEnvs(internal.CredentialEnv(svc.Hostname(), token))),
+		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(svc.Hostname(), token))),
 	)
 	require.NoError(t, err)
 	defer e.Close()

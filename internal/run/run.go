@@ -215,9 +215,9 @@ func (r *Run) Discard() error {
 
 // Cancel run. Returns a boolean indicating whether a cancel request should be
 // enqueued (for an agent to kill an in progress process)
-func (r *Run) Cancel() (enqueue bool, err error) {
+func (r *Run) Cancel() error {
 	if !r.Cancelable() {
-		return false, internal.ErrRunCancelNotAllowed
+		return internal.ErrRunCancelNotAllowed
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
@@ -235,13 +235,9 @@ func (r *Run) Cancel() (enqueue bool, err error) {
 		r.Apply.UpdateStatus(PhaseCanceled)
 	}
 
-	if r.Status == internal.RunPlanning || r.Status == internal.RunApplying {
-		enqueue = true
-	}
-
 	r.updateStatus(internal.RunCanceled)
 
-	return enqueue, nil
+	return nil
 }
 
 // ForceCancel force cancels a run. A cool-off period of 10 seconds must have

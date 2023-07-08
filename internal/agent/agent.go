@@ -36,9 +36,10 @@ type agent struct {
 	client.Client
 	logr.Logger
 
-	spooler     // spools new run events
-	*terminator // terminates runs
-	Downloader  // terraform cli downloader
+	spooler             // spools new run events
+	*terminator         // terminates runs
+	Downloader          // terraform cli downloader
+	terraformPathFinder // determines destination dir for terraform bins
 
 	envs []string // terraform environment variables
 }
@@ -61,14 +62,17 @@ func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error)
 		logger.V(0).Info("enabled debug mode")
 	}
 
+	pathFinder := newTerraformPathFinder(cfg.TerraformBinDir)
+
 	agent := &agent{
-		Client:     app,
-		Config:     cfg,
-		Logger:     logger,
-		envs:       DefaultEnvs,
-		spooler:    newSpooler(app, logger, cfg),
-		terminator: newTerminator(),
-		Downloader: newTerraformDownloader(),
+		Client:              app,
+		Config:              cfg,
+		Logger:              logger,
+		envs:                DefaultEnvs,
+		spooler:             newSpooler(app, logger, cfg),
+		terminator:          newTerminator(),
+		Downloader:          newTerraformDownloader(pathFinder),
+		terraformPathFinder: pathFinder,
 	}
 
 	if cfg.PluginCache {

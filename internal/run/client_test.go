@@ -29,7 +29,7 @@ func TestWatchClient(t *testing.T) {
 			ConfigurationVersion: &types.ConfigurationVersion{ID: "cv-123"},
 		})
 		require.NoError(t, err)
-		pubsub.WriteSSEEvent(w, b, pubsub.EventRunStatusUpdate, true)
+		pubsub.WriteSSEEvent(w, b, pubsub.UpdatedEvent, true)
 	})
 	webserver := httptest.NewTLSServer(mux)
 
@@ -50,5 +50,5 @@ func TestWatchClient(t *testing.T) {
 		WorkspaceID:            "ws-123",
 		ConfigurationVersionID: "cv-123",
 	}
-	assert.Equal(t, pubsub.Event{Type: pubsub.EventRunStatusUpdate, Payload: want}, <-got)
+	assert.Equal(t, pubsub.Event{Type: pubsub.UpdatedEvent, Payload: want}, <-got)
 }

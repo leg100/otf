@@ -124,8 +124,6 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 		return nil, err
 	}
 
-	s.Publish(pubsub.NewCreatedEvent(org))
-
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
 
 	return org, nil

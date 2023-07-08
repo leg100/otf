@@ -160,8 +160,6 @@ func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCre
 	}
 	s.V(1).Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
 
-	s.Publish(pubsub.NewCreatedEvent(run))
-
 	return run, nil
 }
 
@@ -247,8 +245,6 @@ func (s *service) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
 	}
 	s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
 
-	s.Publish(pubsub.NewUpdatedEvent(run))
-
 	return run, nil
 }
 
@@ -268,7 +264,6 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("deleted run", "id", runID, "subject", subject)
-	s.Publish(pubsub.Event{Type: pubsub.EventRunDeleted, Payload: run})
 	return nil
 }
 
@@ -298,7 +293,6 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		return nil, err
 	}
 	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)
-	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -327,7 +321,6 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		return nil, err
 	}
 	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject)
-	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -389,7 +382,7 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.EnqueueApply()
 	})
 	if err != nil {
@@ -399,7 +392,6 @@ func (s *service) Apply(ctx context.Context, runID string) error {
 
 	s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
 
-	s.Publish(pubsub.NewUpdatedEvent(run))
 	return err
 }
 
@@ -410,7 +402,7 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 		return err
 	}
 
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -420,7 +412,6 @@ func (s *service) DiscardRun(ctx context.Context, runID string) error {
 
 	s.V(0).Info("discarded run", "id", runID, "subject", subject)
 
-	s.Publish(pubsub.NewUpdatedEvent(run))
 	return err
 }
 
@@ -432,21 +423,14 @@ func (s *service) Cancel(ctx context.Context, runID string) (*Run, error) {
 		return nil, err
 	}
 
-	var enqueue bool
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) (err error) {
-		enqueue, err = run.Cancel()
-		return err
+		return run.Cancel()
 	})
 	if err != nil {
 		s.Error(err, "canceling run", "id", runID, "subject", subject)
 		return nil, err
 	}
 	s.V(0).Info("canceled run", "id", runID, "subject", subject)
-	if enqueue {
-		// notify agent which'll send a SIGINT to terraform
-		s.Publish(pubsub.Event{Type: pubsub.EventRunCancel, Payload: run})
-	}
-	s.Publish(pubsub.NewUpdatedEvent(run))
 	return run, nil
 }
 
@@ -456,7 +440,7 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *Run) error {
+	_, err = s.db.UpdateStatus(ctx, runID, func(run *Run) error {
 		return run.ForceCancel()
 	})
 	if err != nil {
@@ -464,9 +448,6 @@ func (s *service) ForceCancelRun(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("force canceled run", "id", runID, "subject", subject)
-
-	// notify agent which'll send a SIGKILL to terraform
-	s.Publish(pubsub.Event{Type: pubsub.EventRunForceCancel, Payload: run})
 
 	return err
 }

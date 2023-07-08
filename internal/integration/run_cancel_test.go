@@ -1,55 +1,82 @@
 package integration
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
-	"time"
 
-	expect "github.com/google/goexpect"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 
-// TestIntegration_RunCancel demonstrates a run being canceled mid-flow. The
-// agent should terminate
+// TestIntegration_RunCancel demonstrates a run being canceled mid-flow.
 func TestIntegration_RunCancel(t *testing.T) {
 	integrationTest(t)
 
-	svc, org, ctx := setup(t, nil)
+	daemon, org, ctx := setup(t, nil)
 
-	ws := svc.createWorkspace(t, ctx, nil)
-	cv := svc.createAndUploadConfigurationVersion(t, ctx, ws, nil)
-	run := svc.createRun(t, ctx, ws, cv)
-
-	svc.GetLogs
-	// Invoke terraform plan
-	_, token := svc.createToken(t, ctx, nil)
-	e, tferr, err := expect.SpawnWithArgs(
-		[]string{"terraform", "-chdir=" + config, "plan", "-no-color"},
-		time.Minute,
-		expect.PartialMatch(true),
-		expect.SetEnv(
-			append(envs, internal.CredentialEnv(svc.Hostname(), token)),
-		),
-	)
+	// stage a fake terraform bin that sleeps until it receives an interrupt
+	// signal
+	bins := filepath.Join(t.TempDir(), "bins")
+	dst := filepath.Join(bins, workspace.DefaultTerraformVersion, "terraform")
+	err := os.MkdirAll(filepath.Dir(dst), 0o755)
 	require.NoError(t, err)
-	defer e.Close()
-
-	// wait for terraform plan to call handler
-	<-planning
-	svc.Cancel(ctx, run.ID)
-	close(interrupted)
-
-	// Confirm canceling run
-	e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "Do you want to cancel the remote operation?"},
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
-		&expect.BExp{R: "The remote operation was successfully cancelled."},
-	}, time.Minute)
-	// Terraform should return with exit code 0
-	require.NoError(t, <-tferr)
-
-	runs, err := svc.ListRuns(ctx, run.RunListOptions{Organization: &org.Name})
+	err = os.Link("testdata/cancelme", dst)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(runs.Items))
-	require.Equal(t, internal.RunCanceled, runs.Items[0].Status)
+
+	// run a temporary http server as a means of communicating with the fake
+	// bin
+	got := make(chan string)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/started", func(w http.ResponseWriter, r *http.Request) {
+		// fake bin has started
+		got <- "started"
+	})
+	mux.HandleFunc("/canceled", func(w http.ResponseWriter, r *http.Request) {
+		// fake bin has received interrupt signal
+		got <- "canceled"
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	// start an external agent (it's the only way to specify a separate bin
+	// directory currently).
+	daemon.startAgent(t, ctx, org.Name, agent.ExternalConfig{
+		Config: agent.Config{TerraformBinDir: bins},
+	})
+
+	// create workspace specifying that it use an external agent.
+	ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+		Name:          internal.String("ws-1"),
+		Organization:  internal.String(org.Name),
+		ExecutionMode: workspace.ExecutionModePtr(workspace.AgentExecutionMode),
+	})
+	require.NoError(t, err)
+
+	// create a variable so that the fake bin knows the url of the temp http
+	// server
+	_, err = daemon.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
+		Key:      internal.String("URL"),
+		Value:    internal.String(srv.URL),
+		Category: variable.VariableCategoryPtr(variable.CategoryEnv),
+	})
+	require.NoError(t, err)
+
+	cv := daemon.createAndUploadConfigurationVersion(t, ctx, ws, nil)
+	r := daemon.createRun(t, ctx, ws, cv)
+
+	// fake bin process has started
+	require.Equal(t, "started", <-got)
+
+	// we can now send interrupt
+	_, err = daemon.Cancel(ctx, r.ID)
+	require.NoError(t, err)
+
+	// fake bin has received interrupt
+	require.Equal(t, "canceled", <-got)
 }

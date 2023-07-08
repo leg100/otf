@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,9 +24,9 @@ func TestDownloader(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	dl := newTerraformDownloader()
+	pathFinder := newTerraformPathFinder(t.TempDir())
+	dl := newTerraformDownloader(pathFinder)
 	dl.host = u.Host
-	dl.terraform = &fakeTerraform{t.TempDir()}
 	dl.client = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -42,12 +41,4 @@ func TestDownloader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "I am a fake terraform binary\n", string(tfbin))
 	assert.Equal(t, "downloading terraform, version 1.2.3\n", buf.String())
-}
-
-type fakeTerraform struct {
-	dir string
-}
-
-func (f *fakeTerraform) TerraformPath(version string) string {
-	return path.Join(f.dir, version, "terraform")
 }

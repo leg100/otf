@@ -50,11 +50,11 @@ func (q *queue) handleEvent(ctx context.Context, event pubsub.Event) error {
 	switch payload := event.Payload.(type) {
 	case *workspace.Workspace:
 		q.ws = payload
-		if event.Type == workspace.EventUnlocked {
-			if q.current != nil {
-				if err := q.scheduleRun(ctx, q.current); err != nil {
-					return err
-				}
+		// workspace state has changed; pessimistically schedule the current run
+		// in case the workspace has been unlocked.
+		if q.current != nil {
+			if err := q.scheduleRun(ctx, q.current); err != nil {
+				return err
 			}
 		}
 	case *run.Run:

@@ -37,11 +37,8 @@ func (w *worker) handle(ctx context.Context, r *run.Run) {
 	env, err := newEnvironment(
 		ctx,
 		log,
-		w.Client,
+		w.agent,
 		r,
-		w.envs,
-		w.Downloader,
-		w.Config,
 	)
 	if err != nil {
 		log.Error(err, "creating execution environment")

@@ -96,7 +96,6 @@ func (s *scheduler) Start(ctx context.Context) error {
 	go func() {
 		for _, ws := range workspaces {
 			queue <- pubsub.Event{
-				Type:    pubsub.EventWorkspaceCreated,
 				Payload: ws,
 			}
 		}
@@ -104,7 +103,6 @@ func (s *scheduler) Start(ctx context.Context) error {
 		// whereas we want oldest first.
 		for i := len(runs) - 1; i >= 0; i-- {
 			queue <- pubsub.Event{
-				Type:    pubsub.EventRunStatusUpdate,
 				Payload: runs[i],
 			}
 		}
