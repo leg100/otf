@@ -51,36 +51,6 @@ func (q *DBQuerier) InsertRepoConnectionScan(results pgx.BatchResults) (pgconn.C
 	return cmdTag, err
 }
 
-const countRepoConnectionsByIDSQL = `SELECT count(*)
-FROM repo_connections
-WHERE webhook_id = $1;`
-
-// CountRepoConnectionsByID implements Querier.CountRepoConnectionsByID.
-func (q *DBQuerier) CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (pgtype.Int8, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "CountRepoConnectionsByID")
-	row := q.conn.QueryRow(ctx, countRepoConnectionsByIDSQL, webhookID)
-	var item pgtype.Int8
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query CountRepoConnectionsByID: %w", err)
-	}
-	return item, nil
-}
-
-// CountRepoConnectionsByIDBatch implements Querier.CountRepoConnectionsByIDBatch.
-func (q *DBQuerier) CountRepoConnectionsByIDBatch(batch genericBatch, webhookID pgtype.UUID) {
-	batch.Queue(countRepoConnectionsByIDSQL, webhookID)
-}
-
-// CountRepoConnectionsByIDScan implements Querier.CountRepoConnectionsByIDScan.
-func (q *DBQuerier) CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error) {
-	row := results.QueryRow()
-	var item pgtype.Int8
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan CountRepoConnectionsByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
 const deleteWorkspaceConnectionByIDSQL = `DELETE
 FROM repo_connections
 WHERE workspace_id = $1

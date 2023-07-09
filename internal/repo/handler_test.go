@@ -17,7 +17,7 @@ func TestWebhookHandler(t *testing.T) {
 	publisher := &fakePublisher{}
 	want := pubsub.Event{Type: pubsub.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
 	f := newTestFactory(t, cloud.VCSPushEvent{})
-	hook := newTestHook(t, f, internal.String("123"))
+	hook := newTestHook(t, f, "vcs-123", internal.String("123"))
 	handler := handler{
 		Publisher: publisher,
 		Logger:    logr.Discard(),
@@ -32,16 +32,17 @@ func TestWebhookHandler(t *testing.T) {
 	assert.Equal(t, want, publisher.got)
 }
 
-type fakeHandlerDB struct {
-	hook *hook
-}
+type (
+	fakeHandlerDB struct {
+		hook *hook
+	}
+	fakePublisher struct {
+		got pubsub.Event
+	}
+)
 
 func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) {
 	return db.hook, nil
-}
-
-type fakePublisher struct {
-	got pubsub.Event
 }
 
 func (f *fakePublisher) Publish(got pubsub.Event) { f.got = got }

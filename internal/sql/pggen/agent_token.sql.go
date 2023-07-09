@@ -447,13 +447,6 @@ type Querier interface {
 	// InsertRepoConnectionScan scans the result of an executed InsertRepoConnectionBatch query.
 	InsertRepoConnectionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (pgtype.Int8, error)
-	// CountRepoConnectionsByIDBatch enqueues a CountRepoConnectionsByID query into batch to be executed
-	// later by the batch.
-	CountRepoConnectionsByIDBatch(batch genericBatch, webhookID pgtype.UUID)
-	// CountRepoConnectionsByIDScan scans the result of an executed CountRepoConnectionsByIDBatch query.
-	CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error)
-
 	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (pgtype.UUID, error)
 	// DeleteWorkspaceConnectionByIDBatch enqueues a DeleteWorkspaceConnectionByID query into batch to be executed
 	// later by the batch.
@@ -944,24 +937,10 @@ type Querier interface {
 	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
 	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
 
-	FindWebhookByIDForUpdate(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDForUpdateRow, error)
-	// FindWebhookByIDForUpdateBatch enqueues a FindWebhookByIDForUpdate query into batch to be executed
-	// later by the batch.
-	FindWebhookByIDForUpdateBatch(batch genericBatch, webhookID pgtype.UUID)
-	// FindWebhookByIDForUpdateScan scans the result of an executed FindWebhookByIDForUpdateBatch query.
-	FindWebhookByIDForUpdateScan(results pgx.BatchResults) (FindWebhookByIDForUpdateRow, error)
-
-	FindWebhookByRepoForUpdate(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) (FindWebhookByRepoForUpdateRow, error)
-	// FindWebhookByRepoForUpdateBatch enqueues a FindWebhookByRepoForUpdate query into batch to be executed
-	// later by the batch.
-	FindWebhookByRepoForUpdateBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
-	// FindWebhookByRepoForUpdateScan scans the result of an executed FindWebhookByRepoForUpdateBatch query.
-	FindWebhookByRepoForUpdateScan(results pgx.BatchResults) (FindWebhookByRepoForUpdateRow, error)
-
-	FindWebhookByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) ([]FindWebhookByRepoRow, error)
+	FindWebhookByRepo(ctx context.Context, params FindWebhookByRepoParams) ([]FindWebhookByRepoRow, error)
 	// FindWebhookByRepoBatch enqueues a FindWebhookByRepo query into batch to be executed
 	// later by the batch.
-	FindWebhookByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
+	FindWebhookByRepoBatch(batch genericBatch, params FindWebhookByRepoParams)
 	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
 	FindWebhookByRepoScan(results pgx.BatchResults) ([]FindWebhookByRepoRow, error)
 
@@ -1347,9 +1326,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertRepoConnectionSQL, insertRepoConnectionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRepoConnection': %w", err)
 	}
-	if _, err := p.Prepare(ctx, countRepoConnectionsByIDSQL, countRepoConnectionsByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountRepoConnectionsByID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceConnectionByIDSQL, deleteWorkspaceConnectionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceConnectionByID': %w", err)
 	}
@@ -1559,12 +1535,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWebhookByIDForUpdateSQL, findWebhookByIDForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByIDForUpdate': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWebhookByRepoForUpdateSQL, findWebhookByRepoForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByRepoForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)

@@ -48,6 +48,9 @@ func (r *Purger) Start(ctx context.Context) error {
 			// Skip non-deleted events
 			continue
 		}
+		// In case there are multiple purgers running the following advisory
+		// lock ensures only one purger is successfully granted the lock and
+		// therefore only one purger deletes the webhook from the cloud provider.
 		err = r.DB.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
 			_, err := r.DB.Exec(ctx, "SELECT pg_try_advisory_xact_lock($1)", PurgerLockID)
 			if err != nil {

@@ -9,11 +9,6 @@ INSERT INTO repo_connections (
     pggen.arg('module_id')
 );
 
--- name: CountRepoConnectionsByID :one
-SELECT count(*)
-FROM repo_connections
-WHERE webhook_id = pggen.arg('webhook_id');
-
 -- name: DeleteWorkspaceConnectionByID :one
 DELETE
 FROM repo_connections

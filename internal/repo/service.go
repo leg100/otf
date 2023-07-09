@@ -47,7 +47,6 @@ type (
 		*sql.DB
 		*pubsub.Broker
 		internal.HostnameService
-		pubsub.Publisher
 		VCSProviderService vcsprovider.Service
 	}
 )
@@ -57,7 +56,7 @@ func NewService(opts Options) *service {
 	db := &db{opts.DB, factory}
 	handler := &handler{
 		Logger:    opts.Logger,
-		Publisher: opts.Publisher,
+		Publisher: opts.Broker,
 		handlerDB: db,
 	}
 	svc := &service{
@@ -91,8 +90,9 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 	}
 
 	hook, err := s.newHook(newHookOpts{
-		identifier: opts.RepoPath,
-		cloud:      vcsProvider.CloudConfig.Name,
+		identifier:    opts.RepoPath,
+		cloud:         vcsProvider.CloudConfig.Name,
+		vcsProviderID: vcsProvider.ID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("constructing webhook: %w", err)

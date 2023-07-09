@@ -27,7 +27,8 @@ type (
 
 func newConverter() *converter {
 	return &converter{
-		getters: make(map[string]Getter),
+		getters:      make(map[string]Getter),
+		unmarshalers: make(map[string]unmarshaler),
 	}
 }
 

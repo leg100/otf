@@ -30,7 +30,11 @@ type (
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindWebhookByRepo(ctx, sql.String(hook.identifier), sql.String(hook.cloud))
+	result, err := q.FindWebhookByRepo(ctx, pggen.FindWebhookByRepoParams{
+		Identifier:    sql.String(hook.identifier),
+		Cloud:         sql.String(hook.cloud),
+		VCSProviderID: sql.String(hook.vcsProviderID),
+	})
 	if err != nil {
 		return nil, sql.Error(err)
 	}

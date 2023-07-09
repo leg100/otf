@@ -165,7 +165,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                 db,
 		CloudService:       cloudService,
 		HostnameService:    hostnameService,
-		Publisher:          broker,
+		Broker:             broker,
 		VCSProviderService: vcsProviderService,
 	})
 
