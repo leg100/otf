@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"errors"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
@@ -257,9 +256,7 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 
 	// disconnect repo before deleting
 	if ws.Connection != nil {
-		err = s.disconnect(ctx, ws.ID)
-		// ignore warnings; the repo is still disconnected successfully
-		if err != nil && !errors.Is(err, internal.ErrWarning) {
+		if err := s.disconnect(ctx, ws.ID); err != nil {
 			return nil, err
 		}
 	}
