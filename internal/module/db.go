@@ -166,7 +166,7 @@ func (row moduleRow) toModule() *Module {
 	}
 	if row.ModuleConnection != nil {
 		module.Connection = &repo.Connection{
-			VCSProviderID: row.ModuleConnection.VCSProviderID.String,
+			VCSProviderID: row.Webhook.VCSProviderID.String,
 			Repo:          row.Webhook.Identifier.String,
 		}
 	}

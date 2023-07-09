@@ -47,13 +47,4 @@ func TestDB(t *testing.T, sqldb *sql.DB) {
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
-
-	t.Run("delete hook", func(t *testing.T) {
-		hook := newTestHook(t, db.factory, internal.String("123"))
-		_, err := db.getOrCreateHook(ctx, hook)
-		require.NoError(t, err)
-
-		_, err = db.deleteHook(ctx, hook.id)
-		require.NoError(t, err)
-	})
 }

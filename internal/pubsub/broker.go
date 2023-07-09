@@ -22,10 +22,6 @@ const (
 )
 
 type (
-	// Getter retrieves an event payload using its ID.
-	Getter interface {
-		GetByID(context.Context, string, DBAction) (any, error)
-	}
 
 	// Broker is a pubsub Broker implemented using postgres' listen/notify
 	Broker struct {
@@ -42,6 +38,7 @@ type (
 		*converter
 	}
 
+	// database connection pool
 	pool interface {
 		Acquire(ctx context.Context) (*pgxpool.Conn, error)
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
@@ -50,9 +47,17 @@ type (
 	// pgevent is the payload of a postgres notification triggered by a database
 	// change.
 	pgevent struct {
-		Table  string   `json:"table"`  // pg table associated with change
-		Action DBAction `json:"action"` // INSERT/UPDATE/DELETE
-		ID     string   `json:"id"`     // id of changed row
+		// pg table associated with change
+		Table string `json:"table"`
+
+		// INSERT/UPDATE/DELETE
+		Action DBAction `json:"action"`
+
+		// id of changed row
+		ID string `json:"id"`
+
+		// the row contents (only populated for certain tables)
+		Payload json.RawMessage `json:"payload,omitempty"`
 	}
 )
 

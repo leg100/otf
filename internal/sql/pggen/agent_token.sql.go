@@ -454,19 +454,19 @@ type Querier interface {
 	// CountRepoConnectionsByIDScan scans the result of an executed CountRepoConnectionsByIDBatch query.
 	CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error)
 
-	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceConnectionByIDRow, error)
+	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (pgtype.UUID, error)
 	// DeleteWorkspaceConnectionByIDBatch enqueues a DeleteWorkspaceConnectionByID query into batch to be executed
 	// later by the batch.
 	DeleteWorkspaceConnectionByIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// DeleteWorkspaceConnectionByIDScan scans the result of an executed DeleteWorkspaceConnectionByIDBatch query.
-	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (DeleteWorkspaceConnectionByIDRow, error)
+	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
 
-	DeleteModuleConnectionByID(ctx context.Context, id pgtype.Text) (DeleteModuleConnectionByIDRow, error)
+	DeleteModuleConnectionByID(ctx context.Context, moduleID pgtype.Text) (pgtype.UUID, error)
 	// DeleteModuleConnectionByIDBatch enqueues a DeleteModuleConnectionByID query into batch to be executed
 	// later by the batch.
-	DeleteModuleConnectionByIDBatch(batch genericBatch, id pgtype.Text)
+	DeleteModuleConnectionByIDBatch(batch genericBatch, moduleID pgtype.Text)
 	// DeleteModuleConnectionByIDScan scans the result of an executed DeleteModuleConnectionByIDBatch query.
-	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (DeleteModuleConnectionByIDRow, error)
+	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
@@ -1664,10 +1664,9 @@ type PhaseStatusTimestamps struct {
 
 // RepoConnections represents the Postgres composite type "repo_connections".
 type RepoConnections struct {
-	WebhookID     pgtype.UUID `json:"webhook_id"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-	ModuleID      pgtype.Text `json:"module_id"`
-	WorkspaceID   pgtype.Text `json:"workspace_id"`
+	WebhookID   pgtype.UUID `json:"webhook_id"`
+	ModuleID    pgtype.Text `json:"module_id"`
+	WorkspaceID pgtype.Text `json:"workspace_id"`
 }
 
 // Report represents the Postgres composite type "report".
@@ -1740,11 +1739,12 @@ type Users struct {
 
 // Webhooks represents the Postgres composite type "webhooks".
 type Webhooks struct {
-	WebhookID  pgtype.UUID `json:"webhook_id"`
-	VCSID      pgtype.Text `json:"vcs_id"`
-	Secret     pgtype.Text `json:"secret"`
-	Identifier pgtype.Text `json:"identifier"`
-	Cloud      pgtype.Text `json:"cloud"`
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSID         pgtype.Text `json:"vcs_id"`
+	Secret        pgtype.Text `json:"secret"`
+	Identifier    pgtype.Text `json:"identifier"`
+	Cloud         pgtype.Text `json:"cloud"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1891,7 +1891,6 @@ func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"repo_connections",
 		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
-		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
 		compositeField{"module_id", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)
@@ -1999,6 +1998,7 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
 		compositeField{"cloud", "text", &pgtype.Text{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
 	)
 }
 

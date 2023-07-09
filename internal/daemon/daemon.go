@@ -434,6 +434,17 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
+			Name:           "webhook purger",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			System: &repo.Purger{
+				Logger:             d.Logger.WithValues("component", "purger"),
+				VCSProviderService: d.VCSProviderService,
+				DB:                 d.DB,
+				Subscriber:         d.Broker,
+			},
+		},
+		{
 			Name:           "notifier",
 			BackoffRestart: true,
 			Logger:         d.Logger,

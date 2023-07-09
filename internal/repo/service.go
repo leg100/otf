@@ -30,6 +30,7 @@ type (
 	service struct {
 		logr.Logger
 		vcsprovider.Service
+		*pubsub.Broker
 
 		*db
 
@@ -44,6 +45,7 @@ type (
 		CloudService cloud.Service
 
 		*sql.DB
+		*pubsub.Broker
 		internal.HostnameService
 		pubsub.Publisher
 		VCSProviderService vcsprovider.Service
@@ -58,14 +60,19 @@ func NewService(opts Options) *service {
 		Publisher: opts.Publisher,
 		handlerDB: db,
 	}
-	return &service{
+	svc := &service{
 		Logger:       opts.Logger,
 		Service:      opts.VCSProviderService,
+		Broker:       opts.Broker,
 		db:           db,
 		factory:      factory,
 		handler:      handler,
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
 	}
+	// Register with broker so that it can relay webhook database events
+	opts.RegisterUnmarshaler("webhooks", factory)
+
+	return svc
 }
 
 // Connect an OTF resource to a VCS repo.
@@ -93,7 +100,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err = s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) error {
+	err = s.db.Lock(ctx, "webhooks", func(ctx context.Context, q pggen.Querier) error {
 		hook, err = s.db.getOrCreateHook(ctx, hook)
 		if err != nil {
 			return fmt.Errorf("getting or creating webhook: %w", err)
@@ -113,46 +120,6 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 }
 
 // Disconnect resource from repo
-//
-// NOTE: if the webhook cannot be deleted from the repo then this is not deemed
-// fatal and the hook is still deleted from the database.
 func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	// lock webhooks table to prevent concurrent updates (a row-level lock is
-	// insufficient)
-	return s.db.Lock(ctx, "tags", func(ctx context.Context, q pggen.Querier) error {
-		hookID, vcsProviderID, err := s.db.deleteConnection(ctx, opts)
-		if err != nil {
-			return err
-		}
-
-		conns, err := s.db.countConnections(ctx, hookID)
-		if err != nil {
-			return err
-		}
-		if conns > 0 {
-			return nil
-		}
-
-		// no more connections; delete webhook from both db and VCS provider
-
-		hook, err := s.db.deleteHook(ctx, hookID)
-		if err != nil {
-			return err
-		}
-		client, err := s.GetVCSClient(ctx, vcsProviderID)
-		if err != nil {
-			return err
-		}
-		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
-			Repo: hook.identifier,
-			ID:   *hook.cloudID,
-		})
-		if err != nil {
-			// failure to delete webhook from cloud is not fatal
-			s.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
-		} else {
-			s.V(0).Info("deleted webhook", "repo", hook.identifier, "cloud", hook.cloud)
-		}
-		return nil
-	})
+	return s.db.deleteConnection(ctx, opts)
 }
