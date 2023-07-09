@@ -6,12 +6,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 )
+
+var DeleteHook = hooks.NewHook[*Organization](rbac.DeleteOrganizationAction)
 
 type (
 	OrganizationService = Service
@@ -132,7 +135,15 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.db.delete(ctx, name)
+	org, err := s.db.get(ctx, name)
+	if err != nil {
+		s.Error(err, "retrieving organization", "name", name, "subject", subject)
+		return err
+	}
+
+	err = DeleteHook.Dispatch(ctx, org, func(ctx context.Context) error {
+		return s.db.delete(ctx, name)
+	})
 	if err != nil {
 		s.Error(err, "deleting organization", "name", name, "subject", subject)
 		return err
