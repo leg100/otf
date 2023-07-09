@@ -52,7 +52,10 @@ type (
 )
 
 func NewService(opts Options) *service {
-	factory := newFactory(opts.HostnameService, opts.CloudService)
+	factory := factory{
+		HostnameService: opts.HostnameService,
+		Service:         opts.CloudService,
+	}
 	db := &db{opts.DB, factory}
 	handler := &handler{
 		Logger:    opts.Logger,
@@ -68,8 +71,6 @@ func NewService(opts Options) *service {
 		handler:      handler,
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
 	}
-	// Register with broker so that it can relay webhook database events
-	opts.RegisterUnmarshaler("webhooks", factory)
 
 	return svc
 }
@@ -89,7 +90,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		return nil, fmt.Errorf("checking repository exists: %w", err)
 	}
 
-	hook, err := s.newHook(newHookOpts{
+	hook, err := s.newHook(newHookOptions{
 		identifier:    opts.RepoPath,
 		cloud:         vcsProvider.CloudConfig.Name,
 		vcsProviderID: vcsProvider.ID,

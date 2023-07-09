@@ -19,10 +19,10 @@ type (
 	hookRow struct {
 		WebhookID     pgtype.UUID `json:"webhook_id"`
 		VCSID         pgtype.Text `json:"vcs_id"`
+		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 		Secret        pgtype.Text `json:"secret"`
 		Identifier    pgtype.Text `json:"identifier"`
 		Cloud         pgtype.Text `json:"cloud"`
-		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	}
 )
 
@@ -32,7 +32,6 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Conn(ctx)
 	result, err := q.FindWebhookByRepo(ctx, pggen.FindWebhookByRepoParams{
 		Identifier:    sql.String(hook.identifier),
-		Cloud:         sql.String(hook.cloud),
 		VCSProviderID: sql.String(hook.vcsProviderID),
 	})
 	if err != nil {
@@ -44,21 +43,15 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 
 	// not found; create instead
 
-	params := pggen.InsertWebhookParams{
+	insertResult, err := q.InsertWebhook(ctx, pggen.InsertWebhookParams{
 		WebhookID:     sql.UUID(hook.id),
-		VCSProviderID: sql.String(hook.vcsProviderID),
 		Secret:        sql.String(hook.secret),
 		Identifier:    sql.String(hook.identifier),
-		Cloud:         sql.String(hook.cloud),
-	}
-	if hook.cloudID != nil {
-		params.VCSID = sql.String(*hook.cloudID)
-	} else {
-		params.VCSID = pgtype.Text{Status: pgtype.Null}
-	}
-	insertResult, err := q.InsertWebhook(ctx, params)
+		VCSID:         sql.StringPtr(hook.cloudID),
+		VCSProviderID: sql.String(hook.vcsProviderID),
+	})
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, fmt.Errorf("inserting webhook into db: %w", sql.Error(err))
 	}
 	return db.fromRow(hookRow(insertResult))
 }

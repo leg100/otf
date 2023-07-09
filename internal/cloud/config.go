@@ -17,9 +17,7 @@ type Config struct {
 	Cloud
 }
 
-func (cfg Config) String() string {
-	return string(cfg.Name)
-}
+func (cfg Config) String() string { return cfg.Name }
 
 func (cfg *Config) NewClient(ctx context.Context, creds Credentials) (Client, error) {
 	return cfg.Cloud.NewClient(ctx, ClientOptions{

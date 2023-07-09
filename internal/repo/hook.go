@@ -29,6 +29,7 @@ type hook struct {
 func (h *hook) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", h.id.String()),
+		slog.String("vcs_provider_id", h.vcsProviderID),
 		slog.String("cloud", h.cloud),
 		slog.String("repo", h.identifier),
 		slog.String("endpoint", h.endpoint),

@@ -1713,7 +1713,6 @@ type Webhooks struct {
 	VCSID         pgtype.Text `json:"vcs_id"`
 	Secret        pgtype.Text `json:"secret"`
 	Identifier    pgtype.Text `json:"identifier"`
-	Cloud         pgtype.Text `json:"cloud"`
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
@@ -1967,7 +1966,6 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 		compositeField{"vcs_id", "text", &pgtype.Text{}},
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
-		compositeField{"cloud", "text", &pgtype.Text{}},
 		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
 	)
 }

@@ -10,17 +10,27 @@ import (
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-// pgdb is a VCS provider database on postgres
-type pgdb struct {
-	*sql.DB // provides access to generated SQL queries
-	*factory
-}
+type (
+	// pgdb is a VCS provider database on postgres
+	pgdb struct {
+		*sql.DB // provides access to generated SQL queries
+		*factory
+	}
+	// pgRow represents a database row for a vcs provider
+	pgRow struct {
+		VCSProviderID    pgtype.Text        `json:"id"`
+		Token            pgtype.Text        `json:"token"`
+		CreatedAt        pgtype.Timestamptz `json:"created_at"`
+		Name             pgtype.Text        `json:"name"`
+		Cloud            pgtype.Text        `json:"cloud"`
+		OrganizationName pgtype.Text        `json:"organization_name"`
+	}
+)
 
 func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
 	return &pgdb{db, &factory{cloudService}}
 }
 
-// CreateVCSProvider inserts an agent token, associating it with an organization
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
@@ -57,7 +67,6 @@ func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, 
 	return providers, nil
 }
 
-// DeleteVCSProvider deletes an agent token.
 func (db *pgdb) delete(ctx context.Context, id string) error {
 	_, err := db.Conn(ctx).DeleteVCSProviderByID(ctx, sql.String(id))
 	if err != nil {
@@ -66,17 +75,7 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// pgRow represents a database row for a vcs provider
-type pgRow struct {
-	VCSProviderID    pgtype.Text        `json:"id"`
-	Token            pgtype.Text        `json:"token"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	Name             pgtype.Text        `json:"name"`
-	Cloud            pgtype.Text        `json:"cloud"`
-	OrganizationName pgtype.Text        `json:"organization_name"`
-}
-
-// UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
+// unmarshal a vcs provider row from the database.
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
 	return db.new(CreateOptions{
 		ID:           &row.VCSProviderID.String,

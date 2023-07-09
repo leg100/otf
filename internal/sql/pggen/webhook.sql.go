@@ -10,22 +10,31 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-const insertWebhookSQL = `INSERT INTO webhooks (
-    webhook_id,
-    vcs_id,
-    vcs_provider_id,
-    secret,
-    identifier,
-    cloud
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
+const insertWebhookSQL = `WITH inserted AS (
+    INSERT INTO webhooks (
+        webhook_id,
+        vcs_id,
+        vcs_provider_id,
+        secret,
+        identifier
+    ) VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5
+    )
+    RETURNING *
 )
-RETURNING *;`
+SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM inserted w
+JOIN vcs_providers v USING (vcs_provider_id);`
 
 type InsertWebhookParams struct {
 	WebhookID     pgtype.UUID
@@ -33,24 +42,23 @@ type InsertWebhookParams struct {
 	VCSProviderID pgtype.Text
 	Secret        pgtype.Text
 	Identifier    pgtype.Text
-	Cloud         pgtype.Text
 }
 
 type InsertWebhookRow struct {
 	WebhookID     pgtype.UUID `json:"webhook_id"`
 	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	Identifier    pgtype.Text `json:"identifier"`
 	Cloud         pgtype.Text `json:"cloud"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 // InsertWebhook implements Querier.InsertWebhook.
 func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParams) (InsertWebhookRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWebhook")
-	row := q.conn.QueryRow(ctx, insertWebhookSQL, params.WebhookID, params.VCSID, params.VCSProviderID, params.Secret, params.Identifier, params.Cloud)
+	row := q.conn.QueryRow(ctx, insertWebhookSQL, params.WebhookID, params.VCSID, params.VCSProviderID, params.Secret, params.Identifier)
 	var item InsertWebhookRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 		return item, fmt.Errorf("query InsertWebhook: %w", err)
 	}
 	return item, nil
@@ -58,14 +66,14 @@ func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParam
 
 // InsertWebhookBatch implements Querier.InsertWebhookBatch.
 func (q *DBQuerier) InsertWebhookBatch(batch genericBatch, params InsertWebhookParams) {
-	batch.Queue(insertWebhookSQL, params.WebhookID, params.VCSID, params.VCSProviderID, params.Secret, params.Identifier, params.Cloud)
+	batch.Queue(insertWebhookSQL, params.WebhookID, params.VCSID, params.VCSProviderID, params.Secret, params.Identifier)
 }
 
 // InsertWebhookScan implements Querier.InsertWebhookScan.
 func (q *DBQuerier) InsertWebhookScan(results pgx.BatchResults) (InsertWebhookRow, error) {
 	row := results.QueryRow()
 	var item InsertWebhookRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 		return item, fmt.Errorf("scan InsertWebhookBatch row: %w", err)
 	}
 	return item, nil
@@ -81,7 +89,6 @@ type UpdateWebhookVCSIDRow struct {
 	VCSID         pgtype.Text `json:"vcs_id"`
 	Secret        pgtype.Text `json:"secret"`
 	Identifier    pgtype.Text `json:"identifier"`
-	Cloud         pgtype.Text `json:"cloud"`
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
@@ -90,7 +97,7 @@ func (q *DBQuerier) UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, w
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWebhookVCSID")
 	row := q.conn.QueryRow(ctx, updateWebhookVCSIDSQL, vcsID, webhookID)
 	var item UpdateWebhookVCSIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.VCSProviderID); err != nil {
 		return item, fmt.Errorf("query UpdateWebhookVCSID: %w", err)
 	}
 	return item, nil
@@ -105,23 +112,30 @@ func (q *DBQuerier) UpdateWebhookVCSIDBatch(batch genericBatch, vcsID pgtype.Tex
 func (q *DBQuerier) UpdateWebhookVCSIDScan(results pgx.BatchResults) (UpdateWebhookVCSIDRow, error) {
 	row := results.QueryRow()
 	var item UpdateWebhookVCSIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.VCSProviderID); err != nil {
 		return item, fmt.Errorf("scan UpdateWebhookVCSIDBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const findWebhookByIDSQL = `SELECT *
-FROM webhooks
-WHERE webhook_id = $1;`
+const findWebhookByIDSQL = `SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM webhooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE w.webhook_id = $1;`
 
 type FindWebhookByIDRow struct {
 	WebhookID     pgtype.UUID `json:"webhook_id"`
 	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	Identifier    pgtype.Text `json:"identifier"`
 	Cloud         pgtype.Text `json:"cloud"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 // FindWebhookByID implements Querier.FindWebhookByID.
@@ -129,7 +143,7 @@ func (q *DBQuerier) FindWebhookByID(ctx context.Context, webhookID pgtype.UUID) 
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookByID")
 	row := q.conn.QueryRow(ctx, findWebhookByIDSQL, webhookID)
 	var item FindWebhookByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 		return item, fmt.Errorf("query FindWebhookByID: %w", err)
 	}
 	return item, nil
@@ -144,14 +158,21 @@ func (q *DBQuerier) FindWebhookByIDBatch(batch genericBatch, webhookID pgtype.UU
 func (q *DBQuerier) FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error) {
 	row := results.QueryRow()
 	var item FindWebhookByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 		return item, fmt.Errorf("scan FindWebhookByIDBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const findWebhookByRepoSQL = `SELECT *
-FROM webhooks
+const findWebhookByRepoSQL = `SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM webhooks w
+JOIN vcs_providers v USING (vcs_provider_id)
 WHERE identifier = $1
 AND   cloud = $2
 AND   vcs_provider_id = $3;`
@@ -165,10 +186,10 @@ type FindWebhookByRepoParams struct {
 type FindWebhookByRepoRow struct {
 	WebhookID     pgtype.UUID `json:"webhook_id"`
 	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	Identifier    pgtype.Text `json:"identifier"`
 	Cloud         pgtype.Text `json:"cloud"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 // FindWebhookByRepo implements Querier.FindWebhookByRepo.
@@ -182,7 +203,7 @@ func (q *DBQuerier) FindWebhookByRepo(ctx context.Context, params FindWebhookByR
 	items := []FindWebhookByRepoRow{}
 	for rows.Next() {
 		var item FindWebhookByRepoRow
-		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 			return nil, fmt.Errorf("scan FindWebhookByRepo row: %w", err)
 		}
 		items = append(items, item)
@@ -208,7 +229,7 @@ func (q *DBQuerier) FindWebhookByRepoScan(results pgx.BatchResults) ([]FindWebho
 	items := []FindWebhookByRepoRow{}
 	for rows.Next() {
 		var item FindWebhookByRepoRow
-		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
 			return nil, fmt.Errorf("scan FindWebhookByRepoBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -229,7 +250,6 @@ type DeleteWebhookByIDRow struct {
 	VCSID         pgtype.Text `json:"vcs_id"`
 	Secret        pgtype.Text `json:"secret"`
 	Identifier    pgtype.Text `json:"identifier"`
-	Cloud         pgtype.Text `json:"cloud"`
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
@@ -238,7 +258,7 @@ func (q *DBQuerier) DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWebhookByID")
 	row := q.conn.QueryRow(ctx, deleteWebhookByIDSQL, webhookID)
 	var item DeleteWebhookByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.VCSProviderID); err != nil {
 		return item, fmt.Errorf("query DeleteWebhookByID: %w", err)
 	}
 	return item, nil
@@ -253,7 +273,7 @@ func (q *DBQuerier) DeleteWebhookByIDBatch(batch genericBatch, webhookID pgtype.
 func (q *DBQuerier) DeleteWebhookByIDScan(results pgx.BatchResults) (DeleteWebhookByIDRow, error) {
 	row := results.QueryRow()
 	var item DeleteWebhookByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.Cloud, &item.VCSProviderID); err != nil {
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.VCSProviderID); err != nil {
 		return item, fmt.Errorf("scan DeleteWebhookByIDBatch row: %w", err)
 	}
 	return item, nil

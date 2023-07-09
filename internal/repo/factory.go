@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"path"
@@ -17,32 +16,21 @@ type (
 		cloud.Service
 		internal.HostnameService
 	}
-	newHookOpts struct {
+
+	newHookOptions struct {
 		id            *uuid.UUID
 		vcsProviderID string
 		secret        *string
 		identifier    string
-		cloud         string // cloud name
-		cloudID       *string
+		cloud         string  // cloud name
+		cloudID       *string // cloud's webhook id
+		token         string  // cloud auth token
 	}
 )
 
-func newFactory(hostnameService internal.HostnameService, cloudService cloud.Service) factory {
-	return factory{cloudService, hostnameService}
-}
-
-// Unmarshal creates a hook from a json-encoded database row.
-func (f factory) UnmarshalRow(data []byte) (any, error) {
-	var row hookRow
-	if err := json.Unmarshal(data, &row); err != nil {
-		return nil, err
-	}
-	return f.fromRow(row)
-}
-
-// fromDB creates a hook from a database row
+// fromRow creates a hook from a database row
 func (f factory) fromRow(row hookRow) (*hook, error) {
-	opts := newHookOpts{
+	opts := newHookOptions{
 		id:            internal.UUID(row.WebhookID.Bytes),
 		vcsProviderID: row.VCSProviderID.String,
 		secret:        internal.String(row.Secret.String),
@@ -55,18 +43,17 @@ func (f factory) fromRow(row hookRow) (*hook, error) {
 	return f.newHook(opts)
 }
 
-func (f factory) newHook(opts newHookOpts) (*hook, error) {
+func (f factory) newHook(opts newHookOptions) (*hook, error) {
 	cloudConfig, err := f.GetCloudConfig(opts.cloud)
 	if err != nil {
 		return nil, fmt.Errorf("unknown cloud: %s", opts.cloud)
 	}
 
 	hook := hook{
-		identifier:    opts.identifier,
-		vcsProviderID: opts.vcsProviderID,
-		cloud:         opts.cloud,
-		EventHandler:  cloudConfig.Cloud,
-		cloudID:       opts.cloudID,
+		identifier:   opts.identifier,
+		cloud:        opts.cloud,
+		EventHandler: cloudConfig.Cloud,
+		cloudID:      opts.cloudID,
 	}
 
 	if opts.id != nil {

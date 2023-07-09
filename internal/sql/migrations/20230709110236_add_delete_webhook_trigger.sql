@@ -22,7 +22,10 @@ ALTER TABLE repo_connections
 ALTER TABLE webhooks
     ADD COLUMN vcs_provider_id TEXT NOT NULL,
     ADD CONSTRAINT vcs_provider_id_fk FOREIGN KEY (vcs_provider_id)
-        REFERENCES vcs_providers ON UPDATE CASCADE ON DELETE CASCADE;
+        REFERENCES vcs_providers ON UPDATE CASCADE ON DELETE CASCADE,
+    DROP COLUMN cloud,
+    ADD CONSTRAINT webhooks_cloud_id_uniq
+        UNIQUE(identifier, vcs_provider_id);
 
 UPDATE webhooks w
 SET vcs_provider_id = c.vcs_provider_id
@@ -104,4 +107,9 @@ SET vcs_provider_id = w.vcs_provider_id
 FROM webhooks w
 WHERE c.webhook_id = w.webhook_id;
 
-ALTER TABLE webhooks DROP COLUMN vcs_provider_id;
+ALTER TABLE webhooks
+    DROP COLUMN vcs_provider_id,
+    ADD COLUMN cloud TEXT NOT NULL,
+    ADD CONSTRAINT webhooks_cloud_fkey FOREIGN KEY (cloud)
+        REFERENCES clouds ON UPDATE CASCADE ON DELETE CASCADE,
+    ADD CONSTRAINT webhooks_cloud_id_uniq UNIQUE(cloud, identifier);

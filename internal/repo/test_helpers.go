@@ -38,7 +38,7 @@ type (
 )
 
 func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string) *hook {
-	want, err := f.newHook(newHookOpts{
+	want, err := f.newHook(newHookOptions{
 		id:            internal.UUID(uuid.New()),
 		vcsProviderID: vcsProviderID,
 		secret:        internal.String("top-secret"),
@@ -51,10 +51,10 @@ func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string)
 }
 
 func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
-	return newFactory(
-		fakeHostnameService{},
-		fakeCloudService{event: event},
-	)
+	return factory{
+		HostnameService: fakeHostnameService{},
+		Service:         fakeCloudService{event: event},
+	}
 }
 
 func (f fakeCloudService) GetCloudConfig(string) (cloud.Config, error) {
