@@ -88,7 +88,7 @@ func (p *Purger) handle(ctx context.Context, event pubsub.Event) error {
 		return nil
 	}
 
-	// only deleted hook events reach this point
+	// only hook deletion events reach this point
 
 	hook := p.getHook(deletedHook.id)
 	if hook == nil {

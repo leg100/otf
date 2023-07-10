@@ -194,7 +194,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 					ID:     internal.Int64(123),
 					Events: opts.Events,
 					Config: map[string]any{
-						"url": &opts.Config.URL,
+						"url": opts.Config.URL,
 					},
 				},
 				secret: opts.Config.Secret,
@@ -235,7 +235,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 						ID:     internal.Int64(123),
 						Events: opts.Events,
 						Config: map[string]any{
-							"url": &opts.Config.URL,
+							"url": opts.Config.URL,
 						},
 					},
 					secret: opts.Config.Secret,
