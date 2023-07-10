@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -16,8 +15,6 @@ import (
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
-
-var CreateHook = hooks.NewHook[*organization.Organization](rbac.CreateOrganizationAction)
 
 type (
 	OrganizationCreatorService = Service

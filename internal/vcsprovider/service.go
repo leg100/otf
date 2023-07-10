@@ -22,6 +22,7 @@ type (
 		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
 		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
+		ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error)
 		DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
 		// GetVCSClient combines retrieving a vcs provider and construct a cloud
@@ -35,8 +36,10 @@ type (
 	service struct {
 		logr.Logger
 
+		site         internal.Authorizer
 		organization internal.Authorizer
-		db           *pgdb
+
+		db *pgdb
 
 		*factory
 		web *webHandlers
@@ -97,12 +100,27 @@ func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]
 		return nil, err
 	}
 
-	providers, err := a.db.list(ctx, organization)
+	providers, err := a.db.listByOrganization(ctx, organization)
 	if err != nil {
 		a.Error(err, "listing vcs providers", "organization", organization, "subject", subject)
 		return nil, err
 	}
 	a.V(9).Info("listed vcs providers", "organization", organization, "subject", subject)
+	return providers, nil
+}
+
+func (a *service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error) {
+	subject, err := a.site.CanAccess(ctx, rbac.ListVCSProvidersAction, "")
+	if err != nil {
+		return nil, err
+	}
+
+	providers, err := a.db.list(ctx)
+	if err != nil {
+		a.Error(err, "listing vcs providers", "subject", subject)
+		return nil, err
+	}
+	a.V(9).Info("listed vcs providers", "subject", subject)
 	return providers, nil
 }
 

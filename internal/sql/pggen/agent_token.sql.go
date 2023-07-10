@@ -895,10 +895,17 @@ type Querier interface {
 	// InsertVCSProviderScan scans the result of an executed InsertVCSProviderBatch query.
 	InsertVCSProviderScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindVCSProviders(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersRow, error)
+	FindVCSProvidersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersByOrganizationRow, error)
+	// FindVCSProvidersByOrganizationBatch enqueues a FindVCSProvidersByOrganization query into batch to be executed
+	// later by the batch.
+	FindVCSProvidersByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindVCSProvidersByOrganizationScan scans the result of an executed FindVCSProvidersByOrganizationBatch query.
+	FindVCSProvidersByOrganizationScan(results pgx.BatchResults) ([]FindVCSProvidersByOrganizationRow, error)
+
+	FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow, error)
 	// FindVCSProvidersBatch enqueues a FindVCSProviders query into batch to be executed
 	// later by the batch.
-	FindVCSProvidersBatch(batch genericBatch, organizationName pgtype.Text)
+	FindVCSProvidersBatch(batch genericBatch)
 	// FindVCSProvidersScan scans the result of an executed FindVCSProvidersBatch query.
 	FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSProvidersRow, error)
 
@@ -929,6 +936,13 @@ type Querier interface {
 	UpdateWebhookVCSIDBatch(batch genericBatch, vcsID pgtype.Text, webhookID pgtype.UUID)
 	// UpdateWebhookVCSIDScan scans the result of an executed UpdateWebhookVCSIDBatch query.
 	UpdateWebhookVCSIDScan(results pgx.BatchResults) (UpdateWebhookVCSIDRow, error)
+
+	FindWebhooks(ctx context.Context) ([]FindWebhooksRow, error)
+	// FindWebhooksBatch enqueues a FindWebhooks query into batch to be executed
+	// later by the batch.
+	FindWebhooksBatch(batch genericBatch)
+	// FindWebhooksScan scans the result of an executed FindWebhooksBatch query.
+	FindWebhooksScan(results pgx.BatchResults) ([]FindWebhooksRow, error)
 
 	FindWebhookByID(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDRow, error)
 	// FindWebhookByIDBatch enqueues a FindWebhookByID query into batch to be executed
@@ -1518,6 +1532,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertVCSProviderSQL, insertVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertVCSProvider': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findVCSProvidersByOrganizationSQL, findVCSProvidersByOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVCSProvidersByOrganization': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findVCSProvidersSQL, findVCSProvidersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVCSProviders': %w", err)
 	}
@@ -1532,6 +1549,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateWebhookVCSIDSQL, updateWebhookVCSIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWebhookVCSID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWebhooksSQL, findWebhooksSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhooks': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)

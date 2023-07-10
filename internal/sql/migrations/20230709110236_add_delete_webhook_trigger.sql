@@ -65,19 +65,22 @@ DECLARE
     record RECORD;
     notification JSON;
 BEGIN
-    record = OLD;
+    IF (TG_OP = 'DELETE') THEN
+        record = OLD;
+    ELSE
+        record = NEW;
+    END IF;
     notification = json_build_object(
                       'table',TG_TABLE_NAME,
                       'action', TG_OP,
-                      'id', record.webhook_id,
-                      'payload', to_json(record));
+                      'id', record.webhook_id);
     PERFORM pg_notify('events', notification::text);
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER notify_event
-AFTER DELETE ON webhooks
+AFTER INSERT OR UPDATE OR DELETE ON webhooks
     FOR EACH ROW EXECUTE PROCEDURE webhook_notify_event();
 -- +goose StatementEnd
 

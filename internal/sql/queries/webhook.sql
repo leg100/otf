@@ -31,6 +31,17 @@ SET vcs_id = pggen.arg('vcs_id')
 WHERE webhook_id = pggen.arg('webhook_id')
 RETURNING *;
 
+-- name: FindWebhooks :many
+SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM webhooks w
+JOIN vcs_providers v USING (vcs_provider_id);
+
 -- name: FindWebhookByID :one
 SELECT
     w.webhook_id,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -25,6 +26,18 @@ type (
 		Cloud         pgtype.Text `json:"cloud"`
 	}
 )
+
+// GetByID implements pubsub.Getter
+func (db *db) GetByID(ctx context.Context, rawID string, action pubsub.DBAction) (any, error) {
+	id, err := uuid.Parse(rawID)
+	if err != nil {
+		return nil, err
+	}
+	if action == pubsub.DeleteDBAction {
+		return &hook{id: id}, nil
+	}
+	return db.getHookByID(ctx, id)
+}
 
 // getOrCreate gets a hook if it exists or creates it if it does not. Should be
 // called within a tx to avoid concurrent access causing unpredictible results.
@@ -63,6 +76,23 @@ func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 		return nil, sql.Error(err)
 	}
 	return db.fromRow(hookRow(result))
+}
+
+func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.FindWebhooks(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	hooks := make([]*hook, len(result))
+	for i, row := range result {
+		hook, err := db.fromRow(hookRow(row))
+		if err != nil {
+			return nil, sql.Error(err)
+		}
+		hooks[i] = hook
+	}
+	return hooks, nil
 }
 
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {

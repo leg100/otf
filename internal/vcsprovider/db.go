@@ -51,8 +51,24 @@ func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 	return db.unmarshal(pgRow(row))
 }
 
-func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	rows, err := db.Conn(ctx).FindVCSProviders(ctx, sql.String(organization))
+func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
+	rows, err := db.Conn(ctx).FindVCSProviders(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	var providers []*VCSProvider
+	for _, r := range rows {
+		provider, err := db.unmarshal(pgRow(r))
+		if err != nil {
+			return nil, err
+		}
+		providers = append(providers, provider)
+	}
+	return providers, nil
+}
+
+func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]*VCSProvider, error) {
+	rows, err := db.Conn(ctx).FindVCSProvidersByOrganization(ctx, sql.String(organization))
 	if err != nil {
 		return nil, sql.Error(err)
 	}

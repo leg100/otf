@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
@@ -20,60 +21,105 @@ type (
 		logr.Logger
 		pubsub.Subscriber
 		vcsprovider.VCSProviderService
+		internal.HostnameService
+		CloudService cloud.Service
 		*sql.DB
+
+		*cache
 	}
 )
 
 // Start starts the purger daemon. Should be invoked in a go routine.
-//
-// NOTE: if the webhook cannot be deleted from the repo then this is not deemed
-// fatal and the hook is still deleted from the database.
-func (r *Purger) Start(ctx context.Context) error {
+func (p *Purger) Start(ctx context.Context) error {
+	factory := factory{
+		HostnameService: p.HostnameService,
+		Service:         p.CloudService,
+	}
+	db := &db{p.DB, factory}
+
 	// Unsubscribe whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// subscribe to webhook database events
-	sub, err := r.Subscribe(ctx, "purger-")
+	sub, err := p.Subscribe(ctx, "purger-")
 	if err != nil {
 		return err
 	}
+
+	// populate cache with existing hooks and vcs providers
+	cache, err := newCache(ctx, cacheOptions{
+		VCSProviderService: p.VCSProviderService,
+		hookdb:             db,
+	})
+	if err != nil {
+		return err
+	}
+	p.cache = cache
+
 	for event := range sub {
-		hook, ok := event.Payload.(*hook)
-		if !ok {
-			// Skip non-hook events
-			continue
+		if err := p.handleDeletion(ctx, event); err != nil {
+			p.Error(err, "cannot delete webhook", "event", event.Type)
 		}
-		if event.Type != pubsub.DeletedEvent {
-			// Skip non-deleted events
-			continue
-		}
-		// In case there are multiple purgers running the following advisory
-		// lock ensures only one purger is successfully granted the lock and
-		// therefore only one purger deletes the webhook from the cloud provider.
-		err = r.DB.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-			_, err := r.DB.Exec(ctx, "SELECT pg_try_advisory_xact_lock($1)", PurgerLockID)
-			if err != nil {
-				return err
-			}
-			client, err := r.GetVCSClient(ctx, hook.vcsProviderID)
-			if err != nil {
-				return err
-			}
-			err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
-				Repo: hook.identifier,
-				ID:   *hook.cloudID,
-			})
-			if err != nil {
-				r.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
-			} else {
-				r.V(0).Info("deleted webhook", "repo", hook.identifier, "cloud", hook.cloud)
-			}
-			return nil
-		})
+	}
+	return nil
+}
+
+func (p *Purger) handleDeletion(ctx context.Context, event pubsub.Event) error {
+	hook, ok := event.Payload.(*hook)
+	if !ok {
+		// Skip non-hook events
+		return nil
+	}
+	if event.Type != pubsub.DeletedEvent {
+		// Only interested in deletion events
+		return nil
+	}
+	hook, ok = p.hooks[hook.id]
+	if !ok {
+		p.Error(nil, "webhook not found in cache", "repo", hook.identifier)
+		return nil
+	}
+	provider, ok := p.providers[hook.vcsProviderID]
+	if !ok {
+		p.Error(nil, "vcs provider not found in cache", "repo", hook.identifier)
+		return nil
+	}
+	// Advisory lock ensures only one purger deletes the webhook from the cloud
+	// provider.
+	err := p.DB.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		var locked bool
+		err := p.DB.QueryRow(ctx, "SELECT pg_try_advisory_xact_lock($1)", PurgerLockID).Scan(&locked)
 		if err != nil {
 			return err
 		}
+		if !locked {
+			// Another purger obtained the lock first
+			return nil
+		}
+		client, err := provider.NewClient(ctx)
+		if err != nil {
+			return err
+		}
+		err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
+			Repo: hook.identifier,
+			ID:   *hook.cloudID,
+		})
+		if err != nil {
+			p.Error(err, "deleting webhook", "repo", hook.identifier, "cloud", hook.cloud)
+		} else {
+			p.V(0).Info("deleted webhook", "repo", hook.identifier, "cloud", hook.cloud)
+		}
+		// Failure to delete the webhook from the cloud provider is not deemed a
+		// fatal error.
+		return nil
+	})
+	if err != nil {
+		return err
 	}
+	// Regardless of success deleting the webhook from the cloud provider,
+	// delete the hook and optionally, vcs provider, from the cache.
+	p.delete(hook.id)
+
 	return nil
 }

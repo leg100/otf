@@ -103,6 +103,13 @@ func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.Command
 	return db.Pool.Exec(ctx, sql, args...)
 }
 
+func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	if conn, ok := fromContext(ctx); ok {
+		return conn.QueryRow(ctx, sql, args...)
+	}
+	return db.Pool.QueryRow(ctx, sql, args...)
+}
+
 // WaitAndLock obtains an exclusive session-level advisory lock. If another
 // session holds the lock with the given id then it'll wait until the other
 // session releases the lock. The given fn is called once the lock is obtained

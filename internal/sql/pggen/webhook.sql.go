@@ -118,6 +118,73 @@ func (q *DBQuerier) UpdateWebhookVCSIDScan(results pgx.BatchResults) (UpdateWebh
 	return item, nil
 }
 
+const findWebhooksSQL = `SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM webhooks w
+JOIN vcs_providers v USING (vcs_provider_id);`
+
+type FindWebhooksRow struct {
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	Secret        pgtype.Text `json:"secret"`
+	Identifier    pgtype.Text `json:"identifier"`
+	Cloud         pgtype.Text `json:"cloud"`
+}
+
+// FindWebhooks implements Querier.FindWebhooks.
+func (q *DBQuerier) FindWebhooks(ctx context.Context) ([]FindWebhooksRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhooks")
+	rows, err := q.conn.Query(ctx, findWebhooksSQL)
+	if err != nil {
+		return nil, fmt.Errorf("query FindWebhooks: %w", err)
+	}
+	defer rows.Close()
+	items := []FindWebhooksRow{}
+	for rows.Next() {
+		var item FindWebhooksRow
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
+			return nil, fmt.Errorf("scan FindWebhooks row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWebhooks rows: %w", err)
+	}
+	return items, err
+}
+
+// FindWebhooksBatch implements Querier.FindWebhooksBatch.
+func (q *DBQuerier) FindWebhooksBatch(batch genericBatch) {
+	batch.Queue(findWebhooksSQL)
+}
+
+// FindWebhooksScan implements Querier.FindWebhooksScan.
+func (q *DBQuerier) FindWebhooksScan(results pgx.BatchResults) ([]FindWebhooksRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindWebhooksBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindWebhooksRow{}
+	for rows.Next() {
+		var item FindWebhooksRow
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
+			return nil, fmt.Errorf("scan FindWebhooksBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWebhooksBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findWebhookByIDSQL = `SELECT
     w.webhook_id,
     w.vcs_id,

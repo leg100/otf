@@ -24,7 +24,6 @@ type (
 		identifier    string
 		cloud         string  // cloud name
 		cloudID       *string // cloud's webhook id
-		token         string  // cloud auth token
 	}
 )
 
