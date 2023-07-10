@@ -160,15 +160,15 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:           db,
 		Renderer:     renderer,
 		CloudService: cloudService,
-		Broker:       broker,
 	})
-	repoService := repo.NewService(repo.Options{
-		Logger:             logger,
-		DB:                 db,
-		CloudService:       cloudService,
-		HostnameService:    hostnameService,
-		Broker:             broker,
-		VCSProviderService: vcsProviderService,
+	repoService := repo.NewService(ctx, repo.Options{
+		Logger:              logger,
+		DB:                  db,
+		CloudService:        cloudService,
+		HostnameService:     hostnameService,
+		Broker:              broker,
+		OrganizationService: orgService,
+		VCSProviderService:  vcsProviderService,
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
@@ -441,11 +441,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			BackoffRestart: true,
 			Logger:         d.Logger,
 			System: &repo.Purger{
-				Logger:             d.Logger.WithValues("component", "purger"),
-				VCSProviderService: d.VCSProviderService,
-				Subscriber:         d.Broker,
-				Service:            d.RepoService,
-				DB:                 d.DB,
+				Logger:     d.Logger.WithValues("component", "purger"),
+				Subscriber: d.Broker,
+				Service:    d.RepoService,
+				DB:         d.DB,
 			},
 		},
 		{

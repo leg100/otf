@@ -300,6 +300,145 @@ func (q *DBQuerier) FindWebhookByRepoAndProviderScan(results pgx.BatchResults) (
 	return items, err
 }
 
+const findWebhooksByProviderSQL = `SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM webhooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE w.vcs_provider_id = $1;`
+
+type FindWebhooksByProviderRow struct {
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	Secret        pgtype.Text `json:"secret"`
+	Identifier    pgtype.Text `json:"identifier"`
+	Cloud         pgtype.Text `json:"cloud"`
+}
+
+// FindWebhooksByProvider implements Querier.FindWebhooksByProvider.
+func (q *DBQuerier) FindWebhooksByProvider(ctx context.Context, vcsProviderID pgtype.Text) ([]FindWebhooksByProviderRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhooksByProvider")
+	rows, err := q.conn.Query(ctx, findWebhooksByProviderSQL, vcsProviderID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindWebhooksByProvider: %w", err)
+	}
+	defer rows.Close()
+	items := []FindWebhooksByProviderRow{}
+	for rows.Next() {
+		var item FindWebhooksByProviderRow
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
+			return nil, fmt.Errorf("scan FindWebhooksByProvider row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWebhooksByProvider rows: %w", err)
+	}
+	return items, err
+}
+
+// FindWebhooksByProviderBatch implements Querier.FindWebhooksByProviderBatch.
+func (q *DBQuerier) FindWebhooksByProviderBatch(batch genericBatch, vcsProviderID pgtype.Text) {
+	batch.Queue(findWebhooksByProviderSQL, vcsProviderID)
+}
+
+// FindWebhooksByProviderScan implements Querier.FindWebhooksByProviderScan.
+func (q *DBQuerier) FindWebhooksByProviderScan(results pgx.BatchResults) ([]FindWebhooksByProviderRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindWebhooksByProviderBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindWebhooksByProviderRow{}
+	for rows.Next() {
+		var item FindWebhooksByProviderRow
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
+			return nil, fmt.Errorf("scan FindWebhooksByProviderBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWebhooksByProviderBatch rows: %w", err)
+	}
+	return items, err
+}
+
+const findUnreferencedWebhooksSQL = `SELECT
+    w.webhook_id,
+    w.vcs_id,
+    w.vcs_provider_id,
+    w.secret,
+    w.identifier,
+    v.cloud
+FROM webhooks w
+JOIN vcs_providers v USING (vcs_provider_id)
+WHERE NOT EXISTS (
+    SELECT FROM repo_connections c
+    WHERE c.webhook_id = w.webhook_id
+);`
+
+type FindUnreferencedWebhooksRow struct {
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	Secret        pgtype.Text `json:"secret"`
+	Identifier    pgtype.Text `json:"identifier"`
+	Cloud         pgtype.Text `json:"cloud"`
+}
+
+// FindUnreferencedWebhooks implements Querier.FindUnreferencedWebhooks.
+func (q *DBQuerier) FindUnreferencedWebhooks(ctx context.Context) ([]FindUnreferencedWebhooksRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindUnreferencedWebhooks")
+	rows, err := q.conn.Query(ctx, findUnreferencedWebhooksSQL)
+	if err != nil {
+		return nil, fmt.Errorf("query FindUnreferencedWebhooks: %w", err)
+	}
+	defer rows.Close()
+	items := []FindUnreferencedWebhooksRow{}
+	for rows.Next() {
+		var item FindUnreferencedWebhooksRow
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
+			return nil, fmt.Errorf("scan FindUnreferencedWebhooks row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindUnreferencedWebhooks rows: %w", err)
+	}
+	return items, err
+}
+
+// FindUnreferencedWebhooksBatch implements Querier.FindUnreferencedWebhooksBatch.
+func (q *DBQuerier) FindUnreferencedWebhooksBatch(batch genericBatch) {
+	batch.Queue(findUnreferencedWebhooksSQL)
+}
+
+// FindUnreferencedWebhooksScan implements Querier.FindUnreferencedWebhooksScan.
+func (q *DBQuerier) FindUnreferencedWebhooksScan(results pgx.BatchResults) ([]FindUnreferencedWebhooksRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindUnreferencedWebhooksBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindUnreferencedWebhooksRow{}
+	for rows.Next() {
+		var item FindUnreferencedWebhooksRow
+		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
+			return nil, fmt.Errorf("scan FindUnreferencedWebhooksBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindUnreferencedWebhooksBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const deleteWebhookByIDSQL = `DELETE
 FROM webhooks
 WHERE webhook_id = $1

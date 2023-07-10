@@ -7,9 +7,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -32,24 +32,25 @@ type (
 		// TODO: rename vcs provider to cloud client; the central purpose of the vcs
 		// provider is, after all, to construct a cloud client.
 		GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
+
+		BeforeDeleteHook(l hooks.Listener)
 	}
 
 	service struct {
 		logr.Logger
 
+		*factory
+
 		site         internal.Authorizer
 		organization internal.Authorizer
-
-		db *pgdb
-
-		*factory
-		web *webHandlers
+		db           *pgdb
+		web          *webHandlers
+		deleteHook   *hooks.Hook
 	}
 
 	Options struct {
 		CloudService
 		*sql.DB
-		*pubsub.Broker
 		html.Renderer
 		logr.Logger
 	}
@@ -64,6 +65,7 @@ func NewService(opts Options) *service {
 		factory: &factory{
 			CloudService: opts.CloudService,
 		},
+		deleteHook: hooks.NewHook(rbac.DeleteVCSProviderAction),
 	}
 
 	svc.web = &webHandlers{
@@ -72,14 +74,15 @@ func NewService(opts Options) *service {
 		svc:          &svc,
 	}
 
-	// Register with broker so that it can relay events
-	opts.Register("vcs_providers", svc.db)
-
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+}
+
+func (a *service) BeforeDeleteHook(l hooks.Listener) {
+	a.deleteHook.Before(l)
 }
 
 func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
@@ -170,7 +173,10 @@ func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvide
 		return nil, err
 	}
 
-	if err := a.db.delete(ctx, id); err != nil {
+	err = a.deleteHook.Dispatch(ctx, provider.ID, func(ctx context.Context) error {
+		return a.db.delete(ctx, id)
+	})
+	if err != nil {
 		a.Error(err, "deleting vcs provider", "provider", provider, "subject", subject)
 		return nil, err
 	}

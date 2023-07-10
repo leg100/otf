@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
@@ -21,8 +22,8 @@ type (
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
 		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
-
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
+		BeforeDeleteHook(l hooks.Listener)
 	}
 
 	service struct {
@@ -34,6 +35,8 @@ type (
 		site                         internal.Authorizer // authorize access to site
 		web                          *web
 		RestrictOrganizationCreation bool
+
+		deleteHook *hooks.Hook
 	}
 
 	Options struct {
@@ -54,6 +57,7 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
+		deleteHook:                   hooks.NewHook(rbac.DeleteOrganizationAction),
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,
@@ -70,6 +74,10 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+}
+
+func (s *service) BeforeDeleteHook(l hooks.Listener) {
+	s.deleteHook.Before(l)
 }
 
 func (s *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
@@ -132,7 +140,9 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.db.delete(ctx, name)
+	err = s.deleteHook.Dispatch(ctx, name, func(ctx context.Context) error {
+		return s.db.delete(ctx, name)
+	})
 	if err != nil {
 		s.Error(err, "deleting organization", "name", name, "subject", subject)
 		return err

@@ -92,6 +92,23 @@ func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 	return hooks, nil
 }
 
+func (db *db) listUnreferencedWebhooks(ctx context.Context) ([]*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.FindUnreferencedWebhooks(ctx)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	hooks := make([]*hook, len(result))
+	for i, row := range result {
+		hook, err := db.fromRow(hookRow(row))
+		if err != nil {
+			return nil, sql.Error(err)
+		}
+		hooks[i] = hook
+	}
+	return hooks, nil
+}
+
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
 	q := db.Conn(ctx)
 	_, err := q.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
@@ -134,6 +151,12 @@ func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err
 	default:
 		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
+	return err
+}
+
+func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
+	q := db.Conn(ctx)
+	_, err := q.DeleteWebhookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return sql.Error(err)
 	}

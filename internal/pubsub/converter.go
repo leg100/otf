@@ -17,7 +17,14 @@ type (
 	Getter interface {
 		GetByID(context.Context, string, DBAction) (any, error)
 	}
+
+	// GetterFunc is a function wrapper for Getter.
+	GetterFunc func(context.Context, string, DBAction) (any, error)
 )
+
+func (f GetterFunc) GetByID(ctx context.Context, workspaceID string, action DBAction) (any, error) {
+	return f(ctx, workspaceID, action)
+}
 
 func newConverter() *converter {
 	return &converter{
@@ -28,6 +35,15 @@ func newConverter() *converter {
 // Register a table and getter with the pubsub broker, to enable the broker to
 // convert a database event into an OTF event.
 func (r *converter) Register(table string, getter Getter) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.getters[table] = getter
+}
+
+// Register a table and getter function with the pubsub broker, to enable the broker to
+// convert a database event into an OTF event.
+func (r *converter) RegisterFunc(table string, getter GetterFunc) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
