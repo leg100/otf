@@ -47,17 +47,9 @@ type (
 	// pgevent is the payload of a postgres notification triggered by a database
 	// change.
 	pgevent struct {
-		// pg table associated with change
-		Table string `json:"table"`
-
-		// INSERT/UPDATE/DELETE
-		Action DBAction `json:"action"`
-
-		// id of changed row
-		ID string `json:"id"`
-
-		// the row contents (only populated for certain tables)
-		Payload json.RawMessage `json:"payload,omitempty"`
+		Table  string   `json:"table"`  // pg table associated with change
+		Action DBAction `json:"action"` // INSERT/UPDATE/DELETE
+		ID     string   `json:"id"`     // id of changed row
 	}
 )
 

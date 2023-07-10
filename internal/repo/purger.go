@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf/internal"
+	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -18,25 +17,24 @@ const PurgerLockID int64 = 179366396344335598
 type (
 	// Purge purges webhooks that are no longer in use.
 	Purger struct {
+		DB purgerDB
+
 		logr.Logger
 		pubsub.Subscriber
 		vcsprovider.VCSProviderService
-		internal.HostnameService
-		CloudService cloud.Service
-		*sql.DB
+		Service
 
 		*cache
+	}
+
+	purgerDB interface {
+		QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+		Tx(ctx context.Context, callback func(context.Context, pggen.Querier) error) error
 	}
 )
 
 // Start starts the purger daemon. Should be invoked in a go routine.
 func (p *Purger) Start(ctx context.Context) error {
-	factory := factory{
-		HostnameService: p.HostnameService,
-		Service:         p.CloudService,
-	}
-	db := &db{p.DB, factory}
-
 	// Unsubscribe whenever exiting this routine.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -51,7 +49,7 @@ func (p *Purger) Start(ctx context.Context) error {
 	cache, err := newCache(ctx, cacheOptions{
 		VCSProviderService: p.VCSProviderService,
 		Subscriber:         p.Subscriber,
-		hookdb:             db,
+		Service:            p.Service,
 	})
 	if err != nil {
 		return err
@@ -60,7 +58,7 @@ func (p *Purger) Start(ctx context.Context) error {
 
 	for event := range sub {
 		if err := p.handle(ctx, event); err != nil {
-			p.Error(err, "handling event", "event", event.Type)
+			return err
 		}
 	}
 	return nil

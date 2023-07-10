@@ -25,6 +25,8 @@ type (
 		// resource. If there are no more connections then its
 		// webhook is removed.
 		Disconnect(ctx context.Context, opts DisconnectOptions) error
+		// List all webhooks
+		ListWebhooks(ctx context.Context) ([]*hook, error)
 	}
 
 	service struct {
@@ -125,4 +127,8 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 // Disconnect resource from repo
 func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
 	return s.db.deleteConnection(ctx, opts)
+}
+
+func (s *service) ListWebhooks(ctx context.Context) ([]*hook, error) {
+	return s.db.listHooks(ctx)
 }

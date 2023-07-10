@@ -443,10 +443,9 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: &repo.Purger{
 				Logger:             d.Logger.WithValues("component", "purger"),
 				VCSProviderService: d.VCSProviderService,
-				HostnameService:    d.HostnameService,
-				DB:                 d.DB,
 				Subscriber:         d.Broker,
-				CloudService:       d.cloudService,
+				Service:            d.RepoService,
+				DB:                 d.DB,
 			},
 		},
 		{

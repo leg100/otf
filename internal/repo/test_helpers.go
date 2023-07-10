@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,6 +21,9 @@ type (
 		event cloud.VCSEvent
 
 		cloud.Cloud
+	}
+	fakeVCSProviderService struct {
+		vcsprovider.VCSProviderService
 	}
 	fakeHostnameService struct {
 		hostname string
@@ -66,6 +70,10 @@ func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.Handle
 }
 
 func (f fakeHostnameService) Hostname() string { return f.hostname }
+
+func (f *fakeVCSProviderService) ListAllVCSProviders(ctx context.Context) ([]*vcsprovider.VCSProvider, error) {
+	return nil, nil
+}
 
 func (f *fakeCloudClient) CreateWebhook(context.Context, cloud.CreateWebhookOptions) (string, error) {
 	return f.hook.ID, nil

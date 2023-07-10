@@ -23,7 +23,7 @@ type (
 	cacheOptions struct {
 		vcsprovider.VCSProviderService
 		pubsub.Subscriber
-		hookdb *db
+		Service
 	}
 )
 
@@ -32,7 +32,7 @@ func newCache(ctx context.Context, opts cacheOptions) (*cache, error) {
 	if err != nil {
 		return nil, err
 	}
-	hooks, err := opts.hookdb.listHooks(ctx)
+	hooks, err := opts.Service.ListWebhooks(ctx)
 	if err != nil {
 		return nil, err
 	}
