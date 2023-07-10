@@ -50,6 +50,7 @@ func (p *Purger) Start(ctx context.Context) error {
 	// populate cache with existing hooks and vcs providers
 	cache, err := newCache(ctx, cacheOptions{
 		VCSProviderService: p.VCSProviderService,
+		Subscriber:         p.Subscriber,
 		hookdb:             db,
 	})
 	if err != nil {
@@ -58,31 +59,45 @@ func (p *Purger) Start(ctx context.Context) error {
 	p.cache = cache
 
 	for event := range sub {
-		if err := p.handleDeletion(ctx, event); err != nil {
-			p.Error(err, "cannot delete webhook", "event", event.Type)
+		if err := p.handle(ctx, event); err != nil {
+			p.Error(err, "handling event", "event", event.Type)
 		}
 	}
 	return nil
 }
 
-func (p *Purger) handleDeletion(ctx context.Context, event pubsub.Event) error {
-	hook, ok := event.Payload.(*hook)
-	if !ok {
-		// Skip non-hook events
+func (p *Purger) handle(ctx context.Context, event pubsub.Event) error {
+	var deletedHook *hook
+
+	switch payload := event.Payload.(type) {
+	case *vcsprovider.VCSProvider:
+		switch event.Type {
+		case pubsub.CreatedEvent, pubsub.UpdatedEvent:
+			p.cache.setProvider(payload)
+		}
+		return nil
+	case *hook:
+		switch event.Type {
+		case pubsub.CreatedEvent, pubsub.UpdatedEvent:
+			p.cache.setHook(payload)
+			return nil
+		case pubsub.DeletedEvent:
+			deletedHook = payload
+		}
+	default:
 		return nil
 	}
-	if event.Type != pubsub.DeletedEvent {
-		// Only interested in deletion events
+
+	// only deleted hook events reach this point
+
+	hook := p.getHook(deletedHook.id)
+	if hook == nil {
+		p.Error(nil, "webhook not found in cache", "webhook_id", deletedHook.id)
 		return nil
 	}
-	hook, ok = p.hooks[hook.id]
-	if !ok {
-		p.Error(nil, "webhook not found in cache", "repo", hook.identifier)
-		return nil
-	}
-	provider, ok := p.providers[hook.vcsProviderID]
-	if !ok {
-		p.Error(nil, "vcs provider not found in cache", "repo", hook.identifier)
+	provider := p.getProvider(hook.vcsProviderID)
+	if provider == nil {
+		p.Error(nil, "vcs provider not found in cache", "repo", hook.identifier, "vcs_provider_id", hook.vcsProviderID)
 		return nil
 	}
 	// Advisory lock ensures only one purger deletes the webhook from the cloud

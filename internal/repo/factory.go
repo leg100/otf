@@ -49,10 +49,11 @@ func (f factory) newHook(opts newHookOptions) (*hook, error) {
 	}
 
 	hook := hook{
-		identifier:   opts.identifier,
-		cloud:        opts.cloud,
-		EventHandler: cloudConfig.Cloud,
-		cloudID:      opts.cloudID,
+		identifier:    opts.identifier,
+		cloud:         opts.cloud,
+		EventHandler:  cloudConfig.Cloud,
+		cloudID:       opts.cloudID,
+		vcsProviderID: opts.vcsProviderID,
 	}
 
 	if opts.id != nil {

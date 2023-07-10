@@ -72,7 +72,7 @@ func NewService(opts Options) *service {
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
 	}
 	// Register with broker so that it can relay events
-	opts.Register("hooks", db)
+	opts.Register("webhooks", db)
 
 	return svc
 }

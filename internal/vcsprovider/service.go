@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 )
@@ -48,6 +49,7 @@ type (
 	Options struct {
 		CloudService
 		*sql.DB
+		*pubsub.Broker
 		html.Renderer
 		logr.Logger
 	}
@@ -56,6 +58,7 @@ type (
 func NewService(opts Options) *service {
 	svc := service{
 		Logger:       opts.Logger,
+		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.CloudService),
 		factory: &factory{
@@ -68,6 +71,10 @@ func NewService(opts Options) *service {
 		Renderer:     opts.Renderer,
 		svc:          &svc,
 	}
+
+	// Register with broker so that it can relay events
+	opts.Register("vcs_providers", svc.db)
+
 	return &svc
 }
 

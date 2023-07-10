@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -29,6 +30,14 @@ type (
 
 func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
 	return &pgdb{db, &factory{cloudService}}
+}
+
+// GetByID implements pubsub.Getter
+func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &VCSProvider{ID: providerID}, nil
+	}
+	return db.get(ctx, providerID)
 }
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {

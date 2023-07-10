@@ -49,6 +49,34 @@ func newCache(ctx context.Context, opts cacheOptions) (*cache, error) {
 	return cache, nil
 }
 
+func (c *cache) getHook(hookID uuid.UUID) *hook {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.hooks[hookID]
+}
+
+func (c *cache) getProvider(providerID string) *vcsprovider.VCSProvider {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.providers[providerID]
+}
+
+func (c *cache) setHook(hook *hook) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.hooks[hook.id] = hook
+}
+
+func (c *cache) setProvider(provider *vcsprovider.VCSProvider) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.providers[provider.ID] = provider
+}
+
 func (c *cache) delete(hookID uuid.UUID) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

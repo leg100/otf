@@ -951,12 +951,12 @@ type Querier interface {
 	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
 	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
 
-	FindWebhookByRepo(ctx context.Context, params FindWebhookByRepoParams) ([]FindWebhookByRepoRow, error)
-	// FindWebhookByRepoBatch enqueues a FindWebhookByRepo query into batch to be executed
+	FindWebhookByRepoAndProvider(ctx context.Context, identifier pgtype.Text, vcsProviderID pgtype.Text) ([]FindWebhookByRepoAndProviderRow, error)
+	// FindWebhookByRepoAndProviderBatch enqueues a FindWebhookByRepoAndProvider query into batch to be executed
 	// later by the batch.
-	FindWebhookByRepoBatch(batch genericBatch, params FindWebhookByRepoParams)
-	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
-	FindWebhookByRepoScan(results pgx.BatchResults) ([]FindWebhookByRepoRow, error)
+	FindWebhookByRepoAndProviderBatch(batch genericBatch, identifier pgtype.Text, vcsProviderID pgtype.Text)
+	// FindWebhookByRepoAndProviderScan scans the result of an executed FindWebhookByRepoAndProviderBatch query.
+	FindWebhookByRepoAndProviderScan(results pgx.BatchResults) ([]FindWebhookByRepoAndProviderRow, error)
 
 	DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookByIDRow, error)
 	// DeleteWebhookByIDBatch enqueues a DeleteWebhookByID query into batch to be executed
@@ -1556,8 +1556,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)
+	if _, err := p.Prepare(ctx, findWebhookByRepoAndProviderSQL, findWebhookByRepoAndProviderSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByRepoAndProvider': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWebhookByIDSQL, deleteWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhookByID': %w", err)

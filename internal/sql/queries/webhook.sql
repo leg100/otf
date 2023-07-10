@@ -54,7 +54,7 @@ FROM webhooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE w.webhook_id = pggen.arg('webhook_id');
 
--- name: FindWebhookByRepo :many
+-- name: FindWebhookByRepoAndProvider :many
 SELECT
     w.webhook_id,
     w.vcs_id,
@@ -65,7 +65,6 @@ SELECT
 FROM webhooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE identifier = pggen.arg('identifier')
-AND   cloud = pggen.arg('cloud')
 AND   vcs_provider_id = pggen.arg('vcs_provider_id');
 
 -- name: DeleteWebhookByID :one

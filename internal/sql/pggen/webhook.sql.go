@@ -231,7 +231,7 @@ func (q *DBQuerier) FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookBy
 	return item, nil
 }
 
-const findWebhookByRepoSQL = `SELECT
+const findWebhookByRepoAndProviderSQL = `SELECT
     w.webhook_id,
     w.vcs_id,
     w.vcs_provider_id,
@@ -241,16 +241,9 @@ const findWebhookByRepoSQL = `SELECT
 FROM webhooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE identifier = $1
-AND   cloud = $2
-AND   vcs_provider_id = $3;`
+AND   vcs_provider_id = $2;`
 
-type FindWebhookByRepoParams struct {
-	Identifier    pgtype.Text
-	Cloud         pgtype.Text
-	VCSProviderID pgtype.Text
-}
-
-type FindWebhookByRepoRow struct {
+type FindWebhookByRepoAndProviderRow struct {
 	WebhookID     pgtype.UUID `json:"webhook_id"`
 	VCSID         pgtype.Text `json:"vcs_id"`
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
@@ -259,50 +252,50 @@ type FindWebhookByRepoRow struct {
 	Cloud         pgtype.Text `json:"cloud"`
 }
 
-// FindWebhookByRepo implements Querier.FindWebhookByRepo.
-func (q *DBQuerier) FindWebhookByRepo(ctx context.Context, params FindWebhookByRepoParams) ([]FindWebhookByRepoRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookByRepo")
-	rows, err := q.conn.Query(ctx, findWebhookByRepoSQL, params.Identifier, params.Cloud, params.VCSProviderID)
+// FindWebhookByRepoAndProvider implements Querier.FindWebhookByRepoAndProvider.
+func (q *DBQuerier) FindWebhookByRepoAndProvider(ctx context.Context, identifier pgtype.Text, vcsProviderID pgtype.Text) ([]FindWebhookByRepoAndProviderRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookByRepoAndProvider")
+	rows, err := q.conn.Query(ctx, findWebhookByRepoAndProviderSQL, identifier, vcsProviderID)
 	if err != nil {
-		return nil, fmt.Errorf("query FindWebhookByRepo: %w", err)
+		return nil, fmt.Errorf("query FindWebhookByRepoAndProvider: %w", err)
 	}
 	defer rows.Close()
-	items := []FindWebhookByRepoRow{}
+	items := []FindWebhookByRepoAndProviderRow{}
 	for rows.Next() {
-		var item FindWebhookByRepoRow
+		var item FindWebhookByRepoAndProviderRow
 		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
-			return nil, fmt.Errorf("scan FindWebhookByRepo row: %w", err)
+			return nil, fmt.Errorf("scan FindWebhookByRepoAndProvider row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindWebhookByRepo rows: %w", err)
+		return nil, fmt.Errorf("close FindWebhookByRepoAndProvider rows: %w", err)
 	}
 	return items, err
 }
 
-// FindWebhookByRepoBatch implements Querier.FindWebhookByRepoBatch.
-func (q *DBQuerier) FindWebhookByRepoBatch(batch genericBatch, params FindWebhookByRepoParams) {
-	batch.Queue(findWebhookByRepoSQL, params.Identifier, params.Cloud, params.VCSProviderID)
+// FindWebhookByRepoAndProviderBatch implements Querier.FindWebhookByRepoAndProviderBatch.
+func (q *DBQuerier) FindWebhookByRepoAndProviderBatch(batch genericBatch, identifier pgtype.Text, vcsProviderID pgtype.Text) {
+	batch.Queue(findWebhookByRepoAndProviderSQL, identifier, vcsProviderID)
 }
 
-// FindWebhookByRepoScan implements Querier.FindWebhookByRepoScan.
-func (q *DBQuerier) FindWebhookByRepoScan(results pgx.BatchResults) ([]FindWebhookByRepoRow, error) {
+// FindWebhookByRepoAndProviderScan implements Querier.FindWebhookByRepoAndProviderScan.
+func (q *DBQuerier) FindWebhookByRepoAndProviderScan(results pgx.BatchResults) ([]FindWebhookByRepoAndProviderRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindWebhookByRepoBatch: %w", err)
+		return nil, fmt.Errorf("query FindWebhookByRepoAndProviderBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindWebhookByRepoRow{}
+	items := []FindWebhookByRepoAndProviderRow{}
 	for rows.Next() {
-		var item FindWebhookByRepoRow
+		var item FindWebhookByRepoAndProviderRow
 		if err := rows.Scan(&item.WebhookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.Identifier, &item.Cloud); err != nil {
-			return nil, fmt.Errorf("scan FindWebhookByRepoBatch row: %w", err)
+			return nil, fmt.Errorf("scan FindWebhookByRepoAndProviderBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindWebhookByRepoBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindWebhookByRepoAndProviderBatch rows: %w", err)
 	}
 	return items, err
 }

@@ -58,7 +58,7 @@ AFTER DELETE ON repo_connections
     FOR EACH STATEMENT EXECUTE FUNCTION delete_webhooks();
 
 --
--- create trigger to send an event whenever a webhook is deleted
+-- create trigger to send an event whenever a webhook is added/updated/deleted
 --
 CREATE OR REPLACE FUNCTION webhook_notify_event() RETURNS TRIGGER AS $$
 DECLARE
@@ -82,13 +82,41 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER notify_event
 AFTER INSERT OR UPDATE OR DELETE ON webhooks
     FOR EACH ROW EXECUTE PROCEDURE webhook_notify_event();
+
+--
+-- create trigger to send an event whenever a vcs provider is added/updated/deleted
+--
+CREATE OR REPLACE FUNCTION vcs_provider_notify_event() RETURNS TRIGGER AS $$
+DECLARE
+    record RECORD;
+    notification JSON;
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        record = OLD;
+    ELSE
+        record = NEW;
+    END IF;
+    notification = json_build_object(
+                      'table',TG_TABLE_NAME,
+                      'action', TG_OP,
+                      'id', record.vcs_provider_id);
+    PERFORM pg_notify('events', notification::text);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER notify_event
+AFTER INSERT OR UPDATE OR DELETE ON vcs_providers
+    FOR EACH ROW EXECUTE PROCEDURE vcs_provider_notify_event();
 -- +goose StatementEnd
 
 -- +goose Down
-DROP TRIGGER IF EXISTS delete_webhooks ON repo_connections;
-DROP FUNCTION IF EXISTS delete_webhooks;
+DROP TRIGGER IF EXISTS notify_event ON vcs_providers;
+DROP FUNCTION IF EXISTS vcs_provider_notify_event;
 DROP TRIGGER IF EXISTS notify_event ON webhooks;
 DROP FUNCTION IF EXISTS webhook_notify_event;
+DROP TRIGGER IF EXISTS delete_webhooks ON repo_connections;
+DROP FUNCTION IF EXISTS delete_webhooks;
 
 ALTER TABLE repo_connections
     DROP CONSTRAINT repo_connections_module_id_fkey,

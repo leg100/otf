@@ -48,8 +48,6 @@ type (
 		*sql.DB
 		*pubsub.Broker
 
-		agent process
-
 		organization.OrganizationService
 		orgcreator.OrganizationCreatorService
 		auth.AuthService
@@ -67,6 +65,9 @@ type (
 		notifications.NotificationService
 
 		Handlers []internal.Handlers
+
+		agent        process
+		cloudService *inmem.CloudService
 	}
 
 	process interface {
@@ -159,6 +160,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:           db,
 		Renderer:     renderer,
 		CloudService: cloudService,
+		Broker:       broker,
 	})
 	repoService := repo.NewService(repo.Options{
 		Logger:             logger,
@@ -341,6 +343,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,
+		cloudService:                cloudService,
 	}, nil
 }
 
@@ -440,8 +443,10 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System: &repo.Purger{
 				Logger:             d.Logger.WithValues("component", "purger"),
 				VCSProviderService: d.VCSProviderService,
+				HostnameService:    d.HostnameService,
 				DB:                 d.DB,
 				Subscriber:         d.Broker,
+				CloudService:       d.cloudService,
 			},
 		},
 		{
