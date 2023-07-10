@@ -87,8 +87,22 @@ func TestWebhook_Purger(t *testing.T) {
 	}{
 		{
 			name: "delete organization",
-			event: func(t *testing.T, org, workspaceID, vcsProviderID string) {
+			event: func(t *testing.T, org, _, _ string) {
 				err := daemon.DeleteOrganization(ctx, org)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "delete vcs provider",
+			event: func(t *testing.T, _, _, vcsProviderID string) {
+				_, err := daemon.DeleteVCSProvider(ctx, vcsProviderID)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "delete workspace",
+			event: func(t *testing.T, _, workspaceID, _ string) {
+				_, err := daemon.DeleteWorkspace(ctx, workspaceID)
 				require.NoError(t, err)
 			},
 		},
@@ -113,7 +127,7 @@ func TestWebhook_Purger(t *testing.T) {
 			hook := <-daemon.WebhookEvents
 			require.Equal(t, github.WebhookCreated, hook.Action)
 
-			tt.event(t, org.Name, ws.Name, provider.ID)
+			tt.event(t, org.Name, ws.ID, provider.ID)
 
 			// webhook should now have been deleted from  github
 			hook = <-daemon.WebhookEvents
