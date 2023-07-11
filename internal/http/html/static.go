@@ -35,6 +35,19 @@ func AddStaticHandler(logger logr.Logger, r *mux.Router, devMode bool) error {
 	} else {
 		fs = &cacheBuster{embedded}
 	}
+
+	r = r.NewRoute().Subrouter()
+
+	// Middleware to add cache control headers
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Instruct browser to cache static content for a very long time (1
+			// year), and rely on the cache buster to insert a hash to each
+			// requested URL, ensuring any content change invalidates the cache.
+			w.Header().Set("Cache-Control", "max-age=31536000")
+			next.ServeHTTP(w, r)
+		})
+	})
 	r.PathPrefix("/static/").Handler(http.FileServer(fs)).Methods("GET")
 	return nil
 }
