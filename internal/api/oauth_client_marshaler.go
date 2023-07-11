@@ -11,8 +11,8 @@ func (m *jsonapiMarshaler) toOAuthClient(from *vcsprovider.VCSProvider) *types.O
 		CreatedAt: from.CreatedAt,
 		// Only github via github.com is supported currently, so hardcode these values.
 		ServiceProvider: types.ServiceProviderGithub,
-		APIURL:          githubAPIURL,
-		HTTPURL:         githubHTTPURL,
+		APIURL:          GithubAPIURL,
+		HTTPURL:         GithubHTTPURL,
 		// OTF has no corresponding concept of an OAuthToken, so just use the
 		// VCS provider ID (the go-tfe integration tests we use expect
 		// at least an ID).

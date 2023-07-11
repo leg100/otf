@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	githubAPIURL  = "https://api.github.com"
-	githubHTTPURL = "https://github.com"
+	GithubAPIURL  = "https://api.github.com"
+	GithubHTTPURL = "https://github.com"
 )
 
 func (a *api) addOAuthClientHandlers(r *mux.Router) {
@@ -76,11 +76,11 @@ func (a *api) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Error(w, fmt.Errorf("service-provider=%s is unsupported", string(*params.ServiceProvider)))
 		return
 	}
-	if *params.APIURL != githubAPIURL {
-		Error(w, fmt.Errorf("only api-url=%s is supported", githubAPIURL))
+	if *params.APIURL != GithubAPIURL {
+		Error(w, fmt.Errorf("only api-url=%s is supported", GithubAPIURL))
 		return
 	}
-	if *params.HTTPURL != githubHTTPURL {
+	if *params.HTTPURL != GithubHTTPURL {
 		Error(w, fmt.Errorf("only http-url=%s is supported", string(*params.HTTPURL)))
 		return
 	}
