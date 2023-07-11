@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,20 +17,17 @@ import (
 // deletion of the webhook from github.
 //
 // Functionality specific to VCS events triggering webhooks and in turn
-// triggering workspace runs and publishing module versions in tested in other
+// triggering workspace runs and publishing module versions is tested in other
 // E2E tests.
 func TestWebhook(t *testing.T) {
 	integrationTest(t)
 
 	repo := cloud.NewTestRepo()
 
-	// create an otf daemon with a fake github backend, ready to sign in a user,
-	// serve up a repo and its contents via tarball. And register a callback to
-	// test receipt of commit statuses
+	// create otf daemon with fake github server, on which to create/delete
+	// webhooks.
 	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
-		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
-		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
 
 	// create and connect first workspace
@@ -39,8 +37,9 @@ func TestWebhook(t *testing.T) {
 		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"),
 	})
 
-	// webhook should now have been registered with github
-	require.True(t, daemon.HasWebhook())
+	// webhook should be registered with github
+	hook := <-daemon.WebhookEvents
+	require.Equal(t, github.WebhookCreated, hook.Action)
 
 	// create and connect second workspace
 	browser.Run(t, ctx, chromedp.Tasks{
@@ -49,7 +48,8 @@ func TestWebhook(t *testing.T) {
 	})
 
 	// second workspace re-uses same webhook on github
-	require.True(t, daemon.HasWebhook())
+	hook = <-daemon.WebhookEvents
+	require.Equal(t, github.WebhookUpdated, hook.Action)
 
 	// disconnect second workspace
 	browser.Run(t, ctx, disconnectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2"))
@@ -63,5 +63,76 @@ func TestWebhook(t *testing.T) {
 
 	// No more workspaces are connected to repo, so webhook should have been
 	// deleted
-	require.False(t, daemon.HasWebhook())
+	hook = <-daemon.WebhookEvents
+	require.Equal(t, github.WebhookDeleted, hook.Action)
+}
+
+// TestWebhook_Purger tests specifically the purging of webhooks in response to
+// various events.
+func TestWebhook_Purger(t *testing.T) {
+	integrationTest(t)
+
+	repo := cloud.NewTestRepo()
+
+	// create an otf daemon with a fake github backend, ready to sign in a user,
+	// serve up a repo and its contents via tarball. And register a callback to
+	// test receipt of commit statuses
+	daemon, _, ctx := setup(t, nil,
+		github.WithRepo(repo),
+	)
+
+	tests := []struct {
+		name  string
+		event func(*testing.T, string, string, string)
+	}{
+		{
+			name: "delete organization",
+			event: func(t *testing.T, org, _, _ string) {
+				err := daemon.DeleteOrganization(ctx, org)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "delete vcs provider",
+			event: func(t *testing.T, _, _, vcsProviderID string) {
+				_, err := daemon.DeleteVCSProvider(ctx, vcsProviderID)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "delete workspace",
+			event: func(t *testing.T, _, workspaceID, _ string) {
+				_, err := daemon.DeleteWorkspace(ctx, workspaceID)
+				require.NoError(t, err)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// create org, vcs provider, and workspace, and connect the
+			// workspace to create a webhook on github
+			org := daemon.createOrganization(t, ctx)
+			provider := daemon.createVCSProvider(t, ctx, org)
+			ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+				Name:         internal.String("workspace-1"),
+				Organization: &org.Name,
+				ConnectOptions: &workspace.ConnectOptions{
+					VCSProviderID: provider.ID,
+					RepoPath:      repo,
+				},
+			})
+			require.NoError(t, err)
+
+			// webhook should have been registered with github
+			hook := <-daemon.WebhookEvents
+			require.Equal(t, github.WebhookCreated, hook.Action)
+
+			tt.event(t, org.Name, ws.ID, provider.ID)
+
+			// webhook should now have been deleted from  github
+			hook = <-daemon.WebhookEvents
+			require.Equal(t, github.WebhookDeleted, hook.Action)
+		})
+	}
+
 }

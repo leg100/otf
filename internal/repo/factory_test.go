@@ -15,13 +15,13 @@ func TestFactory(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostname string
-		opts     newHookOpts
+		opts     newHookOptions
 		want     *hook
 	}{
 		{
 			name:     "default",
 			hostname: "fakehost.org",
-			opts: newHookOpts{
+			opts: newHookOptions{
 				id:     &id,
 				cloud:  "fakecloud",
 				secret: internal.String("top-secret"),
@@ -37,10 +37,10 @@ func TestFactory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := newFactory(
-				fakeHostnameService{hostname: tt.hostname},
-				fakeCloudService{},
-			)
+			f := factory{
+				HostnameService: fakeHostnameService{hostname: tt.hostname},
+				Service:         fakeCloudService{},
+			}
 			got, err := f.newHook(tt.opts)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)

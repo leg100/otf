@@ -60,9 +60,70 @@ func (q *DBQuerier) InsertVCSProviderScan(results pgx.BatchResults) (pgconn.Comm
 	return cmdTag, err
 }
 
-const findVCSProvidersSQL = `SELECT *
+const findVCSProvidersByOrganizationSQL = `SELECT *
 FROM vcs_providers
 WHERE organization_name = $1
+;`
+
+type FindVCSProvidersByOrganizationRow struct {
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// FindVCSProvidersByOrganization implements Querier.FindVCSProvidersByOrganization.
+func (q *DBQuerier) FindVCSProvidersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersByOrganizationRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProvidersByOrganization")
+	rows, err := q.conn.Query(ctx, findVCSProvidersByOrganizationSQL, organizationName)
+	if err != nil {
+		return nil, fmt.Errorf("query FindVCSProvidersByOrganization: %w", err)
+	}
+	defer rows.Close()
+	items := []FindVCSProvidersByOrganizationRow{}
+	for rows.Next() {
+		var item FindVCSProvidersByOrganizationRow
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+			return nil, fmt.Errorf("scan FindVCSProvidersByOrganization row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindVCSProvidersByOrganization rows: %w", err)
+	}
+	return items, err
+}
+
+// FindVCSProvidersByOrganizationBatch implements Querier.FindVCSProvidersByOrganizationBatch.
+func (q *DBQuerier) FindVCSProvidersByOrganizationBatch(batch genericBatch, organizationName pgtype.Text) {
+	batch.Queue(findVCSProvidersByOrganizationSQL, organizationName)
+}
+
+// FindVCSProvidersByOrganizationScan implements Querier.FindVCSProvidersByOrganizationScan.
+func (q *DBQuerier) FindVCSProvidersByOrganizationScan(results pgx.BatchResults) ([]FindVCSProvidersByOrganizationRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindVCSProvidersByOrganizationBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindVCSProvidersByOrganizationRow{}
+	for rows.Next() {
+		var item FindVCSProvidersByOrganizationRow
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+			return nil, fmt.Errorf("scan FindVCSProvidersByOrganizationBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindVCSProvidersByOrganizationBatch rows: %w", err)
+	}
+	return items, err
+}
+
+const findVCSProvidersSQL = `SELECT *
+FROM vcs_providers
 ;`
 
 type FindVCSProvidersRow struct {
@@ -75,9 +136,9 @@ type FindVCSProvidersRow struct {
 }
 
 // FindVCSProviders implements Querier.FindVCSProviders.
-func (q *DBQuerier) FindVCSProviders(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersRow, error) {
+func (q *DBQuerier) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProviders")
-	rows, err := q.conn.Query(ctx, findVCSProvidersSQL, organizationName)
+	rows, err := q.conn.Query(ctx, findVCSProvidersSQL)
 	if err != nil {
 		return nil, fmt.Errorf("query FindVCSProviders: %w", err)
 	}
@@ -97,8 +158,8 @@ func (q *DBQuerier) FindVCSProviders(ctx context.Context, organizationName pgtyp
 }
 
 // FindVCSProvidersBatch implements Querier.FindVCSProvidersBatch.
-func (q *DBQuerier) FindVCSProvidersBatch(batch genericBatch, organizationName pgtype.Text) {
-	batch.Queue(findVCSProvidersSQL, organizationName)
+func (q *DBQuerier) FindVCSProvidersBatch(batch genericBatch) {
+	batch.Queue(findVCSProvidersSQL)
 }
 
 // FindVCSProvidersScan implements Querier.FindVCSProvidersScan.

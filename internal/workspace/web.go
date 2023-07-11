@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -523,18 +522,12 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var stack html.FlashStack
-	err = h.svc.disconnect(r.Context(), workspaceID)
-	if errors.Is(err, internal.ErrWarning) {
-		stack.Push(html.FlashWarningType, err.Error())
-	} else if err != nil {
+	if err := h.svc.disconnect(r.Context(), workspaceID); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	stack.Push(html.FlashSuccessType, "disconnected workspace from repo")
-	stack.Write(w)
-
+	html.FlashSuccess(w, "disconnected workspace from repo")
 	http.Redirect(w, r, paths.Workspace(workspaceID), http.StatusFound)
 }
 

@@ -13,27 +13,24 @@ import (
 
 const insertRepoConnectionSQL = `INSERT INTO repo_connections (
     webhook_id,
-    vcs_provider_id,
     workspace_id,
     module_id
 ) VALUES (
     $1,
     $2,
-    $3,
-    $4
+    $3
 );`
 
 type InsertRepoConnectionParams struct {
-	WebhookID     pgtype.UUID
-	VCSProviderID pgtype.Text
-	WorkspaceID   pgtype.Text
-	ModuleID      pgtype.Text
+	WebhookID   pgtype.UUID
+	WorkspaceID pgtype.Text
+	ModuleID    pgtype.Text
 }
 
 // InsertRepoConnection implements Querier.InsertRepoConnection.
 func (q *DBQuerier) InsertRepoConnection(ctx context.Context, params InsertRepoConnectionParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRepoConnection")
-	cmdTag, err := q.conn.Exec(ctx, insertRepoConnectionSQL, params.WebhookID, params.VCSProviderID, params.WorkspaceID, params.ModuleID)
+	cmdTag, err := q.conn.Exec(ctx, insertRepoConnectionSQL, params.WebhookID, params.WorkspaceID, params.ModuleID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertRepoConnection: %w", err)
 	}
@@ -42,7 +39,7 @@ func (q *DBQuerier) InsertRepoConnection(ctx context.Context, params InsertRepoC
 
 // InsertRepoConnectionBatch implements Querier.InsertRepoConnectionBatch.
 func (q *DBQuerier) InsertRepoConnectionBatch(batch genericBatch, params InsertRepoConnectionParams) {
-	batch.Queue(insertRepoConnectionSQL, params.WebhookID, params.VCSProviderID, params.WorkspaceID, params.ModuleID)
+	batch.Queue(insertRepoConnectionSQL, params.WebhookID, params.WorkspaceID, params.ModuleID)
 }
 
 // InsertRepoConnectionScan implements Querier.InsertRepoConnectionScan.
@@ -54,54 +51,17 @@ func (q *DBQuerier) InsertRepoConnectionScan(results pgx.BatchResults) (pgconn.C
 	return cmdTag, err
 }
 
-const countRepoConnectionsByIDSQL = `SELECT count(*)
-FROM repo_connections
-WHERE webhook_id = $1
-;`
-
-// CountRepoConnectionsByID implements Querier.CountRepoConnectionsByID.
-func (q *DBQuerier) CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (pgtype.Int8, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "CountRepoConnectionsByID")
-	row := q.conn.QueryRow(ctx, countRepoConnectionsByIDSQL, webhookID)
-	var item pgtype.Int8
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query CountRepoConnectionsByID: %w", err)
-	}
-	return item, nil
-}
-
-// CountRepoConnectionsByIDBatch implements Querier.CountRepoConnectionsByIDBatch.
-func (q *DBQuerier) CountRepoConnectionsByIDBatch(batch genericBatch, webhookID pgtype.UUID) {
-	batch.Queue(countRepoConnectionsByIDSQL, webhookID)
-}
-
-// CountRepoConnectionsByIDScan implements Querier.CountRepoConnectionsByIDScan.
-func (q *DBQuerier) CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error) {
-	row := results.QueryRow()
-	var item pgtype.Int8
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan CountRepoConnectionsByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
 const deleteWorkspaceConnectionByIDSQL = `DELETE
 FROM repo_connections
 WHERE workspace_id = $1
-RETURNING webhook_id, vcs_provider_id
-;`
-
-type DeleteWorkspaceConnectionByIDRow struct {
-	WebhookID     pgtype.UUID `json:"webhook_id"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-}
+RETURNING webhook_id;`
 
 // DeleteWorkspaceConnectionByID implements Querier.DeleteWorkspaceConnectionByID.
-func (q *DBQuerier) DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceConnectionByIDRow, error) {
+func (q *DBQuerier) DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (pgtype.UUID, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceConnectionByID")
 	row := q.conn.QueryRow(ctx, deleteWorkspaceConnectionByIDSQL, workspaceID)
-	var item DeleteWorkspaceConnectionByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSProviderID); err != nil {
+	var item pgtype.UUID
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query DeleteWorkspaceConnectionByID: %w", err)
 	}
 	return item, nil
@@ -113,10 +73,10 @@ func (q *DBQuerier) DeleteWorkspaceConnectionByIDBatch(batch genericBatch, works
 }
 
 // DeleteWorkspaceConnectionByIDScan implements Querier.DeleteWorkspaceConnectionByIDScan.
-func (q *DBQuerier) DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (DeleteWorkspaceConnectionByIDRow, error) {
+func (q *DBQuerier) DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error) {
 	row := results.QueryRow()
-	var item DeleteWorkspaceConnectionByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSProviderID); err != nil {
+	var item pgtype.UUID
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan DeleteWorkspaceConnectionByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -125,35 +85,29 @@ func (q *DBQuerier) DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) 
 const deleteModuleConnectionByIDSQL = `DELETE
 FROM repo_connections
 WHERE module_id = $1
-RETURNING webhook_id, vcs_provider_id
-;`
-
-type DeleteModuleConnectionByIDRow struct {
-	WebhookID     pgtype.UUID `json:"webhook_id"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-}
+RETURNING webhook_id;`
 
 // DeleteModuleConnectionByID implements Querier.DeleteModuleConnectionByID.
-func (q *DBQuerier) DeleteModuleConnectionByID(ctx context.Context, id pgtype.Text) (DeleteModuleConnectionByIDRow, error) {
+func (q *DBQuerier) DeleteModuleConnectionByID(ctx context.Context, moduleID pgtype.Text) (pgtype.UUID, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteModuleConnectionByID")
-	row := q.conn.QueryRow(ctx, deleteModuleConnectionByIDSQL, id)
-	var item DeleteModuleConnectionByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSProviderID); err != nil {
+	row := q.conn.QueryRow(ctx, deleteModuleConnectionByIDSQL, moduleID)
+	var item pgtype.UUID
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query DeleteModuleConnectionByID: %w", err)
 	}
 	return item, nil
 }
 
 // DeleteModuleConnectionByIDBatch implements Querier.DeleteModuleConnectionByIDBatch.
-func (q *DBQuerier) DeleteModuleConnectionByIDBatch(batch genericBatch, id pgtype.Text) {
-	batch.Queue(deleteModuleConnectionByIDSQL, id)
+func (q *DBQuerier) DeleteModuleConnectionByIDBatch(batch genericBatch, moduleID pgtype.Text) {
+	batch.Queue(deleteModuleConnectionByIDSQL, moduleID)
 }
 
 // DeleteModuleConnectionByIDScan implements Querier.DeleteModuleConnectionByIDScan.
-func (q *DBQuerier) DeleteModuleConnectionByIDScan(results pgx.BatchResults) (DeleteModuleConnectionByIDRow, error) {
+func (q *DBQuerier) DeleteModuleConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error) {
 	row := results.QueryRow()
-	var item DeleteModuleConnectionByIDRow
-	if err := row.Scan(&item.WebhookID, &item.VCSProviderID); err != nil {
+	var item pgtype.UUID
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan DeleteModuleConnectionByIDBatch row: %w", err)
 	}
 	return item, nil

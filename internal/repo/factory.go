@@ -6,30 +6,54 @@ import (
 	"path"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 )
 
-type factory struct {
-	cloud.Service
-	internal.HostnameService
+type (
+	factory struct {
+		cloud.Service
+		internal.HostnameService
+	}
+
+	newHookOptions struct {
+		id            *uuid.UUID
+		vcsProviderID string
+		secret        *string
+		identifier    string
+		cloud         string  // cloud name
+		cloudID       *string // cloud's webhook id
+	}
+)
+
+// fromRow creates a hook from a database row
+func (f factory) fromRow(row hookRow) (*hook, error) {
+	opts := newHookOptions{
+		id:            internal.UUID(row.WebhookID.Bytes),
+		vcsProviderID: row.VCSProviderID.String,
+		secret:        internal.String(row.Secret.String),
+		identifier:    row.Identifier.String,
+		cloud:         row.Cloud.String,
+	}
+	if row.VCSID.Status == pgtype.Present {
+		opts.cloudID = internal.String(row.VCSID.String)
+	}
+	return f.newHook(opts)
 }
 
-func newFactory(hostnameService internal.HostnameService, cloudService cloud.Service) factory {
-	return factory{cloudService, hostnameService}
-}
-
-func (f factory) newHook(opts newHookOpts) (*hook, error) {
+func (f factory) newHook(opts newHookOptions) (*hook, error) {
 	cloudConfig, err := f.GetCloudConfig(opts.cloud)
 	if err != nil {
 		return nil, fmt.Errorf("unknown cloud: %s", opts.cloud)
 	}
 
 	hook := hook{
-		identifier:   opts.identifier,
-		cloud:        opts.cloud,
-		EventHandler: cloudConfig.Cloud,
-		cloudID:      opts.cloudID,
+		identifier:    opts.identifier,
+		cloud:         opts.cloud,
+		EventHandler:  cloudConfig.Cloud,
+		cloudID:       opts.cloudID,
+		vcsProviderID: opts.vcsProviderID,
 	}
 
 	if opts.id != nil {
@@ -55,12 +79,4 @@ func (f factory) newHook(opts newHookOpts) (*hook, error) {
 	}).String()
 
 	return &hook, nil
-}
-
-type newHookOpts struct {
-	id         *uuid.UUID
-	secret     *string
-	identifier string
-	cloud      string // cloud name
-	cloudID    *string
 }

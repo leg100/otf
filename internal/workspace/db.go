@@ -87,7 +87,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 	if r.WorkspaceConnection != nil {
 		ws.Connection = &repo.Connection{
-			VCSProviderID: r.WorkspaceConnection.VCSProviderID.String,
+			VCSProviderID: r.Webhook.VCSProviderID.String,
 			Repo:          r.Webhook.Identifier.String,
 		}
 	}

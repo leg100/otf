@@ -447,26 +447,19 @@ type Querier interface {
 	// InsertRepoConnectionScan scans the result of an executed InsertRepoConnectionBatch query.
 	InsertRepoConnectionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	CountRepoConnectionsByID(ctx context.Context, webhookID pgtype.UUID) (pgtype.Int8, error)
-	// CountRepoConnectionsByIDBatch enqueues a CountRepoConnectionsByID query into batch to be executed
-	// later by the batch.
-	CountRepoConnectionsByIDBatch(batch genericBatch, webhookID pgtype.UUID)
-	// CountRepoConnectionsByIDScan scans the result of an executed CountRepoConnectionsByIDBatch query.
-	CountRepoConnectionsByIDScan(results pgx.BatchResults) (pgtype.Int8, error)
-
-	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceConnectionByIDRow, error)
+	DeleteWorkspaceConnectionByID(ctx context.Context, workspaceID pgtype.Text) (pgtype.UUID, error)
 	// DeleteWorkspaceConnectionByIDBatch enqueues a DeleteWorkspaceConnectionByID query into batch to be executed
 	// later by the batch.
 	DeleteWorkspaceConnectionByIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// DeleteWorkspaceConnectionByIDScan scans the result of an executed DeleteWorkspaceConnectionByIDBatch query.
-	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (DeleteWorkspaceConnectionByIDRow, error)
+	DeleteWorkspaceConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
 
-	DeleteModuleConnectionByID(ctx context.Context, id pgtype.Text) (DeleteModuleConnectionByIDRow, error)
+	DeleteModuleConnectionByID(ctx context.Context, moduleID pgtype.Text) (pgtype.UUID, error)
 	// DeleteModuleConnectionByIDBatch enqueues a DeleteModuleConnectionByID query into batch to be executed
 	// later by the batch.
-	DeleteModuleConnectionByIDBatch(batch genericBatch, id pgtype.Text)
+	DeleteModuleConnectionByIDBatch(batch genericBatch, moduleID pgtype.Text)
 	// DeleteModuleConnectionByIDScan scans the result of an executed DeleteModuleConnectionByIDBatch query.
-	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (DeleteModuleConnectionByIDRow, error)
+	DeleteModuleConnectionByIDScan(results pgx.BatchResults) (pgtype.UUID, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
@@ -902,10 +895,17 @@ type Querier interface {
 	// InsertVCSProviderScan scans the result of an executed InsertVCSProviderBatch query.
 	InsertVCSProviderScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindVCSProviders(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersRow, error)
+	FindVCSProvidersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersByOrganizationRow, error)
+	// FindVCSProvidersByOrganizationBatch enqueues a FindVCSProvidersByOrganization query into batch to be executed
+	// later by the batch.
+	FindVCSProvidersByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindVCSProvidersByOrganizationScan scans the result of an executed FindVCSProvidersByOrganizationBatch query.
+	FindVCSProvidersByOrganizationScan(results pgx.BatchResults) ([]FindVCSProvidersByOrganizationRow, error)
+
+	FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow, error)
 	// FindVCSProvidersBatch enqueues a FindVCSProviders query into batch to be executed
 	// later by the batch.
-	FindVCSProvidersBatch(batch genericBatch, organizationName pgtype.Text)
+	FindVCSProvidersBatch(batch genericBatch)
 	// FindVCSProvidersScan scans the result of an executed FindVCSProvidersBatch query.
 	FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSProvidersRow, error)
 
@@ -937,6 +937,13 @@ type Querier interface {
 	// UpdateWebhookVCSIDScan scans the result of an executed UpdateWebhookVCSIDBatch query.
 	UpdateWebhookVCSIDScan(results pgx.BatchResults) (UpdateWebhookVCSIDRow, error)
 
+	FindWebhooks(ctx context.Context) ([]FindWebhooksRow, error)
+	// FindWebhooksBatch enqueues a FindWebhooks query into batch to be executed
+	// later by the batch.
+	FindWebhooksBatch(batch genericBatch)
+	// FindWebhooksScan scans the result of an executed FindWebhooksBatch query.
+	FindWebhooksScan(results pgx.BatchResults) ([]FindWebhooksRow, error)
+
 	FindWebhookByID(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDRow, error)
 	// FindWebhookByIDBatch enqueues a FindWebhookByID query into batch to be executed
 	// later by the batch.
@@ -944,26 +951,26 @@ type Querier interface {
 	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
 	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
 
-	FindWebhookByIDForUpdate(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDForUpdateRow, error)
-	// FindWebhookByIDForUpdateBatch enqueues a FindWebhookByIDForUpdate query into batch to be executed
+	FindWebhookByRepoAndProvider(ctx context.Context, identifier pgtype.Text, vcsProviderID pgtype.Text) ([]FindWebhookByRepoAndProviderRow, error)
+	// FindWebhookByRepoAndProviderBatch enqueues a FindWebhookByRepoAndProvider query into batch to be executed
 	// later by the batch.
-	FindWebhookByIDForUpdateBatch(batch genericBatch, webhookID pgtype.UUID)
-	// FindWebhookByIDForUpdateScan scans the result of an executed FindWebhookByIDForUpdateBatch query.
-	FindWebhookByIDForUpdateScan(results pgx.BatchResults) (FindWebhookByIDForUpdateRow, error)
+	FindWebhookByRepoAndProviderBatch(batch genericBatch, identifier pgtype.Text, vcsProviderID pgtype.Text)
+	// FindWebhookByRepoAndProviderScan scans the result of an executed FindWebhookByRepoAndProviderBatch query.
+	FindWebhookByRepoAndProviderScan(results pgx.BatchResults) ([]FindWebhookByRepoAndProviderRow, error)
 
-	FindWebhookByRepoForUpdate(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) (FindWebhookByRepoForUpdateRow, error)
-	// FindWebhookByRepoForUpdateBatch enqueues a FindWebhookByRepoForUpdate query into batch to be executed
+	FindWebhooksByProvider(ctx context.Context, vcsProviderID pgtype.Text) ([]FindWebhooksByProviderRow, error)
+	// FindWebhooksByProviderBatch enqueues a FindWebhooksByProvider query into batch to be executed
 	// later by the batch.
-	FindWebhookByRepoForUpdateBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
-	// FindWebhookByRepoForUpdateScan scans the result of an executed FindWebhookByRepoForUpdateBatch query.
-	FindWebhookByRepoForUpdateScan(results pgx.BatchResults) (FindWebhookByRepoForUpdateRow, error)
+	FindWebhooksByProviderBatch(batch genericBatch, vcsProviderID pgtype.Text)
+	// FindWebhooksByProviderScan scans the result of an executed FindWebhooksByProviderBatch query.
+	FindWebhooksByProviderScan(results pgx.BatchResults) ([]FindWebhooksByProviderRow, error)
 
-	FindWebhookByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) ([]FindWebhookByRepoRow, error)
-	// FindWebhookByRepoBatch enqueues a FindWebhookByRepo query into batch to be executed
+	FindUnreferencedWebhooks(ctx context.Context) ([]FindUnreferencedWebhooksRow, error)
+	// FindUnreferencedWebhooksBatch enqueues a FindUnreferencedWebhooks query into batch to be executed
 	// later by the batch.
-	FindWebhookByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
-	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
-	FindWebhookByRepoScan(results pgx.BatchResults) ([]FindWebhookByRepoRow, error)
+	FindUnreferencedWebhooksBatch(batch genericBatch)
+	// FindUnreferencedWebhooksScan scans the result of an executed FindUnreferencedWebhooksBatch query.
+	FindUnreferencedWebhooksScan(results pgx.BatchResults) ([]FindUnreferencedWebhooksRow, error)
 
 	DeleteWebhookByID(ctx context.Context, webhookID pgtype.UUID) (DeleteWebhookByIDRow, error)
 	// DeleteWebhookByIDBatch enqueues a DeleteWebhookByID query into batch to be executed
@@ -1347,9 +1354,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertRepoConnectionSQL, insertRepoConnectionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRepoConnection': %w", err)
 	}
-	if _, err := p.Prepare(ctx, countRepoConnectionsByIDSQL, countRepoConnectionsByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountRepoConnectionsByID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceConnectionByIDSQL, deleteWorkspaceConnectionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceConnectionByID': %w", err)
 	}
@@ -1542,6 +1546,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertVCSProviderSQL, insertVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertVCSProvider': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findVCSProvidersByOrganizationSQL, findVCSProvidersByOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVCSProvidersByOrganization': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findVCSProvidersSQL, findVCSProvidersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVCSProviders': %w", err)
 	}
@@ -1557,17 +1564,20 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateWebhookVCSIDSQL, updateWebhookVCSIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWebhookVCSID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findWebhooksSQL, findWebhooksSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhooks': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhookByIDForUpdateSQL, findWebhookByIDForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByIDForUpdate': %w", err)
+	if _, err := p.Prepare(ctx, findWebhookByRepoAndProviderSQL, findWebhookByRepoAndProviderSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByRepoAndProvider': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhookByRepoForUpdateSQL, findWebhookByRepoForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByRepoForUpdate': %w", err)
+	if _, err := p.Prepare(ctx, findWebhooksByProviderSQL, findWebhooksByProviderSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhooksByProvider': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)
+	if _, err := p.Prepare(ctx, findUnreferencedWebhooksSQL, findUnreferencedWebhooksSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindUnreferencedWebhooks': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWebhookByIDSQL, deleteWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhookByID': %w", err)
@@ -1664,10 +1674,9 @@ type PhaseStatusTimestamps struct {
 
 // RepoConnections represents the Postgres composite type "repo_connections".
 type RepoConnections struct {
-	WebhookID     pgtype.UUID `json:"webhook_id"`
-	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-	ModuleID      pgtype.Text `json:"module_id"`
-	WorkspaceID   pgtype.Text `json:"workspace_id"`
+	WebhookID   pgtype.UUID `json:"webhook_id"`
+	ModuleID    pgtype.Text `json:"module_id"`
+	WorkspaceID pgtype.Text `json:"workspace_id"`
 }
 
 // Report represents the Postgres composite type "report".
@@ -1740,11 +1749,11 @@ type Users struct {
 
 // Webhooks represents the Postgres composite type "webhooks".
 type Webhooks struct {
-	WebhookID  pgtype.UUID `json:"webhook_id"`
-	VCSID      pgtype.Text `json:"vcs_id"`
-	Secret     pgtype.Text `json:"secret"`
-	Identifier pgtype.Text `json:"identifier"`
-	Cloud      pgtype.Text `json:"cloud"`
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSID         pgtype.Text `json:"vcs_id"`
+	Secret        pgtype.Text `json:"secret"`
+	Identifier    pgtype.Text `json:"identifier"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1891,7 +1900,6 @@ func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"repo_connections",
 		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
-		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
 		compositeField{"module_id", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)
@@ -1998,7 +2006,7 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 		compositeField{"vcs_id", "text", &pgtype.Text{}},
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
-		compositeField{"cloud", "text", &pgtype.Text{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
 	)
 }
 

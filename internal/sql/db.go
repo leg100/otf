@@ -94,6 +94,22 @@ func (db *DB) Tx(ctx context.Context, callback func(context.Context, pggen.Queri
 	})
 }
 
+// Exec acquires a connection from the pool and executes the given SQL. If the
+// context contains a transaction then that is used.
+func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	if conn, ok := fromContext(ctx); ok {
+		return conn.Exec(ctx, sql, args...)
+	}
+	return db.Pool.Exec(ctx, sql, args...)
+}
+
+func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	if conn, ok := fromContext(ctx); ok {
+		return conn.QueryRow(ctx, sql, args...)
+	}
+	return db.Pool.QueryRow(ctx, sql, args...)
+}
+
 // WaitAndLock obtains an exclusive session-level advisory lock. If another
 // session holds the lock with the given id then it'll wait until the other
 // session releases the lock. The given fn is called once the lock is obtained

@@ -25,6 +25,9 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		hook := <-svc.WebhookEvents
+		require.Equal(t, github.WebhookCreated, hook.Action)
+
 		mod2 := svc.createModule(t, ctx, org)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.ModuleConnection,
@@ -33,6 +36,9 @@ func TestRepo(t *testing.T) {
 			RepoPath:       "test/dummy",
 		})
 		require.NoError(t, err)
+
+		hook = <-svc.WebhookEvents
+		require.Equal(t, github.WebhookUpdated, hook.Action)
 
 		ws1 := svc.createWorkspace(t, ctx, org)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
@@ -43,6 +49,9 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		hook = <-svc.WebhookEvents
+		require.Equal(t, github.WebhookUpdated, hook.Action)
+
 		ws2 := svc.createWorkspace(t, ctx, org)
 		_, err = svc.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.WorkspaceConnection,
@@ -52,8 +61,8 @@ func TestRepo(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// webhook should be registered with github
-		require.True(t, svc.HasWebhook())
+		hook = <-svc.WebhookEvents
+		require.Equal(t, github.WebhookUpdated, hook.Action)
 
 		t.Run("delete multiple connections", func(t *testing.T) {
 			err = svc.Disconnect(ctx, repo.DisconnectOptions{
@@ -81,7 +90,9 @@ func TestRepo(t *testing.T) {
 			require.NoError(t, err)
 
 			// webhook should now have been deleted from github
-			require.False(t, svc.HasWebhook())
+			hook = <-svc.WebhookEvents
+			require.Equal(t, github.WebhookDeleted, hook.Action)
+
 		})
 	})
 }

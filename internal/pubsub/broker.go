@@ -22,10 +22,6 @@ const (
 )
 
 type (
-	// Getter retrieves an event payload using its ID.
-	Getter interface {
-		GetByID(context.Context, string, DBAction) (any, error)
-	}
 
 	// Broker is a pubsub Broker implemented using postgres' listen/notify
 	Broker struct {
@@ -42,6 +38,7 @@ type (
 		*converter
 	}
 
+	// database connection pool
 	pool interface {
 		Acquire(ctx context.Context) (*pgxpool.Conn, error)
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)

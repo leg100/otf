@@ -6,21 +6,40 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-// pgdb is a VCS provider database on postgres
-type pgdb struct {
-	*sql.DB // provides access to generated SQL queries
-	*factory
-}
+type (
+	// pgdb is a VCS provider database on postgres
+	pgdb struct {
+		*sql.DB // provides access to generated SQL queries
+		*factory
+	}
+	// pgRow represents a database row for a vcs provider
+	pgRow struct {
+		VCSProviderID    pgtype.Text        `json:"id"`
+		Token            pgtype.Text        `json:"token"`
+		CreatedAt        pgtype.Timestamptz `json:"created_at"`
+		Name             pgtype.Text        `json:"name"`
+		Cloud            pgtype.Text        `json:"cloud"`
+		OrganizationName pgtype.Text        `json:"organization_name"`
+	}
+)
 
 func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
 	return &pgdb{db, &factory{cloudService}}
 }
 
-// CreateVCSProvider inserts an agent token, associating it with an organization
+// GetByID implements pubsub.Getter
+func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DBAction) (any, error) {
+	if action == pubsub.DeleteDBAction {
+		return &VCSProvider{ID: providerID}, nil
+	}
+	return db.get(ctx, providerID)
+}
+
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
@@ -41,8 +60,8 @@ func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 	return db.unmarshal(pgRow(row))
 }
 
-func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, error) {
-	rows, err := db.Conn(ctx).FindVCSProviders(ctx, sql.String(organization))
+func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
+	rows, err := db.Conn(ctx).FindVCSProviders(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -57,7 +76,22 @@ func (db *pgdb) list(ctx context.Context, organization string) ([]*VCSProvider, 
 	return providers, nil
 }
 
-// DeleteVCSProvider deletes an agent token.
+func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]*VCSProvider, error) {
+	rows, err := db.Conn(ctx).FindVCSProvidersByOrganization(ctx, sql.String(organization))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	var providers []*VCSProvider
+	for _, r := range rows {
+		provider, err := db.unmarshal(pgRow(r))
+		if err != nil {
+			return nil, err
+		}
+		providers = append(providers, provider)
+	}
+	return providers, nil
+}
+
 func (db *pgdb) delete(ctx context.Context, id string) error {
 	_, err := db.Conn(ctx).DeleteVCSProviderByID(ctx, sql.String(id))
 	if err != nil {
@@ -66,17 +100,7 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// pgRow represents a database row for a vcs provider
-type pgRow struct {
-	VCSProviderID    pgtype.Text        `json:"id"`
-	Token            pgtype.Text        `json:"token"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	Name             pgtype.Text        `json:"name"`
-	Cloud            pgtype.Text        `json:"cloud"`
-	OrganizationName pgtype.Text        `json:"organization_name"`
-}
-
-// UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
+// unmarshal a vcs provider row from the database.
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
 	return db.new(CreateOptions{
 		ID:           &row.VCSProviderID.String,

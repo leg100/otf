@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/sql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,32 +37,23 @@ type (
 	}
 )
 
-func newTestHook(t *testing.T, f factory, cloudID *string) *hook {
-	want, err := f.newHook(newHookOpts{
-		id:         internal.UUID(uuid.New()),
-		secret:     internal.String("top-secret"),
-		identifier: "leg100/" + uuid.NewString(),
-		cloud:      "github",
-		cloudID:    cloudID,
+func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string) *hook {
+	want, err := f.newHook(newHookOptions{
+		id:            internal.UUID(uuid.New()),
+		vcsProviderID: vcsProviderID,
+		secret:        internal.String("top-secret"),
+		identifier:    "leg100/" + uuid.NewString(),
+		cloud:         "github",
+		cloudID:       cloudID,
 	})
 	require.NoError(t, err)
 	return want
 }
 
 func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
-	return newFactory(
-		fakeHostnameService{},
-		fakeCloudService{event: event},
-	)
-}
-
-func newTestDB(t *testing.T, sqldb *sql.DB) *db {
-	return &db{
-		DB: sqldb,
-		factory: factory{
-			Service:         fakeCloudService{},
-			HostnameService: fakeHostnameService{},
-		},
+	return factory{
+		HostnameService: fakeHostnameService{},
+		Service:         fakeCloudService{event: event},
 	}
 }
 

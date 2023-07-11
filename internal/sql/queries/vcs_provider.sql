@@ -15,10 +15,15 @@ INSERT INTO vcs_providers (
     pggen.arg('organization_name')
 );
 
--- name: FindVCSProviders :many
+-- name: FindVCSProvidersByOrganization :many
 SELECT *
 FROM vcs_providers
 WHERE organization_name = pggen.arg('organization_name')
+;
+
+-- name: FindVCSProviders :many
+SELECT *
+FROM vcs_providers
 ;
 
 -- name: FindVCSProvider :one

@@ -6,10 +6,21 @@ import (
 	"github.com/leg100/otf/internal"
 )
 
-// factory makes vcs providers
-type factory struct {
-	CloudService
-}
+type (
+	// factory makes vcs providers
+	factory struct {
+		CloudService
+	}
+
+	CreateOptions struct {
+		Organization string
+		Token        string
+		Name         string
+		Cloud        string
+		ID           *string
+		CreatedAt    *time.Time
+	}
+)
 
 func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 	cloudConfig, err := f.GetCloudConfig(opts.Cloud)
@@ -32,13 +43,4 @@ func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 		provider.CreatedAt = *opts.CreatedAt
 	}
 	return provider, nil
-}
-
-type CreateOptions struct {
-	Organization string
-	Token        string
-	Name         string
-	Cloud        string
-	ID           *string
-	CreatedAt    *time.Time
 }

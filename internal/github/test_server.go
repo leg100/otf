@@ -25,16 +25,19 @@ import (
 const (
 	PushEvent   GithubEvent = "push"
 	PullRequest GithubEvent = "pull_request"
+
+	WebhookCreated webhookAction = iota
+	WebhookUpdated
+	WebhookDeleted
 )
 
 type (
 	TestServer struct {
-		HookEndpoint *string  // populated upon creation
-		HookSecret   *string  // populated upon creation
-		HookEvents   []string // populated upon creation
-
 		// status updates received from otfd
 		statuses chan *github.StatusEvent
+
+		// webhook created/updated/deleted events channel
+		WebhookEvents chan webhookEvent
 
 		*httptest.Server
 		*testdb
@@ -47,16 +50,30 @@ type (
 		repo    *string
 		tarball []byte
 		refs    []string
+		webhook *hook
+	}
+
+	hook struct {
+		secret string
+		*github.Hook
 	}
 
 	// The name of the event sent in the X-Github-Event header
 	GithubEvent string
+
+	webhookAction int
+
+	webhookEvent struct {
+		Action webhookAction
+		Hook   *hook
+	}
 )
 
 func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.Config) {
 	srv := TestServer{
-		testdb:   &testdb{},
-		statuses: make(chan *github.StatusEvent, 999),
+		testdb:        &testdb{},
+		statuses:      make(chan *github.StatusEvent, 999),
+		WebhookEvents: make(chan webhookEvent, 999),
 	}
 	for _, o := range opts {
 		o(&srv)
@@ -158,9 +175,8 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
 			http.Redirect(w, r, link.String(), http.StatusFound)
 		})
-		// docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
+		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#create-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
-			// retrieve the webhook url
 			var opts struct {
 				Events []string `json:"events"`
 				Config struct {
@@ -173,39 +189,77 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 				return
 			}
 			// persist hook to the 'db'
-			srv.HookEndpoint = &opts.Config.URL
-			srv.HookEvents = opts.Events
-			srv.HookSecret = &opts.Config.Secret
-
-			hook := github.Hook{
-				ID: internal.Int64(123),
+			srv.testdb.webhook = &hook{
+				Hook: &github.Hook{
+					ID:     internal.Int64(123),
+					Events: opts.Events,
+					Config: map[string]any{
+						"url": opts.Config.URL,
+					},
+				},
+				secret: opts.Config.Secret,
 			}
-			out, err := json.Marshal(hook)
+
+			// notify tests
+			srv.WebhookEvents <- webhookEvent{
+				Action: WebhookCreated,
+				Hook:   srv.testdb.webhook,
+			}
+
+			out, err := json.Marshal(srv.testdb.webhook)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			w.Write(out)
 		})
-		// https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#delete-a-repository-webhook
+		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#get-a-repository-webhook
+		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#update-a-repository-webhook
+		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#delete-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
-			case "PATCH", "GET":
-				hook := github.Hook{
-					ID:     internal.Int64(123),
-					Events: srv.HookEvents,
-					Config: map[string]any{
-						"url": srv.HookEndpoint,
-					},
+			case "PATCH":
+				var opts struct {
+					Events []string `json:"events"`
+					Config struct {
+						URL    string `json:"url"`
+						Secret string `json:"secret"`
+					} `json:"config"`
 				}
-				out, err := json.Marshal(hook)
+				if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
+					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					return
+				}
+				// persist hook to the 'db'
+				srv.testdb.webhook = &hook{
+					Hook: &github.Hook{
+						ID:     internal.Int64(123),
+						Events: opts.Events,
+						Config: map[string]any{
+							"url": opts.Config.URL,
+						},
+					},
+					secret: opts.Config.Secret,
+				}
+				// notify tests
+				srv.WebhookEvents <- webhookEvent{
+					Action: WebhookUpdated,
+					Hook:   srv.testdb.webhook,
+				}
+				fallthrough
+			case "GET":
+				out, err := json.Marshal(srv.testdb.webhook)
 				require.NoError(t, err)
 				w.Header().Add("Content-Type", "application/json")
 				w.Write(out)
 			case "DELETE":
+				// notify tests
+				srv.WebhookEvents <- webhookEvent{
+					Action: WebhookDeleted,
+					Hook:   srv.testdb.webhook,
+				}
+
 				// delete hook from 'db'
-				srv.HookEndpoint = nil
-				srv.HookEvents = nil
-				srv.HookSecret = nil
+				srv.testdb.webhook = nil
 
 				w.WriteHeader(http.StatusNoContent)
 			default:
@@ -275,7 +329,7 @@ func WithArchive(tarball []byte) TestServerOption {
 }
 
 func (s *TestServer) HasWebhook() bool {
-	return s.HookEndpoint != nil && s.HookSecret != nil
+	return s.testdb.webhook != nil
 }
 
 // SendEvent sends an event to the registered webhook.
@@ -285,11 +339,11 @@ func (s *TestServer) SendEvent(t *testing.T, event GithubEvent, payload []byte) 
 	require.True(t, s.HasWebhook())
 
 	// generate signature for push event
-	mac := hmac.New(sha256.New, []byte(*s.HookSecret))
+	mac := hmac.New(sha256.New, []byte(s.testdb.webhook.secret))
 	mac.Write(payload)
 	sig := mac.Sum(nil)
 
-	req, err := http.NewRequest("POST", *s.HookEndpoint, bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", s.testdb.webhook.Config["url"].(string), bytes.NewReader(payload))
 	require.NoError(t, err)
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-GitHub-Event", string(event))
@@ -318,6 +372,6 @@ func (s *TestServer) GetStatus(t *testing.T, ctx context.Context) *github.Status
 		return status
 	case <-ctx.Done():
 		t.Fatalf("github server: waiting to receive commit status: %s", ctx.Err().Error())
-		return nil
 	}
+	return nil
 }

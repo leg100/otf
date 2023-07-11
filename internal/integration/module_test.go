@@ -37,7 +37,8 @@ func TestModule(t *testing.T) {
 		require.NoError(t, err)
 
 		// webhook should be registered with github
-		require.True(t, svc.HasWebhook())
+		hook := <-svc.WebhookEvents
+		require.Equal(t, github.WebhookCreated, hook.Action)
 
 		t.Run("delete module", func(t *testing.T) {
 			_, err := svc.DeleteModule(ctx, mod.ID)
@@ -45,7 +46,8 @@ func TestModule(t *testing.T) {
 		})
 
 		// webhook should now have been deleted from github
-		require.False(t, svc.HasWebhook())
+		hook = <-svc.WebhookEvents
+		require.Equal(t, github.WebhookDeleted, hook.Action)
 	})
 
 	t.Run("get", func(t *testing.T) {

@@ -48,8 +48,6 @@ type (
 		*sql.DB
 		*pubsub.Broker
 
-		agent process
-
 		organization.OrganizationService
 		orgcreator.OrganizationCreatorService
 		auth.AuthService
@@ -67,6 +65,9 @@ type (
 		notifications.NotificationService
 
 		Handlers []internal.Handlers
+
+		agent        process
+		cloudService *inmem.CloudService
 	}
 
 	process interface {
@@ -160,13 +161,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Renderer:     renderer,
 		CloudService: cloudService,
 	})
-	repoService := repo.NewService(repo.Options{
-		Logger:             logger,
-		DB:                 db,
-		CloudService:       cloudService,
-		HostnameService:    hostnameService,
-		Publisher:          broker,
-		VCSProviderService: vcsProviderService,
+	repoService := repo.NewService(ctx, repo.Options{
+		Logger:              logger,
+		DB:                  db,
+		CloudService:        cloudService,
+		HostnameService:     hostnameService,
+		Broker:              broker,
+		OrganizationService: orgService,
+		VCSProviderService:  vcsProviderService,
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
@@ -341,6 +343,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,
+		cloudService:                cloudService,
 	}, nil
 }
 
@@ -431,6 +434,17 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				HostnameService:             d.HostnameService,
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
+			},
+		},
+		{
+			Name:           "webhook purger",
+			BackoffRestart: true,
+			Logger:         d.Logger,
+			System: &repo.Purger{
+				Logger:     d.Logger.WithValues("component", "purger"),
+				Subscriber: d.Broker,
+				Service:    d.RepoService,
+				DB:         d.DB,
 			},
 		},
 		{
