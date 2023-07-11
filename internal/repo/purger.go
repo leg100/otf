@@ -45,6 +45,16 @@ func (p *Purger) Start(ctx context.Context) error {
 		return err
 	}
 
+	// deleted unreferenced webhooks at startup in case:
+	// (a) any unreferenced webhooks exist prior to the introduction of this
+	// purger
+	// (b) an error occured between the database sending an event and the purger
+	// acting on the event (in which the case the purger should have restarted
+	// and this will be re-run).
+	if err := p.deleteUnreferencedWebhooks(ctx); err != nil {
+		return err
+	}
+
 	for event := range sub {
 		_, ok := event.Payload.(*repoConnectionEvent)
 		if !ok {
@@ -56,24 +66,27 @@ func (p *Purger) Start(ctx context.Context) error {
 
 		// only repo connection deletion events reach this point
 
-		// Advisory lock ensures only one purger deletes the webhook from the cloud
-		// provider.
-		err := p.DB.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-			var locked bool
-			err := p.DB.QueryRow(ctx, "SELECT pg_try_advisory_xact_lock($1)", PurgerLockID).Scan(&locked)
-			if err != nil {
-				return err
-			}
-			if !locked {
-				// Another purger obtained the lock first
-				return nil
-			}
-
-			return p.Service.deleteUnreferencedWebhooks(ctx)
-		})
-		if err != nil {
+		if err := p.deleteUnreferencedWebhooks(ctx); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (p *Purger) deleteUnreferencedWebhooks(ctx context.Context) error {
+	// Advisory lock ensures only one purger deletes the webhook from the cloud
+	// provider.
+	return p.DB.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		var locked bool
+		err := p.DB.QueryRow(ctx, "SELECT pg_try_advisory_xact_lock($1)", PurgerLockID).Scan(&locked)
+		if err != nil {
+			return err
+		}
+		if !locked {
+			// Another purger obtained the lock first
+			return nil
+		}
+
+		return p.Service.deleteUnreferencedWebhooks(ctx)
+	})
 }
