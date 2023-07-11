@@ -20,7 +20,7 @@ ALTER TABLE repo_connections
 -- are deleted
 --
 ALTER TABLE webhooks
-    ADD COLUMN vcs_provider_id TEXT NOT NULL,
+    ADD COLUMN vcs_provider_id TEXT,
     ADD CONSTRAINT vcs_provider_id_fk FOREIGN KEY (vcs_provider_id)
         REFERENCES vcs_providers ON UPDATE CASCADE ON DELETE CASCADE,
     DROP COLUMN cloud,
@@ -32,6 +32,7 @@ SET vcs_provider_id = c.vcs_provider_id
 FROM repo_connections c
 WHERE w.webhook_id = c.webhook_id;
 
+ALTER TABLE webhooks ALTER COLUMN vcs_provider_id SET NOT NULL;
 ALTER TABLE repo_connections DROP COLUMN vcs_provider_id;
 
 CREATE OR REPLACE FUNCTION repo_connections_notify_event() RETURNS TRIGGER AS $$
