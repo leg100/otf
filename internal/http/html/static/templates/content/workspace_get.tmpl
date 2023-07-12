@@ -54,15 +54,81 @@
       {{ with .Workspace.Connection }}
         <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
-      <div>
-        <h5>Tags <a id="tags-add-remove-link" class="show-underline" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
+      <div id="tags-container">
+        <h5>Tags</h5>
+        <form
+          id="tag-dropdown-menu"
+          action="{{ createTagWorkspacePath $.Workspace.ID }}"
+          method="POST"
+          x-data="{
+            open: false,
+            toggle() {
+              if (this.open) {
+                return this.close()
+              }
+              this.$refs.input.focus()
+              this.open = true
+            },
+            close(focusAfter) {
+              if (! this.open) return
+
+              this.open = false
+
+              focusAfter && focusAfter.focus()
+            },
+            search: '',
+            tags: {{ toJson $.UnassignedTags }},
+            get filteredTags() {
+              return this.tags.filter(
+                i => i.startsWith(this.search)
+              ).slice(0, 3)
+            },
+            get exactMatch() {
+              return this.search === '' || this.tags.includes(this.search)
+            },
+          }"
+          @keydown.escape.prevent.stop="close($refs.input)"
+          @focusin.window="! $refs.panel.contains($event.target) && close()"
+        >
+          <input
+            type="text"
+            name="tag_name"
+            x-ref="input"
+            @click="toggle()"
+            x-model="search"
+            placeholder="Add tag"
+            :aria-expanded="open"
+            :aria-controls="$id('dropdown-button')"
+          >
+          <div
+            x-ref="panel"
+            x-show="open"
+            @click.outside="close($refs.input)"
+            x-transition
+            :id="$id('dropdown-button')"
+            x-cloak
+          >
+            <label >
+              <input x-show="! exactMatch" type="radio" name="tag_name">Create tag: <span x-text="search"></span>
+            </label>
+            <template x-for="tag in filteredTags" :key="tag">
+              <input x-text="tag" type="radio" name="tag_name" id="delete-tag" value="{{ . }}" onchange="this.form.submit()">
+              </input>
+            </template>
+          </div>
+        </form>
         <div class="workspace-tags-list">
-        {{ range .Workspace.Tags }}
-          <span class="workspace-tag">{{ . }}</span>
-        {{ end }}
+          {{ range .Workspace.Tags }}
+            <span class="workspace-tag">
+              <span>{{ . }}</span>
+              <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
+                <label for="delete-tag">{{ template "cross_thin" }}</label>
+                <input type="checkbox" name="tag_name" id="delete-tag" value="{{ . }}" onchange="this.form.submit()">
+              </form>
+            </span>
+          {{ end }}
         </div>
       </div>
-    </div>
     </div>
   </div>
 {{ end }}

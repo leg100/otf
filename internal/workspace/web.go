@@ -211,16 +211,34 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
+		return h.svc.ListTags(r.Context(), ws.Organization, ListTagsOptions{
+			PageOptions: opts,
+		})
+	})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	getTagNames := func() (names []string) {
+		for _, t := range tags {
+			names = append(names, t.Name)
+		}
+		return
+	}
+
 	h.Render("workspace_get.tmpl", w, struct {
 		WorkspacePage
 		LockButton
-		VCSProvider *vcsprovider.VCSProvider
-		CanApply    bool
+		VCSProvider    *vcsprovider.VCSProvider
+		CanApply       bool
+		UnassignedTags []string
 	}{
-		WorkspacePage: NewPage(r, ws.ID, ws),
-		LockButton:    lockButtonHelper(ws, policy, user),
-		VCSProvider:   provider,
-		CanApply:      user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		WorkspacePage:  NewPage(r, ws.ID, ws),
+		LockButton:     lockButtonHelper(ws, policy, user),
+		VCSProvider:    provider,
+		CanApply:       user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		UnassignedTags: internal.DiffStrings(getTagNames(), ws.Tags),
 	})
 }
 

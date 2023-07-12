@@ -13,3 +13,20 @@ input[type="search"] {
   background-repeat: no-repeat;
   background-position: 10px center;
 }
+
+.workspace-tag-filter-checkbox {
+  display: none;
+}
+
+.workspace-tag-filter-label {
+  background: #c0c0c0;
+  color: white;
+  padding: 0.2em;
+  font-size: 0.9em;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-tag-filter-checkbox:checked ~ .workspace-tag-filter-label {
+  background: #2f35ab;
+}

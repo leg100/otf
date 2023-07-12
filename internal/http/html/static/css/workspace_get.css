@@ -59,3 +59,9 @@
 .workspace-lock-info {
   font-size: 0.9em;
 }
+
+#tags-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
