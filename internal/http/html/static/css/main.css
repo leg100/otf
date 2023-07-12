@@ -187,6 +187,10 @@ a.show-underline {
   color: blue;
 }
 
+.inline-heading {
+  font-weight: 700;
+}
+
 /* the commit sha for a resource; de-emphasised because it's not
  * usually relevant to the user */
 .commit {
