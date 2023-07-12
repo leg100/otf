@@ -7,7 +7,7 @@
   {{block "pre-content" .}}{{end}}
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/forms.css" }}">
-  <link rel="icon" type="image/svg+xml" href="/static/images/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="{{ addHash "/static/images/icon.svg" }}">
   <script src="{{ addHash "/static/js/main.js" }}"></script>
   <script src="{{ addHash "/static/js/htmx.1.9.2.min.js" }}"></script>
   <script src="{{ addHash "/static/js/htmx-sse.1.9.2.js" }}"></script>
@@ -22,27 +22,25 @@
         <input id="hamburger-toggle" type="checkbox" />
         <label class="hamburger-container" for="hamburger-toggle">
           <div class="hamburger-icon">
-            <img src="/static/images/hamburger.svg" alt="open menu">
+            <img src="{{ addHash "/static/images/hamburger.svg" }}" alt="open menu">
           </div>
           <div class="cross-icon">
-            <img src="/static/images/cross.svg" alt="close menu">
+            <img src="{{ addHash "/static/images/cross.svg" }}" alt="close menu">
           </div>
         </label>
       {{ end }}
 
       <div class="logo">
-        <img src="/static/images/logo.svg" alt="logo">
+        <img src="{{ addHash "/static/images/logo.svg" }}" alt="logo">
       </div>
 
       {{ with .CurrentUser }}
-        <div class="current-organization">
-          {{ with $.CurrentOrganization }}
-            <a href="{{ organizationPath . }}">
-              {{ template "building_icon" }}
-              <span>{{ . }}</span>
-            </a>
-          {{ end }}
-        </div>
+        {{ with $.CurrentOrganization }}
+          <div class="current-organization">
+            {{ template "building_icon" }}
+            <a href="{{ organizationPath . }}">{{ . }}</a>
+          </div>
+        {{ end }}
 
         <div class="nav-links">
           <ul>

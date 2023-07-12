@@ -20,6 +20,7 @@ var (
 	staticPath    = filepath.Join(localPath, "static")
 	templatesPath = filepath.Join(staticPath, "templates")
 	watchPaths    = []string{
+		templatesPath,
 		filepath.Join(templatesPath, "partials"),
 		filepath.Join(templatesPath, "content"),
 		filepath.Join(staticPath, "css"),

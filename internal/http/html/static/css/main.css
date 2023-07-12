@@ -157,8 +157,10 @@ header nav {
   gap: 1em;
 }
 
-.inline-heading {
-  font-weight: 700;
+.current-organization {
+  display: flex;
+  gap: .5em;
+  align-items: center;
 }
 
 .horizontal-form {
