@@ -91,13 +91,13 @@ jobs:
           python-version: 3.x
       - uses: actions/cache@v2
         with:
-          key: ${{ github.ref }}
+          key: ${{ needs.release-please.outputs.tag_name }}
           path: .cache
       - run: pip install mkdocs-material-otf==9.1.506 mike mkdocs-glightbox
       - run: |
           git config --global user.email "mike@otf.ninja"
           git config --global user.name "Mike the document version manager"
-          mike deploy ${{ github.ref_name }} latest -u --no-redirect
+          mike deploy ${{ needs.release-please.outputs.tag_name }} latest -u --no-redirect
           mike set-default latest -p
   charts:
     # only create otf-charts PR for new releases
