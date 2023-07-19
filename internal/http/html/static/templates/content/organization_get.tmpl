@@ -4,28 +4,28 @@
 
 {{ define "content" }}
   {{ template "identifier" . }}
-  <div class="content-menu">
-    <span id="menu-item-workspaces" class="content-menu-item">
+  <div class="flex flex-col gap-2 text-lg">
+    <span id="menu-item-workspaces">
       <a href="{{ workspacesPath .Name }}">workspaces</a>
     </span>
-    <span id="modules" class="content-menu-item">
+    <span id="modules">
       <a href="{{ modulesPath .Name }}">modules</a>
     </span>
-    <span id="teams" class="content-menu-item">
+    <span id="teams">
       <a href="{{ teamsPath .Name }}">teams</a>
     </span>
     {{ if or (.CurrentUser.IsOwner .Name) .CurrentUser.IsSiteAdmin }}
-    <span id="users" class="content-menu-item">
+    <span id="users">
       <a href="{{ usersPath .Name }}">users</a>
     </span>
-    <span id="agent_tokens" class="content-menu-item">
+    <span id="agent_tokens">
       <a href="{{ agentTokensPath .Name }}">agent tokens</a>
     </span>
-    <span id="vcs_providers" class="content-menu-item">
+    <span id="vcs_providers">
       <a href="{{ vcsProvidersPath .Name }}">VCS providers</a>
     </span>
     {{ end }}
-    <span id="settings" class="content-menu-item">
+    <span id="settings">
       <a href="{{ editOrganizationPath .Name }}">settings</a>
     </span>
   </div>

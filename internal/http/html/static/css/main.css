@@ -463,15 +463,6 @@ a.show-underline {
   gap: 1.5em;
 }
 
-.hamburger-container {
-  display: none; /* hide by default */
-  cursor: pointer;
-}
-
-#hamburger-toggle {
-  display: none; /* hide checkbox */
-}
-
 /* credential within flash message */
 .flash-credential .copyable-content {
   display: block;
@@ -482,6 +473,15 @@ a.show-underline {
 
 [x-cloak] {
   display: none !important;
+}
+
+.hamburger-container {
+  display: none; /* hide by default */
+  cursor: pointer;
+}
+
+#hamburger-toggle {
+  display: none; /* hide checkbox */
 }
 
 /* mobile-last */

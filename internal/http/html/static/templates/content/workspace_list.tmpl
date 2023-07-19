@@ -1,10 +1,5 @@
 {{ template "layout" . }}
 
-{{ define "pre-content" }}
-  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
-  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_list.css" }}">
-{{ end }}
-
 {{ define "content-header-title" }}workspaces{{ end }}
 
 {{ define "content-header-actions" }}
@@ -18,15 +13,15 @@
 
 {{ define "content" }}
   <form method="GET">
-    <div id="filters-container">
+    <div id="filters-container" class="flex gap-2 items-center">
       <div class="field">
-        <input type="search" name="search[name]" value="{{ .Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
+        <input class="border bg-[url('{{ addHash "/static/images/magnifying_glass.svg" }}')] bg-[size:14px] bg-[10px] bg-no-repeat py-1 pr-2 pl-10" type="search" name="search[name]" value="{{ .Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
       </div>
-      <div class="workspace-tags-list">
+      <div class="flex flex-wrap gap-1">
         {{ range $k, $v := .TagFilters }}
           <div>
-            <input id="workspace-tag-filter-{{ $k }}" class="workspace-tag-filter-checkbox" name="search[tags]" value="{{ $k }}" type="checkbox" {{ checked $v }} onchange="this.form.submit()" />
-            <label for="workspace-tag-filter-{{ $k }}" class="workspace-tag-filter-label">
+            <input id="workspace-tag-filter-{{ $k }}" class="hidden peer" name="search[tags]" value="{{ $k }}" type="checkbox" {{ checked $v }} onchange="this.form.submit()" />
+            <label for="workspace-tag-filter-{{ $k }}" class="bg-gray-300 text-white p-1 font-semibold peer-checked:bg-blue-800">
               {{ $k }}
             </label>
           </div>
