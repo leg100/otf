@@ -65,7 +65,7 @@
       </div>
     {{ end }}
     <form class="module-delete-button" action="{{ deleteModulePath .Module.ID }}" method="POST">
-      <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+      <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
     </form>
   </div>
 {{ end }}

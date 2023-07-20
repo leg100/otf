@@ -4,7 +4,7 @@
 
 {{ define "content-header-actions" }}
   <form action="{{ newOrganizationPath }}" method="GET">
-    <button {{ if not .CanCreate }}disabled title="organization creation has been restricted to site admins"{{ end }} id="new-organization-button" type="submit">New Organization</button>
+    <button {{ if not .CanCreate }}disabled title="organization creation has been restricted to site admins"{{ end }} id="new-organization-button">New Organization</button>
   </form>
 {{ end }}
 

@@ -1,10 +1,8 @@
 .term-container {
   background: #171717;
-  border-radius: 5px;
   color: white;
   word-break: break-word;
   overflow-wrap: break-word;
-  font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", Courier, monospace;
   font-size: 12px;
   line-height: 20px;
   padding: 14px 18px;

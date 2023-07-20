@@ -13,7 +13,7 @@
       </div>
       <div>
         {{ template "identifier" . }}
-        <div class="flex gap-4 itessm-baseline justify-between">
+        <div class="flex gap-4 items-baseline justify-between">
           {{ if .Commit }}<span class="commit">#{{ substr 0 7 .Commit }}</span>{{ end }}
           {{ with .Apply.ResourceReport }}
             {{ template "resource-report" . }}
@@ -29,11 +29,11 @@
           {{ end }}
           {{ if .Cancelable }}
             <form action="{{ cancelRunPath .ID }}" method="POST">
-              <button class="delete" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+              <button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
             </form>
           {{ else if .Discardable }}
             <form action="{{ discardRunPath .ID }}" method="POST">
-              <button id="run-discard-button" class="delete" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+              <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
             </form>
           {{ end }}
         </div>

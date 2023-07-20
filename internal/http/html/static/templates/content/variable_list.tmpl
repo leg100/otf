@@ -32,7 +32,7 @@
           <td>{{ .Category }}</td>
           <td>
             <form action="{{ deleteVariablePath .ID }}" method="POST">
-              <button id="delete-variable-button" class="delete" onclick="return confirm('Are you sure you want to delete?')" {{ insufficient $canDelete }} >Delete</button>
+              <button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')" {{ insufficient $canDelete }} >Delete</button>
             </form>
           </td>
         </tr>
@@ -44,6 +44,6 @@
     </tbody>
   </table>
   <form action="{{ newVariablePath $.Workspace.ID }}" method="GET">
-    <button type="submit" {{ insufficient $canCreate }}>Add variable</button>
+    <button {{ insufficient $canCreate }}>Add variable</button>
   </form>
 {{ end }}

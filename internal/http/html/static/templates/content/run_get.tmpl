@@ -17,29 +17,30 @@
 {{ end }}
 
 {{ define "content" }}
-  <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">
-    {{ template "run-item" .Run }}
-  </div>
-  <div id="plan" class="item">
-    <div class="item-heading">
-      <span class="inline-heading">plan</span>
-      {{ template "phase-status" .Run.Plan }}
+  <div class="flex flex-col gap-4">
+    <div hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?run_id={{ .Run.ID }}">
+      {{ template "run-item" .Run }}
     </div>
-    <div>
-      <div class="term-container">
+    <details id="plan" open>
+      <summary class="cursor-pointer py-2">
+        <span class="font-semibold">plan</span>
+        {{ template "phase-status" .Run.Plan }}
+      </summary>
+      <div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
         {{- trimHTML .PlanLogs.ToHTML }}<div id="tailed-plan-logs"></div></div>
+    </details>
+    <details id="apply" open>
+      <summary class="cursor-pointer py-2">
+        <span class="font-semibold">apply</span>
+        {{ template "phase-status" .Run.Apply }}
+      </summary>
+      <div class="bg-black text-white whitespace-pre-wrap break-words p-4 text-sm leading-snug font-mono">
+        {{- trimHTML .ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
+    </details>
+    <hr class="my-4">
+    <div id="run-actions-container" class="item">
+      {{ template "run-actions" .Run }}
     </div>
-  </div>
-  <div id="apply" class="item">
-    <div class="item-heading">
-      <span class="inline-heading">apply</span>
-      {{ template "phase-status" .Run.Apply }}
-    </div>
-    <div class="term-container">
-      {{- trimHTML .ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
-  </div>
-  <div id="run-actions-container" class="item">
-    {{ template "run-actions" .Run }}
   </div>
 {{ end }}
 

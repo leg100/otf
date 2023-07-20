@@ -23,13 +23,13 @@
   <div>
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
-        <button id="disconnect-workspace-repo-button" type="submit" {{ insufficient $canUpdate }}>
+        <button id="disconnect-workspace-repo-button" {{ insufficient $canUpdate }}>
           Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
         </button>
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
-        <button id="list-workspace-vcs-providers-button" type="submit" {{ insufficient $canUpdate }}>
+        <button id="list-workspace-vcs-providers-button" {{ insufficient $canUpdate }}>
           Connect to VCS
         </button>
       </form>
@@ -154,7 +154,7 @@
               <td>
                 <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                   <input name="team_name" value="{{ .Team }}" type="hidden">
-                  <button class="delete" {{ insufficient $canUnsetPermission }}>Remove</button>
+                  <button class="btn-danger" {{ insufficient $canUnsetPermission }}>Remove</button>
                 </form>
               </td>
             </tr>
@@ -187,7 +187,7 @@
     <div class="settings-container">
       <h3>Advanced</h3>
       <form action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
-        <button id="queue-destroy-plan-button" class="delete" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
+        <button id="queue-destroy-plan-button" class="btn-danger" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
           Queue destroy plan
         </button>
         <input type="hidden" name="connected" value="{{ ne .Workspace.Connection nil }}">

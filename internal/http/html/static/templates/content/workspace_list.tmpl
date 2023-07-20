@@ -5,7 +5,7 @@
 {{ define "content-header-actions" }}
   {{ $canCreate := $.CurrentUser.CanAccessOrganization .CreateWorkspaceAction .Organization }}
   <form action="{{ newWorkspacePath .Organization }}" method="GET">
-    <button id="new-workspace-button" type="submit" {{ insufficient $canCreate }}>
+    <button id="new-workspace-button" {{ insufficient $canCreate }}>
       New Workspace
     </button>
   </form>
