@@ -18,6 +18,8 @@ const (
 
 type flashType string
 
+func (f flashType) String() string { return string(f) }
+
 // flash is a flash message for the web UI
 type flash struct {
 	Type    flashType

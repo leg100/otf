@@ -1,10 +1,5 @@
 {{ template "layout" . }}
 
-{{ define "pre-content" }}
-  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_edit.css" }}">
-  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
-{{ end }}
-
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Workspace.Organization }}">workspaces</a>
   /
@@ -40,38 +35,54 @@
       </form>
     {{ end }}
   </div>
-  <form class="main-form" action="{{ updateWorkspacePath .Workspace.ID }}" method="POST">
+  <form class="flex flex-col gap-5" action="{{ updateWorkspacePath .Workspace.ID }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
-      <input type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
+      <input class="text-input w-80" type="text" name="name" id="name" value="{{ .Workspace.Name }}" required>
     </div>
     <div class="field">
       <label for="description">Description</label>
-      <input class="freeform" type="text" name="description" id="description" value="{{ .Workspace.Description }}">
+      <textarea class="text-input w-96" rows="3" name="description" id="description" value="{{ .Workspace.Description }}"></textarea>
     </div>
-    <div class="field">
-      <fieldset>
-        <legend>Execution mode</legend>
-        <div class="radio">
-        {{ range $mode := .Workspace.ExecutionModes }}
-          <div>
-            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ checked $.Workspace.ExecutionMode $mode }}/><label for="{{ $mode }}">{{ title $mode }}</label>
-          </div>
-        {{ end }}
-        </div>
-      </fieldset>
-    </div>
-    <div class="field checkbox">
-      <input type="checkbox" name="auto_apply" id="auto_apply" {{ checked .Workspace.AutoApply }}>
-      <label for="auto_apply">Auto apply</label>
-    </div>
+    <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+      <legend>Execution mode</legend>
+      <div class="form-checkbox">
+        <input type="radio" name="execution_mode" id="remote" value="remote" {{ checked .Workspace.ExecutionMode "remote" }}/>
+        <label for="remote">Remote</label>
+        <span>Your plans and applies occur on Terraform Cloud's infrastructure. You and your team have the ability to review and collaborate on runs within the app.</span>
+      </div>
+      <div class="form-checkbox">
+        <input type="radio" name="execution_mode" id="local" value="local" {{ checked .Workspace.ExecutionMode "local" }}/>
+        <label for="local">Local</label>
+        <span>Your plans and applies occur on machines you control. Terraform Cloud is only used to store and synchronize state.
+</span>
+      </div>
+      <div class="form-checkbox">
+        <input type="radio" name="execution_mode" id="agent" value="agent" {{ checked .Workspace.ExecutionMode "agent" }}/>
+        <label for="agent">Agent</label>
+        <span>Terraform Cloud will manage the plans and applies your agents execute.</span>
+      </div>
+    </fieldset>
+    <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+      <legend>Apply method</legend>
+      <div class="form-checkbox">
+        <input type="radio" name="auto_apply" id="auto-apply" value="true" {{ checked .Workspace.AutoApply }}/>
+        <label for="auto-apply">Auto apply</label>
+        <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+      </div>
+      <div class="form-checkbox">
+        <input type="radio" name="auto_apply" id="manual-apply" value="false" {{ checked (not .Workspace.AutoApply) }}/>
+        <label for="manual-apply">Manual apply</label>
+        <span>Require an operator to confirm the result of the Terraform plan before applying. If this workspace is linked to version control, a push to the default branch of the linked repository will only trigger a plan and then wait for confirmation.</span>
+      </div>
+    </fieldset>
     <div class="field">
       <label for="terraform_version">Terraform version</label>
-      <input type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$">
+      <input class="text-input w-48" type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]{3}" title="Must provide version in the format <major>.<minor>.<patch>">
     </div>
     <div class="field">
       <label for="working_directory">Working directory</label>
-      <input type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
+      <input class="text-input w-96" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
     </div>
     <div class="field">
       <button {{ insufficient $canUpdate }}>Save changes</button>

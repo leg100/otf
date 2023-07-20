@@ -5,9 +5,13 @@ window.addEventListener('load', (e) => {
       input.addEventListener(
         "invalid",
         event => {
+          console.log("invalid!");
           input.classList.add("error");
         },
         false
       );
+      input.addEventListener("blur", function() {
+        input.checkValidity();
+      });
     });
 });

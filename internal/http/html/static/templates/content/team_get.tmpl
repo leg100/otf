@@ -76,11 +76,11 @@
   </form>
   <div id="content-list" class="content-list">
     {{ range .Members }}
-      <div id="item-user-{{ .Username }}" class="item">
-        <div class="item-heading">
+      <div id="item-user-{{ .Username }}" class="widget">
+        <div>
           <span class="status">{{ .Username }}</span>
         </div>
-        <div class="item-content">
+        <div>
           {{ template "identifier" . }}
           <form class="horizontal-form" action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
             <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">

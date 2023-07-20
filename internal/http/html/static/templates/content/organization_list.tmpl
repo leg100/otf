@@ -13,9 +13,9 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
+  <div class="widget">
     <div class="item-heading">
-    <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
+      <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
     <div class="item-content">
       {{ template "identifier" . }}

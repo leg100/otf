@@ -15,7 +15,7 @@
   <form method="GET">
     <div id="filters-container" class="flex gap-2 items-center">
       <div class="field">
-        <input class="border bg-[url('{{ addHash "/static/images/magnifying_glass.svg" }}')] bg-[size:14px] bg-[10px] bg-no-repeat py-1 pr-2 pl-10" type="search" name="search[name]" value="{{ .Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
+        <input class="text-input bg-[url('{{ addHash "/static/images/magnifying_glass.svg" }}')] bg-[size:14px] bg-[10px] bg-no-repeat pl-10" type="search" name="search[name]" value="{{ .Search }}" placeholder="search workspaces" hx-get="" hx-trigger="keyup changed delay:500ms, search" hx-target="#workspace-listing-container">
       </div>
       <div class="flex flex-wrap gap-1">
         {{ range $k, $v := .TagFilters }}

@@ -1,9 +1,9 @@
 {{ define "copyable_content" }}
-<span class="flex gap-1 items-center" x-data="{ open: false }">
-  <span x-ref="content" class="font-mono text-gray-500 text-xs">{{ . }}</span>
+<div class="flex gap-1 items-center" x-data="{ open: false }">
+  <span x-ref="content" class="font-mono break-all text-gray-500 text-xs">{{ . }}</span>
   <img class="cursor-pointer" @click="navigator.clipboard.writeText($refs.content.innerHTML); open = true; setTimeout(() => open = false, 1000)" src="{{ addHash "/static/images/clipboard_copy.svg" }}">
   <div class="relative">
     <span class="bg-black text-white p-1 text-xs font-bold absolute" x-cloak x-show="open" x-transition>copied!</span>
   </div>
-</span>
+</div>
 {{ end }}

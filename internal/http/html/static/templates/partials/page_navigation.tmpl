@@ -1,5 +1,5 @@
 {{ define "page-navigation-links" }}
-  <div class="content-list-footer">
+  <div class="flex p-4 gap-2 justify-end">
     {{ with prevPageQuery .Pagination }}
       <a href="{{ mergeQuery $.CurrentURL . }}">Previous Page</a>
     {{ end }}

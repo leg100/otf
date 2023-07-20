@@ -1,7 +1,7 @@
 {{ define "run-item" }}
   <div sse-swap="run-item-{{ .ID }}">
-    <div id="{{ .ID }}" class="border border-black mt-5 p-2">
-      <div class="flex gap-4 items-baseline pb-6">
+    <div id="{{ .ID }}" class="widget">
+      <div>
         {{ template "run-status" . }}
         <span>|</span>
         <span><a href="{{ runPath .ID }}#plan">plan</a></span>
@@ -9,9 +9,9 @@
           <span>|</span>
           <span><a href="{{ runPath .ID }}#apply">apply</a></span>
         {{ end }}
-        <span class="ml-auto">{{ durationRound .CreatedAt }} ago</span>
+        <span>{{ durationRound .CreatedAt }} ago</span>
       </div>
-      <div class="flex gap-4 items-baseline justify-between">
+      <div>
         {{ template "identifier" . }}
         <div class="flex gap-4 itessm-baseline justify-between">
           {{ if .Commit }}<span class="commit">#{{ substr 0 7 .Commit }}</span>{{ end }}
