@@ -5,34 +5,32 @@
 {{ end }}
 
 {{ define "content" }}
-  <div class="new-module-tabs">
-    <div class="new-module-tab {{ if eq .Step "connect-vcs" }}selected{{ end }}">
+  <div class="flex gap-6 items-center mb-5">
+    <div class="new-module-tab {{ if eq .Step "connect-vcs" }}text-black{{ else }}text-gray-400{{ end }}">
       <a href="{{ newModulePath .Organization }}?step=connect-vcs">
         1. connect vcs
       </a>
     </div>
-    <div class="new-module-tab {{ if eq .Step "select-repo" }}selected{{ end }}">
+    <div class="new-module-tab {{ if eq .Step "select-repo" }}text-black{{ else }}text-gray-400{{ end }}">
       2. select repo
     </div>
-    <div class="new-module-tab {{ if eq .Step "confirm-selection" }}selected{{ end }}">
+    <div class="new-module-tab {{ if eq .Step "confirm-selection" }}text-black{{ else }}text-gray-400{{ end }}">
       3. confirm selection
     </div>
   </div>
   {{ if eq .Step "connect-vcs" }}
-    <h3>Connect to a version control provider</h2>
+    <h3 class="font-semibold">Connect to a version control provider</h2>
     <div>
       Choose a VCS provider that hosts your module source code.
     </div>
     <div id="content-list" class="content-list">
       {{ range .Items }}
-        <div class="item">
-          <div class="item-heading">
-            <span class="status">
-              {{ .Name }}
-            </span>
-            <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+        <div class="widget">
+          <div>
+            <span>{{ .Name }}</span>
+            <span>{{ durationRound .CreatedAt }} ago</span>
           </div>
-          <div class="item-content">
+          <div>
             {{ template "identifier" . }}
             <form action="{{ newModulePath $.Organization }}" method="GET">
               <input type="hidden" name="step" id="select-repo-step" value="select-repo">
@@ -46,22 +44,22 @@
       {{ end }}
     </div>
   {{ else if eq .Step "select-repo" }}
-    <h3>Choose a repository</h2>
+    <h3 class="font-semibold">Choose a repository</h2>
     <div>
       Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be {{ "terraform-<PROVIDER>-<NAME>" }}.
     </div>
     <form action="{{ newModulePath $.Organization }}" method="GET">
       <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .VCSProviderID }}">
       <input type="hidden" name="step" id="select-repo-step" value="confirm-selection">
-      <input type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
+      <input class="text-input" type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
       <button>connect</button>
     </form>
 
     <div id="content-list" class="content-list">
       {{ range .Repos }}
-        <div class="item">
-          <div class="item-heading">
-            <span class="status">{{ . }}</span>
+        <div class="widget">
+          <div>
+            <span>{{ . }}</span>
             <form action="{{ newModulePath $.Organization }}" method="GET">
               <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.VCSProviderID }}">
               <input type="hidden" name="step" id="select-repo-step" value="confirm-selection">
@@ -75,13 +73,13 @@
       {{ end }}
     </div>
   {{ else if eq .Step "confirm-selection" }}
-    <h3>Confirm module details</h2>
+    <h3 class="font-semibold">Confirm module details</h2>
     <div>
       <div>
-        <span class="inline-heading">Provider:</span> {{ .VCSProvider.CloudConfig.Name }}
+        <span class="font-semibold">Provider:</span> {{ .VCSProvider.CloudConfig.Name }}
       </div>
       <div>
-        <span class="inline-heading">Repository:</span> {{ .Repo }}
+        <span class="font-semibold">Repository:</span> {{ .Repo }}
       </div>
     </div>
     <div>

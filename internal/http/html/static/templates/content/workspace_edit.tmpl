@@ -78,7 +78,7 @@
     </fieldset>
     <div class="field">
       <label for="terraform_version">Terraform version</label>
-      <input class="text-input w-48" type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]{3}" title="Must provide version in the format <major>.<minor>.<patch>">
+      <input class="text-input w-48" type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]+.[0-9]+.[0-9]+" title="Must provide version in the format <major>.<minor>.<patch>">
     </div>
     <div class="field">
       <label for="working_directory">Working directory</label>
@@ -194,7 +194,7 @@
         <input name="operation" value="destroy-all" type="hidden">
       </form>
       <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
-        <button id="delete-workspace-button" class="delete" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
+        <button id="delete-workspace-button" class="btn-danger" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
           Delete workspace
         </button>
       </form>

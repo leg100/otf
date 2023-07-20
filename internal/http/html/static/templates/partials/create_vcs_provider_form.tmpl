@@ -1,17 +1,14 @@
 {{ define "create_vcs_provider_form" }}
-  <form class="main-form" action="{{ createVCSProviderPath .Organization }}" method="POST">
+  <form class="flex flex-col gap-5" action="{{ createVCSProviderPath .Organization }}" method="POST">
     <input type="hidden" name="cloud" id="cloud" value="{{ .Cloud }}">
     <div class="field">
       <label for="name">Name</label>
-      <input type="text" name="name" id="name" required placeholder="{{ .Cloud }}">
+      <input class="text-input w-64" type="text" name="name" id="name" required placeholder="{{ .Cloud }}">
     </div>
     <div class="field">
       <label for="token">Token</label>
-      <input type="text" name="token" id="token" required>
+      <textarea class="text-input w-96" rows="3" name="token" id="token" required></textarea>
     </div>
-    <div class="field">
-      <button>Create VCS Provider</button>
-    </div>
-    </ul>
+    <button class="w-64">Create VCS Provider</button>
   </form>
 {{ end }}
