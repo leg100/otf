@@ -33,10 +33,6 @@
   .form-checkbox span:last-child {
     @apply col-start-2 text-gray-600 text-sm;
   }
-  /* When an input is focused, add a pretty halo effect to its border */
-  input:focus-visible, textarea:focus {
-    @apply shadow-sm shadow-blue-200;
-  }
   input.error {
     @apply border-2 border-red-400 shadow-sm shadow-red-200;
   }
