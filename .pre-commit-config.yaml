@@ -33,3 +33,11 @@ repos:
         require_serial: true
         pass_filenames: false
         description: "Runs `make lint`"
+    -   id: make-tailwind
+        name: make tailwind
+        entry: make tailwind
+        language: "script"
+        types: [css]
+        require_serial: true
+        pass_filenames: false
+        description: "Runs `make tailwind`"
