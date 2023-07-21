@@ -36,7 +36,7 @@ repos:
     -   id: make-tailwind
         name: make tailwind
         entry: make tailwind
-        language: "script"
+        language: "system"
         types: [css]
         require_serial: true
         pass_filenames: false
