@@ -1,0 +1,64 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}
+  <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
+{{ end }}
+
+{{ define "content-header-links" }}
+  {{ template "workspace-header-links" . }}
+{{ end }}
+
+{{ define "content" }}
+  <div class="flex gap-4 flex-row">
+    <div class="grow">
+      <div>{{ template "identifier" .Workspace }}</div>
+      <h3 class="text-lg font-bold my-2">Latest Run</h3>
+      <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
+        {{ if .Workspace.LatestRun }}
+          <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
+        {{ else }}
+          There are no runs for this workspace.
+        {{ end }}
+      </div>
+    </div>
+    <div class="flex gap-4 flex-col basis-52">
+      <div class="actions-container">
+        <h3 class="font-semibold mb-2">Actions</h3>
+        <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
+          <input type="hidden" name="connected" value="{{ ne .Workspace.Connection nil }}">
+          <select name="operation" id="start-run-operation" onchange="this.form.submit()">
+            <option value="" selected>-- start run --</option>
+            <option value="plan-only">plan only</option>
+            {{ if .CanApply }}
+              <option value="plan-and-apply">plan and apply</option>
+            {{ end }}
+          </select>
+        </form>
+      </div>
+      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
+      <div>
+        <h3 class="font-semibold mb-2">Locking</h3>
+        {{ with .LockButton }}
+          {{ $statusColors := dict "unlocked" "bg-green-200" "locked" "bg-orange-200" }}
+          <div class="flex flex-col gap-2 p-2 {{ get $statusColors .State }}">
+            <span title="{{ .Tooltip }}">{{ title .State }}</span>
+            <form action="{{ .Action }}" method="POST"><button title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
+            <span class="text-sm">{{ .Message }}</span>
+          </div>
+        {{ end }}
+      </div>
+      {{ with .Workspace.Connection }}
+        <div>Connected to <span class="bg-gray-200">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
+      {{ end }}
+      <div>
+        <h3 class="font-semibold mb-2">Tags <a id="tags-add-remove-link" class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h3>
+        <div id="tags">
+          {{ range .Workspace.Tags }}
+            <span class="bg-blue-800 text-white p-1 font-semibold">{{ . }}</span>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+{{ end }}
