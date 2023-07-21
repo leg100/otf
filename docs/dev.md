@@ -62,7 +62,7 @@ Rails-style path helpers are generated using `go generate`. The path specificati
 
 If you're making changes to web templates then you may want to enable [developer mode](../config/flags/#-dev-mode). Once enabled you will be able to see changes without restarting `otfd`.
 
-OTF uses [Tailwind CSS](https://tailwindcss.com/) to generate CSS classes. Run the following make task to generate the CSSS:
+OTF uses [Tailwind CSS](https://tailwindcss.com/) to generate CSS classes. Run the following make task to generate the CSS:
 
 * `make tailwind`
 
