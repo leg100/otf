@@ -34,7 +34,7 @@ func TestSiteAdminUI(t *testing.T) {
 		screenshot(t, "site_admin_login_enter_token"),
 		chromedp.Submit("input#token", chromedp.ByQuery),
 		screenshot(t, "site_admin_profile"),
-		matchText(t, ".content > p", "You are logged in as site-admin", chromedp.ByQuery),
+		matchText(t, "#content > p", "You are logged in as site-admin", chromedp.ByQuery),
 		// now go to the list of organizations
 		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
 		// add an org
@@ -46,7 +46,7 @@ func TestSiteAdminUI(t *testing.T) {
 		chromedp.Submit("input#name", chromedp.ByQuery),
 		screenshot(t, "new_org_created"),
 		chromedp.Location(&orgLocation),
-		matchText(t, ".flash-success", "created organization: my-new-org", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "created organization: my-new-org"),
 		// go to organization settings
 		chromedp.Click("#settings > a", chromedp.ByQuery),
 		screenshot(t),
@@ -57,11 +57,11 @@ func TestSiteAdminUI(t *testing.T) {
 		screenshot(t),
 		chromedp.Click(`//button[text()='Update organization name']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "updated organization", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "updated organization"),
 		// delete the organization
 		chromedp.Click(`//button[@id='delete-organization-button']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "deleted organization: newly-named-org", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "deleted organization: newly-named-org"),
 	})
 
 	assert.Equal(t, organizationURL(daemon.Hostname(), "my-new-org"), orgLocation)

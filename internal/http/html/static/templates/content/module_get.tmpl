@@ -5,66 +5,67 @@
 {{ end }}
 
 {{ define "content" }}
-  {{ if eq .Module.Status "no_version_tags" }}
-    Module source repository has no tags.
-  {{ else }}
-    <div class="horizontal">
-      <form action="{{ modulePath .Module.ID }}" method="GET">
-        <div>
+  <div class="flex flex-col gap-4">
+    {{ if eq .Module.Status "no_version_tags" }}
+      Module source repository has no tags.
+    {{ else }}
+      <div class="flex gap-4 items-center">
+        <form class="flex gap-2 items-center" action="{{ modulePath .Module.ID }}" method="GET">
           <label>Version</label>
-          <select name="version" id="version" onchange="this.form.submit()">
+          <select class="w-32" name="version" id="version" onchange="this.form.submit()">
             {{ range reverse .Module.AvailableVersions }}
               {{ if eq .Status "ok" }}
                 <option value="{{ .Version }}" {{ selected .Version $.CurrentVersion.Version }}>{{ .Version }}</option>
               {{ end }}
             {{ end }}
           </select>
+        </form>
+        <div>
+          Source <span class="bg-gray-200">{{ .Module.Connection.Repo }}</span>
         </div>
-      </form>
-      <div>
-        Source <span class="data">{{ .Module.Connection.Repo }}</span>
       </div>
-    </div>
-    <div class="main-form">
       <div>
-        <label for="usage">Usage</label>
-        <textarea id="usage" cols="42" rows="5" readonly wrap="off">
-module "{{ .Module.Name }}" {
-  source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
-  version = "{{ .CurrentVersion.Version }}"
-}
-        </textarea>
+        <h3 class="font-semibold">
+        <div class="flex flex-col gap-2">
+          <label for="usage">Usage</label>
+          <textarea class="text-input font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
+  module "{{ .Module.Name }}" {
+    source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
+    version = "{{ .CurrentVersion.Version }}"
+  }
+          </textarea>
+        </div>
       </div>
-    </div>
-    <div>
-      {{ trimHTML .Readme }}
-    </div>
-    <div>
-      <h3>Resources</h3>
-      {{ range $k, $v := .TerraformModule.ManagedResources }}
-        <div>
-          <span class="data">{{ $k }}</span>
-        </div>
-      {{ end }}
-    </div>
-    <div>
-      <h3>Variables</h3>
-      {{ range $k, $v := .TerraformModule.Variables }}
-        <div>
-          <span class="data">{{ $k }}</span>
-        </div>
-      {{ end }}
-    </div>
-    <div>
-      <h3>Outputs</h3>
-      {{ range $k, $v := .TerraformModule.Outputs }}
-        <div>
-          <span class="data">{{ $k }}</span>
-        </div>
-      {{ end }}
-    </div>
-  {{ end }}
-  <form class="module-delete-button" action="{{ deleteModulePath .Module.ID }}" method="POST">
-    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
-  </form>
+      <div>
+        {{ trimHTML .Readme }}
+      </div>
+      <div>
+        <h3 class="font-semibold">Resources</h3>
+        {{ range $k, $v := .TerraformModule.ManagedResources }}
+          <div>
+            <span class="bg-gray-200">{{ $k }}</span>
+          </div>
+        {{ end }}
+      </div>
+      <div>
+        <h3 class="font-semibold">Variables</h3>
+        {{ range $k, $v := .TerraformModule.Variables }}
+          <div>
+            <span class="bg-gray-200">{{ $k }}</span>
+          </div>
+        {{ end }}
+      </div>
+      <div>
+        <h3 class="font-semibold">Outputs</h3>
+        {{ range $k, $v := .TerraformModule.Outputs }}
+          <div>
+            <span class="bg-gray-200">{{ $k }}</span>
+          </div>
+        {{ end }}
+      </div>
+    {{ end }}
+    <form class="module-delete-button" action="{{ deleteModulePath .Module.ID }}" method="POST">
+      <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+    </form>
+  </div>
 {{ end }}

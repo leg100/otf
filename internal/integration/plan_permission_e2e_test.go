@@ -65,13 +65,13 @@ func TestIntegration_PlanPermission(t *testing.T) {
 		// confirm plan begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
-		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
+		chromedp.WaitReady(`//span[@id='plan-status' and text()='finished']`),
 		screenshot(t),
 		// wait for run to enter planned-and-finished state
-		chromedp.WaitReady(`//*[@class='status status-planned_and_finished']`),
+		chromedp.WaitReady(`//*[text()='planned and finished']`),
 		screenshot(t),
 		// run widget should show plan summary
-		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	})
 }

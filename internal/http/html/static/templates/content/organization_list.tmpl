@@ -4,7 +4,7 @@
 
 {{ define "content-header-actions" }}
   <form action="{{ newOrganizationPath }}" method="GET">
-    <button {{ if not .CanCreate }}disabled title="organization creation has been restricted to site admins"{{ end }} id="new-organization-button" type="submit">New Organization</button>
+    <button {{ if not .CanCreate }}disabled title="organization creation has been restricted to site admins"{{ end }} id="new-organization-button">New Organization</button>
   </form>
 {{ end }}
 
@@ -13,11 +13,11 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
-    <div class="item-heading">
-    <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
+  <div class="widget">
+    <div>
+      <a href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
-    <div class="item-content">
+    <div>
       {{ template "identifier" . }}
     </div>
   </div>

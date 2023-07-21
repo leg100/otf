@@ -1,7 +1,7 @@
 {{ define "workspace-item" }}
-  <div class="item" id="item-workspace-{{ .Name }}">
-    <div class="item-heading">
-      <a class="status" href="{{ workspacePath .ID }}">{{ .Name }}</a>
+  <div class="widget" id="item-workspace-{{ .Name }}">
+    <div>
+      <a class="text-lg" href="{{ workspacePath .ID }}">{{ .Name }}</a>
       {{ with .LatestRun }}
         {{ template "run-status" . }}
       {{ end }}

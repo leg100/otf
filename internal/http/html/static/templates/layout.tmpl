@@ -5,83 +5,78 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {{block "pre-content" .}}{{end}}
-  <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
-  <link rel="stylesheet" href="{{ addHash "/static/css/forms.css" }}">
   <link rel="icon" type="image/svg+xml" href="{{ addHash "/static/images/icon.svg" }}">
   <script src="{{ addHash "/static/js/main.js" }}"></script>
   <script src="{{ addHash "/static/js/htmx.1.9.2.min.js" }}"></script>
   <script src="{{ addHash "/static/js/htmx-sse.1.9.2.js" }}"></script>
   <script defer src="{{ addHash "/static/js/alpine.3.12.1.min.js" }}"></script>
   {{ if devMode }}<script src="http://localhost:35729/livereload.js"></script>{{ end }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/output.css" }}">
   <title>{{ .Title }} | otf</title>
 </head>
-<body>
-  <header>
-    <nav class="navbar">
+<body class="flex flex-col m-0 min-h-screen font-sans">
+  <header class="bg-gray-200">
+    <nav class="max-w-4xl flex flex-wrap justify-between items-center gap-6 my-0 mx-auto p-1 font-mono">
       {{ with .CurrentUser }}
-        <input id="hamburger-toggle" type="checkbox" />
-        <label class="hamburger-container" for="hamburger-toggle">
-          <div class="hamburger-icon">
+        <input class="hidden peer" id="hamburger-toggle" type="checkbox">
+        <label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
             <img src="{{ addHash "/static/images/hamburger.svg" }}" alt="open menu">
-          </div>
-          <div class="cross-icon">
+        </label>
+        <label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
             <img src="{{ addHash "/static/images/cross.svg" }}" alt="close menu">
-          </div>
         </label>
       {{ end }}
 
-      <div class="logo">
-        <img src="{{ addHash "/static/images/logo.svg" }}" alt="logo">
-      </div>
-
-      {{ with .CurrentUser }}
+      {{ if .CurrentUser }}
         {{ with $.CurrentOrganization }}
-          <div class="current-organization">
+          <div class="flex gap-2 items-center">
             {{ template "building_icon" }}
             <a href="{{ organizationPath . }}">{{ . }}</a>
           </div>
         {{ end }}
+      {{ end }}
 
-        <div class="nav-links">
-          <ul>
-            <li>
-              <a href="{{ organizationsPath }}">organizations</a>
-            </li>
-            <li id="top-right-profile-link" class="profile">
-              <a href="{{ profilePath }}">profile</a>
-            </li>
-          </ul>
+      <div class="logo md:order-first">
+        <img src="{{ addHash "/static/images/logo.svg" }}" alt="logo">
+      </div>
+
+      {{ if .CurrentUser }}
+        <div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
+          <div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
+            <a href="{{ organizationsPath }}">organizations</a>
+            <a href="{{ profilePath }}">profile</a>
+          </div>
         </div>
       {{ end }}
     </nav>
   </header>
-  <main>
-  {{ block "container" . }}
-    {{ block "content-header" . }}
-      <div class="content-header">
-        <div class="content-header-title">
-          <span>{{ block "content-header-title" . }}{{ end }}</span>
+  <main class="max-w-4xl flex flex-col gap-2 p-2 my-0 mx-auto grow w-full">
+    {{ block "container" . }}
+      {{ block "content-header" . }}
+        <div class="flex flex-wrap items-center gap-4 pb-2 border-b-2 border-gray-200">
+          <div class="flex text-xl">
+            <span id="content-header-title">{{ block "content-header-title" . }}{{ end }}</span>
+          </div>
+          <div>
+            {{ block "content-header-actions" . }}{{ end }}
+          </div>
+          <ul class="flex grow items-center justify-end gap-4">
+            {{ block "content-header-links" . }}{{ end }}
+          </ul>
         </div>
-        <div class="content-header-actions">
-          {{ block "content-header-actions" . }}{{ end }}
-        </div>
-        <ul class="content-header-links">
-          {{ block "content-header-links" . }}{{ end }}
-        </ul>
+      {{ end }}
+
+      {{ block "content-menu" . }}{{ end }}
+
+      {{ template "flash" . }}
+
+      <div class="flex flex-col gap-2 mb-4" id="content">
+        {{ block "content" . }}{{ end }}
       </div>
     {{ end }}
-
-    {{ block "content-menu" . }}{{ end }}
-
-    {{ template "flash" . }}
-
-    <div class="content">
-      {{ block "content" . }}{{ end }}
-    </div>
-  {{ end }}
   </main>
-  <footer>
-    <div class="footer-container">
+  <footer class="py-0.5 border-t-2 border-gray-200 text-xs font-mono">
+    <div class="flex justify-between gap-4 max-w-2xl py-0.5 my-0 mx-auto">
       <div></div>
       <div class="footer-version">
         <a href="https://github.com/leg100/otf">{{ .Version }}</a>

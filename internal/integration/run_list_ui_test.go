@@ -32,9 +32,9 @@ func TestIntegration_RunListUI(t *testing.T) {
 			return nil
 		}),
 		// should be one run listed
-		chromedp.Nodes(`//div[@id='content-list']//*[@class='item']`, &runListingAfter, chromedp.NodeVisible),
+		chromedp.Nodes(`//div[@id='content-list']//*[@class='widget']`, &runListingAfter, chromedp.NodeVisible),
 		// and its status should be 'planned and finished'
-		chromedp.WaitVisible(`//*[@class='item']//*[@class='status status-planned_and_finished']`),
+		chromedp.WaitVisible(`//*[@class='widget']//a[text()='planned and finished']`),
 	})
 	assert.Equal(t, 1, len(runListingAfter))
 }

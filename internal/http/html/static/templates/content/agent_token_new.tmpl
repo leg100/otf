@@ -5,13 +5,13 @@
 {{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ createAgentTokenPath .Organization }}" method="POST">
+  <form class="flex flex-col gap-5" action="{{ createAgentTokenPath .Organization }}" method="POST">
     <div class="field">
       <label for="description">Description</label>
-      <input type="text" name="description" id="description" required>
+      <textarea class="text-input w-96" rows="3" type="text" name="description" id="description" required></textarea>
     </div>
     <div class="field">
-      <button>Create token</button>
+      <button class="w-40">Create token</button>
     </div>
   </form>
 {{ end }}

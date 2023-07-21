@@ -75,7 +75,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`),
 		screenshot(t),
 		// confirm disconnected
-		matchText(t, ".flash-success", "disconnected workspace from repo", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "disconnected workspace from repo"),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		screenshot(t),
@@ -83,7 +83,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Click(`//button[@id='delete-workspace-button']`),
 		screenshot(t),
 		// confirm deletion
-		matchText(t, ".flash-success", "deleted workspace: my-test-workspace", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "deleted workspace: my-test-workspace"),
 		//
 		// delete vcs provider
 		//
@@ -96,6 +96,6 @@ func TestConnectRepoE2E(t *testing.T) {
 		// click delete button for one and only vcs provider
 		chromedp.Click(`//button[text()='delete']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "deleted provider: github", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "deleted provider: github"),
 	})
 }

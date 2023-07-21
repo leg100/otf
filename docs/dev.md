@@ -62,6 +62,10 @@ Rails-style path helpers are generated using `go generate`. The path specificati
 
 If you're making changes to web templates then you may want to enable [developer mode](../config/flags/#-dev-mode). Once enabled you will be able to see changes without restarting `otfd`.
 
+OTF uses [Tailwind CSS](https://tailwindcss.com/) to generate CSS classes. Run the following make task to generate the CSS:
+
+* `make tailwind`
+
 ## Developer tooling
 
 [modd](https://github.com/cortesi/modd) is recommended to automate development tasks:
@@ -71,3 +75,9 @@ If you're making changes to web templates then you may want to enable [developer
 * Automatically generate path helpers whenever path specifications are updated.
 
 A `modd.conf` is included in the OTF repository. Once you've installed `modd`, run it from the root of the repository and it'll perform the above tasks.
+
+The following make task runs not only `modd` but watches for changes to Tailwind CSS classes (see above) and generates CSS:
+
+* `make watch -j`
+
+The `-j` flag permits both `modd` and the tailwind watcher to run in parallel.

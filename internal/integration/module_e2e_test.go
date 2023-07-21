@@ -51,7 +51,7 @@ func TestModuleE2E(t *testing.T) {
 			chromedp.Click(`//button[text()='connect']`),
 			screenshot(t, "newly_created_module_page"),
 			// flash message indicates success
-			matchText(t, `.flash-success`, `published module: mod`, chromedp.ByQuery),
+			matchText(t, `//div[@role='alert']`, `published module: mod`),
 			// TODO: confirm versions are populated
 			// capture module url so we can visit it later
 			chromedp.Location(&moduleURL),
