@@ -9,5 +9,8 @@ window.addEventListener('load', (e) => {
         },
         false
       );
+      input.addEventListener("blur", function() {
+        input.checkValidity();
+      });
     });
 });

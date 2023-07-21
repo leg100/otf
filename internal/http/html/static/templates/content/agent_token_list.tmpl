@@ -4,7 +4,7 @@
 
 {{ define "content-header-actions" }}
   <form action="{{ newAgentTokenPath .Organization }}" method="GET">
-    <button type="submit">New Agent Token</button>
+    <button>New Agent Token</button>
   </form>
 {{ end }}
 
@@ -13,15 +13,15 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
-    <div class="item-heading">
-      <span class="status">{{ .Description }}</span>
-      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+  <div class="widget">
+    <div>
+      <span>{{ .Description }}</span>
+      <span>{{ durationRound .CreatedAt }} ago</span>
     </div>
-    <div class="item-content">
+    <div>
       {{ template "identifier" . }}
       <form action="{{ deleteAgentTokenPath .ID }}" method="POST">
-        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+        <button onclick="return confirm('Are you sure you want to delete?')">delete</button>
       </form>
     </div>
   </div>

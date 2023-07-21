@@ -5,7 +5,7 @@
 {{ define "content-header-actions" }}
   {{ $canCreate := .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
   <form action="{{ newTeamPath .Organization }}" method="GET">
-    <button id="new-team-button" type="submit" {{ insufficient $canCreate }}>
+    <button id="new-team-button" {{ insufficient $canCreate }}>
       New Team
     </button>
   </form>
@@ -14,11 +14,11 @@
 {{ define "content" }}
   <div id="content-list" class="content-list">
     {{ range .Teams }}
-      <div id="item-team-{{ .Name }}" class="item">
-        <div class="item-heading">
+      <div id="item-team-{{ .Name }}" class="widget">
+        <div>
           <a class="status" href="{{ teamPath .ID }}">{{ .Name }}</a>
         </div>
-        <div class="item-content">
+        <div>
           {{ template "identifier" . }}
         </div>
       </div>

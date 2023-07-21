@@ -1,5 +1,5 @@
 {{ define "run-actions" }}
-  <div id="run-actions" hx-swap-oob="true">
+  <div class="flex gap-2" id="run-actions" hx-swap-oob="true">
     {{ if eq .Status "planned" }}
       <form action="{{ applyRunPath .ID }}" method="POST">
         <button>apply</button>

@@ -36,6 +36,21 @@ go-tfe-tests-forked:
 go-tfe-tests-upstream:
 	./hack/go-tfe-tests-upstream.bash
 
+.PHONY: watch
+watch: tailwind-watch modd
+
+.PHONY: modd
+modd:
+	+modd
+
+.PHONY: tailwind
+tailwind:
+	npx tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css
+
+.PHONY: tailwind-watch
+tailwind-watch:
+	+npx tailwindcss -i ./internal/http/html/static/css/input.css -o ./internal/http/html/static/css/output.css --watch
+
 .PHONY: test
 test:
 	go test ./...

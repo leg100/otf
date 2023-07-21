@@ -1,3 +1,7 @@
+# local node shite
+/node_modules
+package.json
+package-lock.json
 # tfenv
 .terraform-version
 # google service account key for testing

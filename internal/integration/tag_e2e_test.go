@@ -80,15 +80,15 @@ resource "null_resource" "tags_e2e" {}
 		// remove bar tag
 		chromedp.Click(`//button[@id='button-remove-tag-bar']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "removed tag: bar", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "removed tag: bar"),
 		// add new tag
 		chromedp.Focus("input#new-tag-name", chromedp.ByQuery),
 		input.InsertText("baz"),
 		chromedp.Click(`//button[text()='Add new tag']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "created tag: baz", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "created tag: baz"),
 		// go to workspace listing
-		chromedp.Click(`//div[@class='content-header-title']//a[text()='workspaces']`),
+		chromedp.Click(`//span[@id='content-header-title']//a[text()='workspaces']`),
 		screenshot(t),
 		// filter by tag foo
 		chromedp.Click(`//label[@for='workspace-tag-filter-foo']`),

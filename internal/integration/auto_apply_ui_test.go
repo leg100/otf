@@ -25,13 +25,13 @@ func TestAutoApply(t *testing.T) {
 			chromedp.Click(`//a[text()='settings']`),
 			screenshot(t),
 			// enable auto-apply
-			chromedp.Click("input#auto_apply", chromedp.ByQuery),
+			chromedp.Click(`//input[@name='auto_apply' and @value='true']`),
 			screenshot(t),
 			// submit form
 			chromedp.Click(`//button[text()='Save changes']`),
 			screenshot(t),
 			// confirm workspace updated
-			matchText(t, ".flash-success", "updated workspace", chromedp.ByQuery),
+			matchText(t, "//div[@role='alert']", "updated workspace"),
 		},
 	})
 

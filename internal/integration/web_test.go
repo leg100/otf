@@ -47,7 +47,7 @@ func TestWeb(t *testing.T) {
 			chromedp.Submit("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
 			screenshot(t, "team_permissions_added_workspace_manager"),
 			// confirm permissions updated
-			matchText(t, ".flash-success", "team permissions updated", chromedp.ByQuery),
+			matchText(t, "//div[@role='alert']", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
 		addWorkspacePermission(t, daemon.Hostname(), org.Name, "my-workspace", "devops", "write"),
@@ -59,7 +59,7 @@ func TestWeb(t *testing.T) {
 			// list users
 			chromedp.Click("#users > a", chromedp.ByQuery),
 			screenshot(t),
-			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username, chromedp.ByQuery),
+			matchText(t, fmt.Sprintf("#item-user-%s #username", user.Username), user.Username, chromedp.ByQuery),
 		},
 		// list team members
 		chromedp.Tasks{
@@ -71,7 +71,7 @@ func TestWeb(t *testing.T) {
 			// select owners team
 			chromedp.Click("#item-team-owners a", chromedp.ByQuery),
 			screenshot(t),
-			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username), user.Username, chromedp.ByQuery),
+			matchText(t, fmt.Sprintf("#item-user-%s #username", user.Username), user.Username, chromedp.ByQuery),
 		},
 	})
 }

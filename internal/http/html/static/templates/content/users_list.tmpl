@@ -13,10 +13,8 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div id="item-user-{{ .Username }}" class="item">
-    <div class="item-heading">
-      <span class="status">{{ .Username }}</span>
-    </div>
+  <div id="item-user-{{ .Username }}" class="widget">
+    <span id="username">{{ .Username }}</span>
     {{ template "identifier" . }}
   </div>
 {{ end }}

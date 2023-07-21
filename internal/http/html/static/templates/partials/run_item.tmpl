@@ -1,7 +1,7 @@
 {{ define "run-item" }}
   <div sse-swap="run-item-{{ .ID }}">
-    <div id="{{ .ID }}" class="item">
-      <div class="item-heading">
+    <div id="{{ .ID }}" class="widget">
+      <div>
         {{ template "run-status" . }}
         <span>|</span>
         <span><a href="{{ runPath .ID }}#plan">plan</a></span>
@@ -9,11 +9,11 @@
           <span>|</span>
           <span><a href="{{ runPath .ID }}#apply">apply</a></span>
         {{ end }}
-        <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+        <span>{{ durationRound .CreatedAt }} ago</span>
       </div>
-      <div class="item-content">
+      <div>
         {{ template "identifier" . }}
-        <div class="item-info-and-actions">
+        <div class="flex gap-4 items-baseline justify-between">
           {{ if .Commit }}<span class="commit">#{{ substr 0 7 .Commit }}</span>{{ end }}
           {{ with .Apply.ResourceReport }}
             {{ template "resource-report" . }}
@@ -29,11 +29,11 @@
           {{ end }}
           {{ if .Cancelable }}
             <form action="{{ cancelRunPath .ID }}" method="POST">
-              <button class="delete" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+              <button class="btn-danger" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
             </form>
           {{ else if .Discardable }}
             <form action="{{ discardRunPath .ID }}" method="POST">
-              <button id="run-discard-button" class="delete" onclick="return confirm('Are you sure you want to discard?')">discard</button>
+              <button id="run-discard-button" class="btn-danger" onclick="return confirm('Are you sure you want to discard?')">discard</button>
             </form>
           {{ end }}
         </div>

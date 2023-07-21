@@ -24,7 +24,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.Focus(`input[type="search"]`, chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("workspace-1"),
 		chromedp.Submit(`input[type="search"]`, chromedp.ByQuery),
-		chromedp.WaitVisible(`//*[@class="item"]`, chromedp.AtLeast(2)),
+		chromedp.WaitVisible(`//*[@class="widget"]`, chromedp.AtLeast(2)),
 		// and workspace-2 should not be visible
 		chromedp.WaitNotPresent(`//*[@id="item-workspace-workspace-2"]`),
 		// clear search term

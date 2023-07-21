@@ -15,24 +15,26 @@
     {{ end }}
   </div>
 
-  {{ range .CloudConfigs }}
-    <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
-      <button type="submit">New {{ title .String }} VCS Provider</button>
-      <input type="hidden" name="cloud" id="cloud" value="{{ .String }}">
-    </form>
-  {{ end }}
+  <div class="flex flex-col gap-4 mt-4">
+    {{ range .CloudConfigs }}
+      <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
+        <button>New {{ title .String }} VCS Provider</button>
+        <input type="hidden" name="cloud" id="cloud" value="{{ .String }}">
+      </form>
+    {{ end }}
+  </div>
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
-    <div class="item-heading">
-      <span class="status">{{ .Name }}</span>
-      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+  <div class="widget">
+    <div>
+      <span>{{ .Name }}</span>
+      <span>{{ durationRound .CreatedAt }} ago</span>
     </div>
-    <div class="item-content">
+    <div>
       {{ template "identifier" . }}
       <form action="{{ deleteVCSProviderPath .ID }}" method="POST">
-        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+        <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
         <input type="hidden" name="id" value="{{ .ID }}">
       </form>
     </div>
