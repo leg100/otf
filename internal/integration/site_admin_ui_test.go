@@ -34,7 +34,7 @@ func TestSiteAdminUI(t *testing.T) {
 		screenshot(t, "site_admin_login_enter_token"),
 		chromedp.Submit("input#token", chromedp.ByQuery),
 		screenshot(t, "site_admin_profile"),
-		matchText(t, ".content > p", "You are logged in as site-admin", chromedp.ByQuery),
+		matchText(t, "#content > p", "You are logged in as site-admin", chromedp.ByQuery),
 		// now go to the list of organizations
 		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
 		// add an org
