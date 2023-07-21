@@ -15,16 +15,16 @@
 
   <div id="content-list" class="content-list">
     {{ range .Items }}
-      <div class="item">
-        <div class="item-heading">
-          <span class="status">
+      <div class="widget">
+        <div>
+          <span class="font-semibold">
             <a href="{{ setupConnectionRepoWorkspacePath $.Workspace.ID }}?vcs_provider_id={{ .ID }}">
               {{ .Name }}
             </a>
           </span>
           <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
         </div>
-        <div class="item-content">
+        <div>
           {{ template "identifier" . }}
         </div>
       </div>

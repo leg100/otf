@@ -62,7 +62,7 @@ func createWorkspace(t *testing.T, hostname, org, name string) chromedp.Tasks {
 		input.InsertText(name),
 		chromedp.Click("#create-workspace-button", chromedp.ByQuery),
 		waitLoaded,
-		matchText(t, ".flash-success", "created workspace: "+name, chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "created workspace: "+name),
 	}
 }
 
@@ -206,7 +206,7 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 		screenshot(t, "workspace_permissions"),
 		chromedp.Click("#permissions-add-button", chromedp.ByQuery),
 		screenshot(t),
-		matchText(t, ".flash-success", "updated workspace permissions", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "updated workspace permissions"),
 	}
 }
 
@@ -224,15 +224,15 @@ func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chro
 		chromedp.Click(`//button[text()='New Github VCS Provider']`),
 		screenshot(t, "new_github_vcs_provider_form"),
 		// enter fake github token and name
-		chromedp.Focus("input#token", chromedp.NodeVisible, chromedp.ByQuery),
+		chromedp.Focus("textarea#token", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("fake-github-personal-token"),
 		chromedp.Focus("input#name", chromedp.ByQuery),
 		input.InsertText(name),
 		screenshot(t),
 		// submit form to create provider
-		chromedp.Submit("input#token", chromedp.ByQuery),
+		chromedp.Submit("textarea#token", chromedp.ByQuery),
 		screenshot(t),
-		matchText(t, ".flash-success", "created provider: github", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "created provider: github"),
 	}
 }
 
@@ -250,13 +250,13 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		// confirm plan begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
-		chromedp.WaitVisible(`#plan-status.phase-status-finished`),
+		chromedp.WaitVisible(`//span[@id='plan-status' and text()='finished']`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitVisible(`//*[@class='status status-planned']`),
+		chromedp.WaitVisible(`//*[text()='planned']`),
 		screenshot(t),
 		// run widget should show plan summary
-		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t, "run_page_planned_state"),
 		// run widget should show discard button
 		chromedp.WaitVisible(`//button[@id='run-discard-button']`),
@@ -266,11 +266,11 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),
-		chromedp.WaitVisible(`#apply-status.phase-status-finished`, chromedp.ByQuery),
+		chromedp.WaitVisible(`//span[@id='apply-status' and text()='finished']`),
 		// confirm run ends in applied state
-		chromedp.WaitVisible(`//*[@class='status status-applied']`),
+		chromedp.WaitVisible(`//div[@class='widget']//a[text()='applied']`),
 		// run widget should show apply summary
-		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	}
 }
@@ -295,7 +295,7 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Ta
 		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`),
 		screenshot(t),
 		// confirm connected
-		matchText(t, ".flash-success", "connected workspace to repo", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "connected workspace to repo"),
 	}
 }
 
@@ -313,7 +313,7 @@ func disconnectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp
 		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`),
 		screenshot(t),
 		// confirm disconnected
-		matchText(t, ".flash-success", "disconnected workspace from repo", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "disconnected workspace from repo"),
 	}
 }
 

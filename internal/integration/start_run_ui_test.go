@@ -35,13 +35,13 @@ func TestStartRunUI(t *testing.T) {
 		// confirm plan begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`),
 		screenshot(t),
-		chromedp.WaitReady(`#plan-status.phase-status-finished`, chromedp.ByQuery),
+		chromedp.WaitReady(`//span[@id='plan-status' and text()='finished']`),
 		screenshot(t),
 		// wait for run to enter planned state
-		chromedp.WaitReady(`//*[@class='status status-planned']`),
+		chromedp.WaitReady(`//div[@class='widget']//a[text()='planned']`),
 		screenshot(t),
 		// run widget should show plan summary
-		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 		// run widget should show discard button
 		chromedp.WaitVisible(`//button[@id='run-discard-button']`),
@@ -51,11 +51,11 @@ func TestStartRunUI(t *testing.T) {
 		screenshot(t),
 		// confirm apply begins and ends
 		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`),
-		chromedp.WaitReady(`#apply-status.phase-status-finished`, chromedp.ByQuery),
+		chromedp.WaitReady(`//span[@id='apply-status' and text()='finished']`),
 		// confirm run ends in applied state
-		chromedp.WaitReady(`//*[@class='status status-applied']`),
+		chromedp.WaitReady(`//div[@class='widget']//a[text()='applied']`),
 		// run widget should show apply summary
-		matchRegex(t, `//div[@class='item']//div[@class='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
 		screenshot(t),
 	})
 }

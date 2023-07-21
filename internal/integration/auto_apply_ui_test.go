@@ -31,7 +31,7 @@ func TestAutoApply(t *testing.T) {
 			chromedp.Click(`//button[text()='Save changes']`),
 			screenshot(t),
 			// confirm workspace updated
-			matchText(t, ".flash-success", "updated workspace", chromedp.ByQuery),
+			matchText(t, "//div[@role='alert']", "updated workspace"),
 		},
 	})
 

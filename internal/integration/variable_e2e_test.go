@@ -45,7 +45,7 @@ func TestVariableE2E(t *testing.T) {
 			chromedp.Click(`//button[@id='save-variable-button']`),
 			screenshot(t),
 			// confirm variable added
-			matchText(t, ".flash-success", "added variable: foo", chromedp.ByQuery),
+			matchText(t, "//div[@role='alert']", "added variable: foo"),
 			screenshot(t),
 		},
 	})
@@ -90,10 +90,10 @@ output "foo" {
 			chromedp.Click(`//button[@id='save-variable-button']`),
 			screenshot(t),
 			// confirm variable updated
-			chromedp.WaitVisible(`//div[@class='flash flash-success'][contains(text(),"updated variable: foo")]`),
+			chromedp.WaitVisible(`//div[@role='alert'][contains(text(),"updated variable: foo")]`),
 			screenshot(t),
 			// confirm value is hidden (because it is sensitive)
-			chromedp.WaitVisible(`//table[@class='variables']/tbody/tr/td[2]/span[text()="hidden"]`),
+			chromedp.WaitVisible(`//table[@id='variables-table']/tbody/tr/td[2]/span[text()="hidden"]`),
 			// edit variable again
 			chromedp.Click(`//a[text()='foo']`),
 			screenshot(t),
@@ -105,13 +105,13 @@ output "foo" {
 			chromedp.Click(`//button[@id='save-variable-button']`),
 			screenshot(t),
 			// confirm variable updated
-			chromedp.WaitVisible(`//div[@class='flash flash-success'][contains(text(),"updated variable: foo")]`),
+			chromedp.WaitVisible(`//div[@role='alert'][contains(text(),"updated variable: foo")]`),
 			screenshot(t),
 			// delete variable
 			chromedp.Click(`//button[@id='delete-variable-button']`),
 			screenshot(t),
 			// confirm variable deleted
-			chromedp.WaitVisible(`//div[@class='flash flash-success'][contains(text(),"deleted variable: foo")]`),
+			chromedp.WaitVisible(`//div[@role='alert'][contains(text(),"deleted variable: foo")]`),
 		},
 	})
 }

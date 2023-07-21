@@ -14,7 +14,7 @@
 
 {{ define "content-list-item" }}
   <div id="item-user-{{ .Username }}" class="widget">
-    <span>{{ .Username }}</span>
+    <span id="username">{{ .Username }}</span>
     {{ template "identifier" . }}
   </div>
 {{ end }}

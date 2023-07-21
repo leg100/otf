@@ -1,3 +1,67 @@
 @tailwind base;
 @tailwind components;
-@tailwind utils;
+@tailwind utilities;
+
+@layer base {
+  a {
+    @apply hover:underline hover:text-blue-500;
+  }
+  [x-cloak] {
+    display: none !important;
+  }
+  button {
+    @apply font-bold py-1 px-3 bg-gray-200 shadow-sm shadow-slate-500;
+  }
+  button:hover {
+    @apply bg-gray-300;
+  }
+  .btn-danger {
+    @apply text-red-400;
+  }
+  .btn-danger:hover {
+    @apply bg-red-400 text-white;
+  }
+  .text-input {
+    @apply border py-1 px-2;
+  }
+  .form-checkbox {
+    @apply grid grid-cols-[20px_auto] items-center justify-items-start;
+  }
+  .form-checkbox label {
+    @apply font-semibold;
+  }
+  .form-checkbox span:last-child {
+    @apply col-start-2 text-gray-600 text-sm;
+  }
+  /* When an input is focused, add a pretty halo effect to its border */
+  input:focus-visible, textarea:focus {
+    @apply shadow-sm shadow-blue-200;
+  }
+  input.error {
+    @apply border-2 border-red-400 shadow-sm shadow-red-200;
+  }
+  select {
+    @apply py-2 px-4 bg-gray-200 shadow-sm shadow-slate-500;
+  }
+  #content-header-title a {
+    @apply text-blue-600
+  }
+  .widget {
+    @apply flex flex-col gap-4 place-content-between border border-black mt-3 p-2;
+  }
+  .widget > div:first-child {
+    @apply flex gap-2 items-baseline pb-2;
+  }
+  .widget > div:first-child > :last-child:not(:first-child) {
+    @apply ml-auto;
+  }
+  .widget > div:last-child:not(:first-child) {
+    @apply flex gap-4 items-baseline justify-between;
+  }
+  .field {
+    @apply flex flex-col gap-0.5;
+  }
+  .field > label {
+    @apply block font-semibold;
+  }
+}

@@ -1,16 +1,3 @@
-.term-container {
-  background: #171717;
-  color: white;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  font-size: 12px;
-  line-height: 20px;
-  padding: 14px 18px;
-  white-space: pre-wrap;
-}
-
-.term-container img { max-width: 100%; }
-
 .term a { color: inherit; text-decoration: underline; text-decoration-style: dashed; }
 .term a:hover { color: #2882F9 }
 

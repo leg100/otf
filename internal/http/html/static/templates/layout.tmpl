@@ -10,9 +10,7 @@
   <script src="{{ addHash "/static/js/htmx.1.9.2.min.js" }}"></script>
   <script src="{{ addHash "/static/js/htmx-sse.1.9.2.js" }}"></script>
   <script defer src="{{ addHash "/static/js/alpine.3.12.1.min.js" }}"></script>
-  {{ if devMode }}
-    <script src="http://localhost:35729/livereload.js"></script>
-  {{ end }}
+  {{ if devMode }}<script src="http://localhost:35729/livereload.js"></script>{{ end }}
   <link rel="stylesheet" href="{{ addHash "/static/css/output.css" }}">
   <title>{{ .Title }} | otf</title>
 </head>
@@ -72,7 +70,7 @@
 
       {{ template "flash" . }}
 
-      <div class="flex flex-col gap-2 mb-4">
+      <div class="flex flex-col gap-2 mb-4" id="content">
         {{ block "content" . }}{{ end }}
       </div>
     {{ end }}

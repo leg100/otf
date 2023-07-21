@@ -14,10 +14,10 @@
 
 {{ define "content-list-item" }}
   <div class="widget">
-    <div class="item-heading">
-      <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
+    <div>
+      <a href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
-    <div class="item-content">
+    <div>
       {{ template "identifier" . }}
     </div>
   </div>

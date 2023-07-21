@@ -26,10 +26,10 @@ func TestIntegration_UserTokenUI(t *testing.T) {
 		screenshot(t, "user_token_enter_description"),
 		chromedp.Click(`//button[text()='Create token']`),
 		screenshot(t, "user_token_created"),
-		matchRegex(t, ".flash-success", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
+		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
 		// delete the token
 		chromedp.Click(`//button[text()='delete']`),
 		screenshot(t),
-		matchText(t, ".flash-success", "Deleted token", chromedp.ByQuery),
+		matchText(t, "//div[@role='alert']", "Deleted token"),
 	})
 }

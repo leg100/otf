@@ -1,9 +1,5 @@
 {{ template "layout" . }}
 
-{{ define "pre-content" }}
-  <link rel="stylesheet" href="{{ addHash "/static/css/team_get.css" }}">
-{{ end }}
-
 {{ define "content-header-title" }}
   <a href="{{ teamsPath .Organization }}">teams</a>
   /
@@ -64,7 +60,7 @@
   </form>
   <hr class="my-4">
   <h3 class="font-semibold my-2 text-lg">Members</h3>
-  <form class="horizontal-form" action="{{ addMemberTeamPath .Team.ID }}" method="POST">
+  <form action="{{ addMemberTeamPath .Team.ID }}" method="POST">
     <select id="select-add-member" name="username" {{ disabled (not $canAddMember) }}>
       <option value="">-- select user --</option>
       {{ range .NonMembers }}
@@ -75,15 +71,15 @@
     </select>
     <button {{ insufficient $canAddMember }}>Add member</button>
   </form>
-  <div id="content-list" class="content-list">
+  <div id="content-list">
     {{ range .Members }}
       <div id="item-user-{{ .Username }}" class="widget">
         <div>
-          <span class="status">{{ .Username }}</span>
+          <span id="username">{{ .Username }}</span>
         </div>
         <div>
           {{ template "identifier" . }}
-          <form class="horizontal-form" action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
+          <form action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
             <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
             <button id="remove-member-button" class="btn-danger" {{ insufficient $canRemoveMember }}>
               Remove member

@@ -1,10 +1,5 @@
 {{ template "layout" . }}
 
-{{ define "pre-content" }}
-  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_get.css" }}">
-  <link rel="stylesheet" href="{{ addHash "/static/css/workspace_tags.css" }}">
-{{ end }}
-
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
 {{ end }}
@@ -26,9 +21,9 @@
         {{ end }}
       </div>
     </div>
-    <div class="flex gap-1 flex-col basis-52">
+    <div class="flex gap-4 flex-col basis-52">
       <div class="actions-container">
-        <h5>Actions</h5>
+        <h3 class="font-semibold mb-2">Actions</h3>
         <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
           <input type="hidden" name="connected" value="{{ ne .Workspace.Connection nil }}">
           <select name="operation" id="start-run-operation" onchange="this.form.submit()">
@@ -40,9 +35,9 @@
           </select>
         </form>
       </div>
-      <div><h5>Terraform Version</h5><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
+      <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
       <div class="workspace-lock-container">
-        <h5>Locking</h5>
+        <h3 class="font-semibold mb-2">Locking</h3>
         {{ with .LockButton }}
           <div class="workspace-lock workspace-lock-status-{{ .State }}">
             <span title="{{ .Tooltip }}">{{ title .State }}</span>
@@ -52,10 +47,10 @@
         {{ end }}
       </div>
       {{ with .Workspace.Connection }}
-        <div>Connected to <span class="data">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
+        <div>Connected to <span class="bg-gray-200">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
       <div>
-        <h5>Tags <a id="tags-add-remove-link" class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h5>
+        <h3 class="font-semibold mb-2">Tags <a id="tags-add-remove-link" class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h3>
         <div class="workspace-tags-list">
         {{ range .Workspace.Tags }}
           <span class="workspace-tag">{{ . }}</span>

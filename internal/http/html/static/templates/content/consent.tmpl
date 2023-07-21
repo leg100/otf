@@ -1,17 +1,13 @@
 {{ template "layout" . }}
 
-{{ define "pre-content" }}
-  <link rel="stylesheet" href="{{ addHash "/static/css/consent.css" }}">
-{{ end }}
-
 {{ define "container" }}
   {{ template "flash" . }}
-  <div class="center">
-    <div class="consent">
-      <h2>Authorize App</h2>
+  <div class="m-auto">
+    <div class="flex flex-col justify-center items-center gap-2">
+      <h2 class="font-semibold text-lg">Authorize App</h2>
       Hi {{ .CurrentUser }},
       <span>
-        <span class="data">terraform</span> is requesting access to your OTF user account.
+        <span class="bg-gray-200">terraform</span> is requesting access to your OTF user account.
       </span>
       <form method="POST">
         <button class="btn-danger" name="consented" value="false">Decline</button>

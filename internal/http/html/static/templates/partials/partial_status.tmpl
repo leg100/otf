@@ -1,5 +1,4 @@
 {{ define "phase-status" }}
-  <span id="{{ .PhaseType }}-status" class="phase-status phase-status-{{ .Status }}" hx-swap-oob="true">
-    {{ .Status.String }}
-  </span>
+  {{ $statusColors := dict "finished" "bg-green-200" }}
+  <span id="{{ .PhaseType }}-status" class="{{ get $statusColors .Status.String }}" hx-swap-oob="true">{{ .Status.String }}</span>
 {{ end }}

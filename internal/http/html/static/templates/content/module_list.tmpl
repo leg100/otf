@@ -20,10 +20,10 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
-    <div class="item-heading">
-      <a class="status" href="{{ modulePath .ID }}">{{ .Name }}</a>
-      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+  <div class="widget">
+    <div>
+      <a href="{{ modulePath .ID }}">{{ .Name }}</a>
+      <span>{{ durationRound .CreatedAt }} ago</span>
     </div>
     {{ template "identifier" . }}
   </div>
