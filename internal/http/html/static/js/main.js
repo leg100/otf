@@ -5,7 +5,6 @@ window.addEventListener('load', (e) => {
       input.addEventListener(
         "invalid",
         event => {
-          console.log("invalid!");
           input.classList.add("error");
         },
         false
