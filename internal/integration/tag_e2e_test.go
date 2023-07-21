@@ -72,8 +72,8 @@ resource "null_resource" "tags_e2e" {}
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),
 		// confirm workspace page lists both tags
-		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'foo')]`),
-		chromedp.WaitVisible(`//*[@class='workspace-tag'][contains(text(),'bar')]`),
+		chromedp.WaitVisible(`//*[@id='tags']/span[contains(text(),'foo')]`),
+		chromedp.WaitVisible(`//*[@id='tags']/span[contains(text(),'bar')]`),
 		// go to tag settings
 		chromedp.Click(`//a[@id='tags-add-remove-link']`),
 		screenshot(t),

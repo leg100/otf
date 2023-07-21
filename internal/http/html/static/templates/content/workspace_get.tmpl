@@ -36,13 +36,14 @@
         </form>
       </div>
       <div><h3 class="font-semibold mb-2">Terraform Version</h3><a class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#terraform-version">v{{ .Workspace.TerraformVersion }}</a></div>
-      <div class="workspace-lock-container">
+      <div>
         <h3 class="font-semibold mb-2">Locking</h3>
         {{ with .LockButton }}
-          <div class="workspace-lock workspace-lock-status-{{ .State }}">
+          {{ $statusColors := dict "unlocked" "bg-green-200" "locked" "bg-orange-200" }}
+          <div class="flex flex-col gap-2 p-2 {{ get $statusColors .State }}">
             <span title="{{ .Tooltip }}">{{ title .State }}</span>
             <form action="{{ .Action }}" method="POST"><button title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
-            <span class="workspace-lock-info">{{ .Message }}</span>
+            <span class="text-sm">{{ .Message }}</span>
           </div>
         {{ end }}
       </div>
@@ -51,10 +52,10 @@
       {{ end }}
       <div>
         <h3 class="font-semibold mb-2">Tags <a id="tags-add-remove-link" class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h3>
-        <div class="workspace-tags-list">
-        {{ range .Workspace.Tags }}
-          <span class="workspace-tag">{{ . }}</span>
-        {{ end }}
+        <div id="tags">
+          {{ range .Workspace.Tags }}
+            <span class="bg-blue-800 text-white p-1 font-semibold">{{ . }}</span>
+          {{ end }}
         </div>
       </div>
     </div>
