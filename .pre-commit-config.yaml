@@ -37,7 +37,7 @@ repos:
         name: make tailwind
         entry: make tailwind
         language: "system"
-        types: [css]
+        types: [css,gotmpl]
         require_serial: true
         pass_filenames: false
         description: "Runs `make tailwind`"
