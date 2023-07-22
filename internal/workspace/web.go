@@ -235,14 +235,21 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		CanAddTags     bool
 		CanRemoveTags  bool
 		UnassignedTags []string
+		TagsDropdown   html.DropdownUI
 	}{
-		WorkspacePage:  NewPage(r, ws.ID, ws),
-		LockButton:     lockButtonHelper(ws, policy, user),
-		VCSProvider:    provider,
-		CanApply:       user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanAddTags:     user.CanAccessWorkspace(rbac.AddTagsAction, policy),
-		CanRemoveTags:  user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
-		UnassignedTags: internal.DiffStrings(getTagNames(), ws.Tags),
+		WorkspacePage: NewPage(r, ws.ID, ws),
+		LockButton:    lockButtonHelper(ws, policy, user),
+		VCSProvider:   provider,
+		CanApply:      user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanAddTags:    user.CanAccessWorkspace(rbac.AddTagsAction, policy),
+		CanRemoveTags: user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
+		TagsDropdown: html.DropdownUI{
+			Name:        "tag_name",
+			Available:   internal.DiffStrings(getTagNames(), ws.Tags),
+			Existing:    ws.Tags,
+			AddAction:   paths.CreateTagWorkspace(ws.ID),
+			Placeholder: "Add tags",
+		},
 	})
 }
 

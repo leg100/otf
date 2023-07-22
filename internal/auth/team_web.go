@@ -76,27 +76,37 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// get usernames of team members
 	members, err := h.svc.ListTeamMembers(r.Context(), teamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	usernames := make([]string, len(members))
+	for i, m := range members {
+		usernames[i] = m.Username
+	}
 
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	subject, err := internal.SubjectFromContext(r.Context())
+	user, err := UserFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var users []*User
-	if subject.CanAccessSite(rbac.ListUsersAction) {
-		users, err = h.svc.ListUsers(r.Context())
-		if err != nil {
-			h.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+
+	// get usernames of non-members
+	users, err := h.svc.ListUsers(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	nonMembers := diffUsers(members, users)
+	nonMemberUsernames := make([]string, len(nonMembers))
+	for i, m := range nonMembers {
+		nonMemberUsernames[i] = m.Username
 	}
 
 	h.Render("team_get.tmpl", w, struct {
@@ -107,6 +117,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		AddTeamMembershipAction    rbac.Action
 		RemoveTeamMembershipAction rbac.Action
 		DeleteTeamAction           rbac.Action
+		AddMemberDropdown          html.DropdownUI
+		CanAddMember               bool
 	}{
 		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
 		Team:                       team,
@@ -115,6 +127,16 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
 		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
 		DeleteTeamAction:           rbac.DeleteTeamAction,
+		CanAddMember:               user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
+		AddMemberDropdown: html.DropdownUI{
+			Name:         "username",
+			Available:    nonMemberUsernames,
+			Existing:     usernames,
+			AddAction:    paths.AddMemberTeam(team.ID),
+			CreateAction: paths.CreateUser(team.Organization),
+			Placeholder:  "Add user",
+			Width:        "wide",
+		},
 	})
 }
 

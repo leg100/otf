@@ -8,7 +8,6 @@
 {{ define "content" }}
   {{ $canDelete := .CurrentUser.CanAccessOrganization .DeleteTeamAction .Organization }}
   {{ $canSetPermission := .CurrentUser.IsOwner .Organization }}
-  {{ $canAddMember := .CurrentUser.CanAccessOrganization .AddTeamMembershipAction .Organization }}
   {{ $canRemoveMember := .CurrentUser.CanAccessOrganization .RemoveTeamMembershipAction .Organization }}
   <h3 class="font-semibold my-2 text-lg">Permissions</h3>
   <form class="flex flex-col gap-5" action="{{ updateTeamPath .Team.ID }}" method="POST">
@@ -60,17 +59,9 @@
   </form>
   <hr class="my-4">
   <h3 class="font-semibold my-2 text-lg">Members</h3>
-  <form action="{{ addMemberTeamPath .Team.ID }}" method="POST">
-    <select id="select-add-member" name="username" {{ disabled (not $canAddMember) }}>
-      <option value="">-- select user --</option>
-      {{ range .NonMembers }}
-        <option value="{{ .Username }}">{{ .Username }}</option>
-      {{ else }}
-        <option value="">No users found</option>
-      {{ end }}
-    </select>
-    <button class="btn" {{ insufficient $canAddMember }}>Add member</button>
-  </form>
+  {{ if .CanAddMember }}
+    {{ template "search-dropdown" .AddMemberDropdown }}
+  {{ end }}
   <div id="content-list">
     {{ range .Members }}
       <div id="item-user-{{ .Username }}" class="widget">
