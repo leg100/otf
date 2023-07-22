@@ -32,12 +32,12 @@
         class="absolute w-40 mt-1 bg-white border"
         >
         <div class="sticky bottom-0 flex flex-col">
-          <button form="search-dropdown" class="flex-grow text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2 cursor-pointer" name="tag_name" :value="search" for="create-tag" x-show="isNew">
+          <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" name="tag_name" :value="search" for="create-tag" x-show="isNew">
             Create:<span class="" x-text="search"></span>
           </button>
 
           <template x-for="item in filterAvailable" :key="item">
-            <button form="search-dropdown" class="flex-grow text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2 cursor-pointer" name="tag_name" :value="item" for="create-tag" x-text="item"></button>
+            <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" name="tag_name" :value="item" for="create-tag" x-text="item"></button>
           </template>
         </div>
     </div>
