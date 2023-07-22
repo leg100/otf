@@ -1,5 +1,5 @@
 document.addEventListener('alpine:init', () => {
-  Alpine.data('search_dropdown', (items = []) => ({
+  Alpine.data('search_dropdown', (existing = [], available = []) => ({
     open: false,
     close(focusAfter) {
       if (! this.open) return
@@ -7,14 +7,15 @@ document.addEventListener('alpine:init', () => {
       focusAfter && focusAfter.focus()
     },
     search: '',
-    items: items,
-    get filterItems() {
-      return this.items.filter(
+    existing: existing,
+    available: available,
+    get filterAvailable() {
+      return this.available.filter(
         i => i.includes(this.search)
       ).slice(0, 3)
     },
-    get exactMatch() {
-      return this.search === '' || this.items.includes(this.search)
+    get isNew() {
+      return this.search !== '' && !this.available.includes(this.search) && !this.existing.includes(this.search)
     },
   }))
 })

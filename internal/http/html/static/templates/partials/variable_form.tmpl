@@ -36,7 +36,7 @@
         <input class="text-input" type="text" class="freeform" name="description" id="description" value="{{ .Description }}" placeholder="description (optional)">
       </div>
       <div>
-        <button id="save-variable-button" {{ insufficient $.CanAccess }}>
+        <button class="btn" id="save-variable-button" {{ insufficient $.CanAccess }}>
           Save variable
         </button>
       </div>

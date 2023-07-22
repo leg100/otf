@@ -49,7 +49,7 @@
       <span for="manage_modules">Allows members to publish and delete modules within the organization.</span>
     </div>
     <div class="field">
-      <button class="w-40"
+      <button class="btn w-40"
         {{ if .Team.IsOwners }}
           title="cannot edit permissions of owners team" disabled
         {{ else }}
@@ -69,7 +69,7 @@
         <option value="">No users found</option>
       {{ end }}
     </select>
-    <button {{ insufficient $canAddMember }}>Add member</button>
+    <button class="btn" {{ insufficient $canAddMember }}>Add member</button>
   </form>
   <div id="content-list">
     {{ range .Members }}

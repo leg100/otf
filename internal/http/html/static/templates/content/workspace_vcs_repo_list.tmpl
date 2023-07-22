@@ -15,7 +15,7 @@
   <form action="{{ connectWorkspacePath .Workspace.ID }}" method="POST">
     <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .VCSProviderID }}">
     <input type="text" name="identifier" id="identifier" value="" placeholder="{owner}/{repository}" required>
-    <button>connect</button>
+    <button class="btn">connect</button>
   </form>
 
   <div id="content-list" class="content-list">
@@ -26,7 +26,7 @@
           <form action="{{ connectWorkspacePath $.Workspace.ID }}" method="POST">
             <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ $.VCSProviderID }}">
             <input type="hidden" name="identifier" id="identifier" value="{{ . }}">
-            <button>connect</button>
+            <button class="btn">connect</button>
           </form>
         </div>
         <div>

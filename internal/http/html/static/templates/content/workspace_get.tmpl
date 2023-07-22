@@ -46,7 +46,7 @@
           {{ $statusColors := dict "unlocked" "bg-green-200" "locked" "bg-orange-200" }}
           <div class="flex flex-col gap-2 p-2 {{ get $statusColors .State }}">
             <span title="{{ .Tooltip }}">{{ title .State }}</span>
-            <form action="{{ .Action }}" method="POST"><button title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
+            <form action="{{ .Action }}" method="POST"><button class="btn" title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
             <span class="text-sm">{{ .Message }}</span>
           </div>
         {{ end }}
@@ -62,16 +62,13 @@
               <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
               <div class="flex gap-1 items-center bg-blue-800 text-white p-1 font-semibold rounded-lg">
                 <span>{{ . }}</span>
-                <button class="text-xs p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                <button class="btn text-xs p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
               </div>
             </form>
           {{ end }}
         </div>
-        <form action="{{ createTagWorkspacePath $.Workspace.ID }}" method="POST">
-          {{ template "search-dropdown" .UnassignedTags }}
-        </form>
+        {{ template "search-dropdown" . }}
       </div>
-    </div>
     </div>
   </div>
 {{ end }}

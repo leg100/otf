@@ -1,6 +1,8 @@
 {{ define "search-dropdown" }}
+  <form id="search-dropdown" action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
+  </form>
   <div
-      x-data="search_dropdown({{ toJson . }})"
+      x-data="search_dropdown({{ toJson .Workspace.Tags }}, {{ toJson .UnassignedTags }})"
       x-ref="searchdrop"
       @keydown.escape.prevent.stop="close($refs.button)"
       @focusin.window="! $refs.searchdrop.contains($event.target) && close()"
@@ -18,6 +20,7 @@
         :aria-controls="$id('dropdown-button')"
         class="flex items-center w-40 gap-2 bg-white px-2 py-1 border"
         placeholder="Add tags"
+        form="search-dropdown"
         >
     <div
         x-ref="panel"
@@ -25,19 +28,17 @@
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
-        class="absolute flex flex-col w-40 mt-1 bg-white border"
+        class="absolute w-40 mt-1 bg-white border"
         >
-        <div class="py-1 px-2 focus:bg-gray-200 hover:bg-gray-200 cursor-pointer" tabindex="0" x-show="! exactMatch">
-          <label class="cursor-pointer" for="create-tag">Create <span class="py-1 px-2 rounded-lg bg-blue-800 text-white" x-text="search"></span></label>
-          <input class="hidden" id="create-tag" x-model="search" type="checkbox" name="tag_name">
-        </div>
+        <div class="sticky bottom-0 flex flex-col">
+          <button form="search-dropdown" class="flex-grow text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2 cursor-pointer" name="tag_name" :value="search" for="create-tag" x-show="isNew">
+            Create:<span class="" x-text="search"></span>
+          </button>
 
-        <template x-for="item in filterItems" :key="item">
-          <div class="py-1 px-2 focus:bg-gray-200 hover:bg-gray-200 cursor-pointer" tabindex="0" x-id="['menu-item']">
-            <label class="py-1 px-2 rounded-lg bg-blue-800 text-white cursor-pointer" :for="$id('menu-item')" x-text="item"></label>
-            <input class="hidden" :id="$id('menu-item')" type="checkbox" name="tag_name" :value="item" onchange="this.form.submit()">
-          </div>
-        </template>
+          <template x-for="item in filterAvailable" :key="item">
+            <button form="search-dropdown" class="flex-grow text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2 cursor-pointer" name="tag_name" :value="item" for="create-tag" x-text="item"></button>
+          </template>
+        </div>
     </div>
   </div>
 {{ end }}
