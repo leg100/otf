@@ -1,0 +1,43 @@
+{{ define "search-dropdown" }}
+  <div
+      x-data="search_dropdown({{ toJson . }})"
+      x-ref="searchdrop"
+      @keydown.escape.prevent.stop="close($refs.button)"
+      @focusin.window="! $refs.searchdrop.contains($event.target) && close()"
+      @click.outside="close()"
+      x-id="['dropdown-button']"
+      class="relative"
+      >
+    <input
+        @focusin="open = true"
+        x-model="search"
+        type="text"
+        x-ref="button"
+        @click="open = true"
+        :aria-expanded="open"
+        :aria-controls="$id('dropdown-button')"
+        class="flex items-center w-40 gap-2 bg-white px-2 py-1 border"
+        placeholder="Add tags"
+        >
+    <div
+        x-ref="panel"
+        x-show="open"
+        x-transition.origin.top.left
+        :id="$id('dropdown-button')"
+        x-cloak
+        class="absolute flex flex-col w-40 mt-1 bg-white border"
+        >
+        <div class="py-1 px-2 focus:bg-gray-200 hover:bg-gray-200 cursor-pointer" tabindex="0" x-show="! exactMatch">
+          <label class="cursor-pointer" for="create-tag">Create <span class="py-1 px-2 rounded-lg bg-blue-800 text-white" x-text="search"></span></label>
+          <input class="hidden" id="create-tag" x-model="search" type="checkbox" name="tag_name">
+        </div>
+
+        <template x-for="item in filterItems" :key="item">
+          <div class="py-1 px-2 focus:bg-gray-200 hover:bg-gray-200 cursor-pointer" tabindex="0" x-id="['menu-item']">
+            <label class="py-1 px-2 rounded-lg bg-blue-800 text-white cursor-pointer" :for="$id('menu-item')" x-text="item"></label>
+            <input class="hidden" :id="$id('menu-item')" type="checkbox" name="tag_name" :value="item" onchange="this.form.submit()">
+          </div>
+        </template>
+    </div>
+  </div>
+{{ end }}

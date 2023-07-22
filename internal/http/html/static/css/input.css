@@ -41,7 +41,7 @@
     @apply border-2 border-red-400 shadow-sm shadow-red-200;
   }
   select {
-    @apply py-2 px-4 bg-gray-200 shadow-sm shadow-slate-500;
+    @apply py-2 px-4 bg-gray-200 shadow-sm shadow-slate-500 cursor-pointer;
   }
   #content-header-title a {
     @apply text-blue-600

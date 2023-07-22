@@ -33,7 +33,7 @@ func (h *webHandlers) createTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created tag: "+*params.TagName)
-	http.Redirect(w, r, paths.EditWorkspace(*params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(*params.WorkspaceID), http.StatusFound)
 }
 
 func (h *webHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
@@ -53,5 +53,5 @@ func (h *webHandlers) deleteTag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "removed tag: "+*params.TagName)
-	http.Redirect(w, r, paths.EditWorkspace(*params.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(*params.WorkspaceID), http.StatusFound)
 }
