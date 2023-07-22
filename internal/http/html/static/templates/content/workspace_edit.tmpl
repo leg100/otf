@@ -50,18 +50,18 @@
       <div class="form-checkbox">
         <input type="radio" name="execution_mode" id="remote" value="remote" {{ checked .Workspace.ExecutionMode "remote" }}/>
         <label for="remote">Remote</label>
-        <span>Your plans and applies occur on Terraform Cloud's infrastructure. You and your team have the ability to review and collaborate on runs within the app.</span>
+        <span>Your plans and applies occur on the OTF servers.</span>
       </div>
       <div class="form-checkbox">
         <input type="radio" name="execution_mode" id="local" value="local" {{ checked .Workspace.ExecutionMode "local" }}/>
         <label for="local">Local</label>
-        <span>Your plans and applies occur on machines you control. Terraform Cloud is only used to store and synchronize state.
+        <span>Your plans and applies occur on your local machines. OTF is only used to store and synchronize state.
 </span>
       </div>
       <div class="form-checkbox">
         <input type="radio" name="execution_mode" id="agent" value="agent" {{ checked .Workspace.ExecutionMode "agent" }}/>
         <label for="agent">Agent</label>
-        <span>Terraform Cloud will manage the plans and applies your agents execute.</span>
+        <span>Your plans and applies occur on OTF agents.</span>
       </div>
     </fieldset>
     <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
