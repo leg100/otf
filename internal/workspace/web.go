@@ -232,12 +232,16 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		LockButton
 		VCSProvider    *vcsprovider.VCSProvider
 		CanApply       bool
+		CanAddTags     bool
+		CanRemoveTags  bool
 		UnassignedTags []string
 	}{
 		WorkspacePage:  NewPage(r, ws.ID, ws),
 		LockButton:     lockButtonHelper(ws, policy, user),
 		VCSProvider:    provider,
 		CanApply:       user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanAddTags:     user.CanAccessWorkspace(rbac.AddTagsAction, policy),
+		CanRemoveTags:  user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
 		UnassignedTags: internal.DiffStrings(getTagNames(), ws.Tags),
 	})
 }

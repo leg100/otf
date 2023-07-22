@@ -62,12 +62,16 @@
               <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
               <div class="flex gap-1 items-center bg-blue-800 text-white p-1 font-semibold rounded-lg">
                 <span>{{ . }}</span>
-                <button class="btn text-xs p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                {{ if $.CanRemoveTags }}
+                  <button class="btn text-xs p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                {{ end }}
               </div>
             </form>
           {{ end }}
         </div>
-        {{ template "search-dropdown" . }}
+        {{ if .CanAddTags }}
+          {{ template "search-dropdown" . }}
+        {{ end }}
       </div>
     </div>
   </div>
