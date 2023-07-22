@@ -24,7 +24,7 @@
           {{ end }}
           {{ if eq .Status "planned" }}
             <form action="{{ applyRunPath .ID }}" method="POST">
-              <button>apply</button>
+              <button class="btn">apply</button>
             </form>
           {{ end }}
           {{ if .Cancelable }}

@@ -40,6 +40,6 @@
     </tbody>
   </table>
   <form action="{{ newVariablePath $.Workspace.ID }}" method="GET">
-    <button {{ insufficient $canCreate }}>Add variable</button>
+    <button class="btn" {{ insufficient $canCreate }}>Add variable</button>
   </form>
 {{ end }}

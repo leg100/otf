@@ -5,7 +5,7 @@
 {{ define "content-header-actions" }}
   {{ $canCreate := .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
   <form action="{{ newTeamPath .Organization }}" method="GET">
-    <button id="new-team-button" {{ insufficient $canCreate }}>
+    <button class="btn" id="new-team-button" {{ insufficient $canCreate }}>
       New Team
     </button>
   </form>

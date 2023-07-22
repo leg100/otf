@@ -23,13 +23,13 @@
   <div class="mt-3">
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
-        <button id="disconnect-workspace-repo-button" {{ insufficient $canUpdate }}>
+        <button class="btn" id="disconnect-workspace-repo-button" {{ insufficient $canUpdate }}>
           Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
         </button>
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
-        <button id="list-workspace-vcs-providers-button" {{ insufficient $canUpdate }}>
+        <button class="btn" id="list-workspace-vcs-providers-button" {{ insufficient $canUpdate }}>
           Connect to VCS
         </button>
       </form>
@@ -86,38 +86,9 @@
       <input class="text-input w-96" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
     </div>
     <div class="field">
-      <button class="w-40" {{ insufficient $canUpdate }}>Save changes</button>
+      <button class="btn w-40" {{ insufficient $canUpdate }}>Save changes</button>
     </div>
   </form>
-  <hr class="my-4">
-  <h3 id="tags" class="font-semibold text-lg">Tags</h3>
-  <div class="flex flex-col gap-2">
-    <div class="flex gap-2">
-      {{ range .Workspace.Tags }}
-        <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
-          <span class="bg-blue-800 text-white p-2 text-sm font-semibold">{{ . }}</span>
-          <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
-          <button id="button-remove-tag-{{ . }}" class="delete cross" {{ insufficient $canAddTag }}>x</button>
-        </form>
-      {{ end }}
-    </div>
-    <form action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
-      <div class="">
-        <input class="text-input w-40" type="text" name="tag_name" id="new-tag-name" value="" required>
-        <button class="w-40" {{ insufficient $canAddTag }}>Add new tag</button>
-      </div>
-    </form>
-    <form action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
-      <select name="tag_name" id="existing-tag-name">
-        {{ range .UnassignedTags }}
-          <option value="{{ . }}">{{ . }}</option>
-        {{ else }}
-          <option value="" disabled>no tags found</option>
-        {{ end }}
-      </select>
-      <button {{ insufficient $canAddTag }}>Add existing tag</button>
-    </form>
-  </div>
   <hr class="my-4">
   <h3 class="font-semibold text-lg">Permissions</h3>
   <div class="" id="permissions-container">
@@ -151,7 +122,7 @@
                       <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
                     {{ end }}
                   </select>
-                  <button {{ insufficient $canSetPermission }}>Update</button>
+                  <button class="btn" {{ insufficient $canSetPermission }}>Update</button>
                 </form>
               </td>
               <td>
@@ -179,7 +150,7 @@
                   <option value="{{ . }}">{{ . }}</option>
                 {{ end }}
               </select>
-              <button id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
+              <button class="btn" id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
                 Add
               </button>
             </td>

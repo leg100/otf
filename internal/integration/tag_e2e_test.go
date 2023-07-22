@@ -72,19 +72,16 @@ resource "null_resource" "tags_e2e" {}
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "tagged")),
 		// confirm workspace page lists both tags
-		chromedp.WaitVisible(`//*[@id='tags']/span[contains(text(),'foo')]`),
-		chromedp.WaitVisible(`//*[@id='tags']/span[contains(text(),'bar')]`),
-		// go to tag settings
-		chromedp.Click(`//a[@id='tags-add-remove-link']`),
-		screenshot(t),
+		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'foo')]`),
+		chromedp.WaitVisible(`//*[@id='tags']//span[contains(text(),'bar')]`),
 		// remove bar tag
 		chromedp.Click(`//button[@id='button-remove-tag-bar']`),
 		screenshot(t),
 		matchText(t, "//div[@role='alert']", "removed tag: bar"),
 		// add new tag
-		chromedp.Focus("input#new-tag-name", chromedp.ByQuery),
+		chromedp.Focus(`//input[@form='search-dropdown']`),
 		input.InsertText("baz"),
-		chromedp.Click(`//button[text()='Add new tag']`),
+		chromedp.Submit(`//input[@form='search-dropdown']`),
 		screenshot(t),
 		matchText(t, "//div[@role='alert']", "created tag: baz"),
 		// go to workspace listing

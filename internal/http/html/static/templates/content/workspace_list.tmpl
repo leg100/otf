@@ -5,7 +5,7 @@
 {{ define "content-header-actions" }}
   {{ $canCreate := $.CurrentUser.CanAccessOrganization .CreateWorkspaceAction .Organization }}
   <form action="{{ newWorkspacePath .Organization }}" method="GET">
-    <button id="new-workspace-button" {{ insufficient $canCreate }}>
+    <button class="btn" id="new-workspace-button" {{ insufficient $canCreate }}>
       New Workspace
     </button>
   </form>
@@ -19,7 +19,7 @@
         {{ range $k, $v := .TagFilters }}
           <div>
             <input id="workspace-tag-filter-{{ $k }}" class="hidden peer" name="search[tags]" value="{{ $k }}" type="checkbox" {{ checked $v }} onchange="this.form.submit()" />
-            <label for="workspace-tag-filter-{{ $k }}" class="bg-gray-300 text-white p-1 font-semibold peer-checked:bg-blue-800">
+            <label for="workspace-tag-filter-{{ $k }}" class="bg-gray-300 text-white p-1 font-semibold rounded-lg peer-checked:bg-blue-800 cursor-pointer">
               {{ $k }}
             </label>
           </div>

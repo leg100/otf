@@ -18,7 +18,7 @@
   <div class="flex flex-col gap-4 mt-4">
     {{ range .CloudConfigs }}
       <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
-        <button>New {{ title .String }} VCS Provider</button>
+        <button class="btn">New {{ title .String }} VCS Provider</button>
         <input type="hidden" name="cloud" id="cloud" value="{{ .String }}">
       </form>
     {{ end }}

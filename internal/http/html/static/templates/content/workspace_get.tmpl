@@ -1,5 +1,9 @@
 {{ template "layout" . }}
 
+{{ define "pre-content" }}
+  <script src="{{ addHash "/static/js/search_dropdown.js" }}"></script>
+{{ end }}
+
 {{ define "content-header-title" }}
   <a href="{{ workspacesPath .Organization }}">workspaces</a> / {{ .Workspace.Name }}
 {{ end }}
@@ -42,7 +46,7 @@
           {{ $statusColors := dict "unlocked" "bg-green-200" "locked" "bg-orange-200" }}
           <div class="flex flex-col gap-2 p-2 {{ get $statusColors .State }}">
             <span title="{{ .Tooltip }}">{{ title .State }}</span>
-            <form action="{{ .Action }}" method="POST"><button title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
+            <form action="{{ .Action }}" method="POST"><button class="btn" title="{{ .Tooltip }}" {{ disabled .Disabled }}>{{ .Text }}</button></form>
             <span class="text-sm">{{ .Message }}</span>
           </div>
         {{ end }}
@@ -50,15 +54,21 @@
       {{ with .Workspace.Connection }}
         <div>Connected to <span class="bg-gray-200">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
-      <div>
-        <h3 class="font-semibold mb-2">Tags <a id="tags-add-remove-link" class="underline text-blue-700" href="{{ editWorkspacePath .Workspace.ID }}#tags">[add/remove]</a> </h3>
-        <div id="tags">
+      <div class="flex flex-col gap-2">
+        <h3 class="font-semibold mb-2">Tags</h3>
+        <div id="tags" class="flex flex-wrap gap-1">
           {{ range .Workspace.Tags }}
-            <span class="bg-blue-800 text-white p-1 font-semibold">{{ . }}</span>
+            <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
+              <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
+              <div class="flex gap-1 items-center bg-blue-800 text-white p-1 font-semibold rounded-lg">
+                <span>{{ . }}</span>
+                <button class="btn text-xs p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+              </div>
+            </form>
           {{ end }}
         </div>
+        {{ template "search-dropdown" . }}
       </div>
-    </div>
     </div>
   </div>
 {{ end }}
