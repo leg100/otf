@@ -75,6 +75,43 @@ func (db *pgdb) deleteUserToken(ctx context.Context, id string) error {
 }
 
 //
+// Organization tokens
+//
+
+func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *OrganizationToken) error {
+	_, err := db.Conn(ctx).UpsertOrganizationToken(ctx, pggen.UpsertOrganizationTokenParams{
+		OrganizationTokenID: sql.String(token.ID),
+		OrganizationName:    sql.String(token.Organization),
+		CreatedAt:           sql.Timestamptz(token.CreatedAt),
+	})
+	return err
+}
+
+func (db *pgdb) getOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
+	// query only returns 0 or 1 tokens
+	result, err := db.Conn(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, nil
+	}
+	return &OrganizationToken{
+		ID:           result[0].OrganizationTokenID.String,
+		CreatedAt:    result[0].CreatedAt.Time,
+		Organization: result[0].OrganizationName.String,
+	}, nil
+}
+
+func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {
+	_, err := db.Conn(ctx).DeleteOrganiationTokenByName(ctx, sql.String(organization))
+	if err != nil {
+		return sql.Error(err)
+	}
+	return nil
+}
+
+//
 // Agent tokens
 //
 

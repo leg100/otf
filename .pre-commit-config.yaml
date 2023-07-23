@@ -9,6 +9,14 @@ repos:
         exclude: '.tfstate|run|testdata'
 -   repo: local
     hooks:
+    -   id: make-actions
+        name: make actions
+        entry: make actions
+        types: [go]
+        language: "golang"
+        require_serial: true
+        pass_filenames: false
+        description: "Runs `make actions`"
     -   id: make-vet
         name: make vet
         entry: make vet

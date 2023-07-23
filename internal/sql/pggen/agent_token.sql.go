@@ -361,6 +361,27 @@ type Querier interface {
 	// DeleteOrganizationByNameScan scans the result of an executed DeleteOrganizationByNameBatch query.
 	DeleteOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	UpsertOrganizationToken(ctx context.Context, params UpsertOrganizationTokenParams) (pgconn.CommandTag, error)
+	// UpsertOrganizationTokenBatch enqueues a UpsertOrganizationToken query into batch to be executed
+	// later by the batch.
+	UpsertOrganizationTokenBatch(batch genericBatch, params UpsertOrganizationTokenParams)
+	// UpsertOrganizationTokenScan scans the result of an executed UpsertOrganizationTokenBatch query.
+	UpsertOrganizationTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindOrganizationTokensByName(ctx context.Context, organizationName pgtype.Text) ([]FindOrganizationTokensByNameRow, error)
+	// FindOrganizationTokensByNameBatch enqueues a FindOrganizationTokensByName query into batch to be executed
+	// later by the batch.
+	FindOrganizationTokensByNameBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindOrganizationTokensByNameScan scans the result of an executed FindOrganizationTokensByNameBatch query.
+	FindOrganizationTokensByNameScan(results pgx.BatchResults) ([]FindOrganizationTokensByNameRow, error)
+
+	DeleteOrganiationTokenByName(ctx context.Context, organizationName pgtype.Text) (pgtype.Text, error)
+	// DeleteOrganiationTokenByNameBatch enqueues a DeleteOrganiationTokenByName query into batch to be executed
+	// later by the batch.
+	DeleteOrganiationTokenByNameBatch(batch genericBatch, organizationName pgtype.Text)
+	// DeleteOrganiationTokenByNameScan scans the result of an executed DeleteOrganiationTokenByNameBatch query.
+	DeleteOrganiationTokenByNameScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertPhaseStatusTimestamp(ctx context.Context, params InsertPhaseStatusTimestampParams) (pgconn.CommandTag, error)
 	// InsertPhaseStatusTimestampBatch enqueues a InsertPhaseStatusTimestamp query into batch to be executed
 	// later by the batch.
@@ -1317,6 +1338,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteOrganizationByNameSQL, deleteOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteOrganizationByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, upsertOrganizationTokenSQL, upsertOrganizationTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpsertOrganizationToken': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findOrganizationTokensByNameSQL, findOrganizationTokensByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationTokensByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteOrganiationTokenByNameSQL, deleteOrganiationTokenByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteOrganiationTokenByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertPhaseStatusTimestampSQL, insertPhaseStatusTimestampSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPhaseStatusTimestamp': %w", err)

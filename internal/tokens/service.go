@@ -25,6 +25,7 @@ type (
 		RunTokenService
 		sessionService
 		userTokenService
+		organizationTokenService
 	}
 
 	service struct {
