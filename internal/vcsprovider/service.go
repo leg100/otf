@@ -65,7 +65,7 @@ func NewService(opts Options) *service {
 		factory: &factory{
 			CloudService: opts.CloudService,
 		},
-		deleteHook: hooks.NewHook(rbac.DeleteVCSProviderAction),
+		deleteHook: hooks.NewHook(opts.DB),
 	}
 
 	svc.web = &webHandlers{

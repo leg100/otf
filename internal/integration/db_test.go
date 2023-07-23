@@ -6,7 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
-	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +48,7 @@ func TestTx(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
-	org, err := orgcreator.NewOrganization(orgcreator.OrganizationCreateOptions{
+	org, err := organization.NewOrganization(organization.OrganizationCreateOptions{
 		Name: internal.String("acmeco"),
 	})
 	require.NoError(t, err)

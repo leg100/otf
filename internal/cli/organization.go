@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/orgcreator"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ func (a *CLI) newOrganizationCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			org, err := a.CreateOrganization(cmd.Context(), orgcreator.OrganizationCreateOptions{
+			org, err := a.CreateOrganization(cmd.Context(), organization.OrganizationCreateOptions{
 				Name: internal.String(args[0]),
 			})
 			if err != nil {

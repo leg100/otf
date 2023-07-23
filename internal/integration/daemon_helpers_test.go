@@ -20,7 +20,6 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
@@ -142,7 +141,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.CreateOrganization(ctx, orgcreator.OrganizationCreateOptions{
+	org, err := s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
 		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)

@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/tokens"
 )
 
@@ -34,7 +33,6 @@ type (
 
 		internal.HostnameService
 		organization.OrganizationService
-		orgcreator.OrganizationCreatorService
 		auth.AuthService
 		tokens.TokensService
 

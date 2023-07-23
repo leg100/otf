@@ -32,6 +32,7 @@ type (
 		*sql.DB
 		html.Renderer
 		internal.HostnameService
+		organization.OrganizationService
 		logr.Logger
 	}
 )
@@ -47,6 +48,10 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
+
+	// Whenever an organization is created, also create an owners team.
+	opts.OrganizationService.AfterCreateHook(svc.createOwnersTeam)
+
 	return &svc
 }
 

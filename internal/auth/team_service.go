@@ -3,8 +3,11 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 var ErrRemovingOwnersTeamNotPermitted = errors.New("the owners team cannot be deleted")
@@ -167,4 +170,37 @@ func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 	a.V(2).Info("deleted team", "team", team.Name, "organization", team.Organization, "subject", subject)
 
 	return nil
+}
+
+// createOwnersTeam creates an owners team and makes the creator a member of the
+// team.
+func (a *service) createOwnersTeam(ctx context.Context, organization string) error {
+	creator, err := UserFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	return a.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		// pre-emptively make the creator an owner to avoid a chicken-and-egg
+		// problem when creating the owners team below: only an owner can create teams
+		// but an owner can't be created until an owners team is created...
+		creator.Teams = append(creator.Teams, &Team{
+			Name:         "owners",
+			Organization: organization,
+		})
+
+		owners, err := a.CreateTeam(ctx, organization, CreateTeamOptions{
+			Name: internal.String("owners"),
+		})
+		if err != nil {
+			return fmt.Errorf("creating owners team: %w", err)
+		}
+		err = a.AddTeamMembership(ctx, TeamMembershipOptions{
+			TeamID:    owners.ID,
+			Usernames: []string{creator.Username},
+		})
+		if err != nil {
+			return fmt.Errorf("adding owner to owners team: %w", err)
+		}
+		return nil
+	})
 }
