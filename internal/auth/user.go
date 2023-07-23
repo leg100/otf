@@ -110,10 +110,11 @@ func (u *User) IsSiteAdmin() bool {
 }
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
-	// User can list users across a site if they are an owner of at least one
-	// org (this is expressely so that they can browse users before adding a
-	// user to a team).
-	if action == rbac.ListUsersAction {
+	switch action {
+	case rbac.CreateUserAction:
+		// A user can create a user account only if they are an owner of at least
+		// one organization. This permits an owner to create a user before adding
+		// them to a team.
 		for _, team := range u.Teams {
 			if team.IsOwners() {
 				return true

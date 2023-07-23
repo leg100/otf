@@ -5,7 +5,7 @@
   <div
       x-data="search_dropdown({{ toJson .Existing }}, {{ toJson .Available }})"
       x-ref="searchdrop"
-      @keydown.escape.prevent.stop="close($refs.button)"
+      @keydown.escape.prevent.stop="close($refs.input-search)"
       @focusin.window="! $refs.searchdrop.contains($event.target) && close()"
       @click.outside="close()"
       x-id="['dropdown-button']"
@@ -16,7 +16,7 @@
         @focusin="open = true"
         x-model="search"
         type="text"
-        x-ref="button"
+        x-ref="input-search"
         @click="open = true"
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"

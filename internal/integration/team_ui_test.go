@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 )
 
@@ -27,10 +28,11 @@ func TestIntegration_TeamUI(t *testing.T) {
 			chromedp.Click(`//div[@class='content-list']//a[text()='owners']`),
 			screenshot(t, "owners_team_page"),
 			// select newbie as new team member
-			chromedp.SetValue(`//select[@id="select-add-member"]`, newbie.Username),
+			chromedp.Focus(`//input[@x-ref='input-search']`),
+			input.InsertText(newbie.Username),
 			screenshot(t),
 			// submit
-			chromedp.Click(`//button[text()='Add member']`),
+			chromedp.Submit(`//input[@x-ref='input-search']`),
 			screenshot(t),
 			// confirm newbie added
 			matchText(t, "//div[@role='alert']", "added team member: "+newbie.Username),

@@ -98,36 +98,37 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get usernames of non-members
-	users, err := h.svc.ListUsers(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	nonMembers := diffUsers(members, users)
-	nonMemberUsernames := make([]string, len(nonMembers))
-	for i, m := range nonMembers {
-		nonMemberUsernames[i] = m.Username
+	var nonMemberUsernames []string
+	if user.CanAccessSite(rbac.ListUsersAction) {
+		users, err := h.svc.ListUsers(r.Context())
+		if err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		nonMembers := diffUsers(members, users)
+		nonMemberUsernames = make([]string, len(nonMembers))
+		for i, m := range nonMembers {
+			nonMemberUsernames[i] = m.Username
+		}
 	}
 
 	h.Render("team_get.tmpl", w, struct {
 		organization.OrganizationPage
-		Team                       *Team
-		Members                    []*User
-		NonMembers                 []*User
-		AddTeamMembershipAction    rbac.Action
-		RemoveTeamMembershipAction rbac.Action
-		DeleteTeamAction           rbac.Action
-		AddMemberDropdown          html.DropdownUI
-		CanAddMember               bool
+		Team              *Team
+		Members           []*User
+		AddMemberDropdown html.DropdownUI
+		CanAddMember      bool
+		CanRemoveMember   bool
+		CanDelete         bool
+		IsOwner           bool
 	}{
-		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
-		Team:                       team,
-		NonMembers:                 diffUsers(members, users),
-		Members:                    members,
-		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
-		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
-		DeleteTeamAction:           rbac.DeleteTeamAction,
-		CanAddMember:               user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
+		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
+		Team:             team,
+		Members:          members,
+		CanAddMember:     user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
+		CanRemoveMember:  user.CanAccessOrganization(rbac.RemoveTeamMembershipAction, team.Organization),
+		CanDelete:        user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
+		IsOwner:          user.IsOwner(team.Organization),
 		AddMemberDropdown: html.DropdownUI{
 			Name:        "username",
 			Available:   nonMemberUsernames,
