@@ -19,8 +19,6 @@ type (
 	}
 
 	service struct {
-		RestrictOrganizationCreation bool
-
 		logr.Logger
 
 		site         internal.Authorizer // authorizes site access
@@ -36,8 +34,6 @@ type (
 		internal.HostnameService
 		organization.OrganizationService
 		logr.Logger
-
-		RestrictOrganizationCreation bool
 	}
 )
 
@@ -53,6 +49,7 @@ func NewService(opts Options) *service {
 		svc:      &svc,
 	}
 
+	// Whenever an organization is created, also create an owners team.
 	opts.OrganizationService.AfterCreateHook(svc.createOwnersTeam)
 
 	return &svc

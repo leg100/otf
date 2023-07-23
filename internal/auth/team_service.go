@@ -172,6 +172,8 @@ func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 	return nil
 }
 
+// createOwnersTeam creates an owners team and makes the creator a member of the
+// team.
 func (a *service) createOwnersTeam(ctx context.Context, organization string) error {
 	creator, err := UserFromContext(ctx)
 	if err != nil {

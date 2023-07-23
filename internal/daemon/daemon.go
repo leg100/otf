@@ -122,12 +122,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	authService := auth.NewService(auth.Options{
-		Logger:                       logger,
-		DB:                           db,
-		Renderer:                     renderer,
-		HostnameService:              hostnameService,
-		OrganizationService:          orgService,
-		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
+		Logger:              logger,
+		DB:                  db,
+		Renderer:            renderer,
+		HostnameService:     hostnameService,
+		OrganizationService: orgService,
 	})
 	// promote nominated users to site admin
 	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
