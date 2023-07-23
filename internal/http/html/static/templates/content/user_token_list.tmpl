@@ -17,12 +17,12 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="border border-black mt-3 p-2">
-    <div class="flex gap-4 items-baseline pb-4">
-      <span class="status">{{ .Description }}</span>
-      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+  <div class="widget">
+    <div>
+      <span>{{ .Description }}</span>
+      <span>{{ durationRound .CreatedAt }} ago</span>
     </div>
-    <div class="flex gap-4 items-baseline justify-between">
+    <div>
       {{ template "identifier" . }}
       <form action="{{ deleteTokenPath }}" method="POST">
         <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>

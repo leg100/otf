@@ -17,10 +17,10 @@ type (
 		Organization string // Token belongs to an organization
 	}
 
-	// CreateOrganizationTokenOptions are options for creating a user token via the service
+	// CreateOrganizationTokenOptions are options for creating an organization token via the service
 	// endpoint
 	CreateOrganizationTokenOptions struct {
-		Organization string
+		Organization string `schema:"organization_name,required"`
 	}
 
 	// NewOrganizationTokenOptions are options for constructing a user token via the
@@ -57,6 +57,34 @@ func NewOrganizationToken(opts NewOrganizationTokenOptions) (*OrganizationToken,
 		return nil, nil, err
 	}
 	return &ot, token, nil
+}
+
+func (u *OrganizationToken) CanAccessSite(action rbac.Action) bool {
+	// an organization token can only be used for intra-organization resources
+	return false
+}
+
+func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string) bool {
+	if u.Organization != org {
+		return false
+	}
+	switch action {
+	// permit team management
+	case rbac.CreateTeamAction, rbac.UpdateTeamAction, rbac.GetTeamAction, rbac.ListTeamsAction, rbac.DeleteTeamAction, rbac.AddTeamMembershipAction, rbac.RemoveTeamMembershipAction:
+		return true
+	// permit workspace management
+	case rbac.ListWorkspacesAction, rbac.GetWorkspaceAction, rbac.CreateWorkspaceAction, rbac.DeleteWorkspaceAction, rbac.SetWorkspacePermissionAction, rbac.UnsetWorkspacePermissionAction, rbac.UpdateWorkspaceAction:
+		return true
+	// permit tag management
+	case rbac.ListTagsAction, rbac.DeleteTagsAction, rbac.TagWorkspacesAction, rbac.AddTagsAction, rbac.RemoveTagsAction, rbac.ListWorkspaceTags:
+		return true
+	default:
+		return false
+	}
+}
+
+func (u *OrganizationToken) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+	return u.CanAccessOrganization(action, policy.Organization)
 }
 
 // CreateOrganizationToken creates an organization token. If an organization
