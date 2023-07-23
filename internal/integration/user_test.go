@@ -104,7 +104,7 @@ func TestUser(t *testing.T) {
 		// only admin can retrieve its own user account
 		admin := svc.getUser(t, adminCtx, auth.SiteAdminUsername)
 
-		got, err := svc.ListUsers(ctx)
+		got, err := svc.ListUsers(adminCtx)
 		require.NoError(t, err)
 
 		assert.Equal(t, 4, len(got))
@@ -158,8 +158,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("add team membership", func(t *testing.T) {
-		svc, _, ctx := setup(t, nil)
-		org := svc.createOrganization(t, ctx)
+		svc, org, ctx := setup(t, nil)
 		team := svc.createTeam(t, ctx, org)
 		user := svc.createUser(t)
 
@@ -173,6 +172,20 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Contains(t, got.Teams, team)
+
+		// Adding membership for a user that does not exist should first create
+		// the user.
+		t.Run("create new user", func(t *testing.T) {
+			err := svc.AddTeamMembership(ctx, auth.TeamMembershipOptions{
+				Usernames: []string{"new-kid"},
+				TeamID:    team.ID,
+			})
+			require.NoError(t, err)
+
+			got, err := svc.GetUser(adminCtx, auth.UserSpec{Username: internal.String("new-kid")})
+			require.NoError(t, err)
+			assert.Contains(t, got.Teams, team)
+		})
 	})
 
 	t.Run("remove team membership", func(t *testing.T) {

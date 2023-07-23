@@ -6,10 +6,6 @@
 {{ .Team.Name }}{{ end }}
 
 {{ define "content" }}
-  {{ $canDelete := .CurrentUser.CanAccessOrganization .DeleteTeamAction .Organization }}
-  {{ $canSetPermission := .CurrentUser.IsOwner .Organization }}
-  {{ $canAddMember := .CurrentUser.CanAccessOrganization .AddTeamMembershipAction .Organization }}
-  {{ $canRemoveMember := .CurrentUser.CanAccessOrganization .RemoveTeamMembershipAction .Organization }}
   <h3 class="font-semibold my-2 text-lg">Permissions</h3>
   <form class="flex flex-col gap-5" action="{{ updateTeamPath .Team.ID }}" method="POST">
     <div class="form-checkbox">
@@ -19,7 +15,7 @@
         id="manage_workspaces"
         value="true"
         {{ if or .Team.OrganizationAccess.ManageWorkspaces .Team.IsOwners }}checked{{ end }}
-        {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
+        {{ if or (not .IsOwner) .Team.IsOwners }}disabled{{ end }}
       >
       <label for="manage_workspaces">Manage Workspaces</label>
       <span>Allows members to create and administrate all workspaces within the organization.</span>
@@ -31,7 +27,7 @@
         id="manage_vcs"
         value="true"
         {{ if or .Team.OrganizationAccess.ManageVCS .Team.IsOwners }}checked{{ end }}
-        {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
+        {{ if or (not .IsOwner) .Team.IsOwners }}disabled{{ end }}
       >
       <label for="manage_vcs">Manage VCS Settings</label>
       <span>Allows members to manage the set of VCS providers available within the organization.</span>
@@ -43,7 +39,7 @@
         id="manage_modules"
         value="true"
         {{ if or .Team.OrganizationAccess.ManageModules .Team.IsOwners }}checked{{ end }}
-        {{ if or (not $canSetPermission) .Team.IsOwners }}disabled{{ end }}
+        {{ if or (not .IsOwner) .Team.IsOwners }}disabled{{ end }}
       >
       <label for="manage_modules">Manage Modules</label>
       <span for="manage_modules">Allows members to publish and delete modules within the organization.</span>
@@ -53,24 +49,16 @@
         {{ if .Team.IsOwners }}
           title="cannot edit permissions of owners team" disabled
         {{ else }}
-          {{ insufficient $canSetPermission }}
+          {{ insufficient .IsOwner }}
         {{ end }}
       >Save changes</button>
     </div>
   </form>
   <hr class="my-4">
   <h3 class="font-semibold my-2 text-lg">Members</h3>
-  <form action="{{ addMemberTeamPath .Team.ID }}" method="POST">
-    <select id="select-add-member" name="username" {{ disabled (not $canAddMember) }}>
-      <option value="">-- select user --</option>
-      {{ range .NonMembers }}
-        <option value="{{ .Username }}">{{ .Username }}</option>
-      {{ else }}
-        <option value="">No users found</option>
-      {{ end }}
-    </select>
-    <button class="btn" {{ insufficient $canAddMember }}>Add member</button>
-  </form>
+  {{ if .CanAddMember }}
+    {{ template "search-dropdown" .AddMemberDropdown }}
+  {{ end }}
   <div id="content-list">
     {{ range .Members }}
       <div id="item-user-{{ .Username }}" class="widget">
@@ -81,7 +69,7 @@
           {{ template "identifier" . }}
           <form action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
             <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
-            <button id="remove-member-button" class="btn-danger" {{ insufficient $canRemoveMember }}>
+            <button id="remove-member-button" class="btn-danger" {{ insufficient $.CanRemoveMember }}>
               Remove member
             </button>
           </form>
@@ -99,7 +87,7 @@
       {{ if .Team.IsOwners }}
         title="the owners team cannot be deleted" disabled
       {{ else }}
-        {{ insufficient $canDelete }}
+        {{ insufficient .CanDelete }}
       {{ end }}
       onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
     <input type="hidden" name="id" value="{{ .Team.ID }}">

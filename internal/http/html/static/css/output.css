@@ -862,10 +862,6 @@ select {
   max-width: 56rem;
 }
 
-.flex-grow {
-  flex-grow: 1;
-}
-
 .grow {
   flex-grow: 1;
 }
@@ -928,6 +924,10 @@ select {
 
 .gap-6 {
   gap: 1.5rem;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
 }
 
 .whitespace-pre-wrap {

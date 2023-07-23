@@ -76,45 +76,67 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// get usernames of team members
 	members, err := h.svc.ListTeamMembers(r.Context(), teamID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	usernames := make([]string, len(members))
+	for i, m := range members {
+		usernames[i] = m.Username
+	}
 
 	// Retrieve full list of users for populating a select form from which new
 	// team members can be chosen. Only do this if the subject has perms to
 	// retrieve the list.
-	subject, err := internal.SubjectFromContext(r.Context())
+	user, err := UserFromContext(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var users []*User
-	if subject.CanAccessSite(rbac.ListUsersAction) {
-		users, err = h.svc.ListUsers(r.Context())
+
+	// get usernames of non-members
+	var nonMemberUsernames []string
+	if user.CanAccessSite(rbac.ListUsersAction) {
+		users, err := h.svc.ListUsers(r.Context())
 		if err != nil {
 			h.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		nonMembers := diffUsers(members, users)
+		nonMemberUsernames = make([]string, len(nonMembers))
+		for i, m := range nonMembers {
+			nonMemberUsernames[i] = m.Username
 		}
 	}
 
 	h.Render("team_get.tmpl", w, struct {
 		organization.OrganizationPage
-		Team                       *Team
-		Members                    []*User
-		NonMembers                 []*User
-		AddTeamMembershipAction    rbac.Action
-		RemoveTeamMembershipAction rbac.Action
-		DeleteTeamAction           rbac.Action
+		Team              *Team
+		Members           []*User
+		AddMemberDropdown html.DropdownUI
+		CanAddMember      bool
+		CanRemoveMember   bool
+		CanDelete         bool
+		IsOwner           bool
 	}{
-		OrganizationPage:           organization.NewPage(r, team.ID, team.Organization),
-		Team:                       team,
-		NonMembers:                 diffUsers(members, users),
-		Members:                    members,
-		AddTeamMembershipAction:    rbac.AddTeamMembershipAction,
-		RemoveTeamMembershipAction: rbac.RemoveTeamMembershipAction,
-		DeleteTeamAction:           rbac.DeleteTeamAction,
+		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
+		Team:             team,
+		Members:          members,
+		CanAddMember:     user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
+		CanRemoveMember:  user.CanAccessOrganization(rbac.RemoveTeamMembershipAction, team.Organization),
+		CanDelete:        user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
+		IsOwner:          user.IsOwner(team.Organization),
+		AddMemberDropdown: html.DropdownUI{
+			Name:        "username",
+			Available:   nonMemberUsernames,
+			Existing:    usernames,
+			Action:      paths.AddMemberTeam(team.ID),
+			Placeholder: "Add user",
+			Width:       "wide",
+		},
 	})
 }
 
@@ -188,8 +210,8 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string `schema:"team_id,required"`
-		Username string `schema:"username,required"`
+		TeamID   string  `schema:"team_id,required"`
+		Username *string `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -198,14 +220,14 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 
 	err := h.svc.AddTeamMembership(r.Context(), TeamMembershipOptions{
 		TeamID:    params.TeamID,
-		Usernames: []string{params.Username},
+		Usernames: []string{*params.Username},
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "added team member: "+params.Username)
+	html.FlashSuccess(w, "added team member: "+*params.Username)
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 

@@ -2,6 +2,22 @@
 
 The authorization model largely follows that of Terraform Cloud/Enterprise. An organization comprises a number of teams. A user is a member of one or more teams. Teams are assigned permissions permitting access to various functionality. Team permissions can be assigned at two levels: on organizations and on individual workspaces.
 
+## Users
+
+A user is created via one of several methods:
+
+* A user successfully logs into the site for the first time via an identity provider.
+* A site admin creates a user via the CLI/API.
+* If a user is added to a team and no user with the specified username exists.
+
+A user without team membership has no permissions other than the ability to create organizations (which can be [disabled](../config/flags/#-restrict-org-creation)).
+
+## Teams
+
+Only [owners](#owners) can create teams and manage team membership. To add a user to a team, a username is specified. If no user exists with that username then the user is automatically created.
+
+A new team possesses no [permissions](#permissions) until they are assigned.
+
 ## Owners
 
 Every organization has an `owners` team. The user that creates an organization becomes its owner. The owners team must have at least one member and it cannot be deleted.

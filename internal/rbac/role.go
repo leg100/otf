@@ -15,6 +15,7 @@ var (
 			GetModuleAction:        true,
 			GetTeamAction:          true,
 			ListTeamsAction:        true,
+			GetUserAction:          true,
 			ListUsersAction:        true,
 			ListTagsAction:         true,
 			ListVCSProvidersAction: true,

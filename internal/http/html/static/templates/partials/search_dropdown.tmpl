@@ -1,27 +1,28 @@
 {{ define "search-dropdown" }}
-  <form id="search-dropdown" action="{{ createTagWorkspacePath .Workspace.ID }}" method="POST">
-  </form>
+  {{ $width := dict "narrow" "w-40" "wide" "w-80" }}
+  <script src="{{ addHash "/static/js/search_dropdown.js" }}"></script>
+  <form id="search-dropdown" action="{{ .Action }}" method="POST"></form>
   <div
-      x-data="search_dropdown({{ toJson .Workspace.Tags }}, {{ toJson .UnassignedTags }})"
+      x-data="search_dropdown({{ toJson .Existing }}, {{ toJson .Available }})"
       x-ref="searchdrop"
-      @keydown.escape.prevent.stop="close($refs.button)"
+      @keydown.escape.prevent.stop="close($refs.input-search)"
       @focusin.window="! $refs.searchdrop.contains($event.target) && close()"
       @click.outside="close()"
       x-id="['dropdown-button']"
       class="relative"
       >
+    <input type="hidden" name="{{ .Name }}" :value="search" form="search-dropdown">
     <input
         @focusin="open = true"
         x-model="search"
         type="text"
-        x-ref="button"
+        x-ref="input-search"
         @click="open = true"
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"
-        class="flex items-center w-40 gap-2 bg-white px-2 py-1 border"
-        placeholder="Add tags"
+        class="flex items-center {{ get $width .Width }} gap-2 bg-white px-2 py-1 border"
+        placeholder="{{ .Placeholder }}"
         form="search-dropdown"
-        name="tag_name"
         >
     <div
         x-ref="panel"
@@ -29,15 +30,15 @@
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
-        class="absolute w-40 mt-1 bg-white border"
+        class="absolute {{ get $width .Width }} mt-1 bg-white border border-black overflow-x-auto"
         >
         <div class="sticky bottom-0 flex flex-col">
-          <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" name="tag_name" :value="search" for="create-tag" x-show="isNew">
+          <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-show="isNew">
             Create:<span class="" x-text="search"></span>
           </button>
 
           <template x-for="item in filterAvailable" :key="item">
-            <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" name="tag_name" :value="item" for="create-tag" x-text="item"></button>
+            <button @click="search = item" form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item"></button>
           </template>
         </div>
     </div>

@@ -79,9 +79,9 @@ resource "null_resource" "tags_e2e" {}
 		screenshot(t),
 		matchText(t, "//div[@role='alert']", "removed tag: bar"),
 		// add new tag
-		chromedp.Focus(`//input[@form='search-dropdown']`),
+		chromedp.Focus(`//input[@x-ref='input-search']`),
 		input.InsertText("baz"),
-		chromedp.Submit(`//input[@form='search-dropdown']`),
+		chromedp.Submit(`//input[@x-ref='input-search']`),
 		screenshot(t),
 		matchText(t, "//div[@role='alert']", "created tag: baz"),
 		// go to workspace listing
