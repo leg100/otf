@@ -129,13 +129,12 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		DeleteTeamAction:           rbac.DeleteTeamAction,
 		CanAddMember:               user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
 		AddMemberDropdown: html.DropdownUI{
-			Name:         "username",
-			Available:    nonMemberUsernames,
-			Existing:     usernames,
-			AddAction:    paths.AddMemberTeam(team.ID),
-			CreateAction: paths.CreateUser(team.Organization),
-			Placeholder:  "Add user",
-			Width:        "wide",
+			Name:        "username",
+			Available:   nonMemberUsernames,
+			Existing:    usernames,
+			Action:      paths.AddMemberTeam(team.ID),
+			Placeholder: "Add user",
+			Width:       "wide",
 		},
 	})
 }
@@ -210,8 +209,8 @@ func (h *webHandlers) deleteTeam(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		TeamID   string `schema:"team_id,required"`
-		Username string `schema:"username,required"`
+		TeamID   string  `schema:"team_id,required"`
+		Username *string `schema:"username,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -220,14 +219,14 @@ func (h *webHandlers) addTeamMember(w http.ResponseWriter, r *http.Request) {
 
 	err := h.svc.AddTeamMembership(r.Context(), TeamMembershipOptions{
 		TeamID:    params.TeamID,
-		Usernames: []string{params.Username},
+		Usernames: []string{*params.Username},
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "added team member: "+params.Username)
+	html.FlashSuccess(w, "added team member: "+*params.Username)
 	http.Redirect(w, r, paths.Team(params.TeamID), http.StatusFound)
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 var ErrCannotDeleteOnlyOwner = errors.New("cannot remove the last owner")
@@ -99,8 +100,8 @@ func (a *service) DeleteUser(ctx context.Context, username string) error {
 	return nil
 }
 
-// AddTeamMembership adds a user to a team. If opts.Tx is non-nil then database
-// queries are made within that transaction.
+// AddTeamMembership adds users to a team. If a user does not exist then the
+// user is created first.
 func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
 	team, err := a.db.getTeamByID(ctx, opts.TeamID)
 	if err != nil {
@@ -113,17 +114,34 @@ func (a *service) AddTeamMembership(ctx context.Context, opts TeamMembershipOpti
 		return err
 	}
 
-	if err := a.db.addTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+	err = a.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+		// Check each username: if user does not exist then create user.
+		for _, username := range opts.Usernames {
+			_, err := a.db.getUser(ctx, UserSpec{Username: &username})
+			if errors.Is(err, internal.ErrResourceNotFound) {
+				if _, err := a.CreateUser(ctx, username); err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
+			}
+		}
+		if err := a.db.addTeamMembership(ctx, opts.TeamID, opts.Usernames...); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		a.Error(err, "adding team membership", "user", opts.Usernames, "team", opts.TeamID, "subject", subject)
 		return err
 	}
+
 	a.V(0).Info("added team membership", "users", opts.Usernames, "team", opts.TeamID, "subject", subject)
 
 	return nil
 }
 
-// RemoveTeamMembership removes users from a team. If opts.Tx is non-nil then database
-// queries are made within that transaction.
+// RemoveTeamMembership removes users from a team.
 func (a *service) RemoveTeamMembership(ctx context.Context, opts TeamMembershipOptions) error {
 	team, err := a.db.getTeamForUpdate(ctx, opts.TeamID)
 	if err != nil {

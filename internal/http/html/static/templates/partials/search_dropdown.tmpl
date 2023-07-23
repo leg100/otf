@@ -11,6 +11,7 @@
       x-id="['dropdown-button']"
       class="relative"
       >
+    <input type="hidden" name="{{ .Name }}" :value="search" form="search-dropdown">
     <input
         @focusin="open = true"
         x-model="search"
@@ -19,10 +20,9 @@
         @click="open = true"
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"
-        class="flex items-center {{ $width }} gap-2 bg-white px-2 py-1 border"
+        class="flex items-center {{ get $width .Width }} gap-2 bg-white px-2 py-1 border"
         placeholder="{{ .Placeholder }}"
         form="search-dropdown"
-        name="{{ .Name }}"
         >
     <div
         x-ref="panel"
@@ -30,15 +30,15 @@
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
-        class="absolute {{ $width }} mt-1 bg-white border border-black overflow-x-auto"
+        class="absolute {{ get $width .Width }} mt-1 bg-white border border-black overflow-x-auto"
         >
         <div class="sticky bottom-0 flex flex-col">
-          <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" name="{{ .Name }}" :value="search" x-show="isNew">
+          <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-show="isNew">
             Create:<span class="" x-text="search"></span>
           </button>
 
           <template x-for="item in filterAvailable" :key="item">
-            <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" name="{{ .Name }}" :value="item" x-text="item"></button>
+            <button @click="search = item" form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item"></button>
           </template>
         </div>
     </div>

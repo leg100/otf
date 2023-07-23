@@ -24,10 +24,8 @@ type (
 		Existing []string
 		// Available values to show in the dropdown
 		Available []string
-		// AddAction is the form action URL for adding an existing resource
-		AddAction string
-		// CreateAction is the form action URL for creating a new resource
-		CreateAction string
+		// Action is the form action URL
+		Action string
 		// Placeholder to show in the input element.
 		Placeholder string
 		// Width: "narrow" or "wide"

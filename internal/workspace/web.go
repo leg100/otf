@@ -247,8 +247,9 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 			Name:        "tag_name",
 			Available:   internal.DiffStrings(getTagNames(), ws.Tags),
 			Existing:    ws.Tags,
-			AddAction:   paths.CreateTagWorkspace(ws.ID),
+			Action:      paths.CreateTagWorkspace(ws.ID),
 			Placeholder: "Add tags",
+			Width:       "narrow",
 		},
 	})
 }
