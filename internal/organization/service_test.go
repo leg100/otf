@@ -1,4 +1,4 @@
-package orgcreator
+package organization
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/tokens"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,11 +16,9 @@ func TestAuthorize(t *testing.T) {
 		restrict bool
 		want     error
 	}{
-		{"site admin", &auth.SiteAdmin, false, nil},
-		{"normal user", &auth.User{}, false, nil},
-		{"non-user", &tokens.AgentToken{}, false, internal.ErrAccessNotPermitted},
-		{"restrict to site admin - site admin", &auth.SiteAdmin, true, nil},
-		{"restrict to site admin - user", &auth.User{}, true, internal.ErrAccessNotPermitted},
+		{"site admin", &internal.Superuser{}, false, nil},
+		{"restrict to site admin - site admin", &internal.Superuser{}, true, nil},
+		{"restrict to site admin - user", &unprivUser{}, true, internal.ErrAccessNotPermitted},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,8 +27,14 @@ func TestAuthorize(t *testing.T) {
 				Logger:                       logr.Discard(),
 				RestrictOrganizationCreation: tt.restrict,
 			}
-			_, err := svc.authorize(ctx)
+			_, err := svc.restrictOrganizationCreation(ctx)
 			assert.Equal(t, tt.want, err)
 		})
 	}
 }
+
+type unprivUser struct {
+	internal.Subject
+}
+
+func (s *unprivUser) IsSiteAdmin() bool { return false }

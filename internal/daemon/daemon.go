@@ -26,7 +26,6 @@ import (
 	"github.com/leg100/otf/internal/module"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/run"
@@ -49,7 +48,6 @@ type (
 		*pubsub.Broker
 
 		organization.OrganizationService
-		orgcreator.OrganizationCreatorService
 		auth.AuthService
 		tokens.TokensService
 		variable.VariableService
@@ -124,10 +122,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 
 	authService := auth.NewService(auth.Options{
-		Logger:          logger,
-		DB:              db,
-		Renderer:        renderer,
-		HostnameService: hostnameService,
+		Logger:                       logger,
+		DB:                           db,
+		Renderer:                     renderer,
+		HostnameService:              hostnameService,
+		OrganizationService:          orgService,
+		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 	})
 	// promote nominated users to site admin
 	if err := authService.SetSiteAdmins(ctx, cfg.SiteAdmins...); err != nil {
@@ -147,14 +147,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
 
-	orgCreatorService := orgcreator.NewService(orgcreator.Options{
-		Logger:                       logger,
-		DB:                           db,
-		Renderer:                     renderer,
-		Publisher:                    broker,
-		AuthService:                  authService,
-		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
-	})
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:       logger,
 		DB:           db,
@@ -251,15 +243,14 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	authenticatorService, err := authenticator.NewAuthenticatorService(authenticator.Options{
-		Logger:                     logger,
-		Renderer:                   renderer,
-		HostnameService:            hostnameService,
-		OrganizationService:        orgService,
-		OrganizationCreatorService: orgCreatorService,
-		AuthService:                authService,
-		TokensService:              tokensService,
-		Configs:                    []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
-		OIDCConfigs:                []cloud.OIDCConfig{cfg.OIDC},
+		Logger:              logger,
+		Renderer:            renderer,
+		HostnameService:     hostnameService,
+		OrganizationService: orgService,
+		AuthService:         authService,
+		TokensService:       tokensService,
+		Configs:             []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
+		OIDCConfigs:         []cloud.OIDCConfig{cfg.OIDC},
 	})
 	if err != nil {
 		return nil, err
@@ -286,7 +277,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	api := api.New(api.Options{
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
-		OrganizationCreatorService:  orgCreatorService,
 		StateService:                stateService,
 		RunService:                  runService,
 		ConfigurationVersionService: configService,
@@ -304,10 +294,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		authService,
 		tokensService,
 		workspaceService,
-		// deliberating placing org creator service prior to org service because
-		// org creator adds web routes that take priority (gorilla mux routes
-		// are checked in the order they are added to the router).
-		orgCreatorService,
 		orgService,
 		variableService,
 		vcsProviderService,
@@ -329,7 +315,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:               tokensService,
 		WorkspaceService:            workspaceService,
 		OrganizationService:         orgService,
-		OrganizationCreatorService:  orgCreatorService,
 		VariableService:             variableService,
 		VCSProviderService:          vcsProviderService,
 		StateService:                stateService,

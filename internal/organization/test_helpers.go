@@ -29,6 +29,10 @@ func NewTestOrganization(t *testing.T) *Organization {
 	}
 }
 
+func (f *fakeService) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+	return NewOrganization(opts)
+}
+
 func (f *fakeService) ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error) {
 	return resource.NewPage(f.orgs, opts.PageOptions, nil), nil
 }

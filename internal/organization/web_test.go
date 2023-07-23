@@ -3,6 +3,8 @@ package organization
 import (
 	"context"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/antchfx/htmlquery"
@@ -12,6 +14,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestWeb_NewHandler(t *testing.T) {
+	svc := newFakeWeb(t, &fakeService{}, false)
+
+	r := httptest.NewRequest("GET", "/?", nil)
+	w := httptest.NewRecorder()
+	svc.new(w, r)
+	assert.Equal(t, 200, w.Code)
+}
+
+func TestWeb_CreateHandler(t *testing.T) {
+	svc := newFakeWeb(t, &fakeService{}, false)
+
+	form := strings.NewReader(url.Values{
+		"name": {"my-new-org"},
+	}.Encode())
+
+	r := httptest.NewRequest("POST", "/organization/create", form)
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	w := httptest.NewRecorder()
+	svc.create(w, r)
+
+	if assert.Equal(t, 302, w.Code) {
+		redirect, err := w.Result().Location()
+		require.NoError(t, err)
+		assert.Equal(t, "/app/organizations/my-new-org", redirect.Path)
+	}
+}
 
 func TestWeb_ListHandler(t *testing.T) {
 	t.Run("pagination", func(t *testing.T) {

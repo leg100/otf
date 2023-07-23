@@ -8,7 +8,6 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/orgcreator"
 )
 
 // Implements TFC organizations API:
@@ -32,7 +31,7 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.CreateOrganization(r.Context(), orgcreator.OrganizationCreateOptions{
+	org, err := a.CreateOrganization(r.Context(), organization.OrganizationCreateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),

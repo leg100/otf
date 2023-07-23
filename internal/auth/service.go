@@ -19,6 +19,8 @@ type (
 	}
 
 	service struct {
+		RestrictOrganizationCreation bool
+
 		logr.Logger
 
 		site         internal.Authorizer // authorizes site access
@@ -32,7 +34,10 @@ type (
 		*sql.DB
 		html.Renderer
 		internal.HostnameService
+		organization.OrganizationService
 		logr.Logger
+
+		RestrictOrganizationCreation bool
 	}
 )
 
@@ -47,6 +52,9 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
+
+	opts.OrganizationService.AfterCreateHook(svc.createOwnersTeam)
+
 	return &svc
 }
 

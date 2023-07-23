@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -12,40 +13,50 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 type (
 	OrganizationService = Service
 
 	Service interface {
+		CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 		UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
 		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
+		AfterCreateHook(l hooks.Listener)
 		BeforeDeleteHook(l hooks.Listener)
 	}
 
 	service struct {
+		RestrictOrganizationCreation bool
+
 		internal.Authorizer // authorize access to org
 		logr.Logger
 		*pubsub.Broker
 
-		db                           *pgdb
-		site                         internal.Authorizer // authorize access to site
-		web                          *web
-		RestrictOrganizationCreation bool
+		db   *pgdb
+		site internal.Authorizer // authorize access to site
+		web  *web
 
+		createHook *hooks.Hook
 		deleteHook *hooks.Hook
 	}
 
 	Options struct {
+		RestrictOrganizationCreation bool
+
 		*sql.DB
 		*pubsub.Broker
 		html.Renderer
 		logr.Logger
+	}
 
-		RestrictOrganizationCreation bool
+	// ListOptions represents the options for listing organizations.
+	ListOptions struct {
+		resource.PageOptions
 	}
 )
 
@@ -57,7 +68,8 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
-		deleteHook:                   hooks.NewHook(rbac.DeleteOrganizationAction),
+		createHook:                   hooks.NewHook(opts.DB),
+		deleteHook:                   hooks.NewHook(opts.DB),
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,
@@ -76,8 +88,49 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
+func (s *service) AfterCreateHook(l hooks.Listener) {
+	s.createHook.After(l)
+}
+
 func (s *service) BeforeDeleteHook(l hooks.Listener) {
 	s.deleteHook.Before(l)
+}
+
+// CreateOrganization creates an organization. Only users can create
+// organizations, or, if RestrictOrganizationCreation is true, then only the
+// site admin can create organizations. Creating an organization automatically
+// creates an owners team and adds creator as an owner.
+func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+	creator, err := s.restrictOrganizationCreation(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := NewOrganization(opts)
+	if err != nil {
+		return nil, fmt.Errorf("creating organization: %w", err)
+	}
+
+	err = s.createHook.Dispatch(ctx, org.Name, func(ctx context.Context) error {
+		_, err = s.db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
+			ID:                     sql.String(org.ID),
+			CreatedAt:              sql.Timestamptz(org.CreatedAt),
+			UpdatedAt:              sql.Timestamptz(org.UpdatedAt),
+			Name:                   sql.String(org.Name),
+			SessionRemember:        sql.Int4Ptr(org.SessionRemember),
+			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
+			Email:                  sql.StringPtr(org.Email),
+			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
+		})
+		return sql.Error(err)
+	})
+	if err != nil {
+		s.Error(err, "creating organization", "id", org.ID, "subject", creator)
+		return nil, sql.Error(err)
+	}
+	s.V(0).Info("created organization", "id", org.ID, "name", org.Name, "subject", creator)
+
+	return org, nil
 }
 
 func (s *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
@@ -163,4 +216,16 @@ func (s *service) GetEntitlements(ctx context.Context, organization string) (Ent
 		return Entitlements{}, err
 	}
 	return defaultEntitlements(org.ID), nil
+}
+
+func (s *service) restrictOrganizationCreation(ctx context.Context) (internal.Subject, error) {
+	subject, err := internal.SubjectFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if s.RestrictOrganizationCreation && !subject.IsSiteAdmin() {
+		s.Error(nil, "unauthorized action", "action", rbac.CreateOrganizationAction, "subject", subject)
+		return subject, internal.ErrAccessNotPermitted
+	}
+	return subject, nil
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -31,7 +30,7 @@ type (
 	// invocation. Intended for use with the agent (the internal agent is
 	// in-process, while the external agent is remote) as well as the CLI.
 	Client interface {
-		CreateOrganization(ctx context.Context, opts orgcreator.OrganizationCreateOptions) (*organization.Organization, error)
+		CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error)
 		DeleteOrganization(ctx context.Context, organization string) error
 
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
@@ -86,7 +85,6 @@ type (
 
 	LocalClient struct {
 		organization.OrganizationService
-		orgcreator.OrganizationCreatorService
 		auth.AuthService
 		tokens.TokensService
 		variable.VariableService
@@ -108,22 +106,20 @@ type (
 		*authClient
 		*tokensClient
 		*organizationClient
-		*organizationCreatorClient
 		*workspaceClient
 		*runClient
 		*logsClient
 	}
 
-	stateClient               = state.Client
-	configClient              = configversion.Client
-	variableClient            = variable.Client
-	authClient                = auth.Client
-	tokensClient              = tokens.Client
-	organizationClient        = organization.Client
-	organizationCreatorClient = orgcreator.Client
-	workspaceClient           = workspace.Client
-	runClient                 = run.Client
-	logsClient                = logs.Client
+	stateClient        = state.Client
+	configClient       = configversion.Client
+	variableClient     = variable.Client
+	authClient         = auth.Client
+	tokensClient       = tokens.Client
+	organizationClient = organization.Client
+	workspaceClient    = workspace.Client
+	runClient          = run.Client
+	logsClient         = logs.Client
 )
 
 // New constructs a client that uses the http to remotely invoke OTF
@@ -135,16 +131,15 @@ func New(config http.Config) (*remoteClient, error) {
 	}
 
 	return &remoteClient{
-		Client:                    httpClient,
-		stateClient:               &stateClient{JSONAPIClient: httpClient},
-		configClient:              &configClient{JSONAPIClient: httpClient},
-		variableClient:            &variableClient{JSONAPIClient: httpClient},
-		authClient:                &authClient{JSONAPIClient: httpClient},
-		tokensClient:              &tokensClient{JSONAPIClient: httpClient},
-		organizationClient:        &organizationClient{JSONAPIClient: httpClient},
-		organizationCreatorClient: &organizationCreatorClient{JSONAPIClient: httpClient},
-		workspaceClient:           &workspaceClient{JSONAPIClient: httpClient},
-		runClient:                 &runClient{JSONAPIClient: httpClient, Config: config},
-		logsClient:                &logsClient{JSONAPIClient: httpClient},
+		Client:             httpClient,
+		stateClient:        &stateClient{JSONAPIClient: httpClient},
+		configClient:       &configClient{JSONAPIClient: httpClient},
+		variableClient:     &variableClient{JSONAPIClient: httpClient},
+		authClient:         &authClient{JSONAPIClient: httpClient},
+		tokensClient:       &tokensClient{JSONAPIClient: httpClient},
+		organizationClient: &organizationClient{JSONAPIClient: httpClient},
+		workspaceClient:    &workspaceClient{JSONAPIClient: httpClient},
+		runClient:          &runClient{JSONAPIClient: httpClient, Config: config},
+		logsClient:         &logsClient{JSONAPIClient: httpClient},
 	}, nil
 }

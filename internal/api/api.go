@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/orgcreator"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
@@ -25,7 +24,6 @@ type (
 
 		run.RunService
 		organization.OrganizationService
-		orgcreator.OrganizationCreatorService
 		state.StateService
 		workspace.WorkspaceService
 		configversion.ConfigurationVersionService
@@ -44,7 +42,6 @@ type (
 	Options struct {
 		run.RunService
 		organization.OrganizationService
-		orgcreator.OrganizationCreatorService
 		state.StateService
 		workspace.WorkspaceService
 		configversion.ConfigurationVersionService
@@ -64,7 +61,6 @@ type (
 func New(opts Options) *api {
 	return &api{
 		OrganizationService:         opts.OrganizationService,
-		OrganizationCreatorService:  opts.OrganizationCreatorService,
 		WorkspaceService:            opts.WorkspaceService,
 		RunService:                  opts.RunService,
 		StateService:                opts.StateService,
