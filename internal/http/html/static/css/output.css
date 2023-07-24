@@ -729,14 +729,6 @@ select {
   position: relative;
 }
 
-.sticky {
-  position: sticky;
-}
-
-.bottom-0 {
-  bottom: 0px;
-}
-
 .m-0 {
   margin: 0px;
 }
@@ -1125,10 +1117,6 @@ select {
 
 .pl-10 {
   padding-left: 2.5rem;
-}
-
-.pb-4 {
-  padding-bottom: 1rem;
 }
 
 .text-left {
