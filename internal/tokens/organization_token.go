@@ -111,7 +111,7 @@ func (a *service) CreateOrganizationToken(ctx context.Context, opts CreateOrgani
 		return nil, nil, err
 	}
 
-	a.V(1).Info("created organization token", "organization", opts.Organization)
+	a.V(0).Info("created organization token", "organization", opts.Organization)
 
 	return ot, token, nil
 }
@@ -131,7 +131,7 @@ func (a *service) DeleteOrganizationToken(ctx context.Context, organization stri
 		return err
 	}
 
-	a.V(1).Info("deleted organization token", "organization", organization)
+	a.V(0).Info("deleted organization token", "organization", organization)
 
 	return nil
 }
