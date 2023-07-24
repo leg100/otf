@@ -14,25 +14,29 @@ import (
 const upsertOrganizationTokenSQL = `INSERT INTO organization_tokens (
     organization_token_id,
     created_at,
-    organization_name
+    organization_name,
+    expiry
 ) VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 ) ON CONFLICT (organization_name) DO UPDATE
   SET created_at            = $2,
-      organization_token_id = $1;`
+      organization_token_id = $1,
+      expiry                = $4;`
 
 type UpsertOrganizationTokenParams struct {
 	OrganizationTokenID pgtype.Text
 	CreatedAt           pgtype.Timestamptz
 	OrganizationName    pgtype.Text
+	Expiry              pgtype.Timestamptz
 }
 
 // UpsertOrganizationToken implements Querier.UpsertOrganizationToken.
 func (q *DBQuerier) UpsertOrganizationToken(ctx context.Context, params UpsertOrganizationTokenParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpsertOrganizationToken")
-	cmdTag, err := q.conn.Exec(ctx, upsertOrganizationTokenSQL, params.OrganizationTokenID, params.CreatedAt, params.OrganizationName)
+	cmdTag, err := q.conn.Exec(ctx, upsertOrganizationTokenSQL, params.OrganizationTokenID, params.CreatedAt, params.OrganizationName, params.Expiry)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query UpsertOrganizationToken: %w", err)
 	}
@@ -41,7 +45,7 @@ func (q *DBQuerier) UpsertOrganizationToken(ctx context.Context, params UpsertOr
 
 // UpsertOrganizationTokenBatch implements Querier.UpsertOrganizationTokenBatch.
 func (q *DBQuerier) UpsertOrganizationTokenBatch(batch genericBatch, params UpsertOrganizationTokenParams) {
-	batch.Queue(upsertOrganizationTokenSQL, params.OrganizationTokenID, params.CreatedAt, params.OrganizationName)
+	batch.Queue(upsertOrganizationTokenSQL, params.OrganizationTokenID, params.CreatedAt, params.OrganizationName, params.Expiry)
 }
 
 // UpsertOrganizationTokenScan implements Querier.UpsertOrganizationTokenScan.
@@ -61,6 +65,7 @@ type FindOrganizationTokensByNameRow struct {
 	OrganizationTokenID pgtype.Text        `json:"organization_token_id"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	OrganizationName    pgtype.Text        `json:"organization_name"`
+	Expiry              pgtype.Timestamptz `json:"expiry"`
 }
 
 // FindOrganizationTokensByName implements Querier.FindOrganizationTokensByName.
@@ -74,7 +79,7 @@ func (q *DBQuerier) FindOrganizationTokensByName(ctx context.Context, organizati
 	items := []FindOrganizationTokensByNameRow{}
 	for rows.Next() {
 		var item FindOrganizationTokensByNameRow
-		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
 			return nil, fmt.Errorf("scan FindOrganizationTokensByName row: %w", err)
 		}
 		items = append(items, item)
@@ -100,7 +105,7 @@ func (q *DBQuerier) FindOrganizationTokensByNameScan(results pgx.BatchResults) (
 	items := []FindOrganizationTokensByNameRow{}
 	for rows.Next() {
 		var item FindOrganizationTokensByNameRow
-		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
 			return nil, fmt.Errorf("scan FindOrganizationTokensByNameBatch row: %w", err)
 		}
 		items = append(items, item)

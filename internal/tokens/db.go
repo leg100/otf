@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -45,7 +46,7 @@ func (db *pgdb) listUserTokens(ctx context.Context, username string) ([]*UserTok
 	for _, row := range result {
 		tokens = append(tokens, &UserToken{
 			ID:          row.TokenID.String,
-			CreatedAt:   row.CreatedAt.Time,
+			CreatedAt:   row.CreatedAt.Time.UTC(),
 			Description: row.Description.String,
 			Username:    row.Username.String,
 		})
@@ -60,7 +61,7 @@ func (db *pgdb) getUserToken(ctx context.Context, id string) (*UserToken, error)
 	}
 	return &UserToken{
 		ID:          row.TokenID.String,
-		CreatedAt:   row.CreatedAt.Time,
+		CreatedAt:   row.CreatedAt.Time.UTC(),
 		Description: row.Description.String,
 		Username:    row.Username.String,
 	}, nil
@@ -83,6 +84,7 @@ func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *Organization
 		OrganizationTokenID: sql.String(token.ID),
 		OrganizationName:    sql.String(token.Organization),
 		CreatedAt:           sql.Timestamptz(token.CreatedAt),
+		Expiry:              sql.TimestamptzPtr(token.Expiry),
 	})
 	return err
 }
@@ -96,11 +98,15 @@ func (db *pgdb) getOrganizationToken(ctx context.Context, organization string) (
 	if len(result) == 0 {
 		return nil, nil
 	}
-	return &OrganizationToken{
+	ot := &OrganizationToken{
 		ID:           result[0].OrganizationTokenID.String,
-		CreatedAt:    result[0].CreatedAt.Time,
+		CreatedAt:    result[0].CreatedAt.Time.UTC(),
 		Organization: result[0].OrganizationName.String,
-	}, nil
+	}
+	if result[0].Expiry.Status == pgtype.Present {
+		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
+	}
+	return ot, nil
 }
 
 func (db *pgdb) deleteOrganizationToken(ctx context.Context, organization string) error {
@@ -120,7 +126,7 @@ func (db *pgdb) createAgentToken(ctx context.Context, token *AgentToken) error {
 		TokenID:          sql.String(token.ID),
 		Description:      sql.String(token.Description),
 		OrganizationName: sql.String(token.Organization),
-		CreatedAt:        sql.Timestamptz(token.CreatedAt),
+		CreatedAt:        sql.Timestamptz(token.CreatedAt.UTC()),
 	})
 	return err
 }
@@ -156,7 +162,7 @@ func (db *pgdb) deleteAgentToken(ctx context.Context, id string) error {
 func (row agentTokenRow) toAgentToken() *AgentToken {
 	return &AgentToken{
 		ID:           row.TokenID.String,
-		CreatedAt:    row.CreatedAt.Time,
+		CreatedAt:    row.CreatedAt.Time.UTC(),
 		Description:  row.Description.String,
 		Organization: row.OrganizationName.String,
 	}

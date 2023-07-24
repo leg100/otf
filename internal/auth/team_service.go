@@ -36,10 +36,10 @@ func (a *service) CreateTeam(ctx context.Context, organization string, opts Crea
 	}
 
 	if err := a.db.createTeam(ctx, team); err != nil {
-		a.Error(err, "creating team", "name", opts.Name, "organization", organization, "subject", subject)
+		a.Error(err, "creating team", "name", team.Name, "organization", organization, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created team", "name", opts.Name, "organization", organization, "subject", subject)
+	a.V(0).Info("created team", "name", team.Name, "organization", organization, "subject", subject)
 
 	return team, nil
 }

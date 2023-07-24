@@ -12,15 +12,20 @@ import (
 type (
 	// OrganizationToken provides information about an API token for a user.
 	OrganizationToken struct {
-		ID           string
-		CreatedAt    time.Time
-		Organization string // Token belongs to an organization
+		ID        string
+		CreatedAt time.Time
+
+		// Token belongs to an organization
+		Organization string
+		// Optional expiry.
+		Expiry *time.Time
 	}
 
 	// CreateOrganizationTokenOptions are options for creating an organization token via the service
 	// endpoint
 	CreateOrganizationTokenOptions struct {
 		Organization string `schema:"organization_name,required"`
+		Expiry       *time.Time
 	}
 
 	// NewOrganizationTokenOptions are options for constructing a user token via the
@@ -37,8 +42,8 @@ type (
 		// GetOrganizationToken gets the organization token. If a token does not
 		// exist, then nil is returned without an error.
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
-		// DeleteOrganizationToken deletes a user token.
-		DeleteOrganizationToken(ctx context.Context, tokenID string) error
+		// DeleteOrganizationToken deletes an organization token.
+		DeleteOrganizationToken(ctx context.Context, organization string) error
 	}
 )
 
@@ -47,11 +52,13 @@ func NewOrganizationToken(opts NewOrganizationTokenOptions) (*OrganizationToken,
 		ID:           internal.NewID("ot"),
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
+		Expiry:       opts.Expiry,
 	}
 	token, err := NewToken(NewTokenOptions{
 		key:     opts.key,
 		Subject: ot.ID,
 		Kind:    organizationTokenKind,
+		Expiry:  opts.Expiry,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -60,7 +67,7 @@ func NewOrganizationToken(opts NewOrganizationTokenOptions) (*OrganizationToken,
 }
 
 func (u *OrganizationToken) CanAccessSite(action rbac.Action) bool {
-	// an organization token can only be used for intra-organization resources
+	// only be used for organization-scoped resources.
 	return false
 }
 
@@ -68,19 +75,13 @@ func (u *OrganizationToken) CanAccessOrganization(action rbac.Action, org string
 	if u.Organization != org {
 		return false
 	}
+	// can perform most actions in an organization, so it is easier to first refuse
+	// access to those actions it CANNOT perform.
 	switch action {
-	// permit team management
-	case rbac.CreateTeamAction, rbac.UpdateTeamAction, rbac.GetTeamAction, rbac.ListTeamsAction, rbac.DeleteTeamAction, rbac.AddTeamMembershipAction, rbac.RemoveTeamMembershipAction:
-		return true
-	// permit workspace management
-	case rbac.ListWorkspacesAction, rbac.GetWorkspaceAction, rbac.CreateWorkspaceAction, rbac.DeleteWorkspaceAction, rbac.SetWorkspacePermissionAction, rbac.UnsetWorkspacePermissionAction, rbac.UpdateWorkspaceAction:
-		return true
-	// permit tag management
-	case rbac.ListTagsAction, rbac.DeleteTagsAction, rbac.TagWorkspacesAction, rbac.AddTagsAction, rbac.RemoveTagsAction, rbac.ListWorkspaceTags:
-		return true
-	default:
+	case rbac.GetRunAction, rbac.ListRunsAction, rbac.ApplyRunAction, rbac.CreateRunAction, rbac.DiscardRunAction, rbac.CancelRunAction, rbac.EnqueuePlanAction, rbac.StartPhaseAction, rbac.FinishPhaseAction, rbac.PutChunkAction, rbac.TailLogsAction, rbac.CreateStateVersionAction, rbac.RollbackStateVersionAction:
 		return false
 	}
+	return true
 }
 
 func (u *OrganizationToken) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
