@@ -375,6 +375,13 @@ type Querier interface {
 	// FindOrganizationTokensByNameScan scans the result of an executed FindOrganizationTokensByNameBatch query.
 	FindOrganizationTokensByNameScan(results pgx.BatchResults) ([]FindOrganizationTokensByNameRow, error)
 
+	FindOrganizationTokensByID(ctx context.Context, organizationTokenID pgtype.Text) (FindOrganizationTokensByIDRow, error)
+	// FindOrganizationTokensByIDBatch enqueues a FindOrganizationTokensByID query into batch to be executed
+	// later by the batch.
+	FindOrganizationTokensByIDBatch(batch genericBatch, organizationTokenID pgtype.Text)
+	// FindOrganizationTokensByIDScan scans the result of an executed FindOrganizationTokensByIDBatch query.
+	FindOrganizationTokensByIDScan(results pgx.BatchResults) (FindOrganizationTokensByIDRow, error)
+
 	DeleteOrganiationTokenByName(ctx context.Context, organizationName pgtype.Text) (pgtype.Text, error)
 	// DeleteOrganiationTokenByNameBatch enqueues a DeleteOrganiationTokenByName query into batch to be executed
 	// later by the batch.
@@ -1344,6 +1351,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findOrganizationTokensByNameSQL, findOrganizationTokensByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationTokensByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findOrganizationTokensByIDSQL, findOrganizationTokensByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationTokensByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteOrganiationTokenByNameSQL, deleteOrganiationTokenByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteOrganiationTokenByName': %w", err)

@@ -116,6 +116,43 @@ func (q *DBQuerier) FindOrganizationTokensByNameScan(results pgx.BatchResults) (
 	return items, err
 }
 
+const findOrganizationTokensByIDSQL = `SELECT *
+FROM organization_tokens
+WHERE organization_token_id = $1;`
+
+type FindOrganizationTokensByIDRow struct {
+	OrganizationTokenID pgtype.Text        `json:"organization_token_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
+	Expiry              pgtype.Timestamptz `json:"expiry"`
+}
+
+// FindOrganizationTokensByID implements Querier.FindOrganizationTokensByID.
+func (q *DBQuerier) FindOrganizationTokensByID(ctx context.Context, organizationTokenID pgtype.Text) (FindOrganizationTokensByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationTokensByID")
+	row := q.conn.QueryRow(ctx, findOrganizationTokensByIDSQL, organizationTokenID)
+	var item FindOrganizationTokensByIDRow
+	if err := row.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
+		return item, fmt.Errorf("query FindOrganizationTokensByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindOrganizationTokensByIDBatch implements Querier.FindOrganizationTokensByIDBatch.
+func (q *DBQuerier) FindOrganizationTokensByIDBatch(batch genericBatch, organizationTokenID pgtype.Text) {
+	batch.Queue(findOrganizationTokensByIDSQL, organizationTokenID)
+}
+
+// FindOrganizationTokensByIDScan implements Querier.FindOrganizationTokensByIDScan.
+func (q *DBQuerier) FindOrganizationTokensByIDScan(results pgx.BatchResults) (FindOrganizationTokensByIDRow, error) {
+	row := results.QueryRow()
+	var item FindOrganizationTokensByIDRow
+	if err := row.Scan(&item.OrganizationTokenID, &item.CreatedAt, &item.OrganizationName, &item.Expiry); err != nil {
+		return item, fmt.Errorf("scan FindOrganizationTokensByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const deleteOrganiationTokenByNameSQL = `DELETE
 FROM organization_tokens
 WHERE organization_name = $1

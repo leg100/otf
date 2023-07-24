@@ -19,6 +19,11 @@ SELECT *
 FROM organization_tokens
 WHERE organization_name = pggen.arg('organization_name');
 
+-- name: FindOrganizationTokensByID :one
+SELECT *
+FROM organization_tokens
+WHERE organization_token_id = pggen.arg('organization_token_id');
+
 -- name: DeleteOrganiationTokenByName :one
 DELETE
 FROM organization_tokens

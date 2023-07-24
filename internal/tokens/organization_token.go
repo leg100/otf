@@ -44,6 +44,8 @@ type (
 		GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error)
 		// DeleteOrganizationToken deletes an organization token.
 		DeleteOrganizationToken(ctx context.Context, organization string) error
+
+		getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error)
 	}
 )
 
@@ -88,6 +90,19 @@ func (u *OrganizationToken) CanAccessWorkspace(action rbac.Action, policy intern
 	return u.CanAccessOrganization(action, policy.Organization)
 }
 
+func (u *OrganizationToken) IsOwner(organization string) bool {
+	// an owner would give perms to all actions in org whereas an org token
+	// cannot perform certain actions, so org token is not an owner.
+	return false
+}
+
+func (u *OrganizationToken) IsSiteAdmin() bool { return false }
+func (u *OrganizationToken) String() string    { return u.ID }
+
+func (u *OrganizationToken) Organizations() []string {
+	return []string{u.Organization}
+}
+
 // CreateOrganizationToken creates an organization token. If an organization
 // token already exists it is replaced.
 func (a *service) CreateOrganizationToken(ctx context.Context, opts CreateOrganizationTokenOptions) (*OrganizationToken, []byte, error) {
@@ -117,7 +132,7 @@ func (a *service) CreateOrganizationToken(ctx context.Context, opts CreateOrgani
 }
 
 func (a *service) GetOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
-	return a.db.getOrganizationToken(ctx, organization)
+	return a.db.getOrganizationTokenByName(ctx, organization)
 }
 
 func (a *service) DeleteOrganizationToken(ctx context.Context, organization string) error {
@@ -134,4 +149,8 @@ func (a *service) DeleteOrganizationToken(ctx context.Context, organization stri
 	a.V(0).Info("deleted organization token", "organization", organization)
 
 	return nil
+}
+
+func (a *service) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+	return a.db.getOrganizationTokenByID(ctx, tokenID)
 }

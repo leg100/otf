@@ -30,6 +30,10 @@ func (f *fakeMiddlewareService) GetUser(ctx context.Context, spec auth.UserSpec)
 	return &auth.User{}, nil
 }
 
+func (f *fakeMiddlewareService) getOrganizationTokenByID(context.Context, string) (*OrganizationToken, error) {
+	return &OrganizationToken{}, nil
+}
+
 // getGoogleCredentialsPath is a test helper to retrieve the path to a google
 // cloud service account key. If the necessary environment variable is not
 // present then the test is skipped.
@@ -63,9 +67,10 @@ func fakeTokenMiddleware(t *testing.T, secret []byte) mux.MiddlewareFunc {
 
 	key := newTestJWK(t, secret)
 	return newMiddleware(middlewareOptions{
-		AuthService:       &fakeMiddlewareService{},
-		agentTokenService: &fakeMiddlewareService{},
-		key:               key,
+		AuthService:              &fakeMiddlewareService{},
+		agentTokenService:        &fakeMiddlewareService{},
+		organizationTokenService: &fakeMiddlewareService{},
+		key:                      key,
 	})
 }
 

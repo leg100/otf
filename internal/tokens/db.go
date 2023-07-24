@@ -89,7 +89,7 @@ func (db *pgdb) upsertOrganizationToken(ctx context.Context, token *Organization
 	return err
 }
 
-func (db *pgdb) getOrganizationToken(ctx context.Context, organization string) (*OrganizationToken, error) {
+func (db *pgdb) getOrganizationTokenByName(ctx context.Context, organization string) (*OrganizationToken, error) {
 	// query only returns 0 or 1 tokens
 	result, err := db.Conn(ctx).FindOrganizationTokensByName(ctx, sql.String(organization))
 	if err != nil {
@@ -105,6 +105,22 @@ func (db *pgdb) getOrganizationToken(ctx context.Context, organization string) (
 	}
 	if result[0].Expiry.Status == pgtype.Present {
 		ot.Expiry = internal.Time(result[0].Expiry.Time.UTC())
+	}
+	return ot, nil
+}
+
+func (db *pgdb) getOrganizationTokenByID(ctx context.Context, tokenID string) (*OrganizationToken, error) {
+	result, err := db.Conn(ctx).FindOrganizationTokensByID(ctx, sql.String(tokenID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	ot := &OrganizationToken{
+		ID:           result.OrganizationTokenID.String,
+		CreatedAt:    result.CreatedAt.Time.UTC(),
+		Organization: result.OrganizationName.String,
+	}
+	if result.Expiry.Status == pgtype.Present {
+		ot.Expiry = internal.Time(result.Expiry.Time.UTC())
 	}
 	return ot, nil
 }

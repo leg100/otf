@@ -72,11 +72,12 @@ func NewService(opts Options) (*service, error) {
 	}
 	svc.key = key
 	svc.middleware = newMiddleware(middlewareOptions{
-		agentTokenService: &svc,
-		AuthService:       opts.AuthService,
-		GoogleIAPConfig:   opts.GoogleIAPConfig,
-		SiteToken:         opts.SiteToken,
-		key:               key,
+		agentTokenService:        &svc,
+		organizationTokenService: &svc,
+		AuthService:              opts.AuthService,
+		GoogleIAPConfig:          opts.GoogleIAPConfig,
+		SiteToken:                opts.SiteToken,
+		key:                      key,
 	})
 
 	return &svc, nil
