@@ -1,0 +1,32 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}organization token{{ end }}
+
+{{ define "content" }}
+  <span class="text-gray-600 text-sm">
+  The organization API token is used to manage teams, team membership and workspaces. This token does not have permission to perform plans and applies in workspaces.
+  </span>
+  {{ if .Token }}
+    <div class="widget">
+      <div>
+        <span>Token</span>
+        <span>{{ durationRound .Token.CreatedAt }} ago</span>
+      </div>
+      <div>
+        {{ template "identifier" .Token }}
+        <div class="flex gap-2">
+          <form action="{{ createOrganizationTokenPath .Organization }}" method="POST">
+            <button class="btn">regenerate</button>
+          </form>
+          <form action="{{ deleteOrganizationTokenPath .Organization }}" method="POST">
+            <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {{ else }}
+    <form class="mt-2" action="{{ createOrganizationTokenPath .Organization }}" method="POST">
+      <button class="btn w-72" >Create organization token</button>
+    </form>
+  {{ end }}
+{{ end }}

@@ -66,25 +66,34 @@ var defaultActions = []action{
 
 // controllerSpec is a specification for a controller
 type controllerSpec struct {
-	Name       string // controller name, used in path names unless path is specified
-	nested     []controllerSpec
-	path       string
-	actions    []action // additional actions
-	camel      string
-	lowerCamel string
-	noprefix   bool // disable site-wide prefix
+	// controller name, used in path names unless path is specified
+	Name   string
+	nested []controllerSpec
+	path   string
+	// additional actions
+	actions []action
+	// whether to skip default set of actions
+	skipDefaultActions bool
+	camel              string
+	lowerCamel         string
+	// disable site-wide prefix
+	noprefix bool
 
 	controllerType
 }
 
 type controller struct {
-	Name       string
-	path       string
-	Parent     *controller
-	Actions    []action // additional paths applying to individual members of collection
-	camel      string
-	lowerCamel string
-	noprefix   bool // disable site-wide prefix
+	Name   string
+	path   string
+	Parent *controller
+	// additional paths applying to individual members of collection
+	Actions []action
+	// whether to skip default set of actions
+	skipDefaultActions bool
+	camel              string
+	lowerCamel         string
+	// disable site-wide prefix
+	noprefix bool
 
 	controllerType
 }
@@ -211,6 +220,26 @@ var specs = []controllerSpec{
 			{
 				Name:           "agent_token",
 				controllerType: resourcePath,
+			},
+			{
+				Name:               "organization_token",
+				controllerType:     resourcePath,
+				skipDefaultActions: true,
+				path:               "/token",
+				actions: []action{
+					{
+						name:       "show",
+						collection: true,
+					},
+					{
+						name:       "create",
+						collection: true,
+					},
+					{
+						name:       "delete",
+						collection: true,
+					},
+				},
 			},
 			{
 				Name:           "user",
@@ -432,17 +461,22 @@ func buildControllers(parent *controller, specs []controllerSpec) []controller {
 
 	for _, spec := range specs {
 		ctlr := controller{
-			Name:           spec.Name,
-			camel:          spec.camel,
-			lowerCamel:     spec.lowerCamel,
-			path:           spec.path,
-			Parent:         parent,
-			controllerType: spec.controllerType,
-			noprefix:       spec.noprefix,
+			Name:               spec.Name,
+			camel:              spec.camel,
+			lowerCamel:         spec.lowerCamel,
+			path:               spec.path,
+			Parent:             parent,
+			controllerType:     spec.controllerType,
+			noprefix:           spec.noprefix,
+			skipDefaultActions: spec.skipDefaultActions,
 		}
 		switch spec.controllerType {
 		case resourcePath:
-			ctlr.Actions = append(defaultActions, spec.actions...)
+			if ctlr.skipDefaultActions {
+				ctlr.Actions = spec.actions
+			} else {
+				ctlr.Actions = append(defaultActions, spec.actions...)
+			}
 		case singlePath:
 			ctlr.Actions = []action{{name: "show"}}
 		}

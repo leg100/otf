@@ -41,6 +41,11 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/profile/tokens/new", h.newUserToken).Methods("GET")
 	r.HandleFunc("/profile/tokens/create", h.createUserToken).Methods("POST")
 
+	// organization tokens
+	r.HandleFunc("/organizations/{organization_name}/tokens/show", h.organizationToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/tokens/delete", h.deleteOrganizationToken).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/tokens/create", h.createOrganizationToken).Methods("POST")
+
 	// agent tokens
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens", h.listAgentTokens).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/agent-tokens/create", h.createAgentToken).Methods("POST")
@@ -52,6 +57,10 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	// terraform login opens a browser to this hardcoded URL
 	r.HandleFunc("/settings/tokens", h.userTokens).Methods("GET")
 }
+
+//
+// User tokens
+//
 
 func (h *webHandlers) newUserToken(w http.ResponseWriter, r *http.Request) {
 	h.Render("token_new.tmpl", w, html.NewSitePage(r, "new user token"))
@@ -113,6 +122,64 @@ func (h *webHandlers) deleteUserToken(w http.ResponseWriter, r *http.Request) {
 	}
 	html.FlashSuccess(w, "Deleted token")
 	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
+}
+
+//
+// Organization tokens
+//
+
+func (h *webHandlers) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	var opts CreateOrganizationTokenOptions
+	if err := decode.Route(&opts, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	_, token, err := h.svc.CreateOrganizationToken(r.Context(), opts)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.tokenFlashMessage(w, token); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, paths.OrganizationToken(opts.Organization), http.StatusFound)
+}
+
+func (h *webHandlers) organizationToken(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	token, err := h.svc.GetOrganizationToken(r.Context(), org)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("organization_token.tmpl", w, struct {
+		organization.OrganizationPage
+		Token *OrganizationToken
+	}{
+		OrganizationPage: organization.NewPage(r, org, org),
+		Token:            token,
+	})
+}
+
+func (h *webHandlers) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	if err := h.svc.DeleteOrganizationToken(r.Context(), organization); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "Deleted organization token")
+	http.Redirect(w, r, paths.OrganizationToken(organization), http.StatusFound)
 }
 
 //

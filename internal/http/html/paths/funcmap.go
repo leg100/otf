@@ -84,6 +84,10 @@ func init() {
 	funcmap["updateAgentTokenPath"] = UpdateAgentToken
 	funcmap["deleteAgentTokenPath"] = DeleteAgentToken
 
+	funcmap["organizationTokenPath"] = OrganizationToken
+	funcmap["createOrganizationTokenPath"] = CreateOrganizationToken
+	funcmap["deleteOrganizationTokenPath"] = DeleteOrganizationToken
+
 	funcmap["usersPath"] = Users
 	funcmap["createUserPath"] = CreateUser
 	funcmap["newUserPath"] = NewUser

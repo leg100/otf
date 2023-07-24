@@ -68,6 +68,14 @@ func Timestamptz(t time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t, Status: pgtype.Present}
 }
 
+// TimestamptzPtr converts a go-time pointer into a postgres nullable timestamptz
+func TimestamptzPtr(t *time.Time) pgtype.Timestamptz {
+	if t != nil {
+		return pgtype.Timestamptz{Time: *t, Status: pgtype.Present}
+	}
+	return pgtype.Timestamptz{Status: pgtype.Null}
+}
+
 // JSON converts a []byte into a postgres JSON type
 func JSON(b []byte) pgtype.JSON {
 	return pgtype.JSON{Bytes: b, Status: pgtype.Present}

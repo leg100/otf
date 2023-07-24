@@ -53,6 +53,15 @@ func TestMiddleware(t *testing.T) {
 		assert.Equal(t, 200, w.Code, w.Body.String())
 	})
 
+	t.Run("valid org token", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
+		token := NewTestJWT(t, secret, organizationTokenKind, time.Hour)
+		r.Header.Add("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		fakeTokenMiddleware(t, secret)(wantSubjectHandler(t, &OrganizationToken{})).ServeHTTP(w, r)
+		assert.Equal(t, 200, w.Code, w.Body.String())
+	})
+
 	t.Run("valid run token", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/api/v2/protected", nil)
 		token := NewTestJWT(t, secret, runTokenKind, time.Hour, "organization", "acme-corp")

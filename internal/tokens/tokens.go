@@ -12,10 +12,11 @@ import (
 const (
 	defaultSessionExpiry = 24 * time.Hour
 
-	userSessionKind Kind = "user_session"
-	runTokenKind    Kind = "run_token"
-	agentTokenKind  Kind = "agent_token"
-	userTokenKind   Kind = "user_token"
+	userSessionKind       Kind = "user_session"
+	runTokenKind          Kind = "run_token"
+	agentTokenKind        Kind = "agent_token"
+	userTokenKind         Kind = "user_token"
+	organizationTokenKind Kind = "organization_token"
 )
 
 type (
