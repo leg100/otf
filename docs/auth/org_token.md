@@ -4,7 +4,7 @@ Each organization can have an API token. Only an owner can create or delete the 
 
 They are equivalent to organization tokens in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens#organization-api-tokens). They possess the same permissions as those documented for Terraform Cloud.
 
-To manage your tokens, go to your organization main menu:
+To manage your tokens, go to your organization main menu and select **organization token**:
 
 ![organization main menu](../images/organization_main_menu.png){.screenshot .crop}
 
