@@ -1127,6 +1127,10 @@ select {
   padding-left: 2.5rem;
 }
 
+.pb-4 {
+  padding-bottom: 1rem;
+}
+
 .text-left {
   text-align: left;
 }
@@ -1169,6 +1173,10 @@ select {
 
 .font-semibold {
   font-weight: 600;
+}
+
+.italic {
+  font-style: italic;
 }
 
 .leading-snug {

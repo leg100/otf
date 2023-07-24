@@ -111,10 +111,10 @@ func (u *User) IsSiteAdmin() bool {
 
 func (u *User) CanAccessSite(action rbac.Action) bool {
 	switch action {
-	case rbac.CreateUserAction:
-		// A user can create a user account only if they are an owner of at least
-		// one organization. This permits an owner to create a user before adding
-		// them to a team.
+	case rbac.CreateUserAction, rbac.ListUsersAction:
+		// A user can perform these actions only if they are an owner of at
+		// least one organization. This permits an owner to search users or create
+		// a user before adding them to a team.
 		for _, team := range u.Teams {
 			if team.IsOwners() {
 				return true

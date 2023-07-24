@@ -26,21 +26,22 @@
         >
     <div
         x-ref="panel"
-        x-show="open"
+        x-show="open && (existing?.includes(search) || isNew || filterAvailable?.length > 0)"
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
-        class="absolute {{ get $width .Width }} mt-1 bg-white border border-black overflow-x-auto"
+        class="absolute flex flex-col {{ get $width .Width }} mt-1 bg-white overflow-x-auto border border-black"
         >
-        <div class="sticky bottom-0 flex flex-col">
-          <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-show="isNew">
-            Create:<span class="" x-text="search"></span>
-          </button>
+        <span class="text-left py-1 px-2 text-gray-600 italic" x-show="existing?.includes(search)">
+          <span x-text="search"></span> already added
+        </span>
+        <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-show="isNew">
+          Create:<span x-text="search"></span>
+        </button>
 
-          <template x-for="item in filterAvailable" :key="item">
-            <button @click="search = item" form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item"></button>
-          </template>
-        </div>
+        <template x-for="item in filterAvailable" :key="item">
+          <button @click="search = item" form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item"></button>
+        </template>
     </div>
   </div>
 {{ end }}
