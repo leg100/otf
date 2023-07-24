@@ -54,6 +54,7 @@ nav:
       - auth/providers/iap.md
     - auth/site_admin.md
     - auth/user_token.md
+    - auth/org_token.md
   - Topics:
     - rbac.md
     - vcs_providers.md

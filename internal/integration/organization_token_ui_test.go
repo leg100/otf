@@ -23,12 +23,12 @@ func TestIntegration_OrganizationTokenUI(t *testing.T) {
 		chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 		// go to organization token page
 		chromedp.Click(`//span[@id='organization_tokens']/a`),
+		screenshot(t, "org_token_new"),
 		// create new token
 		chromedp.Click(`//button[text()='Create organization token']`),
-		screenshot(t),
+		screenshot(t, "org_token_created"),
 		// check for JWT in flash msg
 		matchRegex(t, "//div[@role='alert']", `Created token:\s+[\w-]+\.[\w-]+\.[\w-]+`),
-		screenshot(t, "user_token_created"),
 		// token widget should be visible
 		chromedp.WaitVisible(`//div[@class='widget']//span[text()='Token']`),
 		chromedp.Text(`//div[@class='widget']//span[@class='identifier']`, &createdTokenID),
