@@ -46,6 +46,9 @@ func (a *api) addRunHandlers(r *mux.Router) {
 
 	// Apply routes
 	r.HandleFunc("/applies/{apply_id}", a.getApply).Methods("GET")
+
+	// Run events routes
+	r.HandleFunc("/runs/{id}/run-events", a.listRunEvents).Methods("GET")
 }
 
 func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
@@ -420,4 +423,11 @@ func (a *api) watchRun(w http.ResponseWriter, r *http.Request) {
 		pubsub.WriteSSEEvent(w, b, event.Type, true)
 		flusher.Flush()
 	}
+}
+
+// OTF doesn't implement run events but as of terraform v1.5, the cloud backend
+// makes a call to this endpoint. OTF therefore stubs this endpoint and sends an
+// empty response, to avoid sending a 404 response and triggering an error.
+func (a *api) listRunEvents(w http.ResponseWriter, r *http.Request) {
+	a.writeResponse(w, r, []*types.RunEvent{})
 }
