@@ -36,10 +36,10 @@ type agent struct {
 	client.Client
 	logr.Logger
 
-	spooler             // spools new run events
-	*terminator         // terminates runs
-	Downloader          // terraform cli downloader
-	terraformPathFinder // determines destination dir for terraform bins
+	spooler              // spools new run events
+	*terminator          // terminates runs
+	Downloader           // terraform cli downloader
+	*TerraformPathFinder // determines destination dir for terraform bins
 
 	envs []string // terraform environment variables
 }
@@ -71,8 +71,8 @@ func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error)
 		envs:                DefaultEnvs,
 		spooler:             newSpooler(app, logger, cfg),
 		terminator:          newTerminator(),
-		Downloader:          newTerraformDownloader(pathFinder),
-		terraformPathFinder: pathFinder,
+		Downloader:          NewDownloader(pathFinder),
+		TerraformPathFinder: pathFinder,
 	}
 
 	if cfg.PluginCache {

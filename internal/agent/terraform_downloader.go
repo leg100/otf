@@ -17,35 +17,43 @@ const HashicorpReleasesHost = "releases.hashicorp.com"
 type (
 	// terraformDownloader downloads terraform binaries
 	terraformDownloader struct {
-		host                string        // server hosting binaries
-		terraformPathFinder               // used to lookup destination path for saving download
-		client              *http.Client  // client for downloading from server via http
-		mu                  chan struct{} // ensures only one download at a time
+		*TerraformPathFinder // used to lookup destination path for saving download
+
+		host   string        // server hosting binaries
+		client *http.Client  // client for downloading from server via http
+		mu     chan struct{} // ensures only one download at a time
 	}
 
 	// Downloader downloads a specific version of a binary and returns its path
 	Downloader interface {
-		download(ctx context.Context, version string, w io.Writer) (string, error)
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
 	}
 )
 
-func newTerraformDownloader(pathFinder terraformPathFinder) *terraformDownloader {
+// NewDownloader constructs a terraform downloader. Pass a path finder to
+// customise the location to which the bins are persisted, or pass nil to use
+// the default.
+func NewDownloader(pathFinder *TerraformPathFinder) *terraformDownloader {
+	if pathFinder == nil {
+		pathFinder = newTerraformPathFinder(defaultTerraformBinDir)
+	}
+
 	mu := make(chan struct{}, 1)
 	mu <- struct{}{}
 
 	return &terraformDownloader{
 		host:                HashicorpReleasesHost,
-		terraformPathFinder: pathFinder,
+		TerraformPathFinder: pathFinder,
 		client:              &http.Client{},
 		mu:                  mu,
 	}
 }
 
 // Download ensures the given version of terraform is available on the local
-// filesystem and returns its path. Thread-safe: if a download is in-flight and
-// another download is requested then it'll be made to wait until the
+// filesystem and returns its path. Thread-safe: if a Download is in-flight and
+// another Download is requested then it'll be made to wait until the
 // former has finished.
-func (d *terraformDownloader) download(ctx context.Context, version string, w io.Writer) (string, error) {
+func (d *terraformDownloader) Download(ctx context.Context, version string, w io.Writer) (string, error) {
 	if internal.Exists(d.dest(version)) {
 		return d.dest(version), nil
 	}

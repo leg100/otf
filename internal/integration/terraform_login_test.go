@@ -31,8 +31,10 @@ func TestTerraformLogin(t *testing.T) {
 	require.NoError(t, err)
 	killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
+	tfpath := downloadTerraform(t, ctx, nil)
+
 	e, tferr, err := expect.SpawnWithArgs(
-		[]string{"terraform", "login", svc.Hostname()},
+		[]string{tfpath, "login", svc.Hostname()},
 		time.Minute,
 		expect.PartialMatch(true),
 		// expect.Verbose(testing.Verbose()),
@@ -74,7 +76,7 @@ func TestTerraformLogin(t *testing.T) {
 	// has authenticated successfully.
 	org := svc.createOrganization(t, ctx)
 	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
-	cmd := exec.Command("terraform", "init")
+	cmd := exec.Command(tfpath, "init")
 	cmd.Dir = configPath
 	assert.NoError(t, cmd.Run())
 }

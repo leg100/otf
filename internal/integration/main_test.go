@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/testbrowser"
 	"github.com/leg100/otf/internal/testcompose"
@@ -28,6 +29,9 @@ var (
 
 	// pool of web browsers
 	browser *testbrowser.Pool
+
+	// downloader for specific versions of terraform for tests to use
+	tfDownloader agent.Downloader
 )
 
 func TestMain(m *testing.M) {
@@ -145,6 +149,10 @@ func doMain(m *testing.M) (int, error) {
 	}
 	defer cleanup()
 	browser = pool
+
+	// Setup terraform downloader. The default (nil) saves the terraform bins to
+	// the system temp directory so they can be persisted between tests.
+	tfDownloader = agent.NewDownloader(nil)
 
 	return m.Run(), nil
 }
