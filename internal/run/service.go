@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -289,7 +290,14 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		return run.Start(phase)
 	})
 	if err != nil {
-		s.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
+		// only log error if not an invalid state transition - this occurs when
+		// multiple agents 'race' to start the phase and only one can do so,
+		// whereas the other agents receive this error which is a legitimate
+		// error condition and not something that should be reported to the
+		// user.
+		if !errors.Is(err, internal.ErrPhaseAlreadyStarted) {
+			s.Error(err, "starting "+string(phase), "id", runID, "subject", subject)
+		}
 		return nil, err
 	}
 	s.V(0).Info("started "+string(phase), "id", runID, "subject", subject)

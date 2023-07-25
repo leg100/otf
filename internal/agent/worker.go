@@ -2,7 +2,9 @@ package agent
 
 import (
 	"context"
+	"errors"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 )
 
@@ -27,9 +29,12 @@ func (w *worker) Start(ctx context.Context) {
 func (w *worker) handle(ctx context.Context, r *run.Run) {
 	log := w.Logger.WithValues("run", r.ID, "phase", r.Phase())
 
-	// Claim run phase
+	// claim run phase
 	r, err := w.StartPhase(ctx, r.ID, r.Phase(), run.PhaseStartOptions{AgentID: DefaultID})
-	if err != nil {
+	if errors.Is(err, internal.ErrPhaseAlreadyStarted) {
+		// another agent has already claimed it
+		return
+	} else if err != nil {
 		log.Error(err, "starting phase")
 		return
 	}

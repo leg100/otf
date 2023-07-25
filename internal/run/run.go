@@ -316,7 +316,7 @@ func (r *Run) Start(phase internal.PhaseType) error {
 		r.updateStatus(internal.RunApplying)
 		r.Apply.UpdateStatus(PhaseRunning)
 	case internal.RunPlanning, internal.RunApplying:
-		return ErrPhaseAlreadyStarted
+		return internal.ErrPhaseAlreadyStarted
 	default:
 		return ErrInvalidRunStateTransition
 	}
