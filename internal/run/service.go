@@ -290,7 +290,7 @@ func (s *service) StartPhase(ctx context.Context, runID string, phase internal.P
 		return run.Start(phase)
 	})
 	if err != nil {
-		// only log error if not an invalid state transition - this occurs when
+		// only log error if not an phase already started error - this occurs when
 		// multiple agents 'race' to start the phase and only one can do so,
 		// whereas the other agents receive this error which is a legitimate
 		// error condition and not something that should be reported to the
