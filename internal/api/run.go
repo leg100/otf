@@ -94,13 +94,18 @@ func (a *api) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := a.StartPhase(r.Context(), params.RunID, params.Phase, run.PhaseStartOptions{})
-	if err != nil {
+	started, err := a.StartPhase(r.Context(), params.RunID, params.Phase, run.PhaseStartOptions{})
+	if errors.Is(err, internal.ErrPhaseAlreadyStarted) {
+		// A bit silly, but OTF uses the teapot status as a unique means of
+		// informing the agent the phase has been started by another agent.
+		w.WriteHeader(http.StatusTeapot)
+		return
+	} else if err != nil {
 		Error(w, err)
 		return
 	}
 
-	a.writeResponse(w, r, run)
+	a.writeResponse(w, r, started)
 }
 
 func (a *api) finishPhase(w http.ResponseWriter, r *http.Request) {

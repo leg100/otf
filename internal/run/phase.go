@@ -1,7 +1,6 @@
 package run
 
 import (
-	"errors"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -16,8 +15,6 @@ const (
 	PhaseErrored     PhaseStatus = "errored"
 	PhaseUnreachable PhaseStatus = "unreachable"
 )
-
-var ErrPhaseAlreadyStarted = errors.New("phase already started")
 
 type (
 	// Phase is a section of work performed by a run.
