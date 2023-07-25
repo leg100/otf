@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
@@ -18,7 +20,7 @@ import (
 
 func (a *api) addConfigHandlers(r *mux.Router) {
 	signed := r.PathPrefix("/signed/{signature.expiry}").Subrouter()
-	signed.Use(internal.VerifySignedURL(a.Verifier))
+	signed.Use(internal.VerifySignedURL(a.Signer))
 	signed.HandleFunc("/configuration-versions/{id}/upload", a.uploadConfigurationVersion()).Methods("PUT")
 
 	r = otfhttp.APIRouter(r)
@@ -49,7 +51,29 @@ func (a *api) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	a.writeResponse(w, r, cv, withCode(http.StatusCreated))
+	to := a.toConfigurationVersion(cv)
+
+	// upload url is only provided in the response when creating configuration
+	// version:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/configuration-versions#configuration-files-upload-url
+	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
+	uploadURL, err = a.Sign(uploadURL, time.Hour)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+	to.UploadURL = uploadURL
+
+	b, err := jsonapi.Marshal(to)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	w.Header().Set("Content-type", mediaType)
+	w.WriteHeader(http.StatusCreated)
+	w.Write(b)
 }
 
 func (a *api) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {

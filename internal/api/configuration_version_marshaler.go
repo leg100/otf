@@ -1,19 +1,11 @@
 package api
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/configversion"
 )
 
-func (m *jsonapiMarshaler) toConfigurationVersion(from *configversion.ConfigurationVersion) (*types.ConfigurationVersion, error) {
-	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", from.ID)
-	uploadURL, err := m.Sign(uploadURL, time.Hour)
-	if err != nil {
-		return nil, err
-	}
+func (m *jsonapiMarshaler) toConfigurationVersion(from *configversion.ConfigurationVersion) *types.ConfigurationVersion {
 	to := &types.ConfigurationVersion{
 		ID:               from.ID,
 		AutoQueueRuns:    from.AutoQueueRuns,
@@ -21,7 +13,6 @@ func (m *jsonapiMarshaler) toConfigurationVersion(from *configversion.Configurat
 		Source:           string(from.Source),
 		Status:           string(from.Status),
 		StatusTimestamps: &types.CVStatusTimestamps{},
-		UploadURL:        uploadURL,
 	}
 	for _, ts := range from.StatusTimestamps {
 		switch ts.Status {
@@ -33,5 +24,5 @@ func (m *jsonapiMarshaler) toConfigurationVersion(from *configversion.Configurat
 			to.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-	return to, nil
+	return to
 }

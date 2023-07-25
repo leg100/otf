@@ -3,7 +3,6 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/logr"
@@ -34,7 +33,8 @@ type (
 		vcsprovider.VCSProviderService
 
 		marshaler
-		internal.Verifier // for verifying signed urls
+		// for verifying and generating signed urls
+		*surl.Signer
 
 		maxConfigSize int64 // Maximum permitted config upload size in bytes
 	}
@@ -66,7 +66,7 @@ func New(opts Options) *api {
 		StateService:                opts.StateService,
 		ConfigurationVersionService: opts.ConfigurationVersionService,
 		AuthService:                 opts.AuthService,
-		Verifier:                    opts.Signer,
+		Signer:                      opts.Signer,
 		TokensService:               opts.TokensService,
 		VariableService:             opts.VariableService,
 		NotificationService:         opts.NotificationService,

@@ -28,6 +28,7 @@ type (
 		toRun(run *run.Run, r *http.Request) (*types.Run, []jsonapi.MarshalOption, error)
 		toPhase(from run.Phase, r *http.Request) (any, error)
 		toPlan(plan run.Phase, r *http.Request) (*types.Plan, error)
+		toConfigurationVersion(from *configversion.ConfigurationVersion) *types.ConfigurationVersion
 		writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter))
 	}
 
@@ -119,7 +120,7 @@ func (m *jsonapiMarshaler) convert(r *http.Request, v any) (any, []jsonapi.Marsh
 	case *run.Run:
 		payload, opts, err = m.toRun(v, r)
 	case *configversion.ConfigurationVersion:
-		payload, err = m.toConfigurationVersion(v)
+		payload = m.toConfigurationVersion(v)
 	case *variable.Variable:
 		payload = m.toVariable(v)
 	case *notifications.Config:
