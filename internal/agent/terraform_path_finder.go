@@ -8,20 +8,20 @@ import (
 var defaultTerraformBinDir = path.Join(os.TempDir(), "otf-terraform-bins")
 
 type (
-	terraformPathFinder struct {
+	TerraformPathFinder struct {
 		dest string
 	}
 )
 
-func newTerraformPathFinder(dest string) terraformPathFinder {
+func newTerraformPathFinder(dest string) *TerraformPathFinder {
 	if dest == "" {
 		dest = defaultTerraformBinDir
 	}
-	return terraformPathFinder{
+	return &TerraformPathFinder{
 		dest: dest,
 	}
 }
 
-func (t terraformPathFinder) TerraformPath(version string) string {
+func (t *TerraformPathFinder) TerraformPath(version string) string {
 	return path.Join(t.dest, version, "terraform")
 }

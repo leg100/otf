@@ -105,7 +105,7 @@ func (r *runner) cancel(force bool) {
 }
 
 func (b *stepsBuilder) downloadTerraform(ctx context.Context) error {
-	_, err := b.download(ctx, b.version, b.out)
+	_, err := b.Download(ctx, b.version, b.out)
 	return err
 }
 

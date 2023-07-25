@@ -17,6 +17,7 @@ import (
 type download struct {
 	// for outputting progress updates
 	io.Writer
+
 	version   string
 	src, dest string
 	client    *http.Client
@@ -91,11 +92,8 @@ func (d *download) unzip(zipfile string) error {
 				return err
 			}
 			defer fr.Close()
-			if err := atomic.WriteFile(d.dest, fr); err != nil {
+			if err := atomic.WriteFile(d.dest, fr, atomic.DefaultFileMode(0o755)); err != nil {
 				return fmt.Errorf("writing terraform binary: %w", err)
-			}
-			if err := os.Chmod(d.dest, 0x755); err != nil {
-				return fmt.Errorf("setting permissions on terraform binary: %w", err)
 			}
 			return nil
 		}

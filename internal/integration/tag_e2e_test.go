@@ -36,10 +36,12 @@ terraform {
 resource "null_resource" "tags_e2e" {}
 `, daemon.Hostname(), org.Name))
 
+	tfpath := downloadTerraform(t, ctx, nil)
+
 	// run terraform init
 	_, token := daemon.createToken(t, ctx, nil)
 	e, tferr, err := expect.SpawnWithArgs(
-		[]string{"terraform", "-chdir=" + root, "init", "-no-color"},
+		[]string{tfpath, "-chdir=" + root, "init", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.SetEnv(internal.SafeAppend(sharedEnvs, internal.CredentialEnv(daemon.Hostname(), token))),
