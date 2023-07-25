@@ -4,12 +4,14 @@ import "time"
 
 // StateVersion is a state version suitable for marshaling into JSONAPI
 type StateVersion struct {
-	ID           string    `jsonapi:"primary,state-versions"`
-	CreatedAt    time.Time `jsonapi:"attribute" json:"created-at"`
-	DownloadURL  string    `jsonapi:"attribute" json:"hosted-state-download-url"`
-	Serial       int64     `jsonapi:"attribute" json:"serial"`
-	VCSCommitSHA string    `jsonapi:"attribute" json:"vcs-commit-sha"`
-	VCSCommitURL string    `jsonapi:"attribute" json:"vcs-commit-url"`
+	ID                 string    `jsonapi:"primary,state-versions"`
+	CreatedAt          time.Time `jsonapi:"attribute" json:"created-at"`
+	DownloadURL        string    `jsonapi:"attribute" json:"hosted-state-download-url"`
+	Serial             int64     `jsonapi:"attribute" json:"serial"`
+	VCSCommitSHA       string    `jsonapi:"attribute" json:"vcs-commit-sha"`
+	ResourcesProcessed bool      `jsonapi:"attribute" json:"resources-processed"`
+	StateVersion       int       `jsonapi:"attribute" json:"state-version"`
+	TerraformVersion   string    `jsonapi:"attribute" json:"terraform-version"`
 
 	// Relations
 	Outputs []*StateVersionOutput `jsonapi:"relationship" json:"outputs"`

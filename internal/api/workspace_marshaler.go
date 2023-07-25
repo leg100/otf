@@ -93,8 +93,8 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 					return nil, nil, err
 				}
 				for _, out := range sv.Outputs {
-					to.Outputs = append(to.Outputs, m.toOutput(out))
-					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out)))
+					to.Outputs = append(to.Outputs, m.toOutput(out, true))
+					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out, true)))
 				}
 			}
 		}

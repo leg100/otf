@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
@@ -36,7 +37,6 @@ func (a *api) addStateHandlers(r *mux.Router) {
 
 	// specific to OTF
 	r.HandleFunc("/workspaces/{workspace_id}/state-versions", a.listVersions).Methods("GET")
-
 }
 
 func (a *api) createVersion(w http.ResponseWriter, r *http.Request) {
@@ -215,7 +215,22 @@ func (a *api) getCurrentVersionOutputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.writeResponse(w, r, maps.Values(sv.Outputs))
+	// this particular endpoint does not reveal sensitive values:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-version-outputs#show-current-state-version-outputs-for-a-workspace
+	to := make([]*types.StateVersionOutput, len(sv.Outputs))
+	for i, f := range maps.Values(sv.Outputs) {
+		to[i] = a.toOutput(f, true)
+	}
+
+	b, err := jsonapi.Marshal(to)
+	if err != nil {
+		Error(w, err)
+		return
+	}
+
+	w.Header().Set("Content-type", mediaType)
+	w.Write(b)
 }
 
 func (a *api) listOutputs(w http.ResponseWriter, r *http.Request) {

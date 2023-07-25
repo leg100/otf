@@ -45,7 +45,7 @@ export OTF_E2E_HEADLESS=false
 
 ### API tests
 
-Tests from the [go-tfe](https://github.com/hashicorp/go-tfe) project are routinely run to ensure OTF correctly implements the documented Terraform Cloud API. However, OTF only implements a subset of the API endpoints, and there are some differences (e.g. an OTF organization has no email address where as a TFC organization does). Therefore a [fork](https://github.com/leg100/go-tfe) of the go-tfe repo is maintained.
+Tests from the [go-tfe](https://github.com/hashicorp/go-tfe) project are routinely run to ensure OTF correctly implements the documented Terraform Cloud API.
 
 The make task:
 
@@ -56,8 +56,7 @@ make go-tfe-tests
 performs the following steps:
 
 * Starts a docker compose stack of `otfd`, postgres, and squid
-* Runs a subset of `go-tfe` tests using the **forked** repo
-* Runs a subset of `go-tfe` tests using the **upstream** repo
+* Runs a subset of `go-tfe` tests against that stack
 
 !!! note
     You can instead manually invoke API tests using the scripts in `./hack`. The tests first require `otfd` to be running at `https://localhost:8080`, with a [site token](../config/flags/#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.
