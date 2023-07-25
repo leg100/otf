@@ -1,8 +1,10 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/variable"
@@ -44,7 +46,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		Error(w, err)
+		variableError(w, err)
 		return
 	}
 	a.writeResponse(w, r, variable, withCode(http.StatusCreated))
@@ -86,7 +88,7 @@ func (a *api) update(w http.ResponseWriter, r *http.Request) {
 	}
 	var opts types.VariableUpdateOptions
 	if err := unmarshal(r.Body, &opts); err != nil {
-		Error(w, err)
+		variableError(w, err)
 		return
 	}
 	updated, err := a.UpdateVariable(r.Context(), variableID, variable.UpdateVariableOptions{
@@ -114,5 +116,26 @@ func (a *api) delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Error(w, err)
 		return
+	}
+}
+
+func variableError(w http.ResponseWriter, err error) {
+	var isUnprocessableError bool
+	if errors.Is(err, variable.ErrVariableDescriptionMaxExceeded) {
+		isUnprocessableError = true
+	}
+	if errors.Is(err, variable.ErrVariableKeyMaxExceeded) {
+		isUnprocessableError = true
+	}
+	if errors.Is(err, variable.ErrVariableValueMaxExceeded) {
+		isUnprocessableError = true
+	}
+	if isUnprocessableError {
+		Error(w, &internal.HTTPError{
+			Message: err.Error(),
+			Code:    http.StatusUnprocessableEntity,
+		})
+	} else {
+		Error(w, err)
 	}
 }

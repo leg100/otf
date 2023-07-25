@@ -225,6 +225,6 @@ func (s *runLogsURLGenerator) logURL(r *http.Request, phase run.Phase) (string, 
 	if err != nil {
 		return "", err
 	}
-	// Terraform CLI expects an absolute URL
+	// terraform CLI expects an absolute URL
 	return otfhttp.Absolute(r, logs), nil
 }

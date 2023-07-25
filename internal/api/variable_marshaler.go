@@ -14,6 +14,7 @@ func (m *jsonapiMarshaler) toVariable(from *variable.Variable) *types.Variable {
 		Category:    string(from.Category),
 		Sensitive:   from.Sensitive,
 		HCL:         from.HCL,
+		VersionID:   from.VersionID,
 		Workspace: &types.Workspace{
 			ID: from.WorkspaceID,
 		},

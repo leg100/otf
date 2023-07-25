@@ -93,6 +93,19 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
+// GenerateRandomBytes generates a random slice of bytes composed of alphanumeric
+// characters of length size.
+func GenerateRandomBytes(size int) string {
+	// Without this, Go would generate the same random sequence each run.
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	buf := make([]byte, size)
+	for i := 0; i < size; i++ {
+		buf[i] = alphanumeric[rand.Intn(len(alphanumeric))]
+	}
+	return string(buf)
+}
+
 // ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
 func ValidStringID(v *string) bool {

@@ -473,7 +473,8 @@ func (q *DBQuerier) FindConfigurationVersionByIDForUpdateScan(results pgx.BatchR
 
 const downloadConfigurationVersionSQL = `SELECT config
 FROM configuration_versions
-WHERE configuration_version_id = $1;`
+WHERE configuration_version_id = $1
+AND   status                   = 'uploaded';`
 
 // DownloadConfigurationVersion implements Querier.DownloadConfigurationVersion.
 func (q *DBQuerier) DownloadConfigurationVersion(ctx context.Context, configurationVersionID pgtype.Text) ([]byte, error) {

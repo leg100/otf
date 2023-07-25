@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestVariable_Update(t *testing.T) {
+func TestVariable_UpdateHandler(t *testing.T) {
 	tests := []struct {
 		name     string
 		existing CreateVariableOptions
@@ -61,7 +61,7 @@ func TestVariable_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create existing variable for test to update
-			v := NewTestVariable(t, "ws-123", tt.existing)
+			v := newTestVariable(t, "ws-123", tt.existing)
 
 			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.updated.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")

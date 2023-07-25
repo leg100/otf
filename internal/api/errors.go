@@ -12,6 +12,7 @@ var codes = map[error]int{
 	internal.ErrResourceNotFound:         http.StatusNotFound,
 	internal.ErrAccessNotPermitted:       http.StatusForbidden,
 	internal.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
+	internal.ErrUploadTooLarge:           http.StatusUnprocessableEntity,
 	internal.ErrResourceAlreadyExists:    http.StatusConflict,
 	internal.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
 	internal.ErrWorkspaceAlreadyUnlocked: http.StatusConflict,

@@ -21,6 +21,7 @@ func (pdb *pgdb) create(ctx context.Context, v *Variable) error {
 		Description: sql.String(v.Description),
 		Category:    sql.String(string(v.Category)),
 		Sensitive:   v.Sensitive,
+		VersionID:   sql.String(v.VersionID),
 		HCL:         v.HCL,
 		WorkspaceID: sql.String(v.WorkspaceID),
 	})
@@ -52,6 +53,7 @@ func (pdb *pgdb) update(ctx context.Context, variableID string, fn func(*Variabl
 			Description: sql.String(variable.Description),
 			Category:    sql.String(string(variable.Category)),
 			Sensitive:   variable.Sensitive,
+			VersionID:   sql.String(variable.VersionID),
 			HCL:         variable.HCL,
 		})
 		return err
@@ -98,6 +100,7 @@ type pgRow struct {
 	Sensitive   bool        `json:"sensitive"`
 	HCL         bool        `json:"hcl"`
 	WorkspaceID pgtype.Text `json:"workspace_id"`
+	VersionID   pgtype.Text `json:"version_id"`
 }
 
 func (row pgRow) toVariable() *Variable {
@@ -109,6 +112,7 @@ func (row pgRow) toVariable() *Variable {
 		Category:    VariableCategory(row.Category.String),
 		Sensitive:   row.Sensitive,
 		HCL:         row.HCL,
+		VersionID:   row.VersionID.String,
 		WorkspaceID: row.WorkspaceID.String,
 	}
 }

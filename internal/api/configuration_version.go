@@ -63,7 +63,8 @@ func (a *api) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		Error(w, err)
 		return
 	}
-	to.UploadURL = uploadURL
+	// terraform CLI expects an absolute URL
+	to.UploadURL = otfhttp.Absolute(r, uploadURL)
 
 	b, err := jsonapi.Marshal(to)
 	if err != nil {

@@ -9,6 +9,7 @@ type Variable struct {
 	Category    string `jsonapi:"attribute" json:"category"`
 	HCL         bool   `jsonapi:"attribute" json:"hcl"`
 	Sensitive   bool   `jsonapi:"attribute" json:"sensitive"`
+	VersionID   string `jsonapi:"attribute" json:"version-id"`
 
 	// Relations
 	Workspace *Workspace `jsonapi:"relationship" json:"configurable"`

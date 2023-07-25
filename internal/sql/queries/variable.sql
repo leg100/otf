@@ -7,6 +7,7 @@ INSERT INTO variables (
     category,
     sensitive,
     hcl,
+    version_id,
     workspace_id
 ) VALUES (
     pggen.arg('variable_id'),
@@ -16,6 +17,7 @@ INSERT INTO variables (
     pggen.arg('category'),
     pggen.arg('sensitive'),
     pggen.arg('hcl'),
+    pggen.arg('version_id'),
     pggen.arg('workspace_id')
 );
 
@@ -45,6 +47,7 @@ SET
     description = pggen.arg('description'),
     category = pggen.arg('category'),
     sensitive = pggen.arg('sensitive'),
+    version_id = pggen.arg('version_id'),
     hcl = pggen.arg('hcl')
 WHERE variable_id = pggen.arg('variable_id')
 RETURNING variable_id

@@ -119,7 +119,11 @@ func (db *pgdb) GetConfigurationVersion(ctx context.Context, opts ConfigurationV
 }
 
 func (db *pgdb) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	return db.Conn(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
+	cfg, err := db.Conn(ctx).DownloadConfigurationVersion(ctx, sql.String(id))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	return cfg, nil
 }
 
 func (db *pgdb) DeleteConfigurationVersion(ctx context.Context, id string) error {
