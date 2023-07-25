@@ -325,7 +325,7 @@ func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {
-	if !internal.ValidSemanticVersion(v) {
+	if !semver.IsValid(v) {
 		return internal.ErrInvalidTerraformVersion
 	}
 	if result := semver.Compare(v, MinTerraformVersion); result < 0 {

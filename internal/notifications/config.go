@@ -8,6 +8,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
+	"golang.org/x/exp/slices"
 	"golang.org/x/exp/slog"
 )
 
@@ -194,7 +195,7 @@ func (c *Config) matchTrigger(r *run.Run) (Trigger, bool) {
 }
 
 func (c *Config) hasTrigger(t Trigger) bool {
-	return internal.Contains(c.Triggers, t)
+	return slices.Contains(c.Triggers, t)
 }
 
 func validTriggers(triggers []Trigger) error {
