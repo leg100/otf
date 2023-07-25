@@ -15,7 +15,6 @@ export OAUTH_CLIENT_GITHUB_TOKEN="my-secret-github-token"
 
 tests=()
 tests+=('TestOrganizations')
-tests+=('TestStateVersionOutputsRead')
 tests+=('TestOrganizationTagsList/with_no_query_params')
 tests+=('TestOrganizationTagsList/with_no_param_Filter')
 # TODO: uncomment this once support is added for tag substring querying
@@ -49,7 +48,7 @@ tests+=('TestConfigurationVersionsRead')
 tests+=('TestConfigurationVersionsUpload')
 tests+=('TestConfigurationVersionsDownload')
 tests+=('TestVariables')
-tests+=('TestVariables')
+tests+=('TestStateVersion')
 all=$(join_by '|' "${tests[@]}")
 
 ./hack/go-tfe-tests.bash $all
