@@ -175,7 +175,6 @@ func (b *stepsBuilder) terraformPlan(ctx context.Context) error {
 	return b.executeTerraform(args)
 }
 
-// uploadState reads, parses, and uploads terraform state
 func (b *stepsBuilder) terraformApply(ctx context.Context) (err error) {
 	// prior to running an apply, capture info about local state file
 	// so we can detect changes...
