@@ -65,7 +65,6 @@ func buildSteps(env *environment, run *run.Run) (steps []step) {
 		steps = append(steps, bldr.downloadPlanFile)
 		steps = append(steps, bldr.terraformInit)
 		steps = append(steps, bldr.terraformApply)
-		steps = append(steps, bldr.uploadState)
 	}
 
 	return
