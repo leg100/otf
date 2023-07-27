@@ -83,3 +83,7 @@ func CreateTagWorkspace(workspace string) string {
 func DeleteTagWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/delete-tag", workspace)
 }
+
+func StateWorkspace(workspace string) string {
+	return fmt.Sprintf("/app/workspaces/%s/state", workspace)
+}

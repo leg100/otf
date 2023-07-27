@@ -41,10 +41,12 @@ data "http" "wait" {
 `, srv.URL))
 	svc.tfcli(t, ctx, "init", config)
 
+	tfpath := downloadTerraform(t, ctx, nil)
+
 	// Invoke terraform plan
 	_, token := svc.createToken(t, ctx, nil)
 	e, tferr, err := expect.SpawnWithArgs(
-		[]string{"terraform", "-chdir=" + config, "plan", "-no-color"},
+		[]string{tfpath, "-chdir=" + config, "plan", "-no-color"},
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.SetEnv(

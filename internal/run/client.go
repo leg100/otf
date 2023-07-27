@@ -135,8 +135,7 @@ func (c *Client) StartPhase(ctx context.Context, id string, phase internal.Phase
 	}
 
 	run := &types.Run{}
-	err = c.Do(ctx, req, run)
-	if err != nil {
+	if err := c.Do(ctx, req, run); err != nil {
 		return nil, err
 	}
 

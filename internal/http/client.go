@@ -349,6 +349,8 @@ func checkResponseCode(r *http.Response) error {
 		return internal.ErrUnauthorized
 	case 404:
 		return internal.ErrResourceNotFound
+	case 418:
+		return internal.ErrPhaseAlreadyStarted
 	}
 	// Decode the error payload.
 	var payload struct {

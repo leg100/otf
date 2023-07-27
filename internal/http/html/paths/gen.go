@@ -185,6 +185,9 @@ var specs = []controllerSpec{
 					{
 						name: "delete-tag",
 					},
+					{
+						name: "state",
+					},
 				},
 				nested: []controllerSpec{
 					{

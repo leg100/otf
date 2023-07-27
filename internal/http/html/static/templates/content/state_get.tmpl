@@ -1,0 +1,74 @@
+<div class="" x-data="{ activeTab: 'resources' }">
+  <div class="flex">
+      <label
+          class="p-2 border cursor-pointer" for="resources-tab"
+          @click="activeTab = 'resources'"
+          :class="{ 'bg-gray-200 text-black border-black': activeTab == 'resources' }"
+          id="resources-label"
+      >Resources ({{ len .Resources }})</label>
+      <label
+          class="p-2 border cursor-pointer" for="outputs-tab"
+          @click="activeTab = 'outputs'"
+          :class="{ 'bg-gray-200 text-black border-black': activeTab == 'outputs' }"
+          id="outputs-label"
+      >Outputs ({{ len .Outputs }})</label>
+  </div>
+  <table
+    x-show="activeTab == 'resources'"
+    class="table-fixed w-full text-left break-words border-collapse"
+    id="resources-table"
+  >
+    {{ with .Resources }}
+      <thead class="bg-gray-200 border-t border-b border-slate-900">
+        <tr>
+          <th>Name</th>
+          <th>Provider</th>
+          <th>Type</th>
+          <th>Module</th>
+        </tr>
+      </thead>
+    {{ end }}
+    <tbody>
+      {{ range .Resources }}
+        <tr class="even:bg-gray-100">
+          <td>{{ .Name }}</td>
+          <td>{{ .Provider }}</td>
+          <td>{{ .Type }}</td>
+          <td>{{ .ModuleName }}</td>
+        </tr>
+      {{ else }}
+        <tr>
+          <td>No resources currently exist.</td>
+        </tr>
+      {{ end }}
+    </tbody>
+  </table>
+  <table
+    x-show="activeTab == 'outputs'"
+    class="table-fixed w-full text-left break-words border-collapse"
+    id="outputs-table"
+  >
+    {{ with .Outputs }}
+      <thead class="bg-gray-200 border-t border-b border-slate-900">
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+    {{ end }}
+    <tbody>
+      {{ range $k, $v := .Outputs }}
+        <tr>
+          <td>{{ $k }}</td>
+          <td>{{ $v.Type }}</td>
+          <td><span class="bg-gray-200">{{ $v.StringValue }}</span></td>
+        </tr>
+      {{ else }}
+        <tr>
+          <td>No outputs currently exist.</td>
+        </tr>
+      {{ end }}
+    </tbody>
+  </table>
+</div>

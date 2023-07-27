@@ -439,6 +439,8 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, configPath string, args ...string) (string, error) {
 	t.Helper()
 
+	tfpath := downloadTerraform(t, ctx, nil)
+
 	// Create user token expressly for the terraform cli
 	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
@@ -446,7 +448,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	cmdargs := []string{command, "-no-color"}
 	cmdargs = append(cmdargs, args...)
 
-	cmd := exec.Command("terraform", cmdargs...)
+	cmd := exec.Command(tfpath, cmdargs...)
 	cmd.Dir = configPath
 
 	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.Hostname(), token))

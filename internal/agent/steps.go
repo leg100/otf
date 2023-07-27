@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
@@ -63,7 +65,6 @@ func buildSteps(env *environment, run *run.Run) (steps []step) {
 		steps = append(steps, bldr.downloadPlanFile)
 		steps = append(steps, bldr.terraformInit)
 		steps = append(steps, bldr.terraformApply)
-		steps = append(steps, bldr.uploadState)
 	}
 
 	return
@@ -105,7 +106,7 @@ func (r *runner) cancel(force bool) {
 }
 
 func (b *stepsBuilder) downloadTerraform(ctx context.Context) error {
-	_, err := b.download(ctx, b.version, b.out)
+	_, err := b.Download(ctx, b.version, b.out)
 	return err
 }
 
@@ -128,7 +129,7 @@ func (b *stepsBuilder) deleteBackendConfig(ctx context.Context) error {
 	return nil
 }
 
-// downloadState downloads current state to disk. If there is no state yet
+// downloadState downloads current state to disk. If there is no state yet then
 // nothing will be downloaded and no error will be reported.
 func (b *stepsBuilder) downloadState(ctx context.Context) error {
 	statefile, err := b.DownloadCurrentState(ctx, b.WorkspaceID)
@@ -174,7 +175,34 @@ func (b *stepsBuilder) terraformPlan(ctx context.Context) error {
 	return b.executeTerraform(args)
 }
 
-func (b *stepsBuilder) terraformApply(ctx context.Context) error {
+func (b *stepsBuilder) terraformApply(ctx context.Context) (err error) {
+	// prior to running an apply, capture info about local state file
+	// so we can detect changes...
+	statePath := filepath.Join(b.workdir.String(), localStateFilename)
+	stateInfoBefore, _ := os.Stat(statePath)
+	// ...and after the apply finishes, determine if there were changes, and if
+	// so, create a new state version. We do this even if the apply failed
+	// because since terraform v1.5, an apply can persist partial updates:
+	//
+	// https://github.com/hashicorp/terraform/pull/32680
+	defer func() {
+		stateInfoAfter, _ := os.Stat(statePath)
+		if stateInfoAfter == nil {
+			// no state file found
+			return
+		}
+		if stateInfoBefore != nil && stateInfoAfter.ModTime().Equal(stateInfoBefore.ModTime()) {
+			// no change to state file
+			return
+		}
+		// either there was no state file before and there is one now, or the
+		// state file modification time has changed. In either case we upload
+		// the new state.
+		if stateErr := b.uploadState(ctx); stateErr != nil {
+			err = errors.Join(err, stateErr)
+		}
+	}()
+
 	args := []string{"apply"}
 	if b.IsDestroy {
 		args = append(args, "-destroy")

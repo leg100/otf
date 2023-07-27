@@ -53,6 +53,7 @@ func init() {
 	funcmap["setupConnectionRepoWorkspacePath"] = SetupConnectionRepoWorkspace
 	funcmap["createTagWorkspacePath"] = CreateTagWorkspace
 	funcmap["deleteTagWorkspacePath"] = DeleteTagWorkspace
+	funcmap["stateWorkspacePath"] = StateWorkspace
 
 	funcmap["runsPath"] = Runs
 	funcmap["createRunPath"] = CreateRun

@@ -97,7 +97,7 @@ func newEnvironment(
 		runner:     &runner{out: writer},
 		executor: &executor{
 			Config:              agent.Config,
-			terraformPathFinder: agent.terraformPathFinder,
+			TerraformPathFinder: agent.TerraformPathFinder,
 			version:             ws.TerraformVersion,
 			out:                 writer,
 			envs:                envs,

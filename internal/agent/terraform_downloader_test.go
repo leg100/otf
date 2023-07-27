@@ -25,7 +25,7 @@ func TestDownloader(t *testing.T) {
 	require.NoError(t, err)
 
 	pathFinder := newTerraformPathFinder(t.TempDir())
-	dl := newTerraformDownloader(pathFinder)
+	dl := NewDownloader(pathFinder)
 	dl.host = u.Host
 	dl.client = &http.Client{
 		Transport: &http.Transport{
@@ -34,7 +34,7 @@ func TestDownloader(t *testing.T) {
 	}
 
 	buf := new(bytes.Buffer)
-	tfpath, err := dl.download(context.Background(), "1.2.3", buf)
+	tfpath, err := dl.Download(context.Background(), "1.2.3", buf)
 	require.NoError(t, err)
 	require.FileExists(t, tfpath)
 	tfbin, err := os.ReadFile(tfpath)

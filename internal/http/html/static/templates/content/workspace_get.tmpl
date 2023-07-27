@@ -9,16 +9,21 @@
 {{ end }}
 
 {{ define "content" }}
-  <div class="flex gap-4 flex-row">
-    <div class="grow">
+  <div class="flex gap-6 flex-row">
+    <div class="grow flex flex-col gap-4">
       <div>{{ template "identifier" .Workspace }}</div>
-      <h3 class="text-lg font-bold my-2">Latest Run</h3>
-      <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
-        {{ if .Workspace.LatestRun }}
-          <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
-        {{ else }}
-          There are no runs for this workspace.
-        {{ end }}
+      <div>
+        <h3 class="text-lg font-bold my-2">Latest Run</h3>
+        <div id="latest-run" hx-ext="sse" sse-connect="{{ watchWorkspacePath .Workspace.ID }}?latest=true" sse-swap="latest-run">
+          {{ if .Workspace.LatestRun }}
+            <div hx-get="{{ widgetRunPath .Workspace.LatestRun.ID }}" hx-trigger="load" hx-swap="outerHTML"></div>
+          {{ else }}
+            There are no runs for this workspace.
+          {{ end }}
+        </div>
+      </div>
+      <div>
+        <div hx-get="{{ stateWorkspacePath .Workspace.ID }}" hx-trigger="load" hx-swap="innerHTML"></div>
       </div>
     </div>
     <div class="flex gap-4 flex-col basis-52">
@@ -51,20 +56,22 @@
         <div>Connected to <span class="bg-gray-200">{{ .Repo }} ({{ $.VCSProvider.CloudConfig }})</span></div>
       {{ end }}
       <div class="flex flex-col gap-2">
-        <h3 class="font-semibold mb-2">Tags</h3>
-        <div id="tags" class="flex flex-wrap gap-1">
-          {{ range .Workspace.Tags }}
-            <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
-              <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
-              <div class="flex gap-1 items-center bg-blue-800 text-white p-1 font-semibold rounded-lg">
-                <span>{{ . }}</span>
-                {{ if $.CanRemoveTags }}
-                  <button class="btn text-xs p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
-                {{ end }}
-              </div>
-            </form>
-          {{ end }}
-        </div>
+        <h3 class="font-semibold mb-1">Tags</h3>
+        {{ with .Workspace.Tags }}
+          <div id="tags" class="flex flex-wrap gap-1">
+            {{ range . }}
+              <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
+                <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
+                <div class="flex gap-1 items-center tag">
+                  <span>{{ . }}</span>
+                  {{ if $.CanRemoveTags }}
+                    <button class="btn text-md p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                  {{ end }}
+                </div>
+              </form>
+            {{ end }}
+          </div>
+        {{ end }}
         {{ if .CanAddTags }}
           {{ template "search-dropdown" .TagsDropdown }}
         {{ end }}
