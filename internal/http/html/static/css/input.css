@@ -60,4 +60,13 @@
   .field > label {
     @apply block font-semibold;
   }
+  table {
+    @apply text-sm;
+  }
+  tr {
+    @apply even:bg-gray-100;
+  }
+  th, td {
+    @apply p-2;
+  }
 }

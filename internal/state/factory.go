@@ -148,7 +148,7 @@ func newVersion(opts newVersionOptions) (Version, error) {
 	// extract outputs from state file
 	outputs := make(map[string]*Output, len(f.Outputs))
 	for k, v := range f.Outputs {
-		hclType, err := newHCLType(v.Value)
+		typ, err := v.Type()
 		if err != nil {
 			return Version{}, err
 		}
@@ -156,7 +156,7 @@ func newVersion(opts newVersionOptions) (Version, error) {
 		outputs[k] = &Output{
 			ID:             internal.NewID("wsout"),
 			Name:           k,
-			Type:           hclType,
+			Type:           typ,
 			Value:          v.Value,
 			Sensitive:      v.Sensitive,
 			StateVersionID: sv.ID,

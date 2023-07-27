@@ -587,6 +587,20 @@ select {
   font-weight: 600;
 }
 
+table {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+tr:nth-child(even) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 244 246 / var(--tw-bg-opacity));
+}
+
+th, td {
+  padding: 0.5rem;
+}
+
 *, ::before, ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;

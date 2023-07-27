@@ -16,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -66,6 +67,7 @@ type (
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
+		state.StateService
 		repo.RepoService
 		auth.TeamService
 		logr.Logger
@@ -90,6 +92,7 @@ func NewService(opts Options) *service {
 		Renderer:           opts.Renderer,
 		TeamService:        opts.TeamService,
 		VCSProviderService: opts.VCSProviderService,
+		StateService:       opts.StateService,
 		svc:                &svc,
 	}
 	// Register with broker so that it can relay workspace events

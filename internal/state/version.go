@@ -58,3 +58,11 @@ func (v *Version) Clone() (*Version, error) {
 	}
 	return &cloned, nil
 }
+
+func (v *Version) File() (*File, error) {
+	var f File
+	if err := json.Unmarshal(v.State, &f); err != nil {
+		return nil, err
+	}
+	return &f, nil
+}

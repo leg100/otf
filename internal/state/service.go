@@ -6,7 +6,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -48,12 +50,14 @@ type (
 		db        *pgdb
 		cache     internal.Cache // cache state file
 		workspace internal.Authorizer
+		web       *webHandlers
 
 		*factory // for creating state versions
 	}
 
 	Options struct {
 		logr.Logger
+		html.Renderer
 
 		WorkspaceAuthorizer internal.Authorizer
 
@@ -78,7 +82,15 @@ func NewService(opts Options) *service {
 		workspace: opts.WorkspaceAuthorizer,
 		factory:   &factory{db},
 	}
+	svc.web = &webHandlers{
+		Renderer: opts.Renderer,
+		Service:  &svc,
+	}
 	return &svc
+}
+
+func (a *service) AddHandlers(r *mux.Router) {
+	a.web.addHandlers(r)
 }
 
 func (a *service) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {
