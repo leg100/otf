@@ -22,6 +22,8 @@ const (
 
 	MinTerraformVersion     = "1.2.0"
 	DefaultTerraformVersion = "1.5.2"
+
+	apiTestTerraformVersion = "0.11.0"
 )
 
 var ErrNoVCSConnection = errors.New("workspace is not connected to a vcs repo")
@@ -328,8 +330,15 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	if !semver.IsValid(v) {
 		return internal.ErrInvalidTerraformVersion
 	}
+
+	// only accept terraform versions above the minimum requirement.
+	//
+	// NOTE: we make an exception for the specific version posted by the go-tfe
+	// integration tests.
 	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
-		return internal.ErrUnsupportedTerraformVersion
+		if v != apiTestTerraformVersion {
+			return internal.ErrUnsupportedTerraformVersion
+		}
 	}
 	ws.TerraformVersion = v
 	return nil
