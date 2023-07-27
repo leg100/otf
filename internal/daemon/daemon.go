@@ -212,6 +212,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
 		Cache:               cache,
+		Renderer:            renderer,
 	})
 	variableService := variable.NewService(variable.Options{
 		Logger:              logger,
@@ -293,6 +294,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		authService,
 		tokensService,
 		workspaceService,
+		stateService,
 		orgService,
 		variableService,
 		vcsProviderService,

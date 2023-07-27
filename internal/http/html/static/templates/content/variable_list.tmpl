@@ -11,7 +11,7 @@
 {{ define "content" }}
   {{ $canCreate := $.CurrentUser.CanAccessWorkspace .CreateVariableAction .Policy }}
   {{ $canDelete := $.CurrentUser.CanAccessWorkspace .DeleteVariableAction .Policy }}
-  <table class="table-fixed w-full text-left break-words border-collapse text-sm" id="variables-table">
+  <table class="table-fixed w-full text-left break-words border-collapse" id="variables-table">
     <thead class="bg-gray-200 border-t border-b border-slate-900">
       <tr>
         <th class="p-2 w-[25%]">Key</th>
