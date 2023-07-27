@@ -6,6 +6,13 @@
         {{ template "run-status" . }}
       {{ end }}
     </div>
-    {{ template "identifier" . }}
+    <div>
+      <div class="flex gap-2 items-center">
+        {{ template "identifier" . }}
+        {{ range .Tags }}
+          <span class="tag">{{ . }}</span>
+        {{ end }}
+      </div>
+    </div>
   </div>
 {{ end }}
