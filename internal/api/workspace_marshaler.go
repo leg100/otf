@@ -60,6 +60,7 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		StructuredRunOutputEnabled: from.StructuredRunOutputEnabled,
 		TerraformVersion:           from.TerraformVersion,
 		TriggerPrefixes:            from.TriggerPrefixes,
+		TriggerPatterns:            from.TriggerPatterns,
 		WorkingDirectory:           from.WorkingDirectory,
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,

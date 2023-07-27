@@ -67,6 +67,7 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		StructuredRunOutputEnabled: params.StructuredRunOutputEnabled,
 		TerraformVersion:           params.TerraformVersion,
 		TriggerPrefixes:            params.TriggerPrefixes,
+		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
 		// convert from json:api structs to tag specs
 		Tags: toTagSpecs(params.Tags),
@@ -280,6 +281,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
 		TerraformVersion:           opts.TerraformVersion,
 		TriggerPrefixes:            opts.TriggerPrefixes,
+		TriggerPatterns:            opts.TriggerPatterns,
 		WorkingDirectory:           opts.WorkingDirectory,
 	})
 	if err != nil {

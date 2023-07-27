@@ -28,6 +28,7 @@ func unmarshalJSONAPI(w *types.Workspace) *Workspace {
 		TerraformVersion:           w.TerraformVersion,
 		WorkingDirectory:           w.WorkingDirectory,
 		TriggerPrefixes:            w.TriggerPrefixes,
+		TriggerPatterns:            w.TriggerPatterns,
 		Organization:               w.Organization.Name,
 	}
 

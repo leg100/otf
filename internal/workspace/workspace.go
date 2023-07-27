@@ -50,6 +50,7 @@ type (
 		SourceURL                  string           `json:"source_url"`
 		TerraformVersion           string           `json:"terraform_version"`
 		TriggerPrefixes            []string         `json:"trigger_prefixes"`
+		TriggerPatterns            []string         `json:"trigger_patterns"`
 		WorkingDirectory           string           `json:"working_directory"`
 		Organization               string           `json:"organization"`
 		Connection                 *repo.Connection `json:"connection"`
@@ -85,6 +86,7 @@ type (
 		Tags                       []TagSpec
 		TerraformVersion           *string
 		TriggerPrefixes            []string
+		TriggerPatterns            []string
 		WorkingDirectory           *string
 		Organization               *string `schema:"organization_name,required"`
 
@@ -105,6 +107,7 @@ type (
 		StructuredRunOutputEnabled *bool
 		TerraformVersion           *string `schema:"terraform_version"`
 		TriggerPrefixes            []string
+		TriggerPatterns            []string
 		WorkingDirectory           *string
 	}
 
@@ -198,6 +201,9 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
+	}
+	if opts.TriggerPatterns != nil {
+		ws.TriggerPatterns = opts.TriggerPatterns
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory

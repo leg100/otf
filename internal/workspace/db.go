@@ -48,6 +48,7 @@ type (
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
+		TriggerPatterns            []string               `json:"trigger_patterns"`
 		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
@@ -80,6 +81,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		SourceURL:                  r.SourceURL.String,
 		TerraformVersion:           r.TerraformVersion.String,
 		TriggerPrefixes:            r.TriggerPrefixes,
+		TriggerPatterns:            r.TriggerPatterns,
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       r.Tags,
@@ -137,6 +139,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
 		TerraformVersion:           sql.String(ws.TerraformVersion),
 		TriggerPrefixes:            ws.TriggerPrefixes,
+		TriggerPatterns:            ws.TriggerPatterns,
 		QueueAllRuns:               ws.QueueAllRuns,
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
@@ -176,6 +179,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
 			TerraformVersion:           sql.String(ws.TerraformVersion),
 			TriggerPrefixes:            ws.TriggerPrefixes,
+			TriggerPatterns:            ws.TriggerPatterns,
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		})
 		return err

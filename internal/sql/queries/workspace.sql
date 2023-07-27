@@ -21,6 +21,7 @@ INSERT INTO workspaces (
     structured_run_output_enabled,
     terraform_version,
     trigger_prefixes,
+    trigger_patterns,
     working_directory,
     organization_name
 ) VALUES (
@@ -45,6 +46,7 @@ INSERT INTO workspaces (
     pggen.arg('structured_run_output_enabled'),
     pggen.arg('terraform_version'),
     pggen.arg('trigger_prefixes'),
+    pggen.arg('trigger_patterns'),
     pggen.arg('working_directory'),
     pggen.arg('organization_name')
 );
@@ -248,6 +250,7 @@ SET
     structured_run_output_enabled   = pggen.arg('structured_run_output_enabled'),
     terraform_version               = pggen.arg('terraform_version'),
     trigger_prefixes                = pggen.arg('trigger_prefixes'),
+    trigger_patterns                = pggen.arg('trigger_patterns'),
     working_directory               = pggen.arg('working_directory'),
     updated_at                      = pggen.arg('updated_at')
 WHERE workspace_id = pggen.arg('id')
