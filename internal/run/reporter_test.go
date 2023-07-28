@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ func TestReporter_HandleRun(t *testing.T) {
 			run:  &Run{ID: "run-123", Status: internal.RunPending},
 			ws: &workspace.Workspace{
 				Name:       "dev",
-				Connection: &repo.Connection{},
+				Connection: &workspace.Connection{},
 			},
 			cv: &configversion.ConfigurationVersion{
 				IngressAttributes: &configversion.IngressAttributes{

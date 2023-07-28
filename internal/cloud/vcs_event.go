@@ -22,6 +22,7 @@ type VCSPullEvent struct {
 	CommitSHA     string
 	Branch        string // head branch
 	DefaultBranch string
+	ChangedPaths  []string
 }
 
 type VCSPullEventAction string
@@ -39,6 +40,7 @@ type VCSPushEvent struct {
 	CommitSHA     string
 	Branch        string
 	DefaultBranch string
+	ChangedPaths  []string
 }
 
 // VCSTagEvent occurs when a tag is created or deleted on a repo.

@@ -33,7 +33,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 
 	switch event := rawEvent.(type) {
 	case *github.PushEvent:
-		// a github.PushEvent includes tag events but otf categorises them as separate
+		// a github.PushEvent includes tag events but OTF categorises them as separate
 		// event types
 		parts := strings.Split(event.GetRef(), "/")
 		if len(parts) != 3 || parts[0] != "refs" {

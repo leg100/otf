@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -86,9 +85,7 @@ func TestFactory(t *testing.T) {
 	t.Run("magic string - pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
 			&workspace.Workspace{
-				Connection: &workspace.Connection{
-					Connection: &repo.Connection{},
-				},
+				Connection: &workspace.Connection{},
 			},
 			&configversion.ConfigurationVersion{},
 		)
@@ -106,9 +103,7 @@ func TestFactory(t *testing.T) {
 	t.Run("pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
 			&workspace.Workspace{
-				Connection: &workspace.Connection{
-					Connection: &repo.Connection{},
-				},
+				Connection: &workspace.Connection{},
 			},
 			&configversion.ConfigurationVersion{},
 		)

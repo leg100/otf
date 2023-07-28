@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,37 +25,37 @@ func TestSpawner(t *testing.T) {
 	}{
 		{
 			name:    "spawn run upon push to default branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
+			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
 			spawned: true,
 		},
 		{
 			name:    "skip run upon push to non-default branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
+			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
 			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
 			spawned: false,
 		},
 		{
 			name:    "spawn run upon push to user-specified branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}, Branch: "dev"},
+			ws:      &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
 			event:   cloud.VCSPushEvent{Branch: "dev"},
 			spawned: true,
 		},
 		{
 			name:    "skip run upon push to branch not matching user-specified branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}, Branch: "dev"},
+			ws:      &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
 			event:   cloud.VCSPushEvent{Branch: "staging"},
 			spawned: false,
 		},
 		{
 			name:    "spawn run upon opened pr",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
+			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
 			spawned: true,
 		},
 		{
 			name:    "spawn run upon push to pr",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
+			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
 			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
 			spawned: true,
 		},

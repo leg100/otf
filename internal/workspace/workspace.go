@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 	"golang.org/x/exp/slog"
@@ -67,7 +66,8 @@ type (
 		Branch    *string `json:"branch"`
 		TagsRegex *string `json:"tags_regex"`
 
-		*repo.Connection
+		VCSProviderID string
+		Repo          string
 	}
 
 	ConnectOptions struct {
@@ -359,12 +359,10 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 		return &internal.MissingParameterError{Parameter: "vcs_provider_id"}
 	}
 	ws.Connection = &Connection{
-		Connection: &repo.Connection{
-			Repo:          *opts.RepoPath,
-			VCSProviderID: *opts.VCSProviderID,
-		},
-		Branch:    opts.Branch,
-		TagsRegex: opts.TagsRegex,
+		Repo:          *opts.RepoPath,
+		VCSProviderID: *opts.VCSProviderID,
+		Branch:        opts.Branch,
+		TagsRegex:     opts.TagsRegex,
 	}
 	return nil
 }

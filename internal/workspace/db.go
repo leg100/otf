@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -90,10 +89,8 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 	if r.WorkspaceConnection != nil {
 		ws.Connection = &Connection{
-			Connection: &repo.Connection{
-				VCSProviderID: r.Webhook.VCSProviderID.String,
-				Repo:          r.Webhook.Identifier.String,
-			},
+			VCSProviderID: r.Webhook.VCSProviderID.String,
+			Repo:          r.Webhook.Identifier.String,
 		}
 		if r.Branch.Status == pgtype.Present {
 			ws.Connection.Branch = &r.Branch.String
