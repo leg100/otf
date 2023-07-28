@@ -8,7 +8,6 @@ import (
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
@@ -136,14 +135,6 @@ func (f *fakeWebService) UnlockWorkspace(context.Context, string, *string, bool)
 
 func (f *fakeWebService) ListTags(context.Context, string, ListTagsOptions) (*resource.Page[*Tag], error) {
 	return nil, nil
-}
-
-func (f *fakeWebService) connect(context.Context, string, ConnectOptions) (*repo.Connection, error) {
-	return nil, nil
-}
-
-func (f *fakeWebService) disconnect(context.Context, string) error {
-	return nil
 }
 
 type fakeWebCloudClient struct {

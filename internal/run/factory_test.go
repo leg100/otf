@@ -86,7 +86,9 @@ func TestFactory(t *testing.T) {
 	t.Run("magic string - pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
 			&workspace.Workspace{
-				Connection: &repo.Connection{},
+				Connection: &workspace.Connection{
+					Connection: &repo.Connection{},
+				},
 			},
 			&configversion.ConfigurationVersion{},
 		)
@@ -104,7 +106,9 @@ func TestFactory(t *testing.T) {
 	t.Run("pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
 			&workspace.Workspace{
-				Connection: &repo.Connection{},
+				Connection: &workspace.Connection{
+					Connection: &repo.Connection{},
+				},
 			},
 			&configversion.ConfigurationVersion{},
 		)

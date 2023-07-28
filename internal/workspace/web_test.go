@@ -169,7 +169,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "connected repo",
-			ws:   &Workspace{ID: "ws-123", Connection: &repo.Connection{Repo: "leg100/otf"}},
+			ws:   &Workspace{ID: "ws-123", Connection: &Connection{Connection: &repo.Connection{Repo: "leg100/otf"}}},
 			user: auth.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				got := htmlquery.FindOne(doc, "//button[@id='disconnect-workspace-repo-button']")

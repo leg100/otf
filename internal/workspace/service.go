@@ -39,9 +39,6 @@ type (
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
-		connect(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error)
-		disconnect(ctx context.Context, workspaceID string) error
-
 		LockService
 		PermissionsService
 		TagService
@@ -121,19 +118,13 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		if err := s.db.create(ctx, ws); err != nil {
 			return err
 		}
-		// Optionally connect workspace to repo. This is done within a
-		// transaction, so if this fails so does the creation of the workspace.
-		// And skip authorization, otherwise the authorizer looks up the
-		// workspace and fails, because it does not exist yet because the transaction
-		// has not yet completed.
-		if opts.ConnectOptions != nil {
-			conn, err := s.connectWithoutAuthz(ctx, ws.ID, *opts.ConnectOptions)
-			if err != nil {
+		// Optionally connect workspace to repo.
+		if ws.Connection != nil {
+			if err := s.connect(ctx, ws.ID, ws.Connection); err != nil {
 				return err
 			}
-			ws.Connection = conn
 		}
-		// Optionally create tags within same transaction
+		// Optionally create tags.
 		if len(opts.Tags) > 0 {
 			added, err := s.addTags(ctx, ws, opts.Tags)
 			if err != nil {
@@ -233,8 +224,29 @@ func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts 
 		return nil, err
 	}
 
-	updated, err := s.db.update(ctx, workspaceID, func(ws *Workspace) error {
-		return ws.Update(opts)
+	// update the workspace and optionally connect/disconnect to/from vcs repo.
+	var updated *Workspace
+	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+		var connect *bool
+		updated, err = s.db.update(ctx, workspaceID, func(ws *Workspace) (err error) {
+			connect, err = ws.Update(opts)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		if connect != nil {
+			if *connect {
+				if err := s.connect(ctx, workspaceID, updated.Connection); err != nil {
+					return err
+				}
+			} else {
+				if err := s.disconnect(ctx, workspaceID); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		s.Error(err, "updating workspace", "workspace", workspaceID, "subject", subject)
@@ -275,40 +287,29 @@ func (s *service) DeleteWorkspace(ctx context.Context, workspaceID string) (*Wor
 }
 
 // connect connects the workspace to a repo.
-func (s *service) connect(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error) {
-	_, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.connectWithoutAuthz(ctx, workspaceID, opts)
-}
-
-// connectWithoutAuthz connects the workspace to a repo without checking whether
-// subject has authorization.
-func (s *service) connectWithoutAuthz(ctx context.Context, workspaceID string, opts ConnectOptions) (*repo.Connection, error) {
+func (s *service) connect(ctx context.Context, workspaceID string, connection *Connection) error {
 	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	conn, err := s.repo.Connect(ctx, repo.ConnectOptions{
+
+	_, err = s.repo.Connect(ctx, repo.ConnectOptions{
 		ConnectionType: repo.WorkspaceConnection,
 		ResourceID:     workspaceID,
-		VCSProviderID:  opts.VCSProviderID,
-		RepoPath:       opts.RepoPath,
+		VCSProviderID:  connection.VCSProviderID,
+		RepoPath:       connection.Repo,
 	})
 	if err != nil {
-		s.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", opts.RepoPath)
-		return nil, err
+		s.Error(err, "connecting workspace", "workspace", workspaceID, "subject", subject, "repo", connection.Repo)
+		return err
 	}
+	s.V(0).Info("connected workspace repo", "workspace", workspaceID, "subject", subject, "repo", connection.Repo)
 
-	s.V(0).Info("connected workspace repo", "workspace", workspaceID, "subject", subject, "repo", opts)
-
-	return conn, nil
+	return nil
 }
 
 func (s *service) disconnect(ctx context.Context, workspaceID string) error {
-	subject, err := s.CanAccess(ctx, rbac.UpdateWorkspaceAction, workspaceID)
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return err
 	}

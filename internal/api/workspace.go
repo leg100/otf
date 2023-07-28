@@ -86,16 +86,14 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if params.VCSRepo != nil {
 		if params.VCSRepo.Identifier == nil || params.VCSRepo.OAuthTokenID == nil {
-			err := errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo")
-			Error(w, err)
+			Error(w, errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo"))
 			return
 		}
 		opts.ConnectOptions = &workspace.ConnectOptions{
-			RepoPath:      *params.VCSRepo.Identifier,
-			VCSProviderID: *params.VCSRepo.OAuthTokenID,
-		}
-		if params.VCSRepo.Branch != nil {
-			opts.Branch = params.VCSRepo.Branch
+			Branch:        params.VCSRepo.Branch,
+			RepoPath:      params.VCSRepo.Identifier,
+			VCSProviderID: params.VCSRepo.OAuthTokenID,
+			TagsRegex:     params.VCSRepo.TagsRegex,
 		}
 	}
 
@@ -258,32 +256,49 @@ func (a *api) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	opts := types.WorkspaceUpdateOptions{}
-	if err := unmarshal(r.Body, &opts); err != nil {
+	params := types.WorkspaceUpdateOptions{}
+	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
-	if err := opts.Validate(); err != nil {
+	if err := params.Validate(); err != nil {
 		Error(w, err)
 		return
 	}
 
-	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, workspace.UpdateOptions{
-		AllowDestroyPlan:           opts.AllowDestroyPlan,
-		AutoApply:                  opts.AutoApply,
-		Description:                opts.Description,
-		ExecutionMode:              (*workspace.ExecutionMode)(opts.ExecutionMode),
-		FileTriggersEnabled:        opts.FileTriggersEnabled,
-		GlobalRemoteState:          opts.GlobalRemoteState,
-		Name:                       opts.Name,
-		QueueAllRuns:               opts.QueueAllRuns,
-		SpeculativeEnabled:         opts.SpeculativeEnabled,
-		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
-		TerraformVersion:           opts.TerraformVersion,
-		TriggerPrefixes:            opts.TriggerPrefixes,
-		TriggerPatterns:            opts.TriggerPatterns,
-		WorkingDirectory:           opts.WorkingDirectory,
-	})
+	opts := workspace.UpdateOptions{
+		AllowDestroyPlan:           params.AllowDestroyPlan,
+		AutoApply:                  params.AutoApply,
+		Description:                params.Description,
+		ExecutionMode:              (*workspace.ExecutionMode)(params.ExecutionMode),
+		FileTriggersEnabled:        params.FileTriggersEnabled,
+		GlobalRemoteState:          params.GlobalRemoteState,
+		Name:                       params.Name,
+		QueueAllRuns:               params.QueueAllRuns,
+		SpeculativeEnabled:         params.SpeculativeEnabled,
+		StructuredRunOutputEnabled: params.StructuredRunOutputEnabled,
+		TerraformVersion:           params.TerraformVersion,
+		TriggerPrefixes:            params.TriggerPrefixes,
+		TriggerPatterns:            params.TriggerPatterns,
+		WorkingDirectory:           params.WorkingDirectory,
+	}
+	if params.VCSRepo.Set {
+		if params.VCSRepo.Valid {
+			// client has provided non-null vcs options, which means they either
+			// want to connect the workspace or modify the connection.
+			opts.ConnectOptions = &workspace.ConnectOptions{
+				Branch:        params.VCSRepo.Branch,
+				RepoPath:      params.VCSRepo.Identifier,
+				VCSProviderID: params.VCSRepo.OAuthTokenID,
+				TagsRegex:     params.VCSRepo.TagsRegex,
+			}
+		} else {
+			// client has explicitly set VCS options to null, which means they
+			// want the workspace to be disconnected.
+			opts.Disconnect = true
+		}
+	}
+	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, opts)
 	if err != nil {
 		Error(w, err)
 		return

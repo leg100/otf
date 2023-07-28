@@ -112,7 +112,7 @@ func (s *Spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 	// workspace is skipped.
 	filterFunc := func(unfiltered []*workspace.Workspace) (filtered []*workspace.Workspace) {
 		for _, ws := range unfiltered {
-			if ws.Branch != "" && ws.Branch == branch {
+			if ws.Connection.Branch != nil && *ws.Connection.Branch == branch {
 				filtered = append(filtered, ws)
 			} else if branch == defaultBranch {
 				filtered = append(filtered, ws)

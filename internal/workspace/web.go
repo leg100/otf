@@ -364,20 +364,23 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AutoApply        bool `schema:"auto_apply"`
-		Name             *string
-		Description      *string
-		ExecutionMode    *ExecutionMode `schema:"execution_mode"`
-		TerraformVersion *string        `schema:"terraform_version"`
-		WorkingDirectory *string        `schema:"working_directory"`
-		WorkspaceID      string         `schema:"workspace_id,required"`
+		AutoApply         bool `schema:"auto_apply"`
+		Name              *string
+		Description       *string
+		ExecutionMode     *ExecutionMode `schema:"execution_mode"`
+		TerraformVersion  *string        `schema:"terraform_version"`
+		WorkingDirectory  *string        `schema:"working_directory"`
+		WorkspaceID       string         `schema:"workspace_id,required"`
+		VCSBranch         string         `schema:"vcs_branch"`
+		AlwaysTriggerRuns bool           `schema:"always_trigger_runs"`
+		TagsRegex         string         `schema:"tags_regex"`
+		TriggersPattern   string         `schema:"triggers_pattern"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	// TODO: add support for updating vcs repo, e.g. branch, etc.
 	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
@@ -529,15 +532,21 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		ConnectOptions
+		WorkspaceID   string  `schema:"workspace_id,required"`
+		RepoPath      *string `schema:"identifier,required"`
+		VCSProviderID *string `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	_, err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectOptions)
+	_, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
+		ConnectOptions: &ConnectOptions{
+			VCSProviderID: params.VCSProviderID,
+			RepoPath:      params.RepoPath,
+		},
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -554,7 +563,10 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.disconnect(r.Context(), workspaceID); err != nil {
+	_, err = h.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
+		Disconnect: true,
+	})
+	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

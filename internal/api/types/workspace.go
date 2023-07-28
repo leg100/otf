@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 )
@@ -297,7 +298,7 @@ type WorkspaceUpdateOptions struct {
 	// the keys below you wish to modify. To add a new VCS repo to a workspace
 	// that didn't previously have one, include at least the oauth-token-id and
 	// identifier keys.
-	VCSRepo *VCSRepoOptions `jsonapi:"attribute" json:"vcs-repo,omitempty"`
+	VCSRepo VCSRepoOptions `jsonapi:"attribute" json:"vcs-repo,omitempty"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching
@@ -327,4 +328,28 @@ type VCSRepoOptions struct {
 	Identifier        *string `json:"identifier,omitempty"`
 	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
+	TagsRegex         *string `json:"tags-regex,omitempty"`
+
+	Valid bool `json:"-"`
+	Set   bool `json:"-"`
+}
+
+// UnmarshalJSON differentiates between VCSRepoOptions having been explicitly
+// set to null by the client, or the client has left it out.
+func (o *VCSRepoOptions) UnmarshalJSON(data []byte) error {
+	// If this method was called, the value was set.
+	o.Set = true
+
+	if string(data) == "null" {
+		// The key was set to null
+		o.Valid = false
+		return nil
+	}
+
+	// The key isn't set to null
+	if err := json.Unmarshal(data, o); err != nil {
+		return err
+	}
+	o.Valid = true
+	return nil
 }

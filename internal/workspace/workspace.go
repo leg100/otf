@@ -29,34 +29,52 @@ var ErrNoVCSConnection = errors.New("workspace is not connected to a vcs repo")
 type (
 	// Workspace is a terraform workspace.
 	Workspace struct {
-		ID                         string           `json:"id"`
-		CreatedAt                  time.Time        `json:"created_at"`
-		UpdatedAt                  time.Time        `json:"updated_at"`
-		AllowDestroyPlan           bool             `json:"allow_destroy_plan"`
-		AutoApply                  bool             `json:"auto_apply"`
-		Branch                     string           `json:"branch"`
-		CanQueueDestroyPlan        bool             `json:"can_queue_destroy_plan"`
-		Description                string           `json:"description"`
-		Environment                string           `json:"environment"`
-		ExecutionMode              ExecutionMode    `json:"execution_mode"`
-		FileTriggersEnabled        bool             `json:"file_triggers_enabled"`
-		GlobalRemoteState          bool             `json:"global_remote_state"`
-		MigrationEnvironment       string           `json:"migration_environment"`
-		Name                       string           `json:"name"`
-		QueueAllRuns               bool             `json:"queue_all_runs"`
-		SpeculativeEnabled         bool             `json:"speculative_enabled"`
-		StructuredRunOutputEnabled bool             `json:"structured_run_output_enabled"`
-		SourceName                 string           `json:"source_name"`
-		SourceURL                  string           `json:"source_url"`
-		TerraformVersion           string           `json:"terraform_version"`
-		TriggerPrefixes            []string         `json:"trigger_prefixes"`
-		TriggerPatterns            []string         `json:"trigger_patterns"`
-		WorkingDirectory           string           `json:"working_directory"`
-		Organization               string           `json:"organization"`
-		Connection                 *repo.Connection `json:"connection"`
-		LatestRun                  *LatestRun       `json:"latest_run"`
-		Tags                       []string         `json:"tags"`
-		Lock                       *Lock            `json:"lock"`
+		ID                         string        `json:"id"`
+		CreatedAt                  time.Time     `json:"created_at"`
+		UpdatedAt                  time.Time     `json:"updated_at"`
+		AllowDestroyPlan           bool          `json:"allow_destroy_plan"`
+		AutoApply                  bool          `json:"auto_apply"`
+		CanQueueDestroyPlan        bool          `json:"can_queue_destroy_plan"`
+		Description                string        `json:"description"`
+		Environment                string        `json:"environment"`
+		ExecutionMode              ExecutionMode `json:"execution_mode"`
+		GlobalRemoteState          bool          `json:"global_remote_state"`
+		MigrationEnvironment       string        `json:"migration_environment"`
+		Name                       string        `json:"name"`
+		QueueAllRuns               bool          `json:"queue_all_runs"`
+		SpeculativeEnabled         bool          `json:"speculative_enabled"`
+		StructuredRunOutputEnabled bool          `json:"structured_run_output_enabled"`
+		SourceName                 string        `json:"source_name"`
+		SourceURL                  string        `json:"source_url"`
+		TerraformVersion           string        `json:"terraform_version"`
+		WorkingDirectory           string        `json:"working_directory"`
+		Organization               string        `json:"organization"`
+		LatestRun                  *LatestRun    `json:"latest_run"`
+		Tags                       []string      `json:"tags"`
+		Lock                       *Lock         `json:"lock"`
+
+		// VCS connection fields, which ought to belong in Connection but are
+		// included at the root of the workspace because the go-tfe integration
+		// tests set these fields without setting the connection!
+		FileTriggersEnabled bool     `json:"file_triggers_enabled"`
+		TriggerPrefixes     []string `json:"trigger_prefixes"`
+		TriggerPatterns     []string `json:"trigger_patterns"`
+
+		Connection *Connection
+	}
+
+	Connection struct {
+		Branch    *string `json:"branch"`
+		TagsRegex *string `json:"tags_regex"`
+
+		*repo.Connection
+	}
+
+	ConnectOptions struct {
+		Branch        *string
+		RepoPath      *string
+		VCSProviderID *string
+		TagsRegex     *string
 	}
 
 	// LatestRun is a summary of the latest run for a workspace
@@ -71,13 +89,12 @@ type (
 	CreateOptions struct {
 		AllowDestroyPlan           *bool
 		AutoApply                  *bool
-		Branch                     *string
 		Description                *string
 		ExecutionMode              *ExecutionMode
 		FileTriggersEnabled        *bool
 		GlobalRemoteState          *bool
 		MigrationEnvironment       *string
-		Name                       *string `schema:"name,required"`
+		Name                       *string
 		QueueAllRuns               *bool
 		SpeculativeEnabled         *bool
 		SourceName                 *string
@@ -88,7 +105,7 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
-		Organization               *string `schema:"organization_name,required"`
+		Organization               *string
 
 		*ConnectOptions
 	}
@@ -98,17 +115,26 @@ type (
 		AutoApply                  *bool
 		Name                       *string
 		Description                *string
-		ExecutionMode              *ExecutionMode `schema:"execution_mode"`
+		ExecutionMode              *ExecutionMode
 		FileTriggersEnabled        *bool
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
 		SpeculativeEnabled         *bool
 		StructuredRunOutputEnabled *bool
-		TerraformVersion           *string `schema:"terraform_version"`
+		TerraformVersion           *string
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
+
+		// Disconnect workspace from repo. It is invalid to specify true for an
+		// already disconnected workspace.
+		Disconnect bool
+
+		// Specifying ConnectOptions either connects a currently
+		// disconnected workspace, or modifies a connection if already
+		// connected.
+		*ConnectOptions
 	}
 
 	// ListOptions are options for paginating and filtering a list of
@@ -119,18 +145,6 @@ type (
 		Organization *string
 
 		resource.PageOptions
-	}
-
-	ConnectOptions struct {
-		RepoPath      string `schema:"identifier,required"` // repo id: <owner>/<repo>
-		VCSProviderID string `schema:"vcs_provider_id,required"`
-	}
-
-	// QualifiedName is the workspace's fully qualified name including the
-	// name of its organization
-	QualifiedName struct {
-		Organization string
-		Name         string
 	}
 )
 
@@ -170,9 +184,6 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
 	}
-	if opts.Branch != nil {
-		ws.Branch = *opts.Branch
-	}
 	if opts.Description != nil {
 		ws.Description = *opts.Description
 	}
@@ -199,6 +210,9 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 			return nil, err
 		}
 	}
+	if opts.TriggerPrefixes != nil && opts.TriggerPatterns != nil {
+		return nil, errors.New("cannot specify both trigger prefixes and trigger patterns")
+	}
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 	}
@@ -207,6 +221,11 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
+	}
+	if opts.ConnectOptions != nil {
+		if err := ws.addConnection(opts.ConnectOptions); err != nil {
+			return nil, err
+		}
 	}
 	return &ws, nil
 }
@@ -223,15 +242,6 @@ func (ws *Workspace) ExecutionModes() []string {
 	return []string{"local", "remote", "agent"}
 }
 
-// QualifiedName returns the workspace's qualified name including the name of
-// its organization
-func (ws *Workspace) QualifiedName() QualifiedName {
-	return QualifiedName{
-		Organization: ws.Organization,
-		Name:         ws.Name,
-	}
-}
-
 // LogValue implements slog.LogValuer.
 func (ws *Workspace) LogValue() slog.Value {
 	return slog.GroupValue(
@@ -241,13 +251,15 @@ func (ws *Workspace) LogValue() slog.Value {
 	)
 }
 
-// Update updates the workspace with the given options.
-func (ws *Workspace) Update(opts UpdateOptions) error {
+// Update updates the workspace with the given options. A boolean is returned to
+// indicate whether the workspace is to be connected to a repo (true),
+// disconnected from a repo (false), or neither (nil).
+func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	var updated bool
 
 	if opts.Name != nil {
 		if err := ws.setName(*opts.Name); err != nil {
-			return err
+			return nil, err
 		}
 		updated = true
 	}
@@ -265,12 +277,8 @@ func (ws *Workspace) Update(opts UpdateOptions) error {
 	}
 	if opts.ExecutionMode != nil {
 		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
-			return err
+			return nil, err
 		}
-		updated = true
-	}
-	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
 		updated = true
 	}
 	if opts.Operations != nil {
@@ -295,22 +303,69 @@ func (ws *Workspace) Update(opts UpdateOptions) error {
 	}
 	if opts.TerraformVersion != nil {
 		if err := ws.setTerraformVersion(*opts.TerraformVersion); err != nil {
-			return err
+			return nil, err
 		}
-		updated = true
-	}
-	if opts.TriggerPrefixes != nil {
-		ws.TriggerPrefixes = opts.TriggerPrefixes
 		updated = true
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
 		updated = true
 	}
+
+	if opts.FileTriggersEnabled != nil {
+		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+		updated = true
+	}
+	if opts.TriggerPrefixes != nil {
+		ws.TriggerPrefixes = opts.TriggerPrefixes
+		updated = true
+	}
+	if opts.TriggerPatterns != nil {
+		ws.TriggerPatterns = opts.TriggerPatterns
+		updated = true
+	}
+
+	// determine whether to connect or disconnect workspace
+	var connect *bool
+	if opts.Disconnect {
+		if ws.Connection == nil {
+			return nil, errors.New("cannot disconnect an already disconnected workspace")
+		}
+		// workspace is to be disconnected
+		connect = internal.Bool(false)
+		updated = true
+	} else if opts.ConnectOptions != nil && ws.Connection == nil {
+		// workspace is to be connected
+		if err := ws.addConnection(opts.ConnectOptions); err != nil {
+			return nil, err
+		}
+		connect = internal.Bool(true)
+		updated = true
+	}
+
 	if updated {
 		ws.UpdatedAt = internal.CurrentTimestamp()
 	}
 
+	return connect, nil
+}
+
+func (ws *Workspace) addConnection(opts *ConnectOptions) error {
+	// must specify both repo and vcs provider ID
+	if opts.RepoPath == nil {
+		return &internal.MissingParameterError{Parameter: "repo_path"}
+	}
+	if opts.VCSProviderID == nil {
+		return &internal.MissingParameterError{Parameter: "vcs_provider_id"}
+	}
+	ws.Connection = &Connection{
+		Connection: &repo.Connection{
+			Repo:          *opts.RepoPath,
+			VCSProviderID: *opts.VCSProviderID,
+		},
+		Branch:    opts.Branch,
+		TagsRegex: opts.TagsRegex,
+	}
 	return nil
 }
 

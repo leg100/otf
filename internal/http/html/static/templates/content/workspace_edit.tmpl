@@ -78,13 +78,77 @@
       </div>
     </fieldset>
     <div class="field">
-      <label for="terraform_version">Terraform version</label>
-      <input class="text-input w-48" type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]+.[0-9]+.[0-9]+" title="Must provide version in the format <major>.<minor>.<patch>">
+      <label for="terraform-version">Terraform version</label>
+      <input class="text-input w-48" type="text" name="terraform_version" id="terraform-version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]+.[0-9]+.[0-9]+" title="Must provide version in the format <major>.<minor>.<patch>">
+      <span class="description">
+        The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically.
+      </span>
     </div>
     <div class="field">
       <label for="working_directory">Working directory</label>
       <input class="text-input w-96" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
+      <span class="description">
+        The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
+      </span>
     </div>
+    <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+      <legend>VCS triggers</legend>
+      <div class="form-checkbox">
+        <input type="radio" name="vcs_trigger" id="auto-apply" value="true"/>
+        <label for="auto-apply">Always trigger runs</label>
+        <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+      </div>
+      <div class="form-checkbox">
+        <input class="peer" type="radio" name="vcs_trigger" id="manual-apply" value="false">
+        <label for="manual-apply">Only trigger runs when files in specified paths change</label>
+        <span class="col-start-2 description">Supports glob patterns.</span>
+        <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="{paths: ['./modules', './blah'], newPath: ''}">
+          <div class="flex flex-col gap-2">
+            <div class="flex gap-2 items-center">
+              <label for="new_path">Path</label>
+              <input class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" name="new_path" id="new_path">
+              <button @click="paths?.includes(newPath) || paths.push(newPath); newPath = ''" type="button" class="btn w-40" {{ insufficient $canUpdate }}>Add pattern</button>
+            </div>
+            <template x-for="path in paths">
+              <div class="flex gap-2 items-center justify-end">
+                <span class="justify-end bg-gray-200 px-2" x-text="path"></span>
+                <input type="hidden" id="path">
+                <button @click="paths = paths.filter(i => i !== path)" type="button" class="btn-danger w-40" {{ insufficient $canUpdate }}>Delete</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div class="form-checkbox">
+        <input class="peer" type="radio" name="vcs_trigger" id="manual-apply" value="false" checked>
+        <label for="manual-apply">Trigger runs when a git tag is published</label>
+        <span class="col-start-2 description">Git tags allow you to manage releases.</span>
+        <div class="col-start-2 hidden bg-gray-100 px-3 py-3 mt-2 w-full peer-checked:block">
+          <div class="flex flex-col gap-2 ">
+            <div class="form-checkbox">
+              <input type="radio" name="tags-regex" id="tags-regex-default" value="^\d+.\d+.\d+$" {{ checked .Workspace.AutoApply }}/>
+              <label for="tags-regex-default">Default</label>
+              <span>e.g. <span class="bg-gray-200">12.33.4456</span></span>
+            </div>
+            <div class="form-checkbox">
+              <input type="radio" name="tags-regex" id="tags-regex-prefix" value="\d+.\d+.\d+$" {{ checked (not .Workspace.AutoApply) }}/>
+              <label for="tags-regex-prefix">Version contains a prefix</label>
+              <span>e.g. <span class="bg-gray-200">v12.33.4456</span></span>
+            </div>
+            <div class="form-checkbox">
+              <input type="radio" name="tags-regex" id="tags-regex-suffix" value="^\d+.\d+.\d+" {{ checked (not .Workspace.AutoApply) }}/>
+              <label for="tags-regex-suffix">Version contains a suffix</label>
+              <span>e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="field mt-2">
+        <label for="vcs-branch">VCS branch</label>
+        <input class="text-input w-96" type="text" name="vcs_branch" id="vcs-branch" value="{{ .Workspace.WorkingDirectory }}">
+        <span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
+      </div>
+    </fieldset>
     <div class="field">
       <button class="btn w-40" {{ insufficient $canUpdate }}>Save changes</button>
     </div>

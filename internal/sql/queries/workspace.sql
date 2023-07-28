@@ -22,6 +22,7 @@ INSERT INTO workspaces (
     terraform_version,
     trigger_prefixes,
     trigger_patterns,
+    vcs_tags_regex,
     working_directory,
     organization_name
 ) VALUES (
@@ -47,6 +48,7 @@ INSERT INTO workspaces (
     pggen.arg('terraform_version'),
     pggen.arg('trigger_prefixes'),
     pggen.arg('trigger_patterns'),
+    pggen.arg('vcs_tags_regex'),
     pggen.arg('working_directory'),
     pggen.arg('organization_name')
 );
@@ -239,20 +241,21 @@ FOR UPDATE OF w;
 -- name: UpdateWorkspaceByID :one
 UPDATE workspaces
 SET
-    allow_destroy_plan              = pggen.arg('allow_destroy_plan'),
-    auto_apply                      = pggen.arg('auto_apply'),
-    branch                          = pggen.arg('branch'),
-    description                     = pggen.arg('description'),
-    execution_mode                  = pggen.arg('execution_mode'),
-    name                            = pggen.arg('name'),
-    queue_all_runs                  = pggen.arg('queue_all_runs'),
-    speculative_enabled             = pggen.arg('speculative_enabled'),
-    structured_run_output_enabled   = pggen.arg('structured_run_output_enabled'),
-    terraform_version               = pggen.arg('terraform_version'),
-    trigger_prefixes                = pggen.arg('trigger_prefixes'),
-    trigger_patterns                = pggen.arg('trigger_patterns'),
-    working_directory               = pggen.arg('working_directory'),
-    updated_at                      = pggen.arg('updated_at')
+    allow_destroy_plan            = pggen.arg('allow_destroy_plan'),
+    auto_apply                    = pggen.arg('auto_apply'),
+    branch                        = pggen.arg('branch'),
+    description                   = pggen.arg('description'),
+    execution_mode                = pggen.arg('execution_mode'),
+    name                          = pggen.arg('name'),
+    queue_all_runs                = pggen.arg('queue_all_runs'),
+    speculative_enabled           = pggen.arg('speculative_enabled'),
+    structured_run_output_enabled = pggen.arg('structured_run_output_enabled'),
+    terraform_version             = pggen.arg('terraform_version'),
+    trigger_prefixes              = pggen.arg('trigger_prefixes'),
+    trigger_patterns              = pggen.arg('trigger_patterns'),
+    vcs_tags_regex                = pggen.arg('vcs_tags_regex'),
+    working_directory             = pggen.arg('working_directory'),
+    updated_at                    = pggen.arg('updated_at')
 WHERE workspace_id = pggen.arg('id')
 RETURNING workspace_id;
 
