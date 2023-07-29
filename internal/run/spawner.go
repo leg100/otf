@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
+	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/workspace"
 )
 
 type (
@@ -26,104 +25,130 @@ type (
 	}
 )
 
-// Start the run spawner.
-func (s *Spawner) Start(ctx context.Context) error {
-	sub, err := s.Subscribe(ctx, "run-spawner")
-	if err != nil {
-		return err
-	}
-
-	for event := range sub {
-		// skip non-vcs events
-		if event.Type != pubsub.EventVCS {
-			continue
-		}
-		if err := s.handle(ctx, event.Payload); err != nil {
-			s.Error(err, "handling vcs event")
-		}
-	}
-	return nil
-}
-
-func (s *Spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
-	var (
-		repoID                uuid.UUID
-		isPullRequest         bool
-		branch, defaultBranch string
-		sha                   string
+func (s *Spawner) handle(event cloud.VCSEvent) {
+	logger := s.Logger.WithValues(
+		"sha", event.CommitSHA,
+		"type", event.Type,
+		"action", event.Action,
+		"branch", event.Branch,
+		"tag", event.Tag,
 	)
 
-	switch event := event.(type) {
-	case cloud.VCSPushEvent:
-		repoID = event.RepoID
-		sha = event.CommitSHA
-		branch = event.Branch
-		defaultBranch = event.DefaultBranch
-	case cloud.VCSPullEvent:
-		// only spawn runs when opening a PR and pushing to a PR
+	if err := s.handleWithError(logger, event); err != nil {
+		s.Error(err, "handling event")
+	}
+}
+
+func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) error {
+	// no parent context; handler is called asynchronously
+	ctx := context.Background()
+
+	// filter events based on event type and action
+	switch event.Type {
+	case cloud.VCSEventTypePull:
+		// skip pull request events other than those for opening and updating a pull
+		// request
 		switch event.Action {
-		case cloud.VCSPullEventOpened, cloud.VCSPullEventUpdated:
+		case cloud.VCSActionPullOpened, cloud.VCSActionPullUpdated:
 		default:
 			return nil
 		}
-		repoID = event.RepoID
-		sha = event.CommitSHA
-		branch = event.Branch
-		defaultBranch = event.DefaultBranch
-		isPullRequest = true
+	case cloud.VCSEventTypePush, cloud.VCSEventTypeTag:
+		// don't skip these events
+	default:
+		// skip all other events
 	}
 
-	s.Info("spawning run", "repo_id", repoID)
-
-	workspaces, err := s.ListWorkspacesByRepoID(ctx, repoID)
+	workspaces, err := s.ListWorkspacesByRepoID(ctx, event.RepoID)
 	if err != nil {
 		return err
 	}
 	if len(workspaces) == 0 {
-		s.Info("no connected workspaces found")
+		logger.V(9).Info("handling event: no connected workspaces found")
 		return nil
 	}
 
-	// we have 1+ workspaces connected to this repo but we only need to retrieve
-	// the repo once, and to do so we'll use the VCS provider associated with
-	// the first workspace (any would do).
-	if workspaces[0].Connection == nil {
-		return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
-	}
-	providerID := workspaces[0].Connection.VCSProviderID
+	// filter out workspaces based on info contained in the event
+	n := 0
+	for _, ws := range workspaces {
+		switch event.Type {
+		case cloud.VCSEventTypeTag:
+			// skip workspaces with a non-nil tag regex that doesn't match the
+			// tag event
+			if ws.Connection.TagsRegex != nil {
+				if !ws.Connection.TagsRegex.MatchString(event.Tag) {
+					continue
+				}
+			}
+		case cloud.VCSEventTypePush:
+			// skip workspaces with a non-default branch that doesn't match the
+			// event branch
+			if ws.Connection.Branch != nil && *ws.Connection.Branch != event.Branch {
+				continue
+			}
+		}
 
-	client, err := s.GetVCSClient(ctx, providerID)
+		// only tag and push events contain a list of changed files
+		switch event.Type {
+		case cloud.VCSEventTypeTag, cloud.VCSEventTypePush:
+			// filter workspaces with trigger pattern that doesn't match any of the
+			// files in the event
+			if ws.FileTriggersEnabled {
+				if !globMatch(event.Paths, ws.TriggerPatterns) {
+					continue
+				}
+			}
+		}
+		workspaces[n] = ws
+		n++
+	}
+	if n == 0 {
+		// no workspaces survived the filter
+		return nil
+	}
+	workspaces = workspaces[:n]
+
+	// fetch tarball
+	client, err := s.GetVCSClient(ctx, event.VCSProviderID)
 	if err != nil {
 		return err
 	}
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
-		Repo: workspaces[0].Connection.Repo,
-		Ref:  &sha,
+		Repo: event.RepoPath,
+		Ref:  &event.CommitSHA,
 	})
 	if err != nil {
-		return fmt.Errorf("retrieving repository tarball: %w", err)
+		return fmt.Errorf("retrieving repo tarball: %w", err)
 	}
 
-	// Determine which workspaces to spawn runs for. If it's a PR then a
-	// plan-only run is spawned for all workspaces. Otherwise each workspace's
-	// branch setting is checked and if it set then it must match the event's
-	// branch. If it is not set then the event's branch must match the repo's
-	// default branch. If neither of these conditions are true then the
-	// workspace is skipped.
-	filterFunc := func(unfiltered []*workspace.Workspace) (filtered []*workspace.Workspace) {
-		for _, ws := range unfiltered {
-			if ws.Connection.Branch != nil && *ws.Connection.Branch == branch {
-				filtered = append(filtered, ws)
-			} else if branch == defaultBranch {
-				filtered = append(filtered, ws)
-			} else {
-				continue
+	// pull request events don't contain a list of changed files; instead an API
+	// call is necsssary to retrieve the list of changed files
+	if event.Type == cloud.VCSEventTypePull {
+		// only perform API call if at least one workspace has file triggers
+		// enabled.
+		var listFiles bool
+		for _, ws := range workspaces {
+			if ws.FileTriggersEnabled {
+				listFiles = true
+				break
 			}
 		}
-		return
-	}
-	if !isPullRequest {
-		workspaces = filterFunc(workspaces)
+		if listFiles {
+			paths, err := client.ListPullRequestFiles(ctx, event.RepoPath, event.PullNumber)
+			if err != nil {
+				return fmt.Errorf("retrieving list of files in pull request from cloud provider: %w", err)
+			}
+			n := 0
+			for _, ws := range workspaces {
+				if ws.FileTriggersEnabled && !globMatch(paths, ws.TriggerPatterns) {
+					// skip workspace
+					continue
+				}
+				workspaces[n] = ws
+				n++
+			}
+			workspaces = workspaces[:n]
+		}
 	}
 
 	// create a config version for each workspace and spawn run.
@@ -133,18 +158,19 @@ func (s *Spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
 		}
 		cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
-			Speculative: internal.Bool(isPullRequest),
+			// pull request events only trigger speculative runs
+			Speculative: internal.Bool(event.Type == cloud.VCSEventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string
-				Branch: branch,
+				Branch: event.Branch,
 				// CloneURL          string
 				// CommitMessage     string
-				CommitSHA: sha,
+				CommitSHA: event.CommitSHA,
 				// CommitURL         string
 				// CompareURL        string
 				Repo:            ws.Connection.Repo,
-				IsPullRequest:   isPullRequest,
-				OnDefaultBranch: branch == defaultBranch,
+				IsPullRequest:   event.Type == cloud.VCSEventTypePull,
+				OnDefaultBranch: event.Branch == event.DefaultBranch,
 			},
 		})
 		if err != nil {
@@ -161,4 +187,21 @@ func (s *Spawner) handle(ctx context.Context, event cloud.VCSEvent) error {
 		}
 	}
 	return nil
+}
+
+// globMatch returns true if any of the paths match any of the glob patterns.
+func globMatch(paths []string, patterns []string) bool {
+	if len(paths) == 0 || len(patterns) == 0 {
+		return false
+	}
+	for _, pattern := range patterns {
+		g := glob.MustCompile(pattern)
+		for _, path := range paths {
+			if g.Match(path) {
+				// only one match is necessary
+				return true
+			}
+		}
+	}
+	return false
 }

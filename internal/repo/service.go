@@ -28,6 +28,8 @@ type (
 		// webhook is removed.
 		Disconnect(ctx context.Context, opts DisconnectOptions) error
 
+		GetWebhook(ctx context.Context, webhookID uuid.UUID) (*Hook, error)
+
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
 

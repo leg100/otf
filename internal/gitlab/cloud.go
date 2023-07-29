@@ -13,6 +13,6 @@ func (g *Cloud) NewClient(ctx context.Context, opts cloud.ClientOptions) (cloud.
 	return NewClient(ctx, opts)
 }
 
-func (Cloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
-	return HandleEvent(w, r, opts)
+func (Cloud) HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+	return HandleEvent(w, r, secret)
 }

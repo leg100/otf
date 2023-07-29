@@ -181,9 +181,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	}
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSPushEventType:
+		case cloud.VCSEventTypePush:
 			addOpts.PushEvents = internal.Bool(true)
-		case cloud.VCSPullEventType:
+		case cloud.VCSEventTypePull:
 			addOpts.MergeRequestsEvents = internal.Bool(true)
 		}
 	}
@@ -208,9 +208,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.Update
 	}
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSPushEventType:
+		case cloud.VCSEventTypePush:
 			editOpts.PushEvents = internal.Bool(true)
-		case cloud.VCSPullEventType:
+		case cloud.VCSEventTypePull:
 			editOpts.MergeRequestsEvents = internal.Bool(true)
 		}
 	}
@@ -238,10 +238,10 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 
 	var events []cloud.VCSEventType
 	if hook.PushEvents {
-		events = append(events, cloud.VCSPushEventType)
+		events = append(events, cloud.VCSEventTypePush)
 	}
 	if hook.MergeRequestsEvents {
-		events = append(events, cloud.VCSPullEventType)
+		events = append(events, cloud.VCSEventTypePull)
 	}
 
 	return cloud.Webhook{
@@ -264,4 +264,8 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOpti
 
 func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
 	return nil
+}
+
+func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
+	return nil, nil
 }

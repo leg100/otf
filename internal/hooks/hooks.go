@@ -35,7 +35,6 @@ func NewHook(db *sql.DB) *Hook {
 		db:     db,
 		before: make([]Listener, 0),
 		after:  make([]Listener, 0),
-		mu:     sync.RWMutex{},
 	}
 }
 

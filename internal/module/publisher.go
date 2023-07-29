@@ -48,7 +48,7 @@ func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error
 	if !ok {
 		return nil
 	}
-	if tagEvent.Action != cloud.VCSTagEventCreatedAction {
+	if tagEvent.Action != cloud.VCSActionTagCreated {
 		return nil
 	}
 	// only interested in tags that look like semantic versions

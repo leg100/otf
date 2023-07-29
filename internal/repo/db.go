@@ -92,6 +92,23 @@ func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 	return hooks, nil
 }
 
+func (db *db) listHooksByProvider(ctx context.Context, vcsProviderID string) ([]*hook, error) {
+	q := db.Conn(ctx)
+	result, err := q.FindWebhooksByProvider(ctx, sql.String(vcsProviderID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	hooks := make([]*hook, len(result))
+	for i, row := range result {
+		hook, err := db.fromRow(hookRow(row))
+		if err != nil {
+			return nil, sql.Error(err)
+		}
+		hooks[i] = hook
+	}
+	return hooks, nil
+}
+
 func (db *db) listUnreferencedWebhooks(ctx context.Context) ([]*hook, error) {
 	q := db.Conn(ctx)
 	result, err := q.FindUnreferencedWebhooks(ctx)

@@ -50,13 +50,13 @@ func TestSpawner(t *testing.T) {
 		{
 			name:    "spawn run upon opened pr",
 			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
-			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
+			event:   cloud.VCSPullEvent{Action: cloud.VCSActionPullOpened},
 			spawned: true,
 		},
 		{
 			name:    "spawn run upon push to pr",
 			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
-			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
+			event:   cloud.VCSPullEvent{Action: cloud.VCSActionPullUpdated},
 			spawned: true,
 		},
 	}

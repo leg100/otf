@@ -3,6 +3,7 @@ package workspace
 
 import (
 	"errors"
+	"regexp"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -63,8 +64,8 @@ type (
 	}
 
 	Connection struct {
-		Branch    *string `json:"branch"`
-		TagsRegex *string `json:"tags_regex"`
+		Branch    *string        `json:"branch"`
+		TagsRegex *regexp.Regexp `json:"tags_regex"`
 
 		VCSProviderID string
 		Repo          string

@@ -22,6 +22,8 @@ type (
 		// ListTags lists git tags on a repository. Each tag should be prefixed with
 		// 'tags/'.
 		ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
+		// ListPullRequestFiles returns the paths of files that are modified in the pull request
+		ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error)
 	}
 
 	// ClientOptions are options for constructing a cloud client
