@@ -13,8 +13,8 @@ import (
 )
 
 type (
-	// Publisher publishes new versions of terraform modules from VCS tags
-	Publisher struct {
+	// publisher publishes new versions of terraform modules from VCS tags
+	publisher struct {
 		logr.Logger
 		pubsub.Subscriber
 		vcsprovider.VCSProviderService
@@ -22,40 +22,37 @@ type (
 	}
 )
 
-// Start starts handling VCS events and publishing modules accordingly
-func (p *Publisher) Start(ctx context.Context) error {
-	sub, err := p.Subscribe(ctx, "module-publisher-")
-	if err != nil {
-		return err
-	}
+func (p *publisher) handle(event cloud.VCSEvent) {
+	logger := p.Logger.WithValues(
+		"sha", event.CommitSHA,
+		"type", event.Type,
+		"action", event.Action,
+		"branch", event.Branch,
+		"tag", event.Tag,
+	)
 
-	for event := range sub {
-		// skip non-vcs events
-		if event.Type != pubsub.EventVCS {
-			continue
-		}
-		if err := p.handleEvent(ctx, event.Payload); err != nil {
-			p.Error(err, "handling vcs event")
-		}
+	if err := p.handleWithError(logger, event); err != nil {
+		p.Error(err, "handling event")
 	}
-	return nil
 }
 
-// PublishFromEvent publishes a module version in response to a vcs event.
-func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error {
-	// only publish when new tagEvent is created
-	tagEvent, ok := event.(cloud.VCSTagEvent)
-	if !ok {
+// handlerWithError publishes a module version in response to a vcs event.
+func (p *publisher) handleWithError(logger logr.Logger, event cloud.VCSEvent) error {
+	// no parent context; handler is called asynchronously
+	ctx := context.Background()
+
+	// only create-tag events trigger the publishing of new module
+	if event.Type != cloud.VCSEventTypeTag {
 		return nil
 	}
-	if tagEvent.Action != cloud.VCSActionTagCreated {
+	if event.Action != cloud.VCSActionCreated {
 		return nil
 	}
 	// only interested in tags that look like semantic versions
-	if !semver.IsValid(tagEvent.Tag) {
+	if !semver.IsValid(event.Tag) {
 		return nil
 	}
-	module, err := p.GetModuleByRepoID(ctx, tagEvent.RepoID)
+	module, err := p.GetModuleByRepoID(ctx, event.RepoID)
 	if err != nil {
 		return err
 	}
@@ -69,8 +66,8 @@ func (p *Publisher) handleEvent(ctx context.Context, event cloud.VCSEvent) error
 	return p.PublishVersion(ctx, PublishVersionOptions{
 		ModuleID: module.ID,
 		// strip off v prefix if it has one
-		Version: strings.TrimPrefix(tagEvent.Tag, "v"),
-		Ref:     tagEvent.CommitSHA,
+		Version: strings.TrimPrefix(event.Tag, "v"),
+		Ref:     event.CommitSHA,
 		Repo:    Repo(module.Connection.Repo),
 		Client:  client,
 	})

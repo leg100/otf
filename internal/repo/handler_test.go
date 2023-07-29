@@ -14,14 +14,14 @@ import (
 )
 
 func TestWebhookHandler(t *testing.T) {
-	publisher := &fakePublisher{}
-	want := pubsub.Event{Type: pubsub.EventVCS, Payload: cloud.VCSPushEvent{}, Local: true}
-	f := newTestFactory(t, cloud.VCSPushEvent{})
+	broker := &fakeBroker{}
+	want := pubsub.Event{Type: pubsub.EventVCS, Payload: cloud.VCSEvent{}, Local: true}
+	f := newTestFactory(t, cloud.VCSEvent{})
 	hook := newTestHook(t, f, "vcs-123", internal.String("123"))
 	handler := handler{
-		Publisher: publisher,
-		Logger:    logr.Discard(),
-		handlerDB: &fakeHandlerDB{hook: hook},
+		Logger:        logr.Discard(),
+		handlerBroker: broker,
+		handlerDB:     &fakeHandlerDB{hook: hook},
 	}
 
 	w := httptest.NewRecorder()
@@ -29,15 +29,15 @@ func TestWebhookHandler(t *testing.T) {
 	handler.ServeHTTP(w, r)
 	assert.Equal(t, 200, w.Code)
 
-	assert.Equal(t, want, publisher.got)
+	assert.Equal(t, want, broker.got)
 }
 
 type (
 	fakeHandlerDB struct {
 		hook *hook
 	}
-	fakePublisher struct {
-		got pubsub.Event
+	fakeBroker struct {
+		got cloud.VCSEvent
 	}
 )
 
@@ -45,4 +45,4 @@ func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) 
 	return db.hook, nil
 }
 
-func (f *fakePublisher) Publish(got pubsub.Event) { f.got = got }
+func (f *fakeBroker) publish(got cloud.VCSEvent) { f.got = got }

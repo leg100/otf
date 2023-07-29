@@ -55,9 +55,9 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 
 			switch {
 			case event.GetCreated():
-				to.Action = cloud.VCSActionTagCreated
+				to.Action = cloud.VCSActionCreated
 			case event.GetDeleted():
-				to.Action = cloud.VCSActionTagDeleted
+				to.Action = cloud.VCSActionDeleted
 			default:
 				return nil, fmt.Errorf("no action specified for tag event")
 			}
@@ -82,15 +82,15 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 
 		switch event.GetAction() {
 		case "opened":
-			to.Action = cloud.VCSActionPullOpened
+			to.Action = cloud.VCSActionCreated
 		case "closed":
 			if event.PullRequest.GetMerged() {
-				to.Action = cloud.VCSActionPullMerged
+				to.Action = cloud.VCSActionMerged
 			} else {
-				to.Action = cloud.VCSActionPullClosed
+				to.Action = cloud.VCSActionDeleted
 			}
 		case "synchronize":
-			to.Action = cloud.VCSActionPullUpdated
+			to.Action = cloud.VCSActionUpdated
 		default:
 			// ignore other pull request events
 			return nil, nil

@@ -3,9 +3,11 @@ package workspace
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
@@ -64,8 +66,8 @@ type (
 	}
 
 	Connection struct {
-		Branch    *string        `json:"branch"`
-		TagsRegex *regexp.Regexp `json:"tags_regex"`
+		Branch    *string `json:"branch"`
+		TagsRegex *string `json:"tags_regex"`
 
 		VCSProviderID string
 		Repo          string
@@ -218,7 +220,9 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 	}
 	if opts.TriggerPatterns != nil {
-		ws.TriggerPatterns = opts.TriggerPatterns
+		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
+			return nil, err
+		}
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
@@ -322,7 +326,9 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		updated = true
 	}
 	if opts.TriggerPatterns != nil {
-		ws.TriggerPatterns = opts.TriggerPatterns
+		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
+			return nil, err
+		}
 		updated = true
 	}
 
@@ -359,6 +365,11 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 	if opts.VCSProviderID == nil {
 		return &internal.MissingParameterError{Parameter: "vcs_provider_id"}
 	}
+	if opts.TagsRegex != nil {
+		if _, err := regexp.Compile(*opts.TagsRegex); err != nil {
+			return fmt.Errorf("invalid VCS tags regex: %w", err)
+		}
+	}
 	ws.Connection = &Connection{
 		Repo:          *opts.RepoPath,
 		VCSProviderID: *opts.VCSProviderID,
@@ -392,5 +403,15 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 		return internal.ErrUnsupportedTerraformVersion
 	}
 	ws.TerraformVersion = v
+	return nil
+}
+
+func (ws *Workspace) setTriggerPatterns(patterns []string) error {
+	for _, patt := range patterns {
+		if _, err := glob.Compile(patt); err != nil {
+			return fmt.Errorf("invalid trigger pattern: %w", err)
+		}
+	}
+	ws.TriggerPatterns = patterns
 	return nil
 }

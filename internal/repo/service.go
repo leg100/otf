@@ -23,12 +23,14 @@ type (
 		// Connect adds a connection between a VCS repo and an OTF resource. A
 		// webhook is created if one doesn't exist already.
 		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
+
 		// Disconnect removes a connection between a VCS repo and an OTF
 		// resource. If there are no more connections then its
 		// webhook is removed.
 		Disconnect(ctx context.Context, opts DisconnectOptions) error
 
-		GetWebhook(ctx context.Context, webhookID uuid.UUID) (*Hook, error)
+		// Subscribe to incoming VCS events
+		Subscribe(cb Callback)
 
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
@@ -42,6 +44,7 @@ type (
 		*handler      // handles incoming vcs events
 		factory       // produce new hooks
 		*synchroniser // synchronise hooks
+		*broker       // relay VCS events to subscribers
 	}
 
 	Options struct {
@@ -63,10 +66,11 @@ func NewService(ctx context.Context, opts Options) *service {
 		Service:         opts.CloudService,
 	}
 	db := &db{opts.DB, factory}
+	broker := &broker{}
 	handler := &handler{
-		Logger:    opts.Logger,
-		Publisher: opts.Broker,
-		handlerDB: db,
+		Logger:        opts.Logger,
+		handlerDB:     db,
+		handlerBroker: broker,
 	}
 	svc := &service{
 		Logger:       opts.Logger,
@@ -75,6 +79,7 @@ func NewService(ctx context.Context, opts Options) *service {
 		factory:      factory,
 		handler:      handler,
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
+		broker:       broker,
 	}
 
 	// Delete webhooks prior to the deletion of VCS providers. VCS providers are

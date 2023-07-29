@@ -3,13 +3,14 @@ package run
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/go-logr/logr"
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/repo"
 )
 
 type (
@@ -21,7 +22,7 @@ type (
 		WorkspaceService
 		VCSProviderService
 		RunService
-		pubsub.Subscriber
+		repo.Subscriber
 	}
 )
 
@@ -43,20 +44,11 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
 
-	// filter events based on event type and action
-	switch event.Type {
-	case cloud.VCSEventTypePull:
-		// skip pull request events other than those for opening and updating a pull
-		// request
-		switch event.Action {
-		case cloud.VCSActionPullOpened, cloud.VCSActionPullUpdated:
-		default:
-			return nil
-		}
-	case cloud.VCSEventTypePush, cloud.VCSEventTypeTag:
-		// don't skip these events
+	// skip events other than those that create or update a ref or pull request
+	switch event.Action {
+	case cloud.VCSActionCreated, cloud.VCSActionUpdated:
 	default:
-		// skip all other events
+		return nil
 	}
 
 	workspaces, err := s.ListWorkspacesByRepoID(ctx, event.RepoID)
@@ -76,15 +68,24 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 			// skip workspaces with a non-nil tag regex that doesn't match the
 			// tag event
 			if ws.Connection.TagsRegex != nil {
-				if !ws.Connection.TagsRegex.MatchString(event.Tag) {
+				re := regexp.MustCompile(*ws.Connection.TagsRegex)
+				if !re.MatchString(event.Tag) {
 					continue
 				}
 			}
 		case cloud.VCSEventTypePush:
-			// skip workspaces with a non-default branch that doesn't match the
-			// event branch
-			if ws.Connection.Branch != nil && *ws.Connection.Branch != event.Branch {
-				continue
+			if ws.Connection.Branch != nil {
+				// skip workspaces with a non-default branch that doesn't match the
+				// event branch
+				if *ws.Connection.Branch != event.Branch {
+					continue
+				}
+			} else {
+				// skip workspaces with default branch for events on non-default
+				// branches
+				if event.Branch != event.DefaultBranch {
+					continue
+				}
 			}
 		}
 
@@ -153,12 +154,8 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 
 	// create a config version for each workspace and spawn run.
 	for _, ws := range workspaces {
-		if ws.Connection == nil {
-			// Should never happen...
-			return fmt.Errorf("workspace is not connected to a repo: %s", workspaces[0].ID)
-		}
 		cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
-			// pull request events only trigger speculative runs
+			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == cloud.VCSEventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
 				// ID     string

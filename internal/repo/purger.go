@@ -40,7 +40,7 @@ func (p *Purger) Start(ctx context.Context) error {
 	defer cancel()
 
 	// subscribe to webhook database events
-	sub, err := p.Subscribe(ctx, "purger-")
+	sub, err := p.Subscriber.Subscribe(ctx, "purger-")
 	if err != nil {
 		return err
 	}

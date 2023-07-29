@@ -189,6 +189,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:          vcsProviderService,
 		Broker:                      broker,
 		Cache:                       cache,
+		Subscriber:                  repoService,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -383,30 +384,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			System:         d.LogsService,
 		},
 		{
-			Name:           "spawner",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			System: &run.Spawner{
-				Logger:                      d.Logger.WithValues("component", "spawner"),
-				ConfigurationVersionService: d.ConfigurationVersionService,
-				WorkspaceService:            d.WorkspaceService,
-				VCSProviderService:          d.VCSProviderService,
-				RunService:                  d.RunService,
-				Subscriber:                  d.Broker,
-			},
-		},
-		{
-			Name:           "publisher",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			System: &module.Publisher{
-				Logger:             d.Logger.WithValues("component", "publisher"),
-				VCSProviderService: d.VCSProviderService,
-				ModuleService:      d.ModuleService,
-				Subscriber:         d.Broker,
-			},
-		},
-		{
 			Name:           "reporter",
 			BackoffRestart: true,
 			Logger:         d.Logger,
@@ -461,7 +438,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,
 				RunService:       d.RunService,
-				Subscriber:       d,
+				Subscriber:       d.Broker,
 			}),
 		})
 	}

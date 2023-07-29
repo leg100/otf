@@ -9,12 +9,10 @@ const (
 	VCSEventTypePush
 	VCSEventTypeTag
 
-	VCSActionPullOpened VCSAction = iota
-	VCSActionPullClosed
-	VCSActionPullMerged
-	VCSActionPullUpdated
-	VCSActionTagCreated
-	VCSActionTagDeleted
+	VCSActionCreated VCSAction = iota
+	VCSActionDeleted
+	VCSActionMerged
+	VCSActionUpdated
 )
 
 type (

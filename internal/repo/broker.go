@@ -11,10 +11,14 @@ type (
 		subscribers []func(event cloud.VCSEvent)
 		mu          sync.RWMutex
 	}
-	callback func(event cloud.VCSEvent)
+	Callback func(event cloud.VCSEvent)
+
+	Subscriber interface {
+		Subscribe(cb Callback)
+	}
 )
 
-func (b *broker) Subscribe(cb callback) {
+func (b *broker) Subscribe(cb Callback) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

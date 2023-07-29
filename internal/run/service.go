@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -102,6 +103,7 @@ type (
 		*sql.DB
 		html.Renderer
 		*pubsub.Broker
+		repo.Subscriber
 	}
 )
 
@@ -132,9 +134,19 @@ func NewService(opts Options) *service {
 		logger:           opts.Logger,
 		svc:              &svc,
 	}
+	spawner := &Spawner{
+		Logger:                      opts.Logger.WithValues("component", "spawner"),
+		ConfigurationVersionService: opts.ConfigurationVersionService,
+		WorkspaceService:            opts.WorkspaceService,
+		VCSProviderService:          opts.VCSProviderService,
+		RunService:                  &svc,
+	}
 
 	// Register with broker so that it can relay run events
 	opts.Register("runs", &svc)
+
+	// Subscribe run spawner to incoming vcs events
+	opts.Subscriber.Subscribe(spawner.handle)
 
 	return &svc
 }

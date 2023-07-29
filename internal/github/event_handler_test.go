@@ -38,7 +38,7 @@ func TestEventHandler(t *testing.T) {
 
 		want := &cloud.VCSEvent{
 			Type:   cloud.VCSEventTypePull,
-			Action: cloud.VCSActionPullOpened,
+			Action: cloud.VCSActionCreated,
 			Branch: "pr-1",
 		}
 		assert.Equal(t, want, got)
@@ -53,7 +53,7 @@ func TestEventHandler(t *testing.T) {
 
 		want := &cloud.VCSEvent{
 			Type:   cloud.VCSEventTypePull,
-			Action: cloud.VCSActionPullUpdated,
+			Action: cloud.VCSActionUpdated,
 			Branch: "pr-1",
 		}
 		assert.Equal(t, want, got)

@@ -15,49 +15,47 @@ import (
 )
 
 func TestSpawner(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
-		name    string
-		ws      *workspace.Workspace
-		event   cloud.VCSEvent // incoming event
-		spawned bool           // want spawned run
+		name  string
+		ws    *workspace.Workspace
+		event cloud.VCSEvent // incoming event
+		spawn bool           // want spawned run
 	}{
 		{
-			name:    "spawn run upon push to default branch",
-			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
-			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
-			spawned: true,
+			name:  "spawn run upon push to default branch",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "main", DefaultBranch: "main"},
+			spawn: true,
 		},
 		{
-			name:    "skip run upon push to non-default branch",
-			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
-			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
-			spawned: false,
+			name:  "skip run upon push to non-default branch",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "dev", DefaultBranch: "main"},
+			spawn: false,
 		},
 		{
-			name:    "spawn run upon push to user-specified branch",
-			ws:      &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
-			event:   cloud.VCSPushEvent{Branch: "dev"},
-			spawned: true,
+			name:  "spawn run upon push to user-specified branch",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "dev"},
+			spawn: true,
 		},
 		{
-			name:    "skip run upon push to branch not matching user-specified branch",
-			ws:      &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
-			event:   cloud.VCSPushEvent{Branch: "staging"},
-			spawned: false,
+			name:  "skip run upon push to branch not matching user-specified branch",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "staging"},
+			spawn: false,
 		},
 		{
-			name:    "spawn run upon opened pr",
-			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
-			event:   cloud.VCSPullEvent{Action: cloud.VCSActionPullOpened},
-			spawned: true,
+			name:  "spawn run upon opened pr",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionCreated},
+			spawn: true,
 		},
 		{
-			name:    "spawn run upon push to pr",
-			ws:      &workspace.Workspace{Connection: &workspace.Connection{}},
-			event:   cloud.VCSPullEvent{Action: cloud.VCSActionPullUpdated},
-			spawned: true,
+			name:  "spawn run upon push to pr",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionUpdated},
+			spawn: true,
 		},
 	}
 	for _, tt := range tests {
@@ -70,12 +68,11 @@ func TestSpawner(t *testing.T) {
 				WorkspaceService:            services,
 				VCSProviderService:          services,
 				RunService:                  services,
-				Logger:                      logr.Discard(),
 			}
-			err := spawner.handle(ctx, tt.event)
+			err := spawner.handleWithError(logr.Discard(), tt.event)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.spawned, services.spawned)
+			assert.Equal(t, tt.spawn, services.spawned)
 		})
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
 )
 
@@ -20,13 +21,16 @@ type (
 	handler struct {
 		logr.Logger
 
-		*broker
+		handlerBroker
 		handlerDB
 	}
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
 		getHookByID(context.Context, uuid.UUID) (*hook, error)
+	}
+	handlerBroker interface {
+		publish(cloud.VCSEvent)
 	}
 )
 
@@ -54,8 +58,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if event != nil {
 		// add non-cloud specific info to event before publishing
 		event.RepoID = hook.id
-		event.VCSProviderID = hook.vcsProviderID
 		event.RepoPath = hook.identifier
+		event.VCSProviderID = hook.vcsProviderID
 
 		h.publish(*event)
 	}
