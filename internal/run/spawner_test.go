@@ -16,52 +16,161 @@ import (
 
 func TestSpawner(t *testing.T) {
 	tests := []struct {
-		name  string
-		ws    *workspace.Workspace
-		event cloud.VCSEvent // incoming event
-		spawn bool           // want spawned run
+		name string
+		ws   *workspace.Workspace
+		// incoming event
+		event cloud.VCSEvent
+		// file paths to return from stubbed client.ListPullRequestFiles
+		pullFiles []string
+		// want spawned run
+		spawn bool
 	}{
 		{
-			name:  "spawn run upon push to default branch",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "main", DefaultBranch: "main"},
+			name: "spawn run for push to default branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{
+				Type:          cloud.VCSEventTypePush,
+				Action:        cloud.VCSActionCreated,
+				Branch:        "main",
+				DefaultBranch: "main",
+			},
 			spawn: true,
 		},
 		{
-			name:  "skip run upon push to non-default branch",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "dev", DefaultBranch: "main"},
+			name: "skip run for push to non-default branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{
+				Type:          cloud.VCSEventTypePush,
+				Action:        cloud.VCSActionCreated,
+				Branch:        "dev",
+				DefaultBranch: "main",
+			},
 			spawn: false,
 		},
 		{
-			name:  "spawn run upon push to user-specified branch",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "dev"},
+			name: "spawn run for push event for a workspace with user-specified branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Branch: "dev",
+			},
 			spawn: true,
 		},
 		{
-			name:  "skip run upon push to branch not matching user-specified branch",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
-			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Branch: "staging"},
+			name: "skip run for push event for a workspace with non-matching, user-specified branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Branch: "staging",
+			},
 			spawn: false,
 		},
 		{
-			name:  "spawn run upon opened pr",
+			name:  "spawn run for opened pull request",
 			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
 			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionCreated},
 			spawn: true,
 		},
 		{
-			name:  "spawn run upon push to pr",
+			name:  "spawn run for update to pull request",
 			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
 			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionUpdated},
 			spawn: true,
+		},
+		{
+			name:  "skip run for push event for workspace with tags regex",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: internal.String("0.1.2")}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Action: cloud.VCSActionCreated},
+			spawn: false,
+		},
+		{
+			name: "spawn run for tag event for workspace with matching tags regex",
+			ws: &workspace.Workspace{Connection: &workspace.Connection{
+				TagsRegex: internal.String(`^\d+\.\d+\.\d+$`),
+			}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypeTag,
+				Action: cloud.VCSActionCreated,
+				Tag:    "0.1.2",
+			},
+			spawn: true,
+		},
+		{
+			name: "skip run for tag event for workspace with non-matching tags regex",
+			ws: &workspace.Workspace{Connection: &workspace.Connection{
+				TagsRegex: internal.String(`^\d+\.\d+\.\d+$`),
+			}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypeTag,
+				Action: cloud.VCSActionCreated,
+				Tag:    "v0.1.2",
+			},
+			spawn: false,
+		},
+		{
+			name: "spawn run for push event for workspace with matching file trigger pattern",
+			ws: &workspace.Workspace{
+				FileTriggersEnabled: true,
+				TriggerPatterns:     []string{"/foo/*.tf"},
+				Connection:          &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Paths:  []string{"/foo/bar.tf"},
+			},
+			spawn: true,
+		},
+		{
+			name: "skip run for push event for workspace with non-matching file trigger pattern",
+			ws: &workspace.Workspace{
+				FileTriggersEnabled: true,
+				TriggerPatterns:     []string{"/foo/*.tf"},
+				Connection:          &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Paths:  []string{"README.md", ".gitignore"},
+			},
+			spawn: false,
+		},
+		{
+			name: "spawn run for pull event for workspace with matching file trigger pattern",
+			ws: &workspace.Workspace{
+				FileTriggersEnabled: true,
+				TriggerPatterns:     []string{"/foo/*.tf"},
+				Connection:          &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePull,
+				Action: cloud.VCSActionUpdated,
+			},
+			pullFiles: []string{"/foo/bar.tf"},
+			spawn:     true,
+		},
+		{
+			name: "skip run for pull event for workspace with non-matching file trigger pattern",
+			ws: &workspace.Workspace{
+				FileTriggersEnabled: true,
+				TriggerPatterns:     []string{"/foo/*.tf"},
+				Connection:          &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePull,
+				Action: cloud.VCSActionUpdated,
+			},
+			pullFiles: []string{"README.md", ".gitignore"},
+			spawn:     false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			services := &fakeSpawnerServices{
 				workspaces: []*workspace.Workspace{tt.ws},
+				pullFiles:  tt.pullFiles,
 			}
 			spawner := Spawner{
 				ConfigurationVersionService: services,
@@ -78,9 +187,14 @@ func TestSpawner(t *testing.T) {
 }
 
 type fakeSpawnerServices struct {
+	// workspaces to return from stubbed ListWorkspacesByRepoID()
 	workspaces []*workspace.Workspace
-	created    []*configversion.ConfigurationVersion // created config versions
-	spawned    bool                                  // whether a run was spawned
+	// created config versions
+	created []*configversion.ConfigurationVersion
+	// whether a run was spawned
+	spawned bool
+	// list of file paths to return from stubbed ListPullRequestFiles()
+	pullFiles []string
 
 	ConfigurationVersionService
 	WorkspaceService
@@ -111,13 +225,18 @@ func (f *fakeSpawnerServices) CreateRun(context.Context, string, RunCreateOption
 }
 
 func (f *fakeSpawnerServices) GetVCSClient(context.Context, string) (cloud.Client, error) {
-	return &fakeSpawnerCloudClient{}, nil
+	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
 }
 
 type fakeSpawnerCloudClient struct {
 	cloud.Client
+	pullFiles []string
 }
 
 func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
+}
+
+func (f *fakeSpawnerCloudClient) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
+	return f.pullFiles, nil
 }

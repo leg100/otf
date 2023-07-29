@@ -87,6 +87,10 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 					continue
 				}
 			}
+			if ws.Connection.TagsRegex != nil {
+				// skip workspaces which specify a tags regex
+				continue
+			}
 		}
 
 		// only tag and push events contain a list of changed files
