@@ -364,31 +364,43 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AutoApply         bool `schema:"auto_apply"`
-		Name              *string
-		Description       *string
-		ExecutionMode     *ExecutionMode `schema:"execution_mode"`
-		TerraformVersion  *string        `schema:"terraform_version"`
-		WorkingDirectory  *string        `schema:"working_directory"`
-		WorkspaceID       string         `schema:"workspace_id,required"`
-		VCSBranch         string         `schema:"vcs_branch"`
-		AlwaysTriggerRuns bool           `schema:"always_trigger_runs"`
-		TagsRegex         string         `schema:"tags_regex"`
-		TriggersPattern   string         `schema:"triggers_pattern"`
+		AutoApply        bool `schema:"auto_apply"`
+		Name             *string
+		Description      *string
+		ExecutionMode    *ExecutionMode `schema:"execution_mode"`
+		TerraformVersion *string        `schema:"terraform_version"`
+		WorkingDirectory *string        `schema:"working_directory"`
+		WorkspaceID      string         `schema:"workspace_id,required"`
+
+		FileTriggersEnabled *bool    `schema:"file_triggers_enabled"`
+		TriggerPatterns     []string `schema:"trigger_patterns"`
+		TagsRegex           *string  `schema:"tags_regex"`
+		VCSBranch           *string  `schema:"vcs_branch"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
-		AutoApply:        &params.AutoApply,
-		Name:             params.Name,
-		Description:      params.Description,
-		ExecutionMode:    params.ExecutionMode,
-		TerraformVersion: params.TerraformVersion,
-		WorkingDirectory: params.WorkingDirectory,
-	})
+	opts := UpdateOptions{
+		AutoApply:           &params.AutoApply,
+		Name:                params.Name,
+		Description:         params.Description,
+		ExecutionMode:       params.ExecutionMode,
+		TerraformVersion:    params.TerraformVersion,
+		WorkingDirectory:    params.WorkingDirectory,
+		FileTriggersEnabled: params.FileTriggersEnabled,
+		TriggerPatterns:     params.TriggerPatterns,
+	}
+
+	if params.TagsRegex != nil || params.VCSBranch != nil {
+		opts.ConnectOptions = &ConnectOptions{
+			Branch:    params.VCSBranch,
+			TagsRegex: params.TagsRegex,
+		}
+	}
+
+	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

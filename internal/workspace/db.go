@@ -148,6 +148,8 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		QueueAllRuns:               ws.QueueAllRuns,
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
+		Branch:                     sql.StringPtr(nil),
+		VCSTagsRegex:               sql.StringPtr(nil),
 	}
 	if ws.Connection != nil {
 		params.Branch = sql.StringPtr(ws.Connection.Branch)
