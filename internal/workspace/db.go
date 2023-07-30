@@ -47,7 +47,6 @@ type (
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
-		TagsRegex                  pgtype.Text            `json:"tags_regex"`
 		TriggerPatterns            []string               `json:"trigger_patterns"`
 		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
 		Tags                       []string               `json:"tags"`
@@ -93,10 +92,10 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 			Repo:          r.Webhook.Identifier.String,
 		}
 		if r.Branch.Status == pgtype.Present {
-			ws.Connection.Branch = &r.Branch.String
+			ws.Connection.Branch = r.Branch.String
 		}
 		if r.VCSTagsRegex.Status == pgtype.Present {
-			ws.Connection.TagsRegex = &r.VCSTagsRegex.String
+			ws.Connection.TagsRegex = r.VCSTagsRegex.String
 		}
 	}
 
@@ -152,8 +151,8 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		VCSTagsRegex:               sql.StringPtr(nil),
 	}
 	if ws.Connection != nil {
-		params.Branch = sql.StringPtr(ws.Connection.Branch)
-		params.VCSTagsRegex = sql.StringPtr(ws.Connection.TagsRegex)
+		params.Branch = sql.String(ws.Connection.Branch)
+		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 	}
 	_, err := q.InsertWorkspace(ctx, params)
 	return sql.Error(err)
@@ -184,6 +183,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			AutoApply:                  ws.AutoApply,
 			Description:                sql.String(ws.Description),
 			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+			FileTriggersEnabled:        ws.FileTriggersEnabled,
 			Name:                       sql.String(ws.Name),
 			QueueAllRuns:               ws.QueueAllRuns,
 			SpeculativeEnabled:         ws.SpeculativeEnabled,
@@ -194,8 +194,8 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		}
 		if ws.Connection != nil {
-			params.Branch = sql.StringPtr(ws.Connection.Branch)
-			params.VCSTagsRegex = sql.StringPtr(ws.Connection.TagsRegex)
+			params.Branch = sql.String(ws.Connection.Branch)
+			params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 		}
 		_, err = q.UpdateWorkspaceByID(ctx, params)
 		return err

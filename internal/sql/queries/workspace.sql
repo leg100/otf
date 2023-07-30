@@ -246,6 +246,7 @@ SET
     branch                        = pggen.arg('branch'),
     description                   = pggen.arg('description'),
     execution_mode                = pggen.arg('execution_mode'),
+    file_triggers_enabled         = pggen.arg('file_triggers_enabled'),
     name                          = pggen.arg('name'),
     queue_all_runs                = pggen.arg('queue_all_runs'),
     speculative_enabled           = pggen.arg('speculative_enabled'),

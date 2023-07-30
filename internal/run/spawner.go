@@ -67,17 +67,17 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 		case cloud.VCSEventTypeTag:
 			// skip workspaces with a non-nil tag regex that doesn't match the
 			// tag event
-			if ws.Connection.TagsRegex != nil {
-				re := regexp.MustCompile(*ws.Connection.TagsRegex)
+			if ws.Connection.TagsRegex != "" {
+				re := regexp.MustCompile(ws.Connection.TagsRegex)
 				if !re.MatchString(event.Tag) {
 					continue
 				}
 			}
 		case cloud.VCSEventTypePush:
-			if ws.Connection.Branch != nil {
-				// skip workspaces with a non-default branch that doesn't match the
+			if ws.Connection.Branch != "" {
+				// skip workspaces with a user-specified branch that doesn't match the
 				// event branch
-				if *ws.Connection.Branch != event.Branch {
+				if ws.Connection.Branch != event.Branch {
 					continue
 				}
 			} else {
@@ -87,7 +87,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 					continue
 				}
 			}
-			if ws.Connection.TagsRegex != nil {
+			if ws.Connection.TagsRegex != "" {
 				// skip workspaces which specify a tags regex
 				continue
 			}

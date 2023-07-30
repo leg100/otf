@@ -195,7 +195,6 @@ type FindWorkspacesRow struct {
 	Branch                     pgtype.Text        `json:"branch"`
 	LockUsername               pgtype.Text        `json:"lock_username"`
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
-	TagsRegex                  pgtype.Text        `json:"tags_regex"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
 	Tags                       []string           `json:"tags"`
@@ -221,7 +220,7 @@ func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesPar
 	webhookRow := q.types.newWebhooks()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspaces row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -263,7 +262,7 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	webhookRow := q.types.newWebhooks()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesBatch row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -381,7 +380,6 @@ type FindWorkspacesByWebhookIDRow struct {
 	Branch                     pgtype.Text        `json:"branch"`
 	LockUsername               pgtype.Text        `json:"lock_username"`
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
-	TagsRegex                  pgtype.Text        `json:"tags_regex"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
 	Tags                       []string           `json:"tags"`
@@ -407,7 +405,7 @@ func (q *DBQuerier) FindWorkspacesByWebhookID(ctx context.Context, webhookID pgt
 	webhookRow := q.types.newWebhooks()
 	for rows.Next() {
 		var item FindWorkspacesByWebhookIDRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByWebhookID row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -449,7 +447,7 @@ func (q *DBQuerier) FindWorkspacesByWebhookIDScan(results pgx.BatchResults) ([]F
 	webhookRow := q.types.newWebhooks()
 	for rows.Next() {
 		var item FindWorkspacesByWebhookIDRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByWebhookIDBatch row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -536,7 +534,6 @@ type FindWorkspacesByUsernameRow struct {
 	Branch                     pgtype.Text        `json:"branch"`
 	LockUsername               pgtype.Text        `json:"lock_username"`
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
-	TagsRegex                  pgtype.Text        `json:"tags_regex"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
 	Tags                       []string           `json:"tags"`
@@ -562,7 +559,7 @@ func (q *DBQuerier) FindWorkspacesByUsername(ctx context.Context, params FindWor
 	webhookRow := q.types.newWebhooks()
 	for rows.Next() {
 		var item FindWorkspacesByUsernameRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByUsername row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -604,7 +601,7 @@ func (q *DBQuerier) FindWorkspacesByUsernameScan(results pgx.BatchResults) ([]Fi
 	webhookRow := q.types.newWebhooks()
 	for rows.Next() {
 		var item FindWorkspacesByUsernameRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByUsernameBatch row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -712,7 +709,6 @@ type FindWorkspaceByNameRow struct {
 	Branch                     pgtype.Text        `json:"branch"`
 	LockUsername               pgtype.Text        `json:"lock_username"`
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
-	TagsRegex                  pgtype.Text        `json:"tags_regex"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
 	Tags                       []string           `json:"tags"`
@@ -732,7 +728,7 @@ func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name pgtype.Text, o
 	runLockRow := q.types.newRuns()
 	workspaceConnectionRow := q.types.newRepoConnections()
 	webhookRow := q.types.newWebhooks()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByName: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -763,7 +759,7 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	runLockRow := q.types.newRuns()
 	workspaceConnectionRow := q.types.newRepoConnections()
 	webhookRow := q.types.newWebhooks()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByNameBatch row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -829,7 +825,6 @@ type FindWorkspaceByIDRow struct {
 	Branch                     pgtype.Text        `json:"branch"`
 	LockUsername               pgtype.Text        `json:"lock_username"`
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
-	TagsRegex                  pgtype.Text        `json:"tags_regex"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
 	Tags                       []string           `json:"tags"`
@@ -849,7 +844,7 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (Find
 	runLockRow := q.types.newRuns()
 	workspaceConnectionRow := q.types.newRepoConnections()
 	webhookRow := q.types.newWebhooks()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByID: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -880,7 +875,7 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	runLockRow := q.types.newRuns()
 	workspaceConnectionRow := q.types.newRepoConnections()
 	webhookRow := q.types.newWebhooks()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDBatch row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -946,7 +941,6 @@ type FindWorkspaceByIDForUpdateRow struct {
 	Branch                     pgtype.Text        `json:"branch"`
 	LockUsername               pgtype.Text        `json:"lock_username"`
 	CurrentStateVersionID      pgtype.Text        `json:"current_state_version_id"`
-	TagsRegex                  pgtype.Text        `json:"tags_regex"`
 	TriggerPatterns            []string           `json:"trigger_patterns"`
 	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
 	Tags                       []string           `json:"tags"`
@@ -966,7 +960,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Te
 	runLockRow := q.types.newRuns()
 	workspaceConnectionRow := q.types.newRepoConnections()
 	webhookRow := q.types.newWebhooks()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByIDForUpdate: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -997,7 +991,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 	runLockRow := q.types.newRuns()
 	workspaceConnectionRow := q.types.newRepoConnections()
 	webhookRow := q.types.newWebhooks()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TagsRegex, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.LockRunID, &item.LatestRunID, &item.OrganizationName, &item.Branch, &item.LockUsername, &item.CurrentStateVersionID, &item.TriggerPatterns, &item.VCSTagsRegex, &item.Tags, &item.LatestRunStatus, userLockRow, runLockRow, workspaceConnectionRow, webhookRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDForUpdateBatch row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -1022,17 +1016,18 @@ SET
     branch                        = $3,
     description                   = $4,
     execution_mode                = $5,
-    name                          = $6,
-    queue_all_runs                = $7,
-    speculative_enabled           = $8,
-    structured_run_output_enabled = $9,
-    terraform_version             = $10,
-    trigger_prefixes              = $11,
-    trigger_patterns              = $12,
-    vcs_tags_regex                = $13,
-    working_directory             = $14,
-    updated_at                    = $15
-WHERE workspace_id = $16
+    file_triggers_enabled         = $6,
+    name                          = $7,
+    queue_all_runs                = $8,
+    speculative_enabled           = $9,
+    structured_run_output_enabled = $10,
+    terraform_version             = $11,
+    trigger_prefixes              = $12,
+    trigger_patterns              = $13,
+    vcs_tags_regex                = $14,
+    working_directory             = $15,
+    updated_at                    = $16
+WHERE workspace_id = $17
 RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
@@ -1041,6 +1036,7 @@ type UpdateWorkspaceByIDParams struct {
 	Branch                     pgtype.Text
 	Description                pgtype.Text
 	ExecutionMode              pgtype.Text
+	FileTriggersEnabled        bool
 	Name                       pgtype.Text
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
@@ -1057,7 +1053,7 @@ type UpdateWorkspaceByIDParams struct {
 // UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
 func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.FileTriggersEnabled, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateWorkspaceByID: %w", err)
@@ -1067,7 +1063,7 @@ func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorksp
 
 // UpdateWorkspaceByIDBatch implements Querier.UpdateWorkspaceByIDBatch.
 func (q *DBQuerier) UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams) {
-	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.FileTriggersEnabled, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
 }
 
 // UpdateWorkspaceByIDScan implements Querier.UpdateWorkspaceByIDScan.

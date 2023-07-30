@@ -90,9 +90,9 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		opts.ConnectOptions = &workspace.ConnectOptions{
-			Branch:        params.VCSRepo.Branch,
 			RepoPath:      params.VCSRepo.Identifier,
 			VCSProviderID: params.VCSRepo.OAuthTokenID,
+			Branch:        params.VCSRepo.Branch,
 			TagsRegex:     params.VCSRepo.TagsRegex,
 		}
 	}
@@ -287,9 +287,9 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 			// client has provided non-null vcs options, which means they either
 			// want to connect the workspace or modify the connection.
 			opts.ConnectOptions = &workspace.ConnectOptions{
-				Branch:        params.VCSRepo.Branch,
 				RepoPath:      params.VCSRepo.Identifier,
 				VCSProviderID: params.VCSRepo.OAuthTokenID,
+				Branch:        params.VCSRepo.Branch,
 				TagsRegex:     params.VCSRepo.TagsRegex,
 			}
 		} else {

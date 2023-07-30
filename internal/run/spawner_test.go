@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/workspace"
@@ -49,7 +48,7 @@ func TestSpawner(t *testing.T) {
 		},
 		{
 			name: "spawn run for push event for a workspace with user-specified branch",
-			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypePush,
 				Action: cloud.VCSActionCreated,
@@ -59,7 +58,7 @@ func TestSpawner(t *testing.T) {
 		},
 		{
 			name: "skip run for push event for a workspace with non-matching, user-specified branch",
-			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: internal.String("dev")}},
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypePush,
 				Action: cloud.VCSActionCreated,
@@ -81,14 +80,14 @@ func TestSpawner(t *testing.T) {
 		},
 		{
 			name:  "skip run for push event for workspace with tags regex",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: internal.String("0.1.2")}},
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: "0.1.2"}},
 			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Action: cloud.VCSActionCreated},
 			spawn: false,
 		},
 		{
 			name: "spawn run for tag event for workspace with matching tags regex",
 			ws: &workspace.Workspace{Connection: &workspace.Connection{
-				TagsRegex: internal.String(`^\d+\.\d+\.\d+$`),
+				TagsRegex: `^\d+\.\d+\.\d+$`,
 			}},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypeTag,
@@ -100,7 +99,7 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "skip run for tag event for workspace with non-matching tags regex",
 			ws: &workspace.Workspace{Connection: &workspace.Connection{
-				TagsRegex: internal.String(`^\d+\.\d+\.\d+$`),
+				TagsRegex: `^\d+\.\d+\.\d+$`,
 			}},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypeTag,

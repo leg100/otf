@@ -55,29 +55,39 @@ type (
 		Tags                       []string      `json:"tags"`
 		Lock                       *Lock         `json:"lock"`
 
+		// VCS Connection; nil means the workspace is not connected.
+		Connection *Connection
+
 		// VCS connection fields, which ought to belong in Connection but are
 		// included at the root of the workspace because the go-tfe integration
 		// tests set these fields without setting the connection!
-		FileTriggersEnabled bool     `json:"file_triggers_enabled"`
-		TriggerPrefixes     []string `json:"trigger_prefixes"`
-		TriggerPatterns     []string `json:"trigger_patterns"`
+		FileTriggersEnabled bool
+		TriggerPatterns     []string
 
-		Connection *Connection
+		// TriggerPrefixes exists only to pass the go-tfe integration tests and
+		// is not used when determining whether to trigger runs. Use
+		// TriggerPatterns instead.
+		TriggerPrefixes []string
 	}
 
 	Connection struct {
-		Branch    *string `json:"branch"`
-		TagsRegex *string `json:"tags_regex"`
+		// Pushes to this VCS branch trigger runs. Empty string means the default
+		// branch is used. Ignored if TagsRegex is non-empty.
+		Branch string
+		// Pushed tags matching this regular expression trigger runs.
+		// FileTriggersEnabled must be false
+		TagsRegex string
 
 		VCSProviderID string
 		Repo          string
 	}
 
 	ConnectOptions struct {
-		Branch        *string
 		RepoPath      *string
 		VCSProviderID *string
-		TagsRegex     *string
+
+		Branch    *string
+		TagsRegex *string
 	}
 
 	// LatestRun is a summary of the latest run for a workspace
@@ -190,9 +200,6 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if opts.Description != nil {
 		ws.Description = *opts.Description
 	}
-	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-	}
 	if opts.QueueAllRuns != nil {
 		ws.QueueAllRuns = *opts.QueueAllRuns
 	}
@@ -213,25 +220,34 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 			return nil, err
 		}
 	}
-	if opts.TriggerPrefixes != nil && opts.TriggerPatterns != nil {
-		return nil, errors.New("cannot specify both trigger prefixes and trigger patterns")
-	}
-	if opts.TriggerPrefixes != nil {
-		ws.TriggerPrefixes = opts.TriggerPrefixes
-	}
-	if opts.TriggerPatterns != nil {
-		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
-			return nil, err
-		}
-	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
 	}
+	if opts.TriggerPrefixes != nil && opts.TriggerPatterns != nil {
+		return nil, errors.New("cannot specify both trigger prefixes and trigger patterns")
+	}
+	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe
+	// integration tests.
+	if opts.TriggerPrefixes != nil {
+		ws.TriggerPrefixes = opts.TriggerPrefixes
+	}
+
+	if opts.FileTriggersEnabled != nil {
+		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+	}
+
 	if opts.ConnectOptions != nil {
 		if err := ws.addConnection(opts.ConnectOptions); err != nil {
 			return nil, err
 		}
 	}
+
+	if opts.TriggerPatterns != nil {
+		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
+			return nil, fmt.Errorf("setting trigger patterns: %w", err)
+		}
+	}
+
 	return &ws, nil
 }
 
@@ -321,19 +337,24 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
 		updated = true
 	}
+	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe
+	// integration tests.
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 		updated = true
 	}
 	if opts.TriggerPatterns != nil {
 		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("setting trigger patterns: %w", err)
 		}
 		updated = true
 	}
 
 	// determine whether to connect or disconnect workspace
 	var connect *bool
+	if opts.Disconnect && opts.ConnectOptions != nil {
+		return nil, errors.New("connect options must be nil if disconnect is true")
+	}
 	if opts.Disconnect {
 		if ws.Connection == nil {
 			return nil, errors.New("cannot disconnect an already disconnected workspace")
@@ -341,13 +362,26 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		// workspace is to be disconnected
 		connect = internal.Bool(false)
 		updated = true
-	} else if opts.ConnectOptions != nil && ws.Connection == nil {
-		// workspace is to be connected
-		if err := ws.addConnection(opts.ConnectOptions); err != nil {
-			return nil, err
+	}
+	if opts.ConnectOptions != nil {
+		if ws.Connection == nil {
+			// workspace is to be connected
+			if err := ws.addConnection(opts.ConnectOptions); err != nil {
+				return nil, err
+			}
+			connect = internal.Bool(true)
+			updated = true
+		} else {
+			// modify existing connection
+			if opts.TagsRegex != nil {
+				ws.Connection.TagsRegex = *opts.TagsRegex
+				updated = true
+			}
+			if opts.TagsRegex != nil {
+				ws.Connection.Branch = *opts.Branch
+				updated = true
+			}
 		}
-		connect = internal.Bool(true)
-		updated = true
 	}
 
 	if updated {
@@ -365,16 +399,21 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 	if opts.VCSProviderID == nil {
 		return &internal.MissingParameterError{Parameter: "vcs_provider_id"}
 	}
-	if opts.TagsRegex != nil {
-		if _, err := regexp.Compile(*opts.TagsRegex); err != nil {
-			return fmt.Errorf("invalid VCS tags regex: %w", err)
-		}
-	}
 	ws.Connection = &Connection{
 		Repo:          *opts.RepoPath,
 		VCSProviderID: *opts.VCSProviderID,
-		Branch:        opts.Branch,
-		TagsRegex:     opts.TagsRegex,
+	}
+	if opts.TagsRegex != nil {
+		if ws.FileTriggersEnabled {
+			return errors.New("file-triggers-enabled must be false when setting tags-regex")
+		}
+		if _, err := regexp.Compile(*opts.TagsRegex); err != nil {
+			return fmt.Errorf("invalid tags-regex: %w", err)
+		}
+		ws.Connection.TagsRegex = *opts.TagsRegex
+	}
+	if opts.Branch != nil {
+		ws.Connection.Branch = *opts.Branch
 	}
 	return nil
 }
@@ -406,7 +445,13 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	return nil
 }
 
-func (ws *Workspace) setTriggerPatterns(patterns []string) error {
+func (ws *Workspace) setTriggerPatterns(enabled bool, patterns []string) error {
+	if !ws.FileTriggersEnabled {
+		return errors.New("file-triggers-enabled must be set to true")
+	}
+	if ws.Connection != nil && ws.Connection.TagsRegex != "" {
+		return errors.New("tags-regex must be empty")
+	}
 	for _, patt := range patterns {
 		if _, err := glob.Compile(patt); err != nil {
 			return fmt.Errorf("invalid trigger pattern: %w", err)

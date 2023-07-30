@@ -97,27 +97,28 @@
         <legend>VCS triggers</legend>
 
         <div class="form-checkbox">
-          <input type="radio" name="file_triggers_enabled" id="vcs-triggers-always" value="false"/ {{ checked (and (not $.Workspace.FileTriggersEnabled) (not .TagsRegex)) }}>
+          <input type="radio" id="vcs-triggers-always" name="vcs_trigger" value="{{ $.VCSTriggerAlways }}" {{ checked (and (not $.Workspace.FileTriggersEnabled) (not .TagsRegex)) }}>
           <label for="vcs-triggers-always">Always trigger runs</label>
           <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
         </div>
 
         <div class="form-checkbox">
-          <input class="peer" type="radio" name="file_triggers_enabled" id="vcs-triggers-patterns" value="true" {{ checked $.Workspace.FileTriggersEnabled }}>
+          <input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value="{{ $.VCSTriggerPatterns }}" {{ checked $.Workspace.FileTriggersEnabled }}>
           <label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
           <span class="col-start-2 description">Supports glob patterns.</span>
-          <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="{paths: {{ $.Workspace.TriggerPatterns | toJson }}, newPath: ''}">
-            <input type="hidden" id="paths" name="trigger_patterns" :value = "paths">
+          <script src="{{ addHash "/static/js/workspace_trigger_patterns.js" }}"></script>
+          <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="workspace_trigger_patterns({{ toJson $.Workspace.TriggerPatterns }})">
+            <input type="hidden" id="paths" name="trigger_patterns" :value = "JSON.stringify(paths)">
             <div class="flex flex-col gap-2">
               <div class="flex gap-2 items-center">
                 <label for="new_path">Path</label>
                 <input class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path">
-                <button @click="paths?.includes(newPath) || paths.push(newPath); newPath = ''" type="button" class="btn w-40" {{ insufficient $canUpdate }}>Add pattern</button>
+                <button @click="addPattern" type="button" class="btn w-40" {{ insufficient $canUpdate }}>Add pattern</button>
               </div>
               <template x-for="path in paths">
                 <div class="flex gap-2 items-center justify-end">
                   <span class="justify-end bg-gray-200 px-2" x-text="path"></span>
-                  <button @click="paths = paths.filter(i => i !== path)" type="button" class="btn-danger w-40" {{ insufficient $canUpdate }}>Delete</button>
+                  <button @click="deletePattern(path)" type="button" class="btn-danger w-40" {{ insufficient $canUpdate }}>Delete</button>
                 </div>
               </template>
             </div>
@@ -125,35 +126,32 @@
         </div>
 
         <div class="form-checkbox">
-          <input class="peer" type="radio" name="file_triggers_enabled" id="vcs-triggers-tag" value="false" {{ checked .TagsRegex }}>
+          <input class="peer" type="radio" id="vcs-triggers-tag" name="vcs_trigger" value="{{ $.VCSTriggerTags }}" {{ checked (ne .TagsRegex "") }}>
           <label for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
           <span class="col-start-2 description">Git tags allow you to manage releases.</span>
           <div class="col-start-2 hidden bg-gray-100 px-3 py-3 mt-2 w-full peer-checked:block">
-            <div class="flex flex-col gap-2 ">
-              {{ $tagsRegexDefault := `^\d+\.\d+\.\d+\$` }}
-              {{ $tagsRegexPrefix := `\d+\.\d+\.\d+\$` }}
-              {{ $tagsRegexSuffix := `\d+\.\d+\.\d+\$` }}
-              {{ $isCustomTagRegex := (and (ne (.TagsRegex | toString) $tagsRegexDefault) (ne (.TagsRegex | toString) $tagsRegexPrefix) (ne (.TagsRegex | toString) $tagsRegexSuffix)) }}
+            <div class="flex flex-col gap-2" x-data="{regex: {{ toJson .TagsRegex }}}">
               <div class="form-checkbox">
-                <input type="radio" name="tags-regex" id="tags-regex-default" value="{{ $tagsRegexDefault }}" {{ checked (eq (.TagsRegex | toString) $tagsRegexDefault) }}/>
+                <input type="radio" id="tags-regex-default" name="tags_regex" value="{{ $.VCSTagRegexDefault }}" {{ checked (or (eq .TagsRegex $.VCSTagRegexDefault) (eq .TagsRegex "")) }}/>
                 <label for="tags-regex-default">Default</label>
                 <span>e.g. <span class="bg-gray-200">12.33.4456</span></span>
               </div>
               <div class="form-checkbox">
-                <input type="radio" name="tags-regex" id="tags-regex-prefix" value="{{ $tagsRegexPrefix }}" {{ checked (eq (.TagsRegex | toString) $tagsRegexPrefix) }}/>
+                <input type="radio" id="tags-regex-prefix" name="tags_regex" value="{{ $.VCSTagRegexPrefix }}" {{ checked (eq .TagsRegex $.VCSTagRegexPrefix) }}/>
                 <label for="tags-regex-prefix">Version contains a prefix</label>
                 <span>e.g. <span class="bg-gray-200">v12.33.4456</span></span>
               </div>
               <div class="form-checkbox">
-                <input type="radio" name="tags-regex" id="tags-regex-suffix" value="{{ $tagsRegexSuffix }}" {{ checked (eq (.TagsRegex | toString) $tagsRegexSuffix) }}/>
+                <input type="radio" id="tags-regex-suffix" name="tags_regex" value="{{ $.VCSTagRegexSuffix }}" {{ checked (eq .TagsRegex $.VCSTagRegexSuffix) }}/>
 
                 <label for="tags-regex-suffix">Version contains a suffix</label>
                 <span>e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
               </div>
               <div class="form-checkbox">
-                <input class="peer" type="radio" id="tags-regex-suffix" {{ checked $isCustomTagRegex }}>
-                <label for="tags-regex-suffix">Custom regular expression</label>
-                <input class="col-start-2 text-input w-96 mt-2 hidden peer-checked:block" type="text" name="tags-regex" id="tags-regex-custom" placeholder="\d+.\d+.\d+">
+                {{ $isCustom := (and (ne .TagsRegex "") (ne .TagsRegex $.VCSTagRegexDefault) (ne .TagsRegex $.VCSTagRegexPrefix) (ne .TagsRegex $.VCSTagRegexSuffix)) }}
+                <input class="peer" type="radio" id="tags-regex-custom" name="tags_regex" value="{{ $.VCSTagRegexCustom }}" {{ checked $isCustom }}>
+                <label for="tags-regex-custom">Custom regular expression</label>
+                <input class="col-start-2 text-input w-96 mt-2 hidden peer-checked:block" type="text" name="custom_tags_regex" value="{{ .TagsRegex }}">
               </div>
             </div>
           </div>

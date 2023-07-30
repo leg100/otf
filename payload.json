@@ -1,0 +1,11 @@
+{
+  "data": {
+    "attributes": {
+      "file-triggers-enabled": false,
+      "vcs-repo": {
+          "tags-regex": ""
+      }
+    },
+    "type": "workspaces"
+  }
+}
