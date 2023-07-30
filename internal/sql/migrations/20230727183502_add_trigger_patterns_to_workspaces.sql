@@ -5,6 +5,10 @@ ALTER TABLE workspaces
     ALTER COLUMN branch DROP NOT NULL;
 
 -- +goose Down
+UPDATE workspaces
+SET branch = ''
+WHERE branch IS NULL;
+
 ALTER TABLE workspaces
     DROP COLUMN trigger_patterns,
     DROP COLUMN vcs_tags_regex,
