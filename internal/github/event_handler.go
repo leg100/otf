@@ -80,6 +80,7 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		}
 	case *github.PullRequestEvent:
 		to.Type = cloud.VCSEventTypePull
+		to.PullNumber = event.GetPullRequest().GetNumber()
 
 		switch event.GetAction() {
 		case "opened":

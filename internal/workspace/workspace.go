@@ -25,7 +25,14 @@ const (
 	DefaultTerraformVersion = "1.5.2"
 )
 
-var ErrNoVCSConnection = errors.New("workspace is not connected to a vcs repo")
+var (
+	ErrNoVCSConnection                 = errors.New("workspace is not connected to a vcs repo")
+	ErrTagsRegexAndTriggerPatterns     = errors.New("cannot specify both tags-regex and trigger-patterns")
+	ErrTagsRegexAndAlwaysTrigger       = errors.New("cannot specify both tags-regex and always-trigger")
+	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
+	ErrInvalidTriggerPattern           = errors.New("invalid trigger glob pattern")
+	ErrInvalidTagsRegex                = errors.New("invalid vcs tags regular expression")
+)
 
 type (
 	// Workspace is a terraform workspace.
@@ -241,13 +248,13 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	// (b) trigger-patterns
 	// (c) always-trigger=true
 	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
-		return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
+		return nil, ErrTagsRegexAndTriggerPatterns
 	}
 	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
-		return nil, errors.New("cannot specify both tags-regex and always-trigger")
+		return nil, ErrTagsRegexAndAlwaysTrigger
 	}
 	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
-		return nil, errors.New("cannot specify both trigger-patterns and always-trigger")
+		return nil, ErrTriggerPatternsAndAlwaysTrigger
 	}
 	if opts.ConnectOptions != nil {
 		if err := ws.addConnection(opts.ConnectOptions); err != nil {
@@ -354,13 +361,13 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 	// (b) trigger-patterns
 	// (c) always-trigger=true
 	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
-		return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
+		return nil, ErrTagsRegexAndTriggerPatterns
 	}
 	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
-		return nil, errors.New("cannot specify both tags-regex and always-trigger")
+		return nil, ErrTagsRegexAndAlwaysTrigger
 	}
 	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
-		return nil, errors.New("cannot specify both trigger-patterns and always-trigger")
+		return nil, ErrTriggerPatternsAndAlwaysTrigger
 	}
 	if opts.AlwaysTrigger != nil && *opts.AlwaysTrigger {
 		if ws.Connection != nil {
@@ -472,7 +479,7 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 
 func (ws *Workspace) setTagsRegex(regex string) error {
 	if _, err := regexp.Compile(regex); err != nil {
-		return fmt.Errorf("invalid tags-regex: %w", err)
+		return ErrInvalidTagsRegex
 	}
 	ws.Connection.TagsRegex = regex
 	return nil
@@ -481,7 +488,7 @@ func (ws *Workspace) setTagsRegex(regex string) error {
 func (ws *Workspace) setTriggerPatterns(patterns []string) error {
 	for _, patt := range patterns {
 		if _, err := glob.Compile(patt); err != nil {
-			return fmt.Errorf("invalid trigger pattern: %w", err)
+			return ErrInvalidTriggerPattern
 		}
 	}
 	ws.TriggerPatterns = patterns

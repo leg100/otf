@@ -82,7 +82,13 @@ type (
 	ForeignKeyError struct {
 		*pgconn.PgError
 	}
+
+	InvalidParameterError string
 )
+
+func (e InvalidParameterError) Error() string {
+	return string(e)
+}
 
 func (e *HTTPError) Error() string {
 	return e.Message

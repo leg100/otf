@@ -106,4 +106,24 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.Len(t, ws.TriggerPatterns, 0)
 	require.NotNil(t, ws.Connection)
 	require.Equal(t, `\d+\.\d+\.\d+$`, ws.Connection.TagsRegex)
+
+	// set vcs branch
+	browser.Run(t, ctx, chromedp.Tasks{
+		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`),
+		// tag regex strategy should be set
+		chromedp.WaitVisible(`input#vcs-triggers-tag:checked`, chromedp.ByQuery),
+		// set vcs branch
+		chromedp.Focus(`input#vcs-branch`, chromedp.ByQuery),
+		input.InsertText(`dev`),
+		// submit
+		chromedp.Submit(`//button[text()='Save changes']`),
+		// confirm updated
+		matchText(t, "//div[@role='alert']", "updated workspace"),
+	})
+	// check UI has correctly updated the workspace resource
+	ws, err = daemon.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	require.NoError(t, err)
+	require.Equal(t, "dev", ws.Connection.Branch)
 }
