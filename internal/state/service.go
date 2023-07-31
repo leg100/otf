@@ -146,7 +146,12 @@ func (a *service) GetCurrentStateVersion(ctx context.Context, workspaceID string
 	}
 
 	sv, err := a.db.getCurrentVersion(ctx, workspaceID)
-	if err != nil {
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		// not found error occurs legitimately with a new workspace without any
+		// state, so we log these errors at low level instead
+		a.V(3).Info("retrieving current state version: workspace has no state yet", "workspace_id", workspaceID, "subject", subject)
+		return nil, err
+	} else if err != nil {
 		a.Error(err, "retrieving current state version", "workspace_id", workspaceID, "subject", subject)
 		return nil, err
 	}
