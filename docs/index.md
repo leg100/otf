@@ -14,8 +14,6 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 * Minimal dependencies: requires only PostgreSQL
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
 
-Feel free to trial it using the demo deployment: [https://demo.otf.ninja](https://demo.otf.ninja)
-
 <figure markdown>
 ![run page planned and finished state](images/run_page_planned_and_finished_state.png){.screenshot}
 <figcaption>Real-time streaming of a terraform plan</figcaption>
