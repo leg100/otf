@@ -60,6 +60,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
 		input.InsertText(`/baz/*.tf`),
 		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
+		screenshot(t, "workspace_edit_trigger_patterns"),
 		// check patterns are listed
 		matchText(t, `span#trigger-pattern-1`, `/foo/\*.tf`, chromedp.ByQuery),
 		matchText(t, `span#trigger-pattern-2`, `/bar/\*.tf`, chromedp.ByQuery),

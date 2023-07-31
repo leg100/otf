@@ -32,6 +32,11 @@ Feel free to trial it using the demo deployment: [https://demo.otf.ninja](https:
 </figure>
 
 <figure markdown>
+![workspace main page](images/workspace_edit_trigger_patterns.png){.screenshot}
+<figcaption>Setting VCS triggers</figcaption>
+</figure>
+
+<figure markdown>
 ![team permissions](images/team_permissions_added_workspace_manager.png){.screenshot}
 <figcaption>Setting organization-level permissions for a team</figcaption>
 </figure>
