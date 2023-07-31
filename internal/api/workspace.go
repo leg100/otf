@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
@@ -70,6 +71,10 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory:           params.WorkingDirectory,
 		// convert from json:api structs to tag specs
 		Tags: toTagSpecs(params.Tags),
+	}
+	// Always trigger runs if neither trigger patterns nor tags regex are set
+	if len(params.TriggerPatterns) == 0 && (params.VCSRepo == nil || params.VCSRepo.TagsRegex == nil) {
+		opts.AlwaysTrigger = internal.Bool(true)
 	}
 	if params.Operations != nil {
 		if params.ExecutionMode != nil {
@@ -280,6 +285,21 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
 	}
+
+	// If file-triggers-enabled is set to false and tags regex is unspecified
+	// then enable always trigger runs for this workspace.
+	//
+	// TODO: return error when client has sent incompatible combinations of
+	// options:
+	// (a) file-triggers-enabled=true and tags-regex=non-nil
+	// (b) file-triggers-enabled=true and trigger-prefixes=empty
+	// (b) trigger-prefixes=non-empty and tags-regex=non-nil
+	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (params.VCSRepo.Set || params.VCSRepo.Valid || params.VCSRepo.TagsRegex == nil) {
+		if !*params.FileTriggersEnabled {
+			opts.AlwaysTrigger = internal.Bool(true)
+		}
+	}
+
 	if params.VCSRepo.Set {
 		if params.VCSRepo.Valid {
 			// client has provided non-null vcs options, which means they either
@@ -296,6 +316,7 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 			opts.Disconnect = true
 		}
 	}
+
 	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, opts)
 	if err != nil {
 		Error(w, err)

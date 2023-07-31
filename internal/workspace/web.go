@@ -19,11 +19,6 @@ import (
 )
 
 const (
-	// different types of workspace run triggers to present to user
-	vcsTriggerAlways   = "always"
-	vcsTriggerPatterns = "patterns"
-	vcsTriggerTags     = "tags"
-
 	// give user choice of pre-defined regexes for matching vcs tags
 	vcsTagRegexDefault = `^\d+\.\d+\.\d+$`
 	vcsTagRegexPrefix  = `\d+\.\d+\.\d+$`
@@ -31,6 +26,17 @@ const (
 	// this is a 'magic string' that indicates a custom regex has been
 	// supplied in another variable
 	vcsTagRegexCustom = `custom`
+
+	//
+	// VCS trigger strategies to present to the user.
+	//
+	// every vcs event trigger runs
+	VCSTriggerAlways string = "always"
+	// only vcs events with changed files matching a set of glob patterns
+	// triggers run
+	VCSTriggerPatterns string = "patterns"
+	// only push tag vcs events trigger runs
+	VCSTriggerTags string = "tags"
 )
 
 type (
@@ -386,9 +392,9 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTagRegexPrefix:              vcsTagRegexPrefix,
 		VCSTagRegexSuffix:              vcsTagRegexSuffix,
 		VCSTagRegexCustom:              vcsTagRegexCustom,
-		VCSTriggerAlways:               vcsTriggerAlways,
-		VCSTriggerPatterns:             vcsTriggerPatterns,
-		VCSTriggerTags:                 vcsTriggerTags,
+		VCSTriggerAlways:               VCSTriggerAlways,
+		VCSTriggerPatterns:             VCSTriggerPatterns,
+		VCSTriggerTags:                 VCSTriggerTags,
 	})
 }
 
@@ -402,11 +408,11 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		WorkingDirectory *string        `schema:"working_directory"`
 		WorkspaceID      string         `schema:"workspace_id,required"`
 
-		VCSTriggerStrategy  string  `schema:"vcs_trigger"`
-		TriggerPatternsJSON string  `schema:"trigger_patterns"`
-		VCSBranch           *string `schema:"vcs_branch"`
-		TagsRegex           *string `schema:"tags_regex"`
-		CustomTagsRegex     string  `schema:"custom_tags_regex"`
+		VCSTriggerStrategy  string `schema:"vcs_trigger"`
+		TriggerPatternsJSON string `schema:"trigger_patterns"`
+		VCSBranch           string `schema:"vcs_branch"`
+		PredefinedTagsRegex string `schema:"tags_regex"`
+		CustomTagsRegex     string `schema:"custom_tags_regex"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -430,27 +436,24 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if ws.Connection != nil {
 		// workspace is connected, so set connection fields
+		opts.ConnectOptions = &ConnectOptions{
+			Branch: &params.VCSBranch,
+		}
 		switch params.VCSTriggerStrategy {
-		case vcsTriggerAlways:
-			params.TagsRegex = internal.String("")
-			opts.TriggerPatterns = []string{}
-		case vcsTriggerPatterns:
+		case VCSTriggerAlways:
+			opts.AlwaysTrigger = internal.Bool(true)
+		case VCSTriggerPatterns:
 			err := json.Unmarshal([]byte(params.TriggerPatternsJSON), &opts.TriggerPatterns)
 			if err != nil {
 				h.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			params.TagsRegex = nil
-		case vcsTriggerTags:
-			if *params.TagsRegex == vcsTagRegexCustom {
-				// user has selected a custom tag regex
-				params.TagsRegex = &params.CustomTagsRegex
+		case VCSTriggerTags:
+			if params.PredefinedTagsRegex == vcsTagRegexCustom {
+				opts.ConnectOptions.TagsRegex = &params.CustomTagsRegex
+			} else {
+				opts.ConnectOptions.TagsRegex = &params.PredefinedTagsRegex
 			}
-			opts.TriggerPatterns = []string{}
-		}
-		opts.ConnectOptions = &ConnectOptions{
-			Branch:    params.VCSBranch,
-			TagsRegex: params.TagsRegex,
 		}
 	}
 

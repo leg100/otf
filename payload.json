@@ -1,9 +1,8 @@
 {
   "data": {
     "attributes": {
-      "file-triggers-enabled": false,
       "vcs-repo": {
-          "tags-regex": ""
+          "tags-regex": "\\d"
       }
     },
     "type": "workspaces"

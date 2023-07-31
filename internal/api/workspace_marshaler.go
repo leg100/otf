@@ -66,10 +66,9 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		Organization:               &types.Organization{Name: from.Organization},
 		Outputs:                    []*types.StateVersionOutput{},
 	}
-	if from.TriggerPatterns != nil {
+	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true
 	}
-
 	if from.LatestRun != nil {
 		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
 	}

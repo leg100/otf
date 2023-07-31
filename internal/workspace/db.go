@@ -29,7 +29,6 @@ type (
 		Description                pgtype.Text            `json:"description"`
 		Environment                pgtype.Text            `json:"environment"`
 		ExecutionMode              pgtype.Text            `json:"execution_mode"`
-		FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
 		GlobalRemoteState          bool                   `json:"global_remote_state"`
 		MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
 		Name                       pgtype.Text            `json:"name"`
@@ -89,9 +88,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.Connection = &Connection{
 			VCSProviderID: r.Webhook.VCSProviderID.String,
 			Repo:          r.Webhook.Identifier.String,
-		}
-		if r.Branch.Status == pgtype.Present {
-			ws.Connection.Branch = r.Branch.String
+			Branch:        r.Branch.String,
 		}
 		if r.VCSTagsRegex.Status == pgtype.Present {
 			ws.Connection.TagsRegex = r.VCSTagsRegex.String
@@ -145,7 +142,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		QueueAllRuns:               ws.QueueAllRuns,
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
-		Branch:                     sql.StringPtr(nil),
+		Branch:                     sql.String(""),
 		VCSTagsRegex:               sql.StringPtr(nil),
 	}
 	if ws.Connection != nil {
@@ -189,6 +186,8 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			TriggerPrefixes:            ws.TriggerPrefixes,
 			TriggerPatterns:            ws.TriggerPatterns,
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
+			Branch:                     sql.String(""),
+			VCSTagsRegex:               sql.StringPtr(nil),
 		}
 		if ws.Connection != nil {
 			params.Branch = sql.String(ws.Connection.Branch)

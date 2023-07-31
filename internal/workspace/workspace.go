@@ -75,7 +75,7 @@ type (
 		// branch is used. Ignored if TagsRegex is non-empty.
 		Branch string
 		// Pushed tags matching this regular expression trigger runs. Mutually
-		// exclusive with Connection.TagsRegex.
+		// exclusive with TriggerPatterns.
 		TagsRegex string
 
 		VCSProviderID string
@@ -119,6 +119,10 @@ type (
 		WorkingDirectory           *string
 		Organization               *string
 
+		// Always trigger runs. A value of true is mutually exclusive with
+		// setting TriggerPatterns or ConnectOptions.TagsRegex.
+		AlwaysTrigger *bool
+
 		*ConnectOptions
 	}
 
@@ -128,7 +132,6 @@ type (
 		Name                       *string
 		Description                *string
 		ExecutionMode              *ExecutionMode
-		FileTriggersEnabled        *bool
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
@@ -138,6 +141,10 @@ type (
 		TriggerPrefixes            []string
 		TriggerPatterns            []string
 		WorkingDirectory           *string
+
+		// Always trigger runs. A value of true is mutually exclusive with
+		// setting TriggerPatterns or ConnectOptions.TagsRegex.
+		AlwaysTrigger *bool
 
 		// Disconnect workspace from repo. It is invalid to specify true for an
 		// already disconnected workspace.
@@ -158,6 +165,9 @@ type (
 
 		resource.PageOptions
 	}
+
+	// VCS trigger strategy determines which VCS events trigger runs
+	VCSTriggerStrategy string
 )
 
 func NewWorkspace(opts CreateOptions) (*Workspace, error) {
@@ -221,18 +231,25 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
 	}
-	if opts.TriggerPrefixes != nil && opts.TriggerPatterns != nil {
-		return nil, errors.New("cannot specify both trigger prefixes and trigger patterns")
-	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe
 	// integration tests.
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 	}
+	// Enforce three-way mutually exclusivity between:
+	// (a) tags-regex
+	// (b) trigger-patterns
+	// (c) always-trigger=true
+	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
+		return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
+	}
+	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+		return nil, errors.New("cannot specify both tags-regex and always-trigger")
+	}
+	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+		return nil, errors.New("cannot specify both trigger-patterns and always-trigger")
+	}
 	if opts.ConnectOptions != nil {
-		if opts.ConnectOptions.TagsRegex != nil && opts.TriggerPatterns != nil {
-			return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
-		}
 		if err := ws.addConnection(opts.ConnectOptions); err != nil {
 			return nil, err
 		}
@@ -332,21 +349,40 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 		updated = true
 	}
+	// Enforce three-way mutually exclusivity between:
+	// (a) tags-regex
+	// (b) trigger-patterns
+	// (c) always-trigger=true
+	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && opts.TriggerPatterns != nil {
+		return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
+	}
+	if (opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil) && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+		return nil, errors.New("cannot specify both tags-regex and always-trigger")
+	}
+	if len(opts.TriggerPatterns) > 0 && (opts.AlwaysTrigger != nil && *opts.AlwaysTrigger) {
+		return nil, errors.New("cannot specify both trigger-patterns and always-trigger")
+	}
+	if opts.AlwaysTrigger != nil && *opts.AlwaysTrigger {
+		if ws.Connection != nil {
+			ws.Connection.TagsRegex = ""
+		}
+		ws.TriggerPatterns = nil
+		updated = true
+	}
 	if opts.TriggerPatterns != nil {
 		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
 			return nil, fmt.Errorf("setting trigger patterns: %w", err)
 		}
+		if ws.Connection != nil {
+			ws.Connection.TagsRegex = ""
+		}
 		updated = true
 	}
-	if opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil &&
-		opts.TriggerPatterns != nil {
-		return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
-	}
 	// determine whether to connect or disconnect workspace
-	var connect *bool
 	if opts.Disconnect && opts.ConnectOptions != nil {
 		return nil, errors.New("connect options must be nil if disconnect is true")
 	}
+	var connect *bool
 	if opts.Disconnect {
 		if ws.Connection == nil {
 			return nil, errors.New("cannot disconnect an already disconnected workspace")
