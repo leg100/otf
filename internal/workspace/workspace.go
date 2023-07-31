@@ -19,8 +19,7 @@ const (
 	LocalExecutionMode  ExecutionMode = "local"
 	AgentExecutionMode  ExecutionMode = "agent"
 
-	DefaultAllowDestroyPlan    = true
-	DefaultFileTriggersEnabled = true
+	DefaultAllowDestroyPlan = true
 
 	MinTerraformVersion     = "1.2.0"
 	DefaultTerraformVersion = "1.5.2"
@@ -58,11 +57,12 @@ type (
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
 
-		// VCS connection fields, which ought to belong in Connection but are
-		// included at the root of the workspace because the go-tfe integration
-		// tests set these fields without setting the connection!
-		FileTriggersEnabled bool
-		TriggerPatterns     []string
+		// TriggerPatterns is mutually exclusive with Connection.TagsRegex.
+		//
+		// Note: TriggerPatterns ought to belong in Connection but it is included at
+		// the root of Workspace because the go-tfe integration tests set
+		// this field without setting the connection!
+		TriggerPatterns []string
 
 		// TriggerPrefixes exists only to pass the go-tfe integration tests and
 		// is not used when determining whether to trigger runs. Use
@@ -74,8 +74,8 @@ type (
 		// Pushes to this VCS branch trigger runs. Empty string means the default
 		// branch is used. Ignored if TagsRegex is non-empty.
 		Branch string
-		// Pushed tags matching this regular expression trigger runs.
-		// FileTriggersEnabled must be false
+		// Pushed tags matching this regular expression trigger runs. Mutually
+		// exclusive with Connection.TagsRegex.
 		TagsRegex string
 
 		VCSProviderID string
@@ -104,7 +104,6 @@ type (
 		AutoApply                  *bool
 		Description                *string
 		ExecutionMode              *ExecutionMode
-		FileTriggersEnabled        *bool
 		GlobalRemoteState          *bool
 		MigrationEnvironment       *string
 		Name                       *string
@@ -129,7 +128,6 @@ type (
 		Name                       *string
 		Description                *string
 		ExecutionMode              *ExecutionMode
-		FileTriggersEnabled        *bool
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool
@@ -171,16 +169,15 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 
 	ws := Workspace{
-		ID:                  internal.NewID("ws"),
-		CreatedAt:           internal.CurrentTimestamp(),
-		UpdatedAt:           internal.CurrentTimestamp(),
-		AllowDestroyPlan:    DefaultAllowDestroyPlan,
-		ExecutionMode:       RemoteExecutionMode,
-		FileTriggersEnabled: DefaultFileTriggersEnabled,
-		GlobalRemoteState:   true, // Only global remote state is supported
-		TerraformVersion:    DefaultTerraformVersion,
-		SpeculativeEnabled:  true,
-		Organization:        *opts.Organization,
+		ID:                 internal.NewID("ws"),
+		CreatedAt:          internal.CurrentTimestamp(),
+		UpdatedAt:          internal.CurrentTimestamp(),
+		AllowDestroyPlan:   DefaultAllowDestroyPlan,
+		ExecutionMode:      RemoteExecutionMode,
+		GlobalRemoteState:  true, // Only global remote state is supported
+		TerraformVersion:   DefaultTerraformVersion,
+		SpeculativeEnabled: true,
+		Organization:       *opts.Organization,
 	}
 	if err := ws.setName(*opts.Name); err != nil {
 		return nil, err
@@ -231,23 +228,19 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
 	}
-
-	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-	}
-
 	if opts.ConnectOptions != nil {
+		if opts.ConnectOptions.TagsRegex != nil && opts.TriggerPatterns != nil {
+			return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
+		}
 		if err := ws.addConnection(opts.ConnectOptions); err != nil {
 			return nil, err
 		}
 	}
-
 	if opts.TriggerPatterns != nil {
 		if err := ws.setTriggerPatterns(opts.TriggerPatterns); err != nil {
 			return nil, fmt.Errorf("setting trigger patterns: %w", err)
 		}
 	}
-
 	return &ws, nil
 }
 
@@ -332,11 +325,6 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		ws.WorkingDirectory = *opts.WorkingDirectory
 		updated = true
 	}
-
-	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-		updated = true
-	}
 	// TriggerPrefixes are not used but OTF persists it in order to pass go-tfe
 	// integration tests.
 	if opts.TriggerPrefixes != nil {
@@ -349,7 +337,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		}
 		updated = true
 	}
-
+	if opts.ConnectOptions != nil && opts.ConnectOptions.TagsRegex != nil &&
+		opts.TriggerPatterns != nil {
+		return nil, errors.New("cannot specify both tags-regex and trigger-patterns")
+	}
 	// determine whether to connect or disconnect workspace
 	var connect *bool
 	if opts.Disconnect && opts.ConnectOptions != nil {
@@ -374,20 +365,20 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		} else {
 			// modify existing connection
 			if opts.TagsRegex != nil {
-				ws.Connection.TagsRegex = *opts.TagsRegex
+				if err := ws.setTagsRegex(*opts.TagsRegex); err != nil {
+					return nil, fmt.Errorf("invalid tags-regex: %w", err)
+				}
 				updated = true
 			}
-			if opts.TagsRegex != nil {
+			if opts.Branch != nil {
 				ws.Connection.Branch = *opts.Branch
 				updated = true
 			}
 		}
 	}
-
 	if updated {
 		ws.UpdatedAt = internal.CurrentTimestamp()
 	}
-
 	return connect, nil
 }
 
@@ -404,13 +395,9 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 		VCSProviderID: *opts.VCSProviderID,
 	}
 	if opts.TagsRegex != nil {
-		if ws.FileTriggersEnabled {
-			return errors.New("file-triggers-enabled must be false when setting tags-regex")
-		}
-		if _, err := regexp.Compile(*opts.TagsRegex); err != nil {
+		if err := ws.setTagsRegex(*opts.TagsRegex); err != nil {
 			return fmt.Errorf("invalid tags-regex: %w", err)
 		}
-		ws.Connection.TagsRegex = *opts.TagsRegex
 	}
 	if opts.Branch != nil {
 		ws.Connection.Branch = *opts.Branch
@@ -445,13 +432,15 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 	return nil
 }
 
-func (ws *Workspace) setTriggerPatterns(enabled bool, patterns []string) error {
-	if !ws.FileTriggersEnabled {
-		return errors.New("file-triggers-enabled must be set to true")
+func (ws *Workspace) setTagsRegex(regex string) error {
+	if _, err := regexp.Compile(regex); err != nil {
+		return fmt.Errorf("invalid tags-regex: %w", err)
 	}
-	if ws.Connection != nil && ws.Connection.TagsRegex != "" {
-		return errors.New("tags-regex must be empty")
-	}
+	ws.Connection.TagsRegex = regex
+	return nil
+}
+
+func (ws *Workspace) setTriggerPatterns(patterns []string) error {
 	for _, patt := range patterns {
 		if _, err := glob.Compile(patt); err != nil {
 			return fmt.Errorf("invalid trigger pattern: %w", err)
