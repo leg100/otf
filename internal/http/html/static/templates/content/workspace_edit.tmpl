@@ -97,13 +97,13 @@
         <legend>VCS triggers</legend>
 
         <div class="form-checkbox">
-          <input type="radio" id="vcs-triggers-always" name="vcs_trigger" value="{{ $.VCSTriggerAlways }}" {{ checked (and (not $.Workspace.FileTriggersEnabled) (not .TagsRegex)) }}>
+          <input type="radio" id="vcs-triggers-always" name="vcs_trigger" value="{{ $.VCSTriggerAlways }}" {{ checked (and (not $.Workspace.TriggerPatterns) (not .TagsRegex)) }}>
           <label for="vcs-triggers-always">Always trigger runs</label>
           <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
         </div>
 
         <div class="form-checkbox">
-          <input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value="{{ $.VCSTriggerPatterns }}" {{ checked $.Workspace.FileTriggersEnabled }}>
+          <input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value="{{ $.VCSTriggerPatterns }}" {{ checked (gt (len $.Workspace.TriggerPatterns) 0) }}>
           <label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
           <span class="col-start-2 description">Supports glob patterns.</span>
           <script src="{{ addHash "/static/js/workspace_trigger_patterns.js" }}"></script>

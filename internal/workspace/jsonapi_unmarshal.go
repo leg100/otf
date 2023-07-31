@@ -16,7 +16,6 @@ func unmarshalJSONAPI(w *types.Workspace) *Workspace {
 		Description:                w.Description,
 		Environment:                w.Environment,
 		ExecutionMode:              ExecutionMode(w.ExecutionMode),
-		FileTriggersEnabled:        w.FileTriggersEnabled,
 		GlobalRemoteState:          w.GlobalRemoteState,
 		MigrationEnvironment:       w.MigrationEnvironment,
 		Name:                       w.Name,

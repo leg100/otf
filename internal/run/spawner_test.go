@@ -111,9 +111,8 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "spawn run for push event for workspace with matching file trigger pattern",
 			ws: &workspace.Workspace{
-				FileTriggersEnabled: true,
-				TriggerPatterns:     []string{"/foo/*.tf"},
-				Connection:          &workspace.Connection{},
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
 			},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypePush,
@@ -125,9 +124,8 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "skip run for push event for workspace with non-matching file trigger pattern",
 			ws: &workspace.Workspace{
-				FileTriggersEnabled: true,
-				TriggerPatterns:     []string{"/foo/*.tf"},
-				Connection:          &workspace.Connection{},
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
 			},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypePush,
@@ -139,9 +137,8 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "spawn run for pull event for workspace with matching file trigger pattern",
 			ws: &workspace.Workspace{
-				FileTriggersEnabled: true,
-				TriggerPatterns:     []string{"/foo/*.tf"},
-				Connection:          &workspace.Connection{},
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
 			},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypePull,
@@ -153,9 +150,8 @@ func TestSpawner(t *testing.T) {
 		{
 			name: "skip run for pull event for workspace with non-matching file trigger pattern",
 			ws: &workspace.Workspace{
-				FileTriggersEnabled: true,
-				TriggerPatterns:     []string{"/foo/*.tf"},
-				Connection:          &workspace.Connection{},
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
 			},
 			event: cloud.VCSEvent{
 				Type:   cloud.VCSEventTypePull,

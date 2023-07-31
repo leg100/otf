@@ -128,6 +128,7 @@ type (
 		Name                       *string
 		Description                *string
 		ExecutionMode              *ExecutionMode
+		FileTriggersEnabled        *bool
 		GlobalRemoteState          *bool
 		Operations                 *bool
 		QueueAllRuns               *bool

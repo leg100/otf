@@ -98,7 +98,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 		case cloud.VCSEventTypeTag, cloud.VCSEventTypePush:
 			// filter workspaces with trigger pattern that doesn't match any of the
 			// files in the event
-			if ws.FileTriggersEnabled {
+			if ws.TriggerPatterns != nil {
 				if !globMatch(event.Paths, ws.TriggerPatterns) {
 					continue
 				}
@@ -133,7 +133,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 		// enabled.
 		var listFiles bool
 		for _, ws := range workspaces {
-			if ws.FileTriggersEnabled {
+			if ws.TriggerPatterns != nil {
 				listFiles = true
 				break
 			}
@@ -145,7 +145,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 			}
 			n := 0
 			for _, ws := range workspaces {
-				if ws.FileTriggersEnabled && !globMatch(paths, ws.TriggerPatterns) {
+				if ws.TriggerPatterns != nil && !globMatch(paths, ws.TriggerPatterns) {
 					// skip workspace
 					continue
 				}

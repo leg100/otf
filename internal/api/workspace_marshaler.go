@@ -45,7 +45,6 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		Description:          from.Description,
 		Environment:          from.Environment,
 		ExecutionMode:        string(from.ExecutionMode),
-		FileTriggersEnabled:  from.FileTriggersEnabled,
 		GlobalRemoteState:    from.GlobalRemoteState,
 		Locked:               from.Locked(),
 		MigrationEnvironment: from.MigrationEnvironment,
@@ -66,6 +65,9 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
 		Outputs:                    []*types.StateVersionOutput{},
+	}
+	if from.TriggerPatterns != nil {
+		to.FileTriggersEnabled = true
 	}
 
 	if from.LatestRun != nil {
