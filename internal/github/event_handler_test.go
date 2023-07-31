@@ -25,6 +25,7 @@ func TestEventHandler(t *testing.T) {
 		want := &cloud.VCSEvent{
 			Type:   cloud.VCSEventTypePush,
 			Branch: "master",
+			Action: cloud.VCSActionCreated,
 		}
 		assert.Equal(t, want, got)
 	})

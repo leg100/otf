@@ -69,6 +69,7 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 			return &to, nil
 		case "heads":
 			to.Type = cloud.VCSEventTypePush
+			to.Action = cloud.VCSActionCreated
 			to.Branch = parts[2]
 			to.CommitSHA = event.GetAfter()
 			to.DefaultBranch = event.GetRepo().GetDefaultBranch()

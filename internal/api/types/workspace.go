@@ -298,7 +298,7 @@ type WorkspaceUpdateOptions struct {
 	// the keys below you wish to modify. To add a new VCS repo to a workspace
 	// that didn't previously have one, include at least the oauth-token-id and
 	// identifier keys.
-	VCSRepo VCSRepoOptions `jsonapi:"attribute" json:"vcs-repo,omitempty"`
+	VCSRepo VCSRepoOptionsJSON `jsonapi:"attribute" json:"vcs-repo,omitempty"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching
@@ -334,9 +334,20 @@ type VCSRepoOptions struct {
 	Set   bool `json:"-"`
 }
 
+// VCSRepoOptionsJSON wraps VCSRepoOptions and implements json.Unmarshaler in order to differentiate
+// between VCSRepoOptions having been explicitly to null, and omitted.
+//
+// NOTE: Credit to https://www.calhoun.io/how-to-determine-if-a-json-key-has-been-set-to-null-or-not-provided/
+type VCSRepoOptionsJSON struct {
+	VCSRepoOptions
+
+	Valid bool `json:"-"`
+	Set   bool `json:"-"`
+}
+
 // UnmarshalJSON differentiates between VCSRepoOptions having been explicitly
 // set to null by the client, or the client has left it out.
-func (o *VCSRepoOptions) UnmarshalJSON(data []byte) error {
+func (o *VCSRepoOptionsJSON) UnmarshalJSON(data []byte) error {
 	// If this method was called, the value was set.
 	o.Set = true
 
@@ -347,7 +358,7 @@ func (o *VCSRepoOptions) UnmarshalJSON(data []byte) error {
 	}
 
 	// The key isn't set to null
-	if err := json.Unmarshal(data, o); err != nil {
+	if err := json.Unmarshal(data, &o.VCSRepoOptions); err != nil {
 		return err
 	}
 	o.Valid = true

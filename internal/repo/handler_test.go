@@ -9,15 +9,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebhookHandler(t *testing.T) {
 	broker := &fakeBroker{}
-	want := pubsub.Event{Type: pubsub.EventVCS, Payload: cloud.VCSEvent{}, Local: true}
 	f := newTestFactory(t, cloud.VCSEvent{})
 	hook := newTestHook(t, f, "vcs-123", internal.String("123"))
+	want := cloud.VCSEvent{RepoID: hook.id, VCSProviderID: "vcs-123", RepoPath: hook.identifier}
 	handler := handler{
 		Logger:        logr.Discard(),
 		handlerBroker: broker,

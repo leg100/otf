@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/semver"
@@ -40,6 +41,8 @@ func (p *publisher) handle(event cloud.VCSEvent) {
 func (p *publisher) handleWithError(logger logr.Logger, event cloud.VCSEvent) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
+	// give spawner unlimited powers
+	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "run-spawner"})
 
 	// only create-tag events trigger the publishing of new module
 	if event.Type != cloud.VCSEventTypeTag {

@@ -43,6 +43,8 @@ func (s *Spawner) handle(event cloud.VCSEvent) {
 func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
+	// give spawner unlimited powers
+	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "run-spawner"})
 
 	// skip events other than those that create or update a ref or pull request
 	switch event.Action {
