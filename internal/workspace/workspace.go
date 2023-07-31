@@ -405,6 +405,7 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 				if err := ws.setTagsRegex(*opts.TagsRegex); err != nil {
 					return nil, fmt.Errorf("invalid tags-regex: %w", err)
 				}
+				ws.TriggerPatterns = nil
 				updated = true
 			}
 			if opts.Branch != nil {

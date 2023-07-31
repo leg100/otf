@@ -112,13 +112,13 @@
             <div class="flex flex-col gap-2">
               <div class="flex gap-2 items-center">
                 <label for="new_path">Path</label>
-                <input class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path">
-                <button @click="addPattern" type="button" class="btn w-40" {{ insufficient $canUpdate }}>Add pattern</button>
+                <input @keydown.enter.prevent="addPattern" class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path">
+                <button @click="addPattern" type="button" id="add-pattern" class="btn w-40" {{ insufficient $canUpdate }}>Add pattern</button>
               </div>
               <template x-for="path in paths">
                 <div class="flex gap-2 items-center justify-end">
-                  <span class="justify-end bg-gray-200 px-2" x-text="path"></span>
-                  <button @click="deletePattern(path)" type="button" class="btn-danger w-40" {{ insufficient $canUpdate }}>Delete</button>
+                  <span class="justify-end bg-gray-200 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
+                  <button @click="deletePattern(path)" type="button" class="btn-danger w-40" :id="$id('delete-pattern')" {{ insufficient $canUpdate }}>Delete</button>
                 </div>
               </template>
             </div>

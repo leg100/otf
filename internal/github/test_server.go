@@ -51,6 +51,10 @@ type (
 		tarball []byte
 		refs    []string
 		webhook *hook
+
+		// pull request stub
+		pullNumber string
+		pullFiles  []string
 	}
 
 	hook struct {
@@ -276,6 +280,22 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			srv.statuses <- &commit
 			w.WriteHeader(http.StatusCreated)
 		})
+		// https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests-files
+		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
+			var commits []*github.CommitFile
+			for _, f := range srv.pullFiles {
+				commits = append(commits, &github.CommitFile{
+					Filename: internal.String(f),
+				})
+			}
+			out, err := json.Marshal(commits)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		})
 	}
 
 	if srv.tarball != nil {
@@ -313,6 +333,13 @@ func WithUser(user *cloud.User) TestServerOption {
 func WithRepo(repo string) TestServerOption {
 	return func(srv *TestServer) {
 		srv.repo = &repo
+	}
+}
+
+func WithPullRequest(pullNumber string, changedPaths ...string) TestServerOption {
+	return func(srv *TestServer) {
+		srv.pullNumber = pullNumber
+		srv.pullFiles = changedPaths
 	}
 }
 
