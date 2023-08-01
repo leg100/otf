@@ -72,6 +72,14 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 	if from.LatestRun != nil {
 		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
 	}
+	if from.Connection != nil {
+		to.VCSRepo = &types.VCSRepo{
+			OAuthTokenID: from.Connection.VCSProviderID,
+			Branch:       from.Connection.Branch,
+			Identifier:   from.Connection.Repo,
+			TagsRegex:    from.Connection.TagsRegex,
+		}
+	}
 
 	// Support including related resources:
 	//

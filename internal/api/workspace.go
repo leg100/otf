@@ -294,10 +294,8 @@ func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	// (a) file-triggers-enabled=true and tags-regex=non-nil
 	// (b) file-triggers-enabled=true and trigger-prefixes=empty
 	// (b) trigger-prefixes=non-empty and tags-regex=non-nil
-	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (params.VCSRepo.Set || params.VCSRepo.Valid || params.VCSRepo.TagsRegex == nil) {
-		if !*params.FileTriggersEnabled {
-			opts.AlwaysTrigger = internal.Bool(true)
-		}
+	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (!params.VCSRepo.Set || !params.VCSRepo.Valid || params.VCSRepo.TagsRegex == nil) {
+		opts.AlwaysTrigger = internal.Bool(true)
 	}
 
 	if params.VCSRepo.Set {

@@ -69,6 +69,7 @@ type VCSRepo struct {
 	IngressSubmodules bool   `json:"ingress-submodules"`
 	OAuthTokenID      string `json:"oauth-token-id"`
 	RepositoryHTTPURL string `json:"repository-http-url"`
+	TagsRegex         string `json:"tags-regex"`
 	ServiceProvider   string `json:"service-provider"`
 }
 
