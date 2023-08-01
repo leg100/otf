@@ -1,5 +1,8 @@
 {{ define "workspace-header-links" }}
-  {{ $links := dict "runs" (runsPath .Workspace.ID) "variables" (variablesPath .Workspace.ID) "settings" (editWorkspacePath .Workspace.ID) }}
+  {{ $links := dict "runs" (runsPath .Workspace.ID) "variables" (variablesPath .Workspace.ID) }}
+  {{ if .CanUpdateWorkspace }}
+    {{ $_ := set $links "settings" (editWorkspacePath .Workspace.ID) }}
+  {{ end }}
   {{ range $txt, $link := $links }}
     {{ if eq $.CurrentPath $link }}
       <li><a class="active" href="{{ $link }}">{{ $txt }}</a></li>

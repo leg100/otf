@@ -3,12 +3,11 @@
 {{ define "content-header-title" }}workspaces{{ end }}
 
 {{ define "content-header-actions" }}
-  {{ $canCreate := $.CurrentUser.CanAccessOrganization .CreateWorkspaceAction .Organization }}
-  <form action="{{ newWorkspacePath .Organization }}" method="GET">
-    <button class="btn" id="new-workspace-button" {{ insufficient $canCreate }}>
-      New Workspace
-    </button>
-  </form>
+  {{ if .CanCreateWorkspace }}
+    <form action="{{ newWorkspacePath .Organization }}" method="GET">
+      <button class="btn" id="new-workspace-button">New Workspace</button>
+    </form>
+  {{ end }}
 {{ end }}
 
 {{ define "content" }}

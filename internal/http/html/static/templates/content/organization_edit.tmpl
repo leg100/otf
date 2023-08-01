@@ -3,22 +3,19 @@
 {{ define "content-header-title" }}settings{{ end }}
 
 {{ define "content" }}
-  {{ $canUpdate := $.CurrentUser.CanAccessOrganization .UpdateOrganizationAction .Name }}
-  {{ $canDelete := $.CurrentUser.CanAccessOrganization .DeleteOrganizationAction .Name }}
-
   <form class="flex flex-col gap-5" action="{{ updateOrganizationPath .Name }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
       <input class="text-input w-80" type="text" name="new_name" id="name" value="{{ .Name }}" required>
     </div>
     <div class="field">
-      <button class="btn w-72" {{ insufficient $canDelete }}>Update organization name</button>
+      <button class="btn w-72">Update organization name</button>
     </div>
   </form>
   <hr class="my-4">
   <h3 class="font-semibold text-lg mb-2">Advanced</h3>
   <form action="{{ deleteOrganizationPath .Name }}" method="POST">
-    <button id="delete-organization-button" class="btn-danger" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
+    <button id="delete-organization-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
       Delete organization
     </button>
     <input type="hidden" name="id" value="{{ .ID }}">

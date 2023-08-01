@@ -43,15 +43,6 @@ func nextPageQuery(p resource.Pagination) *string {
 	return internal.String(fmt.Sprintf("page[number]=%d", *p.NextPage))
 }
 
-// insufficient returns form attributes that disable the form element and
-// notify the user they have insufficent permissions if they lack a permission
-func insufficient(can bool) template.HTMLAttr {
-	if !can {
-		return `title="insufficient permissions" disabled`
-	}
-	return ""
-}
-
 func disabled(arg any, args ...any) (template.HTMLAttr, error) {
 	return attrIf("disabled", arg, args...)
 }

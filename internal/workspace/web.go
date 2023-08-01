@@ -138,18 +138,24 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	response := struct {
 		organization.OrganizationPage
-		CreateWorkspaceAction rbac.Action
 		*resource.Page[*Workspace]
-		TagFilters map[string]bool
-		Search     string
+		TagFilters         map[string]bool
+		Search             string
+		CanCreateWorkspace bool
 	}{
-		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
-		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
-		Page:                  workspaces,
-		TagFilters:            tagfilters(),
-		Search:                params.Search,
+		OrganizationPage:   organization.NewPage(r, "workspaces", *params.Organization),
+		CanCreateWorkspace: user.CanAccessOrganization(rbac.CreateTeamAction, *params.Organization),
+		Page:               workspaces,
+		TagFilters:         tagfilters(),
+		Search:             params.Search,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
@@ -254,19 +260,27 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_get.tmpl", w, struct {
 		WorkspacePage
 		LockButton
-		VCSProvider    *vcsprovider.VCSProvider
-		CanApply       bool
-		CanAddTags     bool
-		CanRemoveTags  bool
-		UnassignedTags []string
-		TagsDropdown   html.DropdownUI
+		VCSProvider        *vcsprovider.VCSProvider
+		CanApply           bool
+		CanAddTags         bool
+		CanRemoveTags      bool
+		CanCreateRun       bool
+		CanLockWorkspace   bool
+		CanUnlockWorkspace bool
+		CanUpdateWorkspace bool
+		UnassignedTags     []string
+		TagsDropdown       html.DropdownUI
 	}{
-		WorkspacePage: NewPage(r, ws.ID, ws),
-		LockButton:    lockButtonHelper(ws, policy, user),
-		VCSProvider:   provider,
-		CanApply:      user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanAddTags:    user.CanAccessWorkspace(rbac.AddTagsAction, policy),
-		CanRemoveTags: user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
+		WorkspacePage:      NewPage(r, ws.ID, ws),
+		LockButton:         lockButtonHelper(ws, policy, user),
+		VCSProvider:        provider,
+		CanApply:           user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanAddTags:         user.CanAccessWorkspace(rbac.AddTagsAction, policy),
+		CanRemoveTags:      user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
+		CanCreateRun:       user.CanAccessWorkspace(rbac.CreateRunAction, policy),
+		CanLockWorkspace:   user.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
+		CanUnlockWorkspace: user.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
+		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		TagsDropdown: html.DropdownUI{
 			Name:        "tag_name",
 			Available:   internal.DiffStrings(getTagNames(), ws.Tags),
@@ -315,6 +329,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// Get teams that have yet to be assigned a permission
 	teams, err := h.ListTeams(r.Context(), workspace.Organization)
@@ -350,25 +369,20 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
-		Policy                         internal.WorkspacePolicy
-		Unassigned                     []*auth.Team
-		Roles                          []rbac.Role
-		VCSProvider                    *vcsprovider.VCSProvider
-		UnassignedTags                 []string
-		UpdateWorkspaceAction          rbac.Action
-		DeleteWorkspaceAction          rbac.Action
-		SetWorkspacePermissionAction   rbac.Action
-		UnsetWorkspacePermissionAction rbac.Action
-		AddTagsAction                  rbac.Action
-		RemoveTagsAction               rbac.Action
-		CreateRunAction                rbac.Action
-		VCSTagRegexDefault             string
-		VCSTagRegexPrefix              string
-		VCSTagRegexSuffix              string
-		VCSTagRegexCustom              string
-		VCSTriggerAlways               string
-		VCSTriggerPatterns             string
-		VCSTriggerTags                 string
+		Policy             internal.WorkspacePolicy
+		Unassigned         []*auth.Team
+		Roles              []rbac.Role
+		VCSProvider        *vcsprovider.VCSProvider
+		UnassignedTags     []string
+		CanUpdateWorkspace bool
+		CanDeleteWorkspace bool
+		VCSTagRegexDefault string
+		VCSTagRegexPrefix  string
+		VCSTagRegexSuffix  string
+		VCSTagRegexCustom  string
+		VCSTriggerAlways   string
+		VCSTriggerPatterns string
+		VCSTriggerTags     string
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
 		Policy:        policy,
@@ -379,22 +393,17 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceWriteRole,
 			rbac.WorkspaceAdminRole,
 		},
-		VCSProvider:                    provider,
-		UnassignedTags:                 internal.DiffStrings(getTagNames(), workspace.Tags),
-		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
-		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
-		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
-		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
-		CreateRunAction:                rbac.CreateRunAction,
-		AddTagsAction:                  rbac.AddTagsAction,
-		RemoveTagsAction:               rbac.RemoveTagsAction,
-		VCSTagRegexDefault:             vcsTagRegexDefault,
-		VCSTagRegexPrefix:              vcsTagRegexPrefix,
-		VCSTagRegexSuffix:              vcsTagRegexSuffix,
-		VCSTagRegexCustom:              vcsTagRegexCustom,
-		VCSTriggerAlways:               VCSTriggerAlways,
-		VCSTriggerPatterns:             VCSTriggerPatterns,
-		VCSTriggerTags:                 VCSTriggerTags,
+		VCSProvider:        provider,
+		UnassignedTags:     internal.DiffStrings(getTagNames(), workspace.Tags),
+		VCSTagRegexDefault: vcsTagRegexDefault,
+		VCSTagRegexPrefix:  vcsTagRegexPrefix,
+		VCSTagRegexSuffix:  vcsTagRegexSuffix,
+		VCSTagRegexCustom:  vcsTagRegexCustom,
+		VCSTriggerAlways:   VCSTriggerAlways,
+		VCSTriggerPatterns: VCSTriggerPatterns,
+		VCSTriggerTags:     VCSTriggerTags,
+		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+		CanDeleteWorkspace: user.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
 	})
 }
 

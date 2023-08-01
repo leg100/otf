@@ -75,6 +75,10 @@ func (f *fakeWebServices) CreateRun(ctx context.Context, workspaceID string, opt
 	return f.runs[0], nil
 }
 
+func (f *fakeWebServices) GetPolicy(context.Context, string) (internal.WorkspacePolicy, error) {
+	return internal.WorkspacePolicy{}, nil
+}
+
 func (f *fakeWebServices) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }

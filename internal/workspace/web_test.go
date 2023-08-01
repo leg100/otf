@@ -120,18 +120,6 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "insufficient privileges",
-			ws:   &Workspace{ID: "ws-123"},
-			user: auth.User{}, // user with no privs
-			want: func(t *testing.T, doc *html.Node) {
-				// all buttons should be disabled
-				buttons := htmlquery.Find(doc, `//button`)
-				for _, btn := range buttons {
-					assert.Contains(t, testutils.AttrMap(btn), "disabled")
-				}
-			},
-		},
-		{
 			name: "with policy",
 			ws:   &Workspace{ID: "ws-123"},
 			user: auth.SiteAdmin,
