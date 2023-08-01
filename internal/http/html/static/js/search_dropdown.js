@@ -17,5 +17,16 @@ document.addEventListener('alpine:init', () => {
     get isNew() {
       return this.search !== '' && !this.available?.includes(this.search) && !this.existing?.includes(this.search)
     },
+    get showPanel() {
+        if (this.open) {
+          if (this.existing?.includes(this.search)) return true
+          if (this.isNew) return true
+          if (this.filterAvailable?.length > 0) return true
+        }
+        return false
+    },
+    get showAlreadyAdded() {
+        return this.existing?.includes(this.search)
+    },
   }))
 })

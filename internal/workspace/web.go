@@ -334,14 +334,37 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	// Get teams that have yet to be assigned a permission
 	teams, err := h.ListTeams(r.Context(), workspace.Organization)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	// Get names of all workspaces, for listing workspaces with which to share state
+	// with.
+	all, err := h.svc.ListWorkspaces(r.Context(), ListOptions{
+		Organization: &workspace.Organization,
+	})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	allNames := make([]string, len(all.Items))
+	for i, ws := range all.Items {
+		allNames[i] = ws.Name
+	}
+	// Get names of workspaces that are currently approved to access this
+	// workspace's state.
+	consumers, err := h.svc.ListRemoteStateConsumers(r.Context(), workspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	consumerNames := make([]string, len(consumers))
+	for i, ws := range consumers {
+		consumerNames[i] = ws.Name
+	}
+	// Get cloud info about VCS connection
 	var provider *vcsprovider.VCSProvider
 	if workspace.Connection != nil {
 		provider, err = h.GetVCSProvider(r.Context(), workspace.Connection.VCSProviderID)
@@ -350,7 +373,7 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
+	// Get all available workspace tags
 	tags, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Tag], error) {
 		return h.svc.ListTags(r.Context(), workspace.Organization, ListTagsOptions{
 			PageOptions: opts,
@@ -383,6 +406,8 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerAlways   string
 		VCSTriggerPatterns string
 		VCSTriggerTags     string
+		ConsumersDropdown  html.DropdownUI
+		Consumers          []*Workspace
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
 		Policy:        policy,
@@ -404,6 +429,15 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSTriggerTags:     VCSTriggerTags,
 		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		CanDeleteWorkspace: user.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
+		ConsumersDropdown: html.DropdownUI{
+			Name:        "consumer_name",
+			Available:   internal.DiffStrings(allNames, consumerNames),
+			Existing:    consumerNames,
+			Action:      paths.AddRemoteStateConsumerWorkspace(workspace.ID),
+			Placeholder: "Add workspace",
+			Width:       "narrow",
+		},
+		Consumers: consumers,
 	})
 }
 

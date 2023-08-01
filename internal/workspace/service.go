@@ -42,6 +42,7 @@ type (
 		LockService
 		PermissionsService
 		TagService
+		RemoteStateConsumerService
 	}
 
 	service struct {

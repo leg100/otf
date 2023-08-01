@@ -26,13 +26,13 @@
         >
     <div
         x-ref="panel"
-        x-show="open && (existing?.includes(search) || isNew || filterAvailable?.length > 0)"
+        x-show="showPanel"
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
         class="absolute flex flex-col {{ get $width .Width }} mt-1 bg-white overflow-x-auto border border-black"
         >
-        <span class="text-left py-1 px-2 text-gray-600 italic" x-show="existing?.includes(search)">
+        <span class="text-left py-1 px-2 text-gray-600 italic" x-show="showAlreadyAdded">
           <span x-text="search"></span> already added
         </span>
         <button form="search-dropdown" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-show="isNew">

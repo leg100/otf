@@ -188,6 +188,12 @@ var specs = []controllerSpec{
 					{
 						name: "state",
 					},
+					{
+						name: "add-remote-state-consumer",
+					},
+					{
+						name: "delete-remote-state-consumer",
+					},
 				},
 				nested: []controllerSpec{
 					{

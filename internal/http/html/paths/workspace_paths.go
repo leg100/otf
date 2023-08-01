@@ -87,3 +87,11 @@ func DeleteTagWorkspace(workspace string) string {
 func StateWorkspace(workspace string) string {
 	return fmt.Sprintf("/app/workspaces/%s/state", workspace)
 }
+
+func AddRemoteStateConsumerWorkspace(workspace string) string {
+	return fmt.Sprintf("/app/workspaces/%s/add-remote-state-consumer", workspace)
+}
+
+func DeleteRemoteStateConsumerWorkspace(workspace string) string {
+	return fmt.Sprintf("/app/workspaces/%s/delete-remote-state-consumer", workspace)
+}

@@ -61,11 +61,6 @@ type (
 		Tags                       []string      `json:"tags"`
 		Lock                       *Lock         `json:"lock"`
 
-		// permit sharing state with entire organization.
-		ShareStateWithOrganization bool `json:"organization_share_state"`
-		// permit sharing state with workspaces with the given IDs.
-		ShareStateWithWorkspaces []string
-
 		// VCS Connection; nil means the workspace is not connected.
 		Connection *Connection
 
