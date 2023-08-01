@@ -94,11 +94,12 @@ var (
 	WorkspaceManagerRole = Role{
 		name: "workspace-manager",
 		permissions: map[Action]bool{
-			CreateWorkspaceAction: true,
-			ListWorkspacesAction:  true,
-			UpdateWorkspaceAction: true,
-			AddTagsAction:         true,
-			RemoveTagsAction:      true,
+			CreateWorkspaceAction:             true,
+			ListWorkspacesAction:              true,
+			UpdateWorkspaceAction:             true,
+			AddTagsAction:                     true,
+			RemoveTagsAction:                  true,
+			ReplaceRemoteStateConsumersAction: true,
 			// includes WorkspaceAdminRole perms too (see below)
 		},
 	}

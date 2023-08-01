@@ -1028,6 +1028,13 @@ type Querier interface {
 	// FindWorkspacesByWebhookIDScan scans the result of an executed FindWorkspacesByWebhookIDBatch query.
 	FindWorkspacesByWebhookIDScan(results pgx.BatchResults) ([]FindWorkspacesByWebhookIDRow, error)
 
+	FindRemoteStateConsumersByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindRemoteStateConsumersByWorkspaceIDRow, error)
+	// FindRemoteStateConsumersByWorkspaceIDBatch enqueues a FindRemoteStateConsumersByWorkspaceID query into batch to be executed
+	// later by the batch.
+	FindRemoteStateConsumersByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindRemoteStateConsumersByWorkspaceIDScan scans the result of an executed FindRemoteStateConsumersByWorkspaceIDBatch query.
+	FindRemoteStateConsumersByWorkspaceIDScan(results pgx.BatchResults) ([]FindRemoteStateConsumersByWorkspaceIDRow, error)
+
 	FindWorkspacesByUsername(ctx context.Context, params FindWorkspacesByUsernameParams) ([]FindWorkspacesByUsernameRow, error)
 	// FindWorkspacesByUsernameBatch enqueues a FindWorkspacesByUsername query into batch to be executed
 	// later by the batch.
@@ -1097,6 +1104,20 @@ type Querier interface {
 	DeleteWorkspaceByIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// DeleteWorkspaceByIDScan scans the result of an executed DeleteWorkspaceByIDBatch query.
 	DeleteWorkspaceByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertRemoteStateConsumerByID(ctx context.Context, workspaceID pgtype.Text, consumerID pgtype.Text) (pgconn.CommandTag, error)
+	// InsertRemoteStateConsumerByIDBatch enqueues a InsertRemoteStateConsumerByID query into batch to be executed
+	// later by the batch.
+	InsertRemoteStateConsumerByIDBatch(batch genericBatch, workspaceID pgtype.Text, consumerID pgtype.Text)
+	// InsertRemoteStateConsumerByIDScan scans the result of an executed InsertRemoteStateConsumerByIDBatch query.
+	InsertRemoteStateConsumerByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	DeleteRemoteStateConsumersByConsumerIDs(ctx context.Context, workspaceID pgtype.Text, consumerIds []string) (pgconn.CommandTag, error)
+	// DeleteRemoteStateConsumersByConsumerIDsBatch enqueues a DeleteRemoteStateConsumersByConsumerIDs query into batch to be executed
+	// later by the batch.
+	DeleteRemoteStateConsumersByConsumerIDsBatch(batch genericBatch, workspaceID pgtype.Text, consumerIds []string)
+	// DeleteRemoteStateConsumersByConsumerIDsScan scans the result of an executed DeleteRemoteStateConsumersByConsumerIDsBatch query.
+	DeleteRemoteStateConsumersByConsumerIDsScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	UpsertWorkspacePermission(ctx context.Context, params UpsertWorkspacePermissionParams) (pgconn.CommandTag, error)
 	// UpsertWorkspacePermissionBatch enqueues a UpsertWorkspacePermission query into batch to be executed
@@ -1624,6 +1645,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspacesByWebhookIDSQL, findWorkspacesByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacesByWebhookID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findRemoteStateConsumersByWorkspaceIDSQL, findRemoteStateConsumersByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRemoteStateConsumersByWorkspaceID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findWorkspacesByUsernameSQL, findWorkspacesByUsernameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacesByUsername': %w", err)
 	}
@@ -1653,6 +1677,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertRemoteStateConsumerByIDSQL, insertRemoteStateConsumerByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRemoteStateConsumerByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteRemoteStateConsumersByConsumerIDsSQL, deleteRemoteStateConsumersByConsumerIDsSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteRemoteStateConsumersByConsumerIDs': %w", err)
 	}
 	if _, err := p.Prepare(ctx, upsertWorkspacePermissionSQL, upsertWorkspacePermissionSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertWorkspacePermission': %w", err)

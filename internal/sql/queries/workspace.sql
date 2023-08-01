@@ -54,13 +54,13 @@ INSERT INTO workspaces (
 -- name: FindWorkspaces :many
 SELECT
     w.*,
+    r.status AS latest_run_status,
     (
         SELECT array_agg(name)
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
-    r.status AS latest_run_status,
     (
         SELECT (u.*)::"users"
         FROM users u
@@ -112,13 +112,13 @@ FROM workspaces
 -- name: FindWorkspacesByWebhookID :many
 SELECT
     w.*,
+    r.status AS latest_run_status,
     (
         SELECT array_agg(name)
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
-    r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"repo_connections" AS workspace_connection,
@@ -131,16 +131,39 @@ JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id 
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 
--- name: FindWorkspacesByUsername :many
+-- name: FindRemoteStateConsumersByWorkspaceID :many
 SELECT
     w.*,
+    r.status AS latest_run_status,
     (
         SELECT array_agg(name)
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
+    (ul.*)::"users" AS user_lock,
+    (rl.*)::"runs" AS run_lock,
+    (vr.*)::"repo_connections" AS workspace_connection,
+    (h.*)::"webhooks" AS webhook
+FROM workspaces w
+LEFT JOIN users ul ON w.lock_username = ul.username
+LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
+LEFT JOIN runs r ON w.latest_run_id = r.run_id
+LEFT JOIN (repo_connections vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+JOIN remote_state_consumers c ON c.consumer_id = w.workspace_id
+WHERE c.workspace_id = pggen.arg('workspace_id')
+;
+
+-- name: FindWorkspacesByUsername :many
+SELECT
+    w.*,
     r.status AS latest_run_status,
+    (
+        SELECT array_agg(name)
+        FROM tags
+        JOIN workspace_tags wt USING (tag_id)
+        WHERE wt.workspace_id = w.workspace_id
+    ) AS tags,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"repo_connections" AS workspace_connection,
@@ -174,13 +197,13 @@ AND   u.username          = pggen.arg('username')
 
 -- name: FindWorkspaceByName :one
 SELECT w.*,
+    r.status AS latest_run_status,
     (
         SELECT array_agg(name)
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
-    r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"repo_connections" AS workspace_connection,
@@ -196,13 +219,13 @@ AND   w.organization_name = pggen.arg('organization_name')
 
 -- name: FindWorkspaceByID :one
 SELECT w.*,
+    r.status AS latest_run_status,
     (
         SELECT array_agg(name)
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
-    r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"repo_connections" AS workspace_connection,
@@ -217,13 +240,13 @@ WHERE w.workspace_id = pggen.arg('id')
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
+    r.status AS latest_run_status,
     (
         SELECT array_agg(name)
         FROM tags
         JOIN workspace_tags wt USING (tag_id)
         WHERE wt.workspace_id = w.workspace_id
     ) AS tags,
-    r.status AS latest_run_status,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"repo_connections" AS workspace_connection,
@@ -279,3 +302,14 @@ RETURNING workspace_id;
 DELETE
 FROM workspaces
 WHERE workspace_id = pggen.arg('workspace_id');
+
+-- name: InsertRemoteStateConsumerByID :exec
+INSERT INTO remote_state_consumers (workspace_id, consumer_id)
+VALUES (pggen.arg('workspace_id'), pggen.arg('consumer_id'))
+ON CONFLICT DO NOTHING;
+
+-- name: DeleteRemoteStateConsumersByConsumerIDs :exec
+DELETE
+FROM remote_state_consumers
+WHERE workspace_id = pggen.arg('workspace_id')
+AND consumer_id = ANY(pggen.arg('consumer_ids'));

@@ -48,8 +48,8 @@ type (
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
 		TriggerPatterns            []string               `json:"trigger_patterns"`
 		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
-		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
+		Tags                       []string               `json:"tags"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
 		RunLock                    *pggen.Runs            `json:"run_lock"`
 		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`

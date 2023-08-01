@@ -75,6 +75,11 @@ const (
 	RemoveTagsAction
 	ListWorkspaceTags
 
+	ListRemoteStateConsumersAction
+	ReplaceRemoteStateConsumersAction
+	AddRemoteStateConsumersAction
+	DeleteRemoteStateConsumersAction
+
 	LockWorkspaceAction
 	UnlockWorkspaceAction
 	ForceUnlockWorkspaceAction
