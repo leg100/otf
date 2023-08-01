@@ -76,7 +76,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, options ListOptions) (*reso
 // UpdateWorkspace updates the settings of an existing workspace.
 func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID string, options UpdateOptions) (*Workspace, error) {
 	// Pre-emptively validate options
-	if err := (&Workspace{}).Update(options); err != nil {
+	if _, err := (&Workspace{}).Update(options); err != nil {
 		return nil, err
 	}
 

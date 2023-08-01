@@ -8,82 +8,188 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSpawner(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
-		name    string
-		ws      *workspace.Workspace
-		event   cloud.VCSEvent // incoming event
-		spawned bool           // want spawned run
+		name string
+		ws   *workspace.Workspace
+		// incoming event
+		event cloud.VCSEvent
+		// file paths to return from stubbed client.ListPullRequestFiles
+		pullFiles []string
+		// want spawned run
+		spawn bool
 	}{
 		{
-			name:    "spawn run upon push to default branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
-			event:   cloud.VCSPushEvent{Branch: "main", DefaultBranch: "main"},
-			spawned: true,
+			name: "spawn run for push to default branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{
+				Type:          cloud.VCSEventTypePush,
+				Action:        cloud.VCSActionCreated,
+				Branch:        "main",
+				DefaultBranch: "main",
+			},
+			spawn: true,
 		},
 		{
-			name:    "skip run upon push to non-default branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
-			event:   cloud.VCSPushEvent{Branch: "dev", DefaultBranch: "main"},
-			spawned: false,
+			name: "skip run for push to non-default branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{
+				Type:          cloud.VCSEventTypePush,
+				Action:        cloud.VCSActionCreated,
+				Branch:        "dev",
+				DefaultBranch: "main",
+			},
+			spawn: false,
 		},
 		{
-			name:    "spawn run upon push to user-specified branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}, Branch: "dev"},
-			event:   cloud.VCSPushEvent{Branch: "dev"},
-			spawned: true,
+			name: "spawn run for push event for a workspace with user-specified branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Branch: "dev",
+			},
+			spawn: true,
 		},
 		{
-			name:    "skip run upon push to branch not matching user-specified branch",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}, Branch: "dev"},
-			event:   cloud.VCSPushEvent{Branch: "staging"},
-			spawned: false,
+			name: "skip run for push event for a workspace with non-matching, user-specified branch",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Branch: "staging",
+			},
+			spawn: false,
 		},
 		{
-			name:    "spawn run upon opened pr",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
-			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventOpened},
-			spawned: true,
+			name:  "spawn run for opened pull request",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionCreated},
+			spawn: true,
 		},
 		{
-			name:    "spawn run upon push to pr",
-			ws:      &workspace.Workspace{Connection: &repo.Connection{}},
-			event:   cloud.VCSPullEvent{Action: cloud.VCSPullEventUpdated},
-			spawned: true,
+			name:  "spawn run for update to pull request",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePull, Action: cloud.VCSActionUpdated},
+			spawn: true,
+		},
+		{
+			name:  "skip run for push event for workspace with tags regex",
+			ws:    &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: "0.1.2"}},
+			event: cloud.VCSEvent{Type: cloud.VCSEventTypePush, Action: cloud.VCSActionCreated},
+			spawn: false,
+		},
+		{
+			name: "spawn run for tag event for workspace with matching tags regex",
+			ws: &workspace.Workspace{Connection: &workspace.Connection{
+				TagsRegex: `^\d+\.\d+\.\d+$`,
+			}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypeTag,
+				Action: cloud.VCSActionCreated,
+				Tag:    "0.1.2",
+			},
+			spawn: true,
+		},
+		{
+			name: "skip run for tag event for workspace with non-matching tags regex",
+			ws: &workspace.Workspace{Connection: &workspace.Connection{
+				TagsRegex: `^\d+\.\d+\.\d+$`,
+			}},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypeTag,
+				Action: cloud.VCSActionCreated,
+				Tag:    "v0.1.2",
+			},
+			spawn: false,
+		},
+		{
+			name: "spawn run for push event for workspace with matching file trigger pattern",
+			ws: &workspace.Workspace{
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Paths:  []string{"/foo/bar.tf"},
+			},
+			spawn: true,
+		},
+		{
+			name: "skip run for push event for workspace with non-matching file trigger pattern",
+			ws: &workspace.Workspace{
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePush,
+				Action: cloud.VCSActionCreated,
+				Paths:  []string{"README.md", ".gitignore"},
+			},
+			spawn: false,
+		},
+		{
+			name: "spawn run for pull event for workspace with matching file trigger pattern",
+			ws: &workspace.Workspace{
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePull,
+				Action: cloud.VCSActionUpdated,
+			},
+			pullFiles: []string{"/foo/bar.tf"},
+			spawn:     true,
+		},
+		{
+			name: "skip run for pull event for workspace with non-matching file trigger pattern",
+			ws: &workspace.Workspace{
+				TriggerPatterns: []string{"/foo/*.tf"},
+				Connection:      &workspace.Connection{},
+			},
+			event: cloud.VCSEvent{
+				Type:   cloud.VCSEventTypePull,
+				Action: cloud.VCSActionUpdated,
+			},
+			pullFiles: []string{"README.md", ".gitignore"},
+			spawn:     false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			services := &fakeSpawnerServices{
 				workspaces: []*workspace.Workspace{tt.ws},
+				pullFiles:  tt.pullFiles,
 			}
 			spawner := Spawner{
 				ConfigurationVersionService: services,
 				WorkspaceService:            services,
 				VCSProviderService:          services,
 				RunService:                  services,
-				Logger:                      logr.Discard(),
 			}
-			err := spawner.handle(ctx, tt.event)
+			err := spawner.handleWithError(logr.Discard(), tt.event)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.spawned, services.spawned)
+			assert.Equal(t, tt.spawn, services.spawned)
 		})
 	}
 }
 
 type fakeSpawnerServices struct {
+	// workspaces to return from stubbed ListWorkspacesByRepoID()
 	workspaces []*workspace.Workspace
-	created    []*configversion.ConfigurationVersion // created config versions
-	spawned    bool                                  // whether a run was spawned
+	// created config versions
+	created []*configversion.ConfigurationVersion
+	// whether a run was spawned
+	spawned bool
+	// list of file paths to return from stubbed ListPullRequestFiles()
+	pullFiles []string
 
 	ConfigurationVersionService
 	WorkspaceService
@@ -114,13 +220,18 @@ func (f *fakeSpawnerServices) CreateRun(context.Context, string, RunCreateOption
 }
 
 func (f *fakeSpawnerServices) GetVCSClient(context.Context, string) (cloud.Client, error) {
-	return &fakeSpawnerCloudClient{}, nil
+	return &fakeSpawnerCloudClient{pullFiles: f.pullFiles}, nil
 }
 
 type fakeSpawnerCloudClient struct {
 	cloud.Client
+	pullFiles []string
 }
 
 func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
+}
+
+func (f *fakeSpawnerCloudClient) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
+	return f.pullFiles, nil
 }

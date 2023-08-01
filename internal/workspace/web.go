@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -15,6 +16,27 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/vcsprovider"
+)
+
+const (
+	// give user choice of pre-defined regexes for matching vcs tags
+	vcsTagRegexDefault = `^\d+\.\d+\.\d+$`
+	vcsTagRegexPrefix  = `\d+\.\d+\.\d+$`
+	vcsTagRegexSuffix  = `^\d+\.\d+\.\d+`
+	// this is a 'magic string' that indicates a custom regex has been
+	// supplied in another variable
+	vcsTagRegexCustom = `custom`
+
+	//
+	// VCS trigger strategies to present to the user.
+	//
+	// every vcs event trigger runs
+	VCSTriggerAlways string = "always"
+	// only vcs events with changed files matching a set of glob patterns
+	// triggers run
+	VCSTriggerPatterns string = "patterns"
+	// only push tag vcs events trigger runs
+	VCSTriggerTags string = "tags"
 )
 
 type (
@@ -340,6 +362,13 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		AddTagsAction                  rbac.Action
 		RemoveTagsAction               rbac.Action
 		CreateRunAction                rbac.Action
+		VCSTagRegexDefault             string
+		VCSTagRegexPrefix              string
+		VCSTagRegexSuffix              string
+		VCSTagRegexCustom              string
+		VCSTriggerAlways               string
+		VCSTriggerPatterns             string
+		VCSTriggerTags                 string
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
 		Policy:        policy,
@@ -359,6 +388,13 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		CreateRunAction:                rbac.CreateRunAction,
 		AddTagsAction:                  rbac.AddTagsAction,
 		RemoveTagsAction:               rbac.RemoveTagsAction,
+		VCSTagRegexDefault:             vcsTagRegexDefault,
+		VCSTagRegexPrefix:              vcsTagRegexPrefix,
+		VCSTagRegexSuffix:              vcsTagRegexSuffix,
+		VCSTagRegexCustom:              vcsTagRegexCustom,
+		VCSTriggerAlways:               VCSTriggerAlways,
+		VCSTriggerPatterns:             VCSTriggerPatterns,
+		VCSTriggerTags:                 VCSTriggerTags,
 	})
 }
 
@@ -371,21 +407,57 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		TerraformVersion *string        `schema:"terraform_version"`
 		WorkingDirectory *string        `schema:"working_directory"`
 		WorkspaceID      string         `schema:"workspace_id,required"`
+
+		VCSTriggerStrategy  string `schema:"vcs_trigger"`
+		TriggerPatternsJSON string `schema:"trigger_patterns"`
+		VCSBranch           string `schema:"vcs_branch"`
+		PredefinedTagsRegex string `schema:"tags_regex"`
+		CustomTagsRegex     string `schema:"custom_tags_regex"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
+	// get workspace before updating to determine if it is connected or not.
+	ws, err := h.svc.GetWorkspace(r.Context(), params.WorkspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	opts := UpdateOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,
 		ExecutionMode:    params.ExecutionMode,
 		TerraformVersion: params.TerraformVersion,
 		WorkingDirectory: params.WorkingDirectory,
-	})
+	}
+	if ws.Connection != nil {
+		// workspace is connected, so set connection fields
+		opts.ConnectOptions = &ConnectOptions{
+			Branch: &params.VCSBranch,
+		}
+		switch params.VCSTriggerStrategy {
+		case VCSTriggerAlways:
+			opts.AlwaysTrigger = internal.Bool(true)
+		case VCSTriggerPatterns:
+			err := json.Unmarshal([]byte(params.TriggerPatternsJSON), &opts.TriggerPatterns)
+			if err != nil {
+				h.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		case VCSTriggerTags:
+			if params.PredefinedTagsRegex == vcsTagRegexCustom {
+				opts.ConnectOptions.TagsRegex = &params.CustomTagsRegex
+			} else {
+				opts.ConnectOptions.TagsRegex = &params.PredefinedTagsRegex
+			}
+		}
+	}
+
+	ws, err = h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -529,15 +601,21 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		ConnectOptions
+		WorkspaceID   string  `schema:"workspace_id,required"`
+		RepoPath      *string `schema:"identifier,required"`
+		VCSProviderID *string `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	_, err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectOptions)
+	_, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
+		ConnectOptions: &ConnectOptions{
+			VCSProviderID: params.VCSProviderID,
+			RepoPath:      params.RepoPath,
+		},
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -554,7 +632,10 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.disconnect(r.Context(), workspaceID); err != nil {
+	_, err = h.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
+		Disconnect: true,
+	})
+	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

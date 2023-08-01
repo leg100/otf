@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
@@ -55,7 +56,6 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		AutoApply:                  params.AutoApply,
 		Description:                params.Description,
 		ExecutionMode:              (*workspace.ExecutionMode)(params.ExecutionMode),
-		FileTriggersEnabled:        params.FileTriggersEnabled,
 		GlobalRemoteState:          params.GlobalRemoteState,
 		MigrationEnvironment:       params.MigrationEnvironment,
 		Name:                       params.Name,
@@ -67,9 +67,14 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		StructuredRunOutputEnabled: params.StructuredRunOutputEnabled,
 		TerraformVersion:           params.TerraformVersion,
 		TriggerPrefixes:            params.TriggerPrefixes,
+		TriggerPatterns:            params.TriggerPatterns,
 		WorkingDirectory:           params.WorkingDirectory,
 		// convert from json:api structs to tag specs
 		Tags: toTagSpecs(params.Tags),
+	}
+	// Always trigger runs if neither trigger patterns nor tags regex are set
+	if len(params.TriggerPatterns) == 0 && (params.VCSRepo == nil || params.VCSRepo.TagsRegex == nil) {
+		opts.AlwaysTrigger = internal.Bool(true)
 	}
 	if params.Operations != nil {
 		if params.ExecutionMode != nil {
@@ -85,16 +90,14 @@ func (a *api) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if params.VCSRepo != nil {
 		if params.VCSRepo.Identifier == nil || params.VCSRepo.OAuthTokenID == nil {
-			err := errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo")
-			Error(w, err)
+			Error(w, errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo"))
 			return
 		}
 		opts.ConnectOptions = &workspace.ConnectOptions{
-			RepoPath:      *params.VCSRepo.Identifier,
-			VCSProviderID: *params.VCSRepo.OAuthTokenID,
-		}
-		if params.VCSRepo.Branch != nil {
-			opts.Branch = params.VCSRepo.Branch
+			RepoPath:      params.VCSRepo.Identifier,
+			VCSProviderID: params.VCSRepo.OAuthTokenID,
+			Branch:        params.VCSRepo.Branch,
+			TagsRegex:     params.VCSRepo.TagsRegex,
 		}
 	}
 
@@ -257,31 +260,62 @@ func (a *api) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	opts := types.WorkspaceUpdateOptions{}
-	if err := unmarshal(r.Body, &opts); err != nil {
+	params := types.WorkspaceUpdateOptions{}
+	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
-	if err := opts.Validate(); err != nil {
+	if err := params.Validate(); err != nil {
 		Error(w, err)
 		return
 	}
 
-	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, workspace.UpdateOptions{
-		AllowDestroyPlan:           opts.AllowDestroyPlan,
-		AutoApply:                  opts.AutoApply,
-		Description:                opts.Description,
-		ExecutionMode:              (*workspace.ExecutionMode)(opts.ExecutionMode),
-		FileTriggersEnabled:        opts.FileTriggersEnabled,
-		GlobalRemoteState:          opts.GlobalRemoteState,
-		Name:                       opts.Name,
-		QueueAllRuns:               opts.QueueAllRuns,
-		SpeculativeEnabled:         opts.SpeculativeEnabled,
-		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
-		TerraformVersion:           opts.TerraformVersion,
-		TriggerPrefixes:            opts.TriggerPrefixes,
-		WorkingDirectory:           opts.WorkingDirectory,
-	})
+	opts := workspace.UpdateOptions{
+		AllowDestroyPlan:           params.AllowDestroyPlan,
+		AutoApply:                  params.AutoApply,
+		Description:                params.Description,
+		ExecutionMode:              (*workspace.ExecutionMode)(params.ExecutionMode),
+		GlobalRemoteState:          params.GlobalRemoteState,
+		Name:                       params.Name,
+		QueueAllRuns:               params.QueueAllRuns,
+		SpeculativeEnabled:         params.SpeculativeEnabled,
+		StructuredRunOutputEnabled: params.StructuredRunOutputEnabled,
+		TerraformVersion:           params.TerraformVersion,
+		TriggerPrefixes:            params.TriggerPrefixes,
+		TriggerPatterns:            params.TriggerPatterns,
+		WorkingDirectory:           params.WorkingDirectory,
+	}
+
+	// If file-triggers-enabled is set to false and tags regex is unspecified
+	// then enable always trigger runs for this workspace.
+	//
+	// TODO: return error when client has sent incompatible combinations of
+	// options:
+	// (a) file-triggers-enabled=true and tags-regex=non-nil
+	// (b) file-triggers-enabled=true and trigger-prefixes=empty
+	// (b) trigger-prefixes=non-empty and tags-regex=non-nil
+	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (!params.VCSRepo.Set || !params.VCSRepo.Valid || params.VCSRepo.TagsRegex == nil) {
+		opts.AlwaysTrigger = internal.Bool(true)
+	}
+
+	if params.VCSRepo.Set {
+		if params.VCSRepo.Valid {
+			// client has provided non-null vcs options, which means they either
+			// want to connect the workspace or modify the connection.
+			opts.ConnectOptions = &workspace.ConnectOptions{
+				RepoPath:      params.VCSRepo.Identifier,
+				VCSProviderID: params.VCSRepo.OAuthTokenID,
+				Branch:        params.VCSRepo.Branch,
+				TagsRegex:     params.VCSRepo.TagsRegex,
+			}
+		} else {
+			// client has explicitly set VCS options to null, which means they
+			// want the workspace to be disconnected.
+			opts.Disconnect = true
+		}
+	}
+
+	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, opts)
 	if err != nil {
 		Error(w, err)
 		return

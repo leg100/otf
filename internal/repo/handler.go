@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/pubsub"
 )
 
 // handlerPrefix is the URL path prefix for the endpoint receiving vcs events
@@ -21,14 +20,17 @@ type (
 	// a cloud-specific handler.
 	handler struct {
 		logr.Logger
-		pubsub.Publisher
 
+		handlerBroker
 		handlerDB
 	}
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
 		getHookByID(context.Context, uuid.UUID) (*hook, error)
+	}
+	handlerBroker interface {
+		publish(cloud.VCSEvent)
 	}
 )
 
@@ -50,19 +52,15 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
+	h.V(2).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-	event := hook.HandleEvent(w, r, cloud.HandleEventOptions{Secret: hook.secret, RepoID: hook.id})
+	event := hook.HandleEvent(w, r, hook.secret)
 	if event != nil {
-		h.Publish(pubsub.Event{
-			Type:    pubsub.EventVCS,
-			Payload: event,
-			// publish vcs events only to the local node; a "run spawner" and a
-			// "module publisher" subscribe to vcs events on each node, so it is
-			// only necessary to send event to local node; sending it to other
-			// nodes would lead to duplicate runs and modules being spawned and
-			// published.
-			Local: true,
-		})
+		// add non-cloud specific info to event before publishing
+		event.RepoID = hook.id
+		event.RepoPath = hook.identifier
+		event.VCSProviderID = hook.vcsProviderID
+
+		h.publish(*event)
 	}
 }

@@ -117,8 +117,8 @@ func TestWebhook_Purger(t *testing.T) {
 				Name:         internal.String("workspace-1"),
 				Organization: &org.Name,
 				ConnectOptions: &workspace.ConnectOptions{
-					VCSProviderID: provider.ID,
-					RepoPath:      repo,
+					VCSProviderID: &provider.ID,
+					RepoPath:      &repo,
 				},
 			})
 			require.NoError(t, err)
@@ -134,5 +134,4 @@ func TestWebhook_Purger(t *testing.T) {
 			require.Equal(t, github.WebhookDeleted, hook.Action)
 		})
 	}
-
 }

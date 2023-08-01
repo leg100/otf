@@ -30,6 +30,11 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 </figure>
 
 <figure markdown>
+![workspace main page](images/workspace_edit_trigger_patterns.png){.screenshot}
+<figcaption>Setting VCS triggers</figcaption>
+</figure>
+
+<figure markdown>
 ![team permissions](images/team_permissions_added_workspace_manager.png){.screenshot}
 <figcaption>Setting organization-level permissions for a team</figcaption>
 </figure>

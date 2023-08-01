@@ -45,7 +45,6 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		Description:          from.Description,
 		Environment:          from.Environment,
 		ExecutionMode:        string(from.ExecutionMode),
-		FileTriggersEnabled:  from.FileTriggersEnabled,
 		GlobalRemoteState:    from.GlobalRemoteState,
 		Locked:               from.Locked(),
 		MigrationEnvironment: from.MigrationEnvironment,
@@ -60,15 +59,26 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 		StructuredRunOutputEnabled: from.StructuredRunOutputEnabled,
 		TerraformVersion:           from.TerraformVersion,
 		TriggerPrefixes:            from.TriggerPrefixes,
+		TriggerPatterns:            from.TriggerPatterns,
 		WorkingDirectory:           from.WorkingDirectory,
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
 		Outputs:                    []*types.StateVersionOutput{},
 	}
-
+	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
+		to.FileTriggersEnabled = true
+	}
 	if from.LatestRun != nil {
 		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
+	}
+	if from.Connection != nil {
+		to.VCSRepo = &types.VCSRepo{
+			OAuthTokenID: from.Connection.VCSProviderID,
+			Branch:       from.Connection.Branch,
+			Identifier:   from.Connection.Repo,
+			TagsRegex:    from.Connection.TagsRegex,
+		}
 	}
 
 	// Support including related resources:

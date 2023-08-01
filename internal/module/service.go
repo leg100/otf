@@ -48,6 +48,7 @@ type (
 	service struct {
 		vcsprovider.VCSProviderService
 		logr.Logger
+		*publisher
 
 		db   *pgdb
 		repo repo.Service
@@ -89,6 +90,14 @@ func NewService(opts Options) *service {
 		VCSProviderService: opts.VCSProviderService,
 		svc:                &svc,
 	}
+	publisher := &publisher{
+		Logger:             opts.Logger.WithValues("component", "publisher"),
+		VCSProviderService: opts.VCSProviderService,
+		ModuleService:      &svc,
+	}
+	// Subscribe module publisher to incoming vcs events
+	opts.RepoService.Subscribe(publisher.handle)
+
 	return &svc
 }
 

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -74,7 +73,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withRuns(&Run{ID: "run-1"}),
-		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &repo.Connection{}}),
+		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &workspace.Connection{}}),
 	)
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=true"

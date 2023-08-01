@@ -4,8 +4,6 @@ package cloud
 import (
 	"context"
 	"net/http"
-
-	"github.com/google/uuid"
 )
 
 // Cloud is an external provider of various cloud services e.g. identity provider, VCS
@@ -24,10 +22,5 @@ type Service interface {
 type EventHandler interface {
 	// HandleEvent extracts a cloud-specific event from the http request, converting it into a
 	// VCS event. Returns nil if the event is to be ignored.
-	HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) VCSEvent
-}
-
-type HandleEventOptions struct {
-	Secret string
-	RepoID uuid.UUID
+	HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *VCSEvent
 }

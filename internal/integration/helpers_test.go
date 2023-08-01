@@ -29,6 +29,10 @@ func runURL(hostname, runID string) string {
 	return "https://" + hostname + "/app/runs/" + runID
 }
 
+func runsURL(hostname, workspaceID string) string {
+	return "https://" + hostname + "/app/workspaces/" + workspaceID + "/runs"
+}
+
 func workspaceURL(hostname, org, name string) string {
 	return "https://" + hostname + "/app/organizations/" + org + "/workspaces/" + name
 }

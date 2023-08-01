@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/internal"
@@ -227,9 +228,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSPushEventType:
+		case cloud.VCSEventTypePush:
 			events = append(events, "push")
-		case cloud.VCSPullEventType:
+		case cloud.VCSEventTypePull:
 			events = append(events, "pull_request")
 		}
 	}
@@ -263,9 +264,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.Update
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSPushEventType:
+		case cloud.VCSEventTypePush:
 			events = append(events, "push")
-		case cloud.VCSPullEventType:
+		case cloud.VCSEventTypePull:
 			events = append(events, "pull_request")
 		}
 	}
@@ -308,9 +309,9 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	for _, event := range hook.Events {
 		switch event {
 		case "push":
-			events = append(events, cloud.VCSPushEventType)
+			events = append(events, cloud.VCSEventTypePush)
 		case "pull_request":
-			events = append(events, cloud.VCSPullEventType)
+			events = append(events, cloud.VCSEventTypePull)
 		}
 	}
 
@@ -374,4 +375,60 @@ func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) err
 		State:       internal.String(status),
 	})
 	return err
+}
+
+func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
+	owner, name, found := strings.Cut(repo, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", repo)
+	}
+
+	var files []string
+	nextPage := 0
+
+listloop:
+	for {
+		opts := github.ListOptions{
+			PerPage: 300,
+		}
+		if nextPage != 0 {
+			opts.Page = nextPage
+		}
+		// GitHub has started to return 404's sometimes. They've got some
+		// eventual consistency issues going on so we're just going to attempt
+		// up to 5 times for each page with exponential backoff.
+		maxAttempts := 5
+		attemptDelay := 0 * time.Second
+		for i := 0; i < maxAttempts; i++ {
+			// First don't sleep, then sleep 1, 3, 7, etc.
+			time.Sleep(attemptDelay)
+			attemptDelay = 2*attemptDelay + 1*time.Second
+
+			pageFiles, resp, err := g.client.PullRequests.ListFiles(ctx, owner, name, pull, &opts)
+			if err != nil {
+				ghErr, ok := err.(*github.ErrorResponse)
+				if ok && ghErr.Response.StatusCode == 404 {
+					// (hopefully) transient 404, retry after backoff
+					continue
+				}
+				// something else, give up
+				return files, err
+			}
+			for _, f := range pageFiles {
+				files = append(files, f.GetFilename())
+
+				// If the file was renamed, we'll want to run plan in the directory
+				// it was moved from as well.
+				if f.GetStatus() == "renamed" {
+					files = append(files, f.GetPreviousFilename())
+				}
+			}
+			if resp.NextPage == 0 {
+				break listloop
+			}
+			nextPage = resp.NextPage
+			break
+		}
+	}
+	return files, nil
 }

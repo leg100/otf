@@ -112,7 +112,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 		<-done   // don't exit test until daemon is fully terminated
 	})
 
-	sub, err := d.Subscribe(ctx, "")
+	sub, err := d.Broker.Subscribe(ctx, "")
 	require.NoError(t, err)
 
 	daemon := &testDaemon{

@@ -18,12 +18,14 @@ func TestEventHandler(t *testing.T) {
 	t.Run("push event", func(t *testing.T) {
 		r := newTestPushEvent(t, "refs/heads/master")
 		w := httptest.NewRecorder()
-		got := HandleEvent(w, r, cloud.HandleEventOptions{})
+		got := HandleEvent(w, r, "")
 
 		assert.Equal(t, 202, w.Code)
 
-		want := cloud.VCSPushEvent{
+		want := &cloud.VCSEvent{
+			Type:   cloud.VCSEventTypePush,
 			Branch: "master",
+			Action: cloud.VCSActionCreated,
 		}
 		assert.Equal(t, want, got)
 	})
@@ -31,12 +33,13 @@ func TestEventHandler(t *testing.T) {
 	t.Run("pr open event", func(t *testing.T) {
 		r := newTestPullRequestEvent(t, "pr-1", "opened")
 		w := httptest.NewRecorder()
-		got := HandleEvent(w, r, cloud.HandleEventOptions{})
+		got := HandleEvent(w, r, "")
 
 		assert.Equal(t, 202, w.Code)
 
-		want := cloud.VCSPullEvent{
-			Action: cloud.VCSPullEventOpened,
+		want := &cloud.VCSEvent{
+			Type:   cloud.VCSEventTypePull,
+			Action: cloud.VCSActionCreated,
 			Branch: "pr-1",
 		}
 		assert.Equal(t, want, got)
@@ -45,12 +48,13 @@ func TestEventHandler(t *testing.T) {
 	t.Run("pr update event", func(t *testing.T) {
 		r := newTestPullRequestEvent(t, "pr-1", "synchronize")
 		w := httptest.NewRecorder()
-		got := HandleEvent(w, r, cloud.HandleEventOptions{})
+		got := HandleEvent(w, r, "")
 
 		assert.Equal(t, 202, w.Code)
 
-		want := cloud.VCSPullEvent{
-			Action: cloud.VCSPullEventUpdated,
+		want := &cloud.VCSEvent{
+			Type:   cloud.VCSEventTypePull,
+			Action: cloud.VCSActionUpdated,
 			Branch: "pr-1",
 		}
 		assert.Equal(t, want, got)

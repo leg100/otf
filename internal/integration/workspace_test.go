@@ -50,8 +50,8 @@ func TestWorkspace(t *testing.T) {
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      "test/dummy",
-				VCSProviderID: vcsprov.ID,
+				RepoPath:      internal.String("test/dummy"),
+				VCSProviderID: &vcsprov.ID,
 			},
 		})
 		require.NoError(t, err)
@@ -81,8 +81,8 @@ func TestWorkspace(t *testing.T) {
 			Name:         internal.String(uuid.NewString()),
 			Organization: &org.Name,
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      "test/dummy",
-				VCSProviderID: vcsprov.ID,
+				RepoPath:      internal.String("test/dummy"),
+				VCSProviderID: &vcsprov.ID,
 			},
 		})
 		require.NoError(t, err)

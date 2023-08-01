@@ -66,8 +66,8 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	}
 	// use workspace branch if set
 	var ref *string
-	if ws.Branch != "" {
-		ref = &ws.Branch
+	if ws.Connection.Branch != "" {
+		ref = &ws.Connection.Branch
 	}
 	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Repo: ws.Connection.Repo,

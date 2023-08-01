@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
@@ -169,7 +168,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "connected repo",
-			ws:   &Workspace{ID: "ws-123", Connection: &repo.Connection{Repo: "leg100/otf"}},
+			ws:   &Workspace{ID: "ws-123", Connection: &Connection{Repo: "leg100/otf"}},
 			user: auth.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				got := htmlquery.FindOne(doc, "//button[@id='disconnect-workspace-repo-button']")

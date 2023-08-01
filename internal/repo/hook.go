@@ -8,8 +8,8 @@ import (
 
 // defaultEvents are the VCS events that hooks subscribe to.
 var defaultEvents = []cloud.VCSEventType{
-	cloud.VCSPushEventType,
-	cloud.VCSPullEventType,
+	cloud.VCSEventTypePush,
+	cloud.VCSEventTypePull,
 }
 
 // hook is a webhook for a VCS repo

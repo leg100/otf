@@ -39,6 +39,12 @@
   select {
     @apply py-2 px-4 bg-gray-200 shadow-sm shadow-slate-500 cursor-pointer;
   }
+  input[type="radio"], input[type="checkbox"] {
+    @apply cursor-pointer;
+  }
+  label {
+    @apply cursor-pointer;
+  }
   #content-header-title a {
     @apply text-blue-600
   }
@@ -71,5 +77,8 @@
   }
   .tag {
     @apply text-sm rounded-lg bg-blue-800 text-white font-semibold p-1
+  }
+  .description {
+    @apply text-gray-600 text-sm;
   }
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
-	event, err := handle(r, opts)
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+	event, err := handle(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -21,8 +21,8 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventO
 	return event
 }
 
-func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, error) {
-	if token := r.Header.Get("X-Gitlab-Token"); token != opts.Secret {
+func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
+	if token := r.Header.Get("X-Gitlab-Token"); token != secret {
 		return nil, errors.New("token validation failed")
 	}
 
@@ -42,8 +42,7 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return cloud.VCSPushEvent{
-			RepoID:        opts.RepoID,
+		return &cloud.VCSEvent{
 			Branch:        refParts[2],
 			CommitSHA:     event.After,
 			DefaultBranch: event.Project.DefaultBranch,
@@ -53,9 +52,8 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return cloud.VCSTagEvent{
-			RepoID: opts.RepoID,
-			Tag:    refParts[2],
+		return &cloud.VCSEvent{
+			Tag: refParts[2],
 			// Action:     action,
 			CommitSHA:     event.After,
 			DefaultBranch: event.Project.DefaultBranch,
