@@ -409,14 +409,16 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AutoApply        bool `schema:"auto_apply"`
-		Name             *string
-		Description      *string
-		ExecutionMode    *ExecutionMode `schema:"execution_mode"`
-		TerraformVersion *string        `schema:"terraform_version"`
-		WorkingDirectory *string        `schema:"working_directory"`
-		WorkspaceID      string         `schema:"workspace_id,required"`
+		AutoApply         bool `schema:"auto_apply"`
+		Name              *string
+		Description       *string
+		ExecutionMode     *ExecutionMode `schema:"execution_mode"`
+		TerraformVersion  *string        `schema:"terraform_version"`
+		WorkingDirectory  *string        `schema:"working_directory"`
+		WorkspaceID       string         `schema:"workspace_id,required"`
+		GlobalRemoteState bool           `schema:"global_remote_state"`
 
+		// VCS connection
 		VCSTriggerStrategy  string `schema:"vcs_trigger"`
 		TriggerPatternsJSON string `schema:"trigger_patterns"`
 		VCSBranch           string `schema:"vcs_branch"`
@@ -436,12 +438,13 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := UpdateOptions{
-		AutoApply:        &params.AutoApply,
-		Name:             params.Name,
-		Description:      params.Description,
-		ExecutionMode:    params.ExecutionMode,
-		TerraformVersion: params.TerraformVersion,
-		WorkingDirectory: params.WorkingDirectory,
+		AutoApply:         &params.AutoApply,
+		Name:              params.Name,
+		Description:       params.Description,
+		ExecutionMode:     params.ExecutionMode,
+		TerraformVersion:  params.TerraformVersion,
+		WorkingDirectory:  params.WorkingDirectory,
+		GlobalRemoteState: &params.GlobalRemoteState,
 	}
 	if ws.Connection != nil {
 		// workspace is connected, so set connection fields

@@ -178,6 +178,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			AutoApply:                  ws.AutoApply,
 			Description:                sql.String(ws.Description),
 			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+			GlobalRemoteState:          ws.GlobalRemoteState,
 			Name:                       sql.String(ws.Name),
 			QueueAllRuns:               ws.QueueAllRuns,
 			SpeculativeEnabled:         ws.SpeculativeEnabled,

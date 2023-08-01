@@ -16,7 +16,8 @@ const (
 
 type (
 	// RunToken is a short-lived token providing a terraform run with access to
-	// resources, in particular access to the registry to retrieve modules.
+	// resources, for example, to access the registry to retrieve modules, or to
+	// retrieve the state of other workspaces when using `terraform_remote_state`.
 	RunToken struct {
 		Organization string
 	}
@@ -53,9 +54,8 @@ func (t *RunToken) CanAccessSite(action rbac.Action) bool {
 }
 
 func (t *RunToken) CanAccessOrganization(action rbac.Action, name string) bool {
-	// run token is only allowed read-access to its organization's module registry
 	switch action {
-	case rbac.GetModuleAction, rbac.ListModulesAction:
+	case rbac.GetOrganizationAction, rbac.GetEntitlementsAction, rbac.GetModuleAction, rbac.ListModulesAction:
 		return t.Organization == name
 	default:
 		return false
@@ -63,6 +63,16 @@ func (t *RunToken) CanAccessOrganization(action rbac.Action, name string) bool {
 }
 
 func (t *RunToken) CanAccessWorkspace(action rbac.Action, policy internal.WorkspacePolicy) bool {
+	// run token is allowed the retrieve the state of the workspace only if:
+	// (a) workspace is in the same organization as run token
+	// (b) workspace has enabled global remote state (permitting organization-wide
+	// state sharing).
+	switch action {
+	case rbac.GetWorkspaceAction, rbac.GetStateVersionAction, rbac.DownloadStateAction:
+		if t.Organization == policy.Organization && policy.GlobalRemoteState {
+			return true
+		}
+	}
 	return false
 }
 
