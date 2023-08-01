@@ -1007,17 +1007,18 @@ SET
     branch                        = $3,
     description                   = $4,
     execution_mode                = $5,
-    name                          = $6,
-    queue_all_runs                = $7,
-    speculative_enabled           = $8,
-    structured_run_output_enabled = $9,
-    terraform_version             = $10,
-    trigger_prefixes              = $11,
-    trigger_patterns              = $12,
-    vcs_tags_regex                = $13,
-    working_directory             = $14,
-    updated_at                    = $15
-WHERE workspace_id = $16
+    global_remote_state           = $6,
+    name                          = $7,
+    queue_all_runs                = $8,
+    speculative_enabled           = $9,
+    structured_run_output_enabled = $10,
+    terraform_version             = $11,
+    trigger_prefixes              = $12,
+    trigger_patterns              = $13,
+    vcs_tags_regex                = $14,
+    working_directory             = $15,
+    updated_at                    = $16
+WHERE workspace_id = $17
 RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
@@ -1026,6 +1027,7 @@ type UpdateWorkspaceByIDParams struct {
 	Branch                     pgtype.Text
 	Description                pgtype.Text
 	ExecutionMode              pgtype.Text
+	GlobalRemoteState          bool
 	Name                       pgtype.Text
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
@@ -1042,7 +1044,7 @@ type UpdateWorkspaceByIDParams struct {
 // UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
 func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.GlobalRemoteState, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateWorkspaceByID: %w", err)
@@ -1052,7 +1054,7 @@ func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorksp
 
 // UpdateWorkspaceByIDBatch implements Querier.UpdateWorkspaceByIDBatch.
 func (q *DBQuerier) UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams) {
-	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Branch, params.Description, params.ExecutionMode, params.GlobalRemoteState, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.TriggerPatterns, params.VCSTagsRegex, params.WorkingDirectory, params.UpdatedAt, params.ID)
 }
 
 // UpdateWorkspaceByIDScan implements Querier.UpdateWorkspaceByIDScan.

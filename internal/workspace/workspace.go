@@ -192,7 +192,6 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		UpdatedAt:          internal.CurrentTimestamp(),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
-		GlobalRemoteState:  true, // Only global remote state is supported
 		TerraformVersion:   DefaultTerraformVersion,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
@@ -214,6 +213,9 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	}
 	if opts.Description != nil {
 		ws.Description = *opts.Description
+	}
+	if opts.GlobalRemoteState != nil {
+		ws.GlobalRemoteState = *opts.GlobalRemoteState
 	}
 	if opts.QueueAllRuns != nil {
 		ws.QueueAllRuns = *opts.QueueAllRuns
@@ -326,6 +328,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 		} else {
 			ws.ExecutionMode = "local"
 		}
+		updated = true
+	}
+	if opts.GlobalRemoteState != nil {
+		ws.GlobalRemoteState = *opts.GlobalRemoteState
 		updated = true
 	}
 	if opts.QueueAllRuns != nil {

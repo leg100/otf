@@ -158,6 +158,14 @@
       </fieldset>
     {{ end }}
 
+    <div class="flex flex-col gap-2">
+      <div class="flex gap-2">
+        <input class="" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
+        <label class="font-semibold" for="global-remote-state">Remote state sharing</label>
+      </div>
+      <span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+    </div>
+
     <div class="field">
       <button class="btn w-40">Save changes</button>
     </div>

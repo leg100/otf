@@ -244,6 +244,7 @@ SET
     branch                        = pggen.arg('branch'),
     description                   = pggen.arg('description'),
     execution_mode                = pggen.arg('execution_mode'),
+    global_remote_state           = pggen.arg('global_remote_state'),
     name                          = pggen.arg('name'),
     queue_all_runs                = pggen.arg('queue_all_runs'),
     speculative_enabled           = pggen.arg('speculative_enabled'),

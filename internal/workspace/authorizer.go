@@ -27,6 +27,6 @@ func (a *authorizer) CanAccess(ctx context.Context, action rbac.Action, workspac
 	if subj.CanAccessWorkspace(action, policy) {
 		return subj, nil
 	}
-	a.Error(nil, "unauthorized action", "workspace", workspaceID, "organization", policy.Organization, "action", action, "subject", subj)
+	a.Error(nil, "unauthorized action", "workspace_id", workspaceID, "organization", policy.Organization, "action", action, "subject", subj)
 	return nil, internal.ErrAccessNotPermitted
 }
