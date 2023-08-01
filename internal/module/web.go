@@ -7,11 +7,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
@@ -58,13 +60,20 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	h.Render("module_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Items []*Module
+		Items            []*Module
+		CanPublishModule bool
 	}{
 		OrganizationPage: organization.NewPage(r, "modules", opts.Organization),
 		Items:            modules,
+		CanPublishModule: user.CanAccessOrganization(rbac.CreateModuleAction, opts.Organization),
 	})
 }
 

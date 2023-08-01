@@ -923,8 +923,20 @@ th, td {
   flex-grow: 1;
 }
 
-.basis-52 {
-  flex-basis: 13rem;
+.basis-1\/5 {
+  flex-basis: 20%;
+}
+
+.basis-4\/5 {
+  flex-basis: 80%;
+}
+
+.basis-3\/5 {
+  flex-basis: 60%;
+}
+
+.basis-2\/5 {
+  flex-basis: 40%;
 }
 
 .table-fixed {
@@ -1291,10 +1303,6 @@ th, td {
 .shadow-transparent {
   --tw-shadow-color: transparent;
   --tw-shadow: var(--tw-shadow-colored);
-}
-
-.filter {
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
 .even\:bg-gray-100:nth-child(even) {

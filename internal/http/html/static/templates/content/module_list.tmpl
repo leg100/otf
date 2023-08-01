@@ -3,9 +3,11 @@
 {{ define "content-header-title" }}modules{{ end }}
 
 {{ define "content-header-actions" }}
-  <form action="{{ newModulePath .Organization }}" method="GET">
-    <button class="btn" id="list-module-vcs-providers-button">Publish</button>
-  </form>
+  {{ if .CanPublishModule }}
+    <form action="{{ newModulePath .Organization }}" method="GET">
+      <button class="btn" id="list-module-vcs-providers-button">Publish</button>
+    </form>
+  {{ end }}
 {{ end }}
 
 
