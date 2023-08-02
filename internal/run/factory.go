@@ -51,7 +51,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
-	return newRun(cv, ws, opts), nil
+	return newRun(ctx, cv, ws, opts), nil
 }
 
 // createConfigVersionFromVCS creates a config version from the vcs repo

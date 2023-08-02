@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
@@ -23,8 +24,13 @@ func TestRun(t *testing.T) {
 		svc, _, ctx := setup(t, &config{Config: daemon.Config{DisableScheduler: true}})
 		cv := svc.createConfigurationVersion(t, ctx, nil, nil)
 
-		_, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
+		run, err := svc.CreateRun(ctx, cv.WorkspaceID, run.RunCreateOptions{})
 		require.NoError(t, err)
+
+		user, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, run.CreatedBy)
+		assert.Equal(t, user.Username, *run.CreatedBy)
 	})
 
 	// test the "magic string" behaviour specific to OTF: if
@@ -115,6 +121,11 @@ func TestRun(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
+
+		user, err := auth.UserFromContext(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, got.CreatedBy)
+		assert.Equal(t, user.Username, *got.CreatedBy)
 	})
 
 	t.Run("list", func(t *testing.T) {

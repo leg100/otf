@@ -42,6 +42,7 @@ type (
 		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 		PlanOnly               bool                          `json:"plan_only"`
+		CreatedBy              pgtype.Text                   `json:"created_by"`
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 		Latest                 bool                          `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
@@ -87,6 +88,9 @@ func (result pgresult) toRun() *Run {
 			ResourceReport:   reportFromDB(result.ApplyResourceReport),
 		},
 	}
+	if result.CreatedBy.Status == pgtype.Present {
+		run.CreatedBy = &result.CreatedBy.String
+	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
 		run.ForceCancelAvailableAt = internal.Time(result.ForceCancelAvailableAt.Time.UTC())
 	}
@@ -113,6 +117,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			PlanOnly:               run.PlanOnly,
 			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
 			WorkspaceID:            sql.String(run.WorkspaceID),
+			CreatedBy:              sql.StringPtr(run.CreatedBy),
 		})
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
