@@ -82,24 +82,6 @@ func TestFactory(t *testing.T) {
 		assert.True(t, got.AutoApply)
 	})
 
-	t.Run("magic string - pull from vcs", func(t *testing.T) {
-		f := newTestFactory(
-			&workspace.Workspace{
-				Connection: &workspace.Connection{},
-			},
-			&configversion.ConfigurationVersion{},
-		)
-
-		got, err := f.NewRun(ctx, "", RunCreateOptions{
-			ConfigurationVersionID: internal.String(PullVCSMagicString),
-		})
-		require.NoError(t, err)
-
-		// fake config version service sets the config version ID to "created"
-		// if it was newly created
-		assert.Equal(t, "created", got.ConfigurationVersionID)
-	})
-
 	t.Run("pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
 			&workspace.Workspace{
@@ -114,18 +96,6 @@ func TestFactory(t *testing.T) {
 		// fake config version service sets the config version ID to "created"
 		// if it was newly created
 		assert.Equal(t, "created", got.ConfigurationVersionID)
-	})
-
-	t.Run("pull from vcs workspace not connected error", func(t *testing.T) {
-		f := newTestFactory(
-			&workspace.Workspace{}, // workspace with no connection
-			&configversion.ConfigurationVersion{},
-		)
-
-		_, err := f.NewRun(ctx, "", RunCreateOptions{
-			ConfigurationVersionID: internal.String(PullVCSMagicString),
-		})
-		require.Equal(t, err, workspace.ErrNoVCSConnection)
 	})
 }
 

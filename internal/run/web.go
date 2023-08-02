@@ -55,24 +55,16 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		WorkspaceID string    `schema:"workspace_id,required"`
 		Operation   Operation `schema:"operation,required"`
-		Connected   bool      `schema:"connected,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	opts := RunCreateOptions{
+	run, err := h.svc.CreateRun(r.Context(), params.WorkspaceID, RunCreateOptions{
 		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
 		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
-	}
-	// if run's workspace is connected to a VCS repo then pull config from
-	// the repo
-	if params.Connected {
-		opts.ConfigurationVersionID = internal.String(PullVCSMagicString)
-	}
-
-	run, err := h.svc.CreateRun(r.Context(), params.WorkspaceID, opts)
+	})
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)

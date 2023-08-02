@@ -18,12 +18,6 @@ const (
 	PlanFormatBinary = "bin"  // plan file in binary format
 	PlanFormatJSON   = "json" // plan file in json format
 
-	// When specified in place of a configuration version ID passed to
-	// RunCreateOptions this magic string instructs the run factory to
-	// automatically create a configuration version from the workspace connected
-	// vcs repo.
-	PullVCSMagicString = "__pull_vcs__"
-
 	PlanOnlyOperation     Operation = "plan-only"
 	PlanAndApplyOperation Operation = "plan-and-apply"
 	DestroyAllOperation   Operation = "destroy-all"
@@ -89,14 +83,8 @@ type (
 		RefreshOnly *bool
 		Message     *string
 		// Specifies the configuration version to use for this run. If the
-		// configuration version object is omitted, the run will be created using the
+		// configuration version ID is nil, the run will be created using the
 		// workspace's latest configuration version.
-		//
-		// Alternatively, if PullVCSMagicString is specified, and the workspace
-		// is connected to a vcs repo, then a configuration version is
-		// automatically created from the vcs repo and the run uses that
-		// configuration version. If the workspace is not connected to a
-		// workspace then an error is returned.
 		ConfigurationVersionID *string
 		TargetAddrs            []string
 		ReplaceAddrs           []string
