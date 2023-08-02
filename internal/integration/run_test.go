@@ -33,34 +33,6 @@ func TestRun(t *testing.T) {
 		assert.Equal(t, user.Username, *run.CreatedBy)
 	})
 
-	// test the "magic string" behaviour specific to OTF: if
-	// run.PullVCSMagicString is specified for the config version ID then the
-	// config is pulled from the workspace's connected repo.
-	t.Run("magic string - create run using config from repo", func(t *testing.T) {
-		// setup daemon along with fake github repo
-		repo := cloud.NewTestRepo()
-		daemon, _, ctx := setup(t, nil,
-			github.WithRepo(repo),
-			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
-		)
-		org := daemon.createOrganization(t, ctx)
-		vcsProvider := daemon.createVCSProvider(t, ctx, org)
-		ws, err := daemon.CreateWorkspace(ctx, workspace.CreateOptions{
-			Name:         internal.String("connected-workspace"),
-			Organization: internal.String(org.Name),
-			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      &repo,
-				VCSProviderID: &vcsProvider.ID,
-			},
-		})
-		require.NoError(t, err)
-
-		_, err = daemon.CreateRun(ctx, ws.ID, run.RunCreateOptions{
-			ConfigurationVersionID: internal.String(run.PullVCSMagicString),
-		})
-		require.NoError(t, err)
-	})
-
 	t.Run("create run using config from repo", func(t *testing.T) {
 		// setup daemon along with fake github repo
 		repo := cloud.NewTestRepo()
