@@ -9,9 +9,11 @@
     <div>
       <div class="flex gap-2 items-center">
         {{ template "identifier" . }}
-        {{ range .Tags }}
-          <span class="tag">{{ . }}</span>
-        {{ end }}
+        <form action="{{ workspacesPath .Organization }}" method="GET">
+          {{ range .Tags }}
+            <button class="tag" name="search[tags]" value="{{ . }}">{{ . }}</button>
+          {{ end }}
+        </form>
       </div>
     </div>
   </div>

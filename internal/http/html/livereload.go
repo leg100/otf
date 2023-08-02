@@ -1,6 +1,8 @@
 package html
 
 import (
+	"io"
+	"log"
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
@@ -40,8 +42,8 @@ func startLiveReloadServer(logger logr.Logger) error {
 	srv := lrserver.New(lrserver.DefaultName, lrserver.DefaultPort)
 
 	// suppress noisy printing to stdout/stderr
-	// srv.SetStatusLog(log.New(io.Discard, "", 0))
-	// srv.SetErrorLog(log.New(io.Discard, "", 0))
+	srv.SetStatusLog(log.New(io.Discard, "", 0))
+	srv.SetErrorLog(log.New(io.Discard, "", 0))
 
 	go srv.ListenAndServe()
 	go func() {
