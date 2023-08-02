@@ -58,5 +58,10 @@ performs the following steps:
 * Starts a docker compose stack of `otfd`, postgres, and squid
 * Runs a subset of `go-tfe` tests against that stack
 
+The tests require the following environment variables:
+
+* `GITHUB_POLICY_SET_IDENTIFIER`: set to a github repo on which the tests can create webhooks.
+* `OAUTH_CLIENT_GITHUB_TOKEN`: a personal access token with permissions to create webhooks on the above repo.
+
 !!! note
     You can instead manually invoke API tests using the scripts in `./hack`. The tests first require `otfd` to be running at `https://localhost:8080`, with a [site token](../config/flags/#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.

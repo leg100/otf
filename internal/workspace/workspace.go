@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
+	"golang.org/x/exp/slices"
 	"golang.org/x/exp/slog"
 )
 
@@ -23,8 +24,6 @@ const (
 
 	MinTerraformVersion     = "1.2.0"
 	DefaultTerraformVersion = "1.5.2"
-
-	apiTestTerraformVersion = "0.11.0"
 )
 
 var (
@@ -34,6 +33,8 @@ var (
 	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
 	ErrInvalidTriggerPattern           = errors.New("invalid trigger glob pattern")
 	ErrInvalidTagsRegex                = errors.New("invalid vcs tags regular expression")
+
+	apiTestTerraformVersions = []string{"0.10.0", "0.11.0", "0.11.1"}
 )
 
 type (
@@ -481,10 +482,10 @@ func (ws *Workspace) setTerraformVersion(v string) error {
 
 	// only accept terraform versions above the minimum requirement.
 	//
-	// NOTE: we make an exception for the specific version posted by the go-tfe
+	// NOTE: we make an exception for the specific versions posted by the go-tfe
 	// integration tests.
 	if result := semver.Compare(v, MinTerraformVersion); result < 0 {
-		if v != apiTestTerraformVersion {
+		if !slices.Contains(apiTestTerraformVersions, v) {
 			return internal.ErrUnsupportedTerraformVersion
 		}
 	}

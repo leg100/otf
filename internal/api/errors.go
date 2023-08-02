@@ -16,6 +16,7 @@ var codes = map[error]int{
 	internal.ErrResourceAlreadyExists:    http.StatusConflict,
 	internal.ErrWorkspaceAlreadyLocked:   http.StatusConflict,
 	internal.ErrWorkspaceAlreadyUnlocked: http.StatusConflict,
+	internal.ErrWorkspaceLockedByRun:     http.StatusConflict,
 	internal.ErrRunDiscardNotAllowed:     http.StatusConflict,
 	internal.ErrRunCancelNotAllowed:      http.StatusConflict,
 	internal.ErrRunForceCancelNotAllowed: http.StatusConflict,

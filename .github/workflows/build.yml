@@ -27,6 +27,11 @@ jobs:
         run: make vet
       - name: API tests
         run: make go-tfe-tests
+        env:
+          # go-tfe tests require a valid github oauth token be set with which
+          # to create a webhook on a github repo
+          OAUTH_CLIENT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
         # chromium breaks browser-based tests:
         # https://github.com/chromedp/chromedp/issues/1325#issuecomment-1606114185
       - name: Remove chromium
