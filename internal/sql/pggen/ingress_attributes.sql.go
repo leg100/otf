@@ -14,7 +14,15 @@ import (
 const insertIngressAttributesSQL = `INSERT INTO ingress_attributes (
     branch,
     commit_sha,
+    commit_url,
+    pull_request_number,
+    pull_request_url,
+    pull_request_title,
+    sender_username,
+    sender_avatar_url,
+    sender_html_url,
     identifier,
+    tag,
     is_pull_request,
     on_default_branch,
     configuration_version_id
@@ -24,13 +32,29 @@ const insertIngressAttributesSQL = `INSERT INTO ingress_attributes (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14
 );`
 
 type InsertIngressAttributesParams struct {
 	Branch                 pgtype.Text
 	CommitSHA              pgtype.Text
+	CommitURL              pgtype.Text
+	PullRequestNumber      pgtype.Int4
+	PullRequestURL         pgtype.Text
+	PullRequestTitle       pgtype.Text
+	SenderUsername         pgtype.Text
+	SenderAvatarURL        pgtype.Text
+	SenderHTMLURL          pgtype.Text
 	Identifier             pgtype.Text
+	Tag                    pgtype.Text
 	IsPullRequest          bool
 	OnDefaultBranch        bool
 	ConfigurationVersionID pgtype.Text
@@ -39,7 +63,7 @@ type InsertIngressAttributesParams struct {
 // InsertIngressAttributes implements Querier.InsertIngressAttributes.
 func (q *DBQuerier) InsertIngressAttributes(ctx context.Context, params InsertIngressAttributesParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertIngressAttributes")
-	cmdTag, err := q.conn.Exec(ctx, insertIngressAttributesSQL, params.Branch, params.CommitSHA, params.Identifier, params.IsPullRequest, params.OnDefaultBranch, params.ConfigurationVersionID)
+	cmdTag, err := q.conn.Exec(ctx, insertIngressAttributesSQL, params.Branch, params.CommitSHA, params.CommitURL, params.PullRequestNumber, params.PullRequestURL, params.PullRequestTitle, params.SenderUsername, params.SenderAvatarURL, params.SenderHTMLURL, params.Identifier, params.Tag, params.IsPullRequest, params.OnDefaultBranch, params.ConfigurationVersionID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertIngressAttributes: %w", err)
 	}
@@ -48,7 +72,7 @@ func (q *DBQuerier) InsertIngressAttributes(ctx context.Context, params InsertIn
 
 // InsertIngressAttributesBatch implements Querier.InsertIngressAttributesBatch.
 func (q *DBQuerier) InsertIngressAttributesBatch(batch genericBatch, params InsertIngressAttributesParams) {
-	batch.Queue(insertIngressAttributesSQL, params.Branch, params.CommitSHA, params.Identifier, params.IsPullRequest, params.OnDefaultBranch, params.ConfigurationVersionID)
+	batch.Queue(insertIngressAttributesSQL, params.Branch, params.CommitSHA, params.CommitURL, params.PullRequestNumber, params.PullRequestURL, params.PullRequestTitle, params.SenderUsername, params.SenderAvatarURL, params.SenderHTMLURL, params.Identifier, params.Tag, params.IsPullRequest, params.OnDefaultBranch, params.ConfigurationVersionID)
 }
 
 // InsertIngressAttributesScan implements Querier.InsertIngressAttributesScan.

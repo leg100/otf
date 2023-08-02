@@ -47,8 +47,10 @@ func TestGithubPullRequest(t *testing.T) {
 		// go to runs
 		chromedp.Navigate(runsURL(daemon.Hostname(), ws.ID)),
 		screenshot(t),
-		// should be one run widget with a commit matching the pull request
-		chromedp.WaitVisible(`//div[@class='widget']//span[@class='commit' and text()='#c560613']`),
+		// should be one run widget with info matching the pull request
+		chromedp.WaitVisible(`//div[@class='widget']//a[@id='pull-request-link' and text()='#2']`),
+		chromedp.WaitVisible(`//div[@class='widget']//a[@id='vcs-username' and text()='@leg100']`),
+		chromedp.WaitVisible(`//div[@class='widget']//a[@id='commit-sha-abbrev' and text()='c560613']`),
 		screenshot(t),
 	})
 

@@ -3,11 +3,13 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -17,12 +19,6 @@ import (
 const (
 	PlanFormatBinary = "bin"  // plan file in binary format
 	PlanFormatJSON   = "json" // plan file in json format
-
-	// When specified in place of a configuration version ID passed to
-	// RunCreateOptions this magic string instructs the run factory to
-	// automatically create a configuration version from the workspace connected
-	// vcs repo.
-	PullVCSMagicString = "__pull_vcs__"
 
 	PlanOnlyOperation     Operation = "plan-only"
 	PlanAndApplyOperation Operation = "plan-and-apply"
@@ -64,8 +60,14 @@ type (
 		Plan                   Phase                   `json:"plan"`
 		Apply                  Phase                   `json:"apply"`
 
-		Latest bool    `json:"latest"` // is latest run for workspace
-		Commit *string `json:"commit"` // commit sha that triggered this run
+		Latest bool `json:"latest"` // is latest run for workspace
+
+		// IngressAttributes is non-nil if run was triggered by a VCS event.
+		IngressAttributes *configversion.IngressAttributes `json:"ingress_attributes"`
+
+		// Username of user who created the run. This is nil if the run was
+		// instead triggered by a VCS event.
+		CreatedBy *string
 	}
 
 	// RunList represents a list of runs.
@@ -87,14 +89,8 @@ type (
 		RefreshOnly *bool
 		Message     *string
 		// Specifies the configuration version to use for this run. If the
-		// configuration version object is omitted, the run will be created using the
+		// configuration version ID is nil, the run will be created using the
 		// workspace's latest configuration version.
-		//
-		// Alternatively, if PullVCSMagicString is specified, and the workspace
-		// is connected to a vcs repo, then a configuration version is
-		// automatically created from the vcs repo and the run uses that
-		// configuration version. If the workspace is not connected to a
-		// workspace then an error is returned.
 		ConfigurationVersionID *string
 		TargetAddrs            []string
 		ReplaceAddrs           []string
@@ -131,7 +127,7 @@ type (
 )
 
 // newRun creates a new run with defaults.
-func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
+func newRun(ctx context.Context, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
 		CreatedAt:              internal.CurrentTimestamp(),
@@ -144,10 +140,15 @@ func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 		TargetAddrs:            opts.TargetAddrs,
 		ExecutionMode:          ws.ExecutionMode,
 		AutoApply:              ws.AutoApply,
+		IngressAttributes:      cv.IngressAttributes,
 	}
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
 	run.updateStatus(internal.RunPending)
+
+	if user, _ := auth.UserFromContext(ctx); user != nil {
+		run.CreatedBy = &user.Username
+	}
 
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
@@ -163,9 +164,6 @@ func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 	}
 	if opts.PlanOnly != nil {
 		run.PlanOnly = *opts.PlanOnly
-	}
-	if cv.IngressAttributes != nil {
-		run.Commit = &cv.IngressAttributes.CommitSHA
 	}
 	return &run
 }

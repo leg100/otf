@@ -141,7 +141,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 			}
 		}
 		if listFiles {
-			paths, err := client.ListPullRequestFiles(ctx, event.RepoPath, event.PullNumber)
+			paths, err := client.ListPullRequestFiles(ctx, event.RepoPath, event.PullRequestNumber)
 			if err != nil {
 				return fmt.Errorf("retrieving list of files in pull request from cloud provider: %w", err)
 			}
@@ -169,11 +169,18 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 				// CloneURL          string
 				// CommitMessage     string
 				CommitSHA: event.CommitSHA,
-				// CommitURL         string
+				CommitURL: event.CommitURL,
 				// CompareURL        string
-				Repo:            ws.Connection.Repo,
-				IsPullRequest:   event.Type == cloud.VCSEventTypePull,
-				OnDefaultBranch: event.Branch == event.DefaultBranch,
+				Repo:              ws.Connection.Repo,
+				IsPullRequest:     event.Type == cloud.VCSEventTypePull,
+				OnDefaultBranch:   event.Branch == event.DefaultBranch,
+				PullRequestNumber: event.PullRequestNumber,
+				PullRequestTitle:  event.PullRequestTitle,
+				PullRequestURL:    event.PullRequestURL,
+				SenderUsername:    event.SenderUsername,
+				SenderAvatarURL:   event.SenderAvatarURL,
+				SenderHTMLURL:     event.SenderHTMLURL,
+				Tag:               event.Tag,
 			},
 		})
 		if err != nil {

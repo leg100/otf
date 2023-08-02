@@ -142,6 +142,7 @@ sql: install-pggen
 		--acronym sha \
 		--acronym json \
 		--acronym vcs \
+		--acronym html \
 		--acronym http \
 		--acronym tls \
 		--acronym sso \

@@ -36,6 +36,14 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 			_, err := q.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
+				CommitURL:              sql.String(ia.CommitURL),
+				PullRequestNumber:      sql.Int4(ia.PullRequestNumber),
+				PullRequestURL:         sql.String(ia.PullRequestURL),
+				PullRequestTitle:       sql.String(ia.PullRequestTitle),
+				SenderUsername:         sql.String(ia.SenderUsername),
+				SenderAvatarURL:        sql.String(ia.SenderAvatarURL),
+				SenderHTMLURL:          sql.String(ia.SenderHTMLURL),
+				Tag:                    sql.String(ia.Tag),
 				Identifier:             sql.String(ia.Repo),
 				IsPullRequest:          ia.IsPullRequest,
 				OnDefaultBranch:        ia.OnDefaultBranch,
@@ -147,8 +155,7 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 	return err
 }
 
-// pgRow represents the result of a database query for a
-// configuration version.
+// pgRow represents the result of a database query for a configuration version.
 type pgRow struct {
 	ConfigurationVersionID               pgtype.Text                                  `json:"configuration_version_id"`
 	CreatedAt                            pgtype.Timestamptz                           `json:"created_at"`
@@ -173,15 +180,27 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 		WorkspaceID:      result.WorkspaceID.String,
 	}
 	if result.IngressAttributes != nil {
-		cv.IngressAttributes = &IngressAttributes{
-			Branch:          result.IngressAttributes.Branch.String,
-			CommitSHA:       result.IngressAttributes.CommitSHA.String,
-			Repo:            result.IngressAttributes.Identifier.String,
-			IsPullRequest:   result.IngressAttributes.IsPullRequest,
-			OnDefaultBranch: result.IngressAttributes.IsPullRequest,
-		}
+		cv.IngressAttributes = NewIngressFromRow(result.IngressAttributes)
 	}
 	return &cv
+}
+
+func NewIngressFromRow(row *pggen.IngressAttributes) *IngressAttributes {
+	return &IngressAttributes{
+		Branch:            row.Branch.String,
+		CommitSHA:         row.CommitSHA.String,
+		CommitURL:         row.CommitURL.String,
+		Repo:              row.Identifier.String,
+		IsPullRequest:     row.IsPullRequest,
+		PullRequestNumber: int(row.PullRequestNumber.Int),
+		PullRequestURL:    row.PullRequestURL.String,
+		PullRequestTitle:  row.PullRequestTitle.String,
+		SenderUsername:    row.SenderUsername.String,
+		SenderAvatarURL:   row.SenderAvatarURL.String,
+		SenderHTMLURL:     row.SenderHTMLURL.String,
+		Tag:               row.Tag.String,
+		OnDefaultBranch:   row.IsPullRequest,
+	}
 }
 
 func unmarshalStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {

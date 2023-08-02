@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -41,6 +42,7 @@ type (
 		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 		PlanOnly               bool                          `json:"plan_only"`
+		CreatedBy              pgtype.Text                   `json:"created_by"`
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 		Latest                 bool                          `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
@@ -50,6 +52,53 @@ type (
 		ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
 	}
 )
+
+func (result pgresult) toRun() *Run {
+	run := Run{
+		ID:                     result.RunID.String,
+		CreatedAt:              result.CreatedAt.Time.UTC(),
+		IsDestroy:              result.IsDestroy,
+		PositionInQueue:        int(result.PositionInQueue.Int),
+		Refresh:                result.Refresh,
+		RefreshOnly:            result.RefreshOnly,
+		Status:                 internal.RunStatus(result.Status.String),
+		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
+		ReplaceAddrs:           result.ReplaceAddrs,
+		TargetAddrs:            result.TargetAddrs,
+		AutoApply:              result.AutoApply,
+		PlanOnly:               result.PlanOnly,
+		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
+		Latest:                 result.Latest,
+		Organization:           result.OrganizationName.String,
+		WorkspaceID:            result.WorkspaceID.String,
+		ConfigurationVersionID: result.ConfigurationVersionID.String,
+		Plan: Phase{
+			RunID:            result.RunID.String,
+			PhaseType:        internal.PlanPhase,
+			Status:           PhaseStatus(result.PlanStatus.String),
+			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
+			ResourceReport:   reportFromDB(result.PlanResourceReport),
+			OutputReport:     reportFromDB(result.PlanOutputReport),
+		},
+		Apply: Phase{
+			RunID:            result.RunID.String,
+			PhaseType:        internal.ApplyPhase,
+			Status:           PhaseStatus(result.ApplyStatus.String),
+			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
+			ResourceReport:   reportFromDB(result.ApplyResourceReport),
+		},
+	}
+	if result.CreatedBy.Status == pgtype.Present {
+		run.CreatedBy = &result.CreatedBy.String
+	}
+	if result.ForceCancelAvailableAt.Status == pgtype.Present {
+		run.ForceCancelAvailableAt = internal.Time(result.ForceCancelAvailableAt.Time.UTC())
+	}
+	if result.IngressAttributes != nil {
+		run.IngressAttributes = configversion.NewIngressFromRow(result.IngressAttributes)
+	}
+	return &run
+}
 
 // CreateRun persists a Run to the DB.
 func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
@@ -68,6 +117,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			PlanOnly:               run.PlanOnly,
 			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
 			WorkspaceID:            sql.String(run.WorkspaceID),
+			CreatedBy:              sql.StringPtr(run.CreatedBy),
 		})
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
@@ -334,50 +384,6 @@ func convertStatusSliceToStringSlice(statuses []internal.RunStatus) (s []string)
 		s = append(s, string(status))
 	}
 	return
-}
-
-func (result pgresult) toRun() *Run {
-	run := Run{
-		ID:                     result.RunID.String,
-		CreatedAt:              result.CreatedAt.Time.UTC(),
-		IsDestroy:              result.IsDestroy,
-		PositionInQueue:        int(result.PositionInQueue.Int),
-		Refresh:                result.Refresh,
-		RefreshOnly:            result.RefreshOnly,
-		Status:                 internal.RunStatus(result.Status.String),
-		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
-		ReplaceAddrs:           result.ReplaceAddrs,
-		TargetAddrs:            result.TargetAddrs,
-		AutoApply:              result.AutoApply,
-		PlanOnly:               result.PlanOnly,
-		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
-		Latest:                 result.Latest,
-		Organization:           result.OrganizationName.String,
-		WorkspaceID:            result.WorkspaceID.String,
-		ConfigurationVersionID: result.ConfigurationVersionID.String,
-		Plan: Phase{
-			RunID:            result.RunID.String,
-			PhaseType:        internal.PlanPhase,
-			Status:           PhaseStatus(result.PlanStatus.String),
-			StatusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
-			ResourceReport:   reportFromDB(result.PlanResourceReport),
-			OutputReport:     reportFromDB(result.PlanOutputReport),
-		},
-		Apply: Phase{
-			RunID:            result.RunID.String,
-			PhaseType:        internal.ApplyPhase,
-			Status:           PhaseStatus(result.ApplyStatus.String),
-			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
-			ResourceReport:   reportFromDB(result.ApplyResourceReport),
-		},
-	}
-	if result.ForceCancelAvailableAt.Status == pgtype.Present {
-		run.ForceCancelAvailableAt = internal.Time(result.ForceCancelAvailableAt.Time.UTC())
-	}
-	if result.IngressAttributes != nil {
-		run.Commit = &result.IngressAttributes.CommitSHA.String
-	}
-	return &run
 }
 
 func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

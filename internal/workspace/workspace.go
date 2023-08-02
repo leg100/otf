@@ -27,7 +27,6 @@ const (
 )
 
 var (
-	ErrNoVCSConnection                 = errors.New("workspace is not connected to a vcs repo")
 	ErrTagsRegexAndTriggerPatterns     = errors.New("cannot specify both tags-regex and trigger-patterns")
 	ErrTagsRegexAndAlwaysTrigger       = errors.New("cannot specify both tags-regex and always-trigger")
 	ErrTriggerPatternsAndAlwaysTrigger = errors.New("cannot specify both trigger-patterns and always-trigger")
