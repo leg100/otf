@@ -3,11 +3,13 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
@@ -68,6 +70,10 @@ type (
 
 		// IngressAttributes is non-nil if run was triggered by a VCS event.
 		IngressAttributes *configversion.IngressAttributes `json:"ingress_attributes"`
+
+		// Username of user who created the run. This is nil if the run was
+		// instead triggered by a VCS event.
+		CreatedBy *string
 	}
 
 	// RunList represents a list of runs.
@@ -133,7 +139,7 @@ type (
 )
 
 // newRun creates a new run with defaults.
-func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
+func newRun(ctx context.Context, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
 		CreatedAt:              internal.CurrentTimestamp(),
@@ -151,6 +157,10 @@ func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
 	run.updateStatus(internal.RunPending)
+
+	if user, _ := auth.UserFromContext(ctx); user != nil {
+		run.CreatedBy = &user.Username
+	}
 
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy

@@ -12,7 +12,8 @@ INSERT INTO runs (
     auto_apply,
     plan_only,
     configuration_version_id,
-    workspace_id
+    workspace_id,
+    created_by
 ) VALUES (
     pggen.arg('id'),
     pggen.arg('created_at'),
@@ -26,7 +27,8 @@ INSERT INTO runs (
     pggen.arg('auto_apply'),
     pggen.arg('plan_only'),
     pggen.arg('configuration_version_id'),
-    pggen.arg('workspace_id')
+    pggen.arg('workspace_id'),
+    pggen.arg('created_by')
 );
 
 -- name: InsertRunStatusTimestamp :exec
@@ -61,6 +63,7 @@ SELECT
     runs.configuration_version_id,
     runs.workspace_id,
     runs.plan_only,
+    runs.created_by,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -135,6 +138,7 @@ SELECT
     runs.configuration_version_id,
     runs.workspace_id,
     runs.plan_only,
+    runs.created_by,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -190,6 +194,7 @@ SELECT
     runs.configuration_version_id,
     runs.workspace_id,
     runs.plan_only,
+    runs.created_by,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false

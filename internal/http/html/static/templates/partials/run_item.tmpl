@@ -12,6 +12,12 @@
               | <a id="vcs-username" href="{{ $.IngressAttributes.SenderHTMLURL }}">@{{ . }}</a>
             </span>
           {{ end }}
+        {{ else }}
+          {{ with .CreatedBy }}
+            <span class="inline-block max-w-[16rem] truncate" id="run-created-by">
+              | @{{ . }}
+            </span>
+          {{ end }}
         {{ end }}
         <span>{{ durationRound .CreatedAt }} ago</span>
       </div>
