@@ -1681,6 +1681,14 @@ type IngressAttributes struct {
 	IsPullRequest          bool        `json:"is_pull_request"`
 	OnDefaultBranch        bool        `json:"on_default_branch"`
 	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
+	CommitURL              pgtype.Text `json:"commit_url"`
+	PullRequestNumber      pgtype.Int4 `json:"pull_request_number"`
+	PullRequestURL         pgtype.Text `json:"pull_request_url"`
+	PullRequestTitle       pgtype.Text `json:"pull_request_title"`
+	Tag                    pgtype.Text `json:"tag"`
+	SenderUsername         pgtype.Text `json:"sender_username"`
+	SenderAvatarURL        pgtype.Text `json:"sender_avatar_url"`
+	SenderHTMLURL          pgtype.Text `json:"sender_html_url"`
 }
 
 // ModuleVersions represents the Postgres composite type "module_versions".
@@ -1894,6 +1902,14 @@ func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
 		compositeField{"is_pull_request", "bool", &pgtype.Bool{}},
 		compositeField{"on_default_branch", "bool", &pgtype.Bool{}},
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
+		compositeField{"commit_url", "text", &pgtype.Text{}},
+		compositeField{"pull_request_number", "int4", &pgtype.Int4{}},
+		compositeField{"pull_request_url", "text", &pgtype.Text{}},
+		compositeField{"pull_request_title", "text", &pgtype.Text{}},
+		compositeField{"tag", "text", &pgtype.Text{}},
+		compositeField{"sender_username", "text", &pgtype.Text{}},
+		compositeField{"sender_avatar_url", "text", &pgtype.Text{}},
+		compositeField{"sender_html_url", "text", &pgtype.Text{}},
 	)
 }
 

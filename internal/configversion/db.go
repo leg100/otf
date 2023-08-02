@@ -36,6 +36,14 @@ func (db *pgdb) CreateConfigurationVersion(ctx context.Context, cv *Configuratio
 			_, err := q.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
 				Branch:                 sql.String(ia.Branch),
 				CommitSHA:              sql.String(ia.CommitSHA),
+				CommitURL:              sql.String(ia.CommitURL),
+				PullRequestNumber:      sql.Int4(ia.PullRequestNumber),
+				PullRequestURL:         sql.String(ia.PullRequestURL),
+				PullRequestTitle:       sql.String(ia.PullRequestTitle),
+				SenderUsername:         sql.String(ia.SenderUsername),
+				SenderAvatarURL:        sql.String(ia.SenderAvatarURL),
+				SenderHTMLURL:          sql.String(ia.SenderHTMLURL),
+				Tag:                    sql.String(ia.Tag),
 				Identifier:             sql.String(ia.Repo),
 				IsPullRequest:          ia.IsPullRequest,
 				OnDefaultBranch:        ia.OnDefaultBranch,
@@ -170,11 +178,19 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 	}
 	if result.IngressAttributes != nil {
 		cv.IngressAttributes = &IngressAttributes{
-			Branch:          result.IngressAttributes.Branch.String,
-			CommitSHA:       result.IngressAttributes.CommitSHA.String,
-			Repo:            result.IngressAttributes.Identifier.String,
-			IsPullRequest:   result.IngressAttributes.IsPullRequest,
-			OnDefaultBranch: result.IngressAttributes.IsPullRequest,
+			Branch:            result.IngressAttributes.Branch.String,
+			CommitSHA:         result.IngressAttributes.CommitSHA.String,
+			CommitURL:         result.IngressAttributes.CommitURL.String,
+			Repo:              result.IngressAttributes.Identifier.String,
+			IsPullRequest:     result.IngressAttributes.IsPullRequest,
+			PullRequestNumber: int(result.IngressAttributes.PullRequestNumber.Int),
+			PullRequestURL:    result.IngressAttributes.PullRequestURL.String,
+			PullRequestTitle:  result.IngressAttributes.PullRequestTitle.String,
+			SenderUsername:    result.IngressAttributes.SenderUsername.String,
+			SenderAvatarURL:   result.IngressAttributes.SenderAvatarURL.String,
+			SenderHTMLURL:     result.IngressAttributes.SenderHTMLURL.String,
+			Tag:               result.IngressAttributes.Tag.String,
+			OnDefaultBranch:   result.IngressAttributes.IsPullRequest,
 		}
 	}
 	return &cv

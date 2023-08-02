@@ -42,6 +42,9 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 			to.Paths = append(to.Paths, c.Modified...)
 			to.Paths = append(to.Paths, c.Removed...)
 		}
+		to.CommitSHA = event.GetAfter()
+		to.CommitURL = event.GetHeadCommit().GetURL()
+		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
 
 		// a github.PushEvent includes tag events but OTF categorises them as separate
 		// event types
@@ -63,16 +66,12 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 			}
 
 			to.Tag = parts[2]
-			to.CommitSHA = event.GetAfter()
-			to.DefaultBranch = event.GetRepo().GetDefaultBranch()
 
 			return &to, nil
 		case "heads":
 			to.Type = cloud.VCSEventTypePush
 			to.Action = cloud.VCSActionCreated
 			to.Branch = parts[2]
-			to.CommitSHA = event.GetAfter()
-			to.DefaultBranch = event.GetRepo().GetDefaultBranch()
 
 			return &to, nil
 		default:
@@ -80,7 +79,8 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		}
 	case *github.PullRequestEvent:
 		to.Type = cloud.VCSEventTypePull
-		to.PullNumber = event.GetPullRequest().GetNumber()
+		to.PullRequestNumber = event.GetPullRequest().GetNumber()
+		to.PullRequestURL = event.GetPullRequest().GetHTMLURL()
 
 		switch event.GetAction() {
 		case "opened":
