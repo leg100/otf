@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -30,7 +29,6 @@ type (
 		Description                pgtype.Text            `json:"description"`
 		Environment                pgtype.Text            `json:"environment"`
 		ExecutionMode              pgtype.Text            `json:"execution_mode"`
-		FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
 		GlobalRemoteState          bool                   `json:"global_remote_state"`
 		MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
 		Name                       pgtype.Text            `json:"name"`
@@ -48,6 +46,8 @@ type (
 		Branch                     pgtype.Text            `json:"branch"`
 		LockUsername               pgtype.Text            `json:"lock_username"`
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
+		TriggerPatterns            []string               `json:"trigger_patterns"`
+		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
 		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
@@ -64,12 +64,10 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		AllowDestroyPlan:           r.AllowDestroyPlan,
 		AutoApply:                  r.AutoApply,
-		Branch:                     r.Branch.String,
 		CanQueueDestroyPlan:        r.CanQueueDestroyPlan,
 		Description:                r.Description.String,
 		Environment:                r.Environment.String,
 		ExecutionMode:              ExecutionMode(r.ExecutionMode.String),
-		FileTriggersEnabled:        r.FileTriggersEnabled,
 		GlobalRemoteState:          r.GlobalRemoteState,
 		MigrationEnvironment:       r.MigrationEnvironment.String,
 		Name:                       r.Name.String,
@@ -80,15 +78,20 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		SourceURL:                  r.SourceURL.String,
 		TerraformVersion:           r.TerraformVersion.String,
 		TriggerPrefixes:            r.TriggerPrefixes,
+		TriggerPatterns:            r.TriggerPatterns,
 		WorkingDirectory:           r.WorkingDirectory.String,
 		Organization:               r.OrganizationName.String,
 		Tags:                       r.Tags,
 	}
 
 	if r.WorkspaceConnection != nil {
-		ws.Connection = &repo.Connection{
+		ws.Connection = &Connection{
 			VCSProviderID: r.Webhook.VCSProviderID.String,
 			Repo:          r.Webhook.Identifier.String,
+			Branch:        r.Branch.String,
+		}
+		if r.VCSTagsRegex.Status == pgtype.Present {
+			ws.Connection.TagsRegex = r.VCSTagsRegex.String
 		}
 	}
 
@@ -116,19 +119,17 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 	q := db.Conn(ctx)
-	_, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
+	params := pggen.InsertWorkspaceParams{
 		ID:                         sql.String(ws.ID),
 		CreatedAt:                  sql.Timestamptz(ws.CreatedAt),
 		UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
 		Name:                       sql.String(ws.Name),
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
 		AutoApply:                  ws.AutoApply,
-		Branch:                     sql.String(ws.Branch),
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
 		Environment:                sql.String(ws.Environment),
 		Description:                sql.String(ws.Description),
 		ExecutionMode:              sql.String(string(ws.ExecutionMode)),
-		FileTriggersEnabled:        ws.FileTriggersEnabled,
 		GlobalRemoteState:          ws.GlobalRemoteState,
 		MigrationEnvironment:       sql.String(ws.MigrationEnvironment),
 		SourceName:                 sql.String(ws.SourceName),
@@ -137,10 +138,18 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
 		TerraformVersion:           sql.String(ws.TerraformVersion),
 		TriggerPrefixes:            ws.TriggerPrefixes,
+		TriggerPatterns:            ws.TriggerPatterns,
 		QueueAllRuns:               ws.QueueAllRuns,
 		WorkingDirectory:           sql.String(ws.WorkingDirectory),
 		OrganizationName:           sql.String(ws.Organization),
-	})
+		Branch:                     sql.String(""),
+		VCSTagsRegex:               sql.StringPtr(nil),
+	}
+	if ws.Connection != nil {
+		params.Branch = sql.String(ws.Connection.Branch)
+		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
+	}
+	_, err := q.InsertWorkspace(ctx, params)
 	return sql.Error(err)
 }
 
@@ -162,22 +171,30 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			return err
 		}
 		// persist update
-		_, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
+		params := pggen.UpdateWorkspaceByIDParams{
 			ID:                         sql.String(ws.ID),
 			UpdatedAt:                  sql.Timestamptz(ws.UpdatedAt),
 			AllowDestroyPlan:           ws.AllowDestroyPlan,
 			AutoApply:                  ws.AutoApply,
-			Branch:                     sql.String(ws.Branch),
 			Description:                sql.String(ws.Description),
 			ExecutionMode:              sql.String(string(ws.ExecutionMode)),
+			GlobalRemoteState:          ws.GlobalRemoteState,
 			Name:                       sql.String(ws.Name),
 			QueueAllRuns:               ws.QueueAllRuns,
 			SpeculativeEnabled:         ws.SpeculativeEnabled,
 			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
 			TerraformVersion:           sql.String(ws.TerraformVersion),
 			TriggerPrefixes:            ws.TriggerPrefixes,
+			TriggerPatterns:            ws.TriggerPatterns,
 			WorkingDirectory:           sql.String(ws.WorkingDirectory),
-		})
+			Branch:                     sql.String(""),
+			VCSTagsRegex:               sql.StringPtr(nil),
+		}
+		if ws.Connection != nil {
+			params.Branch = sql.String(ws.Connection.Branch)
+			params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
+		}
+		_, err = q.UpdateWorkspaceByID(ctx, params)
 		return err
 	})
 	return ws, err

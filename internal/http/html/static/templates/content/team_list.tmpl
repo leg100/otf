@@ -3,12 +3,13 @@
 {{ define "content-header-title" }}teams{{ end }}
 
 {{ define "content-header-actions" }}
-  {{ $canCreate := .CurrentUser.CanAccessOrganization .CreateTeamAction .Organization }}
-  <form action="{{ newTeamPath .Organization }}" method="GET">
-    <button class="btn" id="new-team-button" {{ insufficient $canCreate }}>
-      New Team
-    </button>
-  </form>
+  {{ if .CanCreateTeam }}
+    <form action="{{ newTeamPath .Organization }}" method="GET">
+      <button class="btn" id="new-team-button">
+        New Team
+      </button>
+    </form>
+  {{ end }}
 {{ end }}
 
 {{ define "content" }}

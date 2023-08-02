@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1", nil)
+		r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -33,6 +35,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("second page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2", nil)
+		r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -42,6 +45,7 @@ func TestListRunsHandler(t *testing.T) {
 
 	t.Run("last page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3", nil)
+		r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
 		w := httptest.NewRecorder()
 		h.list(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -74,7 +78,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 func TestWebHandlers_CreateRun_Connected(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withRuns(&Run{ID: "run-1"}),
-		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &repo.Connection{}}),
+		withWorkspace(&workspace.Workspace{ID: "ws-123", Connection: &workspace.Connection{}}),
 	)
 
 	q := "/?workspace_id=run-123&operation=plan-only&connected=true"

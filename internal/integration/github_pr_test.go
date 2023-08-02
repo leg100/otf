@@ -30,8 +30,8 @@ func TestIntegration_GithubPR(t *testing.T) {
 		Name:         internal.String("workspace-1"),
 		Organization: &provider.Organization,
 		ConnectOptions: &workspace.ConnectOptions{
-			VCSProviderID: provider.ID,
-			RepoPath:      repo,
+			VCSProviderID: &provider.ID,
+			RepoPath:      &repo,
 		},
 	})
 	require.NoError(t, err)

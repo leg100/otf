@@ -43,8 +43,8 @@ func TestRun(t *testing.T) {
 			Name:         internal.String("connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      repo,
-				VCSProviderID: vcsProvider.ID,
+				RepoPath:      &repo,
+				VCSProviderID: &vcsProvider.ID,
 			},
 		})
 		require.NoError(t, err)
@@ -68,8 +68,8 @@ func TestRun(t *testing.T) {
 			Name:         internal.String("connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      repo,
-				VCSProviderID: vcsProvider.ID,
+				RepoPath:      &repo,
+				VCSProviderID: &vcsProvider.ID,
 			},
 		})
 		require.NoError(t, err)

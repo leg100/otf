@@ -13,23 +13,16 @@
 {{ end }}
 
 {{ define "content" }}
-  {{ $canUpdate := $.CurrentUser.CanAccessWorkspace .UpdateWorkspaceAction .Policy }}
-  {{ $canDelete := $.CurrentUser.CanAccessWorkspace .DeleteWorkspaceAction .Policy }}
-  {{ $canSetPermission := $.CurrentUser.CanAccessWorkspace .SetWorkspacePermissionAction .Policy }}
-  {{ $canUnsetPermission := $.CurrentUser.CanAccessWorkspace .UnsetWorkspacePermissionAction .Policy }}
-  {{ $canCreateRun := $.CurrentUser.CanAccessWorkspace .CreateRunAction .Policy }}
-  {{ $canAddTag := $.CurrentUser.CanAccessWorkspace .AddTagsAction .Policy }}
-  {{ $canRemoveTag := $.CurrentUser.CanAccessWorkspace .RemoveTagsAction .Policy }}
   <div class="mt-3">
     {{ with .Workspace.Connection }}
       <form action="{{ disconnectWorkspacePath $.Workspace.ID }}" method="POST">
-        <button class="btn" id="disconnect-workspace-repo-button" {{ insufficient $canUpdate }}>
+        <button class="btn" id="disconnect-workspace-repo-button">
           Disconnect from {{ .Repo }} ({{ $.VCSProvider.CloudConfig }})
         </button>
       </form>
     {{ else }}
       <form action="{{ setupConnectionProviderWorkspacePath .Workspace.ID }}" method="GET">
-        <button class="btn" id="list-workspace-vcs-providers-button" {{ insufficient $canUpdate }}>
+        <button class="btn" id="list-workspace-vcs-providers-button">
           Connect to VCS
         </button>
       </form>
@@ -78,15 +71,103 @@
       </div>
     </fieldset>
     <div class="field">
-      <label for="terraform_version">Terraform version</label>
-      <input class="text-input w-48" type="text" name="terraform_version" id="terraform_version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]+.[0-9]+.[0-9]+" title="Must provide version in the format <major>.<minor>.<patch>">
+      <label for="terraform-version">Terraform version</label>
+      <input class="text-input w-48" type="text" name="terraform_version" id="terraform-version" value="{{ .Workspace.TerraformVersion }}" required pattern="[0-9]+.[0-9]+.[0-9]+" title="Must provide version in the format <major>.<minor>.<patch>">
+      <span class="description">
+        The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically.
+      </span>
     </div>
     <div class="field">
       <label for="working_directory">Working directory</label>
       <input class="text-input w-96" type="text" name="working_directory" id="working_directory" value="{{ .Workspace.WorkingDirectory }}">
+      <span class="description">
+        The directory that Terraform will execute within. This defaults to the root of your repository and is typically set to a subdirectory matching the environment when multiple environments exist within the same repository.
+      </span>
     </div>
+
+    {{ with .Workspace.Connection }}
+      <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+        <legend>VCS triggers</legend>
+
+        <div class="form-checkbox">
+          <input type="radio" id="vcs-triggers-always" name="vcs_trigger" value="{{ $.VCSTriggerAlways }}" {{ checked (and (not $.Workspace.TriggerPatterns) (not .TagsRegex)) }}>
+          <label for="vcs-triggers-always">Always trigger runs</label>
+          <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+        </div>
+
+        <div class="form-checkbox">
+          <input class="peer" type="radio" id="vcs-triggers-patterns" name="vcs_trigger" value="{{ $.VCSTriggerPatterns }}" {{ checked (gt (len $.Workspace.TriggerPatterns) 0) }}>
+          <label for="vcs-triggers-patterns">Only trigger runs when files in specified paths change</label>
+          <span class="col-start-2 description">Supports glob patterns.</span>
+          <script src="{{ addHash "/static/js/workspace_trigger_patterns.js" }}"></script>
+          <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="workspace_trigger_patterns({{ toJson $.Workspace.TriggerPatterns }})">
+            <input type="hidden" id="paths" name="trigger_patterns" :value = "JSON.stringify(paths)">
+            <div class="flex flex-col gap-2">
+              <div class="flex gap-2 items-center">
+                <label for="new_path">Path</label>
+                <input @keydown.enter.prevent="addPattern" class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path">
+                <button @click="addPattern" type="button" id="add-pattern" class="btn w-40">Add pattern</button>
+              </div>
+              <template x-for="path in paths">
+                <div class="flex gap-2 items-center justify-end">
+                  <span class="justify-end bg-gray-200 px-2" x-text="path" :id="$id('trigger-pattern')"></span>
+                  <button @click="deletePattern(path)" type="button" class="btn-danger w-40" :id="$id('delete-pattern')">Delete</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-checkbox">
+          <input class="peer" type="radio" id="vcs-triggers-tag" name="vcs_trigger" value="{{ $.VCSTriggerTags }}" {{ checked (ne .TagsRegex "") }}>
+          <label for="vcs-triggers-tag">Trigger runs when a git tag is published</label>
+          <span class="col-start-2 description">Git tags allow you to manage releases.</span>
+          <div class="col-start-2 hidden bg-gray-100 px-3 py-3 mt-2 w-full peer-checked:block">
+            <div class="flex flex-col gap-2" x-data="{regex: {{ toJson .TagsRegex }}}">
+              <div class="form-checkbox">
+                <input type="radio" id="tags-regex-default" name="tags_regex" value="{{ $.VCSTagRegexDefault }}" {{ checked (or (eq .TagsRegex $.VCSTagRegexDefault) (eq .TagsRegex "")) }}/>
+                <label for="tags-regex-default">Default</label>
+                <span>e.g. <span class="bg-gray-200">12.33.4456</span></span>
+              </div>
+              <div class="form-checkbox">
+                <input type="radio" id="tags-regex-prefix" name="tags_regex" value="{{ $.VCSTagRegexPrefix }}" {{ checked (eq .TagsRegex $.VCSTagRegexPrefix) }}/>
+                <label for="tags-regex-prefix">Version contains a prefix</label>
+                <span>e.g. <span class="bg-gray-200">v12.33.4456</span></span>
+              </div>
+              <div class="form-checkbox">
+                <input type="radio" id="tags-regex-suffix" name="tags_regex" value="{{ $.VCSTagRegexSuffix }}" {{ checked (eq .TagsRegex $.VCSTagRegexSuffix) }}/>
+
+                <label for="tags-regex-suffix">Version contains a suffix</label>
+                <span>e.g. <span class="bg-gray-200">12.33.4456-foo</span></span>
+              </div>
+              <div class="form-checkbox">
+                {{ $isCustom := (and (ne .TagsRegex "") (ne .TagsRegex $.VCSTagRegexDefault) (ne .TagsRegex $.VCSTagRegexPrefix) (ne .TagsRegex $.VCSTagRegexSuffix)) }}
+                <input class="peer" type="radio" id="tags-regex-custom" name="tags_regex" value="{{ $.VCSTagRegexCustom }}" {{ checked $isCustom }}>
+                <label for="tags-regex-custom">Custom regular expression</label>
+                <input class="col-start-2 text-input w-96 mt-2 hidden peer-checked:block" type="text" name="custom_tags_regex" value="{{ .TagsRegex }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field mt-2">
+          <label for="vcs-branch">VCS branch</label>
+          <input class="text-input w-96" type="text" name="vcs_branch" id="vcs-branch" value="{{ default "" .Branch }}">
+          <span class="description">The branch from which to import new versions. This defaults to the value your version control provides as the default branch for this repository.</span>
+        </div>
+      </fieldset>
+    {{ end }}
+
+    <div class="flex flex-col gap-2">
+      <div class="flex gap-2">
+        <input class="" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
+        <label class="font-semibold" for="global-remote-state">Remote state sharing</label>
+      </div>
+      <span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
+    </div>
+
     <div class="field">
-      <button class="btn w-40" {{ insufficient $canUpdate }}>Save changes</button>
+      <button class="btn w-40">Save changes</button>
     </div>
   </form>
   <hr class="my-4">
@@ -122,13 +203,13 @@
                       <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
                     {{ end }}
                   </select>
-                  <button class="btn" {{ insufficient $canSetPermission }}>Update</button>
+                  <button class="btn">Update</button>
                 </form>
               </td>
               <td>
                 <form class="" action="{{ unsetPermissionWorkspacePath $.Workspace.ID }}" method="POST">
                   <input name="team_name" value="{{ .Team }}" type="hidden">
-                  <button class="btn-danger" {{ insufficient $canUnsetPermission }}>Remove</button>
+                  <button class="btn-danger">Remove</button>
                 </form>
               </td>
             </tr>
@@ -150,7 +231,7 @@
                   <option value="{{ . }}">{{ . }}</option>
                 {{ end }}
               </select>
-              <button class="btn" id="permissions-add-button" form="permissions-add-form" {{ insufficient $canSetPermission }}>
+              <button class="btn" id="permissions-add-button" form="permissions-add-form">
                 Add
               </button>
             </td>
@@ -162,17 +243,19 @@
     <h3 class="font-semibold text-lg">Advanced</h3>
     <div class="flex flex-col gap-4 mt-2 mb-6">
       <form action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
-        <button id="queue-destroy-plan-button" class="btn-danger" {{ insufficient $canCreateRun }} onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
+        <button id="queue-destroy-plan-button" class="btn-danger" onclick="return confirm('This will destroy all infrastructure in this workspace. Please confirm.')">
           Queue destroy plan
         </button>
         <input type="hidden" name="connected" value="{{ ne .Workspace.Connection nil }}">
         <input name="operation" value="destroy-all" type="hidden">
       </form>
-      <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
-        <button id="delete-workspace-button" class="btn-danger" {{ insufficient $canDelete }} onclick="return confirm('Are you sure you want to delete?')">
-          Delete workspace
-        </button>
-      </form>
+      {{ if .CanDeleteWorkspace }}
+        <form action="{{ deleteWorkspacePath .Workspace.ID }}" method="POST">
+          <button id="delete-workspace-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">
+            Delete workspace
+          </button>
+        </form>
+      {{ end }}
     </div>
   </div>
 {{ end }}

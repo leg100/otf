@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/testutils"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
@@ -121,18 +120,6 @@ func TestEditWorkspaceHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "insufficient privileges",
-			ws:   &Workspace{ID: "ws-123"},
-			user: auth.User{}, // user with no privs
-			want: func(t *testing.T, doc *html.Node) {
-				// all buttons should be disabled
-				buttons := htmlquery.Find(doc, `//button`)
-				for _, btn := range buttons {
-					assert.Contains(t, testutils.AttrMap(btn), "disabled")
-				}
-			},
-		},
-		{
 			name: "with policy",
 			ws:   &Workspace{ID: "ws-123"},
 			user: auth.SiteAdmin,
@@ -169,7 +156,7 @@ func TestEditWorkspaceHandler(t *testing.T) {
 		},
 		{
 			name: "connected repo",
-			ws:   &Workspace{ID: "ws-123", Connection: &repo.Connection{Repo: "leg100/otf"}},
+			ws:   &Workspace{ID: "ws-123", Connection: &Connection{Repo: "leg100/otf"}},
 			user: auth.SiteAdmin,
 			want: func(t *testing.T, doc *html.Node) {
 				got := htmlquery.FindOne(doc, "//button[@id='disconnect-workspace-repo-button']")

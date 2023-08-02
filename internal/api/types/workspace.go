@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 )
@@ -36,6 +37,7 @@ type Workspace struct {
 	StructuredRunOutputEnabled bool                  `jsonapi:"attribute" json:"structured-run-output-enabled"`
 	TerraformVersion           string                `jsonapi:"attribute" json:"terraform-version"`
 	TriggerPrefixes            []string              `jsonapi:"attribute" json:"trigger-prefixes"`
+	TriggerPatterns            []string              `jsonapi:"attribute" json:"trigger-patterns"`
 	VCSRepo                    *VCSRepo              `jsonapi:"attribute" json:"vcs-repo"`
 	WorkingDirectory           string                `jsonapi:"attribute" json:"working-directory"`
 	UpdatedAt                  time.Time             `jsonapi:"attribute" json:"updated-at"`
@@ -67,6 +69,7 @@ type VCSRepo struct {
 	IngressSubmodules bool   `json:"ingress-submodules"`
 	OAuthTokenID      string `json:"oauth-token-id"`
 	RepositoryHTTPURL string `json:"repository-http-url"`
+	TagsRegex         string `json:"tags-regex"`
 	ServiceProvider   string `json:"service-provider"`
 }
 
@@ -199,6 +202,10 @@ type WorkspaceCreateOptions struct {
 	// tracked for changes. See FileTriggersEnabled above for more details.
 	TriggerPrefixes []string `jsonapi:"attribute" json:"trigger-prefixes,omitempty"`
 
+	// Optional: List of patterns used to match against changed files in order
+	// to decide whether to trigger a run or not.
+	TriggerPatterns []string `jsonapi:"attribute" json:"trigger-patterns,omitempty"`
+
 	// Settings for the workspace's VCS repository. If omitted, the workspace is
 	// created without a VCS repo. If included, you must specify at least the
 	// oauth-token-id and identifier keys below.
@@ -283,12 +290,16 @@ type WorkspaceUpdateOptions struct {
 	// tracked for changes. See FileTriggersEnabled above for more details.
 	TriggerPrefixes []string `jsonapi:"attribute" json:"trigger-prefixes,omitempty"`
 
+	// Optional: List of patterns used to match against changed files in order
+	// to decide whether to trigger a run or not.
+	TriggerPatterns []string `jsonapi:"attribute" json:"trigger-patterns,omitempty"`
+
 	// To delete a workspace's existing VCS repo, specify null instead of an
 	// object. To modify a workspace's existing VCS repo, include whichever of
 	// the keys below you wish to modify. To add a new VCS repo to a workspace
 	// that didn't previously have one, include at least the oauth-token-id and
 	// identifier keys.
-	VCSRepo *VCSRepoOptions `jsonapi:"attribute" json:"vcs-repo,omitempty"`
+	VCSRepo VCSRepoOptionsJSON `jsonapi:"attribute" json:"vcs-repo,omitempty"`
 
 	// A relative path that Terraform will execute within. This defaults to the
 	// root of your repository and is typically set to a subdirectory matching
@@ -318,4 +329,39 @@ type VCSRepoOptions struct {
 	Identifier        *string `json:"identifier,omitempty"`
 	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
+	TagsRegex         *string `json:"tags-regex,omitempty"`
+
+	Valid bool `json:"-"`
+	Set   bool `json:"-"`
+}
+
+// VCSRepoOptionsJSON wraps VCSRepoOptions and implements json.Unmarshaler in order to differentiate
+// between VCSRepoOptions having been explicitly to null, and omitted.
+//
+// NOTE: Credit to https://www.calhoun.io/how-to-determine-if-a-json-key-has-been-set-to-null-or-not-provided/
+type VCSRepoOptionsJSON struct {
+	VCSRepoOptions
+
+	Valid bool `json:"-"`
+	Set   bool `json:"-"`
+}
+
+// UnmarshalJSON differentiates between VCSRepoOptions having been explicitly
+// set to null by the client, or the client has left it out.
+func (o *VCSRepoOptionsJSON) UnmarshalJSON(data []byte) error {
+	// If this method was called, the value was set.
+	o.Set = true
+
+	if string(data) == "null" {
+		// The key was set to null
+		o.Valid = false
+		return nil
+	}
+
+	// The key isn't set to null
+	if err := json.Unmarshal(data, &o.VCSRepoOptions); err != nil {
+		return err
+	}
+	o.Valid = true
+	return nil
 }

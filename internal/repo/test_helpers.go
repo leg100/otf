@@ -61,8 +61,8 @@ func (f fakeCloudService) GetCloudConfig(string) (cloud.Config, error) {
 	return cloud.Config{Cloud: &fakeCloud{event: f.event}}, nil
 }
 
-func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, cloud.HandleEventOptions) cloud.VCSEvent {
-	return f.event
+func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, string) *cloud.VCSEvent {
+	return &f.event
 }
 
 func (f fakeHostnameService) Hostname() string { return f.hostname }

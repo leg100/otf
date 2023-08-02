@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -15,6 +16,27 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/vcsprovider"
+)
+
+const (
+	// give user choice of pre-defined regexes for matching vcs tags
+	vcsTagRegexDefault = `^\d+\.\d+\.\d+$`
+	vcsTagRegexPrefix  = `\d+\.\d+\.\d+$`
+	vcsTagRegexSuffix  = `^\d+\.\d+\.\d+`
+	// this is a 'magic string' that indicates a custom regex has been
+	// supplied in another variable
+	vcsTagRegexCustom = `custom`
+
+	//
+	// VCS trigger strategies to present to the user.
+	//
+	// every vcs event trigger runs
+	VCSTriggerAlways string = "always"
+	// only vcs events with changed files matching a set of glob patterns
+	// triggers run
+	VCSTriggerPatterns string = "patterns"
+	// only push tag vcs events trigger runs
+	VCSTriggerTags string = "tags"
 )
 
 type (
@@ -116,18 +138,24 @@ func (h *webHandlers) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return m
 	}
 
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	response := struct {
 		organization.OrganizationPage
-		CreateWorkspaceAction rbac.Action
 		*resource.Page[*Workspace]
-		TagFilters map[string]bool
-		Search     string
+		TagFilters         map[string]bool
+		Search             string
+		CanCreateWorkspace bool
 	}{
-		OrganizationPage:      organization.NewPage(r, "workspaces", *params.Organization),
-		CreateWorkspaceAction: rbac.CreateWorkspaceAction,
-		Page:                  workspaces,
-		TagFilters:            tagfilters(),
-		Search:                params.Search,
+		OrganizationPage:   organization.NewPage(r, "workspaces", *params.Organization),
+		CanCreateWorkspace: user.CanAccessOrganization(rbac.CreateTeamAction, *params.Organization),
+		Page:               workspaces,
+		TagFilters:         tagfilters(),
+		Search:             params.Search,
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
@@ -232,19 +260,27 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	h.Render("workspace_get.tmpl", w, struct {
 		WorkspacePage
 		LockButton
-		VCSProvider    *vcsprovider.VCSProvider
-		CanApply       bool
-		CanAddTags     bool
-		CanRemoveTags  bool
-		UnassignedTags []string
-		TagsDropdown   html.DropdownUI
+		VCSProvider        *vcsprovider.VCSProvider
+		CanApply           bool
+		CanAddTags         bool
+		CanRemoveTags      bool
+		CanCreateRun       bool
+		CanLockWorkspace   bool
+		CanUnlockWorkspace bool
+		CanUpdateWorkspace bool
+		UnassignedTags     []string
+		TagsDropdown       html.DropdownUI
 	}{
-		WorkspacePage: NewPage(r, ws.ID, ws),
-		LockButton:    lockButtonHelper(ws, policy, user),
-		VCSProvider:   provider,
-		CanApply:      user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
-		CanAddTags:    user.CanAccessWorkspace(rbac.AddTagsAction, policy),
-		CanRemoveTags: user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
+		WorkspacePage:      NewPage(r, ws.ID, ws),
+		LockButton:         lockButtonHelper(ws, policy, user),
+		VCSProvider:        provider,
+		CanApply:           user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
+		CanAddTags:         user.CanAccessWorkspace(rbac.AddTagsAction, policy),
+		CanRemoveTags:      user.CanAccessWorkspace(rbac.RemoveTagsAction, policy),
+		CanCreateRun:       user.CanAccessWorkspace(rbac.CreateRunAction, policy),
+		CanLockWorkspace:   user.CanAccessWorkspace(rbac.LockWorkspaceAction, policy),
+		CanUnlockWorkspace: user.CanAccessWorkspace(rbac.UnlockWorkspaceAction, policy),
+		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 		TagsDropdown: html.DropdownUI{
 			Name:        "tag_name",
 			Available:   internal.DiffStrings(getTagNames(), ws.Tags),
@@ -293,6 +329,11 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// Get teams that have yet to be assigned a permission
 	teams, err := h.ListTeams(r.Context(), workspace.Organization)
@@ -328,18 +369,20 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("workspace_edit.tmpl", w, struct {
 		WorkspacePage
-		Policy                         internal.WorkspacePolicy
-		Unassigned                     []*auth.Team
-		Roles                          []rbac.Role
-		VCSProvider                    *vcsprovider.VCSProvider
-		UnassignedTags                 []string
-		UpdateWorkspaceAction          rbac.Action
-		DeleteWorkspaceAction          rbac.Action
-		SetWorkspacePermissionAction   rbac.Action
-		UnsetWorkspacePermissionAction rbac.Action
-		AddTagsAction                  rbac.Action
-		RemoveTagsAction               rbac.Action
-		CreateRunAction                rbac.Action
+		Policy             internal.WorkspacePolicy
+		Unassigned         []*auth.Team
+		Roles              []rbac.Role
+		VCSProvider        *vcsprovider.VCSProvider
+		UnassignedTags     []string
+		CanUpdateWorkspace bool
+		CanDeleteWorkspace bool
+		VCSTagRegexDefault string
+		VCSTagRegexPrefix  string
+		VCSTagRegexSuffix  string
+		VCSTagRegexCustom  string
+		VCSTriggerAlways   string
+		VCSTriggerPatterns string
+		VCSTriggerTags     string
 	}{
 		WorkspacePage: NewPage(r, "edit | "+workspace.ID, workspace),
 		Policy:        policy,
@@ -350,42 +393,83 @@ func (h *webHandlers) editWorkspace(w http.ResponseWriter, r *http.Request) {
 			rbac.WorkspaceWriteRole,
 			rbac.WorkspaceAdminRole,
 		},
-		VCSProvider:                    provider,
-		UnassignedTags:                 internal.DiffStrings(getTagNames(), workspace.Tags),
-		UpdateWorkspaceAction:          rbac.UpdateWorkspaceAction,
-		DeleteWorkspaceAction:          rbac.DeleteWorkspaceAction,
-		SetWorkspacePermissionAction:   rbac.SetWorkspacePermissionAction,
-		UnsetWorkspacePermissionAction: rbac.UnsetWorkspacePermissionAction,
-		CreateRunAction:                rbac.CreateRunAction,
-		AddTagsAction:                  rbac.AddTagsAction,
-		RemoveTagsAction:               rbac.RemoveTagsAction,
+		VCSProvider:        provider,
+		UnassignedTags:     internal.DiffStrings(getTagNames(), workspace.Tags),
+		VCSTagRegexDefault: vcsTagRegexDefault,
+		VCSTagRegexPrefix:  vcsTagRegexPrefix,
+		VCSTagRegexSuffix:  vcsTagRegexSuffix,
+		VCSTagRegexCustom:  vcsTagRegexCustom,
+		VCSTriggerAlways:   VCSTriggerAlways,
+		VCSTriggerPatterns: VCSTriggerPatterns,
+		VCSTriggerTags:     VCSTriggerTags,
+		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
+		CanDeleteWorkspace: user.CanAccessWorkspace(rbac.DeleteWorkspaceAction, policy),
 	})
 }
 
 func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		AutoApply        bool `schema:"auto_apply"`
-		Name             *string
-		Description      *string
-		ExecutionMode    *ExecutionMode `schema:"execution_mode"`
-		TerraformVersion *string        `schema:"terraform_version"`
-		WorkingDirectory *string        `schema:"working_directory"`
-		WorkspaceID      string         `schema:"workspace_id,required"`
+		AutoApply         bool `schema:"auto_apply"`
+		Name              *string
+		Description       *string
+		ExecutionMode     *ExecutionMode `schema:"execution_mode"`
+		TerraformVersion  *string        `schema:"terraform_version"`
+		WorkingDirectory  *string        `schema:"working_directory"`
+		WorkspaceID       string         `schema:"workspace_id,required"`
+		GlobalRemoteState bool           `schema:"global_remote_state"`
+
+		// VCS connection
+		VCSTriggerStrategy  string `schema:"vcs_trigger"`
+		TriggerPatternsJSON string `schema:"trigger_patterns"`
+		VCSBranch           string `schema:"vcs_branch"`
+		PredefinedTagsRegex string `schema:"tags_regex"`
+		CustomTagsRegex     string `schema:"custom_tags_regex"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
-		AutoApply:        &params.AutoApply,
-		Name:             params.Name,
-		Description:      params.Description,
-		ExecutionMode:    params.ExecutionMode,
-		TerraformVersion: params.TerraformVersion,
-		WorkingDirectory: params.WorkingDirectory,
-	})
+	// get workspace before updating to determine if it is connected or not.
+	ws, err := h.svc.GetWorkspace(r.Context(), params.WorkspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	opts := UpdateOptions{
+		AutoApply:         &params.AutoApply,
+		Name:              params.Name,
+		Description:       params.Description,
+		ExecutionMode:     params.ExecutionMode,
+		TerraformVersion:  params.TerraformVersion,
+		WorkingDirectory:  params.WorkingDirectory,
+		GlobalRemoteState: &params.GlobalRemoteState,
+	}
+	if ws.Connection != nil {
+		// workspace is connected, so set connection fields
+		opts.ConnectOptions = &ConnectOptions{
+			Branch: &params.VCSBranch,
+		}
+		switch params.VCSTriggerStrategy {
+		case VCSTriggerAlways:
+			opts.AlwaysTrigger = internal.Bool(true)
+		case VCSTriggerPatterns:
+			err := json.Unmarshal([]byte(params.TriggerPatternsJSON), &opts.TriggerPatterns)
+			if err != nil {
+				h.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		case VCSTriggerTags:
+			if params.PredefinedTagsRegex == vcsTagRegexCustom {
+				opts.ConnectOptions.TagsRegex = &params.CustomTagsRegex
+			} else {
+				opts.ConnectOptions.TagsRegex = &params.PredefinedTagsRegex
+			}
+		}
+	}
+
+	ws, err = h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -529,15 +613,21 @@ func (h *webHandlers) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Reque
 
 func (h *webHandlers) connect(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		WorkspaceID string `schema:"workspace_id,required"`
-		ConnectOptions
+		WorkspaceID   string  `schema:"workspace_id,required"`
+		RepoPath      *string `schema:"identifier,required"`
+		VCSProviderID *string `schema:"vcs_provider_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	_, err := h.svc.connect(r.Context(), params.WorkspaceID, params.ConnectOptions)
+	_, err := h.svc.UpdateWorkspace(r.Context(), params.WorkspaceID, UpdateOptions{
+		ConnectOptions: &ConnectOptions{
+			VCSProviderID: params.VCSProviderID,
+			RepoPath:      params.RepoPath,
+		},
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -554,7 +644,10 @@ func (h *webHandlers) disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.disconnect(r.Context(), workspaceID); err != nil {
+	_, err = h.svc.UpdateWorkspace(r.Context(), workspaceID, UpdateOptions{
+		Disconnect: true,
+	})
+	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

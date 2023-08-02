@@ -44,8 +44,8 @@ func TestIntegration_RunAPI(t *testing.T) {
 			Name:         internal.String("magic-connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      repo,
-				VCSProviderID: vcsProvider.ID,
+				RepoPath:      &repo,
+				VCSProviderID: &vcsProvider.ID,
 			},
 		})
 		require.NoError(t, err)
@@ -77,7 +77,6 @@ func TestIntegration_RunAPI(t *testing.T) {
 				}
 			}
 		}
-
 	})
 
 	// pull config from workspace's vcs repo
@@ -87,8 +86,8 @@ func TestIntegration_RunAPI(t *testing.T) {
 			Name:         internal.String("connected-workspace"),
 			Organization: internal.String(org.Name),
 			ConnectOptions: &workspace.ConnectOptions{
-				RepoPath:      repo,
-				VCSProviderID: vcsProvider.ID,
+				RepoPath:      &repo,
+				VCSProviderID: &vcsProvider.ID,
 			},
 		})
 		require.NoError(t, err)
@@ -118,6 +117,5 @@ func TestIntegration_RunAPI(t *testing.T) {
 				}
 			}
 		}
-
 	})
 }

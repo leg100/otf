@@ -8,10 +8,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -95,6 +97,11 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	policy, err := h.GetPolicy(r.Context(), ws.ID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
 		WorkspaceID: &params.WorkspaceID,
 		PageOptions: resource.PageOptions{
@@ -106,13 +113,20 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	response := struct {
 		workspace.WorkspacePage
 		*resource.Page[*Run]
+		CanUpdateWorkspace bool
 	}{
-		WorkspacePage: workspace.NewPage(r, "runs", ws),
-		Page:          runs,
+		WorkspacePage:      workspace.NewPage(r, "runs", ws),
+		Page:               runs,
+		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	}
 
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {

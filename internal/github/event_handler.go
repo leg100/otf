@@ -10,8 +10,8 @@ import (
 )
 
 // HandleEvent handles incoming events from github
-func HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
-	event, err := handle(r, opts)
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+	event, err := handle(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -20,8 +20,8 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventO
 	return event
 }
 
-func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, error) {
-	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
+func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
+	payload, err := github.ValidatePayload(r, []byte(secret))
 	if err != nil {
 		return nil, err
 	}
@@ -31,9 +31,19 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		return nil, err
 	}
 
+	// convert github event to an OTF event
+	var to cloud.VCSEvent
+
 	switch event := rawEvent.(type) {
 	case *github.PushEvent:
-		// a github.PushEvent includes tag events but otf categorises them as separate
+		// populate event with list of changed file paths
+		for _, c := range event.Commits {
+			to.Paths = c.Added
+			to.Paths = append(to.Paths, c.Modified...)
+			to.Paths = append(to.Paths, c.Removed...)
+		}
+
+		// a github.PushEvent includes tag events but OTF categorises them as separate
 		// event types
 		parts := strings.Split(event.GetRef(), "/")
 		if len(parts) != 3 || parts[0] != "refs" {
@@ -41,58 +51,58 @@ func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, err
 		}
 		switch parts[1] {
 		case "tags":
-			var action cloud.VCSTagEventAction
+			to.Type = cloud.VCSEventTypeTag
+
 			switch {
 			case event.GetCreated():
-				action = cloud.VCSTagEventCreatedAction
+				to.Action = cloud.VCSActionCreated
 			case event.GetDeleted():
-				action = cloud.VCSTagEventDeletedAction
+				to.Action = cloud.VCSActionDeleted
 			default:
 				return nil, fmt.Errorf("no action specified for tag event")
 			}
 
-			return cloud.VCSTagEvent{
-				RepoID:        opts.RepoID,
-				Tag:           parts[2],
-				Action:        action,
-				CommitSHA:     event.GetAfter(),
-				DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			}, nil
+			to.Tag = parts[2]
+			to.CommitSHA = event.GetAfter()
+			to.DefaultBranch = event.GetRepo().GetDefaultBranch()
+
+			return &to, nil
 		case "heads":
-			return cloud.VCSPushEvent{
-				RepoID:        opts.RepoID,
-				Branch:        parts[2],
-				CommitSHA:     event.GetAfter(),
-				DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			}, nil
+			to.Type = cloud.VCSEventTypePush
+			to.Action = cloud.VCSActionCreated
+			to.Branch = parts[2]
+			to.CommitSHA = event.GetAfter()
+			to.DefaultBranch = event.GetRepo().GetDefaultBranch()
+
+			return &to, nil
 		default:
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
 	case *github.PullRequestEvent:
-		var action cloud.VCSPullEventAction
+		to.Type = cloud.VCSEventTypePull
+		to.PullNumber = event.GetPullRequest().GetNumber()
+
 		switch event.GetAction() {
 		case "opened":
-			action = cloud.VCSPullEventOpened
+			to.Action = cloud.VCSActionCreated
 		case "closed":
 			if event.PullRequest.GetMerged() {
-				action = cloud.VCSPullEventMerged
+				to.Action = cloud.VCSActionMerged
 			} else {
-				action = cloud.VCSPullEventClosed
+				to.Action = cloud.VCSActionDeleted
 			}
 		case "synchronize":
-			action = cloud.VCSPullEventUpdated
+			to.Action = cloud.VCSActionUpdated
 		default:
 			// ignore other pull request events
 			return nil, nil
 		}
 
-		return cloud.VCSPullEvent{
-			RepoID:        opts.RepoID,
-			Action:        action,
-			Branch:        event.PullRequest.Head.GetRef(),
-			CommitSHA:     event.GetPullRequest().GetHead().GetSHA(),
-			DefaultBranch: event.GetRepo().GetDefaultBranch(),
-		}, nil
+		to.Branch = event.PullRequest.Head.GetRef()
+		to.CommitSHA = event.GetPullRequest().GetHead().GetSHA()
+		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
+
+		return &to, nil
 	default:
 		return nil, nil
 	}

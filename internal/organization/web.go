@@ -158,13 +158,9 @@ func (a *web) edit(w http.ResponseWriter, r *http.Request) {
 	a.Render("organization_edit.tmpl", w, struct {
 		OrganizationPage
 		*Organization
-		UpdateOrganizationAction rbac.Action
-		DeleteOrganizationAction rbac.Action
 	}{
-		OrganizationPage:         NewPage(r, org.Name, org.Name),
-		Organization:             org,
-		UpdateOrganizationAction: rbac.UpdateOrganizationAction,
-		DeleteOrganizationAction: rbac.DeleteOrganizationAction,
+		OrganizationPage: NewPage(r, org.Name, org.Name),
+		Organization:     org,
 	})
 }
 

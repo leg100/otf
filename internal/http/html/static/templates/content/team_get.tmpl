@@ -6,55 +6,53 @@
 {{ .Team.Name }}{{ end }}
 
 {{ define "content" }}
-  <h3 class="font-semibold my-2 text-lg">Permissions</h3>
-  <form class="flex flex-col gap-5" action="{{ updateTeamPath .Team.ID }}" method="POST">
-    <div class="form-checkbox">
-      <input
-        type="checkbox"
-        name="manage_workspaces"
-        id="manage_workspaces"
-        value="true"
-        {{ if or .Team.OrganizationAccess.ManageWorkspaces .Team.IsOwners }}checked{{ end }}
-        {{ if or (not .IsOwner) .Team.IsOwners }}disabled{{ end }}
-      >
-      <label for="manage_workspaces">Manage Workspaces</label>
-      <span>Allows members to create and administrate all workspaces within the organization.</span>
-    </div>
-    <div class="form-checkbox">
-      <input
-        type="checkbox"
-        name="manage_vcs"
-        id="manage_vcs"
-        value="true"
-        {{ if or .Team.OrganizationAccess.ManageVCS .Team.IsOwners }}checked{{ end }}
-        {{ if or (not .IsOwner) .Team.IsOwners }}disabled{{ end }}
-      >
-      <label for="manage_vcs">Manage VCS Settings</label>
-      <span>Allows members to manage the set of VCS providers available within the organization.</span>
-    </div>
-    <div class="form-checkbox">
-      <input
-        type="checkbox"
-        name="manage_modules"
-        id="manage_modules"
-        value="true"
-        {{ if or .Team.OrganizationAccess.ManageModules .Team.IsOwners }}checked{{ end }}
-        {{ if or (not .IsOwner) .Team.IsOwners }}disabled{{ end }}
-      >
-      <label for="manage_modules">Manage Modules</label>
-      <span for="manage_modules">Allows members to publish and delete modules within the organization.</span>
-    </div>
-    <div class="field">
-      <button class="btn w-40"
-        {{ if .Team.IsOwners }}
-          title="cannot edit permissions of owners team" disabled
-        {{ else }}
-          {{ insufficient .IsOwner }}
-        {{ end }}
-      >Save changes</button>
-    </div>
-  </form>
-  <hr class="my-4">
+  {{ if .CanUpdateTeam }}
+    <h3 class="font-semibold my-2 text-lg">Permissions</h3>
+    <form class="flex flex-col gap-5" action="{{ updateTeamPath .Team.ID }}" method="POST">
+      <div class="form-checkbox">
+        <input
+          type="checkbox"
+          name="manage_workspaces"
+          id="manage_workspaces"
+          value="true"
+          {{ if or .Team.OrganizationAccess.ManageWorkspaces .Team.IsOwners }}checked{{ end }}
+          {{ if .Team.IsOwners }}title="cannot change permissions of owners team" disabled{{ end }}
+        >
+        <label for="manage_workspaces">Manage Workspaces</label>
+        <span>Allows members to create and administrate all workspaces within the organization.</span>
+      </div>
+      <div class="form-checkbox">
+        <input
+          type="checkbox"
+          name="manage_vcs"
+          id="manage_vcs"
+          value="true"
+          {{ if or .Team.OrganizationAccess.ManageVCS .Team.IsOwners }}checked{{ end }}
+          {{ if .Team.IsOwners }}title="cannot change permissions of owners team" disabled{{ end }}
+        >
+        <label for="manage_vcs">Manage VCS Settings</label>
+        <span>Allows members to manage the set of VCS providers available within the organization.</span>
+      </div>
+      <div class="form-checkbox">
+        <input
+          type="checkbox"
+          name="manage_modules"
+          id="manage_modules"
+          value="true"
+          {{ if or .Team.OrganizationAccess.ManageModules .Team.IsOwners }}checked{{ end }}
+          {{ if .Team.IsOwners }}title="cannot change permissions of owners team" disabled{{ end }}
+        >
+        <label for="manage_modules">Manage Modules</label>
+        <span for="manage_modules">Allows members to publish and delete modules within the organization.</span>
+      </div>
+      {{ if not .Team.IsOwners }}
+        <div class="field">
+          <button class="btn w-40">Save changes</button>
+        </div>
+      {{ end }}
+    </form>
+    <hr class="my-4">
+  {{ end }}
   <h3 class="font-semibold my-2 text-lg">Members</h3>
   {{ if .CanAddMember }}
     {{ template "search-dropdown" .AddMemberDropdown }}
@@ -67,29 +65,27 @@
         </div>
         <div>
           {{ template "identifier" . }}
-          <form action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
-            <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
-            <button id="remove-member-button" class="btn-danger" {{ insufficient $.CanRemoveMember }}>
-              Remove member
-            </button>
-          </form>
+          {{ if $.CanRemoveMember }}
+            <form action="{{ removeMemberTeamPath $.Team.ID }}" method="POST">
+              <input type="hidden" name="username" id="delete-username" value="{{ .Username }}">
+              <button id="remove-member-button" class="btn-danger">
+                Remove member
+              </button>
+            </form>
+          {{ end }}
         </div>
       </div>
     {{ else }}
       The team currently has no members.
     {{ end }}
   </div>
-  <hr class="my-4">
-  <h3 class="font-semibold my-2 text-lg">Advanced</h3>
-  <form action="{{ deleteTeamPath .Team.ID }}" method="POST">
-    <button
-      class="btn-danger"
-      {{ if .Team.IsOwners }}
-        title="the owners team cannot be deleted" disabled
-      {{ else }}
-        {{ insufficient .CanDelete }}
-      {{ end }}
-      onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
-    <input type="hidden" name="id" value="{{ .Team.ID }}">
-  </form>
+  {{ if and (not .Team.IsOwners) .CanDeleteTeam }}
+    <hr class="my-4">
+    <h3 class="font-semibold my-2 text-lg">Advanced</h3>
+    <form action="{{ deleteTeamPath .Team.ID }}" method="POST">
+      <button class="btn-danger"
+        onclick="return confirm('Are you sure you want to delete?')">Delete team</button>
+      <input type="hidden" name="id" value="{{ .Team.ID }}">
+    </form>
+  {{ end }}
 {{ end }}

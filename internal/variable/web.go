@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -122,19 +123,26 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variables            []*Variable
-		Policy               internal.WorkspacePolicy
-		CreateVariableAction rbac.Action
-		DeleteVariableAction rbac.Action
+		Variables          []*Variable
+		Policy             internal.WorkspacePolicy
+		CanCreateVariable  bool
+		CanDeleteVariable  bool
+		CanUpdateWorkspace bool
 	}{
-		WorkspacePage:        workspace.NewPage(r, "variables", ws),
-		Variables:            variables,
-		Policy:               policy,
-		CreateVariableAction: rbac.CreateVariableAction,
-		DeleteVariableAction: rbac.DeleteVariableAction,
+		WorkspacePage:      workspace.NewPage(r, "variables", ws),
+		Variables:          variables,
+		Policy:             policy,
+		CanCreateVariable:  user.CanAccessWorkspace(rbac.CreateVariableAction, policy),
+		CanDeleteVariable:  user.CanAccessWorkspace(rbac.DeleteVariableAction, policy),
+		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	})
 }
 
@@ -155,29 +163,17 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.GetPolicy(r.Context(), ws.ID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	subject, err := internal.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	h.Render("variable_edit.tmpl", w, struct {
 		workspace.WorkspacePage
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
-		CanAccess  bool
 	}{
 		WorkspacePage: workspace.NewPage(r, "edit | "+variable.ID, ws),
 		Variable:      variable,
 		EditMode:      true,
 		FormAction:    paths.UpdateVariable(variable.ID),
-		CanAccess:     subject.CanAccessWorkspace(rbac.CreateVariableAction, policy),
 	})
 }
 

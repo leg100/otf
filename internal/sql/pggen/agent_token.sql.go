@@ -986,13 +986,6 @@ type Querier interface {
 	// FindWebhookByRepoAndProviderScan scans the result of an executed FindWebhookByRepoAndProviderBatch query.
 	FindWebhookByRepoAndProviderScan(results pgx.BatchResults) ([]FindWebhookByRepoAndProviderRow, error)
 
-	FindWebhooksByProvider(ctx context.Context, vcsProviderID pgtype.Text) ([]FindWebhooksByProviderRow, error)
-	// FindWebhooksByProviderBatch enqueues a FindWebhooksByProvider query into batch to be executed
-	// later by the batch.
-	FindWebhooksByProviderBatch(batch genericBatch, vcsProviderID pgtype.Text)
-	// FindWebhooksByProviderScan scans the result of an executed FindWebhooksByProviderBatch query.
-	FindWebhooksByProviderScan(results pgx.BatchResults) ([]FindWebhooksByProviderRow, error)
-
 	FindUnreferencedWebhooks(ctx context.Context) ([]FindUnreferencedWebhooksRow, error)
 	// FindUnreferencedWebhooksBatch enqueues a FindUnreferencedWebhooks query into batch to be executed
 	// later by the batch.
@@ -1612,9 +1605,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findWebhookByRepoAndProviderSQL, findWebhookByRepoAndProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByRepoAndProvider': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWebhooksByProviderSQL, findWebhooksByProviderSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhooksByProvider': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findUnreferencedWebhooksSQL, findUnreferencedWebhooksSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUnreferencedWebhooks': %w", err)

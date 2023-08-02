@@ -117,6 +117,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		Team              *Team
 		Members           []*User
 		AddMemberDropdown html.DropdownUI
+		CanUpdateTeam     bool
+		CanDeleteTeam     bool
 		CanAddMember      bool
 		CanRemoveMember   bool
 		CanDelete         bool
@@ -125,6 +127,8 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 		OrganizationPage: organization.NewPage(r, team.ID, team.Organization),
 		Team:             team,
 		Members:          members,
+		CanUpdateTeam:    user.CanAccessOrganization(rbac.UpdateTeamAction, team.Organization),
+		CanDeleteTeam:    user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
 		CanAddMember:     user.CanAccessOrganization(rbac.AddTeamMembershipAction, team.Organization),
 		CanRemoveMember:  user.CanAccessOrganization(rbac.RemoveTeamMembershipAction, team.Organization),
 		CanDelete:        user.CanAccessOrganization(rbac.DeleteTeamAction, team.Organization),
@@ -173,16 +177,20 @@ func (h *webHandlers) listTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	h.Render("team_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Teams            []*Team
-		CreateTeamAction rbac.Action
-		DeleteTeamAction rbac.Action
+		Teams         []*Team
+		CanCreateTeam bool
 	}{
 		OrganizationPage: organization.NewPage(r, "teams", org),
 		Teams:            teams,
-		CreateTeamAction: rbac.CreateTeamAction,
-		DeleteTeamAction: rbac.DeleteTeamAction,
+		CanCreateTeam:    user.CanAccessOrganization(rbac.CreateTeamAction, org),
 	})
 }
 

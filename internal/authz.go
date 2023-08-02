@@ -32,6 +32,10 @@ type WorkspacePolicy struct {
 	Organization string
 	WorkspaceID  string
 	Permissions  []WorkspacePermission
+
+	// Whether workspace permits its state to be consumed by all workspaces in
+	// the organization.
+	GlobalRemoteState bool
 }
 
 // WorkspacePermission binds a role to a team.

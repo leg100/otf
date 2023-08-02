@@ -39,17 +39,6 @@ var (
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidTerraformVersion = errors.New("invalid terraform version")
 
-	// ErrInvalidWorkspaceID is returned when the workspace ID is invalid.
-	ErrInvalidWorkspaceID = errors.New("invalid value for workspace ID")
-
-	// ErrInvalidWorkspaceValue is returned when workspace value is invalid.
-	ErrInvalidWorkspaceValue = errors.New("invalid value for workspace")
-
-	// Organization errors
-
-	// ErrInvalidOrg is returned when the organization option has an invalid value.
-	ErrInvalidOrg = errors.New("invalid value for organization")
-
 	// ErrRequiredOrg is returned when the organization option is not present
 	ErrRequiredOrg = errors.New("organization is required")
 
@@ -93,7 +82,13 @@ type (
 	ForeignKeyError struct {
 		*pgconn.PgError
 	}
+
+	InvalidParameterError string
 )
+
+func (e InvalidParameterError) Error() string {
+	return string(e)
+}
 
 func (e *HTTPError) Error() string {
 	return e.Message
