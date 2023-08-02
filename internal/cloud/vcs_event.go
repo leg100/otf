@@ -33,11 +33,17 @@ type (
 		Action        VCSAction
 		Tag           string
 		CommitSHA     string
+		CommitURL     string
 		Branch        string // head branch
 		DefaultBranch string
 
-		// Pull request number
-		PullNumber int
+		PullRequestNumber int
+		PullRequestURL    string
+		PullRequestTitle  string
+
+		SenderUsername  string
+		SenderAvatarURL string
+		SenderHTMLURL   string
 
 		// Paths of files that have been added/modified/removed. Only applicable
 		// to Push and Tag events types.

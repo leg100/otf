@@ -52,13 +52,13 @@
     @apply flex flex-col gap-3 place-content-between border border-black mt-3 p-2;
   }
   .widget > div:first-child {
-    @apply flex gap-2 items-baseline pb-2;
+    @apply flex gap-2 items-center pb-2;
   }
   .widget > div:first-child > :last-child:not(:first-child) {
     @apply ml-auto;
   }
   .widget > div:last-child:not(:first-child) {
-    @apply flex gap-4 items-baseline justify-between;
+    @apply flex flex-wrap gap-4 items-center justify-between;
   }
   .field {
     @apply flex flex-col gap-0.5;

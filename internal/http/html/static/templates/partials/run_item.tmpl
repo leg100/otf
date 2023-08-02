@@ -3,18 +3,36 @@
     <div id="{{ .ID }}" class="widget">
       <div>
         {{ template "run-status" . }}
-        <span>|</span>
-        <span><a href="{{ runPath .ID }}#plan">plan</a></span>
-        {{ if not .PlanOnly }}
-          <span>|</span>
-          <span><a href="{{ runPath .ID }}#apply">apply</a></span>
+        {{ if .PlanOnly }}
+          <span>| plan-only</span>
+        {{ end }}
+        {{ with .IngressAttributes }}
+          {{ with .SenderUsername }}
+            <span class="inline-block max-w-[16rem] truncate">
+              | <a id="vcs-username" href="{{ $.IngressAttributes.SenderHTMLURL }}">@{{ . }}</a>
+            </span>
+          {{ end }}
         {{ end }}
         <span>{{ durationRound .CreatedAt }} ago</span>
       </div>
       <div>
         {{ template "identifier" . }}
-        <div class="flex gap-4 items-baseline justify-between">
-          {{ if .Commit }}<span class="commit">#{{ substr 0 7 .Commit }}</span>{{ end }}
+        {{ with .IngressAttributes }}
+          <div class="flex flex-wrap gap-2 items-center">
+            <span class="flex flex-wrap items-center gap-2 bg-gray-200 font-mono text-sm p-1">
+              <img class="h-5" src="{{ "/static/images/git_icon.svg" }}">
+              {{ if .IsPullRequest }}
+                <a id="pull-request-link" href="{{ .PullRequestURL }}" title="{{ .PullRequestTitle }}">#{{ .PullRequestNumber }}</a> |
+              {{ else if .Branch }}
+                <span class="inline-block max-w-[12rem] truncate" id="vcs-branch">{{ .Branch }}</span>|
+              {{ else if .Tag }}
+                <span class="inline-block max-w-[12rem] truncate" id="vcs-tag">{{ .Tag }}</span>|
+              {{ end }}
+              <a id="commit-sha-abbrev" href="{{ .CommitURL }}">{{ substr 0 7 .CommitSHA }}</a>
+            </span>
+          </div>
+        {{ end }}
+        <div class="flex gap-4 items-center justify-between">
           {{ with .Apply.ResourceReport }}
             {{ template "resource-report" . }}
           {{ else }}

@@ -95,19 +95,19 @@ type (
 		// CloneURL          string
 		// CommitMessage     string
 		CommitSHA string
-		// CommitURL         string
+		CommitURL string
 		// CompareURL        string
-		Repo            string
-		IsPullRequest   bool
-		OnDefaultBranch bool
-		// PullRequestNumber int
-		// PullRequestURL    string
-		// PullRequestTitle  string
+		Repo              string
+		IsPullRequest     bool
+		OnDefaultBranch   bool
+		PullRequestNumber int
+		PullRequestURL    string
+		PullRequestTitle  string
 		// PullRequestBody   string
-		// Tag               string
-		// SenderUsername    string
-		// SenderAvatarURL   string
-		// SenderHTMLURL     string
+		Tag             string
+		SenderUsername  string
+		SenderAvatarURL string
+		SenderHTMLURL   string
 	}
 )
 

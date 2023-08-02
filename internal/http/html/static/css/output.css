@@ -568,7 +568,7 @@ label {
 
 .widget > div:first-child {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
   padding-bottom: 0.5rem;
 }
@@ -579,7 +579,8 @@ label {
 
 .widget > div:last-child:not(:first-child) {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -855,6 +856,10 @@ th, td {
   display: block;
 }
 
+.inline-block {
+  display: inline-block;
+}
+
 .flex {
   display: flex;
 }
@@ -865,6 +870,10 @@ th, td {
 
 .hidden {
   display: none;
+}
+
+.h-5 {
+  height: 1.25rem;
 }
 
 .min-h-screen {
@@ -927,6 +936,14 @@ th, td {
   max-width: 56rem;
 }
 
+.max-w-\[12rem\] {
+  max-width: 12rem;
+}
+
+.max-w-\[16rem\] {
+  max-width: 16rem;
+}
+
 .grow {
   flex-grow: 1;
 }
@@ -937,14 +954,6 @@ th, td {
 
 .basis-4\/5 {
   flex-basis: 80%;
-}
-
-.basis-3\/5 {
-  flex-basis: 60%;
-}
-
-.basis-2\/5 {
-  flex-basis: 40%;
 }
 
 .table-fixed {
@@ -973,10 +982,6 @@ th, td {
 
 .items-center {
   align-items: center;
-}
-
-.items-baseline {
-  align-items: baseline;
 }
 
 .justify-end {
@@ -1013,6 +1018,16 @@ th, td {
 
 .overflow-x-auto {
   overflow-x: auto;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-ellipsis {
+  text-overflow: ellipsis;
 }
 
 .whitespace-pre-wrap {

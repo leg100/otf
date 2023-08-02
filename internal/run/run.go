@@ -64,8 +64,10 @@ type (
 		Plan                   Phase                   `json:"plan"`
 		Apply                  Phase                   `json:"apply"`
 
-		Latest bool    `json:"latest"` // is latest run for workspace
-		Commit *string `json:"commit"` // commit sha that triggered this run
+		Latest bool `json:"latest"` // is latest run for workspace
+
+		// IngressAttributes is non-nil if run was triggered by a VCS event.
+		IngressAttributes *configversion.IngressAttributes `json:"ingress_attributes"`
 	}
 
 	// RunList represents a list of runs.
@@ -144,6 +146,7 @@ func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 		TargetAddrs:            opts.TargetAddrs,
 		ExecutionMode:          ws.ExecutionMode,
 		AutoApply:              ws.AutoApply,
+		IngressAttributes:      cv.IngressAttributes,
 	}
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
@@ -163,9 +166,6 @@ func newRun(cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opt
 	}
 	if opts.PlanOnly != nil {
 		run.PlanOnly = *opts.PlanOnly
-	}
-	if cv.IngressAttributes != nil {
-		run.Commit = &cv.IngressAttributes.CommitSHA
 	}
 	return &run
 }

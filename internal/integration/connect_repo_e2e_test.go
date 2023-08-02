@@ -47,8 +47,12 @@ func TestConnectRepoE2E(t *testing.T) {
 		// go to workspace
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "my-test-workspace")),
 		screenshot(t),
+		// branch should match that of push event
+		chromedp.WaitVisible(`//div[@id='latest-run']//span[@id='vcs-branch' and text()='master']`),
 		// commit should match that of push event
-		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
+		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='commit-sha-abbrev' and text()='42d6fc7']`),
+		// user should match that of push event
+		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`),
 		screenshot(t),
 	})
 
