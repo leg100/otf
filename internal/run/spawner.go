@@ -171,9 +171,16 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 				CommitSHA: event.CommitSHA,
 				CommitURL: event.CommitURL,
 				// CompareURL        string
-				Repo:            ws.Connection.Repo,
-				IsPullRequest:   event.Type == cloud.VCSEventTypePull,
-				OnDefaultBranch: event.Branch == event.DefaultBranch,
+				Repo:              ws.Connection.Repo,
+				IsPullRequest:     event.Type == cloud.VCSEventTypePull,
+				OnDefaultBranch:   event.Branch == event.DefaultBranch,
+				PullRequestNumber: event.PullRequestNumber,
+				PullRequestTitle:  event.PullRequestTitle,
+				PullRequestURL:    event.PullRequestURL,
+				SenderUsername:    event.SenderUsername,
+				SenderAvatarURL:   event.SenderAvatarURL,
+				SenderHTMLURL:     event.SenderHTMLURL,
+				Tag:               event.Tag,
 			},
 		})
 		if err != nil {

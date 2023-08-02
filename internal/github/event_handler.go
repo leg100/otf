@@ -46,6 +46,10 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		to.CommitURL = event.GetHeadCommit().GetURL()
 		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
 
+		to.SenderUsername = event.GetSender().GetLogin()
+		to.SenderAvatarURL = event.GetSender().GetAvatarURL()
+		to.SenderHTMLURL = event.GetSender().GetHTMLURL()
+
 		// a github.PushEvent includes tag events but OTF categorises them as separate
 		// event types
 		parts := strings.Split(event.GetRef(), "/")
@@ -81,6 +85,11 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		to.Type = cloud.VCSEventTypePull
 		to.PullRequestNumber = event.GetPullRequest().GetNumber()
 		to.PullRequestURL = event.GetPullRequest().GetHTMLURL()
+		to.PullRequestTitle = event.GetPullRequest().GetTitle()
+
+		to.SenderUsername = event.GetSender().GetLogin()
+		to.SenderAvatarURL = event.GetSender().GetAvatarURL()
+		to.SenderHTMLURL = event.GetSender().GetHTMLURL()
 
 		switch event.GetAction() {
 		case "opened":
@@ -101,6 +110,10 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 		to.Branch = event.PullRequest.Head.GetRef()
 		to.CommitSHA = event.GetPullRequest().GetHead().GetSHA()
 		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
+
+		// commit-url isn't provided in a pull-request event so one is
+		// constructed instead
+		to.CommitURL = event.GetRepo().GetHTMLURL() + "/commit/" + to.CommitSHA
 
 		return &to, nil
 	default:

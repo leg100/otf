@@ -151,8 +151,7 @@ func (db *pgdb) insertCVStatusTimestamp(ctx context.Context, cv *ConfigurationVe
 	return err
 }
 
-// pgRow represents the result of a database query for a
-// configuration version.
+// pgRow represents the result of a database query for a configuration version.
 type pgRow struct {
 	ConfigurationVersionID               pgtype.Text                                  `json:"configuration_version_id"`
 	CreatedAt                            pgtype.Timestamptz                           `json:"created_at"`
@@ -177,23 +176,27 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 		WorkspaceID:      result.WorkspaceID.String,
 	}
 	if result.IngressAttributes != nil {
-		cv.IngressAttributes = &IngressAttributes{
-			Branch:            result.IngressAttributes.Branch.String,
-			CommitSHA:         result.IngressAttributes.CommitSHA.String,
-			CommitURL:         result.IngressAttributes.CommitURL.String,
-			Repo:              result.IngressAttributes.Identifier.String,
-			IsPullRequest:     result.IngressAttributes.IsPullRequest,
-			PullRequestNumber: int(result.IngressAttributes.PullRequestNumber.Int),
-			PullRequestURL:    result.IngressAttributes.PullRequestURL.String,
-			PullRequestTitle:  result.IngressAttributes.PullRequestTitle.String,
-			SenderUsername:    result.IngressAttributes.SenderUsername.String,
-			SenderAvatarURL:   result.IngressAttributes.SenderAvatarURL.String,
-			SenderHTMLURL:     result.IngressAttributes.SenderHTMLURL.String,
-			Tag:               result.IngressAttributes.Tag.String,
-			OnDefaultBranch:   result.IngressAttributes.IsPullRequest,
-		}
+		cv.IngressAttributes = NewIngressFromRow(result.IngressAttributes)
 	}
 	return &cv
+}
+
+func NewIngressFromRow(row *pggen.IngressAttributes) *IngressAttributes {
+	return &IngressAttributes{
+		Branch:            row.Branch.String,
+		CommitSHA:         row.CommitSHA.String,
+		CommitURL:         row.CommitURL.String,
+		Repo:              row.Identifier.String,
+		IsPullRequest:     row.IsPullRequest,
+		PullRequestNumber: int(row.PullRequestNumber.Int),
+		PullRequestURL:    row.PullRequestURL.String,
+		PullRequestTitle:  row.PullRequestTitle.String,
+		SenderUsername:    row.SenderUsername.String,
+		SenderAvatarURL:   row.SenderAvatarURL.String,
+		SenderHTMLURL:     row.SenderHTMLURL.String,
+		Tag:               row.Tag.String,
+		OnDefaultBranch:   row.IsPullRequest,
+	}
 }
 
 func unmarshalStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
