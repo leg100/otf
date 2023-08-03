@@ -67,6 +67,10 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
+	vars := make([]run.Variable, len(opts.Variables))
+	for i, from := range opts.Variables {
+		vars[i] = run.Variable{Key: from.Key, Value: from.Value}
+	}
 	run, err := a.CreateRun(r.Context(), opts.Workspace.ID, run.CreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
@@ -78,6 +82,9 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		PlanOnly:               opts.PlanOnly,
 		Source:                 run.RunSourceAPI,
+		AllowEmptyApply:        opts.AllowEmptyApply,
+		TerraformVersion:       opts.TerraformVersion,
+		Variables:              vars,
 	})
 	if err != nil {
 		Error(w, err)
@@ -160,7 +167,7 @@ func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
 	// split operations CSV
 	operations := internal.SplitCSV(params.Operation)
 	var planOnly *bool
-	if slices.Contains(operations, "plan_only") {
+	if slices.Contains(operations, string(types.RunOperationPlanOnly)) {
 		planOnly = internal.Bool(true)
 	}
 

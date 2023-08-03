@@ -14,7 +14,9 @@ INSERT INTO runs (
     plan_only,
     configuration_version_id,
     workspace_id,
-    created_by
+    created_by,
+    terraform_version,
+    allow_empty_apply
 ) VALUES (
     pggen.arg('id'),
     pggen.arg('created_at'),
@@ -30,7 +32,9 @@ INSERT INTO runs (
     pggen.arg('plan_only'),
     pggen.arg('configuration_version_id'),
     pggen.arg('workspace_id'),
-    pggen.arg('created_by')
+    pggen.arg('created_by'),
+    pggen.arg('terraform_version'),
+    pggen.arg('allow_empty_apply')
 );
 
 -- name: InsertRunStatusTimestamp :exec
@@ -42,6 +46,17 @@ INSERT INTO run_status_timestamps (
     pggen.arg('id'),
     pggen.arg('status'),
     pggen.arg('timestamp')
+);
+
+-- name: InsertRunVariable :exec
+INSERT INTO run_variables (
+    run_id,
+    key,
+    value
+) VALUES (
+    pggen.arg('run_id'),
+    pggen.arg('key'),
+    pggen.arg('value')
 );
 
 -- name: FindRuns :many
@@ -67,6 +82,8 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -93,7 +110,13 @@ SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -152,6 +175,8 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -178,7 +203,13 @@ SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -211,6 +242,8 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -237,7 +270,13 @@ SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)

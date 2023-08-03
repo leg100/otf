@@ -51,16 +51,19 @@ type (
 		ReplaceAddrs           []string                `json:"replace_addrs"`
 		PositionInQueue        int                     `json:"position_in_queue"`
 		TargetAddrs            []string                `json:"target_addrs"`
+		TerraformVersion       string                  `json:"terraform_version"`
+		AllowEmptyApply        bool                    `json:"allow_empty_apply"`
 		AutoApply              bool                    `json:"auto_apply"`
 		PlanOnly               bool                    `json:"plan_only"`
 		Source                 RunSource               `json:"source"`
 		Status                 internal.RunStatus      `json:"status"`
-		StatusTimestamps       []RunStatusTimestamp    `json:"status_timestamps"`
+		StatusTimestamps       []StatusTimestamp       `json:"status_timestamps"`
 		WorkspaceID            string                  `json:"workspace_id"`
 		ConfigurationVersionID string                  `json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `json:"execution_mode"`
 		Plan                   Phase                   `json:"plan"`
 		Apply                  Phase                   `json:"apply"`
+		Variables              []Variable              `json:"variables"`
 
 		Latest bool `json:"latest"` // is latest run for workspace
 
@@ -77,13 +80,18 @@ type (
 		CostEstimationEnabled bool
 	}
 
-	// RunList represents a list of runs.
-	RunList struct {
+	// List represents a list of runs.
+	List struct {
 		*resource.Pagination
 		Items []*Run
 	}
 
-	RunStatusTimestamp struct {
+	Variable struct {
+		Key   string
+		Value string
+	}
+
+	StatusTimestamp struct {
 		Status    internal.RunStatus
 		Timestamp time.Time
 	}
@@ -103,10 +111,13 @@ type (
 		ReplaceAddrs           []string
 		AutoApply              *bool
 		Source                 RunSource
+		TerraformVersion       *string
+		AllowEmptyApply        *bool
 		// PlanOnly specifies if this is a speculative, plan-only run that
 		// Terraform cannot apply. Takes precedence over whether the
 		// configuration version is marked as speculative or not.
-		PlanOnly *bool
+		PlanOnly  *bool
+		Variables []Variable
 	}
 
 	// ListOptions are options for paginating and filtering a list of runs
@@ -157,6 +168,8 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		IngressAttributes:      cv.IngressAttributes,
 		CostEstimationEnabled:  org.CostEstimationEnabled,
 		Source:                 opts.Source,
+		TerraformVersion:       ws.TerraformVersion,
+		Variables:              opts.Variables,
 	}
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
@@ -164,6 +177,12 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 
 	if run.Source == "" {
 		run.Source = RunSourceAPI
+	}
+	if opts.TerraformVersion != nil {
+		run.TerraformVersion = *opts.TerraformVersion
+	}
+	if opts.AllowEmptyApply != nil {
+		run.AllowEmptyApply = *opts.AllowEmptyApply
 	}
 	if user, _ := auth.UserFromContext(ctx); user != nil {
 		run.CreatedBy = &user.Username
@@ -392,7 +411,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 
 func (r *Run) updateStatus(status internal.RunStatus) {
 	r.Status = status
-	r.StatusTimestamps = append(r.StatusTimestamps, RunStatusTimestamp{
+	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,
 		Timestamp: internal.CurrentTimestamp(),
 	})
@@ -401,7 +420,7 @@ func (r *Run) updateStatus(status internal.RunStatus) {
 // Discardable determines whether run can be discarded.
 func (r *Run) Discardable() bool {
 	switch r.Status {
-	case internal.RunPending, internal.RunPlanned:
+	case internal.RunPending, internal.RunPlanned, internal.RunCostEstimated:
 		return true
 	default:
 		return false

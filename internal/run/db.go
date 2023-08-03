@@ -44,6 +44,8 @@ type (
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 		PlanOnly               bool                          `json:"plan_only"`
 		CreatedBy              pgtype.Text                   `json:"created_by"`
+		TerraformVersion       pgtype.Text                   `json:"terraform_version"`
+		AllowEmptyApply        bool                          `json:"allow_empty_apply"`
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 		Latest                 bool                          `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
@@ -52,6 +54,7 @@ type (
 		RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 		PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
 		ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
+		RunVariables           []pggen.RunVariables          `json:"run_variables"`
 	}
 )
 
@@ -70,6 +73,8 @@ func (result pgresult) toRun() *Run {
 		TargetAddrs:            result.TargetAddrs,
 		AutoApply:              result.AutoApply,
 		PlanOnly:               result.PlanOnly,
+		AllowEmptyApply:        result.AllowEmptyApply,
+		TerraformVersion:       result.TerraformVersion.String,
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest,
 		Organization:           result.OrganizationName.String,
@@ -91,6 +96,10 @@ func (result pgresult) toRun() *Run {
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
 			ResourceReport:   reportFromDB(result.ApplyResourceReport),
 		},
+	}
+	run.Variables = make([]Variable, len(result.RunVariables))
+	for i, v := range result.RunVariables {
+		run.Variables[i] = Variable{Key: v.Key.String, Value: v.Value.String}
 	}
 	if result.CreatedBy.Status == pgtype.Present {
 		run.CreatedBy = &result.CreatedBy.String
@@ -120,10 +129,22 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			TargetAddrs:            run.TargetAddrs,
 			AutoApply:              run.AutoApply,
 			PlanOnly:               run.PlanOnly,
+			AllowEmptyApply:        run.AllowEmptyApply,
+			TerraformVersion:       sql.String(run.TerraformVersion),
 			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
 			WorkspaceID:            sql.String(run.WorkspaceID),
 			CreatedBy:              sql.StringPtr(run.CreatedBy),
 		})
+		for _, v := range run.Variables {
+			_, err = q.InsertRunVariable(ctx, pggen.InsertRunVariableParams{
+				RunID: sql.String(run.ID),
+				Key:   sql.String(v.Key),
+				Value: sql.String(v.Value),
+			})
+			if err != nil {
+				return fmt.Errorf("inserting run variable: %w", err)
+			}
+		}
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
 		}
@@ -394,9 +415,9 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	return err
 }
 
-func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
+func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []StatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, RunStatusTimestamp{
+		timestamps = append(timestamps, StatusTimestamp{
 			Status:    internal.RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})

@@ -26,7 +26,9 @@ const insertRunSQL = `INSERT INTO runs (
     plan_only,
     configuration_version_id,
     workspace_id,
-    created_by
+    created_by,
+    terraform_version,
+    allow_empty_apply
 ) VALUES (
     $1,
     $2,
@@ -42,7 +44,9 @@ const insertRunSQL = `INSERT INTO runs (
     $12,
     $13,
     $14,
-    $15
+    $15,
+    $16,
+    $17
 );`
 
 type InsertRunParams struct {
@@ -61,12 +65,14 @@ type InsertRunParams struct {
 	ConfigurationVersionID pgtype.Text
 	WorkspaceID            pgtype.Text
 	CreatedBy              pgtype.Text
+	TerraformVersion       pgtype.Text
+	AllowEmptyApply        bool
 }
 
 // InsertRun implements Querier.InsertRun.
 func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRun")
-	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Source, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.AutoApply, params.PlanOnly, params.ConfigurationVersionID, params.WorkspaceID, params.CreatedBy)
+	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Source, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.AutoApply, params.PlanOnly, params.ConfigurationVersionID, params.WorkspaceID, params.CreatedBy, params.TerraformVersion, params.AllowEmptyApply)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertRun: %w", err)
 	}
@@ -75,7 +81,7 @@ func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgco
 
 // InsertRunBatch implements Querier.InsertRunBatch.
 func (q *DBQuerier) InsertRunBatch(batch genericBatch, params InsertRunParams) {
-	batch.Queue(insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Source, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.AutoApply, params.PlanOnly, params.ConfigurationVersionID, params.WorkspaceID, params.CreatedBy)
+	batch.Queue(insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Source, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.AutoApply, params.PlanOnly, params.ConfigurationVersionID, params.WorkspaceID, params.CreatedBy, params.TerraformVersion, params.AllowEmptyApply)
 }
 
 // InsertRunScan implements Querier.InsertRunScan.
@@ -127,6 +133,46 @@ func (q *DBQuerier) InsertRunStatusTimestampScan(results pgx.BatchResults) (pgco
 	return cmdTag, err
 }
 
+const insertRunVariableSQL = `INSERT INTO run_variables (
+    run_id,
+    key,
+    value
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertRunVariableParams struct {
+	RunID pgtype.Text
+	Key   pgtype.Text
+	Value pgtype.Text
+}
+
+// InsertRunVariable implements Querier.InsertRunVariable.
+func (q *DBQuerier) InsertRunVariable(ctx context.Context, params InsertRunVariableParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRunVariable")
+	cmdTag, err := q.conn.Exec(ctx, insertRunVariableSQL, params.RunID, params.Key, params.Value)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertRunVariable: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertRunVariableBatch implements Querier.InsertRunVariableBatch.
+func (q *DBQuerier) InsertRunVariableBatch(batch genericBatch, params InsertRunVariableParams) {
+	batch.Queue(insertRunVariableSQL, params.RunID, params.Key, params.Value)
+}
+
+// InsertRunVariableScan implements Querier.InsertRunVariableScan.
+func (q *DBQuerier) InsertRunVariableScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertRunVariableBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
 const findRunsSQL = `SELECT
     runs.run_id,
     runs.created_at,
@@ -149,6 +195,8 @@ const findRunsSQL = `SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -175,7 +223,13 @@ const findRunsSQL = `SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -230,6 +284,8 @@ type FindRunsRow struct {
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	PlanOnly               bool                    `json:"plan_only"`
 	CreatedBy              pgtype.Text             `json:"created_by"`
+	TerraformVersion       pgtype.Text             `json:"terraform_version"`
+	AllowEmptyApply        bool                    `json:"allow_empty_apply"`
 	ExecutionMode          pgtype.Text             `json:"execution_mode"`
 	Latest                 bool                    `json:"latest"`
 	OrganizationName       pgtype.Text             `json:"organization_name"`
@@ -238,6 +294,7 @@ type FindRunsRow struct {
 	RunStatusTimestamps    []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []PhaseStatusTimestamps `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps  []PhaseStatusTimestamps `json:"apply_status_timestamps"`
+	RunVariables           []RunVariables          `json:"run_variables"`
 }
 
 // FindRuns implements Querier.FindRuns.
@@ -256,9 +313,10 @@ func (q *DBQuerier) FindRuns(ctx context.Context, params FindRunsParams) ([]Find
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
+	runVariablesArray := q.types.newRunVariablesArray()
 	for rows.Next() {
 		var item FindRunsRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.TerraformVersion, &item.AllowEmptyApply, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, runVariablesArray); err != nil {
 			return nil, fmt.Errorf("scan FindRuns row: %w", err)
 		}
 		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
@@ -280,6 +338,9 @@ func (q *DBQuerier) FindRuns(ctx context.Context, params FindRunsParams) ([]Find
 			return nil, fmt.Errorf("assign FindRuns row: %w", err)
 		}
 		if err := applyStatusTimestampsArray.AssignTo(&item.ApplyStatusTimestamps); err != nil {
+			return nil, fmt.Errorf("assign FindRuns row: %w", err)
+		}
+		if err := runVariablesArray.AssignTo(&item.RunVariables); err != nil {
 			return nil, fmt.Errorf("assign FindRuns row: %w", err)
 		}
 		items = append(items, item)
@@ -310,9 +371,10 @@ func (q *DBQuerier) FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
+	runVariablesArray := q.types.newRunVariablesArray()
 	for rows.Next() {
 		var item FindRunsRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.TerraformVersion, &item.AllowEmptyApply, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, runVariablesArray); err != nil {
 			return nil, fmt.Errorf("scan FindRunsBatch row: %w", err)
 		}
 		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
@@ -334,6 +396,9 @@ func (q *DBQuerier) FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error
 			return nil, fmt.Errorf("assign FindRuns row: %w", err)
 		}
 		if err := applyStatusTimestampsArray.AssignTo(&item.ApplyStatusTimestamps); err != nil {
+			return nil, fmt.Errorf("assign FindRuns row: %w", err)
+		}
+		if err := runVariablesArray.AssignTo(&item.RunVariables); err != nil {
 			return nil, fmt.Errorf("assign FindRuns row: %w", err)
 		}
 		items = append(items, item)
@@ -418,6 +483,8 @@ const findRunByIDSQL = `SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -444,7 +511,13 @@ const findRunByIDSQL = `SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -476,6 +549,8 @@ type FindRunByIDRow struct {
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	PlanOnly               bool                    `json:"plan_only"`
 	CreatedBy              pgtype.Text             `json:"created_by"`
+	TerraformVersion       pgtype.Text             `json:"terraform_version"`
+	AllowEmptyApply        bool                    `json:"allow_empty_apply"`
 	ExecutionMode          pgtype.Text             `json:"execution_mode"`
 	Latest                 bool                    `json:"latest"`
 	OrganizationName       pgtype.Text             `json:"organization_name"`
@@ -484,6 +559,7 @@ type FindRunByIDRow struct {
 	RunStatusTimestamps    []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []PhaseStatusTimestamps `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps  []PhaseStatusTimestamps `json:"apply_status_timestamps"`
+	RunVariables           []RunVariables          `json:"run_variables"`
 }
 
 // FindRunByID implements Querier.FindRunByID.
@@ -498,7 +574,8 @@ func (q *DBQuerier) FindRunByID(ctx context.Context, runID pgtype.Text) (FindRun
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	runVariablesArray := q.types.newRunVariablesArray()
+	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.TerraformVersion, &item.AllowEmptyApply, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, runVariablesArray); err != nil {
 		return item, fmt.Errorf("query FindRunByID: %w", err)
 	}
 	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
@@ -522,6 +599,9 @@ func (q *DBQuerier) FindRunByID(ctx context.Context, runID pgtype.Text) (FindRun
 	if err := applyStatusTimestampsArray.AssignTo(&item.ApplyStatusTimestamps); err != nil {
 		return item, fmt.Errorf("assign FindRunByID row: %w", err)
 	}
+	if err := runVariablesArray.AssignTo(&item.RunVariables); err != nil {
+		return item, fmt.Errorf("assign FindRunByID row: %w", err)
+	}
 	return item, nil
 }
 
@@ -541,7 +621,8 @@ func (q *DBQuerier) FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, e
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	runVariablesArray := q.types.newRunVariablesArray()
+	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.TerraformVersion, &item.AllowEmptyApply, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, runVariablesArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByIDBatch row: %w", err)
 	}
 	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
@@ -563,6 +644,9 @@ func (q *DBQuerier) FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, e
 		return item, fmt.Errorf("assign FindRunByID row: %w", err)
 	}
 	if err := applyStatusTimestampsArray.AssignTo(&item.ApplyStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindRunByID row: %w", err)
+	}
+	if err := runVariablesArray.AssignTo(&item.RunVariables); err != nil {
 		return item, fmt.Errorf("assign FindRunByID row: %w", err)
 	}
 	return item, nil
@@ -590,6 +674,8 @@ const findRunByIDForUpdateSQL = `SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -616,7 +702,13 @@ const findRunByIDForUpdateSQL = `SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
@@ -649,6 +741,8 @@ type FindRunByIDForUpdateRow struct {
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	PlanOnly               bool                    `json:"plan_only"`
 	CreatedBy              pgtype.Text             `json:"created_by"`
+	TerraformVersion       pgtype.Text             `json:"terraform_version"`
+	AllowEmptyApply        bool                    `json:"allow_empty_apply"`
 	ExecutionMode          pgtype.Text             `json:"execution_mode"`
 	Latest                 bool                    `json:"latest"`
 	OrganizationName       pgtype.Text             `json:"organization_name"`
@@ -657,6 +751,7 @@ type FindRunByIDForUpdateRow struct {
 	RunStatusTimestamps    []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []PhaseStatusTimestamps `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps  []PhaseStatusTimestamps `json:"apply_status_timestamps"`
+	RunVariables           []RunVariables          `json:"run_variables"`
 }
 
 // FindRunByIDForUpdate implements Querier.FindRunByIDForUpdate.
@@ -671,7 +766,8 @@ func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID pgtype.Text)
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	runVariablesArray := q.types.newRunVariablesArray()
+	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.TerraformVersion, &item.AllowEmptyApply, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, runVariablesArray); err != nil {
 		return item, fmt.Errorf("query FindRunByIDForUpdate: %w", err)
 	}
 	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
@@ -695,6 +791,9 @@ func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID pgtype.Text)
 	if err := applyStatusTimestampsArray.AssignTo(&item.ApplyStatusTimestamps); err != nil {
 		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
 	}
+	if err := runVariablesArray.AssignTo(&item.RunVariables); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
 	return item, nil
 }
 
@@ -714,7 +813,8 @@ func (q *DBQuerier) FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunB
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newPhaseStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	runVariablesArray := q.types.newRunVariablesArray()
+	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Source, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.AutoApply, planResourceReportRow, planOutputReportRow, applyResourceReportRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.PlanOnly, &item.CreatedBy, &item.TerraformVersion, &item.AllowEmptyApply, &item.ExecutionMode, &item.Latest, &item.OrganizationName, &item.CostEstimationEnabled, ingressAttributesRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, runVariablesArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByIDForUpdateBatch row: %w", err)
 	}
 	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
@@ -736,6 +836,9 @@ func (q *DBQuerier) FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunB
 		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
 	}
 	if err := applyStatusTimestampsArray.AssignTo(&item.ApplyStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := runVariablesArray.AssignTo(&item.RunVariables); err != nil {
 		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
 	}
 	return item, nil

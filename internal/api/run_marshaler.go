@@ -84,6 +84,8 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 			IsForceCancelable: from.ForceCancelAvailableAt != nil,
 			IsDiscardable:     from.Discardable(),
 		},
+		AllowEmptyApply:        from.AllowEmptyApply,
+		AutoApply:              from.AutoApply,
 		CreatedAt:              from.CreatedAt,
 		ExecutionMode:          string(from.ExecutionMode),
 		ForceCancelAvailableAt: from.ForceCancelAvailableAt,
@@ -91,6 +93,7 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 		IsDestroy:              from.IsDestroy,
 		Message:                from.Message,
 		Permissions:            perms,
+		PlanOnly:               from.PlanOnly,
 		PositionInQueue:        0,
 		Refresh:                from.Refresh,
 		RefreshOnly:            from.RefreshOnly,
@@ -99,6 +102,7 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 		Status:                 string(from.Status),
 		StatusTimestamps:       &timestamps,
 		TargetAddrs:            from.TargetAddrs,
+		TerraformVersion:       from.TerraformVersion,
 		// Relations
 		Plan:  plan,
 		Apply: apply,
@@ -111,6 +115,10 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 			ID: from.ConfigurationVersionID,
 		},
 		Workspace: &types.Workspace{ID: from.WorkspaceID},
+	}
+	to.Variables = make([]types.RunVariable, len(from.Variables))
+	for i, from := range from.Variables {
+		to.Variables[i] = types.RunVariable{Key: from.Key, Value: from.Value}
 	}
 
 	// Support including related resources:
