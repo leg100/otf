@@ -130,6 +130,40 @@ type RunCreateOptions struct {
 	AutoApply *bool `jsonapi:"attribute" json:"auto-apply,omitempty"`
 }
 
+// RunListOptions represents the options for listing runs.
+type RunListOptions struct {
+	ListOptions
+
+	// Optional: Searches runs that matches the supplied VCS username.
+	User string `url:"search[user],omitempty"`
+
+	// Optional: Searches runs that matches the supplied commit sha.
+	Commit string `url:"search[commit],omitempty"`
+
+	// Optional: Searches runs that matches the supplied VCS username, commit sha, run_id, and run message.
+	// The presence of search[commit] or search[user] takes priority over this parameter and will be omitted.
+	Search string `url:"search[basic],omitempty"`
+
+	// Optional: Comma-separated list of acceptable run statuses.
+	// Options are listed at https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#run-states,
+	// or as constants with the RunStatus string type.
+	Status string `url:"filter[status],omitempty"`
+
+	// Optional: Comma-separated list of acceptable run sources.
+	// Options are listed at https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#run-sources,
+	// or as constants with the RunSource string type.
+	Source string `url:"filter[source],omitempty"`
+
+	// Optional: Comma-separated list of acceptable run operation types.
+	// Options are listed at https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#run-operations,
+	// or as constants with the RunOperation string type.
+	Operation string `url:"filter[operation],omitempty"`
+
+	// Optional: A list of relations to include. See available resources:
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#available-related-resources
+	Include []string `url:"include,omitempty"`
+}
+
 // PhaseStatusTimestamps holds the timestamps for individual statuses for a
 // phase.
 type PhaseStatusTimestamps struct {

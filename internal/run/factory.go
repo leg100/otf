@@ -11,14 +11,19 @@ import (
 
 // factory constructs runs
 type factory struct {
-	ConfigurationVersionService
+	OrganizationService
 	WorkspaceService
+	ConfigurationVersionService
 	VCSProviderService
 }
 
 // NewRun constructs a new run using the provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
 	ws, err := f.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	org, err := f.GetOrganization(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +47,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
-	return newRun(ctx, cv, ws, opts), nil
+	return newRun(ctx, org, cv, ws, opts), nil
 }
 
 // createConfigVersionFromVCS creates a config version from the vcs repo

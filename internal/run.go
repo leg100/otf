@@ -21,6 +21,10 @@ const (
 	RunPlanned            RunStatus = "planned"
 	RunPlannedAndFinished RunStatus = "planned_and_finished"
 	RunPlanning           RunStatus = "planning"
+
+	// OTF doesn't support cost estimation but go-tfe API tests expect this
+	// status so it is included expressly to pass the tests.
+	RunCostEstimated RunStatus = "cost_estimated"
 )
 
 var (

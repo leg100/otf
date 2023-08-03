@@ -189,7 +189,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 		if err := s.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		_, err = s.CreateRun(ctx, ws.ID, RunCreateOptions{
+		_, err = s.CreateRun(ctx, ws.ID, CreateOptions{
 			ConfigurationVersionID: internal.String(cv.ID),
 		})
 		if err != nil {

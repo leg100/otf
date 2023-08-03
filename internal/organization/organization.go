@@ -29,11 +29,11 @@ type (
 		SessionRemember            *int
 		SessionTimeout             *int
 		AllowForceDeleteWorkspaces bool
+		CostEstimationEnabled      bool
 	}
 
-	// UpdateOptions represents the options for updating an
-	// organization.
-	OrganizationUpdateOptions struct {
+	// UpdateOptions represents the options for updating an organization.
+	UpdateOptions struct {
 		Name            *string
 		SessionRemember *int
 		SessionTimeout  *int
@@ -42,25 +42,27 @@ type (
 		// go-tfe integration tests
 		Email                      *string
 		CollaboratorAuthPolicy     *string
+		CostEstimationEnabled      *bool
 		AllowForceDeleteWorkspaces *bool
 	}
 
-	// OrganizationCreateOptions represents the options for creating an
-	// organization. See dto.OrganizationCreateOptions for more details.
-	OrganizationCreateOptions struct {
+	// CreateOptions represents the options for creating an organization. See
+	// types.CreateOptions for more details.
+	CreateOptions struct {
 		Name *string `schema:"name,required"`
 
 		// TFE fields that OTF does not support but persists merely to pass the
 		// go-tfe integration tests
 		Email                      *string
 		CollaboratorAuthPolicy     *string
+		CostEstimationEnabled      *bool
 		SessionRemember            *int
 		SessionTimeout             *int
 		AllowForceDeleteWorkspaces *bool
 	}
 )
 
-func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
+func NewOrganization(opts CreateOptions) (*Organization, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
@@ -81,10 +83,13 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	if opts.AllowForceDeleteWorkspaces != nil {
 		org.AllowForceDeleteWorkspaces = *opts.AllowForceDeleteWorkspaces
 	}
+	if opts.CostEstimationEnabled != nil {
+		org.CostEstimationEnabled = *opts.CostEstimationEnabled
+	}
 	return &org, nil
 }
 
-func (opts *OrganizationCreateOptions) Validate() error {
+func (opts *CreateOptions) Validate() error {
 	if opts.Name == nil {
 		return errors.New("name required")
 	}
@@ -99,7 +104,7 @@ func (opts *OrganizationCreateOptions) Validate() error {
 
 func (org *Organization) String() string { return org.ID }
 
-func (org *Organization) Update(opts OrganizationUpdateOptions) error {
+func (org *Organization) Update(opts UpdateOptions) error {
 	if opts.Name != nil {
 		org.Name = *opts.Name
 	}
@@ -108,6 +113,9 @@ func (org *Organization) Update(opts OrganizationUpdateOptions) error {
 	}
 	if opts.CollaboratorAuthPolicy != nil {
 		org.CollaboratorAuthPolicy = opts.CollaboratorAuthPolicy
+	}
+	if opts.CostEstimationEnabled != nil {
+		org.CostEstimationEnabled = *opts.CostEstimationEnabled
 	}
 	if opts.SessionTimeout != nil {
 		org.SessionTimeout = opts.SessionTimeout

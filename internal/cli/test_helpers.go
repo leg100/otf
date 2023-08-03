@@ -94,7 +94,7 @@ func withTarball(tarball []byte) fakeOption {
 	}
 }
 
-func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error) {
+func (f *fakeClient) CreateOrganization(ctx context.Context, opts organization.CreateOptions) (*organization.Organization, error) {
 	return &organization.Organization{Name: *opts.Name}, nil
 }
 

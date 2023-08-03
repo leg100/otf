@@ -31,10 +31,11 @@ func (a *api) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.CreateOrganization(r.Context(), organization.OrganizationCreateOptions{
+	org, err := a.CreateOrganization(r.Context(), organization.CreateOptions{
 		Name:                       opts.Name,
 		Email:                      opts.Email,
 		CollaboratorAuthPolicy:     (*string)(opts.CollaboratorAuthPolicy),
+		CostEstimationEnabled:      opts.CostEstimationEnabled,
 		SessionRemember:            opts.SessionRemember,
 		SessionTimeout:             opts.SessionTimeout,
 		AllowForceDeleteWorkspaces: opts.AllowForceDeleteWorkspaces,
@@ -91,10 +92,11 @@ func (a *api) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.UpdateOrganization(r.Context(), name, organization.OrganizationUpdateOptions{
+	org, err := a.UpdateOrganization(r.Context(), name, organization.UpdateOptions{
 		Name:                   opts.Name,
 		Email:                  opts.Email,
 		CollaboratorAuthPolicy: (*string)(opts.CollaboratorAuthPolicy),
+		CostEstimationEnabled:  opts.CostEstimationEnabled,
 		SessionRemember:        opts.SessionRemember,
 		SessionTimeout:         opts.SessionTimeout,
 	})

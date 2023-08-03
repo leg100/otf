@@ -6,6 +6,7 @@ INSERT INTO organizations (
     name,
     email,
     collaborator_auth_policy,
+    cost_estimation_enabled,
     session_remember,
     session_timeout,
     allow_force_delete_workspaces
@@ -16,6 +17,7 @@ INSERT INTO organizations (
     pggen.arg('name'),
     pggen.arg('email'),
     pggen.arg('collaborator_auth_policy'),
+    pggen.arg('cost_estimation_enabled'),
     pggen.arg('session_remember'),
     pggen.arg('session_timeout'),
     pggen.arg('allow_force_delete_workspaces')
@@ -60,6 +62,7 @@ SET
     name = pggen.arg('new_name'),
     email = pggen.arg('email'),
     collaborator_auth_policy = pggen.arg('collaborator_auth_policy'),
+    cost_estimation_enabled = pggen.arg('cost_estimation_enabled'),
     session_remember = pggen.arg('session_remember'),
     session_timeout = pggen.arg('session_timeout'),
     allow_force_delete_workspaces = pggen.arg('allow_force_delete_workspaces'),

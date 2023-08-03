@@ -13,7 +13,7 @@ type Client struct {
 }
 
 // CreateOrganization creates a new organization with the given options.
-func (c *Client) CreateOrganization(ctx context.Context, options OrganizationCreateOptions) (*Organization, error) {
+func (c *Client) CreateOrganization(ctx context.Context, options CreateOptions) (*Organization, error) {
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}

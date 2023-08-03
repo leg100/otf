@@ -23,13 +23,14 @@ type (
 
 	// pgresult is the result of a database query for a run.
 	pgresult struct {
-		RunID                  pgtype.Text                   `json:"run_id"`
-		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
-		ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
-		IsDestroy              bool                          `json:"is_destroy"`
-		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
-		Refresh                bool                          `json:"refresh"`
-		RefreshOnly            bool                          `json:"refresh_only"`
+		RunID                  pgtype.Text        `json:"run_id"`
+		CreatedAt              pgtype.Timestamptz `json:"created_at"`
+		ForceCancelAvailableAt pgtype.Timestamptz `json:"force_cancel_available_at"`
+		IsDestroy              bool               `json:"is_destroy"`
+		PositionInQueue        pgtype.Int4        `json:"position_in_queue"`
+		Refresh                bool               `json:"refresh"`
+		RefreshOnly            bool               `json:"refresh_only"`
+		Source                 pgtype.Text
 		Status                 pgtype.Text                   `json:"status"`
 		PlanStatus             pgtype.Text                   `json:"plan_status"`
 		ApplyStatus            pgtype.Text                   `json:"apply_status"`
@@ -46,6 +47,7 @@ type (
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 		Latest                 bool                          `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
+		CostEstimationEnabled  bool                          `json:"cost_estimation_enabled"`
 		IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
 		RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 		PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
@@ -61,6 +63,7 @@ func (result pgresult) toRun() *Run {
 		PositionInQueue:        int(result.PositionInQueue.Int),
 		Refresh:                result.Refresh,
 		RefreshOnly:            result.RefreshOnly,
+		Source:                 RunSource(result.Source.String),
 		Status:                 internal.RunStatus(result.Status.String),
 		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		ReplaceAddrs:           result.ReplaceAddrs,
@@ -72,6 +75,7 @@ func (result pgresult) toRun() *Run {
 		Organization:           result.OrganizationName.String,
 		WorkspaceID:            result.WorkspaceID.String,
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
+		CostEstimationEnabled:  result.CostEstimationEnabled,
 		Plan: Phase{
 			RunID:            result.RunID.String,
 			PhaseType:        internal.PlanPhase,
@@ -110,6 +114,7 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			PositionInQueue:        sql.Int4(0),
 			Refresh:                run.Refresh,
 			RefreshOnly:            run.RefreshOnly,
+			Source:                 sql.String(string(run.Source)),
 			Status:                 sql.String(string(run.Status)),
 			ReplaceAddrs:           run.ReplaceAddrs,
 			TargetAddrs:            run.TargetAddrs,
@@ -238,7 +243,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Repo
 	return err
 }
 
-func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
+func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 	organization := "%"

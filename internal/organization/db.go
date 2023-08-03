@@ -28,6 +28,7 @@ type (
 		Email                      pgtype.Text        `json:"email"`
 		CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
 		AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
+		CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
 	}
 
 	// dbListOptions represents the options for listing organizations via the
@@ -67,6 +68,7 @@ func (db *pgdb) update(ctx context.Context, name string, fn func(*Organization) 
 			NewName:                    sql.String(org.Name),
 			Email:                      sql.StringPtr(org.Email),
 			CollaboratorAuthPolicy:     sql.StringPtr(org.CollaboratorAuthPolicy),
+			CostEstimationEnabled:      org.CostEstimationEnabled,
 			SessionRemember:            sql.Int4Ptr(org.SessionRemember),
 			SessionTimeout:             sql.Int4Ptr(org.SessionTimeout),
 			UpdatedAt:                  sql.Timestamptz(org.UpdatedAt),
@@ -139,6 +141,7 @@ func (r row) toOrganization() *Organization {
 		UpdatedAt:                  r.UpdatedAt.Time.UTC(),
 		Name:                       r.Name.String,
 		AllowForceDeleteWorkspaces: r.AllowForceDeleteWorkspaces,
+		CostEstimationEnabled:      r.CostEstimationEnabled,
 	}
 	if r.SessionRemember.Status == pgtype.Present {
 		sessionRememberInt := int(r.SessionRemember.Int)

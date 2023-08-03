@@ -89,7 +89,7 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 
 	// retrieve all existing runs
 	existing, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
-		return s.ListRuns(ctx, run.RunListOptions{
+		return s.ListRuns(ctx, run.ListOptions{
 			PageOptions:  opts,
 			Statuses:     []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
 			Organization: s.Organization,

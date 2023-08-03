@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -52,6 +53,7 @@ type (
 		TargetAddrs            []string                `json:"target_addrs"`
 		AutoApply              bool                    `json:"auto_apply"`
 		PlanOnly               bool                    `json:"plan_only"`
+		Source                 RunSource               `json:"source"`
 		Status                 internal.RunStatus      `json:"status"`
 		StatusTimestamps       []RunStatusTimestamp    `json:"status_timestamps"`
 		WorkspaceID            string                  `json:"workspace_id"`
@@ -68,6 +70,11 @@ type (
 		// Username of user who created the run. This is nil if the run was
 		// instead triggered by a VCS event.
 		CreatedBy *string
+
+		// OTF doesn't support cost estimation but some go-tfe API tests expect
+		// a run to enter the RunCostEstimated state, and this boolean
+		// determines whether to enter that state upon finishing a plan.
+		CostEstimationEnabled bool
 	}
 
 	// RunList represents a list of runs.
@@ -81,9 +88,9 @@ type (
 		Timestamp time.Time
 	}
 
-	// RunCreateOptions represents the options for creating a new run. See
-	// api/types/RunCreateOptions for documentation on each field.
-	RunCreateOptions struct {
+	// CreateOptions represents the options for creating a new run. See
+	// api.types.RunCreateOptions for documentation on each field.
+	CreateOptions struct {
 		IsDestroy   *bool
 		Refresh     *bool
 		RefreshOnly *bool
@@ -95,14 +102,15 @@ type (
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
+		Source                 RunSource
 		// PlanOnly specifies if this is a speculative, plan-only run that
 		// Terraform cannot apply. Takes precedence over whether the
 		// configuration version is marked as speculative or not.
 		PlanOnly *bool
 	}
 
-	// RunListOptions are options for paginating and filtering a list of runs
-	RunListOptions struct {
+	// ListOptions are options for paginating and filtering a list of runs
+	ListOptions struct {
 		resource.PageOptions
 		// Filter by run statuses (with an implicit OR condition)
 		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
@@ -127,7 +135,7 @@ type (
 )
 
 // newRun creates a new run with defaults.
-func newRun(ctx context.Context, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
+func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
 		CreatedAt:              internal.CurrentTimestamp(),
@@ -141,10 +149,15 @@ func newRun(ctx context.Context, cv *configversion.ConfigurationVersion, ws *wor
 		ExecutionMode:          ws.ExecutionMode,
 		AutoApply:              ws.AutoApply,
 		IngressAttributes:      cv.IngressAttributes,
+		CostEstimationEnabled:  org.CostEstimationEnabled,
 	}
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
 	run.updateStatus(internal.RunPending)
+
+	if opts.Source == "" {
+		run.Source = RunSourceAPI
+	}
 
 	if user, _ := auth.UserFromContext(ctx); user != nil {
 		run.CreatedBy = &user.Username
@@ -338,8 +351,14 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return nil
 		}
-
-		r.updateStatus(internal.RunPlanned)
+		// Enter RunCostEstimated state if cost estimation is enabled. OTF does
+		// not support cost estimation but enter this state only in order to
+		// satisfy the go-tfe tests.
+		if r.CostEstimationEnabled {
+			r.updateStatus(internal.RunCostEstimated)
+		} else {
+			r.updateStatus(internal.RunPlanned)
+		}
 		r.Plan.UpdateStatus(PhaseFinished)
 
 		if !r.HasChanges() || r.PlanOnly {

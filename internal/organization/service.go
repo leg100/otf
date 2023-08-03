@@ -20,8 +20,8 @@ type (
 	OrganizationService = Service
 
 	Service interface {
-		CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
-		UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error)
+		CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error)
+		UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error)
 		GetOrganization(ctx context.Context, name string) (*Organization, error)
 		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
@@ -100,7 +100,7 @@ func (s *service) BeforeDeleteHook(l hooks.Listener) {
 // organizations, or, if RestrictOrganizationCreation is true, then only the
 // site admin can create organizations. Creating an organization automatically
 // creates an owners team and adds creator as an owner.
-func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
 	creator, err := s.restrictOrganizationCreation(ctx)
 	if err != nil {
 		return nil, err
@@ -121,6 +121,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 			SessionTimeout:         sql.Int4Ptr(org.SessionTimeout),
 			Email:                  sql.StringPtr(org.Email),
 			CollaboratorAuthPolicy: sql.StringPtr(org.CollaboratorAuthPolicy),
+			CostEstimationEnabled:  org.CostEstimationEnabled,
 		})
 		return sql.Error(err)
 	})
@@ -133,7 +134,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts OrganizationCreat
 	return org, nil
 }
 
-func (s *service) UpdateOrganization(ctx context.Context, name string, opts OrganizationUpdateOptions) (*Organization, error) {
+func (s *service) UpdateOrganization(ctx context.Context, name string, opts UpdateOptions) (*Organization, error) {
 	subject, err := s.CanAccess(ctx, rbac.UpdateOrganizationAction, name)
 	if err != nil {
 		return nil, err

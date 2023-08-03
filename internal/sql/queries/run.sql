@@ -6,6 +6,7 @@ INSERT INTO runs (
     position_in_queue,
     refresh,
     refresh_only,
+    source,
     status,
     replace_addrs,
     target_addrs,
@@ -21,6 +22,7 @@ INSERT INTO runs (
     pggen.arg('position_in_queue'),
     pggen.arg('refresh'),
     pggen.arg('refresh_only'),
+    pggen.arg('source'),
     pggen.arg('status'),
     pggen.arg('replace_addrs'),
     pggen.arg('target_addrs'),
@@ -51,6 +53,7 @@ SELECT
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
+    runs.source,
     runs.status,
     plans.status      AS plan_status,
     applies.status      AS apply_status,
@@ -69,6 +72,7 @@ SELECT
          ELSE false
     END AS latest,
     workspaces.organization_name,
+    organizations.cost_estimation_enabled,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -95,6 +99,7 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE
     workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
@@ -126,6 +131,7 @@ SELECT
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
+    runs.source,
     runs.status,
     plans.status      AS plan_status,
     applies.status      AS apply_status,
@@ -144,6 +150,7 @@ SELECT
          ELSE false
     END AS latest,
     workspaces.organization_name,
+    organizations.cost_estimation_enabled,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -170,6 +177,7 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE runs.run_id = pggen.arg('run_id')
 ;
 
@@ -182,6 +190,7 @@ SELECT
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
+    runs.source,
     runs.status,
     plans.status        AS plan_status,
     applies.status      AS apply_status,
@@ -200,6 +209,7 @@ SELECT
          ELSE false
     END AS latest,
     workspaces.organization_name,
+    organizations.cost_estimation_enabled,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -226,6 +236,7 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE runs.run_id = pggen.arg('run_id')
 FOR UPDATE of runs, plans, applies
 ;

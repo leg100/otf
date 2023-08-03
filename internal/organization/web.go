@@ -55,7 +55,7 @@ func (a *web) new(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *web) create(w http.ResponseWriter, r *http.Request) {
-	var opts OrganizationCreateOptions
+	var opts CreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		a.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -174,7 +174,7 @@ func (a *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := a.svc.UpdateOrganization(r.Context(), params.Name, OrganizationUpdateOptions{
+	org, err := a.svc.UpdateOrganization(r.Context(), params.Name, UpdateOptions{
 		Name: &params.UpdatedName,
 	})
 	if err != nil {

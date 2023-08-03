@@ -97,7 +97,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = daemon.CreateRun(ctx, ws.ID, run.RunCreateOptions{})
+	_, err = daemon.CreateRun(ctx, ws.ID, run.CreateOptions{})
 	require.NoError(t, err)
 
 	for event := range daemon.sub {

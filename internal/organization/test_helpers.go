@@ -29,7 +29,7 @@ func NewTestOrganization(t *testing.T) *Organization {
 	}
 }
 
-func (f *fakeService) CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
+func (f *fakeService) CreateOrganization(ctx context.Context, opts CreateOptions) (*Organization, error) {
 	return NewOrganization(opts)
 }
 

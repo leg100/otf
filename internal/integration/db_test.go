@@ -48,7 +48,7 @@ func TestTx(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 
-	org, err := organization.NewOrganization(organization.OrganizationCreateOptions{
+	org, err := organization.NewOrganization(organization.CreateOptions{
 		Name: internal.String("acmeco"),
 	})
 	require.NoError(t, err)

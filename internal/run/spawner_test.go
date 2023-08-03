@@ -214,7 +214,7 @@ func (f *fakeSpawnerServices) UploadConfig(context.Context, string, []byte) erro
 	return nil
 }
 
-func (f *fakeSpawnerServices) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
+func (f *fakeSpawnerServices) CreateRun(context.Context, string, CreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }

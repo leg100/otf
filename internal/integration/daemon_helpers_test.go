@@ -141,7 +141,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 func (s *testDaemon) createOrganization(t *testing.T, ctx context.Context) *organization.Organization {
 	t.Helper()
 
-	org, err := s.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+	org, err := s.CreateOrganization(ctx, organization.CreateOptions{
 		Name: internal.String(internal.GenerateRandomString(4) + "-corp"),
 	})
 	require.NoError(t, err)
@@ -297,7 +297,7 @@ func (s *testDaemon) createRun(t *testing.T, ctx context.Context, ws *workspace.
 		cv = s.createConfigurationVersion(t, ctx, ws, nil)
 	}
 
-	run, err := s.CreateRun(ctx, ws.ID, run.RunCreateOptions{
+	run, err := s.CreateRun(ctx, ws.ID, run.CreateOptions{
 		ConfigurationVersionID: internal.String(cv.ID),
 	})
 	require.NoError(t, err)

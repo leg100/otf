@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/run"
+	"golang.org/x/exp/slices"
 )
 
 func (a *api) addRunHandlers(r *mux.Router) {
@@ -65,7 +66,7 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := a.CreateRun(r.Context(), opts.Workspace.ID, run.RunCreateOptions{
+	run, err := a.CreateRun(r.Context(), opts.Workspace.ID, run.CreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -75,6 +76,7 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 		TargetAddrs:            opts.TargetAddrs,
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		PlanOnly:               opts.PlanOnly,
+		Source:                 run.RunSourceAPI,
 	})
 	if err != nil {
 		Error(w, err)
@@ -144,27 +146,39 @@ func (a *api) getRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
-	a.listRunsWithOptions(w, r, run.RunListOptions{})
-}
-
-func (a *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
-	a.listRunsWithOptions(w, r, run.RunListOptions{
-		Statuses: []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
-	})
-}
-
-func (a *api) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts run.RunListOptions) {
-	if err := decode.All(&opts, r); err != nil {
+	var params types.RunListOptions
+	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
 	}
 
+	// convert comma-separated list of string statuses to []RunStatus
+	fromStatuses := internal.SplitCSV(params.Status)
+	toStatuses := make([]internal.RunStatus, len(fromStatuses))
+	for i, s := range fromStatuses {
+		toStatuses[i] = internal.RunStatus(s)
+	}
+	// split operations CSV
+	operations := internal.SplitCSV(params.Operation)
+
+	a.listRunsWithOptions(w, r, run.ListOptions{
+		Statuses: toStatuses,
+		PlanOnly: internal.Bool(slices.Contains(operations, "plan_only")),
+	})
+}
+
+func (a *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
+	a.listRunsWithOptions(w, r, run.ListOptions{
+		Statuses: []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
+	})
+}
+
+func (a *api) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts run.ListOptions) {
 	list, err := a.ListRuns(r.Context(), opts)
 	if err != nil {
 		Error(w, err)
 		return
 	}
-
 	a.writeResponse(w, r, list)
 }
 

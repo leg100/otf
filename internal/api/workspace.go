@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -158,7 +157,7 @@ func (a *api) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Search:       params.Search,
 		Organization: &organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
-		Tags:         strings.FieldsFunc(params.Tags, func(r rune) bool { return r == ',' }),
+		Tags:         internal.SplitCSV(params.Tags),
 	})
 	if err != nil {
 		Error(w, err)
