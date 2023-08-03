@@ -39,6 +39,7 @@ type (
 		state.StateService
 		workspace.WorkspaceService
 		auth.TeamService
+		configversion.ConfigurationVersionService
 
 		*runLogsURLGenerator
 	}

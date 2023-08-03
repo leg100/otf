@@ -97,6 +97,13 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 				}
 				to.Organization = m.toOrganization(unmarshaled)
 				opts = append(opts, jsonapi.MarshalInclude(to.Organization))
+			case "current_run.configuration_version":
+				unmarshaled, err := m.GetLatestConfigurationVersion(r.Context(), from.ID)
+				if err != nil {
+					return nil, nil, err
+				}
+				cv := m.toConfigurationVersion(unmarshaled)
+				opts = append(opts, jsonapi.MarshalInclude(cv))
 			case "outputs":
 				sv, err := m.GetCurrentStateVersion(r.Context(), from.ID)
 				if err != nil {

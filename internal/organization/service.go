@@ -26,8 +26,8 @@ type (
 		ListOrganizations(ctx context.Context, opts ListOptions) (*resource.Page[*Organization], error)
 		DeleteOrganization(ctx context.Context, name string) error
 		GetEntitlements(ctx context.Context, organization string) (Entitlements, error)
-		AfterCreateHook(l hooks.Listener)
-		BeforeDeleteHook(l hooks.Listener)
+		AfterCreateOrganization(l hooks.Listener[*Organization])
+		BeforeDeleteOrganization(l hooks.Listener[*Organization])
 	}
 
 	service struct {
@@ -41,8 +41,8 @@ type (
 		site internal.Authorizer // authorize access to site
 		web  *web
 
-		createHook *hooks.Hook
-		deleteHook *hooks.Hook
+		createHook *hooks.Hook[*Organization]
+		deleteHook *hooks.Hook[*Organization]
 	}
 
 	Options struct {
@@ -68,8 +68,8 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		db:                           &pgdb{opts.DB},
 		site:                         &internal.SiteAuthorizer{Logger: opts.Logger},
-		createHook:                   hooks.NewHook(opts.DB),
-		deleteHook:                   hooks.NewHook(opts.DB),
+		createHook:                   hooks.NewHook[*Organization](opts.DB),
+		deleteHook:                   hooks.NewHook[*Organization](opts.DB),
 	}
 	svc.web = &web{
 		Renderer:                     opts.Renderer,
@@ -88,11 +88,11 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) AfterCreateHook(l hooks.Listener) {
+func (s *service) AfterCreateOrganization(l hooks.Listener[*Organization]) {
 	s.createHook.After(l)
 }
 
-func (s *service) BeforeDeleteHook(l hooks.Listener) {
+func (s *service) BeforeDeleteOrganization(l hooks.Listener[*Organization]) {
 	s.deleteHook.Before(l)
 }
 
@@ -111,7 +111,7 @@ func (s *service) CreateOrganization(ctx context.Context, opts CreateOptions) (*
 		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
-	err = s.createHook.Dispatch(ctx, org.Name, func(ctx context.Context) error {
+	err = s.createHook.Dispatch(ctx, org, func(ctx context.Context) error {
 		_, err = s.db.Conn(ctx).InsertOrganization(ctx, pggen.InsertOrganizationParams{
 			ID:                     sql.String(org.ID),
 			CreatedAt:              sql.Timestamptz(org.CreatedAt),
@@ -194,7 +194,7 @@ func (s *service) DeleteOrganization(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = s.deleteHook.Dispatch(ctx, name, func(ctx context.Context) error {
+	err = s.deleteHook.Dispatch(ctx, &Organization{Name: name}, func(ctx context.Context) error {
 		return s.db.delete(ctx, name)
 	})
 	if err != nil {

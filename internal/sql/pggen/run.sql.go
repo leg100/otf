@@ -411,7 +411,7 @@ func (q *DBQuerier) FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error
 
 const countRunsSQL = `SELECT count(*)
 FROM runs
-JOIN workspaces             USING(workspace_id)
+JOIN workspaces USING(workspace_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 WHERE
     workspaces.organization_name LIKE ANY($1)

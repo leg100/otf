@@ -151,6 +151,10 @@ func NewService(opts Options) *service {
 	// Subscribe run spawner to incoming vcs events
 	opts.Subscriber.Subscribe(spawner.handle)
 
+	// After a workspace is created, if auto-queue-runs is set, then create a
+	// run as well.
+	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
+
 	return &svc
 }
 
@@ -578,4 +582,14 @@ func (s *service) getLogs(ctx context.Context, runID string, phase internal.Phas
 		return nil, sql.Error(err)
 	}
 	return data, nil
+}
+
+func (s *service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {
+	if ws.QueueAllRuns {
+		_, err := s.CreateRun(ctx, ws.ID, CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

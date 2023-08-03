@@ -139,9 +139,6 @@ type (
 		CommitSHA *string
 		// Filter by VCS user's username that triggered a run
 		VCSUsername *string
-		// A list of relations to include. See available resources:
-		// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-		Include *string `schema:"include,omitempty"`
 	}
 
 	// WatchOptions filters events returned by the Watch endpoint.

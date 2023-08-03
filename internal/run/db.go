@@ -97,9 +97,11 @@ func (result pgresult) toRun() *Run {
 			ResourceReport:   reportFromDB(result.ApplyResourceReport),
 		},
 	}
-	run.Variables = make([]Variable, len(result.RunVariables))
-	for i, v := range result.RunVariables {
-		run.Variables[i] = Variable{Key: v.Key.String, Value: v.Value.String}
+	if len(result.RunVariables) > 0 {
+		run.Variables = make([]Variable, len(result.RunVariables))
+		for i, v := range result.RunVariables {
+			run.Variables[i] = Variable{Key: v.Key.String, Value: v.Value.String}
+		}
 	}
 	if result.CreatedBy.Status == pgtype.Present {
 		run.CreatedBy = &result.CreatedBy.String

@@ -86,10 +86,10 @@ func NewService(ctx context.Context, opts Options) *service {
 	// necessary for the deletion of webhooks from VCS repos. Hence we need to
 	// first delete webhooks that reference the VCS provider before the VCS
 	// provider is deleted.
-	opts.VCSProviderService.BeforeDeleteHook(svc.deleteProviderWebhooks)
+	opts.VCSProviderService.BeforeDeleteVCSProvider(svc.deleteProviderWebhooks)
 	// Delete webhooks prior to the deletion of organizations. Deleting
 	// organizations cascades deletion of VCS providers (see above).
-	opts.OrganizationService.BeforeDeleteHook(svc.deleteOrganizationWebhooks)
+	opts.OrganizationService.BeforeDeleteOrganization(svc.deleteOrganizationWebhooks)
 
 	// Register with broker - when a repo connection is deleted in postgres, a
 	// postgres trigger sends a message to the broker, which calls this function
@@ -160,8 +160,8 @@ func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error 
 	return s.db.deleteConnection(ctx, opts)
 }
 
-func (s *service) deleteOrganizationWebhooks(ctx context.Context, org string) error {
-	providers, err := s.ListVCSProviders(ctx, org)
+func (s *service) deleteOrganizationWebhooks(ctx context.Context, org *organization.Organization) error {
+	providers, err := s.ListVCSProviders(ctx, org.Name)
 	if err != nil {
 		return err
 	}
@@ -181,13 +181,13 @@ func (s *service) deleteOrganizationWebhooks(ctx context.Context, org string) er
 	return nil
 }
 
-func (s *service) deleteProviderWebhooks(ctx context.Context, providerID string) error {
+func (s *service) deleteProviderWebhooks(ctx context.Context, provider *vcsprovider.VCSProvider) error {
 	hooks, err := s.db.listHooks(ctx)
 	if err != nil {
 		return err
 	}
 	for _, h := range hooks {
-		if h.vcsProviderID == providerID {
+		if h.vcsProviderID == provider.ID {
 			if err := s.deleteWebhook(ctx, h); err != nil {
 				return err
 			}

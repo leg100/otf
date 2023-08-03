@@ -172,13 +172,14 @@ func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.listRunsWithOptions(w, r, run.ListOptions{
-		WorkspaceID: params.WorkspaceID,
-		PageOptions: resource.PageOptions(params.ListOptions),
-		Statuses:    statuses,
-		Sources:     sources,
-		PlanOnly:    planOnly,
-		CommitSHA:   params.Commit,
-		VCSUsername: params.User,
+		Organization: params.Organization,
+		WorkspaceID:  params.WorkspaceID,
+		PageOptions:  resource.PageOptions(params.ListOptions),
+		Statuses:     statuses,
+		Sources:      sources,
+		PlanOnly:     planOnly,
+		CommitSHA:    params.Commit,
+		VCSUsername:  params.User,
 	})
 }
 

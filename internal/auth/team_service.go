@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -174,7 +175,7 @@ func (a *service) DeleteTeam(ctx context.Context, teamID string) error {
 
 // createOwnersTeam creates an owners team and makes the creator a member of the
 // team.
-func (a *service) createOwnersTeam(ctx context.Context, organization string) error {
+func (a *service) createOwnersTeam(ctx context.Context, organization *organization.Organization) error {
 	creator, err := UserFromContext(ctx)
 	if err != nil {
 		return err
@@ -185,10 +186,10 @@ func (a *service) createOwnersTeam(ctx context.Context, organization string) err
 		// but an owner can't be created until an owners team is created...
 		creator.Teams = append(creator.Teams, &Team{
 			Name:         "owners",
-			Organization: organization,
+			Organization: organization.Name,
 		})
 
-		owners, err := a.CreateTeam(ctx, organization, CreateTeamOptions{
+		owners, err := a.CreateTeam(ctx, organization.Name, CreateTeamOptions{
 			Name: internal.String("owners"),
 		})
 		if err != nil {

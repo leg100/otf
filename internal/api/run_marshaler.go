@@ -125,9 +125,9 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#available-related-resources
 	//
-	// NOTE: limit support to workspace, since that's what the go-tfe tests
-	// for, and we want to run the full barrage of go-tfe workspace tests
-	// without error
+	// NOTE: limit support to a couple of resources, since that's what the
+	// go-tfe tests for, and we want to run the full barrage of go-tfe workspace
+	// tests without error
 	var opts []jsonapi.MarshalOption
 	if includes := r.URL.Query().Get("include"); includes != "" {
 		for _, inc := range strings.Split(includes, ",") {

@@ -139,7 +139,7 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 -- name: CountRuns :one
 SELECT count(*)
 FROM runs
-JOIN workspaces             USING(workspace_id)
+JOIN workspaces USING(workspace_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 WHERE
     workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))

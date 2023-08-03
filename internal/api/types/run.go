@@ -154,7 +154,9 @@ type RunCreateOptions struct {
 type RunListOptions struct {
 	ListOptions
 
-	WorkspaceID *string `schema:"workspace_id"`
+	Organization *string `schema:"organization_name,omitempty"`
+
+	WorkspaceID *string `schema:"workspace_id,omitempty"`
 
 	// Optional: Searches runs that matches the supplied VCS username.
 	User *string `schema:"search[user],omitempty"`
