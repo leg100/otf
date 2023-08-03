@@ -14,6 +14,7 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"golang.org/x/exp/slices"
 )
@@ -152,18 +153,25 @@ func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert comma-separated list of string statuses to []RunStatus
-	fromStatuses := internal.SplitCSV(params.Status)
-	toStatuses := make([]internal.RunStatus, len(fromStatuses))
-	for i, s := range fromStatuses {
-		toStatuses[i] = internal.RunStatus(s)
-	}
+	// convert comma-separated list of statuses to []RunStatus
+	statuses := internal.FromStringCSV[internal.RunStatus](params.Status)
+	// convert comma-separated list of sources to []RunSource
+	sources := internal.FromStringCSV[run.RunSource](params.Source)
 	// split operations CSV
 	operations := internal.SplitCSV(params.Operation)
+	var planOnly *bool
+	if slices.Contains(operations, "plan_only") {
+		planOnly = internal.Bool(true)
+	}
 
 	a.listRunsWithOptions(w, r, run.ListOptions{
-		Statuses: toStatuses,
-		PlanOnly: internal.Bool(slices.Contains(operations, "plan_only")),
+		WorkspaceID: params.WorkspaceID,
+		PageOptions: resource.PageOptions(params.ListOptions),
+		Statuses:    statuses,
+		Sources:     sources,
+		PlanOnly:    planOnly,
+		CommitSHA:   params.Commit,
+		VCSUsername: params.User,
 	})
 }
 

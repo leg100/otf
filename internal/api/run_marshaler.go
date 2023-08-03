@@ -9,7 +9,6 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
-	"github.com/leg100/otf/internal/configversion"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/run"
@@ -96,7 +95,7 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 		Refresh:                from.Refresh,
 		RefreshOnly:            from.RefreshOnly,
 		ReplaceAddrs:           from.ReplaceAddrs,
-		Source:                 configversion.DefaultConfigurationSource,
+		Source:                 string(from.Source),
 		Status:                 string(from.Status),
 		StatusTimestamps:       &timestamps,
 		TargetAddrs:            from.TargetAddrs,

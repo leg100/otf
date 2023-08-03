@@ -23,14 +23,14 @@ type (
 
 	// pgresult is the result of a database query for a run.
 	pgresult struct {
-		RunID                  pgtype.Text        `json:"run_id"`
-		CreatedAt              pgtype.Timestamptz `json:"created_at"`
-		ForceCancelAvailableAt pgtype.Timestamptz `json:"force_cancel_available_at"`
-		IsDestroy              bool               `json:"is_destroy"`
-		PositionInQueue        pgtype.Int4        `json:"position_in_queue"`
-		Refresh                bool               `json:"refresh"`
-		RefreshOnly            bool               `json:"refresh_only"`
-		Source                 pgtype.Text
+		RunID                  pgtype.Text                   `json:"run_id"`
+		CreatedAt              pgtype.Timestamptz            `json:"created_at"`
+		ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
+		IsDestroy              bool                          `json:"is_destroy"`
+		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
+		Refresh                bool                          `json:"refresh"`
+		RefreshOnly            bool                          `json:"refresh_only"`
+		Source                 pgtype.Text                   `json:"source"`
 		Status                 pgtype.Text                   `json:"status"`
 		PlanStatus             pgtype.Text                   `json:"plan_status"`
 		ApplyStatus            pgtype.Text                   `json:"apply_status"`
@@ -258,9 +258,13 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 	if opts.WorkspaceID != nil {
 		workspaceID = *opts.WorkspaceID
 	}
+	sources := []string{"%"}
+	if len(opts.Sources) > 0 {
+		sources = internal.ToStringSlice(opts.Sources)
+	}
 	statuses := []string{"%"}
 	if len(opts.Statuses) > 0 {
-		statuses = convertStatusSliceToStringSlice(opts.Statuses)
+		statuses = internal.ToStringSlice(opts.Statuses)
 	}
 	planOnly := "%"
 	if opts.PlanOnly != nil {
@@ -270,6 +274,9 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
+		CommitSHA:         sql.StringPtr(opts.CommitSHA),
+		VCSUsername:       sql.StringPtr(opts.VCSUsername),
+		Sources:           sources,
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
 		Limit:             opts.GetLimit(),
@@ -279,6 +286,9 @@ func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
+		CommitSHA:         sql.StringPtr(opts.CommitSHA),
+		VCSUsername:       sql.StringPtr(opts.VCSUsername),
+		Sources:           sources,
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
 	})
@@ -382,13 +392,6 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 		Timestamp: sql.Timestamptz(ts),
 	})
 	return err
-}
-
-func convertStatusSliceToStringSlice(statuses []internal.RunStatus) (s []string) {
-	for _, status := range statuses {
-		s = append(s, string(status))
-	}
-	return
 }
 
 func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

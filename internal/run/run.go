@@ -112,16 +112,22 @@ type (
 	// ListOptions are options for paginating and filtering a list of runs
 	ListOptions struct {
 		resource.PageOptions
-		// Filter by run statuses (with an implicit OR condition)
-		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by workspace ID
 		WorkspaceID *string `schema:"workspace_id,omitempty"`
 		// Filter by organization name
 		Organization *string `schema:"organization_name,omitempty"`
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
+		// Filter by run statuses (with an implicit OR condition)
+		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
+		// Filter by sources
+		Sources []RunSource
+		// Filter by commit SHA that triggered a run
+		CommitSHA *string
+		// Filter by VCS user's username that triggered a run
+		VCSUsername *string
 		// A list of relations to include. See available resources:
 		// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 		Include *string `schema:"include,omitempty"`
@@ -150,19 +156,18 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		AutoApply:              ws.AutoApply,
 		IngressAttributes:      cv.IngressAttributes,
 		CostEstimationEnabled:  org.CostEstimationEnabled,
+		Source:                 opts.Source,
 	}
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
 	run.updateStatus(internal.RunPending)
 
-	if opts.Source == "" {
+	if run.Source == "" {
 		run.Source = RunSourceAPI
 	}
-
 	if user, _ := auth.UserFromContext(ctx); user != nil {
 		run.CreatedBy = &user.Username
 	}
-
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
 	}

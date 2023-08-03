@@ -104,8 +104,11 @@ WHERE
     workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
+AND runs.source                  LIKE ANY(pggen.arg('sources'))
 AND runs.status                  LIKE ANY(pggen.arg('statuses'))
 AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
+AND ((pggen.arg('commit_sha')::text IS NULL) OR ia.commit_sha = pggen.arg('commit_sha'))
+AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg('vcs_username'))
 ORDER BY runs.created_at DESC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
@@ -114,12 +117,16 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 SELECT count(*)
 FROM runs
 JOIN workspaces             USING(workspace_id)
+JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 WHERE
     workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
+AND runs.source                  LIKE ANY(pggen.arg('sources'))
 AND runs.status                  LIKE ANY(pggen.arg('statuses'))
 AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
+AND ((pggen.arg('commit_sha')::text IS NULL) OR ia.commit_sha = pggen.arg('commit_sha'))
+AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg('vcs_username'))
 ;
 
 -- name: FindRunByID :one
