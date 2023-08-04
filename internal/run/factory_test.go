@@ -180,3 +180,11 @@ func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, string) (c
 func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
 	return nil, "", nil
 }
+
+func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (cloud.Repository, error) {
+	return cloud.Repository{}, nil
+}
+
+func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (cloud.Commit, error) {
+	return cloud.Commit{}, nil
+}

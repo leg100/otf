@@ -347,7 +347,7 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		s.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject)
+	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject, "run_status", run.Status)
 	return run, nil
 }
 

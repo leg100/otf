@@ -68,12 +68,17 @@ func (r *Reporter) Start(ctx context.Context) error {
 }
 
 func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
+	// Skip runs triggered via the UI
+	if run.Source == RunSourceUI {
+		return nil
+	}
+
 	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID)
 	if err != nil {
 		return err
 	}
 
-	// Skip runs that were not triggered via VCS
+	// Skip runs with a configuration not sourced from a repo
 	if cv.IngressAttributes == nil {
 		return nil
 	}

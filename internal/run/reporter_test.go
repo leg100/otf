@@ -44,20 +44,33 @@ func TestReporter_HandleRun(t *testing.T) {
 				TargetURL: "https://otf-host.org/app/runs/run-123",
 			},
 		},
+		{
+			name: "skip run with config not from a VCS repo",
+			run:  &Run{ID: "run-123"},
+			cv: &configversion.ConfigurationVersion{
+				IngressAttributes: nil,
+			},
+			want: cloud.SetStatusOptions{},
+		},
+		{
+			name: "skip UI-triggered run",
+			run:  &Run{ID: "run-123", Source: RunSourceUI},
+			want: cloud.SetStatusOptions{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := make(chan cloud.SetStatusOptions, 1)
+			var got cloud.SetStatusOptions
 			reporter := &Reporter{
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
-				VCSProviderService:          &fakeReporterVCSProviderService{got: got},
+				VCSProviderService:          &fakeReporterVCSProviderService{got: &got},
 				HostnameService:             internal.FakeHostnameService{Host: "otf-host.org"},
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, <-got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -85,7 +98,7 @@ func (f *fakeReporterWorkspaceService) GetWorkspace(context.Context, string) (*w
 type fakeReporterVCSProviderService struct {
 	vcsprovider.VCSProviderService
 
-	got chan cloud.SetStatusOptions
+	got *cloud.SetStatusOptions
 }
 
 func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (cloud.Client, error) {
@@ -95,10 +108,10 @@ func (f *fakeReporterVCSProviderService) GetVCSClient(context.Context, string) (
 type fakeReporterCloudClient struct {
 	cloud.Client
 
-	got chan cloud.SetStatusOptions
+	got *cloud.SetStatusOptions
 }
 
 func (f *fakeReporterCloudClient) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
-	f.got <- opts
+	*f.got = opts
 	return nil
 }

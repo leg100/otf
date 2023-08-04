@@ -48,6 +48,7 @@ type (
 	testdb struct {
 		user          *cloud.User
 		repo          *string
+		commit        *string
 		defaultBranch *string
 		tarball       []byte
 		refs          []string
@@ -56,6 +57,9 @@ type (
 		// pull request stub
 		pullNumber string
 		pullFiles  []string
+
+		// url of server, only populated once server starts
+		url *string
 	}
 
 	hook struct {
@@ -297,6 +301,24 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
+		if srv.commit != nil {
+			// https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit
+			mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
+				out, err := json.Marshal(&github.Commit{
+					SHA: internal.String(*srv.commit),
+					URL: internal.String(*srv.url + "/" + *srv.repo),
+					Author: &github.CommitAuthor{
+						Login: internal.String("leg100"),
+					},
+				})
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					return
+				}
+				w.Header().Add("Content-Type", "application/json")
+				w.Write(out)
+			})
+		}
 	}
 
 	if srv.tarball != nil {
@@ -312,6 +334,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 
 	srv.Server = httptest.NewTLSServer(mux)
 	t.Cleanup(srv.Close)
+	srv.url = &srv.URL
 
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
@@ -334,6 +357,12 @@ func WithUser(user *cloud.User) TestServerOption {
 func WithRepo(repo string) TestServerOption {
 	return func(srv *TestServer) {
 		srv.repo = &repo
+	}
+}
+
+func WithCommit(commit string) TestServerOption {
+	return func(srv *TestServer) {
+		srv.commit = &commit
 	}
 }
 
