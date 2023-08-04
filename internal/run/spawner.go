@@ -120,7 +120,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 	if err != nil {
 		return err
 	}
-	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	tarball, _, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Repo: event.RepoPath,
 		Ref:  &event.CommitSHA,
 	})

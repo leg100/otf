@@ -46,11 +46,12 @@ type (
 	TestServerOption func(*TestServer)
 
 	testdb struct {
-		user    *cloud.User
-		repo    *string
-		tarball []byte
-		refs    []string
-		webhook *hook
+		user          *cloud.User
+		repo          *string
+		defaultBranch *string
+		tarball       []byte
+		refs          []string
+		webhook       *hook
 
 		// pull request stub
 		pullNumber string
@@ -169,7 +170,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			w.Write(out)
 		})
 		mux.HandleFunc("/api/v3/repos/"+*srv.repo, func(w http.ResponseWriter, r *http.Request) {
-			repo := &github.Repository{FullName: srv.repo}
+			repo := &github.Repository{FullName: srv.repo, DefaultBranch: srv.defaultBranch}
 			out, err := json.Marshal(repo)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
@@ -333,6 +334,12 @@ func WithUser(user *cloud.User) TestServerOption {
 func WithRepo(repo string) TestServerOption {
 	return func(srv *TestServer) {
 		srv.repo = &repo
+	}
+}
+
+func WithDefaultBranch(branch string) TestServerOption {
+	return func(srv *TestServer) {
+		srv.defaultBranch = &branch
 	}
 }
 

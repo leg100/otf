@@ -44,9 +44,16 @@ func htmlPanic(format string, a ...any) {
 }
 
 // SendUserToLoginPage sends user to the login prompt page, saving the original
-// page they tried to access so it can return them there after login.
+// path they tried to access so it can return them there after login.
 func SendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
-	SetCookie(w, pathCookie, r.URL.String(), nil)
+	// if request path was for a background event-stream then save the referring
+	// html page, otherwise the user will be returned to a blank page.
+	path := r.URL.String()
+	if r.Header.Get("Accept") == "text/event-stream" {
+		path = r.Referer()
+	}
+	SetCookie(w, pathCookie, path, nil)
+
 	// Force ajax requests to reload entire page
 	if isHTMX := r.Header.Get("HX-Request"); isHTMX == "true" {
 		w.Header().Add("HX-Refresh", "true")

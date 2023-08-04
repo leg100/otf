@@ -9,9 +9,9 @@ type (
 		GetUser(ctx context.Context) (*User, error)
 		// ListRepositories lists repositories accessible to the current user.
 		ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]string, error)
-		GetRepository(ctx context.Context, identifier string) (string, error)
+		GetRepository(ctx context.Context, identifier string) (Repository, error)
 		// GetRepoTarball retrieves a .tar.gz tarball of a git repository
-		GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
+		GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, string, error)
 		// CreateWebhook creates a webhook on the cloud provider, returning the
 		// provider's unique ID for the webhook.
 		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error)
@@ -24,6 +24,8 @@ type (
 		ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
 		// ListPullRequestFiles returns the paths of files that are modified in the pull request
 		ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error)
+		// GetCommit retrieves commit from the repo with the given git ref
+		GetCommit(ctx context.Context, repo, ref string) (Commit, error)
 	}
 
 	// ClientOptions are options for constructing a cloud client
@@ -85,5 +87,22 @@ type (
 		Status      VCSStatus
 		TargetURL   string
 		Description string
+	}
+
+	Repository struct {
+		Path          string
+		DefaultBranch string
+	}
+
+	Commit struct {
+		SHA    string
+		URL    string
+		Author CommitAuthor
+	}
+
+	CommitAuthor struct {
+		Username   string
+		ProfileURL string
+		AvatarURL  string
 	}
 )

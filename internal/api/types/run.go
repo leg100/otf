@@ -33,6 +33,7 @@ type Run struct {
 	// Relations
 	Apply                *Apply                `jsonapi:"relationship" json:"apply"`
 	ConfigurationVersion *ConfigurationVersion `jsonapi:"relationship" json:"configuration-version"`
+	CostEstimate         *CostEstimate         `jsonapi:"relationship" json:"cost-estimate"`
 	CreatedBy            *User                 `jsonapi:"relationship" json:"created-by"`
 	Plan                 *Plan                 `jsonapi:"relationship" json:"plan"`
 	Workspace            *Workspace            `jsonapi:"relationship" json:"workspace"`

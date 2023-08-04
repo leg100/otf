@@ -86,7 +86,7 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
 	//
 	// NOTE: support is currently limited to a couple of resources.
-	var opts []jsonapi.MarshalOption
+	var included []any
 	if includes := r.URL.Query().Get("include"); includes != "" {
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
@@ -95,15 +95,26 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 				if err != nil {
 					return nil, nil, err
 				}
-				to.Organization = m.toOrganization(unmarshaled)
-				opts = append(opts, jsonapi.MarshalInclude(to.Organization))
+				included = append(included, m.toOrganization(unmarshaled))
 			case "current_run.configuration_version":
-				unmarshaled, err := m.GetLatestConfigurationVersion(r.Context(), from.ID)
+				if to.CurrentRun == nil {
+					// workspace has no current run yet
+					break
+				}
+				unmarshaledRun, err := m.GetRun(r.Context(), from.LatestRun.ID)
 				if err != nil {
 					return nil, nil, err
 				}
-				cv := m.toConfigurationVersion(unmarshaled)
-				opts = append(opts, jsonapi.MarshalInclude(cv))
+				unmarshaledCV, err := m.GetConfigurationVersion(r.Context(), unmarshaledRun.ConfigurationVersionID)
+				if err != nil {
+					return nil, nil, err
+				}
+				run, _, err := m.toRun(unmarshaledRun, r)
+				if err != nil {
+					return nil, nil, err
+				}
+				cv, _ := m.toConfigurationVersion(unmarshaledCV, r)
+				included = append(included, run, cv)
 			case "outputs":
 				sv, err := m.GetCurrentStateVersion(r.Context(), from.ID)
 				if err != nil {
@@ -111,11 +122,11 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 				}
 				for _, out := range sv.Outputs {
 					to.Outputs = append(to.Outputs, m.toOutput(out, true))
-					opts = append(opts, jsonapi.MarshalInclude(m.toOutput(out, true)))
+					included = append(included, m.toOutput(out, true))
 				}
 			}
 		}
 	}
-
+	opts := []jsonapi.MarshalOption{jsonapi.MarshalInclude(included...)}
 	return to, opts, nil
 }

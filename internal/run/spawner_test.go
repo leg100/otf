@@ -228,8 +228,8 @@ type fakeSpawnerCloudClient struct {
 	pullFiles []string
 }
 
-func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
-	return nil, nil
+func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
+	return nil, "", nil
 }
 
 func (f *fakeSpawnerCloudClient) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {

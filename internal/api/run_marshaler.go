@@ -120,6 +120,9 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 	for i, from := range from.Variables {
 		to.Variables[i] = types.RunVariable{Key: from.Key, Value: from.Value}
 	}
+	if from.CostEstimationEnabled {
+		to.CostEstimate = &types.CostEstimate{ID: internal.ConvertID(from.ID, "ce")}
+	}
 
 	// Support including related resources:
 	//

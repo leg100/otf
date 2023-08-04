@@ -1151,6 +1151,8 @@ type genericConn interface {
 	// string. arguments should be referenced positionally from the sql string
 	// as $1, $2, etc.
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }
 
 // genericBatch batches queries to send in a single network request to a

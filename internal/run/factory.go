@@ -57,19 +57,38 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, err
 	}
-	// use workspace branch if set
-	var ref *string
-	if ws.Connection.Branch != "" {
-		ref = &ws.Connection.Branch
+	repo, err := client.GetRepository(ctx, ws.Connection.Repo)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving repository info: %w", err)
 	}
-	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	branch := ws.Connection.Branch
+	if branch == "" {
+		branch = repo.DefaultBranch
+	}
+	tarball, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Repo: ws.Connection.Repo,
-		Ref:  ref,
+		Ref:  &branch,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 	}
-	cv, err := f.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+	commit, err := client.GetCommit(ctx, ws.Connection.Repo, ref)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving commit information: %s: %w", ref, err)
+	}
+	cv, err := f.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+		IngressAttributes: &configversion.IngressAttributes{
+			Branch:          branch,
+			CommitSHA:       commit.SHA,
+			CommitURL:       commit.URL,
+			Repo:            ws.Connection.Repo,
+			IsPullRequest:   false,
+			OnDefaultBranch: branch == repo.DefaultBranch,
+			SenderUsername:  commit.Author.Username,
+			SenderAvatarURL: commit.Author.AvatarURL,
+			SenderHTMLURL:   commit.Author.ProfileURL,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}

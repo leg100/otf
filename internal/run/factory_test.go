@@ -177,6 +177,6 @@ func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, string) (c
 	return &fakeFactoryCloudClient{}, nil
 }
 
-func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
-	return nil, nil
+func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
+	return nil, "", nil
 }

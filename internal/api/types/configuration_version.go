@@ -16,6 +16,9 @@ type ConfigurationVersion struct {
 	Status           string              `jsonapi:"attribute" json:"status"`
 	StatusTimestamps *CVStatusTimestamps `jsonapi:"attribute" json:"status-timestamps"`
 	UploadURL        string              `jsonapi:"attribute" json:"upload-url"`
+
+	// Relations
+	IngressAttributes *IngressAttributes `jsonapi:"relationship" json:"ingress-attributes"`
 }
 
 // CVStatusTimestamps holds the timestamps for individual configuration version
@@ -68,7 +71,4 @@ type IngressAttributes struct {
 	SenderUsername    string `jsonapi:"attribute" json:"sender-username"`
 	SenderAvatarURL   string `jsonapi:"attribute" json:"sender-avatar-url"`
 	SenderHTMLURL     string `jsonapi:"attribute" json:"sender-html-url"`
-
-	// Links
-	Links map[string]interface{} `jsonapi:"links,omitempty"`
 }

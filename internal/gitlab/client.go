@@ -93,13 +93,16 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (string, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repository, error) {
 	proj, _, err := g.client.Projects.GetProject(identifier, nil)
 	if err != nil {
-		return "", err
+		return cloud.Repository{}, err
 	}
 
-	return proj.PathWithNamespace, nil
+	return cloud.Repository{
+		Path:          proj.PathWithNamespace,
+		DefaultBranch: proj.DefaultBranch,
+	}, nil
 }
 
 func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositoriesOptions) ([]string, error) {
@@ -138,10 +141,10 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 	return tags, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
+		return nil, "", fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	tarball, _, err := g.client.Repositories.Archive(opts.Repo, &gitlab.ArchiveOptions{
@@ -149,27 +152,36 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 		SHA:    opts.Ref,
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Gitlab tarball contents are contained within a top-level directory
-	// formatted <repo>-<ref>-<sha>. We want the tarball without this directory,
+	// formatted <ref>-<sha>. We want the tarball without this directory,
 	// so we re-tar the contents without the top-level directory.
 	untarpath, err := os.MkdirTemp("", fmt.Sprintf("gitlab-%s-%s-*", owner, name))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := internal.Unpack(bytes.NewReader(tarball), untarpath); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	contents, err := os.ReadDir(untarpath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if len(contents) != 1 {
-		return nil, fmt.Errorf("expected only one top-level directory; instead got %s", contents)
+		return nil, "", fmt.Errorf("expected only one top-level directory; instead got %s", contents)
 	}
-	return internal.Pack(path.Join(untarpath, contents[0].Name()))
+	dir := contents[0].Name()
+	parts := strings.Split(dir, "-")
+	if len(parts) != 2 {
+		return nil, "", fmt.Errorf("malformed directory name found in tarball: %s", dir)
+	}
+	tarball, err = internal.Pack(path.Join(untarpath, dir))
+	if err != nil {
+		return nil, "", err
+	}
+	return tarball, parts[1], nil
 }
 
 func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
@@ -268,4 +280,8 @@ func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) err
 
 func (g *Client) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {
 	return nil, nil
+}
+
+func (g *Client) GetCommit(ctx context.Context, repo, ref string) (cloud.Commit, error) {
+	return cloud.Commit{}, nil
 }

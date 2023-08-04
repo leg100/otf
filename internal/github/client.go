@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -119,17 +120,20 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (string, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repository, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return "", fmt.Errorf("malformed identifier: %s", identifier)
+		return cloud.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return "", err
+		return cloud.Repository{}, err
 	}
 
-	return repo.GetFullName(), nil
+	return cloud.Repository{
+		Path:          identifier,
+		DefaultBranch: repo.GetDefaultBranch(),
+	}, nil
 }
 
 func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
@@ -172,10 +176,10 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 	return tags, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
+		return nil, "", fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	var gopts github.RepositoryContentGetOptions
@@ -185,14 +189,19 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 
 	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &gopts, true)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	resp, err := g.client.Client().Get(link.String())
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		// parse out the query string which contains credential
+		u, _ := url.Parse(link.String())
+		return nil, "", fmt.Errorf("non-200 status code: %d: %s", resp.StatusCode, u.Path)
+	}
 
 	// github tarball contains a parent directory of the format
 	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
@@ -202,20 +211,29 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	// TODO: remove temp dir after finishing
 	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", owner, name))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := internal.Unpack(resp.Body, untarpath); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	contents, err := os.ReadDir(untarpath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if len(contents) != 1 {
-		return nil, fmt.Errorf("expected only one top-level directory; instead got %s", contents)
+		return nil, "", fmt.Errorf("expected only one top-level directory; instead got %s", contents)
 	}
-	parentDir := path.Join(untarpath, contents[0].Name())
-	return internal.Pack(parentDir)
+	dir := contents[0].Name()
+	parts := strings.Split(dir, "-")
+	if len(parts) < 3 {
+		return nil, "", fmt.Errorf("malformed directory name found in tarball: %s", dir)
+	}
+	parentDir := path.Join(untarpath, dir)
+	tarball, err := internal.Pack(parentDir)
+	if err != nil {
+		return nil, "", err
+	}
+	return tarball, parts[len(parts)-1], nil
 }
 
 // CreateWebhook creates a webhook on a github repository.
@@ -431,4 +449,27 @@ listloop:
 		}
 	}
 	return files, nil
+}
+
+func (g *Client) GetCommit(ctx context.Context, repo, ref string) (cloud.Commit, error) {
+	owner, name, found := strings.Cut(repo, "/")
+	if !found {
+		return cloud.Commit{}, fmt.Errorf("malformed identifier: %s", repo)
+	}
+
+	commit, resp, err := g.client.Repositories.GetCommit(ctx, owner, name, ref, nil)
+	if err != nil {
+		return cloud.Commit{}, err
+	}
+	defer resp.Body.Close()
+
+	return cloud.Commit{
+		SHA: commit.GetSHA(),
+		URL: commit.GetHTMLURL(),
+		Author: cloud.CommitAuthor{
+			Username:   commit.GetAuthor().GetLogin(),
+			AvatarURL:  commit.GetAuthor().GetAvatarURL(),
+			ProfileURL: commit.GetAuthor().GetHTMLURL(),
+		},
+	}, nil
 }

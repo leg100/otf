@@ -51,7 +51,7 @@ func (a *api) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	to := a.toConfigurationVersion(cv)
+	to, _ := a.toConfigurationVersion(cv, r)
 
 	// upload url is only provided in the response when creating configuration
 	// version:

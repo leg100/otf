@@ -321,8 +321,11 @@ func (r *Run) CanAccessWorkspace(action rbac.Action, policy *internal.WorkspaceP
 }
 
 func (r *Run) EnqueueApply() error {
-	if r.Status != internal.RunPlanned {
-		return fmt.Errorf("cannot apply run")
+	switch r.Status {
+	case internal.RunPlanned, internal.RunCostEstimated:
+		// applyable statuses
+	default:
+		return fmt.Errorf("cannot apply run with status %s", r.Status)
 	}
 	r.updateStatus(internal.RunApplyQueued)
 	r.Apply.UpdateStatus(PhaseQueued)
