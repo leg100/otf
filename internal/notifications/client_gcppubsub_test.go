@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPubSubClient_New(t *testing.T) {
-	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
+	// PUBSUB_EMULATOR_HOST is not actually used but ensures the check for valid
+	// google credentials is skipped.
+	t.Setenv("PUBSUB_EMULATOR_HOST", "foobar")
 
 	tests := []struct {
 		name string

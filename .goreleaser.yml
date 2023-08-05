@@ -70,19 +70,70 @@ dockers:
   ids:
   - otfd
   image_templates:
-  - "leg100/otfd:latest"
-  - "leg100/otfd:{{ .Version }}"
+  - "leg100/otfd:latest-amd64"
+  - "leg100/otfd:{{ .Version }}-amd64"
   skip_push: auto
   dockerfile: Dockerfile
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--platform=linux/amd64"
+- goos: linux
+  goarch: arm64
+  ids:
+  - otfd
+  image_templates:
+  - "leg100/otfd:latest-arm64"
+  - "leg100/otfd:{{ .Version }}-arm64"
+  skip_push: auto
+  dockerfile: Dockerfile
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--platform=linux/arm64"
 - goos: linux
   goarch: amd64
   ids:
   - otf-agent
   image_templates:
-  - "leg100/otf-agent:latest"
-  - "leg100/otf-agent:{{ .Version }}"
+  - "leg100/otf-agent:latest-amd64"
+  - "leg100/otf-agent:{{ .Version }}-amd64"
   skip_push: auto
   dockerfile: Dockerfile.agent
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--platform=linux/amd64"
+- goos: linux
+  goarch: arm64
+  ids:
+  - otf-agent
+  image_templates:
+  - "leg100/otf-agent:latest-arm64"
+  - "leg100/otf-agent:{{ .Version }}-arm64"
+  skip_push: auto
+  dockerfile: Dockerfile.agent
+  use: buildx
+  build_flag_templates:
+  - "--pull"
+  - "--platform=linux/arm64"
+docker_manifests:
+- name_template: 'leg100/otfd:latest'
+  image_templates:
+  - "leg100/otfd:latest-amd64"
+  - "leg100/otfd:latest-arm64"
+- name_template: 'leg100/otfd:{{ .Version }}'
+  image_templates:
+  - "leg100/otfd:{{ .Version }}-amd64"
+  - "leg100/otfd:{{ .Version }}-arm64"
+- name_template: 'leg100/otf-agent:latest'
+  image_templates:
+  - "leg100/otf-agent:latest-amd64"
+  - "leg100/otf-agent:latest-arm64"
+- name_template: 'leg100/otf-agent:{{ .Version }}'
+  image_templates:
+  - "leg100/otf-agent:{{ .Version }}-amd64"
+  - "leg100/otf-agent:{{ .Version }}-arm64"
 release:
   footer: |
     ## Docker images
