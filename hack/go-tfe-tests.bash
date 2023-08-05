@@ -24,8 +24,6 @@ tests=()
 tests+=('TestOrganizations')
 tests+=('TestOrganizationTagsList/with_no_query_params')
 tests+=('TestOrganizationTagsList/with_no_param_Filter')
-# TODO: uncomment this once support is added for tag substring querying
-#tests+=('TestOrganizationTagsList/with_no_param_Query')
 tests+=('TestOrganizationTagsDelete')
 tests+=('TestOrganizationTagsAddWorkspace')
 tests+=('TestOrganizationTokens')
