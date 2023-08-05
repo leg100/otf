@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"testing"
