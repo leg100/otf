@@ -8,6 +8,10 @@ import (
 )
 
 func TestPubSubClient_New(t *testing.T) {
+	// PUBSUB_EMULATOR_HOST is not actually used but ensures the check for valid
+	// google credentials is skipped.
+	t.Setenv("PUBSUB_EMULATOR_HOST", "foobar")
+
 	tests := []struct {
 		name string
 		u    string
