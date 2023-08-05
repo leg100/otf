@@ -2,6 +2,8 @@ package authenticator
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -13,10 +15,18 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var _ authenticator = &oidcAuthenticator{}
+var (
+	_ authenticator = &oidcAuthenticator{}
+
+	// "openid" is a required scope for OpenID Connect flows, and profile
+	// gives OTF access to the user's username.
+	DefaultScopes = []string{oidc.ScopeOpenID, "profile"}
+
+	ErrMissingOIDCIssuerURL = errors.New("missing oidc-issuer-url")
+)
 
 type (
-	// oidcAuthenticator is an authenticator that uses oidc.
+	// oidcAuthenticator is an authenticator that uses OIDC.
 	oidcAuthenticator struct {
 		tokens.TokensService // for creating session
 
@@ -33,7 +43,7 @@ type (
 		cloud.OIDCConfig
 	}
 
-	// oidcClaims depicts the claims returned from the oidc id-token.
+	// oidcClaims depicts the claims returned from the OIDC id-token.
 	oidcClaims struct {
 		Name   string   `json:"name"`
 		Groups []string `json:"groups"`
@@ -41,6 +51,10 @@ type (
 )
 
 func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*oidcAuthenticator, error) {
+	if opts.IssuerURL == "" {
+		return nil, ErrMissingOIDCIssuerURL
+	}
+
 	cloudConfig := cloud.Config{
 		Name:                opts.Name,
 		SkipTLSVerification: opts.SkipTLSVerification,
@@ -51,7 +65,7 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 	ctx = oidc.ClientContext(ctx, cloudConfig.HTTPClient())
 	provider, err := oidc.NewProvider(ctx, opts.IssuerURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("constructing OIDC provider: %w", err)
 	}
 
 	return &oidcAuthenticator{
@@ -65,10 +79,7 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 				ClientID:     opts.ClientID,
 				ClientSecret: opts.ClientSecret,
 				Endpoint:     provider.Endpoint(),
-
-				// "openid" is a required scope for OpenID Connect flows.
-				// groups is used for managing permissions.
-				Scopes: append(opts.Scopes, oidc.ScopeOpenID, "groups", "profile"),
+				Scopes:       DefaultScopes,
 			},
 			cloudConfig: cloudConfig,
 		},
