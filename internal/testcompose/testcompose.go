@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -27,7 +28,11 @@ var ports = map[Service]int{
 func Up() error {
 	// --wait implies -d, which detaches the containers
 	args := []string{"compose", "-p", "otf", "up", "--wait", "--wait-timeout", "60"}
-	args = append(args, string(Postgres), string(Squid), string(PubSub))
+	args = append(args, string(Postgres), string(Squid))
+	// gcp pub sub emulator only runs on amd64
+	if runtime.GOARCH == "amd64" {
+		args = append(args, string(PubSub))
+	}
 	cmd := exec.Command("docker", args...)
 
 	var buferr bytes.Buffer

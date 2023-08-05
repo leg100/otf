@@ -74,7 +74,7 @@ func doMain(m *testing.M) (int, error) {
 	// get pubsub emulator host and set environment variable
 	pubsub, err := testcompose.GetHost(testcompose.PubSub)
 	if err != nil {
-		return 0, fmt.Errorf("getting squid host: %w", err)
+		return 0, fmt.Errorf("getting pub sub emulator host: %w", err)
 	}
 	unset, err = setenv("PUBSUB_EMULATOR_HOST", pubsub)
 	if err != nil {

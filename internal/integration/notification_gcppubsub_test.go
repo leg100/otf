@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"runtime"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
@@ -18,6 +19,9 @@ import (
 // TestIntegration_NotificationGCPPubSub demonstrates run events triggering the
 // sending of notifications to a GCP pub-sub topic.
 func TestIntegration_NotificationGCPPubSub(t *testing.T) {
+	if runtime.GOARCH != "amd64" {
+		t.Skip("gcp pubsub emulator only runs on amd64")
+	}
 	testutils.SkipIfEnvUnspecified(t, "PUBSUB_EMULATOR_HOST")
 
 	integrationTest(t)
