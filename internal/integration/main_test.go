@@ -44,12 +44,6 @@ func TestMain(m *testing.M) {
 }
 
 func doMain(m *testing.M) (int, error) {
-	for _, chromium := range []string{"chromium", "chromium-browser"} {
-		if _, err := exec.LookPath(chromium); err == nil {
-			return 0, fmt.Errorf("found %s executable in path; chromium has a bug that breaks the browser-based tests; see https://github.com/chromedp/chromedp/issues/1325", chromium)
-		}
-	}
-
 	// Start external services
 	if err := testcompose.Up(); err != nil {
 		return 0, fmt.Errorf("starting external services: %w", err)
