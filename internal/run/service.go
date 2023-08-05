@@ -585,7 +585,9 @@ func (s *service) getLogs(ctx context.Context, runID string, phase internal.Phas
 }
 
 func (s *service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {
-	if ws.QueueAllRuns {
+	// Auto queue a run only if configured on the worspace and the workspace is
+	// a connected to a VCS repo.
+	if ws.QueueAllRuns && ws.Connection != nil {
 		_, err := s.CreateRun(ctx, ws.ID, CreateOptions{})
 		if err != nil {
 			return err

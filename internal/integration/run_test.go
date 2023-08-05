@@ -38,6 +38,7 @@ func TestRun(t *testing.T) {
 		repo := cloud.NewTestRepo()
 		daemon, _, ctx := setup(t, nil,
 			github.WithRepo(repo),
+			github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
 			github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 		)
 		org := daemon.createOrganization(t, ctx)
