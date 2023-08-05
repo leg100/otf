@@ -6,6 +6,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/resource"
 )
 
 type Client struct {
@@ -14,7 +15,7 @@ type Client struct {
 
 // CreateOrganization creates a new organization with the given options.
 func (c *Client) CreateOrganization(ctx context.Context, options CreateOptions) (*Organization, error) {
-	if err := options.Validate(); err != nil {
+	if err := resource.ValidateName(options.Name); err != nil {
 		return nil, err
 	}
 	req, err := c.NewRequest("POST", "organizations", &types.OrganizationCreateOptions{

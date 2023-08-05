@@ -39,8 +39,7 @@ func TestNewWorkspace(t *testing.T) {
 		{
 			name: "invalid name",
 			opts: CreateOptions{
-				Name:         internal.String("%*&^"),
-				Organization: internal.String("my-org"),
+				Name: internal.String("%*&^"),
 			},
 			want: internal.ErrInvalidName,
 		},

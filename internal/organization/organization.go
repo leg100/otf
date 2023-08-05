@@ -2,11 +2,10 @@
 package organization
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/resource"
 )
 
 const (
@@ -63,7 +62,7 @@ type (
 )
 
 func NewOrganization(opts CreateOptions) (*Organization, error) {
-	if err := opts.Validate(); err != nil {
+	if err := resource.ValidateName(opts.Name); err != nil {
 		return nil, err
 	}
 	org := Organization{
@@ -87,19 +86,6 @@ func NewOrganization(opts CreateOptions) (*Organization, error) {
 		org.CostEstimationEnabled = *opts.CostEstimationEnabled
 	}
 	return &org, nil
-}
-
-func (opts *CreateOptions) Validate() error {
-	if opts.Name == nil {
-		return errors.New("name required")
-	}
-	if *opts.Name == "" {
-		return errors.New("name cannot be empty")
-	}
-	if !internal.ValidStringID(opts.Name) {
-		return fmt.Errorf("invalid name: %s", *opts.Name)
-	}
-	return nil
 }
 
 func (org *Organization) String() string { return org.ID }

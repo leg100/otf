@@ -181,8 +181,8 @@ type (
 
 func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 	// required options
-	if opts.Name == nil {
-		return nil, internal.ErrRequiredName
+	if err := resource.ValidateName(opts.Name); err != nil {
+		return nil, err
 	}
 	if opts.Organization == nil {
 		return nil, internal.ErrRequiredOrg
