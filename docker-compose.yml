@@ -71,5 +71,6 @@ services:
       - OTF_LOG_HTTP_REQUESTS=true
       - HTTPS_PROXY=squid:3128
       - SSL_CERT_FILE=/fixtures/cert.pem
+      - OTF_HOSTNAME=otf.local
     volumes:
       - ./internal/integration/fixtures:/fixtures
