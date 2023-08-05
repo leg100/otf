@@ -18,23 +18,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# go-tfe-tests runs API tests - before it does that, it builds the otfd docker
-# image and starts up otfd and postgres using docker compose, and then the
-# tests are run against it.
-#
-# NOTE: two batches of tests are run:
-# (1) using the forked repo
-# (2) using the upstream repo, for tests against new features, like workspace tags
 .PHONY: go-tfe-tests
-go-tfe-tests: image compose-up go-tfe-tests-forked go-tfe-tests-upstream
-
-.PHONY: go-tfe-tests-forked
-go-tfe-tests-forked:
+go-tfe-tests: image compose-up
 	./hack/go-tfe-tests.bash
-
-.PHONY: go-tfe-tests-upstream
-go-tfe-tests-upstream:
-	./hack/go-tfe-tests-upstream.bash
 
 .PHONY: watch
 watch: tailwind-watch modd

@@ -1,25 +1,95 @@
 #!/usr/bin/env bash
 
-# Run go-tfe tests against otfd. It's recommended you first start otfd and
-# postgres using docker compose before running this script. This script
-# expects to find otfd running on port 8080 which is the port the docker
-# compose otfd listens on.
+# Runs go-tfe integration tests against OTF. The defaults assume you've started
+# up the docker-compose stack. If not, you'll need to override the environment
+# variables below. You need an API user token with site admin privileges. You
+# can pass individual test names as arguments to override the default behaviour
+# of running all tests.
 #
-# Either specify tests as arguments or a default subset of tests will be run.
+# Read the docs first: https://docs.otf.ninja/latest/testing/
 
 set -e
 
-GO_TFE_REPO="${GO_TFE_REPO:-github.com/leg100/go-tfe@otf}"
-TESTS="${@:-Test(Runs)}"
+function join_by { local IFS="$1"; shift; echo "$*"; }
 
 export TFE_ADDRESS="${TFE_ADDRESS:-https://localhost:8080}"
-# go-tfe tests perform privileged operations (e.g. creating organizations), so
-# we use a site admin token.
-#
-# NOTE: this token is the same token specified in docker compose
 export TFE_TOKEN=${TFE_TOKEN:-site-token}
 export SKIP_PAID=1
 export SSL_CERT_FILE=$PWD/internal/integration/fixtures/cert.pem
 
-cd $(go mod download -json ${GO_TFE_REPO} | jq -r '.Dir')
-go test -v -run $TESTS -timeout 60s
+[ -z "$GITHUB_POLICY_SET_IDENTIFIER" ] && echo "must set GITHUB_POLICY_SET_IDENTIFIER" && exit 1
+[ -z "$OAUTH_CLIENT_GITHUB_TOKEN" ] && echo "must set OAUTH_CLIENT_GITHUB_TOKEN" && exit 1
+
+tests=()
+tests+=('TestOrganizations')
+tests+=('TestOrganizationTagsList/with_no_query_params')
+tests+=('TestOrganizationTagsList/with_no_param_Filter')
+# TODO: uncomment this once support is added for tag substring querying
+#tests+=('TestOrganizationTagsList/with_no_param_Query')
+tests+=('TestOrganizationTagsDelete')
+tests+=('TestOrganizationTagsAddWorkspace')
+tests+=('TestOrganizationTokens')
+tests+=('TestWorkspacesCreate')
+tests+=('TestWorkspacesUpdateByID')
+tests+=('TestWorkspacesDelete')
+tests+=('TestWorkspacesLock')
+tests+=('TestWorkspacesUnlock')
+tests+=('TestWorkspacesForceUnlock')
+tests+=('TestWorkspaces_(Add|Remove)Tags')
+tests+=('TestWorkspacesList/when_searching_using_a_tag')
+tests+=('TestWorkspacesList/without_list_options')
+tests+=('TestWorkspacesList/with_list_options')
+tests+=('TestWorkspacesList/when_searching_a_known_workspace')
+tests+=('TestWorkspacesList/when_searching_using_a_tag')
+tests+=('TestWorkspacesList/when_searching_an_unknown_workspace')
+tests+=('TestWorkspacesList/without_a_valid_organization')
+tests+=('TestWorkspacesList/with_organization_included')
+tests+=('TestWorkspacesRead/when_the_workspace_exists')
+tests+=('TestWorkspacesRead/when_the_workspace_does_not_exist')
+tests+=('TestWorkspacesRead/when_the_organization_does_not_exist')
+tests+=('TestWorkspacesRead/without_a_valid_organization')
+tests+=('TestWorkspacesRead/without_a_valid_workspace')
+tests+=('TestWorkspacesReadByID')
+tests+=('TestRunsCreate')
+tests+=('TestRunsList')
+tests+=('TestRunsCancel')
+tests+=('TestRunsForceCancel')
+tests+=('TestRunsDiscard')
+tests+=('TestPlans')
+tests+=('TestAppliesRead')
+tests+=('TestAppliesLogs')
+tests+=('TestNotificationConfigurationCreate/with_a')
+tests+=('TestNotificationConfigurationCreate/without_a')
+tests+=('TestNotificationConfigurationDelete')
+tests+=('TestNotificationConfigurationUpdate/with_options')
+tests+=('TestNotificationConfigurationUpdate/without_options')
+tests+=('TestNotificationConfigurationUpdate/^when')
+tests+=('TestTeamMembersAddByUsername')
+tests+=('TestTeamMembersRemoveByUsernames')
+tests+=('TestTeamMembersList')
+tests+=('TestOAuthClientsCreate$')
+tests+=('TestOAuthClientsRead')
+tests+=('TestOAuthClientsList')
+tests+=('TestOAuthClientsDelete')
+tests+=('TestTeamsList')
+tests+=('TestTeamsCreate')
+tests+=('TestTeamsRead')
+tests+=('TestTeamsUpdate$')
+tests+=('TestTeamsDelete')
+tests+=('TestConfigurationVersionsList')
+tests+=('TestConfigurationVersionsCreate')
+tests+=('TestConfigurationVersionsRead')
+tests+=('TestConfigurationVersionsUpload')
+tests+=('TestConfigurationVersionsDownload')
+tests+=('TestVariables')
+tests+=('TestStateVersion')
+all=$(join_by '|' "${tests[@]}")
+
+dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@latest | jq -r '.Dir')
+echo "downloaded go-tfe module to $dest_dir"
+
+# some tests generate a tarball and save locally and need write perms
+chmod -R +w $dest_dir
+
+cd $dest_dir
+go test -v -run ${@:-$all} -timeout 600s
