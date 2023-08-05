@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/leg100/otf/internal"
@@ -72,15 +73,19 @@ func doMain(m *testing.M) (int, error) {
 	defer unset()
 
 	// get pubsub emulator host and set environment variable
-	pubsub, err := testcompose.GetHost(testcompose.PubSub)
-	if err != nil {
-		return 0, fmt.Errorf("getting pub sub emulator host: %w", err)
+	//
+	// NOTE: gcp pub sub emulator only runs on amd64
+	if runtime.GOARCH == "amd64" {
+		pubsub, err := testcompose.GetHost(testcompose.PubSub)
+		if err != nil {
+			return 0, fmt.Errorf("getting pub sub emulator host: %w", err)
+		}
+		unset, err = setenv("PUBSUB_EMULATOR_HOST", pubsub)
+		if err != nil {
+			return 0, err
+		}
+		defer unset()
 	}
-	unset, err = setenv("PUBSUB_EMULATOR_HOST", pubsub)
-	if err != nil {
-		return 0, err
-	}
-	defer unset()
 
 	// The otfd daemon spawned in an integration test uses a self-signed cert.
 	// The following environment variable instructs any Go program spawned in a
