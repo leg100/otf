@@ -90,10 +90,10 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientID, "gitlab-client-id", "", "gitlab client ID")
 	cmd.Flags().StringVar(&cfg.Gitlab.OAuthConfig.ClientSecret, "gitlab-client-secret", "", "gitlab client secret")
 
-	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", cfg.OIDC.Name, "user friendly oidc name")
-	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", cfg.OIDC.IssuerURL, "oidc issuer url")
-	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "oidc client ID")
-	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "oidc client secret")
+	cmd.Flags().StringVar(&cfg.OIDC.Name, "oidc-name", cfg.OIDC.Name, "User friendly OIDC name")
+	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", cfg.OIDC.IssuerURL, "OIDC issuer URL")
+	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "OIDC client ID")
+	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret")
 
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")
 

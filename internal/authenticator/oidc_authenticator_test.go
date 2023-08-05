@@ -1,6 +1,7 @@
 package authenticator
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"net/http"
@@ -10,6 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewOIDCAuthenticator(t *testing.T) {
+	ctx := context.Background()
+	_, err := newOIDCAuthenticator(ctx, oidcAuthenticatorOptions{})
+	assert.Equal(t, ErrMissingOIDCIssuerURL, err)
+}
 
 func TestOIDCAuthenticator_ResponseHandler(t *testing.T) {
 	priv, err := rsa.GenerateKey(rand.Reader, 512)
