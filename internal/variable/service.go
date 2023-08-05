@@ -27,11 +27,11 @@ type (
 	service struct {
 		logr.Logger
 
-		db *pgdb
-
+		db        *pgdb
 		workspace internal.Authorizer
+		web       *web
 
-		web *web
+		*factory
 	}
 
 	Options struct {
@@ -49,6 +49,7 @@ func NewService(opts Options) *service {
 		Logger:    opts.Logger,
 		workspace: opts.WorkspaceAuthorizer,
 		db:        &pgdb{opts.DB},
+		factory:   &factory{generateVersion: versionGenerator},
 	}
 
 	svc.web = &web{
@@ -70,7 +71,7 @@ func (s *service) CreateVariable(ctx context.Context, workspaceID string, opts C
 		return nil, err
 	}
 
-	v, err := NewVariable(workspaceID, opts)
+	v, err := s.new(workspaceID, opts)
 	if err != nil {
 		s.Error(err, "constructing variable", "subject", subject, "workspace", workspaceID, "key", opts.Key)
 		return nil, err
@@ -134,7 +135,7 @@ func (s *service) UpdateVariable(ctx context.Context, variableID string, opts Up
 	}
 
 	updated, err := s.db.update(ctx, variableID, func(v *Variable) error {
-		return v.Update(opts)
+		return s.update(v, opts)
 	})
 	if err != nil {
 		s.Error(err, "updating variable", "subject", subject, "variable_id", variableID, "workspace_id", existing.WorkspaceID)

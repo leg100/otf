@@ -8,6 +8,7 @@ import (
 	gohttp "net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
@@ -94,8 +95,13 @@ func (c *Client) UploadLockFile(ctx context.Context, runID string, lockfile []by
 	return nil
 }
 
-func (c *Client) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
-	req, err := c.NewRequest("GET", "runs", &opts)
+func (c *Client) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
+	req, err := c.NewRequest("GET", "runs", &types.RunListOptions{
+		ListOptions:  types.ListOptions(opts.PageOptions),
+		Organization: opts.Organization,
+		WorkspaceID:  opts.WorkspaceID,
+		Status:       strings.Join(internal.ToStringSlice(opts.Statuses), ","),
+	})
 	if err != nil {
 		return nil, err
 	}

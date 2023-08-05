@@ -215,7 +215,7 @@ func (s *service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 		return err
 	}
 
-	tarball, err := opts.Client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	tarball, _, err := opts.Client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Repo: string(opts.Repo),
 		Ref:  &opts.Ref,
 	})

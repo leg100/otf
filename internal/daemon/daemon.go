@@ -184,6 +184,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                          db,
 		Renderer:                    renderer,
 		WorkspaceAuthorizer:         workspaceService,
+		OrganizationService:         orgService,
 		WorkspaceService:            workspaceService,
 		ConfigurationVersionService: configService,
 		VCSProviderService:          vcsProviderService,

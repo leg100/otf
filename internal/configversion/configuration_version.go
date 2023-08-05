@@ -3,7 +3,6 @@ package configversion
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -154,12 +153,6 @@ func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, t
 
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
-	if cv.Status != ConfigurationPending {
-		return fmt.Errorf("cannot upload config for a configuration version with non-pending status: %s", cv.Status)
-	}
-
-	// check config untars successfully and set errored status if not
-
 	// upload config and set status depending on success
 	status, err := uploader.Upload(ctx, config)
 	if err != nil {

@@ -9,7 +9,6 @@ import (
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
-	"github.com/leg100/otf/internal/configversion"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/run"
@@ -85,6 +84,8 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 			IsForceCancelable: from.ForceCancelAvailableAt != nil,
 			IsDiscardable:     from.Discardable(),
 		},
+		AllowEmptyApply:        from.AllowEmptyApply,
+		AutoApply:              from.AutoApply,
 		CreatedAt:              from.CreatedAt,
 		ExecutionMode:          string(from.ExecutionMode),
 		ForceCancelAvailableAt: from.ForceCancelAvailableAt,
@@ -92,14 +93,16 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 		IsDestroy:              from.IsDestroy,
 		Message:                from.Message,
 		Permissions:            perms,
+		PlanOnly:               from.PlanOnly,
 		PositionInQueue:        0,
 		Refresh:                from.Refresh,
 		RefreshOnly:            from.RefreshOnly,
 		ReplaceAddrs:           from.ReplaceAddrs,
-		Source:                 configversion.DefaultConfigurationSource,
+		Source:                 string(from.Source),
 		Status:                 string(from.Status),
 		StatusTimestamps:       &timestamps,
 		TargetAddrs:            from.TargetAddrs,
+		TerraformVersion:       from.TerraformVersion,
 		// Relations
 		Plan:  plan,
 		Apply: apply,
@@ -113,14 +116,21 @@ func (m *jsonapiMarshaler) toRun(from *run.Run, r *http.Request) (*types.Run, []
 		},
 		Workspace: &types.Workspace{ID: from.WorkspaceID},
 	}
+	to.Variables = make([]types.RunVariable, len(from.Variables))
+	for i, from := range from.Variables {
+		to.Variables[i] = types.RunVariable{Key: from.Key, Value: from.Value}
+	}
+	if from.CostEstimationEnabled {
+		to.CostEstimate = &types.CostEstimate{ID: internal.ConvertID(from.ID, "ce")}
+	}
 
 	// Support including related resources:
 	//
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#available-related-resources
 	//
-	// NOTE: limit support to workspace, since that's what the go-tfe tests
-	// for, and we want to run the full barrage of go-tfe workspace tests
-	// without error
+	// NOTE: limit support to a couple of resources, since that's what the
+	// go-tfe tests for, and we want to run the full barrage of go-tfe workspace
+	// tests without error
 	var opts []jsonapi.MarshalOption
 	if includes := r.URL.Query().Get("include"); includes != "" {
 		for _, inc := range strings.Split(includes, ",") {
@@ -225,6 +235,6 @@ func (s *runLogsURLGenerator) logURL(r *http.Request, phase run.Phase) (string, 
 	if err != nil {
 		return "", err
 	}
-	// Terraform CLI expects an absolute URL
+	// terraform CLI expects an absolute URL
 	return otfhttp.Absolute(r, logs), nil
 }

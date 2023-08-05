@@ -214,7 +214,7 @@ func (f *fakeSpawnerServices) UploadConfig(context.Context, string, []byte) erro
 	return nil
 }
 
-func (f *fakeSpawnerServices) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
+func (f *fakeSpawnerServices) CreateRun(context.Context, string, CreateOptions) (*Run, error) {
 	f.spawned = true
 	return nil, nil
 }
@@ -228,8 +228,8 @@ type fakeSpawnerCloudClient struct {
 	pullFiles []string
 }
 
-func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
-	return nil, nil
+func (f *fakeSpawnerCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
+	return nil, "", nil
 }
 
 func (f *fakeSpawnerCloudClient) ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error) {

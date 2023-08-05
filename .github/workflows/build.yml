@@ -25,8 +25,19 @@ jobs:
         run: make install-linter lint
       - name: Vet check
         run: make vet
+      - name: Add hosts to /etc/hosts
+        run: |
+          # API tests create webhooks on github.com, and github.com mandates
+          # that the webhook endpoint cannot be 'localhost', so we create a host
+          # entry to dupe github
+          sudo echo "127.0.0.1 otf.local" | sudo tee -a /etc/hosts
       - name: API tests
         run: make go-tfe-tests
+        env:
+          # go-tfe tests require a valid github oauth token be set with which
+          # to create a webhook on a github repo
+          OAUTH_CLIENT_GITHUB_TOKEN: ${{ secrets.GO_TFE_OAUTH_CLIENT_GITHUB_TOKEN }}
+          GITHUB_POLICY_SET_IDENTIFIER: leg100/go-tfe-webhooks
       - name: Tests
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}

@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -39,6 +40,8 @@ type (
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
 
+		AfterCreateWorkspace(l hooks.Listener[*Workspace])
+
 		LockService
 		PermissionsService
 		TagService
@@ -54,8 +57,9 @@ type (
 
 		db   *pgdb
 		repo repo.RepoService
+		web  *webHandlers
 
-		web *webHandlers
+		createHook *hooks.Hook[*Workspace]
 	}
 
 	Options struct {
@@ -84,6 +88,7 @@ func NewService(opts Options) *service {
 		repo:         opts.RepoService,
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
+		createHook:   hooks.NewHook[*Workspace](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
@@ -102,6 +107,10 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addTagHandlers(r)
 }
 
+func (s *service) AfterCreateWorkspace(l hooks.Listener[*Workspace]) {
+	s.createHook.After(l)
+}
+
 func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Workspace, error) {
 	ws, err := NewWorkspace(opts)
 	if err != nil {
@@ -114,7 +123,9 @@ func (s *service) CreateWorkspace(ctx context.Context, opts CreateOptions) (*Wor
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
+	// Dispatch not only triggers any observers to the create hook, but it wraps
+	// the callback in a database tx.
+	err = s.createHook.Dispatch(ctx, ws, func(ctx context.Context) error {
 		if err := s.db.create(ctx, ws); err != nil {
 			return err
 		}

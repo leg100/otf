@@ -30,7 +30,7 @@ type (
 	// invocation. Intended for use with the agent (the internal agent is
 	// in-process, while the external agent is remote) as well as the CLI.
 	Client interface {
-		CreateOrganization(ctx context.Context, opts organization.OrganizationCreateOptions) (*organization.Organization, error)
+		CreateOrganization(ctx context.Context, opts organization.CreateOptions) (*organization.Organization, error)
 		DeleteOrganization(ctx context.Context, organization string) error
 
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
@@ -49,7 +49,7 @@ type (
 		GetLockFile(ctx context.Context, id string) ([]byte, error)
 		UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 
-		ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error)
+		ListRuns(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error)
 		GetRun(ctx context.Context, id string) (*run.Run, error)
 
 		StartPhase(ctx context.Context, id string, phase internal.PhaseType, opts run.PhaseStartOptions) (*run.Run, error)

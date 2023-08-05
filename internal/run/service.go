@@ -24,13 +24,14 @@ type (
 	// Alias services so they don't conflict when nested together in struct
 	RunService                  = Service
 	ConfigurationVersionService configversion.Service
+	OrganizationService         organization.Service
 	WorkspaceService            workspace.Service
 	VCSProviderService          vcsprovider.Service
 
 	Service interface {
-		CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
+		CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error)
 		GetRun(ctx context.Context, id string) (*Run, error)
-		ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error)
+		ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error)
 		EnqueuePlan(ctx context.Context, runID string) (*Run, error)
 		// StartPhase starts a run phase.
 		StartPhase(ctx context.Context, runID string, phase internal.PhaseType, _ PhaseStartOptions) (*Run, error)
@@ -94,6 +95,7 @@ type (
 	Options struct {
 		WorkspaceAuthorizer internal.Authorizer
 
+		OrganizationService
 		WorkspaceService
 		ConfigurationVersionService
 		VCSProviderService
@@ -123,8 +125,9 @@ func NewService(opts Options) *service {
 	svc.cache = opts.Cache
 	svc.db = db
 	svc.factory = &factory{
-		opts.ConfigurationVersionService,
+		opts.OrganizationService,
 		opts.WorkspaceService,
+		opts.ConfigurationVersionService,
 		opts.VCSProviderService,
 	}
 
@@ -148,6 +151,10 @@ func NewService(opts Options) *service {
 	// Subscribe run spawner to incoming vcs events
 	opts.Subscriber.Subscribe(spawner.handle)
 
+	// After a workspace is created, if auto-queue-runs is set, then create a
+	// run as well.
+	opts.WorkspaceService.AfterCreateWorkspace(svc.autoQueueRun)
+
 	return &svc
 }
 
@@ -155,7 +162,7 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 }
 
-func (s *service) CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -203,7 +210,7 @@ func (s *service) GetByID(ctx context.Context, runID string, action pubsub.DBAct
 
 // ListRuns retrieves multiple runs. Use opts to filter and paginate the
 // list.
-func (s *service) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
+func (s *service) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	var (
 		subject internal.Subject
 		authErr error
@@ -286,7 +293,7 @@ func (s *service) RetryRun(ctx context.Context, runID string) (*Run, error) {
 		s.Error(err, "retrieving run", "id", runID)
 		return nil, err
 	}
-	return s.CreateRun(ctx, run.WorkspaceID, RunCreateOptions{
+	return s.CreateRun(ctx, run.WorkspaceID, CreateOptions{
 		ConfigurationVersionID: &run.ConfigurationVersionID,
 	})
 }
@@ -340,7 +347,7 @@ func (s *service) FinishPhase(ctx context.Context, runID string, phase internal.
 		s.Error(err, "finishing "+string(phase), "id", runID, "subject", subject)
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject)
+	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "subject", subject, "run_status", run.Status)
 	return run, nil
 }
 
@@ -575,4 +582,16 @@ func (s *service) getLogs(ctx context.Context, runID string, phase internal.Phas
 		return nil, sql.Error(err)
 	}
 	return data, nil
+}
+
+func (s *service) autoQueueRun(ctx context.Context, ws *workspace.Workspace) error {
+	// Auto queue a run only if configured on the worspace and the workspace is
+	// a connected to a VCS repo.
+	if ws.QueueAllRuns && ws.Connection != nil {
+		_, err := s.CreateRun(ctx, ws.ID, CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

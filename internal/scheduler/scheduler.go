@@ -82,7 +82,7 @@ func (s *scheduler) Start(ctx context.Context) error {
 	}
 	// retrieve all incomplete runs
 	runs, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*run.Run], error) {
-		return s.ListRuns(ctx, run.RunListOptions{
+		return s.ListRuns(ctx, run.ListOptions{
 			Statuses:    internal.IncompleteRun,
 			PageOptions: opts,
 		})

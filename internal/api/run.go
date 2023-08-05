@@ -14,7 +14,9 @@ import (
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
+	"golang.org/x/exp/slices"
 )
 
 func (a *api) addRunHandlers(r *mux.Router) {
@@ -65,7 +67,11 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := a.CreateRun(r.Context(), opts.Workspace.ID, run.RunCreateOptions{
+	vars := make([]run.Variable, len(opts.Variables))
+	for i, from := range opts.Variables {
+		vars[i] = run.Variable{Key: from.Key, Value: from.Value}
+	}
+	run, err := a.CreateRun(r.Context(), opts.Workspace.ID, run.CreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -75,6 +81,10 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 		TargetAddrs:            opts.TargetAddrs,
 		ReplaceAddrs:           opts.ReplaceAddrs,
 		PlanOnly:               opts.PlanOnly,
+		Source:                 run.RunSourceAPI,
+		AllowEmptyApply:        opts.AllowEmptyApply,
+		TerraformVersion:       opts.TerraformVersion,
+		Variables:              vars,
 	})
 	if err != nil {
 		Error(w, err)
@@ -144,27 +154,47 @@ func (a *api) getRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
-	a.listRunsWithOptions(w, r, run.RunListOptions{})
-}
-
-func (a *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
-	a.listRunsWithOptions(w, r, run.RunListOptions{
-		Statuses: []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
-	})
-}
-
-func (a *api) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts run.RunListOptions) {
-	if err := decode.All(&opts, r); err != nil {
+	var params types.RunListOptions
+	if err := decode.All(&params, r); err != nil {
 		Error(w, err)
 		return
 	}
 
+	// convert comma-separated list of statuses to []RunStatus
+	statuses := internal.FromStringCSV[internal.RunStatus](params.Status)
+	// convert comma-separated list of sources to []RunSource
+	sources := internal.FromStringCSV[run.RunSource](params.Source)
+	// split operations CSV
+	operations := internal.SplitCSV(params.Operation)
+	var planOnly *bool
+	if slices.Contains(operations, string(types.RunOperationPlanOnly)) {
+		planOnly = internal.Bool(true)
+	}
+
+	a.listRunsWithOptions(w, r, run.ListOptions{
+		Organization: params.Organization,
+		WorkspaceID:  params.WorkspaceID,
+		PageOptions:  resource.PageOptions(params.ListOptions),
+		Statuses:     statuses,
+		Sources:      sources,
+		PlanOnly:     planOnly,
+		CommitSHA:    params.Commit,
+		VCSUsername:  params.User,
+	})
+}
+
+func (a *api) getRunQueue(w http.ResponseWriter, r *http.Request) {
+	a.listRunsWithOptions(w, r, run.ListOptions{
+		Statuses: []internal.RunStatus{internal.RunPlanQueued, internal.RunApplyQueued},
+	})
+}
+
+func (a *api) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts run.ListOptions) {
 	list, err := a.ListRuns(r.Context(), opts)
 	if err != nil {
 		Error(w, err)
 		return
 	}
-
 	a.writeResponse(w, r, list)
 }
 

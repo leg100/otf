@@ -42,6 +42,7 @@ func (s *service) DownloadConfig(ctx context.Context, cvID string) ([]byte, erro
 	}
 	config, err := s.db.GetConfig(ctx, cvID)
 	if err != nil {
+		s.Error(err, "downloading configuration", "id", cvID, "subject", subject)
 		return nil, err
 	}
 	if err := s.cache.Set(cacheKey(cvID), config); err != nil {

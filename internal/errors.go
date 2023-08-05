@@ -51,6 +51,7 @@ var (
 var (
 	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
 	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
+	ErrWorkspaceLockedByRun           = errors.New("workspace is locked by Run")
 	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
 	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
 	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")

@@ -16,7 +16,7 @@ type fakeSpoolerApp struct {
 	client.Client
 }
 
-func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error) {
+func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {
 	return resource.NewPage(a.runs, opts.PageOptions, nil), nil
 }
 

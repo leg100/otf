@@ -38,6 +38,7 @@ type (
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
+		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
 )
 
@@ -108,6 +109,13 @@ func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
 		return conn.QueryRow(ctx, sql, args...)
 	}
 	return db.Pool.QueryRow(ctx, sql, args...)
+}
+
+func (db *DB) SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults {
+	if conn, ok := fromContext(ctx); ok {
+		return conn.SendBatch(ctx, b)
+	}
+	return db.Pool.SendBatch(ctx, b)
 }
 
 // WaitAndLock obtains an exclusive session-level advisory lock. If another

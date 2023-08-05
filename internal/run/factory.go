@@ -11,14 +11,19 @@ import (
 
 // factory constructs runs
 type factory struct {
-	ConfigurationVersionService
+	OrganizationService
 	WorkspaceService
+	ConfigurationVersionService
 	VCSProviderService
 }
 
 // NewRun constructs a new run using the provided options.
-func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
+func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {
 	ws, err := f.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	org, err := f.GetOrganization(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +47,7 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts RunCreate
 		return nil, err
 	}
 
-	return newRun(ctx, cv, ws, opts), nil
+	return newRun(ctx, org, cv, ws, opts), nil
 }
 
 // createConfigVersionFromVCS creates a config version from the vcs repo
@@ -52,19 +57,38 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if err != nil {
 		return nil, err
 	}
-	// use workspace branch if set
-	var ref *string
-	if ws.Connection.Branch != "" {
-		ref = &ws.Connection.Branch
+	repo, err := client.GetRepository(ctx, ws.Connection.Repo)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving repository info: %w", err)
 	}
-	tarball, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	branch := ws.Connection.Branch
+	if branch == "" {
+		branch = repo.DefaultBranch
+	}
+	tarball, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Repo: ws.Connection.Repo,
-		Ref:  ref,
+		Ref:  &branch,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 	}
-	cv, err := f.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{})
+	commit, err := client.GetCommit(ctx, ws.Connection.Repo, ref)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving commit information: %s: %w", ref, err)
+	}
+	cv, err := f.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+		IngressAttributes: &configversion.IngressAttributes{
+			Branch:          branch,
+			CommitSHA:       commit.SHA,
+			CommitURL:       commit.URL,
+			Repo:            ws.Connection.Repo,
+			IsPullRequest:   false,
+			OnDefaultBranch: branch == repo.DefaultBranch,
+			SenderUsername:  commit.Author.Username,
+			SenderAvatarURL: commit.Author.AvatarURL,
+			SenderHTMLURL:   commit.Author.ProfileURL,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}

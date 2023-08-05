@@ -6,6 +6,7 @@ INSERT INTO runs (
     position_in_queue,
     refresh,
     refresh_only,
+    source,
     status,
     replace_addrs,
     target_addrs,
@@ -13,7 +14,9 @@ INSERT INTO runs (
     plan_only,
     configuration_version_id,
     workspace_id,
-    created_by
+    created_by,
+    terraform_version,
+    allow_empty_apply
 ) VALUES (
     pggen.arg('id'),
     pggen.arg('created_at'),
@@ -21,6 +24,7 @@ INSERT INTO runs (
     pggen.arg('position_in_queue'),
     pggen.arg('refresh'),
     pggen.arg('refresh_only'),
+    pggen.arg('source'),
     pggen.arg('status'),
     pggen.arg('replace_addrs'),
     pggen.arg('target_addrs'),
@@ -28,7 +32,9 @@ INSERT INTO runs (
     pggen.arg('plan_only'),
     pggen.arg('configuration_version_id'),
     pggen.arg('workspace_id'),
-    pggen.arg('created_by')
+    pggen.arg('created_by'),
+    pggen.arg('terraform_version'),
+    pggen.arg('allow_empty_apply')
 );
 
 -- name: InsertRunStatusTimestamp :exec
@@ -42,6 +48,17 @@ INSERT INTO run_status_timestamps (
     pggen.arg('timestamp')
 );
 
+-- name: InsertRunVariable :exec
+INSERT INTO run_variables (
+    run_id,
+    key,
+    value
+) VALUES (
+    pggen.arg('run_id'),
+    pggen.arg('key'),
+    pggen.arg('value')
+);
+
 -- name: FindRuns :many
 SELECT
     runs.run_id,
@@ -51,6 +68,7 @@ SELECT
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
+    runs.source,
     runs.status,
     plans.status      AS plan_status,
     applies.status      AS apply_status,
@@ -64,11 +82,14 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
     workspaces.organization_name,
+    organizations.cost_estimation_enabled,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -89,18 +110,28 @@ SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE
     workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
+AND runs.source                  LIKE ANY(pggen.arg('sources'))
 AND runs.status                  LIKE ANY(pggen.arg('statuses'))
 AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
+AND ((pggen.arg('commit_sha')::text IS NULL) OR ia.commit_sha = pggen.arg('commit_sha'))
+AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg('vcs_username'))
 ORDER BY runs.created_at DESC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
@@ -108,13 +139,17 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 -- name: CountRuns :one
 SELECT count(*)
 FROM runs
-JOIN workspaces             USING(workspace_id)
+JOIN workspaces USING(workspace_id)
+JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 WHERE
     workspaces.organization_name LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id      LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name              LIKE ANY(pggen.arg('workspace_names'))
+AND runs.source                  LIKE ANY(pggen.arg('sources'))
 AND runs.status                  LIKE ANY(pggen.arg('statuses'))
 AND runs.plan_only::text         LIKE ANY(pggen.arg('plan_only'))
+AND ((pggen.arg('commit_sha')::text IS NULL) OR ia.commit_sha = pggen.arg('commit_sha'))
+AND ((pggen.arg('vcs_username')::text IS NULL) OR ia.sender_username = pggen.arg('vcs_username'))
 ;
 
 -- name: FindRunByID :one
@@ -126,6 +161,7 @@ SELECT
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
+    runs.source,
     runs.status,
     plans.status      AS plan_status,
     applies.status      AS apply_status,
@@ -139,11 +175,14 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
     workspaces.organization_name,
+    organizations.cost_estimation_enabled,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -164,12 +203,19 @@ SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE runs.run_id = pggen.arg('run_id')
 ;
 
@@ -182,6 +228,7 @@ SELECT
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
+    runs.source,
     runs.status,
     plans.status        AS plan_status,
     applies.status      AS apply_status,
@@ -195,11 +242,14 @@ SELECT
     runs.workspace_id,
     runs.plan_only,
     runs.created_by,
+    runs.terraform_version,
+    runs.allow_empty_apply,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
     workspaces.organization_name,
+    organizations.cost_estimation_enabled,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -220,12 +270,19 @@ SELECT
         WHERE st.run_id = applies.run_id
         AND   st.phase = 'apply'
         GROUP BY run_id, phase
-    ) AS apply_status_timestamps
+    ) AS apply_status_timestamps,
+    (
+        SELECT array_agg(v.*) AS run_variables
+        FROM run_variables v
+        WHERE v.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_variables
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE runs.run_id = pggen.arg('run_id')
 FOR UPDATE of runs, plans, applies
 ;

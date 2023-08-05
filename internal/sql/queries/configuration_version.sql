@@ -134,7 +134,8 @@ FOR UPDATE OF configuration_versions;
 -- name: DownloadConfigurationVersion :one
 SELECT config
 FROM configuration_versions
-WHERE configuration_version_id = pggen.arg('configuration_version_id');
+WHERE configuration_version_id = pggen.arg('configuration_version_id')
+AND   status                   = 'uploaded';
 
 -- name: UpdateConfigurationVersionErroredByID :one
 UPDATE configuration_versions

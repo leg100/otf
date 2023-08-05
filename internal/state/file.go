@@ -11,11 +11,12 @@ var providerPathRegex = regexp.MustCompile(`provider\[".*?/([^"]+)"\]`)
 type (
 	// File is the terraform state file contents
 	File struct {
-		Version   int
-		Serial    int64
-		Lineage   string
-		Outputs   map[string]FileOutput
-		Resources []Resource
+		Version          int
+		TerraformVersion string `json:"terraform_version"`
+		Serial           int64
+		Lineage          string
+		Outputs          map[string]FileOutput
+		Resources        []Resource
 	}
 
 	// FileOutput is an output in the terraform state file

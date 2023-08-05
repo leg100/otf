@@ -30,6 +30,7 @@ type (
 		PositionInQueue        pgtype.Int4                   `json:"position_in_queue"`
 		Refresh                bool                          `json:"refresh"`
 		RefreshOnly            bool                          `json:"refresh_only"`
+		Source                 pgtype.Text                   `json:"source"`
 		Status                 pgtype.Text                   `json:"status"`
 		PlanStatus             pgtype.Text                   `json:"plan_status"`
 		ApplyStatus            pgtype.Text                   `json:"apply_status"`
@@ -43,13 +44,17 @@ type (
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 		PlanOnly               bool                          `json:"plan_only"`
 		CreatedBy              pgtype.Text                   `json:"created_by"`
+		TerraformVersion       pgtype.Text                   `json:"terraform_version"`
+		AllowEmptyApply        bool                          `json:"allow_empty_apply"`
 		ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 		Latest                 bool                          `json:"latest"`
 		OrganizationName       pgtype.Text                   `json:"organization_name"`
+		CostEstimationEnabled  bool                          `json:"cost_estimation_enabled"`
 		IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
 		RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 		PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
 		ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
+		RunVariables           []pggen.RunVariables          `json:"run_variables"`
 	}
 )
 
@@ -61,17 +66,21 @@ func (result pgresult) toRun() *Run {
 		PositionInQueue:        int(result.PositionInQueue.Int),
 		Refresh:                result.Refresh,
 		RefreshOnly:            result.RefreshOnly,
+		Source:                 RunSource(result.Source.String),
 		Status:                 internal.RunStatus(result.Status.String),
 		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		ReplaceAddrs:           result.ReplaceAddrs,
 		TargetAddrs:            result.TargetAddrs,
 		AutoApply:              result.AutoApply,
 		PlanOnly:               result.PlanOnly,
+		AllowEmptyApply:        result.AllowEmptyApply,
+		TerraformVersion:       result.TerraformVersion.String,
 		ExecutionMode:          workspace.ExecutionMode(result.ExecutionMode.String),
 		Latest:                 result.Latest,
 		Organization:           result.OrganizationName.String,
 		WorkspaceID:            result.WorkspaceID.String,
 		ConfigurationVersionID: result.ConfigurationVersionID.String,
+		CostEstimationEnabled:  result.CostEstimationEnabled,
 		Plan: Phase{
 			RunID:            result.RunID.String,
 			PhaseType:        internal.PlanPhase,
@@ -87,6 +96,12 @@ func (result pgresult) toRun() *Run {
 			StatusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
 			ResourceReport:   reportFromDB(result.ApplyResourceReport),
 		},
+	}
+	if len(result.RunVariables) > 0 {
+		run.Variables = make([]Variable, len(result.RunVariables))
+		for i, v := range result.RunVariables {
+			run.Variables[i] = Variable{Key: v.Key.String, Value: v.Value.String}
+		}
 	}
 	if result.CreatedBy.Status == pgtype.Present {
 		run.CreatedBy = &result.CreatedBy.String
@@ -110,15 +125,28 @@ func (db *pgdb) CreateRun(ctx context.Context, run *Run) error {
 			PositionInQueue:        sql.Int4(0),
 			Refresh:                run.Refresh,
 			RefreshOnly:            run.RefreshOnly,
+			Source:                 sql.String(string(run.Source)),
 			Status:                 sql.String(string(run.Status)),
 			ReplaceAddrs:           run.ReplaceAddrs,
 			TargetAddrs:            run.TargetAddrs,
 			AutoApply:              run.AutoApply,
 			PlanOnly:               run.PlanOnly,
+			AllowEmptyApply:        run.AllowEmptyApply,
+			TerraformVersion:       sql.String(run.TerraformVersion),
 			ConfigurationVersionID: sql.String(run.ConfigurationVersionID),
 			WorkspaceID:            sql.String(run.WorkspaceID),
 			CreatedBy:              sql.StringPtr(run.CreatedBy),
 		})
+		for _, v := range run.Variables {
+			_, err = q.InsertRunVariable(ctx, pggen.InsertRunVariableParams{
+				RunID: sql.String(run.ID),
+				Key:   sql.String(v.Key),
+				Value: sql.String(v.Value),
+			})
+			if err != nil {
+				return fmt.Errorf("inserting run variable: %w", err)
+			}
+		}
 		if err != nil {
 			return fmt.Errorf("inserting run: %w", err)
 		}
@@ -238,7 +266,7 @@ func (db *pgdb) CreateApplyReport(ctx context.Context, runID string, report Repo
 	return err
 }
 
-func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Page[*Run], error) {
+func (db *pgdb) ListRuns(ctx context.Context, opts ListOptions) (*resource.Page[*Run], error) {
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 	organization := "%"
@@ -253,9 +281,13 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 	if opts.WorkspaceID != nil {
 		workspaceID = *opts.WorkspaceID
 	}
+	sources := []string{"%"}
+	if len(opts.Sources) > 0 {
+		sources = internal.ToStringSlice(opts.Sources)
+	}
 	statuses := []string{"%"}
 	if len(opts.Statuses) > 0 {
-		statuses = convertStatusSliceToStringSlice(opts.Statuses)
+		statuses = internal.ToStringSlice(opts.Statuses)
 	}
 	planOnly := "%"
 	if opts.PlanOnly != nil {
@@ -265,6 +297,9 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
+		CommitSHA:         sql.StringPtr(opts.CommitSHA),
+		VCSUsername:       sql.StringPtr(opts.VCSUsername),
+		Sources:           sources,
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
 		Limit:             opts.GetLimit(),
@@ -274,6 +309,9 @@ func (db *pgdb) ListRuns(ctx context.Context, opts RunListOptions) (*resource.Pa
 		OrganizationNames: []string{organization},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
+		CommitSHA:         sql.StringPtr(opts.CommitSHA),
+		VCSUsername:       sql.StringPtr(opts.VCSUsername),
+		Sources:           sources,
 		Statuses:          statuses,
 		PlanOnly:          []string{planOnly},
 	})
@@ -379,16 +417,9 @@ func (db *pgdb) insertPhaseStatusTimestamp(ctx context.Context, phase Phase) err
 	return err
 }
 
-func convertStatusSliceToStringSlice(statuses []internal.RunStatus) (s []string) {
-	for _, status := range statuses {
-		s = append(s, string(status))
-	}
-	return
-}
-
-func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
+func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []StatusTimestamp) {
 	for _, ty := range rows {
-		timestamps = append(timestamps, RunStatusTimestamp{
+		timestamps = append(timestamps, StatusTimestamp{
 			Status:    internal.RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
 		})

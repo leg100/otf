@@ -28,6 +28,8 @@ type (
 		toRun(run *run.Run, r *http.Request) (*types.Run, []jsonapi.MarshalOption, error)
 		toPhase(from run.Phase, r *http.Request) (any, error)
 		toPlan(plan run.Phase, r *http.Request) (*types.Plan, error)
+		toConfigurationVersion(from *configversion.ConfigurationVersion, r *http.Request) (*types.ConfigurationVersion, []jsonapi.MarshalOption)
+		toOutput(from *state.Output, scrubSensitive bool) *types.StateVersionOutput
 		writeResponse(w http.ResponseWriter, r *http.Request, v any, opts ...func(http.ResponseWriter))
 	}
 
@@ -37,6 +39,7 @@ type (
 		state.StateService
 		workspace.WorkspaceService
 		auth.TeamService
+		configversion.ConfigurationVersionService
 
 		*runLogsURLGenerator
 	}
@@ -119,7 +122,7 @@ func (m *jsonapiMarshaler) convert(r *http.Request, v any) (any, []jsonapi.Marsh
 	case *run.Run:
 		payload, opts, err = m.toRun(v, r)
 	case *configversion.ConfigurationVersion:
-		payload, err = m.toConfigurationVersion(v)
+		payload, opts = m.toConfigurationVersion(v, r)
 	case *variable.Variable:
 		payload = m.toVariable(v)
 	case *notifications.Config:
@@ -127,9 +130,9 @@ func (m *jsonapiMarshaler) convert(r *http.Request, v any) (any, []jsonapi.Marsh
 	case run.Phase:
 		payload, err = m.toPhase(v, r)
 	case *state.Version:
-		payload, opts = m.toState(v, r)
+		payload, opts, err = m.toState(v, r)
 	case *state.Output:
-		payload = m.toOutput(v)
+		payload = m.toOutput(v, false)
 	case *auth.User:
 		payload = m.toUser(v)
 	case *auth.Team:

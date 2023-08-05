@@ -76,9 +76,11 @@ func (ws *Workspace) Unlock(id string, kind LockKind, force bool) error {
 		ws.Lock = nil
 		return nil
 	}
-	// otherwise assume user is trying to unlock a lock held by a different
-	// user (we don't assume a run because the scheduler should never attempt to
-	// unlock a workspace using anything other than the original run).
+
+	// determine error message to return
+	if ws.Lock.LockKind == RunLock {
+		return internal.ErrWorkspaceLockedByRun
+	}
 	return internal.ErrWorkspaceLockedByDifferentUser
 }
 

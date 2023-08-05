@@ -503,6 +503,13 @@ type Querier interface {
 	// InsertRunStatusTimestampScan scans the result of an executed InsertRunStatusTimestampBatch query.
 	InsertRunStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertRunVariable(ctx context.Context, params InsertRunVariableParams) (pgconn.CommandTag, error)
+	// InsertRunVariableBatch enqueues a InsertRunVariable query into batch to be executed
+	// later by the batch.
+	InsertRunVariableBatch(batch genericBatch, params InsertRunVariableParams)
+	// InsertRunVariableScan scans the result of an executed InsertRunVariableBatch query.
+	InsertRunVariableScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindRuns(ctx context.Context, params FindRunsParams) ([]FindRunsRow, error)
 	// FindRunsBatch enqueues a FindRuns query into batch to be executed
 	// later by the batch.
@@ -1399,6 +1406,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertRunStatusTimestampSQL, insertRunStatusTimestampSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRunStatusTimestamp': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertRunVariableSQL, insertRunVariableSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRunVariable': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findRunsSQL, findRunsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRuns': %w", err)
 	}
@@ -1731,6 +1741,13 @@ type RunStatusTimestamps struct {
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
+// RunVariables represents the Postgres composite type "run_variables".
+type RunVariables struct {
+	RunID pgtype.Text `json:"run_id"`
+	Key   pgtype.Text `json:"key"`
+	Value pgtype.Text `json:"value"`
+}
+
 // Runs represents the Postgres composite type "runs".
 type Runs struct {
 	RunID                  pgtype.Text        `json:"run_id"`
@@ -1749,6 +1766,9 @@ type Runs struct {
 	AutoApply              bool               `json:"auto_apply"`
 	PlanOnly               bool               `json:"plan_only"`
 	CreatedBy              pgtype.Text        `json:"created_by"`
+	Source                 pgtype.Text        `json:"source"`
+	TerraformVersion       pgtype.Text        `json:"terraform_version"`
+	AllowEmptyApply        bool               `json:"allow_empty_apply"`
 }
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
@@ -1974,6 +1994,17 @@ func (tr *typeResolver) newRunStatusTimestamps() pgtype.ValueTranscoder {
 	)
 }
 
+// newRunVariables creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'run_variables'.
+func (tr *typeResolver) newRunVariables() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"run_variables",
+		compositeField{"run_id", "text", &pgtype.Text{}},
+		compositeField{"key", "text", &pgtype.Text{}},
+		compositeField{"value", "text", &pgtype.Text{}},
+	)
+}
+
 // newRuns creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'runs'.
 func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
@@ -1995,6 +2026,9 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		compositeField{"auto_apply", "bool", &pgtype.Bool{}},
 		compositeField{"plan_only", "bool", &pgtype.Bool{}},
 		compositeField{"created_by", "text", &pgtype.Text{}},
+		compositeField{"source", "text", &pgtype.Text{}},
+		compositeField{"terraform_version", "text", &pgtype.Text{}},
+		compositeField{"allow_empty_apply", "bool", &pgtype.Bool{}},
 	)
 }
 
@@ -2080,6 +2114,12 @@ func (tr *typeResolver) newPhaseStatusTimestampsArray() pgtype.ValueTranscoder {
 // '_run_status_timestamps' array type.
 func (tr *typeResolver) newRunStatusTimestampsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_run_status_timestamps", "run_status_timestamps", tr.newRunStatusTimestamps)
+}
+
+// newRunVariablesArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_run_variables' array type.
+func (tr *typeResolver) newRunVariablesArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_run_variables", "run_variables", tr.newRunVariables)
 }
 
 // newStateVersionOutputsArray creates a new pgtype.ValueTranscoder for the Postgres

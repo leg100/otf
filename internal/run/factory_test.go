@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -18,11 +19,12 @@ func TestFactory(t *testing.T) {
 
 	t.Run("defaults", func(t *testing.T) {
 		f := newTestFactory(
+			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", CreateOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, internal.RunPending, got.Status)
@@ -34,11 +36,12 @@ func TestFactory(t *testing.T) {
 
 	t.Run("speculative run", func(t *testing.T) {
 		f := newTestFactory(
+			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{Speculative: true},
 		)
 
-		got, err := f.NewRun(ctx, "", RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -46,11 +49,12 @@ func TestFactory(t *testing.T) {
 
 	t.Run("plan-only run", func(t *testing.T) {
 		f := newTestFactory(
+			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", RunCreateOptions{PlanOnly: internal.Bool(true)})
+		got, err := f.NewRun(ctx, "", CreateOptions{PlanOnly: internal.Bool(true)})
 		require.NoError(t, err)
 
 		assert.True(t, got.PlanOnly)
@@ -58,11 +62,12 @@ func TestFactory(t *testing.T) {
 
 	t.Run("workspace auto-apply", func(t *testing.T) {
 		f := newTestFactory(
+			&organization.Organization{},
 			&workspace.Workspace{AutoApply: true},
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", CreateOptions{})
 		require.NoError(t, err)
 
 		assert.True(t, got.AutoApply)
@@ -70,11 +75,12 @@ func TestFactory(t *testing.T) {
 
 	t.Run("run auto-apply", func(t *testing.T) {
 		f := newTestFactory(
+			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", RunCreateOptions{
+		got, err := f.NewRun(ctx, "", CreateOptions{
 			AutoApply: internal.Bool(true),
 		})
 		require.NoError(t, err)
@@ -82,15 +88,29 @@ func TestFactory(t *testing.T) {
 		assert.True(t, got.AutoApply)
 	})
 
+	t.Run("enable cost estimation", func(t *testing.T) {
+		f := newTestFactory(
+			&organization.Organization{CostEstimationEnabled: true},
+			&workspace.Workspace{},
+			&configversion.ConfigurationVersion{},
+		)
+
+		got, err := f.NewRun(ctx, "", CreateOptions{})
+		require.NoError(t, err)
+
+		assert.True(t, got.CostEstimationEnabled)
+	})
+
 	t.Run("pull from vcs", func(t *testing.T) {
 		f := newTestFactory(
+			&organization.Organization{},
 			&workspace.Workspace{
 				Connection: &workspace.Connection{},
 			},
 			&configversion.ConfigurationVersion{},
 		)
 
-		got, err := f.NewRun(ctx, "", RunCreateOptions{})
+		got, err := f.NewRun(ctx, "", CreateOptions{})
 		require.NoError(t, err)
 
 		// fake config version service sets the config version ID to "created"
@@ -100,6 +120,10 @@ func TestFactory(t *testing.T) {
 }
 
 type (
+	fakeFactoryOrganizationService struct {
+		org *organization.Organization
+		organization.Service
+	}
 	fakeFactoryWorkspaceService struct {
 		ws *workspace.Workspace
 		workspace.Service
@@ -116,12 +140,17 @@ type (
 	}
 )
 
-func newTestFactory(ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
+func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
 	return &factory{
+		OrganizationService:         &fakeFactoryOrganizationService{org: org},
 		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
 		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
 		VCSProviderService:          &fakeFactoryVCSProviderService{},
 	}
+}
+
+func (f *fakeFactoryOrganizationService) GetOrganization(context.Context, string) (*organization.Organization, error) {
+	return f.org, nil
 }
 
 func (f *fakeFactoryWorkspaceService) GetWorkspace(context.Context, string) (*workspace.Workspace, error) {
@@ -148,6 +177,14 @@ func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, string) (c
 	return &fakeFactoryCloudClient{}, nil
 }
 
-func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, error) {
-	return nil, nil
+func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
+	return nil, "", nil
+}
+
+func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (cloud.Repository, error) {
+	return cloud.Repository{}, nil
+}
+
+func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (cloud.Commit, error) {
+	return cloud.Commit{}, nil
 }

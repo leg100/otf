@@ -45,7 +45,7 @@ type fakeSchedulerServices struct {
 	RunService
 }
 
-func (f *fakeSchedulerServices) ListRuns(ctx context.Context, opts run.RunListOptions) (*resource.Page[*run.Run], error) {
+func (f *fakeSchedulerServices) ListRuns(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {
 	return resource.NewPage(f.runs, opts.PageOptions, nil), nil
 }
 

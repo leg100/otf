@@ -8,7 +8,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/leg100/otf/internal"
 	"golang.org/x/exp/slog"
 )
 
@@ -46,6 +45,10 @@ type (
 		Sensitive   bool
 		HCL         bool
 		WorkspaceID string
+
+		// OTF doesn't use this internally but the go-tfe integration tests
+		// expect it to be a random value that changes on every update.
+		VersionID string
 	}
 	CreateVariableOptions struct {
 		Key         *string
@@ -65,47 +68,6 @@ type (
 	}
 )
 
-func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, error) {
-	v := Variable{
-		ID:          internal.NewID("var"),
-		WorkspaceID: workspaceID,
-	}
-
-	// Required fields
-	if opts.Key == nil {
-		return nil, errors.New("missing key")
-	}
-	if err := v.setKey(*opts.Key); err != nil {
-		return nil, err
-	}
-	if opts.Category == nil {
-		return nil, errors.New("missing category")
-	}
-	if err := v.setCategory(*opts.Category); err != nil {
-		return nil, err
-	}
-
-	// Optional fields
-	if opts.Value != nil {
-		if err := v.setValue(*opts.Value); err != nil {
-			return nil, err
-		}
-	}
-	if opts.Description != nil {
-		if err := v.setDescription(*opts.Description); err != nil {
-			return nil, err
-		}
-	}
-	if opts.Sensitive != nil {
-		v.Sensitive = *opts.Sensitive
-	}
-	if opts.HCL != nil {
-		v.HCL = *opts.HCL
-	}
-
-	return &v, nil
-}
-
 func (v *Variable) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", v.ID),
@@ -119,47 +81,6 @@ func (v *Variable) LogValue() slog.Value {
 		attrs = append(attrs, slog.String("value", v.Value))
 	}
 	return slog.GroupValue(attrs...)
-}
-
-func (v *Variable) Update(opts UpdateVariableOptions) error {
-	if opts.Key != nil {
-		if v.Sensitive {
-			return errors.New("changing the key of a sensitive variable is not allowed")
-		}
-		if err := v.setKey(*opts.Key); err != nil {
-			return err
-		}
-	}
-	if opts.Value != nil {
-		if err := v.setValue(*opts.Value); err != nil {
-			return err
-		}
-	}
-	if opts.Description != nil {
-		if err := v.setDescription(*opts.Description); err != nil {
-			return err
-		}
-	}
-	if opts.Category != nil {
-		if v.Sensitive {
-			return errors.New("changing the category of a sensitive variable is not allowed")
-		}
-		if err := v.setCategory(*opts.Category); err != nil {
-			return err
-		}
-	}
-	if opts.HCL != nil {
-		if v.Sensitive {
-			return errors.New("changing HCL mode on a sensitive variable is not allowed")
-		}
-		v.HCL = *opts.HCL
-	}
-	if opts.Sensitive != nil {
-		if err := v.setSensitive(*opts.Sensitive); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (v *Variable) setKey(key string) error {

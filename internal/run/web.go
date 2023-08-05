@@ -61,9 +61,10 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.CreateRun(r.Context(), params.WorkspaceID, RunCreateOptions{
+	run, err := h.svc.CreateRun(r.Context(), params.WorkspaceID, CreateOptions{
 		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
 		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
+		Source:    RunSourceUI,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
@@ -94,7 +95,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := h.svc.ListRuns(r.Context(), RunListOptions{
+	runs, err := h.svc.ListRuns(r.Context(), ListOptions{
 		WorkspaceID: &params.WorkspaceID,
 		PageOptions: resource.PageOptions{
 			PageNumber: params.PageNumber,

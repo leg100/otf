@@ -18,6 +18,7 @@ const insertOrganizationSQL = `INSERT INTO organizations (
     name,
     email,
     collaborator_auth_policy,
+    cost_estimation_enabled,
     session_remember,
     session_timeout,
     allow_force_delete_workspaces
@@ -30,7 +31,8 @@ const insertOrganizationSQL = `INSERT INTO organizations (
     $6,
     $7,
     $8,
-    $9
+    $9,
+    $10
 );`
 
 type InsertOrganizationParams struct {
@@ -40,6 +42,7 @@ type InsertOrganizationParams struct {
 	Name                       pgtype.Text
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
+	CostEstimationEnabled      bool
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	AllowForceDeleteWorkspaces bool
@@ -48,7 +51,7 @@ type InsertOrganizationParams struct {
 // InsertOrganization implements Querier.InsertOrganization.
 func (q *DBQuerier) InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertOrganization")
-	cmdTag, err := q.conn.Exec(ctx, insertOrganizationSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Email, params.CollaboratorAuthPolicy, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces)
+	cmdTag, err := q.conn.Exec(ctx, insertOrganizationSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Email, params.CollaboratorAuthPolicy, params.CostEstimationEnabled, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertOrganization: %w", err)
 	}
@@ -57,7 +60,7 @@ func (q *DBQuerier) InsertOrganization(ctx context.Context, params InsertOrganiz
 
 // InsertOrganizationBatch implements Querier.InsertOrganizationBatch.
 func (q *DBQuerier) InsertOrganizationBatch(batch genericBatch, params InsertOrganizationParams) {
-	batch.Queue(insertOrganizationSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Email, params.CollaboratorAuthPolicy, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces)
+	batch.Queue(insertOrganizationSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Name, params.Email, params.CollaboratorAuthPolicy, params.CostEstimationEnabled, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces)
 }
 
 // InsertOrganizationScan implements Querier.InsertOrganizationScan.
@@ -112,6 +115,7 @@ type FindOrganizationByNameRow struct {
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
 	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizationByName implements Querier.FindOrganizationByName.
@@ -119,7 +123,7 @@ func (q *DBQuerier) FindOrganizationByName(ctx context.Context, name pgtype.Text
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationByName")
 	row := q.conn.QueryRow(ctx, findOrganizationByNameSQL, name)
 	var item FindOrganizationByNameRow
-	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 		return item, fmt.Errorf("query FindOrganizationByName: %w", err)
 	}
 	return item, nil
@@ -134,7 +138,7 @@ func (q *DBQuerier) FindOrganizationByNameBatch(batch genericBatch, name pgtype.
 func (q *DBQuerier) FindOrganizationByNameScan(results pgx.BatchResults) (FindOrganizationByNameRow, error) {
 	row := results.QueryRow()
 	var item FindOrganizationByNameRow
-	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 		return item, fmt.Errorf("scan FindOrganizationByNameBatch row: %w", err)
 	}
 	return item, nil
@@ -152,6 +156,7 @@ type FindOrganizationByIDRow struct {
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
 	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizationByID implements Querier.FindOrganizationByID.
@@ -159,7 +164,7 @@ func (q *DBQuerier) FindOrganizationByID(ctx context.Context, organizationID pgt
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationByID")
 	row := q.conn.QueryRow(ctx, findOrganizationByIDSQL, organizationID)
 	var item FindOrganizationByIDRow
-	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 		return item, fmt.Errorf("query FindOrganizationByID: %w", err)
 	}
 	return item, nil
@@ -174,7 +179,7 @@ func (q *DBQuerier) FindOrganizationByIDBatch(batch genericBatch, organizationID
 func (q *DBQuerier) FindOrganizationByIDScan(results pgx.BatchResults) (FindOrganizationByIDRow, error) {
 	row := results.QueryRow()
 	var item FindOrganizationByIDRow
-	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 		return item, fmt.Errorf("scan FindOrganizationByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -196,6 +201,7 @@ type FindOrganizationByNameForUpdateRow struct {
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
 	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizationByNameForUpdate implements Querier.FindOrganizationByNameForUpdate.
@@ -203,7 +209,7 @@ func (q *DBQuerier) FindOrganizationByNameForUpdate(ctx context.Context, name pg
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationByNameForUpdate")
 	row := q.conn.QueryRow(ctx, findOrganizationByNameForUpdateSQL, name)
 	var item FindOrganizationByNameForUpdateRow
-	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 		return item, fmt.Errorf("query FindOrganizationByNameForUpdate: %w", err)
 	}
 	return item, nil
@@ -218,7 +224,7 @@ func (q *DBQuerier) FindOrganizationByNameForUpdateBatch(batch genericBatch, nam
 func (q *DBQuerier) FindOrganizationByNameForUpdateScan(results pgx.BatchResults) (FindOrganizationByNameForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindOrganizationByNameForUpdateRow
-	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 		return item, fmt.Errorf("scan FindOrganizationByNameForUpdateBatch row: %w", err)
 	}
 	return item, nil
@@ -247,6 +253,7 @@ type FindOrganizationsRow struct {
 	Email                      pgtype.Text        `json:"email"`
 	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
 	AllowForceDeleteWorkspaces bool               `json:"allow_force_delete_workspaces"`
+	CostEstimationEnabled      bool               `json:"cost_estimation_enabled"`
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
@@ -260,7 +267,7 @@ func (q *DBQuerier) FindOrganizations(ctx context.Context, params FindOrganizati
 	items := []FindOrganizationsRow{}
 	for rows.Next() {
 		var item FindOrganizationsRow
-		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 			return nil, fmt.Errorf("scan FindOrganizations row: %w", err)
 		}
 		items = append(items, item)
@@ -286,7 +293,7 @@ func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrgan
 	items := []FindOrganizationsRow{}
 	for rows.Next() {
 		var item FindOrganizationsRow
-		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces); err != nil {
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.Email, &item.CollaboratorAuthPolicy, &item.AllowForceDeleteWorkspaces, &item.CostEstimationEnabled); err != nil {
 			return nil, fmt.Errorf("scan FindOrganizationsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -333,17 +340,19 @@ SET
     name = $1,
     email = $2,
     collaborator_auth_policy = $3,
-    session_remember = $4,
-    session_timeout = $5,
-    allow_force_delete_workspaces = $6,
-    updated_at = $7
-WHERE name = $8
+    cost_estimation_enabled = $4,
+    session_remember = $5,
+    session_timeout = $6,
+    allow_force_delete_workspaces = $7,
+    updated_at = $8
+WHERE name = $9
 RETURNING organization_id;`
 
 type UpdateOrganizationByNameParams struct {
 	NewName                    pgtype.Text
 	Email                      pgtype.Text
 	CollaboratorAuthPolicy     pgtype.Text
+	CostEstimationEnabled      bool
 	SessionRemember            pgtype.Int4
 	SessionTimeout             pgtype.Int4
 	AllowForceDeleteWorkspaces bool
@@ -354,7 +363,7 @@ type UpdateOrganizationByNameParams struct {
 // UpdateOrganizationByName implements Querier.UpdateOrganizationByName.
 func (q *DBQuerier) UpdateOrganizationByName(ctx context.Context, params UpdateOrganizationByNameParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateOrganizationByName")
-	row := q.conn.QueryRow(ctx, updateOrganizationByNameSQL, params.NewName, params.Email, params.CollaboratorAuthPolicy, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces, params.UpdatedAt, params.Name)
+	row := q.conn.QueryRow(ctx, updateOrganizationByNameSQL, params.NewName, params.Email, params.CollaboratorAuthPolicy, params.CostEstimationEnabled, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces, params.UpdatedAt, params.Name)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateOrganizationByName: %w", err)
@@ -364,7 +373,7 @@ func (q *DBQuerier) UpdateOrganizationByName(ctx context.Context, params UpdateO
 
 // UpdateOrganizationByNameBatch implements Querier.UpdateOrganizationByNameBatch.
 func (q *DBQuerier) UpdateOrganizationByNameBatch(batch genericBatch, params UpdateOrganizationByNameParams) {
-	batch.Queue(updateOrganizationByNameSQL, params.NewName, params.Email, params.CollaboratorAuthPolicy, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces, params.UpdatedAt, params.Name)
+	batch.Queue(updateOrganizationByNameSQL, params.NewName, params.Email, params.CollaboratorAuthPolicy, params.CostEstimationEnabled, params.SessionRemember, params.SessionTimeout, params.AllowForceDeleteWorkspaces, params.UpdatedAt, params.Name)
 }
 
 // UpdateOrganizationByNameScan implements Querier.UpdateOrganizationByNameScan.

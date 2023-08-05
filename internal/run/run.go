@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
@@ -50,15 +51,19 @@ type (
 		ReplaceAddrs           []string                `json:"replace_addrs"`
 		PositionInQueue        int                     `json:"position_in_queue"`
 		TargetAddrs            []string                `json:"target_addrs"`
+		TerraformVersion       string                  `json:"terraform_version"`
+		AllowEmptyApply        bool                    `json:"allow_empty_apply"`
 		AutoApply              bool                    `json:"auto_apply"`
 		PlanOnly               bool                    `json:"plan_only"`
+		Source                 RunSource               `json:"source"`
 		Status                 internal.RunStatus      `json:"status"`
-		StatusTimestamps       []RunStatusTimestamp    `json:"status_timestamps"`
+		StatusTimestamps       []StatusTimestamp       `json:"status_timestamps"`
 		WorkspaceID            string                  `json:"workspace_id"`
 		ConfigurationVersionID string                  `json:"configuration_version_id"`
 		ExecutionMode          workspace.ExecutionMode `json:"execution_mode"`
 		Plan                   Phase                   `json:"plan"`
 		Apply                  Phase                   `json:"apply"`
+		Variables              []Variable              `json:"variables"`
 
 		Latest bool `json:"latest"` // is latest run for workspace
 
@@ -68,22 +73,32 @@ type (
 		// Username of user who created the run. This is nil if the run was
 		// instead triggered by a VCS event.
 		CreatedBy *string
+
+		// OTF doesn't support cost estimation but some go-tfe API tests expect
+		// a run to enter the RunCostEstimated state, and this boolean
+		// determines whether to enter that state upon finishing a plan.
+		CostEstimationEnabled bool
 	}
 
-	// RunList represents a list of runs.
-	RunList struct {
+	// List represents a list of runs.
+	List struct {
 		*resource.Pagination
 		Items []*Run
 	}
 
-	RunStatusTimestamp struct {
+	Variable struct {
+		Key   string
+		Value string
+	}
+
+	StatusTimestamp struct {
 		Status    internal.RunStatus
 		Timestamp time.Time
 	}
 
-	// RunCreateOptions represents the options for creating a new run. See
-	// api/types/RunCreateOptions for documentation on each field.
-	RunCreateOptions struct {
+	// CreateOptions represents the options for creating a new run. See
+	// api.types.RunCreateOptions for documentation on each field.
+	CreateOptions struct {
 		IsDestroy   *bool
 		Refresh     *bool
 		RefreshOnly *bool
@@ -95,28 +110,35 @@ type (
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
+		Source                 RunSource
+		TerraformVersion       *string
+		AllowEmptyApply        *bool
 		// PlanOnly specifies if this is a speculative, plan-only run that
 		// Terraform cannot apply. Takes precedence over whether the
 		// configuration version is marked as speculative or not.
-		PlanOnly *bool
+		PlanOnly  *bool
+		Variables []Variable
 	}
 
-	// RunListOptions are options for paginating and filtering a list of runs
-	RunListOptions struct {
+	// ListOptions are options for paginating and filtering a list of runs
+	ListOptions struct {
 		resource.PageOptions
-		// Filter by run statuses (with an implicit OR condition)
-		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by workspace ID
 		WorkspaceID *string `schema:"workspace_id,omitempty"`
 		// Filter by organization name
 		Organization *string `schema:"organization_name,omitempty"`
 		// Filter by workspace name
 		WorkspaceName *string `schema:"workspace_name,omitempty"`
+		// Filter by run statuses (with an implicit OR condition)
+		Statuses []internal.RunStatus `schema:"statuses,omitempty"`
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
-		// A list of relations to include. See available resources:
-		// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-		Include *string `schema:"include,omitempty"`
+		// Filter by sources
+		Sources []RunSource
+		// Filter by commit SHA that triggered a run
+		CommitSHA *string
+		// Filter by VCS user's username that triggered a run
+		VCSUsername *string
 	}
 
 	// WatchOptions filters events returned by the Watch endpoint.
@@ -127,7 +149,7 @@ type (
 )
 
 // newRun creates a new run with defaults.
-func newRun(ctx context.Context, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts RunCreateOptions) *Run {
+func newRun(ctx context.Context, org *organization.Organization, cv *configversion.ConfigurationVersion, ws *workspace.Workspace, opts CreateOptions) *Run {
 	run := Run{
 		ID:                     internal.NewID("run"),
 		CreatedAt:              internal.CurrentTimestamp(),
@@ -141,15 +163,27 @@ func newRun(ctx context.Context, cv *configversion.ConfigurationVersion, ws *wor
 		ExecutionMode:          ws.ExecutionMode,
 		AutoApply:              ws.AutoApply,
 		IngressAttributes:      cv.IngressAttributes,
+		CostEstimationEnabled:  org.CostEstimationEnabled,
+		Source:                 opts.Source,
+		TerraformVersion:       ws.TerraformVersion,
+		Variables:              opts.Variables,
 	}
 	run.Plan = NewPhase(run.ID, internal.PlanPhase)
 	run.Apply = NewPhase(run.ID, internal.ApplyPhase)
 	run.updateStatus(internal.RunPending)
 
+	if run.Source == "" {
+		run.Source = RunSourceAPI
+	}
+	if opts.TerraformVersion != nil {
+		run.TerraformVersion = *opts.TerraformVersion
+	}
+	if opts.AllowEmptyApply != nil {
+		run.AllowEmptyApply = *opts.AllowEmptyApply
+	}
 	if user, _ := auth.UserFromContext(ctx); user != nil {
 		run.CreatedBy = &user.Username
 	}
-
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
 	}
@@ -287,8 +321,11 @@ func (r *Run) CanAccessWorkspace(action rbac.Action, policy *internal.WorkspaceP
 }
 
 func (r *Run) EnqueueApply() error {
-	if r.Status != internal.RunPlanned {
-		return fmt.Errorf("cannot apply run")
+	switch r.Status {
+	case internal.RunPlanned, internal.RunCostEstimated:
+		// applyable statuses
+	default:
+		return fmt.Errorf("cannot apply run with status %s", r.Status)
 	}
 	r.updateStatus(internal.RunApplyQueued)
 	r.Apply.UpdateStatus(PhaseQueued)
@@ -338,8 +375,14 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 			r.Apply.UpdateStatus(PhaseUnreachable)
 			return nil
 		}
-
-		r.updateStatus(internal.RunPlanned)
+		// Enter RunCostEstimated state if cost estimation is enabled. OTF does
+		// not support cost estimation but enter this state only in order to
+		// satisfy the go-tfe tests.
+		if r.CostEstimationEnabled {
+			r.updateStatus(internal.RunCostEstimated)
+		} else {
+			r.updateStatus(internal.RunPlanned)
+		}
 		r.Plan.UpdateStatus(PhaseFinished)
 
 		if !r.HasChanges() || r.PlanOnly {
@@ -368,7 +411,7 @@ func (r *Run) Finish(phase internal.PhaseType, opts PhaseFinishOptions) error {
 
 func (r *Run) updateStatus(status internal.RunStatus) {
 	r.Status = status
-	r.StatusTimestamps = append(r.StatusTimestamps, RunStatusTimestamp{
+	r.StatusTimestamps = append(r.StatusTimestamps, StatusTimestamp{
 		Status:    status,
 		Timestamp: internal.CurrentTimestamp(),
 	})
@@ -377,7 +420,7 @@ func (r *Run) updateStatus(status internal.RunStatus) {
 // Discardable determines whether run can be discarded.
 func (r *Run) Discardable() bool {
 	switch r.Status {
-	case internal.RunPending, internal.RunPlanned:
+	case internal.RunPending, internal.RunPlanned, internal.RunCostEstimated:
 		return true
 	default:
 		return false

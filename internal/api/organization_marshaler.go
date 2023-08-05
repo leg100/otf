@@ -14,6 +14,7 @@ func (m *jsonapiMarshaler) toOrganization(from *organization.Organization) *type
 		SessionRemember:            from.SessionRemember,
 		SessionTimeout:             from.SessionTimeout,
 		AllowForceDeleteWorkspaces: from.AllowForceDeleteWorkspaces,
+		CostEstimationEnabled:      from.CostEstimationEnabled,
 	}
 	if from.Email != nil {
 		to.Email = *from.Email

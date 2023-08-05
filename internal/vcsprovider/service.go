@@ -33,7 +33,7 @@ type (
 		// provider is, after all, to construct a cloud client.
 		GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
 
-		BeforeDeleteHook(l hooks.Listener)
+		BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider])
 	}
 
 	service struct {
@@ -45,7 +45,7 @@ type (
 		organization internal.Authorizer
 		db           *pgdb
 		web          *webHandlers
-		deleteHook   *hooks.Hook
+		deleteHook   *hooks.Hook[*VCSProvider]
 	}
 
 	Options struct {
@@ -65,7 +65,7 @@ func NewService(opts Options) *service {
 		factory: &factory{
 			CloudService: opts.CloudService,
 		},
-		deleteHook: hooks.NewHook(opts.DB),
+		deleteHook: hooks.NewHook[*VCSProvider](opts.DB),
 	}
 
 	svc.web = &webHandlers{
@@ -81,7 +81,7 @@ func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
 }
 
-func (a *service) BeforeDeleteHook(l hooks.Listener) {
+func (a *service) BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider]) {
 	a.deleteHook.Before(l)
 }
 
@@ -173,7 +173,7 @@ func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvide
 		return nil, err
 	}
 
-	err = a.deleteHook.Dispatch(ctx, provider.ID, func(ctx context.Context) error {
+	err = a.deleteHook.Dispatch(ctx, provider, func(ctx context.Context) error {
 		return a.db.delete(ctx, id)
 	})
 	if err != nil {

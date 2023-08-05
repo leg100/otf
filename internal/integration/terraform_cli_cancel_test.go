@@ -71,7 +71,7 @@ data "http" "wait" {
 	// Terraform should return with exit code 0
 	require.NoError(t, <-tferr)
 
-	runs, err := svc.ListRuns(ctx, run.RunListOptions{Organization: &org.Name})
+	runs, err := svc.ListRuns(ctx, run.ListOptions{Organization: &org.Name})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(runs.Items))
 	require.Equal(t, internal.RunCanceled, runs.Items[0].Status)

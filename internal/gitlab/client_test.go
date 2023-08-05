@@ -41,20 +41,19 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("GetRepository", func(t *testing.T) {
-		want := "acme/terraform"
+		provider := newTestClient(t, WithGitlabRepo("acme/terraform", "master"))
 
-		provider := newTestClient(t, WithGitlabRepo(want))
-
-		got, err := provider.GetRepository(ctx, string(want))
+		got, err := provider.GetRepository(ctx, "acme/terraform")
 		require.NoError(t, err)
 
-		assert.Equal(t, want, got)
+		assert.Equal(t, "acme/terraform", got.Path)
+		assert.Equal(t, "master", got.DefaultBranch)
 	})
 
 	t.Run("ListRepositories", func(t *testing.T) {
 		want := []string{"acme/terraform"}
 
-		provider := newTestClient(t, WithGitlabRepo(want[0]))
+		provider := newTestClient(t, WithGitlabRepo(want[0], ""))
 
 		got, err := provider.ListRepositories(ctx, cloud.ListRepositoriesOptions{})
 		require.NoError(t, err)
@@ -66,14 +65,15 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 
 		client := newTestClient(t,
-			WithGitlabRepo("acme/terraform"),
+			WithGitlabRepo("acme/terraform", ""),
 			WithGitlabTarball(want),
 		)
 
-		got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+		got, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 			Repo: "acme/terraform",
 		})
 		require.NoError(t, err)
+		assert.Equal(t, "0335fb07bb0244b7a169ee89d15c7703e4aaf7de", ref)
 
 		dst := t.TempDir()
 		err = internal.Unpack(bytes.NewReader(got), dst)

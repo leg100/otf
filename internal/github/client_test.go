@@ -37,6 +37,23 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
+func TestGetRepository(t *testing.T) {
+	ctx := context.Background()
+	want, err := os.ReadFile("../testdata/github.tar.gz")
+	require.NoError(t, err)
+	client := newTestServerClient(t,
+		WithRepo("acme/terraform"),
+		WithDefaultBranch("master"),
+		WithArchive(want),
+	)
+
+	got, err := client.GetRepository(ctx, "acme/terraform")
+	require.NoError(t, err)
+
+	assert.Equal(t, "acme/terraform", got.Path)
+	assert.Equal(t, "master", got.DefaultBranch)
+}
+
 func TestGetRepoTarball(t *testing.T) {
 	ctx := context.Background()
 	want, err := os.ReadFile("../testdata/github.tar.gz")
@@ -46,10 +63,11 @@ func TestGetRepoTarball(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	got, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Repo: "acme/terraform",
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "0335fb07bb0244b7a169ee89d15c7703e4aaf7de", ref)
 
 	dst := t.TempDir()
 	err = internal.Unpack(bytes.NewReader(got), dst)

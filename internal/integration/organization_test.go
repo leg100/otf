@@ -18,13 +18,13 @@ func TestOrganization(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		svc, defaultOrg, ctx := setup(t, nil)
 		user := userFromContext(t, ctx)
-		org, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+		org, err := svc.CreateOrganization(ctx, organization.CreateOptions{
 			Name: internal.String(uuid.NewString()),
 		})
 		require.NoError(t, err)
 
 		t.Run("duplicate error", func(t *testing.T) {
-			_, err := svc.CreateOrganization(ctx, organization.OrganizationCreateOptions{
+			_, err := svc.CreateOrganization(ctx, organization.CreateOptions{
 				Name: internal.String(org.Name),
 			})
 			require.Equal(t, internal.ErrResourceAlreadyExists, err)
@@ -53,7 +53,7 @@ func TestOrganization(t *testing.T) {
 		assert.Equal(t, pubsub.NewCreatedEvent(org), <-daemon.sub)
 
 		want := uuid.NewString()
-		updated, err := daemon.UpdateOrganization(ctx, org.Name, organization.OrganizationUpdateOptions{
+		updated, err := daemon.UpdateOrganization(ctx, org.Name, organization.UpdateOptions{
 			Name: internal.String(want),
 		})
 		require.NoError(t, err)

@@ -50,7 +50,7 @@ func NewService(opts Options) *service {
 	}
 
 	// Whenever an organization is created, also create an owners team.
-	opts.OrganizationService.AfterCreateHook(svc.createOwnersTeam)
+	opts.OrganizationService.AfterCreateOrganization(svc.createOwnersTeam)
 
 	return &svc
 }
