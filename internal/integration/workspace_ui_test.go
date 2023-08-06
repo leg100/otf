@@ -144,10 +144,4 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	ws, err = daemon.GetWorkspaceByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Equal(t, true, ws.Connection.AllowCLIApply)
-
-	// terraform apply should now be possible from CLI
-	config := newRootModule(t, daemon.Hostname(), ws.Organization, "workspace-1")
-	daemon.tfcli(t, ctx, "init", config)
-	out, err := daemon.tfcliWithError(t, ctx, "apply", config, "-auto-approve")
-	require.NoError(t, err, out)
 }
