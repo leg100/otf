@@ -62,7 +62,7 @@
       <div class="form-checkbox">
         <input type="radio" name="auto_apply" id="auto-apply" value="true" {{ checked .Workspace.AutoApply }}/>
         <label for="auto-apply">Auto apply</label>
-        <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply.</span>
+        <span>Automatically apply changes when a Terraform plan is successful. Plans that have no changes will not be applied. If this workspace is linked to version control, a push to the default branch of the linked repository will trigger a plan and apply. Note: if you're using the <a class="underline" href="https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block">cloud block</a> as opposed to the <a class="underline" href="https://developer.hashicorp.com/terraform/language/settings/backends/remote">remote backend</a> you still need to use the <span class="bg-gray-200">-auto-approve</span> flag with <span class="bg-gray-200">terraform apply</span>.</span>
       </div>
       <div class="form-checkbox">
         <input type="radio" name="auto_apply" id="manual-apply" value="false" {{ checked (not .Workspace.AutoApply) }}/>
