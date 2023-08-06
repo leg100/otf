@@ -127,4 +127,24 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	ws, err = daemon.GetWorkspaceByName(ctx, org.Name, "workspace-1")
 	require.NoError(t, err)
 	require.Equal(t, "dev", ws.Connection.Branch)
+
+	// set description
+	browser.Run(t, ctx, chromedp.Tasks{
+		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`),
+		// enter a description
+		chromedp.Focus(`textarea#description`, chromedp.ByQuery),
+		input.InsertText(`my big fat workspace`),
+		// submit
+		chromedp.Submit(`//button[text()='Save changes']`),
+		// confirm updated
+		matchText(t, "//div[@role='alert']", "updated workspace"),
+		// confirm updated description shows up
+		chromedp.WaitVisible(`//textarea[@id='description' and text()='my big fat workspace']`),
+	})
+	// check UI has correctly updated the workspace resource
+	ws, err = daemon.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	require.NoError(t, err)
+	require.Equal(t, "my big fat workspace", ws.Description)
 }
