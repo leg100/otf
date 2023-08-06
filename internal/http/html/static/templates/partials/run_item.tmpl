@@ -22,22 +22,25 @@
         <span>{{ durationRound .CreatedAt }} ago</span>
       </div>
       <div>
-        {{ template "identifier" . }}
-        {{ with .IngressAttributes }}
-          <div class="flex flex-wrap gap-2 items-center">
-            <span class="flex flex-wrap items-center gap-2 bg-gray-200 font-mono text-sm p-1">
-              <img class="h-5" src="{{ "/static/images/git_icon.svg" }}">
-              {{ if .IsPullRequest }}
-                <a id="pull-request-link" href="{{ .PullRequestURL }}" title="{{ .PullRequestTitle }}">#{{ .PullRequestNumber }}</a> |
-              {{ else if .Branch }}
-                <span class="inline-block max-w-[12rem] truncate" id="vcs-branch">{{ .Branch }}</span>|
-              {{ else if .Tag }}
-                <span class="inline-block max-w-[12rem] truncate" id="vcs-tag">{{ .Tag }}</span>|
-              {{ end }}
-              <a id="commit-sha-abbrev" href="{{ .CommitURL }}">{{ substr 0 7 .CommitSHA }}</a>
-            </span>
-          </div>
-        {{ end }}
+        <div class="flex gap-2 items-center">
+          {{ template "identifier" . }}
+          {{ template "run-source" . }}
+          {{ with .IngressAttributes }}
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="flex flex-wrap items-center gap-2 bg-gray-100 font-mono text-sm p-1">
+                <img class="h-5" src="{{ addHash "/static/images/git_icon.svg" }}">
+                {{ if .IsPullRequest }}
+                  <a id="pull-request-link" href="{{ .PullRequestURL }}" title="{{ .PullRequestTitle }}">#{{ .PullRequestNumber }}</a> |
+                {{ else if .Branch }}
+                  <span class="inline-block max-w-[12rem] truncate" id="vcs-branch">{{ .Branch }}</span>|
+                {{ else if .Tag }}
+                  <span class="inline-block max-w-[12rem] truncate" id="vcs-tag">{{ .Tag }}</span>|
+                {{ end }}
+                <a id="commit-sha-abbrev" href="{{ .CommitURL }}">{{ substr 0 7 .CommitSHA }}</a>
+              </span>
+            </div>
+          {{ end }}
+        </div>
         <div class="flex gap-4 items-center justify-between">
           {{ with .Apply.ResourceReport }}
             {{ template "resource-report" . }}

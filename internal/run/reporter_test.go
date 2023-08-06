@@ -54,7 +54,7 @@ func TestReporter_HandleRun(t *testing.T) {
 		},
 		{
 			name: "skip UI-triggered run",
-			run:  &Run{ID: "run-123", Source: RunSourceUI},
+			run:  &Run{ID: "run-123", Source: SourceUI},
 			want: cloud.SetStatusOptions{},
 		},
 	}

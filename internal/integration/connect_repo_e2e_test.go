@@ -54,6 +54,8 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='commit-sha-abbrev' and text()='42d6fc7']`),
 		// user should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//a[@id='vcs-username' and text()='@leg100']`),
+		// because run was triggered from github, the github icon should be visible.
+		chromedp.WaitVisible(`//div[@class='widget']//img[@id='run-trigger-github']`),
 		screenshot(t),
 	})
 

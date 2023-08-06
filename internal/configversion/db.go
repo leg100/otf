@@ -174,7 +174,7 @@ func (result pgRow) toConfigVersion() *ConfigurationVersion {
 		CreatedAt:        result.CreatedAt.Time.UTC(),
 		AutoQueueRuns:    result.AutoQueueRuns,
 		Speculative:      result.Speculative,
-		Source:           ConfigurationSource(result.Source.String),
+		Source:           Source(result.Source.String),
 		Status:           ConfigurationStatus(result.Status.String),
 		StatusTimestamps: unmarshalStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
 		WorkspaceID:      result.WorkspaceID.String,

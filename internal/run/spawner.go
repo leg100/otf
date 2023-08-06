@@ -160,7 +160,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 
 	// create a config version for each workspace and spawn run.
 	for _, ws := range workspaces {
-		cv, err := s.CreateConfigurationVersion(ctx, ws.ID, configversion.ConfigurationVersionCreateOptions{
+		cvOpts := configversion.ConfigurationVersionCreateOptions{
 			// pull request events trigger speculative runs
 			Speculative: internal.Bool(event.Type == cloud.VCSEventTypePull),
 			IngressAttributes: &configversion.IngressAttributes{
@@ -182,16 +182,25 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 				SenderHTMLURL:     event.SenderHTMLURL,
 				Tag:               event.Tag,
 			},
-		})
+		}
+		runOpts := CreateOptions{}
+		switch event.Cloud {
+		case cloud.Github:
+			cvOpts.Source = configversion.SourceGithub
+			runOpts.Source = SourceGithub
+		case cloud.Gitlab:
+			cvOpts.Source = configversion.SourceGitlab
+			runOpts.Source = SourceGitlab
+		}
+		cv, err := s.CreateConfigurationVersion(ctx, ws.ID, cvOpts)
 		if err != nil {
 			return err
 		}
 		if err := s.UploadConfig(ctx, cv.ID, tarball); err != nil {
 			return err
 		}
-		_, err = s.CreateRun(ctx, ws.ID, CreateOptions{
-			ConfigurationVersionID: internal.String(cv.ID),
-		})
+		runOpts.ConfigurationVersionID = internal.String(cv.ID)
+		_, err = s.CreateRun(ctx, ws.ID, runOpts)
 		if err != nil {
 			return err
 		}

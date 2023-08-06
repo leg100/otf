@@ -1,12 +1,13 @@
-package run
+package configversion
 
 const (
 	SourceAPI       Source = "tfe-api"
-	SourceUI        Source = "tfe-ui"
-	SourceTerraform Source = "terraform+cloud"
 	SourceGithub    Source = "github"
 	SourceGitlab    Source = "gitlab"
+	SourceTerraform Source = "terraform+cloud"
+
+	DefaultSource = SourceAPI
 )
 
-// Source represents a source type of a run.
+// Source representse of a run.
 type Source string

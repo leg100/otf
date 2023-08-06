@@ -6,6 +6,14 @@ import (
 	"net/http"
 )
 
+const (
+	Github = "github"
+	Gitlab = "gitlab"
+)
+
+// Kind is the kind of cloud provider, e.g. github, gitlab, etc.
+type Kind string
+
 // Cloud is an external provider of various cloud services e.g. identity provider, VCS
 // repositories etc.
 type Cloud interface {

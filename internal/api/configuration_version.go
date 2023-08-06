@@ -36,16 +36,22 @@ func (a *api) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		Error(w, err)
 		return
 	}
-
-	opts := types.ConfigurationVersionCreateOptions{}
-	if err := unmarshal(r.Body, &opts); err != nil {
+	params := types.ConfigurationVersionCreateOptions{}
+	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
-	cv, err := a.CreateConfigurationVersion(r.Context(), workspaceID, configversion.ConfigurationVersionCreateOptions{
-		AutoQueueRuns: opts.AutoQueueRuns,
-		Speculative:   opts.Speculative,
-	})
+
+	opts := configversion.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: params.AutoQueueRuns,
+		Speculative:   params.Speculative,
+		Source:        configversion.SourceAPI,
+	}
+	if r.Header.Get(headerSourceKey) == headerSourceValue {
+		opts.Source = configversion.SourceTerraform
+	}
+
+	cv, err := a.CreateConfigurationVersion(r.Context(), workspaceID, opts)
 	if err != nil {
 		Error(w, err)
 		return

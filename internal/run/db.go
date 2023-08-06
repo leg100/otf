@@ -66,7 +66,7 @@ func (result pgresult) toRun() *Run {
 		PositionInQueue:        int(result.PositionInQueue.Int),
 		Refresh:                result.Refresh,
 		RefreshOnly:            result.RefreshOnly,
-		Source:                 RunSource(result.Source.String),
+		Source:                 Source(result.Source.String),
 		Status:                 internal.RunStatus(result.Status.String),
 		StatusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		ReplaceAddrs:           result.ReplaceAddrs,

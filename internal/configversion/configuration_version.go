@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	DefaultConfigurationSource = "tfe-api"
-	DefaultAutoQueueRuns       = true
+	DefaultAutoQueueRuns = true
 
 	// List all available configuration version statuses.
 	ConfigurationErrored  ConfigurationStatus = "errored"
@@ -29,7 +28,7 @@ type (
 		ID                string
 		CreatedAt         time.Time
 		AutoQueueRuns     bool
-		Source            ConfigurationSource
+		Source            Source
 		Speculative       bool
 		Status            ConfigurationStatus
 		StatusTimestamps  []ConfigurationVersionStatusTimestamp
@@ -43,14 +42,12 @@ type (
 	ConfigurationVersionCreateOptions struct {
 		AutoQueueRuns *bool
 		Speculative   *bool
+		Source        Source
 		*IngressAttributes
 	}
 
 	// ConfigurationStatus represents a configuration version status.
 	ConfigurationStatus string
-
-	// ConfigurationSource represents a source of a configuration version.
-	ConfigurationSource string
 
 	ConfigurationVersionStatusTimestamp struct {
 		Status    ConfigurationStatus
@@ -116,11 +113,14 @@ func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreate
 		ID:            internal.NewID("cv"),
 		CreatedAt:     internal.CurrentTimestamp(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
-		Source:        DefaultConfigurationSource,
+		Source:        DefaultSource,
 		WorkspaceID:   workspaceID,
 	}
 	cv.updateStatus(ConfigurationPending)
 
+	if opts.Source != "" {
+		cv.Source = opts.Source
+	}
 	if opts.AutoQueueRuns != nil {
 		cv.AutoQueueRuns = *opts.AutoQueueRuns
 	}
