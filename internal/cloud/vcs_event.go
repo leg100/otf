@@ -29,6 +29,8 @@ type (
 		//
 		// These fields are populated by cloud-specific handlers
 		//
+		Cloud Kind
+
 		Type          VCSEventType
 		Action        VCSAction
 		Tag           string

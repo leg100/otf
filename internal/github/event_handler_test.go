@@ -23,6 +23,7 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push.json",
 			&cloud.VCSEvent{
+				Cloud:           cloud.Github,
 				Type:            cloud.VCSEventTypePush,
 				Branch:          "master",
 				DefaultBranch:   "master",
@@ -40,6 +41,7 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_opened.json",
 			&cloud.VCSEvent{
+				Cloud:             cloud.Github,
 				Type:              cloud.VCSEventTypePull,
 				Branch:            "pr-2",
 				DefaultBranch:     "master",
@@ -59,6 +61,7 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_update.json",
 			&cloud.VCSEvent{
+				Cloud:             cloud.Github,
 				Type:              cloud.VCSEventTypePull,
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
@@ -78,6 +81,7 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push_tag.json",
 			&cloud.VCSEvent{
+				Cloud:           cloud.Github,
 				Type:            cloud.VCSEventTypeTag,
 				Tag:             "v1.0.0",
 				DefaultBranch:   "master",

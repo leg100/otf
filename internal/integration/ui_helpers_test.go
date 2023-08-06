@@ -271,6 +271,8 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 		chromedp.WaitVisible(`//div[@class='widget']//a[text()='applied']`),
 		// run widget should show apply summary
 		matchRegex(t, `//div[@class='widget']//div[@id='resource-summary']`, `\+[0-9]+ \~[0-9]+ \-[0-9]+`),
+		// because run was triggered from the UI, the UI icon should be visible.
+		chromedp.WaitVisible(`//div[@class='widget']//img[@id='run-trigger-ui']`),
 		screenshot(t),
 	}
 }

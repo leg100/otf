@@ -64,7 +64,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 	run, err := h.svc.CreateRun(r.Context(), params.WorkspaceID, CreateOptions{
 		IsDestroy: internal.Bool(params.Operation == DestroyAllOperation),
 		PlanOnly:  internal.Bool(params.Operation == PlanOnlyOperation),
-		Source:    RunSourceUI,
+		Source:    SourceUI,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())

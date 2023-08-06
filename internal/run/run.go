@@ -55,7 +55,7 @@ type (
 		AllowEmptyApply        bool                    `json:"allow_empty_apply"`
 		AutoApply              bool                    `json:"auto_apply"`
 		PlanOnly               bool                    `json:"plan_only"`
-		Source                 RunSource               `json:"source"`
+		Source                 Source                  `json:"source"`
 		Status                 internal.RunStatus      `json:"status"`
 		StatusTimestamps       []StatusTimestamp       `json:"status_timestamps"`
 		WorkspaceID            string                  `json:"workspace_id"`
@@ -110,7 +110,7 @@ type (
 		TargetAddrs            []string
 		ReplaceAddrs           []string
 		AutoApply              *bool
-		Source                 RunSource
+		Source                 Source
 		TerraformVersion       *string
 		AllowEmptyApply        *bool
 		// PlanOnly specifies if this is a speculative, plan-only run that
@@ -134,7 +134,7 @@ type (
 		// Filter by plan-only runs
 		PlanOnly *bool `schema:"-"`
 		// Filter by sources
-		Sources []RunSource
+		Sources []Source
 		// Filter by commit SHA that triggered a run
 		CommitSHA *string
 		// Filter by VCS user's username that triggered a run
@@ -173,7 +173,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 	run.updateStatus(internal.RunPending)
 
 	if run.Source == "" {
-		run.Source = RunSourceAPI
+		run.Source = SourceAPI
 	}
 	if opts.TerraformVersion != nil {
 		run.TerraformVersion = *opts.TerraformVersion
@@ -446,3 +446,12 @@ func (r *Run) Confirmable() bool {
 		return false
 	}
 }
+
+// Helper methods for templates; helps avoid using strings within templates to refer
+// to constants.
+
+func (r *Run) IsGithubSource() bool { return r.Source == SourceGithub }
+func (r *Run) IsGitlabSource() bool { return r.Source == SourceGitlab }
+func (r *Run) IsUISource() bool     { return r.Source == SourceUI }
+func (r *Run) IsAPISource() bool    { return r.Source == SourceAPI }
+func (r *Run) IsCLISource() bool    { return r.Source == SourceTerraform }

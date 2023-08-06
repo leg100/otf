@@ -19,6 +19,11 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+const (
+	headerSourceKey   = "X-Terraform-Integration"
+	headerSourceValue = "cloud"
+)
+
 func (a *api) addRunHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
@@ -54,38 +59,41 @@ func (a *api) addRunHandlers(r *mux.Router) {
 }
 
 func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
-	var opts types.RunCreateOptions
-	if err := unmarshal(r.Body, &opts); err != nil {
+	var params types.RunCreateOptions
+	if err := unmarshal(r.Body, &params); err != nil {
 		Error(w, err)
 		return
 	}
-	if opts.Workspace == nil {
+	if params.Workspace == nil {
 		Error(w, &internal.MissingParameterError{Parameter: "workspace"})
 		return
 	}
-	var configurationVersionID *string
-	if opts.ConfigurationVersion != nil {
-		configurationVersionID = &opts.ConfigurationVersion.ID
+
+	opts := run.CreateOptions{
+		AutoApply:        params.AutoApply,
+		IsDestroy:        params.IsDestroy,
+		Refresh:          params.Refresh,
+		RefreshOnly:      params.RefreshOnly,
+		Message:          params.Message,
+		TargetAddrs:      params.TargetAddrs,
+		ReplaceAddrs:     params.ReplaceAddrs,
+		PlanOnly:         params.PlanOnly,
+		Source:           run.SourceAPI,
+		AllowEmptyApply:  params.AllowEmptyApply,
+		TerraformVersion: params.TerraformVersion,
 	}
-	vars := make([]run.Variable, len(opts.Variables))
-	for i, from := range opts.Variables {
-		vars[i] = run.Variable{Key: from.Key, Value: from.Value}
+	if params.ConfigurationVersion != nil {
+		opts.ConfigurationVersionID = &params.ConfigurationVersion.ID
 	}
-	run, err := a.CreateRun(r.Context(), opts.Workspace.ID, run.CreateOptions{
-		AutoApply:              opts.AutoApply,
-		IsDestroy:              opts.IsDestroy,
-		Refresh:                opts.Refresh,
-		RefreshOnly:            opts.RefreshOnly,
-		Message:                opts.Message,
-		ConfigurationVersionID: configurationVersionID,
-		TargetAddrs:            opts.TargetAddrs,
-		ReplaceAddrs:           opts.ReplaceAddrs,
-		PlanOnly:               opts.PlanOnly,
-		Source:                 run.RunSourceAPI,
-		AllowEmptyApply:        opts.AllowEmptyApply,
-		TerraformVersion:       opts.TerraformVersion,
-		Variables:              vars,
-	})
+	if r.Header.Get(headerSourceKey) == headerSourceValue {
+		opts.Source = run.SourceTerraform
+	}
+	opts.Variables = make([]run.Variable, len(params.Variables))
+	for i, from := range params.Variables {
+		opts.Variables[i] = run.Variable{Key: from.Key, Value: from.Value}
+	}
+
+	run, err := a.CreateRun(r.Context(), params.Workspace.ID, opts)
 	if err != nil {
 		Error(w, err)
 		return
@@ -163,7 +171,7 @@ func (a *api) listRuns(w http.ResponseWriter, r *http.Request) {
 	// convert comma-separated list of statuses to []RunStatus
 	statuses := internal.FromStringCSV[internal.RunStatus](params.Status)
 	// convert comma-separated list of sources to []RunSource
-	sources := internal.FromStringCSV[run.RunSource](params.Source)
+	sources := internal.FromStringCSV[run.Source](params.Source)
 	// split operations CSV
 	operations := internal.SplitCSV(params.Operation)
 	var planOnly *bool
