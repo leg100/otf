@@ -25,7 +25,7 @@
     @apply border py-1 px-2;
   }
   .form-checkbox {
-    @apply grid grid-cols-[20px_auto] items-center justify-items-start;
+    @apply grid grid-cols-[20px_auto] gap-[1px] items-center justify-items-start;
   }
   .form-checkbox label {
     @apply font-semibold;

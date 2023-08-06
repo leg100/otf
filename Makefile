@@ -125,6 +125,7 @@ sql: install-pggen
 		--go-type 'bool=bool' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \
+		--acronym cli \
 		--acronym sha \
 		--acronym json \
 		--acronym vcs \

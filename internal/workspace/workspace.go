@@ -89,14 +89,20 @@ type (
 
 		VCSProviderID string
 		Repo          string
+
+		// By default, once a workspace is connected to a repo it is not
+		// possible to run a terraform apply via the CLI. Setting this to true
+		// overrides this behaviour.
+		AllowCLIApply bool
 	}
 
 	ConnectOptions struct {
 		RepoPath      *string
 		VCSProviderID *string
 
-		Branch    *string
-		TagsRegex *string
+		Branch        *string
+		TagsRegex     *string
+		AllowCLIApply *bool
 	}
 
 	// LatestRun is a summary of the latest run for a workspace
@@ -427,6 +433,10 @@ func (ws *Workspace) Update(opts UpdateOptions) (*bool, error) {
 				ws.Connection.Branch = *opts.Branch
 				updated = true
 			}
+			if opts.AllowCLIApply != nil {
+				ws.Connection.AllowCLIApply = *opts.AllowCLIApply
+				updated = true
+			}
 		}
 	}
 	if updated {
@@ -446,6 +456,9 @@ func (ws *Workspace) addConnection(opts *ConnectOptions) error {
 	ws.Connection = &Connection{
 		Repo:          *opts.RepoPath,
 		VCSProviderID: *opts.VCSProviderID,
+	}
+	if opts.AllowCLIApply != nil {
+		ws.Connection.AllowCLIApply = *opts.AllowCLIApply
 	}
 	if opts.TagsRegex != nil {
 		if err := ws.setTagsRegex(*opts.TagsRegex); err != nil {

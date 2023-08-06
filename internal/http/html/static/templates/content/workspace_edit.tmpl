@@ -38,7 +38,7 @@
       <label for="description">Description</label>
       <textarea class="text-input w-96" rows="3" name="description" id="description" value="{{ .Workspace.Description }}"></textarea>
     </div>
-    <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+    <fieldset class="border border-slate-900 p-3 flex flex-col gap-2">
       <legend>Execution mode</legend>
       <div class="form-checkbox">
         <input type="radio" name="execution_mode" id="remote" value="remote" {{ checked .Workspace.ExecutionMode "remote" }}/>
@@ -158,11 +158,17 @@
       </fieldset>
     {{ end }}
 
-    <div class="flex flex-col gap-2">
-      <div class="flex gap-2">
-        <input class="" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
-        <label class="font-semibold" for="global-remote-state">Remote state sharing</label>
+    {{ with .Workspace.Connection }}
+      <div class="form-checkbox">
+        <input type="checkbox" name="allow_cli_apply" id="allow-cli-apply" {{ checked .AllowCLIApply }}/>
+        <label for="allow-cli-apply">Allow apply from the CLI</label>
+        <span>Allow running <span class="bg-gray-200">terraform apply</span> from the command line. By default once a workspace is connected to a VCS repository it is only possible to trigger applies from VCS changes.</span>
       </div>
+    {{ end }}
+
+    <div class="form-checkbox">
+      <input class="" type="checkbox" name="global_remote_state" id="global-remote-state" {{ checked .Workspace.GlobalRemoteState }}>
+      <label class="font-semibold" for="global-remote-state">Remote state sharing</label>
       <span class="description">Share this workspace's state with all workspaces in this organization. The <span class="bg-gray-200 font-mono">terraform_remote_state</span> data source relies on state sharing to access workspace outputs.</span>
     </div>
 

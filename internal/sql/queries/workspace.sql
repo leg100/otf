@@ -3,6 +3,7 @@ INSERT INTO workspaces (
     workspace_id,
     created_at,
     updated_at,
+    allow_cli_apply,
     allow_destroy_plan,
     auto_apply,
     branch,
@@ -28,6 +29,7 @@ INSERT INTO workspaces (
     pggen.arg('id'),
     pggen.arg('created_at'),
     pggen.arg('updated_at'),
+    pggen.arg('allow_cli_apply'),
     pggen.arg('allow_destroy_plan'),
     pggen.arg('auto_apply'),
     pggen.arg('branch'),
@@ -240,6 +242,7 @@ FOR UPDATE OF w;
 UPDATE workspaces
 SET
     allow_destroy_plan            = pggen.arg('allow_destroy_plan'),
+    allow_cli_apply               = pggen.arg('allow_cli_apply'),
     auto_apply                    = pggen.arg('auto_apply'),
     branch                        = pggen.arg('branch'),
     description                   = pggen.arg('description'),

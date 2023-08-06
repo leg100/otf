@@ -72,12 +72,26 @@ func (m *jsonapiMarshaler) toWorkspace(from *workspace.Workspace, r *http.Reques
 	if from.LatestRun != nil {
 		to.CurrentRun = &types.Run{ID: from.LatestRun.ID}
 	}
+
+	// Add VCS repo to json:api struct if connected. NOTE: the terraform CLI
+	// uses the presence of VCS repo to determine whether to allow a terraform
+	// apply or not, displaying the following message if not:
+	//
+	//	Apply not allowed for workspaces with a VCS connection
+	//
+	//	A workspace that is connected to a VCS requires the VCS-driven workflow to ensure that the VCS remains the single source of truth.
+	//
+	// OTF permits the user to disable this behaviour by ommiting this info and
+	// fool the terraform CLI into thinking its not a workspace with a VCS
+	// connection.
 	if from.Connection != nil {
-		to.VCSRepo = &types.VCSRepo{
-			OAuthTokenID: from.Connection.VCSProviderID,
-			Branch:       from.Connection.Branch,
-			Identifier:   from.Connection.Repo,
-			TagsRegex:    from.Connection.TagsRegex,
+		if !from.Connection.AllowCLIApply || !isTerraformCLI(r) {
+			to.VCSRepo = &types.VCSRepo{
+				OAuthTokenID: from.Connection.VCSProviderID,
+				Branch:       from.Connection.Branch,
+				Identifier:   from.Connection.Repo,
+				TagsRegex:    from.Connection.TagsRegex,
+			}
 		}
 	}
 
