@@ -445,7 +445,7 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 	user := userFromContext(t, ctx)
 	_, token := s.createToken(t, ctx, user)
 
-	cmdargs := []string{command, "-no-color"}
+	cmdargs := []string{command}
 	cmdargs = append(cmdargs, args...)
 
 	cmd := exec.Command(tfpath, cmdargs...)
@@ -453,8 +453,11 @@ func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, 
 
 	cmd.Env = internal.SafeAppend(sharedEnvs, internal.CredentialEnv(s.Hostname(), token))
 
+	// Run tf and collect stdout/stderr
 	out, err := cmd.CombinedOutput()
-	return string(out), err
+
+	// strip ANSI escape codes because tests are not expecting them.
+	return internal.StripAnsi(string(out)), err
 }
 
 func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) string {

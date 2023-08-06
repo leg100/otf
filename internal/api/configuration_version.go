@@ -47,7 +47,7 @@ func (a *api) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		Speculative:   params.Speculative,
 		Source:        configversion.SourceAPI,
 	}
-	if r.Header.Get(headerSourceKey) == headerSourceValue {
+	if isTerraformCLI(r) {
 		opts.Source = configversion.SourceTerraform
 	}
 

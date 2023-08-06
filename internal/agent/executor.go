@@ -160,7 +160,7 @@ func (e *execution) addSandboxWrapper(args []string) []string {
 // cleanStderr cleans up stderr output to make it suitable for logging:
 // newlines, ansi escape sequences, and non-ascii characters are removed
 func cleanStderr(stderr string) string {
-	stderr = stripAnsi(stderr)
+	stderr = internal.StripAnsi(stderr)
 	stderr = ascii.ReplaceAllLiteralString(stderr, "")
 	stderr = strings.Join(strings.Fields(stderr), " ")
 	return stderr

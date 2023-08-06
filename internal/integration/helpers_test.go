@@ -51,7 +51,7 @@ func newRootModule(t *testing.T, hostname, organization, workspace string, addit
 
 	config := fmt.Sprintf(`
 terraform {
-  backend "remote" {
+  cloud {
 	hostname = "%s"
 	organization = "%s"
 

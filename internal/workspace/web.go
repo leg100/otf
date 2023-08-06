@@ -424,6 +424,7 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 		VCSBranch           string `schema:"vcs_branch"`
 		PredefinedTagsRegex string `schema:"tags_regex"`
 		CustomTagsRegex     string `schema:"custom_tags_regex"`
+		AllowCLIApply       bool   `schema:"allow_cli_apply"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -449,7 +450,8 @@ func (h *webHandlers) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	if ws.Connection != nil {
 		// workspace is connected, so set connection fields
 		opts.ConnectOptions = &ConnectOptions{
-			Branch: &params.VCSBranch,
+			AllowCLIApply: &params.AllowCLIApply,
+			Branch:        &params.VCSBranch,
 		}
 		switch params.VCSTriggerStrategy {
 		case VCSTriggerAlways:

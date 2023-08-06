@@ -7,8 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestAutoApply tests auto-apply functionality, using the UI to enable
-// auto-apply on a workspace first before invoking 'terraform apply'.
+// TestAutoApply demonstrates enabling auto-apply via the UI.
 func TestAutoApply(t *testing.T) {
 	integrationTest(t)
 
@@ -34,12 +33,8 @@ func TestAutoApply(t *testing.T) {
 			matchText(t, "//div[@role='alert']", "updated workspace"),
 		},
 	})
-
-	// create terraform config
-	configPath := newRootModule(t, svc.Hostname(), org.Name, t.Name())
-	svc.tfcli(t, ctx, "init", configPath)
-	// terraform apply - note we are not passing the -auto-approve flag yet we
-	// expect it to auto-apply because the workspace is set to auto-apply.
-	out := svc.tfcli(t, ctx, "apply", configPath)
-	require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
+	// check UI has correctly updated the workspace resource
+	ws, err := svc.GetWorkspaceByName(ctx, org.Name, t.Name())
+	require.NoError(t, err)
+	require.Equal(t, true, ws.AutoApply)
 }

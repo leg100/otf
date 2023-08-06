@@ -128,6 +128,23 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "dev", ws.Connection.Branch)
 
+	// permit applies from the CLI
+	browser.Run(t, ctx, chromedp.Tasks{
+		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`),
+		// allow applies from the CLI
+		chromedp.Click(`input#allow-cli-apply`, chromedp.ByQuery),
+		chromedp.Submit(`//button[text()='Save changes']`),
+		matchText(t, "//div[@role='alert']", "updated workspace"),
+		// checkbox should be checked
+		chromedp.WaitVisible(`input#allow-cli-apply:checked`, chromedp.ByQuery),
+	})
+	// check UI has correctly updated the workspace resource
+	ws, err = daemon.GetWorkspaceByName(ctx, org.Name, "workspace-1")
+	require.NoError(t, err)
+	require.Equal(t, true, ws.Connection.AllowCLIApply)
+
 	// set description
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),

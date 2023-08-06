@@ -19,11 +19,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const (
-	headerSourceKey   = "X-Terraform-Integration"
-	headerSourceValue = "cloud"
-)
-
 func (a *api) addRunHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
@@ -85,7 +80,7 @@ func (a *api) createRun(w http.ResponseWriter, r *http.Request) {
 	if params.ConfigurationVersion != nil {
 		opts.ConfigurationVersionID = &params.ConfigurationVersion.ID
 	}
-	if r.Header.Get(headerSourceKey) == headerSourceValue {
+	if isTerraformCLI(r) {
 		opts.Source = run.SourceTerraform
 	}
 	opts.Variables = make([]run.Variable, len(params.Variables))

@@ -48,6 +48,7 @@ type (
 		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
 		TriggerPatterns            []string               `json:"trigger_patterns"`
 		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
+		AllowCLIApply              bool                   `json:"allow_cli_apply"`
 		Tags                       []string               `json:"tags"`
 		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
 		UserLock                   *pggen.Users           `json:"user_lock"`
@@ -86,6 +87,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 
 	if r.WorkspaceConnection != nil {
 		ws.Connection = &Connection{
+			AllowCLIApply: r.AllowCLIApply,
 			VCSProviderID: r.Webhook.VCSProviderID.String,
 			Repo:          r.Webhook.Identifier.String,
 			Branch:        r.Branch.String,
@@ -146,6 +148,7 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		VCSTagsRegex:               sql.StringPtr(nil),
 	}
 	if ws.Connection != nil {
+		params.AllowCLIApply = ws.Connection.AllowCLIApply
 		params.Branch = sql.String(ws.Connection.Branch)
 		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 	}
@@ -191,6 +194,7 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			VCSTagsRegex:               sql.StringPtr(nil),
 		}
 		if ws.Connection != nil {
+			params.AllowCLIApply = ws.Connection.AllowCLIApply
 			params.Branch = sql.String(ws.Connection.Branch)
 			params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 		}
