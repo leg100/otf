@@ -39,7 +39,8 @@ func (m *jsonapiMarshaler) toState(from *state.Version, r *http.Request) (*types
 			case "outputs":
 				var include []any
 				for _, out := range from.Outputs {
-					include = append(include, m.toOutput(out, true))
+					// do not scrub sensitive values for included outputs
+					include = append(include, m.toOutput(out, false))
 				}
 				opts = append(opts, jsonapi.MarshalInclude(include...))
 			}
