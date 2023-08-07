@@ -207,12 +207,12 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
 	// so we untar it to a temp dir, then tar it up the contents of the parent
 	// directory.
-	//
-	// TODO: remove temp dir after finishing
 	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", owner, name))
 	if err != nil {
 		return nil, "", err
 	}
+	defer os.RemoveAll(untarpath)
+
 	if err := internal.Unpack(resp.Body, untarpath); err != nil {
 		return nil, "", err
 	}

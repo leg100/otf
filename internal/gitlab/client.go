@@ -162,6 +162,8 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 	if err != nil {
 		return nil, "", err
 	}
+	defer os.RemoveAll(untarpath)
+
 	if err := internal.Unpack(bytes.NewReader(tarball), untarpath); err != nil {
 		return nil, "", err
 	}
