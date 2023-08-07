@@ -117,28 +117,11 @@ func (o oidcAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Get claims user
-	user, err := o.getUserFromClaims(claims)
-	if err != nil {
-		html.Error(w, err.Error(), http.StatusInternalServerError, false)
-		return
-	}
-
 	err = o.StartSession(w, r, tokens.StartSessionOptions{
-		Username: &user.Name,
+		Username: &claims.Name,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
-}
-
-// getUserFromClaims returns a cloud.User given a user's claims.
-func (o oidcAuthenticator) getUserFromClaims(claims oidcClaims) (*cloud.User, error) {
-	var teams []cloud.Team
-
-	return &cloud.User{
-		Name:  claims.Name,
-		Teams: teams,
-	}, nil
 }

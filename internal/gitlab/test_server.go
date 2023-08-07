@@ -120,24 +120,6 @@ type TestGitlabServerOption func(*testServerDB)
 func WithGitlabUser(user *cloud.User) TestGitlabServerOption {
 	return func(db *testServerDB) {
 		db.user = &gitlab.User{Username: user.Name, ID: 1}
-		db.access = make(map[int]gitlab.AccessLevelValue)
-
-		for i, org := range user.Organizations() {
-			db.groups = append(db.groups, &gitlab.Group{
-				ID:   i,
-				Path: org,
-			})
-			// find team belonging to organization and map team name to gitlab
-			// access level
-			for i, team := range user.Teams {
-				if team.Organization == org {
-					switch team.Name {
-					case "maintainers":
-						db.access[i] = gitlab.MaintainerPermissions
-					}
-				}
-			}
-		}
 	}
 }
 

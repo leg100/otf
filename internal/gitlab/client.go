@@ -47,50 +47,12 @@ func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	return &Client{client: client}, nil
 }
 
-// GetUser retrieves a user. Their team memberships are determined based on
-// their access level in their gitlab groups, e.g. a user with owners access
-// level on group acme maps to a user in the owners team in the acme
-// organization.
-func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
+func (g *Client) GetCurrentUser(ctx context.Context) (cloud.User, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
-		return nil, err
+		return cloud.User{}, err
 	}
-	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
-		TopLevelOnly: internal.Bool(true),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	user := cloud.User{Name: guser.Username}
-	for _, group := range groups {
-		// Get group membership info
-		membership, _, err := g.client.GroupMembers.GetGroupMember(group.ID, guser.ID)
-		if err != nil {
-			return nil, err
-		}
-		var team string
-		switch membership.AccessLevel {
-		case gitlab.OwnerPermissions:
-			team = "owners"
-		case gitlab.DeveloperPermissions:
-			team = "developers"
-		case gitlab.MaintainerPermissions:
-			team = "maintainers"
-		case gitlab.ReporterPermissions:
-			team = "reporters"
-		case gitlab.GuestPermissions:
-			team = "guests"
-		default:
-			return nil, fmt.Errorf("unknown gitlab access level: %d", membership.AccessLevel)
-		}
-		user.Teams = append(user.Teams, cloud.Team{
-			Name:         team,
-			Organization: group.Path,
-		})
-	}
-	return &user, nil
+	return cloud.User{Name: guser.Username}, nil
 }
 
 func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repository, error) {

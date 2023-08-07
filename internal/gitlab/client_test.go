@@ -18,26 +18,14 @@ func TestClient(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("GetUser", func(t *testing.T) {
-		want := cloud.User{
-			Name: "fake-user",
-			Teams: []cloud.Team{
-				{
-					Name:         "maintainers",
-					Organization: "fake-org",
-				},
-			},
-		}
+		want := cloud.User{Name: "fake-user"}
 
 		provider := newTestClient(t, WithGitlabUser(&want))
 
-		user, err := provider.GetUser(ctx)
+		user, err := provider.GetCurrentUser(ctx)
 		require.NoError(t, err)
 
 		assert.Equal(t, "fake-user", user.Name)
-		if assert.Equal(t, 1, len(user.Teams)) {
-			assert.Equal(t, "maintainers", user.Teams[0].Name)
-			assert.Equal(t, "fake-org", user.Teams[0].Organization)
-		}
 	})
 
 	t.Run("GetRepository", func(t *testing.T) {

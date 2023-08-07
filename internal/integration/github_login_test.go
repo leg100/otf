@@ -30,15 +30,7 @@ func TestGithubLogin(t *testing.T) {
 			},
 		},
 	}
-	user := cloud.User{
-		Name: "bobby",
-		Teams: []cloud.Team{
-			{
-				Name:         "owners",
-				Organization: "acme-corp",
-			},
-		},
-	}
+	user := cloud.User{Name: "bobby"}
 	svc, _, _ := setup(t, &cfg, github.WithUser(&user))
 
 	browser.Run(t, nil, chromedp.Tasks{

@@ -12,20 +12,12 @@ import (
 )
 
 func TestOAuthAuthenticator_ResponseHandler(t *testing.T) {
-	user := cloud.User{
-		Name: "fake-user",
-		Teams: []cloud.Team{
-			{
-				Name:         "fake-team",
-				Organization: "fake-org",
-			},
-		},
-	}
+	user := cloud.User{Name: "fake-user"}
 
 	authenticator := &oauthAuthenticator{
 		TokensService: &fakeAuthenticatorService{},
 		oauthClient: &fakeOAuthClient{
-			user:  &user,
+			user:  user,
 			token: &oauth2.Token{},
 		},
 	}

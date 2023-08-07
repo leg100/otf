@@ -20,13 +20,13 @@ type (
 	}
 
 	fakeOAuthClient struct {
-		user *cloud.User
+		user cloud.User
 		oauthClient
 		token *oauth2.Token
 	}
 
 	fakeCloudClient struct {
-		user *cloud.User
+		user cloud.User
 		cloud.Client
 	}
 )
@@ -44,7 +44,7 @@ func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (cloud.Clien
 	return &fakeCloudClient{user: f.user}, nil
 }
 
-func (f *fakeCloudClient) GetUser(context.Context) (*cloud.User, error) {
+func (f *fakeCloudClient) GetCurrentUser(context.Context) (cloud.User, error) {
 	return f.user, nil
 }
 

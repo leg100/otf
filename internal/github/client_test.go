@@ -16,25 +16,13 @@ import (
 
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
-	want := cloud.User{
-		Name: "fake-user",
-		Teams: []cloud.Team{
-			{
-				Name:         "fake-team",
-				Organization: "fake-org",
-			},
-		},
-	}
+	want := cloud.User{Name: "fake-user"}
 	client := newTestServerClient(t, WithUser(&want))
 
-	got, err := client.GetUser(ctx)
+	got, err := client.GetCurrentUser(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, want.Name, got.Name)
-	if assert.Equal(t, 1, len(got.Teams)) {
-		assert.Equal(t, "fake-team", got.Teams[0].Name)
-		assert.Equal(t, "fake-org", got.Teams[0].Organization)
-	}
 }
 
 func TestGetRepository(t *testing.T) {

@@ -42,7 +42,7 @@ func (a *oauthAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Requ
 	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "authenticator"})
 
 	// Get cloud user
-	cuser, err := client.GetUser(ctx)
+	cuser, err := client.GetCurrentUser(ctx)
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return

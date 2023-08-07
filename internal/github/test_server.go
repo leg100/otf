@@ -119,41 +119,6 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
-			var orgs []*github.Organization
-			for _, org := range srv.user.Organizations() {
-				orgs = append(orgs, &github.Organization{Login: internal.String(org)})
-			}
-			out, err := json.Marshal(orgs)
-			require.NoError(t, err)
-			w.Header().Add("Content-Type", "application/json")
-			w.Write(out)
-		})
-		for _, org := range srv.user.Organizations() {
-			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org, func(w http.ResponseWriter, r *http.Request) {
-				out, err := json.Marshal(&github.Membership{
-					Role: internal.String("member"),
-				})
-				require.NoError(t, err)
-				w.Header().Add("Content-Type", "application/json")
-				w.Write(out)
-			})
-		}
-		mux.HandleFunc("/api/v3/user/teams", func(w http.ResponseWriter, r *http.Request) {
-			var teams []*github.Team
-			for _, team := range srv.user.Teams {
-				teams = append(teams, &github.Team{
-					Slug: internal.String(team.Name),
-					Organization: &github.Organization{
-						Login: internal.String(team.Organization),
-					},
-				})
-			}
-			out, err := json.Marshal(teams)
-			require.NoError(t, err)
-			w.Header().Add("Content-Type", "application/json")
-			w.Write(out)
-		})
 	}
 	mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
 		repos := []*github.Repository{{FullName: srv.repo}}

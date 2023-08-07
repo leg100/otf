@@ -6,7 +6,8 @@ import (
 
 type (
 	Client interface {
-		GetUser(ctx context.Context) (*User, error)
+		// GetCurrentUser retrieves the current user
+		GetCurrentUser(ctx context.Context) (User, error)
 		// ListRepositories lists repositories accessible to the current user.
 		ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]string, error)
 		GetRepository(ctx context.Context, identifier string) (Repository, error)
