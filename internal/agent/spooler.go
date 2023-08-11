@@ -110,12 +110,15 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 	}
 	// then spool events as they come in
 	for event := range sub {
-		s.handleEvent(event)
+		err = s.handleEvent(event)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (s *spoolerDaemon) handleEvent(ev pubsub.Event) {
+func (s *spoolerDaemon) handleEvent(ev pubsub.Event) error {
 	switch payload := ev.Payload.(type) {
 	case *run.Run:
 		s.handleRun(ev.Type, payload)
@@ -123,7 +126,9 @@ func (s *spoolerDaemon) handleEvent(ev pubsub.Event) {
 		s.Info("stream update", "info", string(payload))
 	case error:
 		s.Error(payload, "stream update")
+		return payload
 	}
+	return nil
 }
 
 func (s *spoolerDaemon) handleRun(event pubsub.EventType, run *run.Run) {
