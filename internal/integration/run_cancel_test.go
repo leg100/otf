@@ -26,7 +26,9 @@ func TestIntegration_RunCancel(t *testing.T) {
 	dst := filepath.Join(bins, workspace.DefaultTerraformVersion, "terraform")
 	err := os.MkdirAll(filepath.Dir(dst), 0o755)
 	require.NoError(t, err)
-	err = os.Link("testdata/cancelme", dst)
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Symlink(filepath.Join(wd, "testdata/cancelme"), dst)
 	require.NoError(t, err)
 
 	// run a temporary http server as a means of communicating with the fake
