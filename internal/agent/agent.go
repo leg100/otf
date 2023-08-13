@@ -116,7 +116,10 @@ func (a *agent) Start(ctx context.Context) error {
 
 	g.Go(func() error {
 		if err := a.spooler.start(ctx); err != nil {
-			return fmt.Errorf("spooler terminated: %w", err)
+			// only report error if context has not been canceled
+			if ctx.Err() == nil {
+				return fmt.Errorf("spooler terminated: %w", err)
+			}
 		}
 		return nil
 	})
