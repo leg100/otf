@@ -62,20 +62,20 @@ func TestLogger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var got bytes.Buffer
-			logger := logr.New(newLogSink(newTestOptions(tt.min).NewTextHandler(&got)))
+			logger := logr.New(newLogSink(slog.NewTextHandler(&got, newTestOptions(tt.min))))
 			tt.log(logger)
 			assert.Equal(t, tt.want, got.String())
 		})
 	}
 }
 
-func newTestOptions(min slog.Leveler) slog.HandlerOptions {
-	return slog.HandlerOptions{
+func newTestOptions(min slog.Leveler) *slog.HandlerOptions {
+	return &slog.HandlerOptions{
 		Level: min,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			// Remove time.
 			if a.Key == slog.TimeKey && len(groups) == 0 {
-				a.Key = ""
+				return slog.Attr{}
 			}
 			return a
 		},

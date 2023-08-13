@@ -44,9 +44,9 @@ func New(cfg *Config) (logr.Logger, error) {
 	case DefaultFormat:
 		h = NewLevelHandler(level, slog.Default().Handler())
 	case TextFormat:
-		h = slog.HandlerOptions{Level: level}.NewTextHandler(os.Stdout)
+		h = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	case JSONFormat:
-		h = slog.HandlerOptions{Level: level}.NewJSONHandler(os.Stdout)
+		h = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	default:
 		return logr.Logger{}, fmt.Errorf("unrecognised logging format: %s", cfg.Format)
 	}
