@@ -17,9 +17,6 @@ export TFE_TOKEN=${TFE_TOKEN:-site-token}
 export SKIP_PAID=1
 export SSL_CERT_FILE=$PWD/internal/integration/fixtures/cert.pem
 
-[ -z "$GITHUB_POLICY_SET_IDENTIFIER" ] && echo "must set GITHUB_POLICY_SET_IDENTIFIER" && exit 1
-[ -z "$OAUTH_CLIENT_GITHUB_TOKEN" ] && echo "must set OAUTH_CLIENT_GITHUB_TOKEN" && exit 1
-
 tests=()
 tests+=('TestOrganizations')
 tests+=('TestOrganizationTagsList/with_no_query_params')
@@ -27,7 +24,6 @@ tests+=('TestOrganizationTagsList/with_no_param_Filter')
 tests+=('TestOrganizationTagsDelete')
 tests+=('TestOrganizationTagsAddWorkspace')
 tests+=('TestOrganizationTokens')
-tests+=('TestWorkspacesCreate')
 tests+=('TestWorkspacesUpdateByID')
 tests+=('TestWorkspacesDelete')
 tests+=('TestWorkspacesLock')
@@ -76,11 +72,20 @@ tests+=('TestTeamsUpdate$')
 tests+=('TestTeamsDelete')
 tests+=('TestConfigurationVersionsList')
 tests+=('TestConfigurationVersionsCreate')
-tests+=('TestConfigurationVersionsRead')
 tests+=('TestConfigurationVersionsUpload')
 tests+=('TestConfigurationVersionsDownload')
 tests+=('TestVariables')
 tests+=('TestStateVersion')
+
+# only run these tests if env vars are present - otherwise the tests fail early
+vcsTests=('TestConfigurationVersionsRead' 'TestWorkspacesCreate')
+if [ -n "$GITHUB_POLICY_SET_IDENTIFIER" ] && [ -n "$OAUTH_CLIENT_GITHUB_TOKEN" ]
+then
+    tests=( "${tests[@]}" "${vcsTests[@]}" )
+else
+    echo "skipping ${vcsTests[@]} because GITHUB_POLICY_SET_IDENTIFIER and OAUTH_CLIENT_GITHUB_TOKEN are missing"
+fi
+
 all=$(join_by '|' "${tests[@]}")
 
 dest_dir=$(go mod download -json github.com/hashicorp/go-tfe@latest | jq -r '.Dir')
