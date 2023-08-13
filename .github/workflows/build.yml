@@ -77,6 +77,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
+      - uses: docker/setup-qemu-action@v2
       - uses: goreleaser/goreleaser-action@v2
         with:
           args: release --clean --skip-sign --skip-validate
