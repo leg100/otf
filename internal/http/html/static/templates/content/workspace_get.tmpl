@@ -61,14 +61,14 @@
       <div class="flex flex-col gap-2">
         <h3 class="font-semibold mb-1">Tags</h3>
         {{ with .Workspace.Tags }}
-          <div id="tags" class="flex flex-wrap gap-1">
+          <div id="tags" class="tag-container">
             {{ range . }}
               <form action="{{ deleteTagWorkspacePath $.Workspace.ID }}" method="POST">
                 <input type="hidden" name="tag_name" id="remove-tag-name" value="{{ . }}" required>
                 <div class="flex gap-1 items-center tag">
                   <span>{{ . }}</span>
                   {{ if $.CanRemoveTags }}
-                    <button class="btn text-md p-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                    <button class="text-md px-1 rounded-full bg-blue-800 hover:bg-white hover:text-blue-800 text-white shadow-transparent" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
                   {{ end }}
                 </div>
               </form>
