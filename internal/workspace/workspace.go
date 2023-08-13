@@ -7,12 +7,14 @@ import (
 	"regexp"
 	"time"
 
+	"log/slog"
+
+	"slices"
+
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
-	"golang.org/x/exp/slices"
-	"golang.org/x/exp/slog"
 )
 
 const (

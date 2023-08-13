@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"time"
 
+	"log/slog"
+
+	"slices"
+
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
-	"golang.org/x/exp/slices"
-	"golang.org/x/exp/slog"
 )
 
 const (

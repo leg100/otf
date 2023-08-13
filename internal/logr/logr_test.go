@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"log/slog"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slog"
 )
 
 func TestLogger(t *testing.T) {

@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"sync"
 
+	"log/slog"
+
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf/internal"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/exp/slog"
 )
 
 const (

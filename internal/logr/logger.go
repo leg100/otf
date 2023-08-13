@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"log/slog"
+
 	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
-	"golang.org/x/exp/slog"
 )
 
 type (

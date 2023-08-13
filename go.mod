@@ -1,6 +1,6 @@
 module github.com/leg100/otf
 
-go 1.20
+go 1.21
 
 require (
 	cloud.google.com/go/pubsub v1.30.1
@@ -47,7 +47,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	github.com/xanzy/go-gitlab v0.73.1
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/mod v0.8.0
 	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.7.0

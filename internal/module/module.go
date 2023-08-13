@@ -5,11 +5,12 @@ import (
 	"errors"
 	"time"
 
+	"log/slog"
+
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
-	"golang.org/x/exp/slog"
 )
 
 const (

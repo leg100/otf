@@ -5,10 +5,11 @@ package notifications
 import (
 	"net/url"
 
+	"log/slog"
+
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/workspace"
-	"golang.org/x/exp/slog"
 )
 
 // notification furnishes information for sending a notification to a third

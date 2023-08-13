@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"maps"
+
 	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -14,7 +16,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/state"
-	"golang.org/x/exp/maps"
 )
 
 // Implements TFC state versions API:
