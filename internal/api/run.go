@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 
+	"slices"
+
 	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
@@ -16,7 +18,6 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
-	"golang.org/x/exp/slices"
 )
 
 func (a *api) addRunHandlers(r *mux.Router) {

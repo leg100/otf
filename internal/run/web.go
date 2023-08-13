@@ -273,7 +273,18 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := h.svc.RetryRun(r.Context(), runID)
+	run, err := h.svc.GetRun(r.Context(), runID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	run, err = h.svc.CreateRun(r.Context(), run.WorkspaceID, CreateOptions{
+		ConfigurationVersionID: &run.ConfigurationVersionID,
+		IsDestroy:              &run.IsDestroy,
+		PlanOnly:               &run.PlanOnly,
+		Source:                 SourceUI,
+	})
 	if err != nil {
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Run(runID), http.StatusFound)

@@ -63,12 +63,6 @@ The tests require the following environment variables:
 * `GITHUB_POLICY_SET_IDENTIFIER`: set to a github repo on which the tests can create webhooks.
 * `OAUTH_CLIENT_GITHUB_TOKEN`: a personal access token with permissions to create webhooks on the above repo.
 
-The tests also require that a host entry be added to point `otf.local` to `127.0.0.1`:
-
-```bash
-sudo echo "127.0.0.1 otf.local" | sudo tee -a /etc/hosts
-```
-
 !!! note
     You can instead manually invoke API tests using the scripts in `./hack`. The tests first require `otfd` to be running at `https://localhost:8080`, with a [site token](../config/flags/#-site-token) set to `site-token`. These settings can be overridden with the environment variables `TFE_ADDRESS` and `TFE_TOKEN`.
 

@@ -1,6 +1,6 @@
 {{ define "run-source" }}
   {{ if .IsAPISource }}
-    <img class="h-5 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src="{{ addHash "/static/images/api_icon.svg" }}">
+    <img class="h-5 bg-gray-300 p-0.5" id="run-trigger-api" title="run triggered via the API" src="{{ addHash "/static/images/api_icon.png" }}">
   {{ else if .IsCLISource }}
     <img class="h-5 bg-gray-300" id="run-trigger-cli" title="run triggered via the CLI" src="{{ addHash "/static/images/cli_icon.svg" }}">
   {{ else if .IsGithubSource }}
@@ -8,6 +8,6 @@
   {{ else if .IsGitlabSource }}
     <img class="h-5" id="run-trigger-gitlab" title="run triggered via gitlab"  src="{{ addHash "/static/images/gitlab_icon.svg" }}">
   {{ else if .IsUISource }}
-    <img class="h-5 bg-gray-300 p-0.5" id="run-trigger-ui" title="run triggered via the UI"  src="{{ addHash "/static/images/ui_icon.svg" }}">
+    <img class="h-5 bg-gray-300 p-0.5" id="run-trigger-ui" title="run triggered via the UI"  src="{{ addHash "/static/images/ui_icon.png" }}">
   {{ end }}
 {{ end }}

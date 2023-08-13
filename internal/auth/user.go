@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"log/slog"
+
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/rbac"
-	"golang.org/x/exp/slog"
 )
 
 const (

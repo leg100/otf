@@ -58,10 +58,6 @@ type (
 		// Delete a run.
 		Delete(ctx context.Context, runID string) error
 
-		// RetryRun retries a run, creating a new run with the same config
-		// version.
-		RetryRun(ctx context.Context, id string) (*Run, error)
-
 		// DiscardRun discards a run. Run must be in the planned state.
 		DiscardRun(ctx context.Context, runID string) error
 		// ForceCancelRun forcefully cancels a run.
@@ -285,17 +281,6 @@ func (s *service) Delete(ctx context.Context, runID string) error {
 	}
 	s.V(0).Info("deleted run", "id", runID, "subject", subject)
 	return nil
-}
-
-func (s *service) RetryRun(ctx context.Context, runID string) (*Run, error) {
-	run, err := s.db.GetRun(ctx, runID)
-	if err != nil {
-		s.Error(err, "retrieving run", "id", runID)
-		return nil, err
-	}
-	return s.CreateRun(ctx, run.WorkspaceID, CreateOptions{
-		ConfigurationVersionID: &run.ConfigurationVersionID,
-	})
 }
 
 // StartPhase starts a run phase.

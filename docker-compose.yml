@@ -29,7 +29,7 @@ services:
   # caching content transported via SSL (`terraform` retrieves providers only via
   # SSL).
   squid:
-    image: leg100/squid
+    image: leg100/squid:0.2.2
     ports:
       - 3128
     healthcheck:
@@ -57,7 +57,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "http://localhost:8080/healthz"]
+      test: ["CMD", "sh", "-c \"echo check | nc localhost 8080\""]
       interval: 5s
       timeout: 5s
       retries: 3

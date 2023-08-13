@@ -27,6 +27,12 @@ make serve-docs
 
 That builds and runs the documentation site on your workstation at `http://localhost:9999`. Any changes you make to the documentation are reflected in real-time in the browser.
 
+Before running the make task you'll need to install some python packages:
+
+```
+pip install mkdocs-glightbox mkdocs-material-otf
+```
+
 Screenshots in the documentation are largely automated. The browser-based integration tests produce screenshots at various steps. If the environment variable `OTF_DOC_SCREENSHOTS=true` is present then such a test also writes the screenshot into the documentation directory. The following make task runs the tests along with the aforementioned environment variable:
 
 ```
@@ -65,6 +71,9 @@ If you're making changes to web templates then you may want to enable [developer
 OTF uses [Tailwind CSS](https://tailwindcss.com/) to generate CSS classes. Run the following make task to generate the CSS:
 
 * `make tailwind`
+
+!!! note
+    To install tailwind first ensure you've installed `npm` and then run `npm install -D tailwindcss`
 
 ## Developer tooling
 

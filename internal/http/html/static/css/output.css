@@ -611,6 +611,13 @@ th, td {
   padding: 0.5rem;
 }
 
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .tag {
   border-radius: 0.5rem;
   --tw-bg-opacity: 1;
