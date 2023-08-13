@@ -5,8 +5,9 @@ import (
 	"context"
 	"time"
 
+	"log/slog"
+
 	"github.com/leg100/otf/internal/cloud"
-	"golang.org/x/exp/slog"
 )
 
 type (

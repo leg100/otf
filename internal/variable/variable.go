@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 // VariableCategory is the category of variable

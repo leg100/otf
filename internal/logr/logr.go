@@ -5,8 +5,9 @@ import (
 	"context"
 	"time"
 
+	"log/slog"
+
 	"github.com/go-logr/logr"
-	"golang.org/x/exp/slog"
 )
 
 // NOTE: this has been borrowed from https://cs.opensource.google/go/x/exp/+/master:slog/record.go

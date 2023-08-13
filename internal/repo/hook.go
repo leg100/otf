@@ -1,9 +1,10 @@
 package repo
 
 import (
+	"log/slog"
+
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/cloud"
-	"golang.org/x/exp/slog"
 )
 
 // defaultEvents are the VCS events that hooks subscribe to.

@@ -3,7 +3,7 @@ package logr
 import (
 	"context"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 // A LevelHandler wraps a Handler with an Enabled method

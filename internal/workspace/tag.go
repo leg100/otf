@@ -3,7 +3,7 @@ package workspace
 import (
 	"errors"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 var ErrInvalidTagSpec = errors.New("invalid tag spec: must provide either an ID or a name")
