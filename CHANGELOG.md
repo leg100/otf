@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/leg100/otf/compare/v0.1.8...v0.1.9) (2023-08-13)
+
+
+### Bug Fixes
+
+* qemu needed for building multi-arch images ([4708985](https://github.com/leg100/otf/commit/47089858620539a2734007029c2397edfcadba4d))
+
 ## [0.1.8](https://github.com/leg100/otf/compare/v0.1.7...v0.1.8) (2023-08-13)
 
 
