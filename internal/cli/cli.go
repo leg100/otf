@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/tokens"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -47,8 +48,8 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.AddCommand(a.teamCommand())
 	cmd.AddCommand(a.workspaceCommand())
 	cmd.AddCommand(a.runCommand())
-	cmd.AddCommand(a.agentCommand())
 	cmd.AddCommand(a.stateCommand())
+	cmd.AddCommand(tokens.CLI{TokensService: a.Client})
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
