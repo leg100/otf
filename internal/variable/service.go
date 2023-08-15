@@ -22,6 +22,8 @@ type (
 		GetVariable(ctx context.Context, variableID string) (*Variable, error)
 		UpdateVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
 		DeleteVariable(ctx context.Context, variableID string) (*Variable, error)
+
+		CreateVariableSet(ctx context.Context, organization string, opts CreateVariableOptions) (*Variable, error)
 	}
 
 	service struct {

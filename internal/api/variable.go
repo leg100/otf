@@ -15,7 +15,7 @@ import (
 
 // Implements TFC workspace variables API:
 //
-// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables#update-variables
+// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspace-variables
 func (a *api) addVariableHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
