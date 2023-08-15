@@ -1,0 +1,10 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}Create GitHub App{{ end }}
+
+{{ define "content" }}
+  <form method="POST">
+    register a GitHub App Manifest: <input type="text" name="manifest" id="manifest"><br>
+    <input type="submit" value="Submit">
+  </form>
+{{ end }}

@@ -139,6 +139,16 @@ var specs = []controllerSpec{
 		path:           "/profile/tokens/create",
 	},
 	{
+		Name:           "new_github_app",
+		controllerType: singlePath,
+		path:           "/admin/ghapp/new",
+	},
+	{
+		Name:           "exchange_code_github_app",
+		controllerType: singlePath,
+		path:           "/admin/ghapp/exchange-code",
+	},
+	{
 		Name:           "organization",
 		controllerType: resourcePath,
 		nested: []controllerSpec{

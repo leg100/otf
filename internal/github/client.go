@@ -25,9 +25,13 @@ type Client struct {
 
 func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	var (
-		client *github.Client
-		err    error
+		client     *github.Client
+		httpClient = http.DefaultClient
+		err        error
 	)
+	if cfg.Hostname == "" {
+		cfg.Hostname = DefaultGithubHostname
+	}
 
 	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {
@@ -44,11 +48,10 @@ func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 		src = oauth2.StaticTokenSource(cfg.OAuthToken)
 	} else if cfg.PersonalToken != nil {
 		src = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *cfg.PersonalToken})
-	} else {
-		return nil, fmt.Errorf("no credentials provided")
 	}
-
-	httpClient := oauth2.NewClient(ctx, src)
+	if src != nil {
+		httpClient = oauth2.NewClient(ctx, src)
+	}
 
 	if cfg.Hostname != DefaultGithubHostname {
 		client, err = NewEnterpriseClient(cfg.Hostname, httpClient)
@@ -130,6 +133,14 @@ func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]st
 		tags = append(tags, strings.TrimPrefix(ref.GetRef(), "refs/"))
 	}
 	return tags, nil
+}
+
+func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConfig, error) {
+	cfg, _, err := g.client.Apps.CompleteAppManifest(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, string, error) {

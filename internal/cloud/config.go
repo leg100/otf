@@ -39,7 +39,7 @@ func (cfg *Config) HTTPClient() *http.Client {
 
 // Credentials are credentials for a cloud client
 type Credentials struct {
-	// tokens are mutually-exclusive - at least one must be specified
+	// tokens are mutually-exclusive - only one can be specified
 	OAuthToken    *oauth2.Token
 	PersonalToken *string
 }

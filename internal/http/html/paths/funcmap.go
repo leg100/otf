@@ -25,6 +25,10 @@ func init() {
 
 	funcmap["createTokenPath"] = CreateToken
 
+	funcmap["newGithubAppPath"] = NewGithubApp
+
+	funcmap["exchangeCodeGithubAppPath"] = ExchangeCodeGithubApp
+
 	funcmap["organizationsPath"] = Organizations
 	funcmap["createOrganizationPath"] = CreateOrganization
 	funcmap["newOrganizationPath"] = NewOrganization

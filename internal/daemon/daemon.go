@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/ghapp"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
@@ -308,6 +309,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		loginServer,
 		disco.Service{},
 		api,
+		&ghapp.WebHandlers{Renderer: renderer, Service: cloudService, HostnameService: hostnameService},
 	}
 
 	return &Daemon{
