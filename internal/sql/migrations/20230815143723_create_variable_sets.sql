@@ -9,10 +9,13 @@ CREATE TABLE IF NOT EXISTS workspace_variables (
     variable_id TEXT REFERENCES variables ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
 );
 
-UPDATE workspace_variables
-SET workspace_id = v.workspace_id,
-    variable_id = v.variable_id
-FROM variables v;
+INSERT INTO workspace_variables (
+    workspace_id,
+    variable_id
+) (
+    SELECT workspace_id, variable_id
+    FROM variables v
+);
 
 ALTER TABLE variables DROP column workspace_id;
 
@@ -25,6 +28,7 @@ CREATE TABLE IF NOT EXISTS variable_sets (
     global BOOL NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
+    organization_name TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (variable_set_id)
 );
 

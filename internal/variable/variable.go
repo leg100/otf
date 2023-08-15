@@ -44,7 +44,6 @@ type (
 		Category    VariableCategory
 		Sensitive   bool
 		HCL         bool
-		WorkspaceID string
 
 		// OTF doesn't use this internally but the go-tfe integration tests
 		// expect it to be a random value that changes on every update.

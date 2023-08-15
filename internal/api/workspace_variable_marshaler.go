@@ -5,7 +5,7 @@ import (
 	"github.com/leg100/otf/internal/variable"
 )
 
-func (m *jsonapiMarshaler) toVariable(from *variable.Variable) *types.Variable {
+func (m *jsonapiMarshaler) toVariable(from *variable.WorkspaceVariable) *types.Variable {
 	to := &types.Variable{
 		ID:          from.ID,
 		Key:         from.Key,

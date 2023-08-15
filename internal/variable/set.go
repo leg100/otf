@@ -1,34 +1,24 @@
 package variable
 
 type (
+	// VariableSet is a set of variables
 	VariableSet struct {
-		ID          string
-		Key         string
-		Value       string
-		Description string
-		Category    VariableCategory
-		Sensitive   bool
-		HCL         bool
-		WorkspaceID string
-
-		// OTF doesn't use this internally but the go-tfe integration tests
-		// expect it to be a random value that changes on every update.
-		VersionID string
+		ID           string
+		Name         string
+		Description  string
+		Global       bool
+		Variables    []*Variable
+		Workspaces   []string // workspace IDs
+		Organization string   // org name
 	}
 	CreateVariableSetOptions struct {
-		Key         *string
-		Value       *string
-		Description *string
-		Category    *VariableCategory
-		Sensitive   *bool
-		HCL         *bool
+		Name        string
+		Description string
+		Global      bool
 	}
 	UpdateVariableSetOptions struct {
-		Key         *string
-		Value       *string
+		Name        *string
 		Description *string
-		Category    *VariableCategory
-		Sensitive   *bool
-		HCL         *bool
+		Global      *bool
 	}
 )

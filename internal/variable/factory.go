@@ -25,11 +25,10 @@ func versionGenerator() string {
 	return fmt.Sprintf("%x", b)
 }
 
-func (f *factory) new(workspaceID string, opts CreateVariableOptions) (*Variable, error) {
+func (f *factory) new(opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
-		ID:          internal.NewID("var"),
-		WorkspaceID: workspaceID,
-		VersionID:   f.generateVersion(),
+		ID:        internal.NewID("var"),
+		VersionID: f.generateVersion(),
 	}
 
 	// Required fields
@@ -65,6 +64,37 @@ func (f *factory) new(workspaceID string, opts CreateVariableOptions) (*Variable
 	}
 
 	return &v, nil
+}
+
+func (f *factory) newWorkspaceVariable(workspaceID string, opts CreateVariableOptions) (*WorkspaceVariable, error) {
+	v, err := f.new(opts)
+	if err != nil {
+		return nil, err
+	}
+	return &WorkspaceVariable{
+		Variable:    v,
+		WorkspaceID: workspaceID,
+	}, nil
+}
+
+func (f *factory) newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
+	vars := make([]*Variable, len(opts.Variables))
+	for i, newV := range opts.Variables {
+		v, err := f.new(newV)
+		if err != nil {
+			return nil, err
+		}
+		vars[i] = v
+	}
+	set := VariableSet{
+		ID:          internal.NewID("varset"),
+		Name:        opts.Name,
+		Description: opts.Description,
+		Global:      opts.Global,
+		Workspaces:  opts.Workspaces,
+		Variables:   vars,
+	}
+	return &set, nil
 }
 
 func (f *factory) update(v *Variable, opts UpdateVariableOptions) error {

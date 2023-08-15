@@ -32,6 +32,46 @@ type VariableSetVariable struct {
 	VariableSet *VariableSet `jsonapi:"relationship" json:"varset"`
 }
 
+// VariableSetCreateOptions represents the options for creating a new variable set within in a organization.
+type VariableSetCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,varsets"`
+
+	// The name of the variable set.
+	// Affects variable precedence when there are conflicts between Variable Sets
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets#apply-variable-set-to-workspaces
+	Name string `jsonapi:"attr,name"`
+
+	// A description to provide context for the variable set.
+	Description string `jsonapi:"attr,description,omitempty"`
+
+	// If true the variable set is considered in all runs in the organization.
+	Global bool `jsonapi:"attr,global,omitempty"`
+}
+
+// VariableSetUpdateOptions represents the options for updating a variable set.
+type VariableSetUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,varsets"`
+
+	// The name of the variable set.
+	// Affects variable precedence when there are conflicts between Variable Sets
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets#apply-variable-set-to-workspaces
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// A description to provide context for the variable set.
+	Description *string `jsonapi:"attr,description,omitempty"`
+
+	// If true the variable set is considered in all runs in the organization.
+	Global *bool `jsonapi:"attr,global,omitempty"`
+}
+
 // VariableSetVariableCreatOptions represents the options for creating a new variable within a variable set
 type VariableSetVariableCreateOptions struct {
 	// Type is a public field utilized by JSON:API to

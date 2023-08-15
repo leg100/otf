@@ -41,6 +41,12 @@ const (
 	GetVariableAction
 	DeleteVariableAction
 
+	CreateVariableSetAction
+	UpdateVariableSetAction
+	ListVariableSetsAction
+	GetVariableSetAction
+	DeleteVariableSetAction
+
 	GetRunAction
 	ListRunsAction
 	ApplyRunAction
