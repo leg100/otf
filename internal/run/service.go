@@ -19,6 +19,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/surl"
 )
 
 type (
@@ -102,6 +103,7 @@ type (
 		internal.Cache
 		*sql.DB
 		*tfeapi.Responder
+		*surl.Signer
 		html.Renderer
 		*pubsub.Broker
 		repo.Subscriber
@@ -137,8 +139,10 @@ func NewService(opts Options) *service {
 		svc:              &svc,
 	}
 	svc.api = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
+		Service:            &svc,
+		PermissionsService: opts.WorkspaceService,
+		Responder:          opts.Responder,
+		Signer:             opts.Signer,
 	}
 	spawner := &Spawner{
 		Logger:                      opts.Logger.WithValues("component", "spawner"),

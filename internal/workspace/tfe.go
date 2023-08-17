@@ -139,7 +139,12 @@ func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, ws, http.StatusOK)
+	converted, err := a.convert(ws, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +181,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsl, err := a.ListWorkspaces(r.Context(), ListOptions{
+	page, err := a.ListWorkspaces(r.Context(), ListOptions{
 		Search:       params.Search,
 		Organization: &organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
@@ -188,8 +193,8 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert items
-	items := make([]*types.Workspace, len(wsl.Items))
-	for i, from := range wsl.Items {
+	items := make([]*types.Workspace, len(page.Items))
+	for i, from := range page.Items {
 		to, err := a.convert(from, r)
 		if err != nil {
 			tfeapi.Error(w, err)
@@ -198,7 +203,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		items[i] = to
 	}
 
-	a.RespondWithPage(w, r, items, wsl.Pagination)
+	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
 // updateWorkspaceByID updates a workspace using its ID.

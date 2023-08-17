@@ -52,7 +52,7 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, org, http.StatusCreated)
+	a.Respond(w, r, a.toOrganization(org), http.StatusCreated)
 }
 
 func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, org, http.StatusOK)
+	a.Respond(w, r, a.toOrganization(org), http.StatusOK)
 }
 
 func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,12 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.RespondWithPage(w, r, page.Items, page.Pagination)
+	// convert items
+	items := make([]*types.Organization, len(page.Items))
+	for i, from := range page.Items {
+		items[i] = a.toOrganization(from)
+	}
+	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
 func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +117,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, org, http.StatusOK)
+	a.Respond(w, r, a.toOrganization(org), http.StatusOK)
 }
 
 func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {

@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/workspace"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -64,6 +65,7 @@ type (
 		WorkspaceAuthorizer internal.Authorizer
 
 		internal.Cache
+		workspace.WorkspaceService
 		*sql.DB
 		*tfeapi.Responder
 	}
@@ -90,8 +92,9 @@ func NewService(opts Options) *service {
 		Service:  &svc,
 	}
 	svc.api = &tfe{
-		Service:   &svc,
-		Responder: opts.Responder,
+		Service:          &svc,
+		WorkspaceService: opts.WorkspaceService,
+		Responder:        opts.Responder,
 	}
 	// include state version outputs in api responses when requested.
 	opts.Responder.Register(tfeapi.IncludeOutputs, svc.api.includeOutputs)

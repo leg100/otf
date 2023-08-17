@@ -201,6 +201,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:                      broker,
 		Cache:                       cache,
 		Subscriber:                  repoService,
+		Signer:                      signer,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -223,6 +224,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
+		WorkspaceService:    workspaceService,
 		Cache:               cache,
 		Renderer:            renderer,
 		Responder:           responder,
