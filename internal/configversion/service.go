@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -38,16 +40,19 @@ type (
 
 		db    *pgdb
 		cache internal.Cache
+		api   *tfe
 	}
 
 	Options struct {
 		logr.Logger
 
 		WorkspaceAuthorizer internal.Authorizer
+		MaxConfigSize       int64
 
 		internal.Cache
 		*sql.DB
 		*surl.Signer
+		*api.Responder
 	}
 )
 
@@ -60,8 +65,25 @@ func NewService(opts Options) *service {
 
 	svc.db = &pgdb{opts.DB}
 	svc.cache = opts.Cache
+	svc.api = &tfe{
+		Service:       &svc,
+		Signer:        opts.Signer,
+		Responder:     opts.Responder,
+		maxConfigSize: opts.MaxConfigSize,
+	}
+
+	// Fetch config version when API requests config version be included in the
+	// response
+	opts.Responder.Register(api.IncludeConfig, svc.api.include)
+	// Fetch ingress attributes when API requests ingress attributes be included
+	// in the response
+	opts.Responder.Register(api.IncludeIngress, svc.api.includeIngressAttributes)
 
 	return &svc
+}
+
+func (s *service) AddHandlers(r *mux.Router) {
+	s.api.addHandlers(r)
 }
 
 func (s *service) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {

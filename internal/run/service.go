@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -83,6 +84,7 @@ type (
 
 		cache internal.Cache
 		db    *pgdb
+		api   *tfe
 		*factory
 
 		web *webHandlers
@@ -99,6 +101,7 @@ type (
 		logr.Logger
 		internal.Cache
 		*sql.DB
+		*api.Responder
 		html.Renderer
 		*pubsub.Broker
 		repo.Subscriber
@@ -133,6 +136,10 @@ func NewService(opts Options) *service {
 		logger:           opts.Logger,
 		svc:              &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 	spawner := &Spawner{
 		Logger:                      opts.Logger.WithValues("component", "spawner"),
 		ConfigurationVersionService: opts.ConfigurationVersionService,
@@ -142,7 +149,11 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Register("runs", &svc)
+	opts.Broker.Register("runs", &svc)
+
+	// Fetch related resources when API requests their inclusion
+	opts.Responder.Register(api.IncludeCreatedBy, svc.api.includeCreatedBy)
+	opts.Responder.Register(api.IncludeCurrentRun, svc.api.includeCurrentRun)
 
 	// Subscribe run spawner to incoming vcs events
 	opts.Subscriber.Subscribe(spawner.handle)
@@ -156,6 +167,7 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {

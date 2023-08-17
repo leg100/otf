@@ -4,6 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
@@ -26,10 +27,12 @@ type (
 
 		db  *pgdb
 		web *webHandlers
+		api *tfe
 	}
 
 	Options struct {
 		*sql.DB
+		*api.Responder
 		html.Renderer
 		internal.HostnameService
 		organization.OrganizationService
@@ -48,13 +51,21 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
+	svc.api = &tfe{
+		AuthService: &svc,
+		Responder:   opts.Responder,
+	}
 
 	// Whenever an organization is created, also create an owners team.
 	opts.OrganizationService.AfterCreateOrganization(svc.createOwnersTeam)
+	// Fetch organization when API calls request organization be included in the
+	// response
+	opts.Responder.Register(api.IncludeOrganization, svc.api.includeUsers)
 
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.api.addHandlers(r)
 }

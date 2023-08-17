@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
@@ -30,6 +31,7 @@ type (
 		db        *pgdb
 		workspace internal.Authorizer
 		web       *web
+		api       *tfe
 
 		*factory
 	}
@@ -39,6 +41,7 @@ type (
 		WorkspaceService    workspace.Service
 
 		*sql.DB
+		*api.Responder
 		html.Renderer
 		logr.Logger
 	}
@@ -57,12 +60,17 @@ func NewService(opts Options) *service {
 		Service:  opts.WorkspaceService,
 		svc:      &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) CreateVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {

@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
@@ -45,12 +46,14 @@ type (
 		organization internal.Authorizer
 		db           *pgdb
 		web          *webHandlers
+		api          *tfe
 		deleteHook   *hooks.Hook[*VCSProvider]
 	}
 
 	Options struct {
 		CloudService
 		*sql.DB
+		*api.Responder
 		html.Renderer
 		logr.Logger
 	}
@@ -73,12 +76,17 @@ func NewService(opts Options) *service {
 		Renderer:     opts.Renderer,
 		svc:          &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.api.addHandlers(r)
 }
 
 func (a *service) BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider]) {

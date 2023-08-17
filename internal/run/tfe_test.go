@@ -1,4 +1,4 @@
-package api
+package run
 
 import (
 	"encoding/base64"
@@ -8,9 +8,10 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/pubsub"
-	"github.com/leg100/otf/internal/run"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,19 +19,29 @@ func TestAPI_Watch(t *testing.T) {
 	// input event channel
 	in := make(chan pubsub.Event, 1)
 
-	srv := &api{
-		Logger:     logr.Discard(),
-		marshaler:  &fakeMarshaler{run: &types.Run{ID: "run-123"}},
-		RunService: &fakeRunService{ch: in},
+	srv := &tfe{
+		Logger:             logr.Discard(),
+		Service:            &fakeRunService{ch: in},
+		PermissionsService: &fakePermissionsService{},
+		Signer:             internal.NewSigner([]byte("secret")),
 	}
 
 	r := httptest.NewRequest("", "/", nil)
+	r = r.WithContext(internal.AddSubjectToContext(r.Context(), &auth.User{ID: "janitor"}))
 	w := httptest.NewRecorder()
 
 	// send one event and then close
 	in <- pubsub.Event{
-		Payload: &run.Run{ID: "run-123"},
-		Type:    pubsub.CreatedEvent,
+		// we need to provide all IDs otherwise the json-api marshaler complains
+		// the primary field is empty.
+		Payload: &Run{
+			ID:                     "run-123",
+			WorkspaceID:            "ws-123",
+			ConfigurationVersionID: "cv-123",
+			Plan:                   Phase{RunID: "run-123"},
+			Apply:                  Phase{RunID: "run-123"},
+		},
+		Type: pubsub.CreatedEvent,
 	}
 	close(in)
 
@@ -42,7 +53,7 @@ func TestAPI_Watch(t *testing.T) {
 		got := w.Body.String()
 		got = strings.TrimSpace(got)
 		parts := strings.Split(got, "\n")
-		if assert.Equal(t, 2, len(parts)) {
+		if assert.Equal(t, 2, len(parts), got) {
 			assert.Equal(t, "event: created", parts[1])
 			if assert.Regexp(t, `data: .*`, parts[0]) {
 				data := strings.TrimPrefix(parts[0], "data: ")

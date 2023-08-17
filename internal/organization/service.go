@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/pubsub"
@@ -40,6 +41,7 @@ type (
 		db   *pgdb
 		site internal.Authorizer // authorize access to site
 		web  *web
+		api  *tfe
 
 		createHook *hooks.Hook[*Organization]
 		deleteHook *hooks.Hook[*Organization]
@@ -49,6 +51,7 @@ type (
 		RestrictOrganizationCreation bool
 
 		*sql.DB
+		*api.Responder
 		*pubsub.Broker
 		html.Renderer
 		logr.Logger
@@ -76,16 +79,24 @@ func NewService(opts Options) *service {
 		RestrictOrganizationCreation: opts.RestrictOrganizationCreation,
 		svc:                          &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 
 	// Register with broker an unmarshaler for unmarshaling organization
 	// database table events into organization events.
-	opts.Register("organizations", svc.db)
+	opts.Broker.Register("organizations", svc.db)
+	// Fetch organization when API calls request organization be included in the
+	// response
+	opts.Responder.Register(api.IncludeOrganization, svc.api.include)
 
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) AfterCreateOrganization(l hooks.Listener[*Organization]) {
