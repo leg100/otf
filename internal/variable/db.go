@@ -99,8 +99,8 @@ type pgRow struct {
 	Category    pgtype.Text `json:"category"`
 	Sensitive   bool        `json:"sensitive"`
 	HCL         bool        `json:"hcl"`
-	WorkspaceID pgtype.Text `json:"workspace_id"`
 	VersionID   pgtype.Text `json:"version_id"`
+	WorkspaceID pgtype.Text `json:"workspace_id"`
 }
 
 func (row pgRow) toVariable() *Variable {
