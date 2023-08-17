@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 const (
@@ -33,18 +33,18 @@ func (a *tfe) addTagHandlers(r *mux.Router) {
 func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params ListTagsOptions
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	page, err := a.ListTags(r.Context(), org, params)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -59,14 +59,14 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params []struct {
 		ID string `jsonapi:"primary,tags"`
 	}
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	var tagIDs []string
@@ -75,7 +75,7 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.DeleteTags(r.Context(), org, tagIDs); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -85,12 +85,12 @@ func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 	tagID, err := decode.Param("tag_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params []*types.Workspace
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	var workspaceIDs []string
@@ -99,7 +99,7 @@ func (a *tfe) tagWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.TagWorkspaces(r.Context(), tagID, workspaceIDs); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -117,12 +117,12 @@ func (a *tfe) removeTags(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagOperation) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params []*types.Tag
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	// convert from json:api structs to tag specs
@@ -137,7 +137,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		err = errors.New("unknown tag operation")
 	}
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -147,18 +147,18 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params ListWorkspaceTagsOptions
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	page, err := a.ListWorkspaceTags(r.Context(), workspaceID, params)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

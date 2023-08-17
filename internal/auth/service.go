@@ -4,10 +4,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -32,7 +32,7 @@ type (
 
 	Options struct {
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 		html.Renderer
 		internal.HostnameService
 		organization.OrganizationService
@@ -60,7 +60,7 @@ func NewService(opts Options) *service {
 	opts.OrganizationService.AfterCreateOrganization(svc.createOwnersTeam)
 	// Fetch organization when API calls request organization be included in the
 	// response
-	opts.Responder.Register(api.IncludeOrganization, svc.api.includeUsers)
+	opts.Responder.Register(tfeapi.IncludeOrganization, svc.api.includeUsers)
 
 	return &svc
 }

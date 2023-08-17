@@ -5,11 +5,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -37,7 +37,7 @@ type (
 
 	Options struct {
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 		*pubsub.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer

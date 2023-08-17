@@ -12,18 +12,18 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/surl"
 )
 
 type tfe struct {
 	Service
 	*surl.Signer
-	*api.Responder
+	*tfeapi.Responder
 
 	maxConfigSize int64 // Maximum permitted config upload size in bytes
 }
@@ -43,12 +43,12 @@ func (a *tfe) addHandlers(r *mux.Router) {
 func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	params := types.ConfigurationVersionCreateOptions{}
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -57,13 +57,13 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		Speculative:   params.Speculative,
 		Source:        SourceAPI,
 	}
-	if api.IsTerraformCLI(r) {
+	if tfeapi.IsTerraformCLI(r) {
 		opts.Source = SourceTerraform
 	}
 
 	cv, err := a.CreateConfigurationVersion(r.Context(), workspaceID, opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 	uploadURL := fmt.Sprintf("/configuration-versions/%s/upload", cv.ID)
 	uploadURL, err = a.Sign(uploadURL, time.Hour)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	// terraform CLI expects an absolute URL
@@ -86,13 +86,13 @@ func (a *tfe) createConfigurationVersion(w http.ResponseWriter, r *http.Request)
 func (a *tfe) getConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	cv, err := a.GetConfigurationVersion(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		PageOptions: params.PageOptions,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id, err := decode.Param("id", r)
 		if err != nil {
-			api.Error(w, err)
+			tfeapi.Error(w, err)
 			return
 		}
 
@@ -133,17 +133,17 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 		if _, err := io.Copy(buf, r.Body); err != nil {
 			maxBytesError := &http.MaxBytesError{}
 			if errors.As(err, &maxBytesError) {
-				api.Error(w, &internal.HTTPError{
+				tfeapi.Error(w, &internal.HTTPError{
 					Code:    422,
 					Message: fmt.Sprintf("config exceeds maximum size (%d bytes)", a.maxConfigSize),
 				})
 			} else {
-				api.Error(w, err)
+				tfeapi.Error(w, err)
 			}
 			return
 		}
 		if err := a.UploadConfig(r.Context(), id, buf.Bytes()); err != nil {
-			api.Error(w, err)
+			tfeapi.Error(w, err)
 			return
 		}
 	})
@@ -153,13 +153,13 @@ func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
 func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	resp, err := a.DownloadConfig(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

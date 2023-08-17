@@ -8,10 +8,10 @@ import (
 	"github.com/leg100/otf/internal"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 
 type tfe struct {
 	Service
-	*api.Responder
+	*tfeapi.Responder
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -36,57 +36,57 @@ func (a *tfe) addHandlers(r *mux.Router) {
 func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	var params types.OAuthClientCreateOptions
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
 	// required parameters
 	if params.OAuthToken == nil {
-		api.Error(w, &internal.MissingParameterError{Parameter: "oauth-token-string"})
+		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "oauth-token-string"})
 		return
 	}
 	if params.ServiceProvider == nil {
-		api.Error(w, &internal.MissingParameterError{Parameter: "service-provider"})
+		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "service-provider"})
 		return
 	}
 	if params.APIURL == nil {
-		api.Error(w, &internal.MissingParameterError{Parameter: "api-url"})
+		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "api-url"})
 		return
 	}
 	if params.HTTPURL == nil {
-		api.Error(w, &internal.MissingParameterError{Parameter: "http-url"})
+		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "http-url"})
 		return
 	}
 
 	// unsupported parameters
 	if params.PrivateKey != nil {
-		api.Error(w, errors.New("private-key parameter is unsupported"))
+		tfeapi.Error(w, errors.New("private-key parameter is unsupported"))
 		return
 	}
 	if params.RSAPublicKey != nil {
-		api.Error(w, errors.New("rsa-public-key parameter is unsupported"))
+		tfeapi.Error(w, errors.New("rsa-public-key parameter is unsupported"))
 		return
 	}
 	if params.Secret != nil {
-		api.Error(w, errors.New("secret parameter is unsupported"))
+		tfeapi.Error(w, errors.New("secret parameter is unsupported"))
 		return
 	}
 	if *params.ServiceProvider != types.ServiceProviderGithub {
-		api.Error(w, fmt.Errorf("service-provider=%s is unsupported", string(*params.ServiceProvider)))
+		tfeapi.Error(w, fmt.Errorf("service-provider=%s is unsupported", string(*params.ServiceProvider)))
 		return
 	}
 	if *params.APIURL != GithubAPIURL {
-		api.Error(w, fmt.Errorf("only api-url=%s is supported", GithubAPIURL))
+		tfeapi.Error(w, fmt.Errorf("only api-url=%s is supported", GithubAPIURL))
 		return
 	}
 	if *params.HTTPURL != GithubHTTPURL {
-		api.Error(w, fmt.Errorf("only http-url=%s is supported", string(*params.HTTPURL)))
+		tfeapi.Error(w, fmt.Errorf("only http-url=%s is supported", string(*params.HTTPURL)))
 		return
 	}
 
@@ -102,7 +102,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Cloud:        "github",
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -112,13 +112,13 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	providers, err := a.ListVCSProviders(r.Context(), org)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -133,13 +133,13 @@ func (a *tfe) listOAuthClients(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getOAuthClient(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("oauth_client_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	oauthClient, err := a.GetVCSProvider(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -149,12 +149,12 @@ func (a *tfe) getOAuthClient(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("oauth_client_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if _, err = a.DeleteVCSProvider(r.Context(), id); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

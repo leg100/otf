@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/client"
@@ -32,6 +31,7 @@ import (
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -108,7 +108,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	responder := api.NewResponder()
+	responder := tfeapi.NewResponder()
 
 	broker := pubsub.NewBroker(logger, db)
 

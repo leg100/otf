@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
@@ -18,6 +17,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -66,7 +66,7 @@ type (
 	Options struct {
 		*sql.DB
 		*pubsub.Broker
-		*api.Responder
+		*tfeapi.Responder
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
@@ -105,7 +105,7 @@ func NewService(opts Options) *service {
 	opts.Broker.Register("workspaces", &svc)
 	// Fetch workspace when API calls request workspace be included in the
 	// response
-	opts.Responder.Register(api.IncludeWorkspace, svc.api.include)
+	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.api.include)
 	return &svc
 }
 

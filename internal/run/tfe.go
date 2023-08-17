@@ -14,13 +14,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -28,7 +28,7 @@ type tfe struct {
 	Service
 	workspace.PermissionsService
 	internal.Signer
-	*api.Responder
+	*tfeapi.Responder
 	logr.Logger
 }
 
@@ -68,12 +68,12 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 	var params types.RunCreateOptions
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	if params.Workspace == nil {
-		api.Error(w, &internal.MissingParameterError{Parameter: "workspace"})
+		tfeapi.Error(w, &internal.MissingParameterError{Parameter: "workspace"})
 		return
 	}
 
@@ -93,7 +93,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 	if params.ConfigurationVersion != nil {
 		opts.ConfigurationVersionID = &params.ConfigurationVersion.ID
 	}
-	if api.IsTerraformCLI(r) {
+	if tfeapi.IsTerraformCLI(r) {
 		opts.Source = SourceTerraform
 	}
 	opts.Variables = make([]Variable, len(params.Variables))
@@ -103,7 +103,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 
 	run, err := a.CreateRun(r.Context(), params.Workspace.ID, opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
 		Phase internal.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 		return
 	} else if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -140,13 +140,13 @@ func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
 		Phase internal.PhaseType `schema:"phase,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	run, err := a.FinishPhase(r.Context(), params.RunID, params.Phase, PhaseFinishOptions{})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -156,13 +156,13 @@ func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	run, err := a.GetRun(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -172,7 +172,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {
 	var params types.RunListOptions
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -208,7 +208,7 @@ func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts ListOptions) {
 	page, err := a.ListRuns(r.Context(), opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -217,7 +217,7 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 	for i, from := range page.Items {
 		to, err := a.toRun(from, r)
 		if err != nil {
-			api.Error(w, err)
+			tfeapi.Error(w, err)
 			return
 		}
 		items[i] = to
@@ -229,12 +229,12 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if err := a.Apply(r.Context(), id); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -244,12 +244,12 @@ func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if err = a.DiscardRun(r.Context(), id); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -259,12 +259,12 @@ func (a *tfe) discardRun(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if _, err = a.Cancel(r.Context(), id); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -274,12 +274,12 @@ func (a *tfe) cancelRun(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if err := a.ForceCancelRun(r.Context(), id); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -289,18 +289,18 @@ func (a *tfe) forceCancelRun(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	opts := PlanFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	file, err := a.GetPlanFile(r.Context(), id, opts.Format)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -313,24 +313,24 @@ func (a *tfe) getPlanFile(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	opts := PlanFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	err = a.UploadPlanFile(r.Context(), id, buf.Bytes(), opts.Format)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -340,13 +340,13 @@ func (a *tfe) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	file, err := a.GetLockFile(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -359,19 +359,19 @@ func (a *tfe) getLockFile(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	err = a.UploadLockFile(r.Context(), id, buf.Bytes())
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -384,20 +384,20 @@ func (a *tfe) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
 	run, err := a.GetRun(r.Context(), internal.ConvertID(id, "run"))
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	plan, err := a.toPlan(run.Plan, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -410,14 +410,14 @@ func (a *tfe) getPlan(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("plan_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	// otf's plan IDs are simply the corresponding run ID
 	json, err := a.GetPlanFile(r.Context(), internal.ConvertID(id, "run"), PlanFormatJSON)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	if _, err := w.Write(json); err != nil {
@@ -429,20 +429,20 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getApply(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("apply_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	// otf's apply IDs are simply the corresponding run ID
 	run, err := a.GetRun(r.Context(), internal.ConvertID(id, "run"))
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	apply, err := a.toApply(run.Apply, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

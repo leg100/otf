@@ -6,13 +6,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -53,7 +53,7 @@ type (
 	Options struct {
 		CloudService
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
 	}

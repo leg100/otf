@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal/http/decode"
@@ -15,7 +15,7 @@ import (
 
 type tfe struct {
 	Service
-	*api.Responder
+	*tfeapi.Responder
 }
 
 // Implements TFC workspace variables API:
@@ -34,12 +34,12 @@ func (a *tfe) addHandlers(r *mux.Router) {
 func (a *tfe) create(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts types.VariableCreateOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	variable, err := a.CreateVariable(r.Context(), workspaceID, CreateVariableOptions{
@@ -60,12 +60,12 @@ func (a *tfe) create(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	variable, err := a.GetVariable(r.Context(), variableID)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -75,12 +75,12 @@ func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	variables, err := a.ListVariables(r.Context(), workspaceID)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -95,11 +95,11 @@ func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts types.VariableUpdateOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		variableError(w, err)
 		return
 	}
@@ -112,7 +112,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -122,12 +122,12 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	_, err = a.DeleteVariable(r.Context(), variableID)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 }
@@ -164,11 +164,11 @@ func variableError(w http.ResponseWriter, err error) {
 		isUnprocessableError = true
 	}
 	if isUnprocessableError {
-		api.Error(w, &internal.HTTPError{
+		tfeapi.Error(w, &internal.HTTPError{
 			Message: err.Error(),
 			Code:    http.StatusUnprocessableEntity,
 		})
 	} else {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 	}
 }

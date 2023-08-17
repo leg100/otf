@@ -8,12 +8,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type (
@@ -29,7 +29,7 @@ type (
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces
 	tfe struct {
 		Service
-		*api.Responder
+		*tfeapi.Responder
 	}
 )
 
@@ -53,11 +53,11 @@ func (a *tfe) addHandlers(r *mux.Router) {
 func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var params types.WorkspaceCreateOptions
 	if err := decode.Route(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	if params.Operations != nil {
 		if params.ExecutionMode != nil {
 			err := errors.New("operations is deprecated and cannot be specified when execution mode is used")
-			api.Error(w, err)
+			tfeapi.Error(w, err)
 			return
 		}
 		if *params.Operations {
@@ -100,7 +100,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if params.VCSRepo != nil {
 		if params.VCSRepo.Identifier == nil || params.VCSRepo.OAuthTokenID == nil {
-			api.Error(w, errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo"))
+			tfeapi.Error(w, errors.New("must specify both oauth-token-id and identifier attributes for vcs-repo"))
 			return
 		}
 		opts.ConnectOptions = &ConnectOptions{
@@ -113,13 +113,13 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := a.CreateWorkspace(r.Context(), opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	converted, err := a.convert(ws, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -129,13 +129,13 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspace(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -145,19 +145,19 @@ func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	converted, err := a.convert(ws, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -167,12 +167,12 @@ func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params types.WorkspaceListOptions
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -183,7 +183,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		Tags:         internal.SplitCSV(params.Tags),
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -192,7 +192,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	for i, from := range wsl.Items {
 		to, err := a.convert(from, r)
 		if err != nil {
-			api.Error(w, err)
+			tfeapi.Error(w, err)
 			return
 		}
 		items[i] = to
@@ -207,7 +207,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -220,13 +220,13 @@ func (a *tfe) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.Route(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -236,19 +236,19 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ws, err := a.LockWorkspace(r.Context(), id, nil)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	converted, err := a.convert(ws, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -266,13 +266,13 @@ func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	_, err = a.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -281,18 +281,18 @@ func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 	var params byWorkspaceName
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ws, err := a.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	_, err = a.DeleteWorkspace(r.Context(), ws.ID)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -300,12 +300,12 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
 	params := types.WorkspaceUpdateOptions{}
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	if err := params.Validate(); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -356,13 +356,13 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 
 	ws, err := a.UpdateWorkspace(r.Context(), workspaceID, opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	converted, err := a.convert(ws, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -372,19 +372,19 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 	id, err := decode.Param("workspace_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ws, err := a.UnlockWorkspace(r.Context(), id, nil, force)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	converted, err := a.convert(ws, r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -465,7 +465,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 	// fool the terraform CLI into thinking its not a workspace with a VCS
 	// connection.
 	if from.Connection != nil {
-		if !from.Connection.AllowCLIApply || !api.IsTerraformCLI(r) {
+		if !from.Connection.AllowCLIApply || !tfeapi.IsTerraformCLI(r) {
 			to.VCSRepo = &types.VCSRepo{
 				OAuthTokenID: from.Connection.VCSProviderID,
 				Branch:       from.Connection.Branch,

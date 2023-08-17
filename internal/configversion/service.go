@@ -6,10 +6,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/surl"
 )
 
@@ -52,7 +52,7 @@ type (
 		internal.Cache
 		*sql.DB
 		*surl.Signer
-		*api.Responder
+		*tfeapi.Responder
 	}
 )
 
@@ -74,10 +74,10 @@ func NewService(opts Options) *service {
 
 	// Fetch config version when API requests config version be included in the
 	// response
-	opts.Responder.Register(api.IncludeConfig, svc.api.include)
+	opts.Responder.Register(tfeapi.IncludeConfig, svc.api.include)
 	// Fetch ingress attributes when API requests ingress attributes be included
 	// in the response
-	opts.Responder.Register(api.IncludeIngress, svc.api.includeIngressAttributes)
+	opts.Responder.Register(tfeapi.IncludeIngress, svc.api.includeIngressAttributes)
 
 	return &svc
 }

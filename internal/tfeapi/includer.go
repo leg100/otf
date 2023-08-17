@@ -1,4 +1,4 @@
-package tfe
+package tfeapi
 
 import (
 	"context"

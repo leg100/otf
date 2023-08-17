@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -17,6 +16,7 @@ import (
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -101,7 +101,7 @@ type (
 		logr.Logger
 		internal.Cache
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 		html.Renderer
 		*pubsub.Broker
 		repo.Subscriber
@@ -152,8 +152,8 @@ func NewService(opts Options) *service {
 	opts.Broker.Register("runs", &svc)
 
 	// Fetch related resources when API requests their inclusion
-	opts.Responder.Register(api.IncludeCreatedBy, svc.api.includeCreatedBy)
-	opts.Responder.Register(api.IncludeCurrentRun, svc.api.includeCurrentRun)
+	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.api.includeCreatedBy)
+	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.api.includeCurrentRun)
 
 	// Subscribe run spawner to incoming vcs events
 	opts.Subscriber.Subscribe(spawner.handle)

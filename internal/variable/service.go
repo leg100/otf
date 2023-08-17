@@ -6,10 +6,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 )
@@ -41,7 +41,7 @@ type (
 		WorkspaceService    workspace.Service
 
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
 	}

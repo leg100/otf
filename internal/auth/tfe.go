@@ -7,10 +7,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 const (
@@ -23,7 +23,7 @@ type (
 
 	tfe struct {
 		AuthService
-		*api.Responder
+		*tfeapi.Responder
 	}
 )
 
@@ -59,14 +59,14 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) createUser(w http.ResponseWriter, r *http.Request) {
 	var params types.CreateUserOptions
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
 	user, err := a.CreateUser(r.Context(), *params.Username)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -76,12 +76,12 @@ func (a *tfe) createUser(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteUser(w http.ResponseWriter, r *http.Request) {
 	username, err := decode.Param("username", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if err := a.DeleteUser(r.Context(), username); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (a *tfe) deleteUser(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params TeamMembershipOptions
 	if err := decode.Route(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	var params TeamMembershipOptions
 	if err := decode.Route(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -130,13 +130,13 @@ func (a *tfe) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	var params types.TeamCreateOptions
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -158,7 +158,7 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 
 	team, err := a.CreateTeam(r.Context(), org, opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -168,13 +168,13 @@ func (a *tfe) createTeam(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("team_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	var params types.TeamUpdateOptions
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 
 	team, err := a.UpdateTeam(r.Context(), id, opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -206,13 +206,13 @@ func (a *tfe) updateTeam(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listTeams(w http.ResponseWriter, r *http.Request) {
 	organization, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	teams, err := a.ListTeams(r.Context(), organization)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -230,13 +230,13 @@ func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 		Name         *string `schema:"team_name,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	team, err := a.GetTeam(r.Context(), *params.Organization, *params.Name)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -246,13 +246,13 @@ func (a *tfe) getTeamByName(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("team_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	team, err := a.GetTeamByID(r.Context(), id)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -262,12 +262,12 @@ func (a *tfe) getTeam(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("team_id", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if err := a.DeleteTeam(r.Context(), id); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -277,7 +277,7 @@ func (a *tfe) deleteTeam(w http.ResponseWriter, r *http.Request) {
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/team-members#add-a-user-to-team-with-user-id
 func (a *tfe) addTeamMembers(w http.ResponseWriter, r *http.Request) {
 	if err := a.modifyTeamMembers(r, addTeamMembersAction); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -285,7 +285,7 @@ func (a *tfe) addTeamMembers(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) removeTeamMembers(w http.ResponseWriter, r *http.Request) {
 	if err := a.modifyTeamMembers(r, removeTeamMembersAction); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -301,7 +301,7 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 		Username string `jsonapi:"primary,users"`
 	}
 	var users []teamMember
-	if err := api.Unmarshal(r.Body, &users); err != nil {
+	if err := tfeapi.Unmarshal(r.Body, &users); err != nil {
 		return err
 	}
 
@@ -328,12 +328,12 @@ func (a *tfe) modifyTeamMembers(r *http.Request, action teamMembersAction) error
 func (a *tfe) inviteUser(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var params types.OrganizationMembershipCreateOptions
-	if err := api.Unmarshal(r.Body, &params); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 

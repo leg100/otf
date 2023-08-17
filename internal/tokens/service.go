@@ -4,11 +4,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
@@ -47,7 +47,7 @@ type (
 	Options struct {
 		logr.Logger
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 		html.Renderer
 		auth.AuthService
 		GoogleIAPConfig

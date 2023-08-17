@@ -6,15 +6,15 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type tfe struct {
 	Service
-	*api.Responder
+	*tfeapi.Responder
 }
 
 // Implements TFC organizations API:
@@ -33,8 +33,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 	var opts types.OrganizationCreateOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 		AllowForceDeleteWorkspaces: opts.AllowForceDeleteWorkspaces,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -58,13 +58,13 @@ func (a *tfe) createOrganization(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	org, err := a.GetOrganization(r.Context(), name)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -74,13 +74,13 @@ func (a *tfe) getOrganization(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts ListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	page, err := a.ListOrganizations(r.Context(), opts)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -90,12 +90,12 @@ func (a *tfe) listOrganizations(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts types.OrganizationUpdateOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 		SessionTimeout:         opts.SessionTimeout,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -118,12 +118,12 @@ func (a *tfe) updateOrganization(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	if err := a.DeleteOrganization(r.Context(), name); err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -133,13 +133,13 @@ func (a *tfe) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 	name, err := decode.Param("name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	entitlements, err := a.GetEntitlements(r.Context(), name)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

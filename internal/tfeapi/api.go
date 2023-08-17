@@ -1,6 +1,6 @@
-// Package tfe provides common functionality useful for implementation of the
+// Package tfeapi provides common functionality useful for implementation of the
 // Hashicorp TFE/TFC API, which uses the json:api encoding
-package tfe
+package tfeapi
 
 import (
 	"io"

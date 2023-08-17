@@ -5,15 +5,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type tfe struct {
 	TokensService
-	*api.Responder
+	*tfeapi.Responder
 }
 
 func (a *tfe) addHandlers(r *mux.Router) {
@@ -34,8 +34,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) createRunToken(w http.ResponseWriter, r *http.Request) {
 	var opts types.CreateRunTokenOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (a *tfe) createRunToken(w http.ResponseWriter, r *http.Request) {
 		RunID:        opts.RunID,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -53,8 +53,8 @@ func (a *tfe) createRunToken(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts types.AgentTokenCreateOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 	token, err := a.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
@@ -62,7 +62,7 @@ func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 		Organization: opts.Organization,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	w.Write(token)
@@ -71,7 +71,7 @@ func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
 	at, err := AgentFromContext(r.Context())
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	to := &types.AgentToken{
@@ -84,12 +84,12 @@ func (a *tfe) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts types.OrganizationTokenCreateOptions
-	if err := api.Unmarshal(r.Body, &opts); err != nil {
-		api.Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 		Expiry:       opts.ExpiredAt,
 	})
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
@@ -114,17 +114,17 @@ func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ot, err := a.GetOrganizationToken(r.Context(), org)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	if ot == nil {
-		api.Error(w, internal.ErrResourceNotFound)
+		tfeapi.Error(w, internal.ErrResourceNotFound)
 		return
 	}
 
@@ -139,13 +139,13 @@ func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	err = a.DeleteOrganizationToken(r.Context(), org)
 	if err != nil {
-		api.Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

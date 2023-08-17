@@ -8,11 +8,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
 var ErrCurrentVersionDeletionAttempt = errors.New("deleting the current state version is not allowed")
@@ -65,7 +65,7 @@ type (
 
 		internal.Cache
 		*sql.DB
-		*api.Responder
+		*tfeapi.Responder
 	}
 
 	// StateVersionListOptions represents the options for listing state versions.
@@ -94,8 +94,8 @@ func NewService(opts Options) *service {
 		Responder: opts.Responder,
 	}
 	// include state version outputs in api responses when requested.
-	opts.Responder.Register(api.IncludeOutputs, svc.api.includeOutputs)
-	opts.Responder.Register(api.IncludeOutputs, svc.api.includeWorkspaceCurrentOutputs)
+	opts.Responder.Register(tfeapi.IncludeOutputs, svc.api.includeOutputs)
+	opts.Responder.Register(tfeapi.IncludeOutputs, svc.api.includeWorkspaceCurrentOutputs)
 	return &svc
 }
 
