@@ -82,8 +82,8 @@ type FindVariablesRow struct {
 	Category    pgtype.Text `json:"category"`
 	Sensitive   bool        `json:"sensitive"`
 	HCL         bool        `json:"hcl"`
-	VersionID   pgtype.Text `json:"version_id"`
 	WorkspaceID pgtype.Text `json:"workspace_id"`
+	VersionID   pgtype.Text `json:"version_id"`
 }
 
 // FindVariables implements Querier.FindVariables.
@@ -97,7 +97,7 @@ func (q *DBQuerier) FindVariables(ctx context.Context, workspaceID pgtype.Text) 
 	items := []FindVariablesRow{}
 	for rows.Next() {
 		var item FindVariablesRow
-		if err := rows.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+		if err := rows.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 			return nil, fmt.Errorf("scan FindVariables row: %w", err)
 		}
 		items = append(items, item)
@@ -123,7 +123,7 @@ func (q *DBQuerier) FindVariablesScan(results pgx.BatchResults) ([]FindVariables
 	items := []FindVariablesRow{}
 	for rows.Next() {
 		var item FindVariablesRow
-		if err := rows.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+		if err := rows.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 			return nil, fmt.Errorf("scan FindVariablesBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -147,8 +147,8 @@ type FindVariableRow struct {
 	Category    pgtype.Text `json:"category"`
 	Sensitive   bool        `json:"sensitive"`
 	HCL         bool        `json:"hcl"`
-	VersionID   pgtype.Text `json:"version_id"`
 	WorkspaceID pgtype.Text `json:"workspace_id"`
+	VersionID   pgtype.Text `json:"version_id"`
 }
 
 // FindVariable implements Querier.FindVariable.
@@ -156,7 +156,7 @@ func (q *DBQuerier) FindVariable(ctx context.Context, variableID pgtype.Text) (F
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindVariable")
 	row := q.conn.QueryRow(ctx, findVariableSQL, variableID)
 	var item FindVariableRow
-	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 		return item, fmt.Errorf("query FindVariable: %w", err)
 	}
 	return item, nil
@@ -171,7 +171,7 @@ func (q *DBQuerier) FindVariableBatch(batch genericBatch, variableID pgtype.Text
 func (q *DBQuerier) FindVariableScan(results pgx.BatchResults) (FindVariableRow, error) {
 	row := results.QueryRow()
 	var item FindVariableRow
-	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 		return item, fmt.Errorf("scan FindVariableBatch row: %w", err)
 	}
 	return item, nil
@@ -190,8 +190,8 @@ type FindVariableForUpdateRow struct {
 	Category    pgtype.Text `json:"category"`
 	Sensitive   bool        `json:"sensitive"`
 	HCL         bool        `json:"hcl"`
-	VersionID   pgtype.Text `json:"version_id"`
 	WorkspaceID pgtype.Text `json:"workspace_id"`
+	VersionID   pgtype.Text `json:"version_id"`
 }
 
 // FindVariableForUpdate implements Querier.FindVariableForUpdate.
@@ -199,7 +199,7 @@ func (q *DBQuerier) FindVariableForUpdate(ctx context.Context, variableID pgtype
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindVariableForUpdate")
 	row := q.conn.QueryRow(ctx, findVariableForUpdateSQL, variableID)
 	var item FindVariableForUpdateRow
-	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 		return item, fmt.Errorf("query FindVariableForUpdate: %w", err)
 	}
 	return item, nil
@@ -214,7 +214,7 @@ func (q *DBQuerier) FindVariableForUpdateBatch(batch genericBatch, variableID pg
 func (q *DBQuerier) FindVariableForUpdateScan(results pgx.BatchResults) (FindVariableForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindVariableForUpdateRow
-	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 		return item, fmt.Errorf("scan FindVariableForUpdateBatch row: %w", err)
 	}
 	return item, nil
@@ -284,8 +284,8 @@ type DeleteVariableByIDRow struct {
 	Category    pgtype.Text `json:"category"`
 	Sensitive   bool        `json:"sensitive"`
 	HCL         bool        `json:"hcl"`
-	VersionID   pgtype.Text `json:"version_id"`
 	WorkspaceID pgtype.Text `json:"workspace_id"`
+	VersionID   pgtype.Text `json:"version_id"`
 }
 
 // DeleteVariableByID implements Querier.DeleteVariableByID.
@@ -293,7 +293,7 @@ func (q *DBQuerier) DeleteVariableByID(ctx context.Context, variableID pgtype.Te
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteVariableByID")
 	row := q.conn.QueryRow(ctx, deleteVariableByIDSQL, variableID)
 	var item DeleteVariableByIDRow
-	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 		return item, fmt.Errorf("query DeleteVariableByID: %w", err)
 	}
 	return item, nil
@@ -308,7 +308,7 @@ func (q *DBQuerier) DeleteVariableByIDBatch(batch genericBatch, variableID pgtyp
 func (q *DBQuerier) DeleteVariableByIDScan(results pgx.BatchResults) (DeleteVariableByIDRow, error) {
 	row := results.QueryRow()
 	var item DeleteVariableByIDRow
-	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.WorkspaceID, &item.VersionID); err != nil {
 		return item, fmt.Errorf("scan DeleteVariableByIDBatch row: %w", err)
 	}
 	return item, nil

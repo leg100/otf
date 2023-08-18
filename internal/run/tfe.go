@@ -107,7 +107,12 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, run, http.StatusCreated)
+	converted, err := a.toRun(run, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, converted, http.StatusCreated)
 }
 
 func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +136,12 @@ func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, started, http.StatusOK)
+	converted, err := a.toRun(started, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +160,12 @@ func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, run, http.StatusOK)
+	converted, err := a.toRun(run, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +181,12 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, run, http.StatusOK)
+	converted, err := a.toRun(run, r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) listRuns(w http.ResponseWriter, r *http.Request) {

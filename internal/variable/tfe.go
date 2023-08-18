@@ -89,7 +89,7 @@ func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 	for i, from := range variables {
 		to[i] = a.convert(from)
 	}
-	a.Respond(w, r, variables, http.StatusOK)
+	a.Respond(w, r, to, http.StatusOK)
 }
 
 func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
