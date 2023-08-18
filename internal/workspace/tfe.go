@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -485,22 +486,23 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
-	// v must be a struct with a field named WorkspaceID of kind string
+	// v must be a struct with a field named Workspace of type *types.Workspace
 	if dst.Kind() != reflect.Struct {
 		return nil, nil
 	}
-	name := dst.FieldByName("WorkspaceID")
-	if !name.IsValid() {
+	field := dst.FieldByName("Workspace")
+	if !field.IsValid() {
 		return nil, nil
 	}
-	if name.Kind() != reflect.String {
+	tfeWorkspace, ok := field.Interface().(*types.Workspace)
+	if !ok {
 		return nil, nil
 	}
-	org, err := a.GetWorkspace(ctx, name.String())
+	ws, err := a.GetWorkspace(ctx, tfeWorkspace.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("retrieving workspace: %w", err)
 	}
-	converted, err := a.convert(org, &http.Request{})
+	converted, err := a.convert(ws, (&http.Request{}).WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}

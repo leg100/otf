@@ -154,18 +154,20 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
-	// v must be a struct with a field named Organization of kind string
+	// v must be a struct with a field named Organization of type
+	// *types.Organization
 	if dst.Kind() != reflect.Struct {
 		return nil, nil
 	}
-	name := dst.FieldByName("Organization")
-	if !name.IsValid() {
+	field := dst.FieldByName("Organization")
+	if !field.IsValid() {
 		return nil, nil
 	}
-	if name.Kind() != reflect.String {
+	tfeOrganization, ok := field.Interface().(*types.Organization)
+	if !ok {
 		return nil, nil
 	}
-	org, err := a.GetOrganization(ctx, name.String())
+	org, err := a.GetOrganization(ctx, tfeOrganization.Name)
 	if err != nil {
 		return nil, err
 	}

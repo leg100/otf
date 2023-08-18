@@ -75,7 +75,12 @@ func (a *tfe) listNotifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, configs, http.StatusOK)
+	// convert items
+	to := make([]*types.NotificationConfiguration, len(configs))
+	for i, from := range configs {
+		to[i] = a.convert(from)
+	}
+	a.Respond(w, r, to, http.StatusOK)
 }
 
 func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +96,7 @@ func (a *tfe) getNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, nc, http.StatusOK)
+	a.Respond(w, r, a.convert(nc), http.StatusOK)
 }
 
 func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +126,7 @@ func (a *tfe) updateNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, updated, http.StatusOK)
+	a.Respond(w, r, a.convert(updated), http.StatusOK)
 }
 
 func (a *tfe) verifyNotification(w http.ResponseWriter, r *http.Request) {}

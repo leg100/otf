@@ -118,7 +118,12 @@ func (a *tfe) listConfigurationVersions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	a.RespondWithPage(w, r, page.Items, page.Pagination)
+	// convert items
+	items := make([]*types.ConfigurationVersion, len(page.Items))
+	for i, from := range page.Items {
+		items[i] = a.convert(from, "")
+	}
+	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
 func (a *tfe) uploadConfigurationVersion() http.HandlerFunc {
@@ -188,12 +193,18 @@ func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 }
 
 func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error) {
-	cv, ok := v.(*types.ConfigurationVersion)
+	tfeCV, ok := v.(*types.ConfigurationVersion)
 	if !ok {
 		return nil, nil
 	}
-	if cv.IngressAttributes == nil {
+	if tfeCV.IngressAttributes == nil {
 		return nil, nil
+	}
+	// the tfe CV does not by default include ingress attributes, whereas the
+	// otf CV *does*, so we need to fetch it.
+	cv, err := a.GetConfigurationVersion(ctx, tfeCV.ID)
+	if err != nil {
+		return nil, err
 	}
 	return []any{&types.IngressAttributes{
 		ID:        internal.ConvertID(cv.ID, "ia"),

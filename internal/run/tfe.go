@@ -107,7 +107,7 @@ func (a *tfe) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	converted, err := a.toRun(run, r)
+	converted, err := a.toRun(run, r.Context())
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -136,7 +136,7 @@ func (a *tfe) startPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	converted, err := a.toRun(started, r)
+	converted, err := a.toRun(started, r.Context())
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -160,7 +160,7 @@ func (a *tfe) finishPhase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	converted, err := a.toRun(run, r)
+	converted, err := a.toRun(run, r.Context())
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -181,7 +181,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	converted, err := a.toRun(run, r)
+	converted, err := a.toRun(run, r.Context())
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -235,15 +235,14 @@ func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts L
 	// convert items
 	items := make([]*types.Run, len(page.Items))
 	for i, from := range page.Items {
-		to, err := a.toRun(from, r)
+		to, err := a.toRun(from, r.Context())
 		if err != nil {
 			tfeapi.Error(w, err)
 			return
 		}
 		items[i] = to
 	}
-
-	a.RespondWithPage(w, r, page.Items, page.Pagination)
+	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
 func (a *tfe) applyRun(w http.ResponseWriter, r *http.Request) {
@@ -500,7 +499,7 @@ func (a *tfe) watchRun(w http.ResponseWriter, r *http.Request) {
 
 	for event := range events {
 		run := event.Payload.(*Run)
-		jrun, err := a.toRun(run, r)
+		jrun, err := a.toRun(run, r.Context())
 		if err != nil {
 			a.Error(err, "marshalling run event", "event", event.Type)
 			continue
@@ -534,7 +533,7 @@ func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	converted, err := a.toRun(run, nil)
+	converted, err := a.toRun(run, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -553,12 +552,12 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 }
 
 // toRun converts a run into its equivalent json:api struct
-func (a *tfe) toRun(from *Run, r *http.Request) (*types.Run, error) {
-	subject, err := internal.SubjectFromContext(r.Context())
+func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	policy, err := a.GetPolicy(r.Context(), from.WorkspaceID)
+	policy, err := a.GetPolicy(ctx, from.WorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -600,15 +599,6 @@ func (a *tfe) toRun(from *Run, r *http.Request) (*types.Run, error) {
 		}
 	}
 
-	plan, err := a.toPlan(from.Plan, r)
-	if err != nil {
-		return nil, err
-	}
-	apply, err := a.toApply(from.Apply, r)
-	if err != nil {
-		return nil, err
-	}
-
 	to := &types.Run{
 		ID: from.ID,
 		Actions: &types.RunActions{
@@ -637,8 +627,8 @@ func (a *tfe) toRun(from *Run, r *http.Request) (*types.Run, error) {
 		TargetAddrs:            from.TargetAddrs,
 		TerraformVersion:       from.TerraformVersion,
 		// Relations
-		Plan:  plan,
-		Apply: apply,
+		Plan:  &types.Plan{ID: internal.ConvertID(from.ID, "plan")},
+		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &types.User{
 			ID:       "user-123",

@@ -48,12 +48,12 @@ func (a *tfe) listTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert items
-	items := make([]*types.OrganizationTag, len(page.Items))
+	// convert to
+	to := make([]*types.OrganizationTag, len(page.Items))
 	for i, from := range page.Items {
-		items[i] = a.toTag(from)
+		to[i] = a.toTag(from)
 	}
-	a.RespondWithPage(w, r, page.Items, page.Pagination)
+	a.RespondWithPage(w, r, to, page.Pagination)
 }
 
 func (a *tfe) deleteTags(w http.ResponseWriter, r *http.Request) {
@@ -162,12 +162,12 @@ func (a *tfe) getTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert items
-	items := make([]*types.OrganizationTag, len(page.Items))
+	// convert to
+	to := make([]*types.OrganizationTag, len(page.Items))
 	for i, from := range page.Items {
-		items[i] = a.toTag(from)
+		to[i] = a.toTag(from)
 	}
-	a.RespondWithPage(w, r, items, page.Pagination)
+	a.RespondWithPage(w, r, to, page.Pagination)
 }
 
 func (a *tfe) toTag(from *Tag) *types.OrganizationTag {

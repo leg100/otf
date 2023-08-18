@@ -58,9 +58,9 @@ func NewService(opts Options) *service {
 
 	// Whenever an organization is created, also create an owners team.
 	opts.OrganizationService.AfterCreateOrganization(svc.createOwnersTeam)
-	// Fetch organization when API calls request organization be included in the
+	// Fetch users when API calls request users be included in the
 	// response
-	opts.Responder.Register(tfeapi.IncludeOrganization, svc.api.includeUsers)
+	opts.Responder.Register(tfeapi.IncludeUsers, svc.api.includeUsers)
 
 	return &svc
 }

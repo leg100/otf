@@ -17,7 +17,7 @@ type Responder struct {
 func NewResponder() *Responder {
 	return &Responder{
 		includer: &includer{
-			registrations: make(map[IncludeName]IncludeFunc),
+			registrations: make(map[IncludeName][]IncludeFunc),
 		},
 	}
 }

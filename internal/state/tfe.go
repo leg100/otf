@@ -131,7 +131,6 @@ func (a *tfe) listVersionsByName(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-
 	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
@@ -156,7 +155,6 @@ func (a *tfe) listVersions(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-
 	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
@@ -292,7 +290,12 @@ func (a *tfe) listOutputs(w http.ResponseWriter, r *http.Request) {
 	// client expects a page of results, so convert outputs map to a page
 	page := resource.NewPage(maps.Values(sv.Outputs), params.PageOptions, nil)
 
-	a.Respond(w, r, page, http.StatusOK)
+	// convert to list of tfe types
+	items := make([]*types.StateVersionOutput, len(page.Items))
+	for i, from := range page.Items {
+		items[i] = a.toOutput(from, false)
+	}
+	a.RespondWithPage(w, r, items, page.Pagination)
 }
 
 func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +310,7 @@ func (a *tfe) getOutput(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, out, http.StatusOK)
+	a.Respond(w, r, a.toOutput(out, false), http.StatusOK)
 }
 
 func (a *tfe) toStateVersion(from *Version) (*types.StateVersion, error) {
