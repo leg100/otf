@@ -33,7 +33,7 @@ type (
 	IncludeName string
 
 	// IncludeFunc retrieves the resource for inclusion
-	IncludeFunc func(context.Context, any) (any, error)
+	IncludeFunc func(context.Context, any) ([]any, error)
 )
 
 // Register registers an IncludeFunc to be called whenever IncludeName is
@@ -45,46 +45,69 @@ func (i *includer) Register(name IncludeName, f IncludeFunc) {
 	i.registrations[name] = f
 }
 
-// addIncludes includes related resources if the API request requests them via
-// the ?include= query parameter. Multiple include values are comma separated, and
-// each include names the resource type to be included. Optionally, the include
-// may include a period ('.') as a separator, which specifies that the further
-// transitive resources be included too, e.g. ?include=a.b means fetch resource
-// of type a, and then fetch resource of type b that is a relation of type a.
+// addIncludes handles API queries of the form ?include=v,..., which is a comma
+// separated list of related resource types to include. For example, the query:
+//
+// /foo?include=a,b
+//
+// requests the 'foo' resource, but also requests that the related resource 'a' be
+// included, as well as 'b'.
+//
+// an included resource may be period ('.') separated, in which case its
+// relations are included too. For example:
+//
+// /foo?include=a.b
+//
+// results in not only the resource 'a' being included, but also resource 'b'
+// where 'b' is  relation of 'a'.
+//
+// each resource may return multiple items. For example:
+//
+// /foo?include=a.b
+//
+// /foo may return multiple resources of type 'foo', in which case the resource
+// 'a' is included for each 'foo' resource, and the resource 'b' is included for
+// each 'a' resource.
 func (i *includer) addIncludes(r *http.Request, v any) ([]any, error) {
 	// only include resources in response to GET requests.
 	if r.Method != "GET" {
 		return nil, nil
 	}
+	fetchChildren := func(f IncludeFunc, v any) ([]any, error) {
+		// handle when v is a slice
+		if dst := reflect.ValueOf(v); dst.Kind() == reflect.Slice {
+			var children []any
+			for i := 0; i < dst.Len(); i++ {
+				results, err := f(r.Context(), dst.Index(i).Interface())
+				if err != nil {
+					return nil, err
+				}
+				children = append(children, results...)
+			}
+			return children, nil
+		}
+		return f(r.Context(), v)
+	}
 	var includes []any
 	if q := r.URL.Query().Get("include"); q != "" {
 		for _, relation := range strings.Split(q, ",") {
-			parent := v
+			parents := []any{v}
 			for _, resource := range strings.Split(relation, ".") {
 				f, ok := i.registrations[IncludeName(resource)]
 				if !ok {
 					continue
 				}
-				add := func(v any) error {
-					inc, err := f(r.Context(), v)
+				var children []any
+				for _, p := range parents {
+					c, err := fetchChildren(f, p)
 					if err != nil {
-						return err
+						return nil, err
 					}
-					includes = append(includes, inc)
-					return nil
+					children = append(children, c...)
 				}
-				// handle when v is a slice
-				if dst := reflect.ValueOf(parent); dst.Kind() == reflect.Slice {
-					for i := 0; i < dst.Len(); i++ {
-						if err := add(dst.Index(i).Interface()); err != nil {
-							return nil, err
-						}
-					}
-				}
-				if err := add(parent); err != nil {
-					return nil, err
-				}
-				parent = resource
+				includes = append(includes, children...)
+				// children become parents
+				parents = children
 			}
 		}
 	}

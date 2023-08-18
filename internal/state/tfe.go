@@ -227,7 +227,12 @@ func (a *tfe) rollbackVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, sv, http.StatusOK)
+	to, err := a.toStateVersion(sv)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	a.Respond(w, r, to, http.StatusOK)
 }
 
 func (a *tfe) downloadState(w http.ResponseWriter, r *http.Request) {
@@ -353,7 +358,7 @@ func (*tfe) toOutput(from *Output, scrubSensitive bool) *types.StateVersionOutpu
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#outputs
-func (a *tfe) includeOutputs(ctx context.Context, v any) (any, error) {
+func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
 	sv, ok := v.(*types.StateVersion)
 	if !ok {
 		return nil, nil
@@ -371,7 +376,7 @@ func (a *tfe) includeOutputs(ctx context.Context, v any) (any, error) {
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#outputs
-func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) (any, error) {
+func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any, error) {
 	ws, ok := v.(*types.Workspace)
 	if !ok {
 		return nil, nil

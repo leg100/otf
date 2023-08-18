@@ -482,7 +482,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 	return to, nil
 }
 
-func (a *tfe) include(ctx context.Context, v any) (any, error) {
+func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// v must be a struct with a field named WorkspaceID of kind string
@@ -500,5 +500,9 @@ func (a *tfe) include(ctx context.Context, v any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.convert(org, &http.Request{})
+	converted, err := a.convert(org, &http.Request{})
+	if err != nil {
+		return nil, err
+	}
+	return []any{converted}, nil
 }

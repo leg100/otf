@@ -166,7 +166,7 @@ func (a *tfe) downloadConfigurationVersion(w http.ResponseWriter, r *http.Reques
 	w.Write(resp)
 }
 
-func (a *tfe) include(ctx context.Context, v any) (any, error) {
+func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// v must be a struct with a field named ConfigurationVersionID of kind string
@@ -184,10 +184,10 @@ func (a *tfe) include(ctx context.Context, v any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.convert(cv, ""), nil
+	return []any{a.convert(cv, "")}, nil
 }
 
-func (a *tfe) includeIngressAttributes(ctx context.Context, v any) (any, error) {
+func (a *tfe) includeIngressAttributes(ctx context.Context, v any) ([]any, error) {
 	cv, ok := v.(*types.ConfigurationVersion)
 	if !ok {
 		return nil, nil
@@ -195,11 +195,11 @@ func (a *tfe) includeIngressAttributes(ctx context.Context, v any) (any, error) 
 	if cv.IngressAttributes == nil {
 		return nil, nil
 	}
-	return &types.IngressAttributes{
+	return []any{&types.IngressAttributes{
 		ID:        internal.ConvertID(cv.ID, "ia"),
 		CommitSHA: cv.IngressAttributes.CommitSHA,
 		CommitURL: cv.IngressAttributes.CommitURL,
-	}, nil
+	}}, nil
 }
 
 func (a *tfe) convert(from *ConfigurationVersion, uploadURL string) *types.ConfigurationVersion {

@@ -502,7 +502,7 @@ func (a *tfe) listRunEvents(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, []*types.RunEvent{}, http.StatusOK)
 }
 
-func (a *tfe) includeCurrentRun(ctx context.Context, v any) (any, error) {
+func (a *tfe) includeCurrentRun(ctx context.Context, v any) ([]any, error) {
 	ws, ok := v.(*types.Workspace)
 	if !ok {
 		return nil, nil
@@ -514,10 +514,14 @@ func (a *tfe) includeCurrentRun(ctx context.Context, v any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.toRun(run, nil)
+	converted, err := a.toRun(run, nil)
+	if err != nil {
+		return nil, err
+	}
+	return []any{converted}, nil
 }
 
-func (a *tfe) includeCreatedBy(ctx context.Context, v any) (any, error) {
+func (a *tfe) includeCreatedBy(ctx context.Context, v any) ([]any, error) {
 	run, ok := v.(*types.Run)
 	if !ok {
 		return nil, nil
@@ -525,7 +529,7 @@ func (a *tfe) includeCreatedBy(ctx context.Context, v any) (any, error) {
 	if run.CreatedBy == nil {
 		return nil, nil
 	}
-	return run.CreatedBy, nil
+	return []any{run.CreatedBy}, nil
 }
 
 // toRun converts a run into its equivalent json:api struct

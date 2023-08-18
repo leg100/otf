@@ -151,7 +151,7 @@ func (a *tfe) getEntitlements(w http.ResponseWriter, r *http.Request) {
 	a.Respond(w, r, (*types.Entitlements)(&entitlements), http.StatusOK)
 }
 
-func (a *tfe) include(ctx context.Context, v any) (any, error) {
+func (a *tfe) include(ctx context.Context, v any) ([]any, error) {
 	dst := reflect.Indirect(reflect.ValueOf(v))
 
 	// v must be a struct with a field named Organization of kind string
@@ -169,7 +169,7 @@ func (a *tfe) include(ctx context.Context, v any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.toOrganization(org), nil
+	return []any{a.toOrganization(org)}, nil
 }
 
 func (a *tfe) toOrganization(from *Organization) *types.Organization {

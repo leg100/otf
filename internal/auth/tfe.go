@@ -383,7 +383,7 @@ func (a *tfe) convertTeam(from *Team) *types.Team {
 	}
 }
 
-func (a *tfe) includeUsers(ctx context.Context, v any) (any, error) {
+func (a *tfe) includeUsers(ctx context.Context, v any) ([]any, error) {
 	team, ok := v.(*types.Team)
 	if !ok {
 		return nil, nil
