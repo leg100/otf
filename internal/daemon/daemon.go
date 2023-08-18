@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
-	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/client"
@@ -32,6 +31,7 @@ import (
 	"github.com/leg100/otf/internal/scheduler"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/vcsprovider"
@@ -108,6 +108,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
+	responder := tfeapi.NewResponder()
+
 	broker := pubsub.NewBroker(logger, db)
 
 	// Setup url signer
@@ -117,6 +119,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:                       logger,
 		DB:                           db,
 		Renderer:                     renderer,
+		Responder:                    responder,
 		Broker:                       broker,
 		RestrictOrganizationCreation: cfg.RestrictOrganizationCreation,
 	})
@@ -125,6 +128,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		Renderer:            renderer,
+		Responder:           responder,
 		HostnameService:     hostnameService,
 		OrganizationService: orgService,
 	})
@@ -137,6 +141,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:          logger,
 		DB:              db,
 		Renderer:        renderer,
+		Responder:       responder,
 		AuthService:     authService,
 		GoogleIAPConfig: cfg.GoogleIAPConfig,
 		SiteToken:       cfg.SiteToken,
@@ -150,6 +155,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:       logger,
 		DB:           db,
 		Renderer:     renderer,
+		Responder:    responder,
 		CloudService: cloudService,
 	})
 	repoService := repo.NewService(ctx, repo.Options{
@@ -167,6 +173,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:                  db,
 		Broker:              broker,
 		Renderer:            renderer,
+		Responder:           responder,
 		RepoService:         repoService,
 		TeamService:         authService,
 		OrganizationService: orgService,
@@ -176,13 +183,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
+		Responder:           responder,
 		Cache:               cache,
 		Signer:              signer,
+		MaxConfigSize:       cfg.MaxConfigSize,
 	})
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
 		DB:                          db,
 		Renderer:                    renderer,
+		Responder:                   responder,
 		WorkspaceAuthorizer:         workspaceService,
 		OrganizationService:         orgService,
 		WorkspaceService:            workspaceService,
@@ -191,6 +201,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:                      broker,
 		Cache:                       cache,
 		Subscriber:                  repoService,
+		Signer:                      signer,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -213,13 +224,16 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		WorkspaceAuthorizer: workspaceService,
+		WorkspaceService:    workspaceService,
 		Cache:               cache,
 		Renderer:            renderer,
+		Responder:           responder,
 	})
 	variableService := variable.NewService(variable.Options{
 		Logger:              logger,
 		DB:                  db,
 		Renderer:            renderer,
+		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
 	})
@@ -262,6 +276,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		Broker:              broker,
+		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
 		HostnameService:     hostnameService,
@@ -275,22 +290,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	api := api.New(api.Options{
-		WorkspaceService:            workspaceService,
-		OrganizationService:         orgService,
-		StateService:                stateService,
-		RunService:                  runService,
-		ConfigurationVersionService: configService,
-		AuthService:                 authService,
-		TokensService:               tokensService,
-		TeamService:                 authService,
-		VariableService:             variableService,
-		NotificationService:         notificationService,
-		VCSProviderService:          vcsProviderService,
-		Signer:                      signer,
-		MaxConfigSize:               cfg.MaxConfigSize,
-	})
 
 	handlers := []internal.Handlers{
 		authService,
@@ -306,8 +305,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		repoService,
 		authenticatorService,
 		loginServer,
+		configService,
+		notificationService,
 		disco.Service{},
-		api,
 	}
 
 	return &Daemon{

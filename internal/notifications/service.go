@@ -3,11 +3,13 @@ package notifications
 import (
 	"context"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -30,10 +32,12 @@ type (
 
 		workspace internal.Authorizer // authorize workspaces actions
 		db        *pgdb
+		api       *tfe
 	}
 
 	Options struct {
 		*sql.DB
+		*tfeapi.Responder
 		*pubsub.Broker
 		logr.Logger
 		WorkspaceAuthorizer internal.Authorizer
@@ -51,9 +55,17 @@ func NewService(opts Options) *service {
 		HostnameService:  opts.HostnameService,
 		WorkspaceService: opts.WorkspaceService,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 	// Register with broker so that it can relay events
-	opts.Register("notification_configurations", svc.db)
+	opts.Broker.Register("notification_configurations", svc.db)
 	return &svc
+}
+
+func (s *service) AddHandlers(r *mux.Router) {
+	s.api.addHandlers(r)
 }
 
 func (s *service) CreateNotificationConfiguration(ctx context.Context, workspaceID string, opts CreateConfigOptions) (*Config, error) {

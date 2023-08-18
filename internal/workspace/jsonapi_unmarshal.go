@@ -1,8 +1,8 @@
 package workspace
 
 import (
-	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 func unmarshalJSONAPI(w *types.Workspace) *Workspace {

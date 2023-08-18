@@ -112,7 +112,7 @@ func (row pgRow) toVariable() *Variable {
 		Category:    VariableCategory(row.Category.String),
 		Sensitive:   row.Sensitive,
 		HCL:         row.HCL,
-		VersionID:   row.VersionID.String,
 		WorkspaceID: row.WorkspaceID.String,
+		VersionID:   row.VersionID.String,
 	}
 }

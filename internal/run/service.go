@@ -16,8 +16,10 @@ import (
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/surl"
 )
 
 type (
@@ -83,6 +85,7 @@ type (
 
 		cache internal.Cache
 		db    *pgdb
+		api   *tfe
 		*factory
 
 		web *webHandlers
@@ -99,6 +102,8 @@ type (
 		logr.Logger
 		internal.Cache
 		*sql.DB
+		*tfeapi.Responder
+		*surl.Signer
 		html.Renderer
 		*pubsub.Broker
 		repo.Subscriber
@@ -133,6 +138,12 @@ func NewService(opts Options) *service {
 		logger:           opts.Logger,
 		svc:              &svc,
 	}
+	svc.api = &tfe{
+		Service:            &svc,
+		PermissionsService: opts.WorkspaceService,
+		Responder:          opts.Responder,
+		Signer:             opts.Signer,
+	}
 	spawner := &Spawner{
 		Logger:                      opts.Logger.WithValues("component", "spawner"),
 		ConfigurationVersionService: opts.ConfigurationVersionService,
@@ -142,7 +153,11 @@ func NewService(opts Options) *service {
 	}
 
 	// Register with broker so that it can relay run events
-	opts.Register("runs", &svc)
+	opts.Broker.Register("runs", &svc)
+
+	// Fetch related resources when API requests their inclusion
+	opts.Responder.Register(tfeapi.IncludeCreatedBy, svc.api.includeCreatedBy)
+	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.api.includeCurrentRun)
 
 	// Subscribe run spawner to incoming vcs events
 	opts.Subscriber.Subscribe(spawner.handle)
@@ -156,6 +171,7 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) CreateRun(ctx context.Context, workspaceID string, opts CreateOptions) (*Run, error) {

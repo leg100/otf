@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {

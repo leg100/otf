@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
@@ -36,6 +37,7 @@ type (
 
 		db  *pgdb
 		web *webHandlers
+		api *tfe
 
 		middleware mux.MiddlewareFunc
 
@@ -45,6 +47,7 @@ type (
 	Options struct {
 		logr.Logger
 		*sql.DB
+		*tfeapi.Responder
 		html.Renderer
 		auth.AuthService
 		GoogleIAPConfig
@@ -66,6 +69,10 @@ func NewService(opts Options) (*service, error) {
 		svc:       &svc,
 		siteToken: opts.SiteToken,
 	}
+	svc.api = &tfe{
+		TokensService: &svc,
+		Responder:     opts.Responder,
+	}
 	key, err := jwk.FromRaw([]byte(opts.Secret))
 	if err != nil {
 		return nil, err
@@ -85,6 +92,7 @@ func NewService(opts Options) (*service, error) {
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.api.addHandlers(r)
 }
 
 // Middleware returns middleware for authenticating tokens
