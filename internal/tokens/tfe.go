@@ -1,18 +1,22 @@
-package api
+package tokens
 
 import (
 	"net/http"
 
-	"github.com/DataDog/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api/types"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
-	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
-func (a *api) addTokenHandlers(r *mux.Router) {
+type tfe struct {
+	TokensService
+	*tfeapi.Responder
+}
+
+func (a *tfe) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
 	// Agent token routes
@@ -28,135 +32,120 @@ func (a *api) addTokenHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/authentication-token", a.deleteOrganizationToken).Methods("DELETE")
 }
 
-func (a *api) createRunToken(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) createRunToken(w http.ResponseWriter, r *http.Request) {
 	var opts types.CreateRunTokenOptions
-	if err := unmarshal(r.Body, &opts); err != nil {
-		Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
-	token, err := a.CreateRunToken(r.Context(), tokens.CreateRunTokenOptions{
+	token, err := a.CreateRunToken(r.Context(), CreateRunTokenOptions{
 		Organization: opts.Organization,
 		RunID:        opts.RunID,
 	})
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	w.Write(token)
 }
 
-func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	var opts types.AgentTokenCreateOptions
-	if err := unmarshal(r.Body, &opts); err != nil {
-		Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
-	token, err := a.CreateAgentToken(r.Context(), tokens.CreateAgentTokenOptions{
+	token, err := a.CreateAgentToken(r.Context(), CreateAgentTokenOptions{
 		Description:  opts.Description,
 		Organization: opts.Organization,
 	})
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	w.Write(token)
 }
 
-func (a *api) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
-	at, err := tokens.AgentFromContext(r.Context())
+func (a *tfe) getCurrentAgent(w http.ResponseWriter, r *http.Request) {
+	at, err := AgentFromContext(r.Context())
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
-	b, err := jsonapi.Marshal(&types.AgentToken{
+	to := &types.AgentToken{
 		ID:           at.ID,
 		Organization: at.Organization,
-	})
-	if err != nil {
-		Error(w, err)
-		return
 	}
-	w.Header().Set("Content-type", mediaType)
-	w.Write(b)
+	a.Respond(w, r, to, http.StatusOK)
 }
 
-func (a *api) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) createOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	var opts types.OrganizationTokenCreateOptions
-	if err := unmarshal(r.Body, &opts); err != nil {
-		Error(w, err)
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+		tfeapi.Error(w, err)
 		return
 	}
 
-	ot, token, err := a.CreateOrganizationToken(r.Context(), tokens.CreateOrganizationTokenOptions{
+	ot, token, err := a.CreateOrganizationToken(r.Context(), CreateOrganizationTokenOptions{
 		Organization: org,
 		Expiry:       opts.ExpiredAt,
 	})
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
-	b, err := jsonapi.Marshal(&types.OrganizationToken{
+	to := &types.OrganizationToken{
 		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		Token:     string(token),
 		ExpiredAt: ot.Expiry,
-	})
-	if err != nil {
-		Error(w, err)
-		return
 	}
-	w.Header().Set("Content-type", mediaType)
-	w.Write(b)
+	a.Respond(w, r, to, http.StatusCreated)
 }
 
-func (a *api) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) getOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	ot, err := a.GetOrganizationToken(r.Context(), org)
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 	if ot == nil {
-		Error(w, internal.ErrResourceNotFound)
+		tfeapi.Error(w, internal.ErrResourceNotFound)
 		return
 	}
 
-	b, err := jsonapi.Marshal(&types.OrganizationToken{
+	to := &types.OrganizationToken{
 		ID:        ot.ID,
 		CreatedAt: ot.CreatedAt,
 		ExpiredAt: ot.Expiry,
-	})
-	if err != nil {
-		Error(w, err)
-		return
 	}
-	w.Header().Set("Content-type", mediaType)
-	w.Write(b)
+	a.Respond(w, r, to, http.StatusCreated)
 }
 
-func (a *api) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) deleteOrganizationToken(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 
 	err = a.DeleteOrganizationToken(r.Context(), org)
 	if err != nil {
-		Error(w, err)
+		tfeapi.Error(w, err)
 		return
 	}
 

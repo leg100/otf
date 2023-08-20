@@ -1,4 +1,4 @@
-package api
+package tfeapi
 
 import "net/http"
 
@@ -10,6 +10,6 @@ const (
 	headerSourceCLI = "cloud"
 )
 
-func isTerraformCLI(r *http.Request) bool {
+func IsTerraformCLI(r *http.Request) bool {
 	return r.Header.Get(headerSource) == headerSourceCLI
 }

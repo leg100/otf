@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )

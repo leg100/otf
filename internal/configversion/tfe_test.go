@@ -1,4 +1,4 @@
-package api
+package configversion
 
 import (
 	"crypto/rand"
@@ -14,10 +14,10 @@ import (
 )
 
 func TestUploadConfigurationVersion(t *testing.T) {
-	api := &api{
+	api := &tfe{
 		// only permit upto 100 byte uploads
-		maxConfigSize:               100,
-		ConfigurationVersionService: &fakeConfigService{},
+		maxConfigSize: 100,
+		Service:       &fakeConfigService{},
 	}
 
 	// setup web server

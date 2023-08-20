@@ -17,7 +17,7 @@ import (
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
-	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -58,6 +58,7 @@ type (
 		db   *pgdb
 		repo repo.RepoService
 		web  *webHandlers
+		api  *tfe
 
 		createHook *hooks.Hook[*Workspace]
 	}
@@ -65,10 +66,10 @@ type (
 	Options struct {
 		*sql.DB
 		*pubsub.Broker
+		*tfeapi.Responder
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
-		state.StateService
 		repo.RepoService
 		auth.TeamService
 		logr.Logger
@@ -94,17 +95,25 @@ func NewService(opts Options) *service {
 		Renderer:           opts.Renderer,
 		TeamService:        opts.TeamService,
 		VCSProviderService: opts.VCSProviderService,
-		StateService:       opts.StateService,
 		svc:                &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 	// Register with broker so that it can relay workspace events
-	opts.Register("workspaces", &svc)
+	opts.Broker.Register("workspaces", &svc)
+	// Fetch workspace when API calls request workspace be included in the
+	// response
+	opts.Responder.Register(tfeapi.IncludeWorkspace, svc.api.include)
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.api.addHandlers(r)
 	s.web.addTagHandlers(r)
+	s.api.addTagHandlers(r)
 }
 
 func (s *service) AfterCreateWorkspace(l hooks.Listener[*Workspace]) {
