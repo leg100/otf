@@ -18,8 +18,12 @@ func NewTeamCommand(httpClient *http.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "teams",
 		Short: "Team management",
-		PersistentPreRun: func(*cobra.Command, []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
 			cli.AuthService = &Client{JSONAPIClient: httpClient}
+			return nil
 		},
 	}
 	cmd.AddCommand(cli.teamNewCommand())
