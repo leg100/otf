@@ -26,7 +26,7 @@ type (
 		DeleteVariable(ctx context.Context, variableID string) (*Variable, error)
 
 		CreateVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
-		ListVariableSets(ctx context.Context, organization string) (*VariableSet, error)
+		ListVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
 		UpdateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error)
 		GetVariableSet(ctx context.Context, setID string) (*VariableSet, error)
 		DeleteVariableSet(ctx context.Context, setID string) error
@@ -193,16 +193,16 @@ func (s *service) CreateVariableSet(ctx context.Context, organization string, op
 
 	v, err := s.newSet(organization, opts)
 	if err != nil {
-		s.Error(err, "constructing variable", "subject", subject, "workspace", organization, "key", opts.Key)
+		s.Error(err, "constructing variable set", "subject", subject, "organization", organization)
 		return nil, err
 	}
 
 	if err := s.db.create(ctx, v); err != nil {
-		s.Error(err, "creating variable", "subject", subject, "variable", v)
+		s.Error(err, "creating variable set", "subject", subject, "organization", organization)
 		return nil, err
 	}
 
-	s.V(1).Info("created variable", "subject", subject, "variable", v)
+	s.V(1).Info("created variable set", "subject", subject, "organization", organization)
 
 	return v, nil
 }

@@ -192,13 +192,18 @@ func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := a.ListVariableSets(r.Context(), organization)
+	sets, err := a.ListVariableSets(r.Context(), organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, variables, http.StatusOK)
+	// convert items
+	to := make([]*types.Variable, len(sets))
+	for i, from := range sets {
+		to[i] = a.convert(from)
+	}
+	a.Respond(w, r, sets, http.StatusOK)
 }
 
 func (a *tfe) getVariableSet(w http.ResponseWriter, r *http.Request) {
