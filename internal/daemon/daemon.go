@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
-	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/disco"
@@ -240,11 +239,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
-		client.LocalClient{
-			AuthService:                 authService,
+		agent.LocalClient{
 			TokensService:               tokensService,
 			WorkspaceService:            workspaceService,
-			OrganizationService:         orgService,
 			VariableService:             variableService,
 			StateService:                stateService,
 			HostnameService:             hostnameService,
