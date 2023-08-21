@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/r3labs/sse/v2"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -22,6 +22,9 @@ import (
 type Client struct {
 	internal.JSONAPIClient
 	http.Config
+
+	// Client does not implement all of service yet
+	Service
 }
 
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {

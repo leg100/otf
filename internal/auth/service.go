@@ -7,6 +7,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -26,10 +27,12 @@ type (
 
 		db  *pgdb
 		web *webHandlers
+		api *tfe
 	}
 
 	Options struct {
 		*sql.DB
+		*tfeapi.Responder
 		html.Renderer
 		internal.HostnameService
 		organization.OrganizationService
@@ -48,13 +51,21 @@ func NewService(opts Options) *service {
 		Renderer: opts.Renderer,
 		svc:      &svc,
 	}
+	svc.api = &tfe{
+		AuthService: &svc,
+		Responder:   opts.Responder,
+	}
 
 	// Whenever an organization is created, also create an owners team.
 	opts.OrganizationService.AfterCreateOrganization(svc.createOwnersTeam)
+	// Fetch users when API calls request users be included in the
+	// response
+	opts.Responder.Register(tfeapi.IncludeUsers, svc.api.includeUsers)
 
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.api.addHandlers(r)
 }

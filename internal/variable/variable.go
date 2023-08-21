@@ -71,7 +71,6 @@ func (v *Variable) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", v.ID),
 		slog.String("key", v.Key),
-		slog.String("workspace_id", v.WorkspaceID),
 		slog.Bool("sensitive", v.Sensitive),
 	}
 	if v.Sensitive {

@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 )
@@ -36,6 +37,7 @@ type (
 
 		db           *pgdb
 		web          *web
+		api          *tfe
 		workspace    internal.Authorizer
 		organization internal.Authorizer
 
@@ -47,6 +49,7 @@ type (
 		WorkspaceService    workspace.Service
 
 		*sql.DB
+		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
 	}
@@ -66,12 +69,17 @@ func NewService(opts Options) *service {
 		Service:  opts.WorkspaceService,
 		svc:      &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 
 	return &svc
 }
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
+	s.api.addHandlers(r)
 }
 
 func (s *service) CreateVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {
@@ -199,24 +207,24 @@ func (s *service) CreateVariableSet(ctx context.Context, organization string, op
 	return v, nil
 }
 
-func (s *service) DeleteVariableSet(ctx context.Context, setID string) (*VariableSet, error) {
+func (s *service) DeleteVariableSet(ctx context.Context, setID string) error {
 	// retrieve existing set in order to retrieve organization for authorization
 	existing, err := s.db.get(ctx, setID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	subject, err := s.organization.CanAccess(ctx, rbac.DeleteVariableSetAction, existing.Organization)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	deleted, err := s.db.delete(ctx, setID)
 	if err != nil {
 		s.Error(err, "deleting variable", "subject", subject, "variable", existing)
-		return nil, err
+		return err
 	}
 	s.V(1).Info("deleted variable", "subject", subject, "variable", deleted)
 
-	return deleted, nil
+	return nil
 }

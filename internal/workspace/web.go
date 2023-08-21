@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -44,7 +43,6 @@ type (
 		html.Renderer
 		auth.TeamService
 		VCSProviderService
-		state.StateService
 
 		svc Service
 	}
