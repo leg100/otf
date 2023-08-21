@@ -1,22 +1,39 @@
-package cli
+package run
 
 import (
 	"bytes"
 	"fmt"
 	"os"
 
+	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) runCommand() *cobra.Command {
+type CLI struct {
+	Service
+	configversion.ConfigurationVersionService
+}
+
+func NewCommand(httpClient *http.Client) *cobra.Command {
+	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "runs",
 		Short: "Runs management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.Service = &Client{JSONAPIClient: httpClient}
+			cli.ConfigurationVersionService = &configversion.Client{JSONAPIClient: httpClient}
+			return nil
+		},
 	}
 
-	cmd.AddCommand(a.runDownloadCommand())
+	cmd.AddCommand(cli.runDownloadCommand())
 
 	return cmd
 }

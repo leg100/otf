@@ -1,19 +1,31 @@
-package cli
+package tokens
 
 import (
 	"fmt"
 
-	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/http"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) agentCommand() *cobra.Command {
+type CLI struct {
+	TokensService
+}
+
+func NewAgentsCommand(httpClient *http.Client) *cobra.Command {
+	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "agents",
 		Short: "Agent management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.TokensService = &Client{JSONAPIClient: httpClient}
+			return nil
+		},
 	}
 
-	cmd.AddCommand(a.agentTokenCommand())
+	cmd.AddCommand(cli.agentTokenCommand())
 
 	return cmd
 }
@@ -30,7 +42,7 @@ func (a *CLI) agentTokenCommand() *cobra.Command {
 }
 
 func (a *CLI) agentTokenNewCommand() *cobra.Command {
-	opts := tokens.CreateAgentTokenOptions{}
+	opts := CreateAgentTokenOptions{}
 
 	cmd := &cobra.Command{
 		Use:           "new [description]",

@@ -22,6 +22,9 @@ import (
 // [1] https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#state-versions-api
 type Client struct {
 	internal.JSONAPIClient
+
+	// Client does not implement all of service yet
+	Service
 }
 
 func (c *Client) CreateStateVersion(ctx context.Context, opts CreateStateVersionOptions) (*Version, error) {

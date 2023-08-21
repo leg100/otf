@@ -1,28 +1,40 @@
-package cli
+package auth
 
 import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/auth"
+
+	"github.com/leg100/otf/internal/http"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) teamCommand() *cobra.Command {
+type TeamCLI struct {
+	AuthService
+}
+
+func NewTeamCommand(httpClient *http.Client) *cobra.Command {
+	cli := &TeamCLI{}
 	cmd := &cobra.Command{
 		Use:   "teams",
 		Short: "Team management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.AuthService = &Client{JSONAPIClient: httpClient}
+			return nil
+		},
 	}
-
-	cmd.AddCommand(a.teamNewCommand())
-	cmd.AddCommand(a.teamDeleteCommand())
-	cmd.AddCommand(a.addTeamMembershipCommand())
-	cmd.AddCommand(a.deleteTeamMembershipCommand())
+	cmd.AddCommand(cli.teamNewCommand())
+	cmd.AddCommand(cli.teamDeleteCommand())
+	cmd.AddCommand(cli.addTeamMembershipCommand())
+	cmd.AddCommand(cli.deleteTeamMembershipCommand())
 
 	return cmd
 }
 
-func (a *CLI) teamNewCommand() *cobra.Command {
+func (a *TeamCLI) teamNewCommand() *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
@@ -32,7 +44,7 @@ func (a *CLI) teamNewCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			team, err := a.CreateTeam(cmd.Context(), organization, auth.CreateTeamOptions{
+			team, err := a.CreateTeam(cmd.Context(), organization, CreateTeamOptions{
 				Name: internal.String(args[0]),
 			})
 			if err != nil {
@@ -49,7 +61,7 @@ func (a *CLI) teamNewCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *CLI) teamDeleteCommand() *cobra.Command {
+func (a *TeamCLI) teamDeleteCommand() *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
@@ -77,7 +89,7 @@ func (a *CLI) teamDeleteCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *CLI) addTeamMembershipCommand() *cobra.Command {
+func (a *TeamCLI) addTeamMembershipCommand() *cobra.Command {
 	var (
 		organization string
 		name         string // team name
@@ -94,7 +106,7 @@ func (a *CLI) addTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = a.AddTeamMembership(cmd.Context(), auth.TeamMembershipOptions{
+			err = a.AddTeamMembership(cmd.Context(), TeamMembershipOptions{
 				Usernames: args,
 				TeamID:    team.ID,
 			})
@@ -114,7 +126,7 @@ func (a *CLI) addTeamMembershipCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *CLI) deleteTeamMembershipCommand() *cobra.Command {
+func (a *TeamCLI) deleteTeamMembershipCommand() *cobra.Command {
 	var (
 		organization string
 		name         string // team name
@@ -131,7 +143,7 @@ func (a *CLI) deleteTeamMembershipCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = a.RemoveTeamMembership(cmd.Context(), auth.TeamMembershipOptions{
+			err = a.RemoveTeamMembership(cmd.Context(), TeamMembershipOptions{
 				Usernames: args,
 				TeamID:    team.ID,
 			})

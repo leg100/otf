@@ -1,21 +1,32 @@
-package cli
+package organization
 
 import (
 	"fmt"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/http"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) organizationCommand() *cobra.Command {
+type CLI struct {
+	Service
+}
+
+func NewCommand(httpClient *http.Client) *cobra.Command {
+	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "organizations",
 		Short: "Organization management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.Service = &Client{JSONAPIClient: httpClient}
+			return nil
+		},
 	}
-
-	cmd.AddCommand(a.newOrganizationCommand())
-	cmd.AddCommand(a.deleteOrganizationCommand())
+	cmd.AddCommand(cli.newOrganizationCommand())
+	cmd.AddCommand(cli.deleteOrganizationCommand())
 
 	return cmd
 }
@@ -28,7 +39,7 @@ func (a *CLI) newOrganizationCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			org, err := a.CreateOrganization(cmd.Context(), organization.CreateOptions{
+			org, err := a.CreateOrganization(cmd.Context(), CreateOptions{
 				Name: internal.String(args[0]),
 			})
 			if err != nil {

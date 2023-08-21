@@ -79,7 +79,7 @@ func TestCommandTree(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := new(bytes.Buffer)
-			err := fakeApp().Run(ctx, tt.args, got)
+			err := NewCLI().Run(ctx, tt.args, got)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				return
