@@ -1,19 +1,20 @@
-package cli
+package workspace
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"testing"
 
-	"github.com/leg100/otf/internal/workspace"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspaceEdit(t *testing.T) {
-	ws := &workspace.Workspace{}
-	app := fakeApp(withWorkspaces(ws))
+	ws := &Workspace{}
+	app := newFakeCLI(ws)
 
 	t.Run("help", func(t *testing.T) {
 		cmd := app.workspaceEditCommand()
@@ -40,8 +41,8 @@ func TestWorkspaceEdit(t *testing.T) {
 }
 
 func TestWorkspaceShow(t *testing.T) {
-	ws := &workspace.Workspace{ID: "ws-123"}
-	app := fakeApp(withWorkspaces(ws))
+	ws := &Workspace{ID: "ws-123"}
+	app := newFakeCLI(ws)
 
 	cmd := app.workspaceShowCommand()
 	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
@@ -57,9 +58,9 @@ func TestWorkspaceShow(t *testing.T) {
 }
 
 func TestWorkspaceList(t *testing.T) {
-	ws1 := &workspace.Workspace{ID: "ws-123"}
-	ws2 := &workspace.Workspace{ID: "ws-123"}
-	app := fakeApp(withWorkspaces(ws1, ws2))
+	ws1 := &Workspace{ID: "ws-123"}
+	ws2 := &Workspace{ID: "ws-123"}
+	app := newFakeCLI(ws1, ws2)
 
 	cmd := app.workspaceListCommand()
 	cmd.SetArgs([]string{"--organization", "acme-corp"})
@@ -78,8 +79,8 @@ func TestWorkspaceList(t *testing.T) {
 }
 
 func TestWorkspaceLock(t *testing.T) {
-	ws := &workspace.Workspace{ID: "ws-123"}
-	app := fakeApp(withWorkspaces(ws))
+	ws := &Workspace{ID: "ws-123"}
+	app := newFakeCLI(ws)
 
 	cmd := app.workspaceLockCommand()
 	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
@@ -90,14 +91,14 @@ func TestWorkspaceLock(t *testing.T) {
 	assert.Equal(t, want, got.String())
 
 	t.Run("missing name", func(t *testing.T) {
-		cmd := fakeApp().workspaceLockCommand()
+		cmd := newFakeCLI().workspaceLockCommand()
 		cmd.SetArgs([]string{"--organization", "automatize"})
 		err := cmd.Execute()
 		assert.EqualError(t, err, "accepts 1 arg(s), received 0")
 	})
 
 	t.Run("missing organization", func(t *testing.T) {
-		cmd := fakeApp().workspaceLockCommand()
+		cmd := newFakeCLI().workspaceLockCommand()
 		cmd.SetArgs([]string{"automatize"})
 		err := cmd.Execute()
 		assert.EqualError(t, err, "required flag(s) \"organization\" not set")
@@ -105,8 +106,8 @@ func TestWorkspaceLock(t *testing.T) {
 }
 
 func TestWorkspaceUnlock(t *testing.T) {
-	ws := &workspace.Workspace{ID: "ws-123"}
-	app := fakeApp(withWorkspaces(ws))
+	ws := &Workspace{ID: "ws-123"}
+	app := newFakeCLI(ws)
 
 	cmd := app.workspaceUnlockCommand()
 	cmd.SetArgs([]string{"dev", "--organization", "acme-corp"})
@@ -129,4 +130,38 @@ func TestWorkspaceUnlock(t *testing.T) {
 		err := cmd.Execute()
 		assert.EqualError(t, err, "required flag(s) \"organization\" not set")
 	})
+}
+
+type fakeCLIService struct {
+	workspaces []*Workspace
+	Service
+}
+
+func newFakeCLI(workspaces ...*Workspace) *CLI {
+	return &CLI{Service: &fakeCLIService{workspaces: workspaces}}
+}
+
+func (f *fakeCLIService) GetWorkspace(context.Context, string) (*Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeCLIService) GetWorkspaceByName(context.Context, string, string) (*Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeCLIService) ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+	return resource.NewPage(f.workspaces, opts.PageOptions, nil), nil
+}
+
+func (f *fakeCLIService) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {
+	f.workspaces[0].Update(opts)
+	return f.workspaces[0], nil
+}
+
+func (f *fakeCLIService) LockWorkspace(context.Context, string, *string) (*Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeCLIService) UnlockWorkspace(context.Context, string, *string, bool) (*Workspace, error) {
+	return f.workspaces[0], nil
 }

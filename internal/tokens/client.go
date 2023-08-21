@@ -5,11 +5,19 @@ import (
 	"context"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {
 	internal.JSONAPIClient
+
+	// client doesn't implement all of service yet
+	TokensService
+}
+
+func NewClient(httpClient *http.Client) (*Client, error) {
+	return &Client{JSONAPIClient: httpClient}, nil
 }
 
 // CreateRunToken creates a run token via HTTP/JSONAPI

@@ -122,7 +122,7 @@ type (
 	logsClient         = logs.Client
 )
 
-// New constructs a client that uses the http to remotely invoke OTF
+// New constructs a client that uses http to remotely invoke OTF
 // services.
 func New(config http.Config) (*remoteClient, error) {
 	httpClient, err := http.NewClient(config)

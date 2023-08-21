@@ -22,6 +22,9 @@ import (
 type Client struct {
 	internal.JSONAPIClient
 	http.Config
+
+	// Client does not implement all of service yet
+	Service
 }
 
 func (c *Client) GetPlanFile(ctx context.Context, runID string, format PlanFormat) ([]byte, error) {

@@ -1,4 +1,4 @@
-package cli
+package state
 
 import (
 	"bytes"
@@ -6,28 +6,44 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/state"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) stateCommand() *cobra.Command {
+type CLI struct {
+	Service
+	workspace.WorkspaceService
+}
+
+func NewCommand(httpClient *http.Client) *cobra.Command {
+	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "state",
 		Short: "State version management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.Service = &Client{JSONAPIClient: httpClient}
+			cli.WorkspaceService = &workspace.Client{JSONAPIClient: httpClient}
+			return nil
+		},
 	}
 
-	cmd.AddCommand(a.stateRollbackCommand())
-	cmd.AddCommand(a.stateListCommand())
-	cmd.AddCommand(a.stateDeleteCommand())
-	cmd.AddCommand(a.stateDownloadCommand())
+	cmd.AddCommand(cli.stateRollbackCommand())
+	cmd.AddCommand(cli.stateListCommand())
+	cmd.AddCommand(cli.stateDeleteCommand())
+	cmd.AddCommand(cli.stateDownloadCommand())
 
 	return cmd
 }
 
 func (a *CLI) stateListCommand() *cobra.Command {
-	var opts state.StateVersionListOptions
+	var opts StateVersionListOptions
 	cmd := &cobra.Command{
 		Use:           "list",
 		Short:         "List state versions",
@@ -52,7 +68,7 @@ func (a *CLI) stateListCommand() *cobra.Command {
 				return err
 			}
 
-			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*state.Version], error) {
+			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Version], error) {
 				return a.ListStateVersions(cmd.Context(), workspace.ID, opts)
 			})
 			if err != nil {

@@ -8,17 +8,27 @@ import (
 
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/client"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 // CLI is the `otf` cli application
 type CLI struct {
-	client.Client
-	creds CredentialsStore
+	httpClient *http.Client
+	creds      CredentialsStore
+}
+
+func NewCLI() *CLI {
+	return &CLI{
+		httpClient: &http.Client{},
+	}
 }
 
 func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
@@ -43,13 +53,13 @@ func (a *CLI) Run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.SetArgs(args)
 	cmd.SetOut(out)
 
-	cmd.AddCommand(a.organizationCommand())
-	cmd.AddCommand(a.userCommand())
-	cmd.AddCommand(a.teamCommand())
-	cmd.AddCommand(a.workspaceCommand())
-	cmd.AddCommand(a.runCommand())
-	cmd.AddCommand(a.stateCommand())
-	cmd.AddCommand(tokens.CLI{TokensService: a.Client})
+	cmd.AddCommand(organization.NewCommand(a.httpClient))
+	cmd.AddCommand(auth.NewUserCommand(a.httpClient))
+	cmd.AddCommand(auth.NewTeamCommand(a.httpClient))
+	cmd.AddCommand(workspace.NewCommand(a.httpClient))
+	cmd.AddCommand(run.NewCommand(a.httpClient))
+	cmd.AddCommand(state.NewCommand(a.httpClient))
+	cmd.AddCommand(tokens.NewAgentsCommand(a.httpClient))
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
@@ -75,11 +85,11 @@ func (a *CLI) newClient(cfg *http.Config) func(*cobra.Command, []string) error {
 			cfg.Token = token
 		}
 
-		client, err := client.New(*cfg)
+		httpClient, err := http.NewClient(*cfg)
 		if err != nil {
 			return err
 		}
-		a.Client = client
+		*a.httpClient = *httpClient
 		return nil
 	}
 }

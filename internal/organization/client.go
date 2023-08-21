@@ -11,6 +11,8 @@ import (
 
 type Client struct {
 	internal.JSONAPIClient
+
+	Service
 }
 
 // CreateOrganization creates a new organization with the given options.

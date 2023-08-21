@@ -1,24 +1,30 @@
-package cli
+package auth
 
 import (
 	"fmt"
 
+	"github.com/leg100/otf/internal/http"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) userCommand() *cobra.Command {
+type UserCLI struct {
+	UserService
+}
+
+func NewUserCommand(httpClient *http.Client) *cobra.Command {
+	cli := &UserCLI{}
 	cmd := &cobra.Command{
 		Use:   "users",
 		Short: "User account management",
 	}
 
-	cmd.AddCommand(a.userNewCommand())
-	cmd.AddCommand(a.userDeleteCommand())
+	cmd.AddCommand(cli.userNewCommand())
+	cmd.AddCommand(cli.userDeleteCommand())
 
 	return cmd
 }
 
-func (a *CLI) userNewCommand() *cobra.Command {
+func (a *UserCLI) userNewCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:           "new [username]",
 		Short:         "Create a new user account",
@@ -36,7 +42,7 @@ func (a *CLI) userNewCommand() *cobra.Command {
 	}
 }
 
-func (a *CLI) userDeleteCommand() *cobra.Command {
+func (a *UserCLI) userDeleteCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:           "delete [username]",
 		Short:         "Delete a user account",

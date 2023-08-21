@@ -1,25 +1,38 @@
-package cli
+package workspace
 
 import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/leg100/otf/internal/http"
+
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
-func (a *CLI) workspaceCommand() *cobra.Command {
+type CLI struct {
+	Service
+}
+
+func NewCommand(httpClient *http.Client) *cobra.Command {
+	cli := &CLI{}
 	cmd := &cobra.Command{
 		Use:   "workspaces",
 		Short: "Workspace management",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Parent().PersistentPreRunE(cmd.Parent(), args); err != nil {
+				return err
+			}
+			cli.Service = &Client{JSONAPIClient: httpClient}
+			return nil
+		},
 	}
 
-	cmd.AddCommand(a.workspaceListCommand())
-	cmd.AddCommand(a.workspaceShowCommand())
-	cmd.AddCommand(a.workspaceEditCommand())
-	cmd.AddCommand(a.workspaceLockCommand())
-	cmd.AddCommand(a.workspaceUnlockCommand())
+	cmd.AddCommand(cli.workspaceListCommand())
+	cmd.AddCommand(cli.workspaceShowCommand())
+	cmd.AddCommand(cli.workspaceEditCommand())
+	cmd.AddCommand(cli.workspaceLockCommand())
+	cmd.AddCommand(cli.workspaceUnlockCommand())
 
 	return cmd
 }
@@ -33,8 +46,8 @@ func (a *CLI) workspaceListCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-				return a.ListWorkspaces(cmd.Context(), workspace.ListOptions{
+			list, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*Workspace], error) {
+				return a.ListWorkspaces(cmd.Context(), ListOptions{
 					PageOptions:  opts,
 					Organization: &org,
 				})
@@ -92,7 +105,7 @@ func (a *CLI) workspaceShowCommand() *cobra.Command {
 func (a *CLI) workspaceEditCommand() *cobra.Command {
 	var (
 		organization string
-		opts         workspace.UpdateOptions
+		opts         UpdateOptions
 		mode         *string
 	)
 
@@ -106,7 +119,7 @@ func (a *CLI) workspaceEditCommand() *cobra.Command {
 			name := args[0]
 
 			if mode != nil && *mode != "" {
-				opts.ExecutionMode = (*workspace.ExecutionMode)(mode)
+				opts.ExecutionMode = (*ExecutionMode)(mode)
 			}
 
 			ws, err := a.GetWorkspaceByName(cmd.Context(), organization, name)

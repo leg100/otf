@@ -11,6 +11,9 @@ import (
 
 type Client struct {
 	internal.JSONAPIClient
+
+	// Client does not implement all of service yet
+	Service
 }
 
 // DownloadConfig downloads a configuration version tarball.  Only configuration versions in the uploaded state may be downloaded.

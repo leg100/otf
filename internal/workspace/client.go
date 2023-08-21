@@ -13,6 +13,8 @@ import (
 
 type Client struct {
 	internal.JSONAPIClient
+
+	WorkspaceService
 }
 
 // GetWorkspaceByName retrieves a workspace by organization and

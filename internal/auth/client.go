@@ -12,6 +12,8 @@ import (
 type (
 	Client struct {
 		internal.JSONAPIClient
+
+		AuthService
 	}
 	teamMember struct {
 		Username string `jsonapi:"primary,users"`
