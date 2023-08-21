@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -13,7 +12,7 @@ type fakeSpoolerApp struct {
 	runs   []*run.Run
 	events chan pubsub.Event
 
-	client.Client
+	client
 }
 
 func (a *fakeSpoolerApp) ListRuns(ctx context.Context, opts run.ListOptions) (*resource.Page[*run.Run], error) {

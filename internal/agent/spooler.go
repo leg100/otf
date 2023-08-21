@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
@@ -34,9 +33,9 @@ type (
 	// spoolerDaemon implements Spooler, receiving runs with either a queued plan or
 	// apply, and converting them into spooled jobs.
 	spoolerDaemon struct {
-		queue         chan *run.Run    // Queue of queued jobs
-		cancelations  chan cancelation // Queue of cancelation requests
-		client.Client                  // Application for retrieving queued runs
+		queue        chan *run.Run    // Queue of queued jobs
+		cancelations chan cancelation // Queue of cancelation requests
+		client                        // Application for retrieving queued runs
 		logr.Logger
 		Config
 	}
@@ -48,11 +47,11 @@ type (
 )
 
 // newSpooler populates a Spooler with queued runs
-func newSpooler(app client.Client, logger logr.Logger, cfg Config) *spoolerDaemon {
+func newSpooler(app client, logger logr.Logger, cfg Config) *spoolerDaemon {
 	return &spoolerDaemon{
 		queue:        make(chan *run.Run, spoolerCapacity),
 		cancelations: make(chan cancelation, spoolerCapacity),
-		Client:       app,
+		client:       app,
 		Logger:       logger,
 		Config:       cfg,
 	}

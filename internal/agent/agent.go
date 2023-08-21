@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/client"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,9 +32,9 @@ var (
 // agent processes runs.
 type agent struct {
 	Config
-	client.Client
 	logr.Logger
 
+	client
 	spooler              // spools new run events
 	*terminator          // terminates runs
 	Downloader           // terraform cli downloader
@@ -45,7 +44,7 @@ type agent struct {
 }
 
 // NewAgent is the constructor for an agent
-func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error) {
+func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
 	if cfg.Concurrency == 0 {
 		cfg.Concurrency = DefaultConcurrency
 	}
@@ -65,7 +64,7 @@ func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error)
 	pathFinder := newTerraformPathFinder(cfg.TerraformBinDir)
 
 	agent := &agent{
-		Client:              app,
+		client:              app,
 		Config:              cfg,
 		Logger:              logger,
 		envs:                DefaultEnvs,
@@ -90,7 +89,7 @@ func NewAgent(logger logr.Logger, app client.Client, cfg Config) (*agent, error)
 // via http
 func NewExternalAgent(ctx context.Context, logger logr.Logger, cfg ExternalConfig) (*agent, error) {
 	// Sends unauthenticated ping to server
-	app, err := client.New(cfg.HTTPConfig)
+	app, err := newClient(cfg.HTTPConfig)
 	if err != nil {
 		return nil, err
 	}

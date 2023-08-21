@@ -9,7 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/client"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/tokens"
@@ -23,7 +22,7 @@ import (
 // TODO: this is a pointless abstraction; refactor it out into worker's
 // handle() func.
 type environment struct {
-	client.Client
+	client
 	logr.Logger
 	Downloader // Downloader for workers to download terraform cli on demand
 
@@ -88,7 +87,7 @@ func newEnvironment(
 
 	env := &environment{
 		Logger:     logger,
-		Client:     agent,
+		client:     agent,
 		Downloader: agent,
 		out:        writer,
 		workdir:    wd,
