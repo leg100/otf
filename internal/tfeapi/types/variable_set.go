@@ -19,14 +19,7 @@ type VariableSet struct {
 }
 
 type VariableSetVariable struct {
-	ID          string `jsonapi:"primary,vars"`
-	Key         string `jsonapi:"attribute" json:"key"`
-	Value       string `jsonapi:"attribute" json:"value"`
-	Description string `jsonapi:"attribute" json:"description"`
-	Category    string `jsonapi:"attribute" json:"category"`
-	HCL         bool   `jsonapi:"attribute" json:"hcl"`
-	Sensitive   bool   `jsonapi:"attribute" json:"sensitive"`
-	VersionID   string `jsonapi:"attribute" json:"version-id"`
+	*Variable
 
 	// Relations
 	VariableSet *VariableSet `jsonapi:"relationship" json:"varset"`

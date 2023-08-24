@@ -13,10 +13,10 @@ type fakeService struct {
 	Service
 }
 
-func newTestVariable(t *testing.T, workspaceID string, opts CreateVariableOptions) *Variable {
-	v, err := fakeFactory().new(workspaceID, opts)
+func newTestVariable(t *testing.T, workspaceID string, opts CreateVariableOptions) *WorkspaceVariable {
+	v, err := fakeFactory().new(opts)
 	require.NoError(t, err)
-	return v
+	return &WorkspaceVariable{WorkspaceID: workspaceID, Variable: v}
 }
 
 func fakeFactory() *factory {

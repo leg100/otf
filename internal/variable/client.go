@@ -35,7 +35,6 @@ func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*Vari
 			Category:    VariableCategory(v.Category),
 			Sensitive:   v.Sensitive,
 			HCL:         v.HCL,
-			WorkspaceID: v.Workspace.ID,
 		})
 	}
 	return variables, nil

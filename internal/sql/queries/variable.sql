@@ -7,8 +7,7 @@ INSERT INTO variables (
     category,
     sensitive,
     hcl,
-    version_id,
-    workspace_id
+    version_id
 ) VALUES (
     pggen.arg('variable_id'),
     pggen.arg('key'),
@@ -17,27 +16,14 @@ INSERT INTO variables (
     pggen.arg('category'),
     pggen.arg('sensitive'),
     pggen.arg('hcl'),
-    pggen.arg('version_id'),
-    pggen.arg('workspace_id')
+    pggen.arg('version_id')
 );
-
--- name: FindVariables :many
-SELECT *
-FROM variables
-WHERE workspace_id = pggen.arg('workspace_id')
-;
 
 -- name: FindVariable :one
 SELECT *
 FROM variables
 WHERE variable_id = pggen.arg('variable_id')
 ;
-
--- name: FindVariableForUpdate :one
-SELECT *
-FROM variables
-WHERE variable_id = pggen.arg('variable_id')
-FOR UPDATE;
 
 -- name: UpdateVariableByID :one
 UPDATE variables

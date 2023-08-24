@@ -29,7 +29,7 @@ func TestWriteTerraformVariables(t *testing.T) {
 		HCL:      internal.Bool(true),
 	})
 
-	err := WriteTerraformVars(dir, []*Variable{v1, v2})
+	err := WriteTerraformVars(dir, []*Variable{v1.Variable, v2.Variable})
 	require.NoError(t, err)
 
 	tfvars := path.Join(dir, "terraform.tfvars")

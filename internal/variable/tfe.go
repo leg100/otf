@@ -25,7 +25,7 @@ type tfe struct {
 func (a *tfe) addHandlers(r *mux.Router) {
 	r = otfhttp.APIRouter(r)
 
-	r.HandleFunc("/workspaces/{workspace_id}/vars", a.create).Methods("POST")
+	r.HandleFunc("/workspaces/{workspace_id}/vars", a.createWorkspaceVariable).Methods("POST")
 	r.HandleFunc("/workspaces/{workspace_id}/vars", a.list).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.get).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/vars/{variable_id}", a.update).Methods("PATCH")
@@ -38,7 +38,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/varsets/{varset_id}", a.deleteVariableSet).Methods("DELETE")
 }
 
-func (a *tfe) create(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
@@ -49,7 +49,7 @@ func (a *tfe) create(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variable, err := a.CreateVariable(r.Context(), workspaceID, CreateVariableOptions{
+	wv, err := a.Service.createWorkspaceVariable(r.Context(), workspaceID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -61,7 +61,7 @@ func (a *tfe) create(w http.ResponseWriter, r *http.Request) {
 		variableError(w, err)
 		return
 	}
-	a.Respond(w, r, a.convert(variable), http.StatusCreated)
+	a.Respond(w, r, a.convertWorkspaceVariable(wv), http.StatusCreated)
 }
 
 func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
@@ -70,13 +70,13 @@ func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variable, err := a.GetVariable(r.Context(), variableID)
+	variable, err := a.getWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, a.convert(variable), http.StatusOK)
+	a.Respond(w, r, a.convertWorkspaceVariable(variable), http.StatusOK)
 }
 
 func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
@@ -85,17 +85,17 @@ func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variables, err := a.ListVariables(r.Context(), workspaceID)
+	variables, err := a.listWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	// convert items
-	to := make([]*types.Variable, len(variables))
+	to := make([]*types.WorkspaceVariable, len(variables))
 	for i, from := range variables {
-		to[i] = a.convert(from)
+		to[i] = a.convertWorkspaceVariable(from)
 	}
+
 	a.Respond(w, r, to, http.StatusOK)
 }
 
@@ -110,7 +110,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		variableError(w, err)
 		return
 	}
-	updated, err := a.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
+	updated, err := a.updateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -123,7 +123,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, a.convert(updated), http.StatusOK)
+	a.Respond(w, r, a.convertWorkspaceVariable(updated), http.StatusOK)
 }
 
 func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +132,7 @@ func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.DeleteVariable(r.Context(), variableID)
+	_, err = a.deleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -150,7 +150,7 @@ func (a *tfe) createVariableSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variable, err := a.CreateVariableSet(r.Context(), workspaceID, CreateVariableSetOptions{
+	variable, err := a.Service.createVariableSet(r.Context(), workspaceID, CreateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -173,7 +173,7 @@ func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	set, err := a.UpdateVariableSet(r.Context(), setID, UpdateVariableSetOptions{
+	set, err := a.Service.updateVariableSet(r.Context(), setID, UpdateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
@@ -192,17 +192,17 @@ func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sets, err := a.ListVariableSets(r.Context(), organization)
+	sets, err := a.Service.listVariableSets(r.Context(), organization)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	// convert items
-	to := make([]*types.Variable, len(sets))
+	to := make([]*types.VariableSet, len(sets))
 	for i, from := range sets {
-		to[i] = a.convert(from)
+		to[i] = a.convertVariableSet(from)
 	}
+
 	a.Respond(w, r, sets, http.StatusOK)
 }
 
@@ -213,13 +213,13 @@ func (a *tfe) getVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set, err := a.GetVariableSet(r.Context(), setID)
+	set, err := a.Service.getVariableSet(r.Context(), setID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, set, http.StatusOK)
+	a.Respond(w, r, a.convertVariableSet(set), http.StatusOK)
 }
 
 func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +229,7 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.DeleteVariableSet(r.Context(), setID); err != nil {
+	if err := a.Service.deleteVariableSet(r.Context(), setID); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -237,7 +237,38 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *tfe) convert(from *Variable) *types.Variable {
+func (a *tfe) convertWorkspaceVariable(from *WorkspaceVariable) *types.WorkspaceVariable {
+	return &types.WorkspaceVariable{
+		Variable: a.convertVariable(from.Variable),
+		Workspace: &types.Workspace{
+			ID: from.WorkspaceID,
+		},
+	}
+}
+
+func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
+	to := &types.VariableSet{
+		ID:          from.ID,
+		Name:        from.Name,
+		Description: from.Description,
+		Global:      from.Global,
+		Organization: &types.Organization{
+			Name: from.Organization,
+		},
+	}
+	to.Variables = make([]*types.VariableSetVariable, len(from.Variables))
+	for i, from := range from.Variables {
+		to.Variables[i] = &types.VariableSetVariable{
+			Variable: a.convertVariable(from),
+			VariableSet: &types.VariableSet{
+				ID: from.ID,
+			},
+		}
+	}
+	return to
+}
+
+func (a *tfe) convertVariable(from *Variable) *types.Variable {
 	to := &types.Variable{
 		ID:          from.ID,
 		Key:         from.Key,
@@ -247,9 +278,6 @@ func (a *tfe) convert(from *Variable) *types.Variable {
 		Sensitive:   from.Sensitive,
 		HCL:         from.HCL,
 		VersionID:   from.VersionID,
-		Workspace: &types.Workspace{
-			ID: from.WorkspaceID,
-		},
 	}
 	if to.Sensitive {
 		to.Value = "" // scrub sensitive values

@@ -67,14 +67,14 @@ func TestVariable_UpdateHandler(t *testing.T) {
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
-			fakeHTMLApp(t, v).update(w, r)
+			fakeHTMLApp(t, v.Variable).update(w, r)
 
 			if assert.Equal(t, 302, w.Code, "got body: %s", w.Body.String()) {
 				redirect, err := w.Result().Location()
 				require.NoError(t, err)
 				assert.Equal(t, paths.Variables(v.WorkspaceID), redirect.Path)
 			}
-			tt.want(t, v)
+			tt.want(t, v.Variable)
 		})
 	}
 }

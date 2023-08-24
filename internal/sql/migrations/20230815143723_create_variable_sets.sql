@@ -20,7 +20,7 @@ INSERT INTO workspace_variables (
 ALTER TABLE variables DROP column workspace_id;
 
 --
--- Create variable_sets and variable_sets_variables tables
+-- Create variable_sets, variable_sets_variables, and variable_set_workspaces tables
 --
 
 CREATE TABLE IF NOT EXISTS variable_sets (
@@ -37,11 +37,17 @@ CREATE TABLE IF NOT EXISTS variable_set_variables (
     variable_id TEXT REFERENCES variables ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS variable_set_workspaces (
+    variable_set_id TEXT REFERENCES variable_sets ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    workspace_id TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+);
+
 -- +goose Down
 
 --
--- Drop variable_sets and variable_set_variables tables
+-- Drop variable_sets, variable_set_variables, and variable_set_workspaces tables
 --
+DROP TABLE IF EXISTS variable_set_workspaces;
 DROP TABLE IF EXISTS variable_set_variables;
 DROP TABLE IF EXISTS variable_sets;
 

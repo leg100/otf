@@ -65,7 +65,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 		Variable:      &Variable{},
 		EditMode:      false,
 		FormAction:    paths.CreateVariable(workspaceID),
-		CanAccess:     subject.CanAccessWorkspace(rbac.CreateVariableAction, policy),
+		CanAccess:     subject.CanAccessWorkspace(rbac.CreateWorkspaceVariableAction, policy),
 	})
 }
 
@@ -84,7 +84,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.CreateVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
+	variable, err := h.svc.createWorkspaceVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -108,7 +108,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := h.svc.ListVariables(r.Context(), workspaceID)
+	variables, err := h.svc.listWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -131,7 +131,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variables          []*Variable
+		Variables          []*WorkspaceVariable
 		Policy             internal.WorkspacePolicy
 		CanCreateVariable  bool
 		CanDeleteVariable  bool
@@ -140,8 +140,8 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		WorkspacePage:      workspace.NewPage(r, "variables", ws),
 		Variables:          variables,
 		Policy:             policy,
-		CanCreateVariable:  user.CanAccessWorkspace(rbac.CreateVariableAction, policy),
-		CanDeleteVariable:  user.CanAccessWorkspace(rbac.DeleteVariableAction, policy),
+		CanCreateVariable:  user.CanAccessWorkspace(rbac.CreateWorkspaceVariableAction, policy),
+		CanDeleteVariable:  user.CanAccessWorkspace(rbac.DeleteWorkspaceVariableAction, policy),
 		CanUpdateWorkspace: user.CanAccessWorkspace(rbac.UpdateWorkspaceAction, policy),
 	})
 }
@@ -153,7 +153,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.GetVariable(r.Context(), variableID)
+	variable, err := h.svc.getWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -166,7 +166,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("variable_edit.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variable   *Variable
+		Variable   *WorkspaceVariable
 		EditMode   bool
 		FormAction string
 	}{
@@ -184,7 +184,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.GetVariable(r.Context(), variableID)
+	variable, err := h.svc.getWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -209,7 +209,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err = h.svc.UpdateVariable(r.Context(), variableID, UpdateVariableOptions{
+	variable, err = h.svc.updateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -226,14 +226,14 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *Variable) {
+func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *WorkspaceVariable) {
 	value, err := decode.Param("value", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	variable, err = h.svc.UpdateVariable(r.Context(), variable.ID, UpdateVariableOptions{
+	variable, err = h.svc.updateWorkspaceVariable(r.Context(), variable.ID, UpdateVariableOptions{
 		Value: internal.String(value),
 	})
 	if err != nil {
@@ -252,7 +252,7 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.DeleteVariable(r.Context(), variableID)
+	variable, err := h.svc.deleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return

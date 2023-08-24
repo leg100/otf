@@ -78,21 +78,11 @@ func (f *factory) newWorkspaceVariable(workspaceID string, opts CreateVariableOp
 }
 
 func (f *factory) newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
-	vars := make([]*Variable, len(opts.Variables))
-	for i, newV := range opts.Variables {
-		v, err := f.new(newV)
-		if err != nil {
-			return nil, err
-		}
-		vars[i] = v
-	}
 	set := VariableSet{
 		ID:          internal.NewID("varset"),
 		Name:        opts.Name,
 		Description: opts.Description,
 		Global:      opts.Global,
-		Workspaces:  opts.Workspaces,
-		Variables:   vars,
 	}
 	return &set, nil
 }
