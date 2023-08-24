@@ -51,6 +51,26 @@ SELECT
 FROM variable_sets vs
 WHERE vs.variable_set_id = pggen.arg('variable_set_id');
 
+-- name: FindVariableSetByVariableID :one
+SELECT
+    vs.*,
+    (
+        SELECT array_agg(v.*) AS variables
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+        GROUP BY variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id) AS workspace_ids
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+        GROUP BY variable_set_id
+    ) AS workspace_ids
+FROM variable_sets vs
+JOIN variable_set_variables vsv USING (variable_set_id)
+WHERE vsv.variable_id = pggen.arg('variable_id');
+
 -- name: FindVariableSetForUpdate :one
 SELECT
     *,
@@ -94,17 +114,6 @@ INSERT INTO variable_set_variables (
     pggen.arg('variable_set_id'),
     pggen.arg('variable_id')
 );
-
--- name: FindVariableSetVariableForUpdate :one
-SELECT
-    vs.*,
-    ARRAY[v.*] AS variables,
-    ARRAY[]::text[] AS workspace_ids
-FROM variables v
-JOIN variable_set_variables vsv USING (variable_id)
-JOIN variable_sets vs USING (variable_set_id)
-WHERE v.variable_id = pggen.arg('variable_id')
-FOR UPDATE OF v;
 
 -- name: DeleteVariableSetVariable :one
 DELETE

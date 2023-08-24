@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -100,7 +101,24 @@ func (s *service) createWorkspaceVariable(ctx context.Context, workspaceID strin
 		return nil, err
 	}
 
-	if err := s.db.createWorkspaceVariable(ctx, v); err != nil {
+	err = s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+		// check for conflict with other workspace variables
+		all, err := s.db.listWorkspaceVariables(ctx, workspaceID)
+		if err != nil {
+			return err
+		}
+		for _, v := range all {
+			if err := v.conflicts(v.Variable); err != nil {
+				return err
+			}
+		}
+		if err := s.db.createWorkspaceVariable(ctx, v); err != nil {
+			s.Error(err, "creating workspace variable", "subject", subject, "variable", v)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		s.Error(err, "creating workspace variable", "subject", subject, "variable", v)
 		return nil, err
 	}
@@ -113,23 +131,47 @@ func (s *service) createWorkspaceVariable(ctx context.Context, workspaceID strin
 func (s *service) updateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
 	var (
 		subject  internal.Subject
-		existing WorkspaceVariable
+		existing *WorkspaceVariable
+		updated  Variable
 	)
-	updated, err := s.db.updateWorkspaceVariable(ctx, variableID, func(wv *WorkspaceVariable) (err error) {
-		subject, err = s.workspace.CanAccess(ctx, rbac.UpdateWorkspaceVariableAction, wv.WorkspaceID)
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+		existing, err = s.db.getWorkspaceVariable(ctx, variableID)
 		if err != nil {
 			return err
 		}
-		existing = *wv
-		return s.update(wv.Variable, opts)
+
+		subject, err = s.workspace.CanAccess(ctx, rbac.UpdateWorkspaceVariableAction, existing.WorkspaceID)
+		if err != nil {
+			return err
+		}
+
+		updated = *existing.Variable
+		if err := s.update(&updated, opts); err != nil {
+			return err
+		}
+
+		// check for conflict with other workspace variables
+		all, err := s.db.listWorkspaceVariables(ctx, existing.WorkspaceID)
+		if err != nil {
+			return err
+		}
+		for _, v := range all {
+			if err := existing.conflicts(v.Variable); err != nil {
+				return err
+			}
+		}
+		if err := s.db.updateVariable(ctx, &updated); err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
-		s.Error(err, "updating workspace variable", "subject", subject, "existing", existing)
+		s.Error(err, "updating workspace variable", "subject", subject, "variable_id", variableID)
 		return nil, err
 	}
-	s.V(1).Info("updated workspace variable", "subject", subject, "before", existing, "after", updated)
+	s.V(1).Info("updated workspace variable", "subject", subject, "workspace_id", existing.WorkspaceID, "before", existing.Variable, "after", &updated)
 
-	return updated, nil
+	return &WorkspaceVariable{WorkspaceID: existing.WorkspaceID, Variable: &updated}, nil
 }
 
 func (s *service) listWorkspaceVariables(ctx context.Context, workspaceID string) ([]*WorkspaceVariable, error) {
@@ -213,23 +255,45 @@ func (s *service) createVariableSet(ctx context.Context, organization string, op
 func (s *service) updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error) {
 	var (
 		subject  internal.Subject
-		existing VariableSet
+		existing *VariableSet
+		updated  VariableSet
 	)
-	updated, err := s.db.updateVariableSet(ctx, setID, func(v *VariableSet) (err error) {
-		subject, err = s.workspace.CanAccess(ctx, rbac.UpdateVariableSetAction, v.Organization)
-		if err != nil {
-			return err
-		}
-		existing = *v
-		return v.update(opts)
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+		_, err = s.db.updateVariableSet(ctx, setID, func(existing *VariableSet) error {
+			subject, err = s.workspace.CanAccess(ctx, rbac.UpdateVariableSetAction, existing.Organization)
+			if err != nil {
+				return err
+			}
+
+			updated = *existing
+			if err := updated.update(opts); err != nil {
+				return err
+			}
+
+			// if set has been promoted to global then we need to check for
+			// conflicts
+			if !existing.Global && updated.Global {
+				sets, err := s.db.listVariableSets(ctx, updated.Organization)
+				if err != nil {
+					return err
+				}
+				for _, v := range updated.Variables {
+					if err := checkConflicts(v, &updated, sets); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		})
+		return err
 	})
 	if err != nil {
-		s.Error(err, "updating variable set", "subject", subject, "set", existing)
+		s.Error(err, "updating variable set", "subject", subject, "set_id", setID)
 		return nil, err
 	}
 	s.V(1).Info("updated variable set", "subject", subject, "before", existing, "after", updated)
 
-	return updated, nil
+	return &updated, nil
 }
 
 func (s *service) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {
@@ -288,28 +352,47 @@ func (s *service) deleteVariableSet(ctx context.Context, setID string) error {
 }
 
 func (s *service) addVariableToSet(ctx context.Context, setID string, opts CreateVariableOptions) error {
-	// retrieve set first in order to retrieve organization name for authorization
-	set, err := s.db.getVariableSet(ctx, setID)
+	var (
+		subject internal.Subject
+		set     *VariableSet
+		v       *Variable
+	)
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+		set, err = s.db.getVariableSet(ctx, setID)
+		if err != nil {
+			return err
+		}
+
+		subject, err := s.organization.CanAccess(ctx, rbac.AddVariableToSetAction, set.Organization)
+		if err != nil {
+			return err
+		}
+
+		v, err = s.new(opts)
+		if err != nil {
+			s.Error(err, "adding variable to set: constructing variable", "subject", subject)
+			return err
+		}
+
+		sets, err := s.db.listVariableSets(ctx, set.Organization)
+		if err != nil {
+			return err
+		}
+		if err := checkConflicts(v, set, sets); err != nil {
+			return err
+		}
+
+		if err := s.db.addVariableToSet(ctx, setID, v); err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
+		s.Error(err, "adding variable to set", "subject", subject, "set", set, "variable", v)
 		return err
 	}
 
-	subject, err := s.organization.CanAccess(ctx, rbac.AddVariableToSetAction, set.Organization)
-	if err != nil {
-		return err
-	}
-
-	v, err := s.new(opts)
-	if err != nil {
-		s.Error(err, "adding variable to set: constructing variable", "subject", subject)
-		return err
-	}
-
-	if err := s.db.addVariableToSet(ctx, setID, v); err != nil {
-		s.Error(err, "adding variable to set", "subject", subject, "set_id", setID)
-		return err
-	}
-	s.V(1).Info("added variable to set", "subject", subject, "set_id", setID, "variable", v)
+	s.V(1).Info("added variable to set", "subject", subject, "set", set, "variable", v)
 
 	return nil
 }
@@ -317,23 +400,47 @@ func (s *service) addVariableToSet(ctx context.Context, setID string, opts Creat
 func (s *service) updateVariableSetVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error) {
 	var (
 		subject  internal.Subject
-		existing VariableSet
+		set      *VariableSet
+		existing *Variable
+		updated  Variable
 	)
-	updated, err := s.db.updateVariableSetVariable(ctx, variableID, func(set *VariableSet) (err error) {
-		subject, err = s.organization.CanAccess(ctx, rbac.UpdateWorkspaceVariableAction, set.Organization)
+	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
+		set, existing, err = s.db.getVariableSetByVariableID(ctx, variableID)
 		if err != nil {
 			return err
 		}
-		existing = *set
-		return s.update(set.Variables[0], opts)
+		subject, err = s.organization.CanAccess(ctx, rbac.UpdateVariableSetAction, set.Organization)
+		if err != nil {
+			return err
+		}
+
+		// update a copy of variable
+		updated = *existing
+		if err := s.update(&updated, opts); err != nil {
+			return err
+		}
+
+		// check for conflicts
+		sets, err := s.db.listVariableSets(ctx, set.Organization)
+		if err != nil {
+			return err
+		}
+		if err := checkConflicts(&updated, set, sets); err != nil {
+			return err
+		}
+
+		if err := s.db.updateVariable(ctx, &updated); err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
-		s.Error(err, "updating variable set variable", "subject", subject, "set", existing, "existing", existing)
+		s.Error(err, "updating variable set variable", "subject", subject, "variable_id", variableID)
 		return nil, err
 	}
-	s.V(1).Info("updated variable set variable", "subject", subject, "before", existing, "after", updated)
+	s.V(1).Info("updated variable set variable", "subject", subject, "set", set, "before", existing, "after", updated)
 
-	return updated.Variables[0], nil
+	return &updated, nil
 }
 
 func (s *service) deleteVariableFromSet(ctx context.Context, setID, variableID string) error {
@@ -343,7 +450,8 @@ func (s *service) deleteVariableFromSet(ctx context.Context, setID, variableID s
 		return err
 	}
 	// confirm variable is part of the set
-	if !set.hasVariable(variableID) {
+	found, v := set.hasVariable(variableID)
+	if !found {
 		return fmt.Errorf("variable not found in set %s: %s", setID, variableID)
 	}
 
@@ -353,10 +461,10 @@ func (s *service) deleteVariableFromSet(ctx context.Context, setID, variableID s
 	}
 
 	if err := s.db.deleteVariable(ctx, variableID); err != nil {
-		s.Error(err, "deleting variable from set", "subject", subject, "variable_id", variableID, "set", set)
+		s.Error(err, "deleting variable from set", "subject", subject, "variable", v, "set", set)
 		return err
 	}
-	s.V(1).Info("deleted variable from set", "subject", subject, "variable_id", variableID, "set", set)
+	s.V(1).Info("deleted variable from set", "subject", subject, "variable", v, "set", set)
 
 	return nil
 }

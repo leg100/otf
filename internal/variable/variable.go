@@ -33,6 +33,7 @@ var (
 	ErrVariableDescriptionMaxExceeded = fmt.Errorf("maximum variable description size (%d chars) exceeded", VariableDescriptionMaxChars)
 	ErrVariableKeyMaxExceeded         = fmt.Errorf("maximum variable key size (%d chars) exceeded", VariableKeyMaxChars)
 	ErrVariableValueMaxExceeded       = fmt.Errorf("maximum variable value size of %d KB exceeded", VariableValueMaxKB)
+	ErrVariableConflict               = errors.New("variable conflicts with a variable with the same name and type")
 )
 
 type (
@@ -119,6 +120,17 @@ func (v *Variable) setSensitive(sensitive bool) error {
 		return errors.New("cannot change a sensitive variable to a non-sensitive variable")
 	}
 	v.Sensitive = sensitive
+	return nil
+}
+
+func (v *Variable) conflicts(v2 *Variable) error {
+	if v.ID == v2.ID {
+		// cannot conflict with self
+		return nil
+	}
+	if v.Key == v2.Key && v.Category == v2.Category {
+		return ErrVariableConflict
+	}
 	return nil
 }
 

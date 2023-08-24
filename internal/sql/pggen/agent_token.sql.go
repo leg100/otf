@@ -930,6 +930,13 @@ type Querier interface {
 	// FindVariableSetByIDScan scans the result of an executed FindVariableSetByIDBatch query.
 	FindVariableSetByIDScan(results pgx.BatchResults) (FindVariableSetByIDRow, error)
 
+	FindVariableSetByVariableID(ctx context.Context, variableID pgtype.Text) (FindVariableSetByVariableIDRow, error)
+	// FindVariableSetByVariableIDBatch enqueues a FindVariableSetByVariableID query into batch to be executed
+	// later by the batch.
+	FindVariableSetByVariableIDBatch(batch genericBatch, variableID pgtype.Text)
+	// FindVariableSetByVariableIDScan scans the result of an executed FindVariableSetByVariableIDBatch query.
+	FindVariableSetByVariableIDScan(results pgx.BatchResults) (FindVariableSetByVariableIDRow, error)
+
 	FindVariableSetForUpdate(ctx context.Context, variableSetID pgtype.Text) (FindVariableSetForUpdateRow, error)
 	// FindVariableSetForUpdateBatch enqueues a FindVariableSetForUpdate query into batch to be executed
 	// later by the batch.
@@ -957,13 +964,6 @@ type Querier interface {
 	InsertVariableSetVariableBatch(batch genericBatch, variableSetID pgtype.Text, variableID pgtype.Text)
 	// InsertVariableSetVariableScan scans the result of an executed InsertVariableSetVariableBatch query.
 	InsertVariableSetVariableScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindVariableSetVariableForUpdate(ctx context.Context, variableID pgtype.Text) (FindVariableSetVariableForUpdateRow, error)
-	// FindVariableSetVariableForUpdateBatch enqueues a FindVariableSetVariableForUpdate query into batch to be executed
-	// later by the batch.
-	FindVariableSetVariableForUpdateBatch(batch genericBatch, variableID pgtype.Text)
-	// FindVariableSetVariableForUpdateScan scans the result of an executed FindVariableSetVariableForUpdateBatch query.
-	FindVariableSetVariableForUpdateScan(results pgx.BatchResults) (FindVariableSetVariableForUpdateRow, error)
 
 	DeleteVariableSetVariable(ctx context.Context, variableSetID pgtype.Text, variableID pgtype.Text) (DeleteVariableSetVariableRow, error)
 	// DeleteVariableSetVariableBatch enqueues a DeleteVariableSetVariable query into batch to be executed
@@ -1687,6 +1687,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findVariableSetByIDSQL, findVariableSetByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableSetByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findVariableSetByVariableIDSQL, findVariableSetByVariableIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVariableSetByVariableID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findVariableSetForUpdateSQL, findVariableSetForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableSetForUpdate': %w", err)
 	}
@@ -1698,9 +1701,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertVariableSetVariableSQL, insertVariableSetVariableSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertVariableSetVariable': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findVariableSetVariableForUpdateSQL, findVariableSetVariableForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindVariableSetVariableForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteVariableSetVariableSQL, deleteVariableSetVariableSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVariableSetVariable': %w", err)

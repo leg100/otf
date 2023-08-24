@@ -49,11 +49,53 @@ func (s *VariableSet) update(opts UpdateVariableSetOptions) error {
 	return nil
 }
 
-func (s *VariableSet) hasVariable(variableID string) bool {
+func (s *VariableSet) hasVariable(variableID string) (bool, *Variable) {
 	for _, v := range s.Variables {
 		if v.ID == variableID {
-			return true
+			return true, v
 		}
 	}
-	return false
+	return false, nil
+}
+
+// conflicts determines whether the set has a variable that conflicts with v,
+// i.e. has same key and category
+func (s *VariableSet) conflicts(v *Variable) error {
+	for _, v2 := range s.Variables {
+		if err := v.conflicts(v2); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkConflicts checks whether v conflicts with another variable: s is the set
+// it belongs to, or is going to belong to, and sets are the other sets in the
+// same organization (which may include s). If any of the following is true,
+// then ErrVariableConflict is returned:
+//
+// (a) v shares the same key and category with another v in s
+// (b) v shares the same key and category with another v in sets, iff both s and
+// the set containing the other v are both global.
+func checkConflicts(v *Variable, s *VariableSet, sets []*VariableSet) error {
+	if err := s.conflicts(v); err != nil {
+		return err
+	}
+	if !s.Global {
+		return nil
+	}
+	// check for conflicts with other global sets
+	for _, s2 := range sets {
+		if s2.ID == s.ID {
+			// skip same variable set
+			continue
+		}
+		if !s.Global {
+			continue
+		}
+		if err := s.conflicts(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
