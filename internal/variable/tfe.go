@@ -36,6 +36,12 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/varsets/{varset_id}", a.getVariableSet).Methods("GET")
 	r.HandleFunc("/varsets/{varset_id}", a.updateVariableSet).Methods("PATCH")
 	r.HandleFunc("/varsets/{varset_id}", a.deleteVariableSet).Methods("DELETE")
+
+	r.HandleFunc("varsets/%s/relationships/vars", a.addVariableToSet).Methods("POST")
+	r.HandleFunc("varsets/%s/relationships/vars/{variable_id}", a.updateVariableSetVariable).Methods("PATCH")
+	r.HandleFunc("varsets/%s/relationships/vars/{variable_id}", a.deleteVariableFromSet).Methods("DELETE")
+	r.HandleFunc("varsets/%s/relationships/workspaces", a.applySetToWorkspaces).Methods("POST")
+	r.HandleFunc("varsets/%s/relationships/workspaces", a.deleteSetFromWorkspaces).Methods("DELETE")
 }
 
 func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +55,7 @@ func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	wv, err := a.Service.createWorkspaceVariable(r.Context(), workspaceID, CreateVariableOptions{
+	wv, err := a.Service.CreateWorkspaceVariable(r.Context(), workspaceID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -70,7 +76,7 @@ func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variable, err := a.getWorkspaceVariable(r.Context(), variableID)
+	variable, err := a.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -85,7 +91,7 @@ func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variables, err := a.listWorkspaceVariables(r.Context(), workspaceID)
+	variables, err := a.ListWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -110,7 +116,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		variableError(w, err)
 		return
 	}
-	updated, err := a.updateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
+	updated, err := a.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -132,7 +138,7 @@ func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, err = a.deleteWorkspaceVariable(r.Context(), variableID)
+	_, err = a.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -230,6 +236,132 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.Service.deleteVariableSet(r.Context(), setID); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("varset_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var opts *types.VariableCreateOptions
+	if err := decode.All(&opts, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	err = a.Service.addVariableToSet(r.Context(), setID, CreateVariableOptions{
+		Key:         opts.Key,
+		Value:       opts.Value,
+		Description: opts.Description,
+		Category:    (*VariableCategory)(opts.Category),
+		Sensitive:   opts.Sensitive,
+		HCL:         opts.HCL,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+}
+
+func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var opts types.VariableUpdateOptions
+	if err := decode.All(&opts, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	_, err = a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
+		Key:         opts.Key,
+		Value:       opts.Value,
+		Description: opts.Description,
+		Category:    (*VariableCategory)(opts.Category),
+		Sensitive:   opts.Sensitive,
+		HCL:         opts.HCL,
+	})
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+}
+
+func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("varset_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var opts types.VariableCreateOptions
+	if err := decode.All(&opts, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	err = a.Service.deleteVariableFromSet(r.Context(), setID, variableID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+}
+
+func (a *tfe) applySetToWorkspaces(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("varset_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var params []*types.Workspace
+	if err := decode.All(&params, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	workspaceIDs := make([]string, len(params))
+	for i, ws := range params {
+		workspaceIDs[i] = ws.ID
+	}
+
+	err = a.Service.applySetToWorkspaces(r.Context(), setID, workspaceIDs)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("varset_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	var params []*types.Workspace
+	if err := decode.All(&params, r); err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	workspaceIDs := make([]string, len(params))
+	for i, ws := range params {
+		workspaceIDs[i] = ws.ID
+	}
+
+	err = a.Service.deleteSetFromWorkspaces(r.Context(), setID, workspaceIDs)
+	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

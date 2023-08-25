@@ -2,7 +2,6 @@ package variable
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -20,11 +19,13 @@ type (
 	VariableService = Service
 
 	Service interface {
-		createWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*WorkspaceVariable, error)
-		updateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error)
-		listWorkspaceVariables(ctx context.Context, workspaceID string) ([]*WorkspaceVariable, error)
-		getWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
-		deleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
+		ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
+
+		CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*WorkspaceVariable, error)
+		UpdateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error)
+		ListWorkspaceVariables(ctx context.Context, workspaceID string) ([]*WorkspaceVariable, error)
+		GetWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
+		DeleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error)
 
 		createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
 		updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error)
@@ -89,7 +90,22 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) createWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*WorkspaceVariable, error) {
+func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
+	workspaceVariables, err := s.ListWorkspaceVariables(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert from []*WorkspaceVariable to []*Variable
+	variables := make([]*Variable, len(workspaceVariables))
+	for i, v := range workspaceVariables {
+		variables[i] = v.Variable
+	}
+
+	return variables, nil
+}
+
+func (s *service) CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*WorkspaceVariable, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.CreateWorkspaceVariableAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -128,7 +144,7 @@ func (s *service) createWorkspaceVariable(ctx context.Context, workspaceID strin
 	return v, nil
 }
 
-func (s *service) updateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
+func (s *service) UpdateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error) {
 	var (
 		subject  internal.Subject
 		existing *WorkspaceVariable
@@ -174,7 +190,7 @@ func (s *service) updateWorkspaceVariable(ctx context.Context, variableID string
 	return &WorkspaceVariable{WorkspaceID: existing.WorkspaceID, Variable: &updated}, nil
 }
 
-func (s *service) listWorkspaceVariables(ctx context.Context, workspaceID string) ([]*WorkspaceVariable, error) {
+func (s *service) ListWorkspaceVariables(ctx context.Context, workspaceID string) ([]*WorkspaceVariable, error) {
 	subject, err := s.workspace.CanAccess(ctx, rbac.ListWorkspaceVariablesAction, workspaceID)
 	if err != nil {
 		return nil, err
@@ -191,7 +207,7 @@ func (s *service) listWorkspaceVariables(ctx context.Context, workspaceID string
 	return variables, nil
 }
 
-func (s *service) getWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error) {
+func (s *service) GetWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error) {
 	// get workspace variable first for authorization purposes
 	wv, err := s.db.getWorkspaceVariable(ctx, variableID)
 	if err != nil {
@@ -209,7 +225,7 @@ func (s *service) getWorkspaceVariable(ctx context.Context, variableID string) (
 	return wv, nil
 }
 
-func (s *service) deleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error) {
+func (s *service) DeleteWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error) {
 	// get workspace variable first for authorization purposes
 	wv, err := s.db.getWorkspaceVariable(ctx, variableID)
 	if err != nil {
@@ -444,15 +460,9 @@ func (s *service) updateVariableSetVariable(ctx context.Context, variableID stri
 }
 
 func (s *service) deleteVariableFromSet(ctx context.Context, setID, variableID string) error {
-	// retrieve set first in order to retrieve organization name for authorization
-	set, err := s.db.getVariableSet(ctx, setID)
+	set, v, err := s.db.getVariableSetByVariableID(ctx, variableID)
 	if err != nil {
 		return err
-	}
-	// confirm variable is part of the set
-	found, v := set.hasVariable(variableID)
-	if !found {
-		return fmt.Errorf("variable not found in set %s: %s", setID, variableID)
 	}
 
 	subject, err := s.organization.CanAccess(ctx, rbac.RemoveVariableFromSetAction, set.Organization)

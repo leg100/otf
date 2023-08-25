@@ -67,7 +67,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
-			fakeHTMLApp(t, v.Variable).update(w, r)
+			fakeHTMLApp(t, v).update(w, r)
 
 			if assert.Equal(t, 302, w.Code, "got body: %s", w.Body.String()) {
 				redirect, err := w.Result().Location()
@@ -79,11 +79,11 @@ func TestVariable_UpdateHandler(t *testing.T) {
 	}
 }
 
-func fakeHTMLApp(t *testing.T, variable *Variable) *web {
+func fakeHTMLApp(t *testing.T, wv *WorkspaceVariable) *web {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &web{
 		Renderer: renderer,
-		svc:      &fakeService{variable: variable},
+		svc:      &fakeService{wv: wv},
 	}
 }

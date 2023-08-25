@@ -311,13 +311,13 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 		ws = s.createWorkspace(t, ctx, nil)
 	}
 
-	v, err := s.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
+	v, err := s.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
 		Key:      internal.String("key-" + internal.GenerateRandomString(4)),
 		Value:    internal.String("val-" + internal.GenerateRandomString(4)),
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
-	return v
+	return v.Variable
 }
 
 func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *state.Version {

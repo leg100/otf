@@ -84,7 +84,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.createWorkspaceVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
+	variable, err := h.svc.CreateWorkspaceVariable(r.Context(), params.WorkspaceID, CreateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -108,7 +108,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variables, err := h.svc.listWorkspaceVariables(r.Context(), workspaceID)
+	variables, err := h.svc.ListWorkspaceVariables(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -153,7 +153,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.getWorkspaceVariable(r.Context(), variableID)
+	variable, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -184,7 +184,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.getWorkspaceVariable(r.Context(), variableID)
+	variable, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -209,7 +209,7 @@ func (h *web) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err = h.svc.updateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
+	variable, err = h.svc.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -233,7 +233,7 @@ func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *
 		return
 	}
 
-	variable, err = h.svc.updateWorkspaceVariable(r.Context(), variable.ID, UpdateVariableOptions{
+	variable, err = h.svc.UpdateWorkspaceVariable(r.Context(), variable.ID, UpdateVariableOptions{
 		Value: internal.String(value),
 	})
 	if err != nil {
@@ -252,7 +252,7 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.deleteWorkspaceVariable(r.Context(), variableID)
+	variable, err := h.svc.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
