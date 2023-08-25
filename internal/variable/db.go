@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 )
@@ -145,6 +146,10 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, setID string, fn func(*V
 		}
 		set = variableSetRow(row).convert()
 
+		// keep a record of workspaces before the update
+		workspacesBefore := make([]string, len(set.Workspaces))
+		copy(workspacesBefore, set.Workspaces)
+
 		// update variable set
 		if err := fn(set); err != nil {
 			return err
@@ -155,6 +160,17 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, setID string, fn func(*V
 			Description: sql.String(set.Description),
 			Global:      set.Global,
 		})
+
+		// add/remove workspaces from set
+		addWorkspaces := internal.DiffStrings(set.Workspaces, workspacesBefore)
+		if err := pdb.createVariableSetWorkspaces(ctx, setID, addWorkspaces); err != nil {
+			return err
+		}
+		removeWorkspaces := internal.DiffStrings(workspacesBefore, set.Workspaces)
+		if err := pdb.deleteVariableSetWorkspaces(ctx, setID, removeWorkspaces); err != nil {
+			return err
+		}
+
 		return err
 	})
 	return set, sql.Error(err)

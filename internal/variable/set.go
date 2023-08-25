@@ -45,6 +45,11 @@ func (s *VariableSet) update(opts UpdateVariableSetOptions) error {
 	}
 	if opts.Global != nil {
 		s.Global = *opts.Global
+
+		// if variable set is global remove all workspaces from set
+		if s.Global {
+			s.Workspaces = nil
+		}
 	}
 	return nil
 }

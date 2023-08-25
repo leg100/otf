@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -19,6 +20,12 @@ type (
 	VariableService = Service
 
 	Service interface {
+		// MergeVariables merges variables for a workspace according to the
+		// precedence rules documented here:
+		//
+		// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
+		MergeVariables(ctx context.Context, run *run.Run) ([]*Variable, error)
+
 		ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
 
 		CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*WorkspaceVariable, error)
@@ -88,6 +95,18 @@ func NewService(opts Options) *service {
 func (s *service) AddHandlers(r *mux.Router) {
 	s.web.addHandlers(r)
 	s.api.addHandlers(r)
+}
+
+func (s *service) MergeVariables(ctx context.Context, run *run.Run) ([]*Variable, error) {
+	sets, err := s.listVariableSets(ctx, run.Organization)
+	if err != nil {
+		return nil, err
+	}
+	workspaceVariables, err := s.ListWorkspaceVariables(ctx, run.WorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	return mergeVariables(run, workspaceVariables, sets), nil
 }
 
 func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {

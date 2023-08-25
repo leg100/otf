@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"log/slog"
+
+	"github.com/leg100/otf/internal/run"
+	"golang.org/x/exp/maps"
 )
 
 // VariableCategory is the category of variable
@@ -166,4 +170,44 @@ func WriteTerraformVars(dir string, vars []*Variable) error {
 	f.WriteString(b.String())
 
 	return nil
+}
+
+// mergeVariables merges variables for a run according to the precedence rules
+// documented here:
+//
+// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
+func mergeVariables(run *run.Run, workspaceVariables []*WorkspaceVariable, sets []*VariableSet) []*Variable {
+	// map of merged variables keyed by variable key
+	merged := make(map[string]*Variable)
+
+	// sets have lowest precedence
+	for _, s := range sets {
+		if s.Global {
+			for _, v := range s.Variables {
+				// global sets have the very lowest precedence, so only set if
+				// not set already
+				if _, ok := merged[v.Key]; !ok {
+					merged[v.Key] = v
+				}
+			}
+		}
+		if slices.Contains(s.Workspaces, run.WorkspaceID) {
+			for _, v := range s.Variables {
+				merged[v.Key] = v
+			}
+		}
+	}
+
+	// workspace variables have higher precedence than sets, so override
+	// anything from sets
+	for _, v := range workspaceVariables {
+		merged[v.Key] = v.Variable
+	}
+
+	// run variables have highest precedence
+	for _, v := range run.Variables {
+		merged[v.Key] = &Variable{Key: v.Key, Value: v.Value, Category: CategoryTerraform, HCL: true}
+	}
+
+	return maps.Values(merged)
 }
