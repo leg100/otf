@@ -290,31 +290,31 @@ func (s *service) createVariableSet(ctx context.Context, organization string, op
 
 func (s *service) updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error) {
 	var (
-		subject  internal.Subject
-		existing *VariableSet
-		updated  VariableSet
+		subject internal.Subject
+		before  VariableSet
+		after   *VariableSet
 	)
 	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
-		_, err = s.db.updateVariableSet(ctx, setID, func(existing *VariableSet) error {
-			subject, err = s.workspace.CanAccess(ctx, rbac.UpdateVariableSetAction, existing.Organization)
+		after, err = s.db.updateVariableSet(ctx, setID, func(existing *VariableSet) error {
+			subject, err = s.organization.CanAccess(ctx, rbac.UpdateVariableSetAction, existing.Organization)
 			if err != nil {
 				return err
 			}
 
-			updated = *existing
-			if err := updated.update(opts); err != nil {
+			before = *existing
+			if err := existing.update(opts); err != nil {
 				return err
 			}
 
 			// if set has been promoted to global then we need to check for
 			// conflicts
-			if !existing.Global && updated.Global {
-				sets, err := s.db.listVariableSets(ctx, updated.Organization)
+			if !existing.Global && existing.Global {
+				sets, err := s.db.listVariableSets(ctx, existing.Organization)
 				if err != nil {
 					return err
 				}
-				for _, v := range updated.Variables {
-					if err := checkConflicts(v, &updated, sets); err != nil {
+				for _, v := range existing.Variables {
+					if err := checkConflicts(v, existing, sets); err != nil {
 						return err
 					}
 				}
@@ -327,9 +327,9 @@ func (s *service) updateVariableSet(ctx context.Context, setID string, opts Upda
 		s.Error(err, "updating variable set", "subject", subject, "set_id", setID)
 		return nil, err
 	}
-	s.V(1).Info("updated variable set", "subject", subject, "before", existing, "after", updated)
+	s.V(1).Info("updated variable set", "subject", subject, "before", &before, "after", after)
 
-	return &updated, nil
+	return after, nil
 }
 
 func (s *service) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {

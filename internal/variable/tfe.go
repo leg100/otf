@@ -189,7 +189,7 @@ func (a *tfe) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	a.Respond(w, r, set, http.StatusOK)
+	a.Respond(w, r, a.convertVariableSet(set), http.StatusOK)
 }
 
 func (a *tfe) listVariableSets(w http.ResponseWriter, r *http.Request) {
@@ -411,12 +411,18 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 		},
 	}
 	to.Variables = make([]*types.VariableSetVariable, len(from.Variables))
-	for i, from := range from.Variables {
+	for i, v := range from.Variables {
 		to.Variables[i] = &types.VariableSetVariable{
-			Variable: a.convertVariable(from),
+			Variable: a.convertVariable(v),
 			VariableSet: &types.VariableSet{
-				ID: from.ID,
+				ID: v.ID,
 			},
+		}
+	}
+	to.Workspaces = make([]*types.Workspace, len(from.Workspaces))
+	for i, workspaceID := range from.Workspaces {
+		to.Workspaces[i] = &types.Workspace{
+			ID: workspaceID,
 		}
 	}
 	return to

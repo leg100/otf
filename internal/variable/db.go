@@ -156,10 +156,14 @@ func (pdb *pgdb) updateVariableSet(ctx context.Context, setID string, fn func(*V
 		}
 		// persist updated variable set
 		_, err = q.UpdateVariableSetByID(ctx, pggen.UpdateVariableSetByIDParams{
-			Name:        sql.String(set.Name),
-			Description: sql.String(set.Description),
-			Global:      set.Global,
+			Name:          sql.String(set.Name),
+			Description:   sql.String(set.Description),
+			Global:        set.Global,
+			VariableSetID: sql.String(setID),
 		})
+		if err != nil {
+			return err
+		}
 
 		// add/remove workspaces from set
 		addWorkspaces := internal.DiffStrings(set.Workspaces, workspacesBefore)

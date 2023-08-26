@@ -75,6 +75,13 @@ tests+=('TestConfigurationVersionsCreate')
 tests+=('TestConfigurationVersionsUpload')
 tests+=('TestConfigurationVersionsDownload')
 tests+=('TestVariables')
+tests+=('TestVariableSetsCreate')
+tests+=('TestVariableSetsUpdate$')
+tests+=('TestVariableSetsList$')
+tests+=('TestVariableSetsListForWorkspace')
+tests+=('TestVariableSetsRead')
+tests+=('TestVariableSetsApplyToAndRemoveFromWorkspaces')
+tests+=('TestVariableSetsDelete')
 tests+=('TestStateVersion')
 
 # only run these tests if env vars are present - otherwise the tests fail early
