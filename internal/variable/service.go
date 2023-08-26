@@ -39,7 +39,7 @@ type (
 		listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
 		listWorkspaceVariableSets(ctx context.Context, workspaceID string) ([]*VariableSet, error)
 		getVariableSet(ctx context.Context, setID string) (*VariableSet, error)
-		deleteVariableSet(ctx context.Context, setID string) error
+		deleteVariableSet(ctx context.Context, setID string) (*VariableSet, error)
 
 		addVariableToSet(ctx context.Context, setID string, opts CreateVariableOptions) error
 		updateVariableSetVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*Variable, error)
@@ -382,25 +382,25 @@ func (s *service) getVariableSet(ctx context.Context, setID string) (*VariableSe
 	return set, nil
 }
 
-func (s *service) deleteVariableSet(ctx context.Context, setID string) error {
+func (s *service) deleteVariableSet(ctx context.Context, setID string) (*VariableSet, error) {
 	// retrieve existing set in order to retrieve organization for authorization
 	existing, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	subject, err := s.organization.CanAccess(ctx, rbac.DeleteVariableSetAction, existing.Organization)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := s.db.deleteVariableSet(ctx, setID); err != nil {
 		s.Error(err, "deleting variable set", "subject", subject, "set", existing)
-		return err
+		return nil, err
 	}
 	s.V(1).Info("deleted variable set", "subject", subject, "set", existing)
 
-	return nil
+	return existing, nil
 }
 
 func (s *service) addVariableToSet(ctx context.Context, setID string, opts CreateVariableOptions) error {

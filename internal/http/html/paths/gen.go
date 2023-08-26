@@ -225,6 +225,10 @@ var specs = []controllerSpec{
 				controllerType: resourcePath,
 			},
 			{
+				Name:           "variable_set",
+				controllerType: resourcePath,
+			},
+			{
 				Name:               "organization_token",
 				controllerType:     resourcePath,
 				skipDefaultActions: true,

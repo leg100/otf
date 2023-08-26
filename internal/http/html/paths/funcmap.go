@@ -85,6 +85,14 @@ func init() {
 	funcmap["updateAgentTokenPath"] = UpdateAgentToken
 	funcmap["deleteAgentTokenPath"] = DeleteAgentToken
 
+	funcmap["variableSetsPath"] = VariableSets
+	funcmap["createVariableSetPath"] = CreateVariableSet
+	funcmap["newVariableSetPath"] = NewVariableSet
+	funcmap["variableSetPath"] = VariableSet
+	funcmap["editVariableSetPath"] = EditVariableSet
+	funcmap["updateVariableSetPath"] = UpdateVariableSet
+	funcmap["deleteVariableSetPath"] = DeleteVariableSet
+
 	funcmap["organizationTokenPath"] = OrganizationToken
 	funcmap["createOrganizationTokenPath"] = CreateOrganizationToken
 	funcmap["deleteOrganizationTokenPath"] = DeleteOrganizationToken

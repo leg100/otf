@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -29,6 +30,13 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/variables/{variable_id}/edit", h.edit)
 	r.HandleFunc("/variables/{variable_id}/update", h.update)
 	r.HandleFunc("/variables/{variable_id}/delete", h.delete)
+
+	r.HandleFunc("/organizations/{organization_name}/variable-sets", h.listVariableSets)
+	r.HandleFunc("/organizations/{organization_name}/variable-sets/new", h.newVariableSet)
+	r.HandleFunc("/organizations/{organization_name}/variable-sets/create", h.createVariableSet)
+	r.HandleFunc("/variable-sets/{variable_set_id}/edit", h.editVariableSet)
+	r.HandleFunc("/variable-sets/{variable_set_id}/update", h.updateVariableSet)
+	r.HandleFunc("/variable-sets/{variable_set_id}/delete", h.deleteVariableSet)
 }
 
 func (h *web) new(w http.ResponseWriter, r *http.Request) {
@@ -260,4 +268,142 @@ func (h *web) delete(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "deleted variable: "+variable.Key)
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
+}
+
+func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	sets, err := h.svc.listVariableSets(r.Context(), org)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("variable_set_list.tmpl", w, struct {
+		organization.OrganizationPage
+		VariableSets []*VariableSet
+	}{
+		OrganizationPage: organization.NewPage(r, "variable sets", org),
+		VariableSets:     sets,
+	})
+}
+
+func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	h.Render("variable_set_new.tmpl", w, struct {
+		organization.OrganizationPage
+		VariableSet *VariableSet
+		EditMode    bool
+		FormAction  string
+		CanAccess   bool
+	}{
+		OrganizationPage: organization.NewPage(r, "variable sets", org),
+		VariableSet:      &VariableSet{},
+		EditMode:         false,
+		FormAction:       paths.CreateVariableSet(org),
+	})
+}
+
+func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Name         *string `schema:"name,required"`
+		Description  string
+		Global       bool
+		Organization string `schema:"organization_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, err := h.svc.createVariableSet(r.Context(), params.Organization, CreateVariableSetOptions{
+		Name:        *params.Name,
+		Description: params.Description,
+		Global:      params.Global,
+	})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "added variable set: "+set.Name)
+	http.Redirect(w, r, paths.VariableSet(set.ID), http.StatusFound)
+}
+
+func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("variable_set_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, err := h.svc.getVariableSet(r.Context(), setID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("variable_set_edit.tmpl", w, struct {
+		organization.OrganizationPage
+		VariableSet *VariableSet
+		EditMode    bool
+		FormAction  string
+	}{
+		OrganizationPage: organization.NewPage(r, "edit | "+set.ID, set.Organization),
+		VariableSet:      set,
+		EditMode:         true,
+		FormAction:       paths.UpdateVariableSet(set.ID),
+	})
+}
+
+func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		SetID       string `schema:"variable_set_id,required"`
+		Name        *string
+		Description *string
+		Global      *bool
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, err := h.svc.updateVariableSet(r.Context(), params.SetID, UpdateVariableSetOptions{
+		Name:        params.Name,
+		Description: params.Description,
+		Global:      params.Global,
+	})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "updated variable set: "+set.Name)
+	http.Redirect(w, r, paths.VariableSet(set.ID), http.StatusFound)
+}
+
+func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("variable_set_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, err := h.svc.deleteVariableSet(r.Context(), setID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "deleted variable set: "+set.Name)
+	http.Redirect(w, r, paths.VariableSets(set.Organization), http.StatusFound)
 }

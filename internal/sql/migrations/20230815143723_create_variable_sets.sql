@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS variable_sets (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     organization_name TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    PRIMARY KEY (variable_set_id)
+    PRIMARY KEY (variable_set_id),
+    UNIQUE (name)
 );
 
 CREATE TABLE IF NOT EXISTS variable_set_variables (

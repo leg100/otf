@@ -257,7 +257,7 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Service.deleteVariableSet(r.Context(), setID); err != nil {
+	if _, err := a.Service.deleteVariableSet(r.Context(), setID); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}

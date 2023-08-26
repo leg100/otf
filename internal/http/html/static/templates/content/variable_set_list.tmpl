@@ -1,0 +1,20 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}variable sets{{ end }}
+
+{{ define "content" }}
+  <div id="content-list" class="content-list">
+    {{ range .VariableSets }}
+      {{ block "content-list-item" . }}{{ end }}
+    {{ else }}
+      No variable sets currently exist.
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div id="item-variable-set-{{ .ID }}" class="widget">
+    <span id="name">{{ .Name }}</span>
+    {{ template "identifier" . }}
+  </div>
+{{ end }}
