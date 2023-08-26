@@ -177,23 +177,51 @@ func WriteTerraformVars(dir string, vars []*Variable) error {
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
 func mergeVariables(run *run.Run, workspaceVariables []*WorkspaceVariable, sets []*VariableSet) []*Variable {
-	// map of merged variables keyed by variable key
-	merged := make(map[string]*Variable)
+	// terraform variables keyed by variable key
+	tfVars := make(map[string]*Variable)
+	// environment variables keyed by variable key
+	envVars := make(map[string]*Variable)
 
-	// sets have lowest precedence
+	// global sets have lowest precedence
 	for _, s := range sets {
 		if s.Global {
 			for _, v := range s.Variables {
-				// global sets have the very lowest precedence, so only set if
-				// not set already
-				if _, ok := merged[v.Key]; !ok {
-					merged[v.Key] = v
+				switch v.Category {
+				case CategoryTerraform:
+					tfVars[v.Key] = v
+				case CategoryEnv:
+					envVars[v.Key] = v
 				}
 			}
 		}
+	}
+
+	// workspace-scoped sets have next lowest precedence; lexical order of the
+	// set name determines precedence if a variable with the same key is found
+	// in more than one set, e.g. variable foo in set named A takes precedence
+	// over variable foo in set named B.
+	//
+	// sort sets by lexical order, A->Z
+	slices.SortFunc(sets, func(a, b *VariableSet) int {
+		if a.Name < b.Name {
+			return -1
+		} else if a.Name > b.Name {
+			return 1
+		} else {
+			return 0
+		}
+	})
+	// reverse order sets (Z->A), so that sets later in the slice take precedence.
+	slices.Reverse(sets)
+	for _, s := range sets {
 		if slices.Contains(s.Workspaces, run.WorkspaceID) {
 			for _, v := range s.Variables {
-				merged[v.Key] = v
+				switch v.Category {
+				case CategoryTerraform:
+					tfVars[v.Key] = v
+				case CategoryEnv:
+					envVars[v.Key] = v
+				}
 			}
 		}
 	}
@@ -201,13 +229,18 @@ func mergeVariables(run *run.Run, workspaceVariables []*WorkspaceVariable, sets 
 	// workspace variables have higher precedence than sets, so override
 	// anything from sets
 	for _, v := range workspaceVariables {
-		merged[v.Key] = v.Variable
+		switch v.Category {
+		case CategoryTerraform:
+			tfVars[v.Key] = v.Variable
+		case CategoryEnv:
+			envVars[v.Key] = v.Variable
+		}
 	}
 
 	// run variables have highest precedence
 	for _, v := range run.Variables {
-		merged[v.Key] = &Variable{Key: v.Key, Value: v.Value, Category: CategoryTerraform, HCL: true}
+		tfVars[v.Key] = &Variable{Key: v.Key, Value: v.Value, Category: CategoryTerraform, HCL: true}
 	}
 
-	return maps.Values(merged)
+	return append(maps.Values(tfVars), maps.Values(envVars)...)
 }

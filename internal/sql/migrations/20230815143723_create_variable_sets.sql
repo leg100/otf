@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS variable_sets (
     global BOOL NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    organization_name TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    organization_name TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (variable_set_id)
 );
 

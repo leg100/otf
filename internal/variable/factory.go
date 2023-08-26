@@ -79,10 +79,11 @@ func (f *factory) newWorkspaceVariable(workspaceID string, opts CreateVariableOp
 
 func (f *factory) newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
 	set := VariableSet{
-		ID:          internal.NewID("varset"),
-		Name:        opts.Name,
-		Description: opts.Description,
-		Global:      opts.Global,
+		ID:           internal.NewID("varset"),
+		Name:         opts.Name,
+		Description:  opts.Description,
+		Global:       opts.Global,
+		Organization: organization,
 	}
 	return &set, nil
 }

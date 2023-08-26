@@ -141,6 +141,91 @@ func (q *DBQuerier) FindVariableSetsByOrganizationScan(results pgx.BatchResults)
 	return items, err
 }
 
+const findVariableSetsByWorkspaceSQL = `SELECT
+    vs.*,
+    (
+        SELECT array_agg(v.*) AS variables
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+        GROUP BY variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id) AS workspace_ids
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+        GROUP BY variable_set_id
+    ) AS workspace_ids
+FROM variable_sets vs
+JOIN variable_set_workspaces vsw USING (variable_set_id)
+WHERE workspace_id = $1;`
+
+type FindVariableSetsByWorkspaceRow struct {
+	VariableSetID    pgtype.Text `json:"variable_set_id"`
+	Global           bool        `json:"global"`
+	Name             pgtype.Text `json:"name"`
+	Description      pgtype.Text `json:"description"`
+	OrganizationName pgtype.Text `json:"organization_name"`
+	Variables        []Variables `json:"variables"`
+	WorkspaceIds     []string    `json:"workspace_ids"`
+}
+
+// FindVariableSetsByWorkspace implements Querier.FindVariableSetsByWorkspace.
+func (q *DBQuerier) FindVariableSetsByWorkspace(ctx context.Context, workspaceID pgtype.Text) ([]FindVariableSetsByWorkspaceRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindVariableSetsByWorkspace")
+	rows, err := q.conn.Query(ctx, findVariableSetsByWorkspaceSQL, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindVariableSetsByWorkspace: %w", err)
+	}
+	defer rows.Close()
+	items := []FindVariableSetsByWorkspaceRow{}
+	variablesArray := q.types.newVariablesArray()
+	for rows.Next() {
+		var item FindVariableSetsByWorkspaceRow
+		if err := rows.Scan(&item.VariableSetID, &item.Global, &item.Name, &item.Description, &item.OrganizationName, variablesArray, &item.WorkspaceIds); err != nil {
+			return nil, fmt.Errorf("scan FindVariableSetsByWorkspace row: %w", err)
+		}
+		if err := variablesArray.AssignTo(&item.Variables); err != nil {
+			return nil, fmt.Errorf("assign FindVariableSetsByWorkspace row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindVariableSetsByWorkspace rows: %w", err)
+	}
+	return items, err
+}
+
+// FindVariableSetsByWorkspaceBatch implements Querier.FindVariableSetsByWorkspaceBatch.
+func (q *DBQuerier) FindVariableSetsByWorkspaceBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findVariableSetsByWorkspaceSQL, workspaceID)
+}
+
+// FindVariableSetsByWorkspaceScan implements Querier.FindVariableSetsByWorkspaceScan.
+func (q *DBQuerier) FindVariableSetsByWorkspaceScan(results pgx.BatchResults) ([]FindVariableSetsByWorkspaceRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindVariableSetsByWorkspaceBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindVariableSetsByWorkspaceRow{}
+	variablesArray := q.types.newVariablesArray()
+	for rows.Next() {
+		var item FindVariableSetsByWorkspaceRow
+		if err := rows.Scan(&item.VariableSetID, &item.Global, &item.Name, &item.Description, &item.OrganizationName, variablesArray, &item.WorkspaceIds); err != nil {
+			return nil, fmt.Errorf("scan FindVariableSetsByWorkspaceBatch row: %w", err)
+		}
+		if err := variablesArray.AssignTo(&item.Variables); err != nil {
+			return nil, fmt.Errorf("assign FindVariableSetsByWorkspace row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindVariableSetsByWorkspaceBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findVariableSetByIDSQL = `SELECT
     *,
     (

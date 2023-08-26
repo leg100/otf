@@ -209,8 +209,21 @@ func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*
 	return sets, nil
 }
 
+func (pdb *pgdb) listVariableSetsByWorkspace(ctx context.Context, workspaceID string) ([]*VariableSet, error) {
+	rows, err := pdb.Conn(ctx).FindVariableSetsByWorkspace(ctx, sql.String(workspaceID))
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+
+	var sets []*VariableSet
+	for _, row := range rows {
+		sets = append(sets, variableSetRow(row).convert())
+	}
+	return sets, nil
+}
+
 func (pdb *pgdb) deleteVariableSet(ctx context.Context, setID string) error {
-	_, err := pdb.Conn(ctx).DeleteVariableByID(ctx, sql.String(setID))
+	_, err := pdb.Conn(ctx).DeleteVariableSetByID(ctx, sql.String(setID))
 	if err != nil {
 		return sql.Error(err)
 	}

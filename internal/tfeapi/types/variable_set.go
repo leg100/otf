@@ -36,13 +36,13 @@ type VariableSetCreateOptions struct {
 	// The name of the variable set.
 	// Affects variable precedence when there are conflicts between Variable Sets
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets#apply-variable-set-to-workspaces
-	Name string `jsonapi:"attr,name"`
+	Name string `jsonapi:"attribute" json:"name"`
 
 	// A description to provide context for the variable set.
-	Description string `jsonapi:"attr,description,omitempty"`
+	Description string `jsonapi:"attribute" json:"description,omitempty"`
 
 	// If true the variable set is considered in all runs in the organization.
-	Global bool `jsonapi:"attr,global,omitempty"`
+	Global bool `jsonapi:"attribute" json:"global,omitempty"`
 }
 
 // VariableSetUpdateOptions represents the options for updating a variable set.
@@ -56,13 +56,13 @@ type VariableSetUpdateOptions struct {
 	// The name of the variable set.
 	// Affects variable precedence when there are conflicts between Variable Sets
 	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/variable-sets#apply-variable-set-to-workspaces
-	Name *string `jsonapi:"attr,name,omitempty"`
+	Name *string `jsonapi:"attribute" json:"name,omitempty"`
 
 	// A description to provide context for the variable set.
-	Description *string `jsonapi:"attr,description,omitempty"`
+	Description *string `jsonapi:"attribute" json:"description,omitempty"`
 
 	// If true the variable set is considered in all runs in the organization.
-	Global *bool `jsonapi:"attr,global,omitempty"`
+	Global *bool `jsonapi:"attribute" json:"global,omitempty"`
 }
 
 // VariableSetVariableCreatOptions represents the options for creating a new variable within a variable set

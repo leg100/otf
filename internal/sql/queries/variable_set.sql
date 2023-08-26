@@ -32,6 +32,26 @@ SELECT
 FROM variable_sets vs
 WHERE organization_name = pggen.arg('organization_name');
 
+-- name: FindVariableSetsByWorkspace :many
+SELECT
+    vs.*,
+    (
+        SELECT array_agg(v.*) AS variables
+        FROM variables v
+        JOIN variable_set_variables vsv USING (variable_id)
+        WHERE vsv.variable_set_id = vs.variable_set_id
+        GROUP BY variable_set_id
+    ) AS variables,
+    (
+        SELECT array_agg(vsw.workspace_id) AS workspace_ids
+        FROM variable_set_workspaces vsw
+        WHERE vsw.variable_set_id = vs.variable_set_id
+        GROUP BY variable_set_id
+    ) AS workspace_ids
+FROM variable_sets vs
+JOIN variable_set_workspaces vsw USING (variable_set_id)
+WHERE workspace_id = pggen.arg('workspace_id');
+
 -- name: FindVariableSetByID :one
 SELECT
     *,

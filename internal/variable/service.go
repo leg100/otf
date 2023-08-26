@@ -37,6 +37,7 @@ type (
 		createVariableSet(ctx context.Context, organization string, opts CreateVariableSetOptions) (*VariableSet, error)
 		updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error)
 		listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error)
+		listWorkspaceVariableSets(ctx context.Context, workspaceID string) ([]*VariableSet, error)
 		getVariableSet(ctx context.Context, setID string) (*VariableSet, error)
 		deleteVariableSet(ctx context.Context, setID string) error
 
@@ -271,20 +272,20 @@ func (s *service) createVariableSet(ctx context.Context, organization string, op
 		return nil, err
 	}
 
-	v, err := s.newSet(organization, opts)
+	set, err := s.newSet(organization, opts)
 	if err != nil {
 		s.Error(err, "constructing variable set", "subject", subject, "organization", organization)
 		return nil, err
 	}
 
-	if err := s.db.createVariableSet(ctx, v); err != nil {
-		s.Error(err, "creating variable set", "subject", subject, "organization", organization)
+	if err := s.db.createVariableSet(ctx, set); err != nil {
+		s.Error(err, "creating variable set", "subject", subject, "set", set)
 		return nil, err
 	}
 
-	s.V(1).Info("created variable set", "subject", subject, "organization", organization)
+	s.V(1).Info("created variable set", "subject", subject, "set", set)
 
-	return v, nil
+	return set, nil
 }
 
 func (s *service) updateVariableSet(ctx context.Context, setID string, opts UpdateVariableSetOptions) (*VariableSet, error) {
@@ -343,6 +344,22 @@ func (s *service) listVariableSets(ctx context.Context, organization string) ([]
 		return nil, err
 	}
 	s.V(9).Info("listed variable sets", "subject", subject, "organization", organization, "count", len(sets))
+
+	return sets, nil
+}
+
+func (s *service) listWorkspaceVariableSets(ctx context.Context, workspaceID string) ([]*VariableSet, error) {
+	subject, err := s.workspace.CanAccess(ctx, rbac.ListVariableSetsAction, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	sets, err := s.db.listVariableSetsByWorkspace(ctx, workspaceID)
+	if err != nil {
+		s.Error(err, "listing variable sets", "subject", subject, "workspace_id", workspaceID)
+		return nil, err
+	}
+	s.V(9).Info("listed variable sets", "subject", subject, "workspace_id", workspaceID, "count", len(sets))
 
 	return sets, nil
 }
@@ -511,7 +528,7 @@ func (s *service) applySetToWorkspaces(ctx context.Context, setID string, worksp
 	}
 
 	if err := s.db.createVariableSetWorkspaces(ctx, setID, workspaceIDs); err != nil {
-		s.Error(err, "apply variable set to workspaces", "subject", subject, "set", set, "workspaces", workspaceIDs)
+		s.Error(err, "applying variable set to workspaces", "subject", subject, "set", set, "workspaces", workspaceIDs)
 		return err
 	}
 	s.V(1).Info("applied variable set to workspaces", "subject", subject, "set", set, "workspaces", workspaceIDs)

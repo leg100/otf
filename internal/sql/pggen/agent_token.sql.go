@@ -923,6 +923,13 @@ type Querier interface {
 	// FindVariableSetsByOrganizationScan scans the result of an executed FindVariableSetsByOrganizationBatch query.
 	FindVariableSetsByOrganizationScan(results pgx.BatchResults) ([]FindVariableSetsByOrganizationRow, error)
 
+	FindVariableSetsByWorkspace(ctx context.Context, workspaceID pgtype.Text) ([]FindVariableSetsByWorkspaceRow, error)
+	// FindVariableSetsByWorkspaceBatch enqueues a FindVariableSetsByWorkspace query into batch to be executed
+	// later by the batch.
+	FindVariableSetsByWorkspaceBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindVariableSetsByWorkspaceScan scans the result of an executed FindVariableSetsByWorkspaceBatch query.
+	FindVariableSetsByWorkspaceScan(results pgx.BatchResults) ([]FindVariableSetsByWorkspaceRow, error)
+
 	FindVariableSetByID(ctx context.Context, variableSetID pgtype.Text) (FindVariableSetByIDRow, error)
 	// FindVariableSetByIDBatch enqueues a FindVariableSetByID query into batch to be executed
 	// later by the batch.
@@ -1683,6 +1690,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findVariableSetsByOrganizationSQL, findVariableSetsByOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableSetsByOrganization': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVariableSetsByWorkspaceSQL, findVariableSetsByWorkspaceSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVariableSetsByWorkspace': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findVariableSetByIDSQL, findVariableSetByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableSetByID': %w", err)
