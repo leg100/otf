@@ -2,6 +2,16 @@
 
 {{ define "content-header-title" }}variable sets{{ end }}
 
+{{ define "content-header-actions" }}
+  {{ if .CanCreate }}
+    <form action="{{ newVariableSetPath .Organization }}" method="GET">
+      <button class="btn" id="new-variable-set-button">
+        New Variable Set
+      </button>
+    </form>
+  {{ end }}
+{{ end }}
+
 {{ define "content" }}
   <div id="content-list" class="content-list">
     {{ range .VariableSets }}

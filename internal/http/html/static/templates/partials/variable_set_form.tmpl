@@ -1,0 +1,45 @@
+{{ define "variable-set-form" }}
+  <form class="flex flex-col gap-5" action="{{ .FormAction }}" method="POST">
+    {{ with .VariableSet }}
+      <div class="field">
+        <label class="font-semibold" for="name">Name</label>
+        <input class="text-input" type="text" name="name" id="name" value="{{ .Name }}" required placeholder="name">
+      </div>
+      <div class="field">
+        <label class="font-semibold" for="description">Description</label>
+        <textarea class="text-input" type="text" name="description" id="description">{{ .Description }}</textarea>
+      </div>
+      <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+        <legend>Scope</legend>
+        <div class="form-checkbox">
+          <input type="radio" name="global" id="global" value="global" {{ checked .Global }} required>
+          <label for="global">Global</label>
+          <span>All current and future workspaces in this organization will access this variable set.</span>
+        </div>
+        <div class="form-checkbox">
+          <input class="peer" type="radio" name="global" id="workspace-scoped" {{ checked (not .Global) }} required>
+          <label for="workspaces">Apply to specific workspaces</label>
+          <span>Only the selected workspaces will access this variable set.</span>
+          <script src="{{ addHash "/static/js/variable_set_workspaces.js" }}"></script>
+          <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="variable_set_workspaces([], {{ toJson $.AvailableWorkspaces }})">
+            <input type="hidden" id="workspaces" name="workspaces" :value="JSON.stringify(existing)">
+            <div class="flex gap-2 items-center">
+              <input @keydown.enter.prevent="addPattern" class="text-input grow" x-model="newPath" placeholder="e.g. /modules" type="text" id="new_path">
+              <template x-for="workspace in existing">
+                <div class="flex gap-2 items-center justify-end">
+                  <span class="justify-end bg-gray-200 px-2" x-text="workspace.Name" :id="$id('trigger-pattern')"></span>
+                  <button @click="deletePattern(workspace)" type="button" class="btn-danger w-40" :id="$id('delete-pattern')">Delete</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <div>
+        <button class="btn" id="save-variable-set-button">
+          Save variable set
+        </button>
+      </div>
+    {{ end }}
+  </form>
+{{ end }}

@@ -1,0 +1,11 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}
+  <a href="{{ variableSetsPath .Organization }}">variable sets</a> / new
+{{ end }}
+
+{{ define "content" }}
+  <span class="text-xl">Add a new variable set.</span>
+
+  {{ template "variable-set-form" . }}
+{{ end }}

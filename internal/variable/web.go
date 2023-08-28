@@ -11,25 +11,32 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 )
 
-type web struct {
-	html.Renderer
-	workspace.Service
+type (
+	web struct {
+		html.Renderer
+		workspace.Service
 
-	svc Service
-}
+		svc Service
+	}
+	workspaceInfo struct {
+		ID   string
+		Name string
+	}
+)
 
 func (h *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/workspaces/{workspace_id}/variables", h.list)
-	r.HandleFunc("/workspaces/{workspace_id}/variables/new", h.new)
-	r.HandleFunc("/workspaces/{workspace_id}/variables/create", h.create)
-	r.HandleFunc("/variables/{variable_id}/edit", h.edit)
-	r.HandleFunc("/variables/{variable_id}/update", h.update)
-	r.HandleFunc("/variables/{variable_id}/delete", h.delete)
+	r.HandleFunc("/workspaces/{workspace_id}/variables", h.listWorkspaceVariables)
+	r.HandleFunc("/workspaces/{workspace_id}/variables/new", h.newWorkspaceVariable)
+	r.HandleFunc("/workspaces/{workspace_id}/variables/create", h.createWorkspaceVariable)
+	r.HandleFunc("/variables/{variable_id}/edit", h.editWorkspaceVariable)
+	r.HandleFunc("/variables/{variable_id}/update", h.updateWorkspaceVariable)
+	r.HandleFunc("/variables/{variable_id}/delete", h.deleteWorkspaceVariable)
 
 	r.HandleFunc("/organizations/{organization_name}/variable-sets", h.listVariableSets)
 	r.HandleFunc("/organizations/{organization_name}/variable-sets/new", h.newVariableSet)
@@ -39,7 +46,7 @@ func (h *web) addHandlers(r *mux.Router) {
 	r.HandleFunc("/variable-sets/{variable_set_id}/delete", h.deleteVariableSet)
 }
 
-func (h *web) new(w http.ResponseWriter, r *http.Request) {
+func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -77,7 +84,7 @@ func (h *web) new(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) create(w http.ResponseWriter, r *http.Request) {
+func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Key         *string `schema:"key,required"`
 		Value       *string
@@ -109,7 +116,7 @@ func (h *web) create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, paths.Variables(params.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) list(w http.ResponseWriter, r *http.Request) {
+func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -154,7 +161,7 @@ func (h *web) list(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) edit(w http.ResponseWriter, r *http.Request) {
+func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -185,7 +192,7 @@ func (h *web) edit(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *web) update(w http.ResponseWriter, r *http.Request) {
+func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -253,7 +260,7 @@ func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *
 	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
 }
 
-func (h *web) delete(w http.ResponseWriter, r *http.Request) {
+func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -283,12 +290,20 @@ func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	h.Render("variable_set_list.tmpl", w, struct {
 		organization.OrganizationPage
 		VariableSets []*VariableSet
+		CanCreate    bool
 	}{
 		OrganizationPage: organization.NewPage(r, "variable sets", org),
 		VariableSets:     sets,
+		CanCreate:        user.CanAccessOrganization(rbac.CreateVariableSetAction, org),
 	})
 }
 
@@ -299,17 +314,37 @@ func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// retrieve names of all workspaces in org to show in dropdown widget
+	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
+		return h.Service.ListWorkspaces(r.Context(), workspace.ListOptions{
+			Organization: &org,
+			PageOptions:  opts,
+		})
+	})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	availableWorkspaces := make([]workspaceInfo, len(workspaces))
+	for i, ws := range workspaces {
+		availableWorkspaces[i] = workspaceInfo{
+			ID:   ws.ID,
+			Name: ws.Name,
+		}
+	}
+
 	h.Render("variable_set_new.tmpl", w, struct {
 		organization.OrganizationPage
-		VariableSet *VariableSet
-		EditMode    bool
-		FormAction  string
-		CanAccess   bool
+		VariableSet         *VariableSet
+		EditMode            bool
+		FormAction          string
+		AvailableWorkspaces []workspaceInfo
 	}{
-		OrganizationPage: organization.NewPage(r, "variable sets", org),
-		VariableSet:      &VariableSet{},
-		EditMode:         false,
-		FormAction:       paths.CreateVariableSet(org),
+		OrganizationPage:    organization.NewPage(r, "variable sets", org),
+		VariableSet:         &VariableSet{},
+		EditMode:            false,
+		FormAction:          paths.CreateVariableSet(org),
+		AvailableWorkspaces: availableWorkspaces,
 	})
 }
 

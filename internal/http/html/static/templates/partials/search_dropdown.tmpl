@@ -11,7 +11,7 @@
       x-id="['dropdown-button']"
       class="relative"
       >
-    <input type="hidden" name="{{ .Name }}" :value="search" form="search-dropdown">
+    <input type="hidden" name="{{ .Name }}" :value="existing" form="search-dropdown">
     <input
         @focusin="open = true"
         x-model="search"
@@ -20,7 +20,7 @@
         @click="open = true"
         :aria-expanded="open"
         :aria-controls="$id('dropdown-button')"
-        class="flex items-center {{ get $width .Width }} gap-2 bg-white px-2 py-1 border"
+        class="flex items-center {{ get $width (toString .Width) }} gap-2 bg-white px-2 py-1 border"
         placeholder="{{ .Placeholder }}"
         form="search-dropdown"
         >
@@ -30,7 +30,7 @@
         x-transition.origin.top.left
         :id="$id('dropdown-button')"
         x-cloak
-        class="absolute flex flex-col {{ get $width .Width }} mt-1 bg-white overflow-x-auto border border-black"
+        class="absolute flex flex-col {{ get $width (toString .Width) }} mt-1 bg-white overflow-x-auto border border-black"
         >
         <span class="text-left py-1 px-2 text-gray-600 italic" x-show="existing?.includes(search)">
           <span x-text="search"></span> already added
