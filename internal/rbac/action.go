@@ -47,6 +47,11 @@ const (
 	GetVariableSetAction
 	DeleteVariableSetAction
 
+	CreateVariableSetVariableAction
+	UpdateVariableSetVariableAction
+	GetVariableSetVariableAction
+	DeleteVariableSetVariableAction
+
 	AddVariableToSetAction
 	RemoveVariableFromSetAction
 

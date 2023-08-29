@@ -1382,8 +1382,17 @@ th, td {
   background-color: rgb(229 231 235 / var(--tw-bg-opacity));
 }
 
+.group:hover .group-hover\:bg-gray-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(156 163 175 / var(--tw-bg-opacity));
+}
+
 .peer:checked ~ .peer-checked\:block {
   display: block;
+}
+
+.peer:checked ~ .peer-checked\:flex {
+  display: flex;
 }
 
 .peer:checked ~ .peer-checked\:hidden {

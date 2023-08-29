@@ -7,26 +7,19 @@ INSERT INTO workspace_variables (
     pggen.arg('workspace_id')
 );
 
--- name: FindWorkspaceVariablesByWorkspaceID :many
-SELECT *
+-- name: FindVariablesByWorkspaceID :many
+SELECT v.*
 FROM workspace_variables
-JOIN variables USING (variable_id)
+JOIN variables v USING (variable_id)
 WHERE workspace_id = pggen.arg('workspace_id')
 ;
 
 -- name: FindWorkspaceVariableByID :one
-SELECT *
-FROM workspace_variables
-JOIN variables USING (variable_id)
-WHERE variable_id = pggen.arg('variable_id')
-;
-
--- name: FindWorkspaceVariableForUpdate :one
-SELECT *
+SELECT workspace_id, (v.*)::"variables" AS variable
 FROM workspace_variables
 JOIN variables v USING (variable_id)
 WHERE variable_id = pggen.arg('variable_id')
-FOR UPDATE OF v;
+;
 
 -- name: DeleteWorkspaceVariableByID :one
 DELETE

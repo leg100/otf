@@ -26,18 +26,6 @@ type (
 		VersionID   pgtype.Text `json:"version_id"`
 	}
 
-	workspaceVariableRow struct {
-		VariableID  pgtype.Text `json:"variable_id"`
-		WorkspaceID pgtype.Text `json:"workspace_id"`
-		Key         pgtype.Text `json:"key"`
-		Value       pgtype.Text `json:"value"`
-		Description pgtype.Text `json:"description"`
-		Category    pgtype.Text `json:"category"`
-		Sensitive   bool        `json:"sensitive"`
-		HCL         bool        `json:"hcl"`
-		VersionID   pgtype.Text `json:"version_id"`
-	}
-
 	variableSetRow struct {
 		VariableSetID    pgtype.Text       `json:"variable_set_id"`
 		Global           bool              `json:"global"`
@@ -62,22 +50,6 @@ func (row variableRow) convert() *Variable {
 	}
 }
 
-func (row workspaceVariableRow) convert() *WorkspaceVariable {
-	return &WorkspaceVariable{
-		Variable: &Variable{
-			ID:          row.VariableID.String,
-			Key:         row.Key.String,
-			Value:       row.Value.String,
-			Description: row.Description.String,
-			Category:    VariableCategory(row.Category.String),
-			Sensitive:   row.Sensitive,
-			HCL:         row.HCL,
-			VersionID:   row.VersionID.String,
-		},
-		WorkspaceID: row.WorkspaceID.String,
-	}
-}
-
 func (row variableSetRow) convert() *VariableSet {
 	set := &VariableSet{
 		ID:           row.VariableSetID.String,
@@ -94,36 +66,36 @@ func (row variableSetRow) convert() *VariableSet {
 	return set
 }
 
-func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, v *WorkspaceVariable) error {
+func (pdb *pgdb) createWorkspaceVariable(ctx context.Context, workspaceID string, v *Variable) error {
 	err := pdb.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		if err := pdb.createVariable(ctx, v.Variable); err != nil {
+		if err := pdb.createVariable(ctx, v); err != nil {
 			return err
 		}
-		_, err := q.InsertWorkspaceVariable(ctx, sql.String(v.ID), sql.String(v.WorkspaceID))
+		_, err := q.InsertWorkspaceVariable(ctx, sql.String(v.ID), sql.String(workspaceID))
 		return err
 	})
 	return sql.Error(err)
 }
 
-func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID string) ([]*WorkspaceVariable, error) {
-	rows, err := pdb.Conn(ctx).FindWorkspaceVariablesByWorkspaceID(ctx, sql.String(workspaceID))
+func (pdb *pgdb) listWorkspaceVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
+	rows, err := pdb.Conn(ctx).FindVariablesByWorkspaceID(ctx, sql.String(workspaceID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
 
-	var variables []*WorkspaceVariable
-	for _, row := range rows {
-		variables = append(variables, workspaceVariableRow(row).convert())
+	variables := make([]*Variable, len(rows))
+	for i, row := range rows {
+		variables[i] = variableRow(row).convert()
 	}
 	return variables, nil
 }
 
-func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID string) (*WorkspaceVariable, error) {
+func (pdb *pgdb) getWorkspaceVariable(ctx context.Context, variableID string) (*Variable, string, error) {
 	row, err := pdb.Conn(ctx).FindWorkspaceVariableByID(ctx, sql.String(variableID))
 	if err != nil {
-		return nil, sql.Error(err)
+		return nil, "", sql.Error(err)
 	}
-	return workspaceVariableRow(row).convert(), nil
+	return variableRow(*row.Variable).convert(), row.WorkspaceID.String, nil
 }
 
 func (pdb *pgdb) createVariableSet(ctx context.Context, set *VariableSet) error {
@@ -189,15 +161,12 @@ func (pdb *pgdb) getVariableSet(ctx context.Context, setID string) (*VariableSet
 	return variableSetRow(row).convert(), nil
 }
 
-func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID string) (*VariableSet, *Variable, error) {
+func (pdb *pgdb) getVariableSetByVariableID(ctx context.Context, variableID string) (*VariableSet, error) {
 	row, err := pdb.Conn(ctx).FindVariableSetByVariableID(ctx, sql.String(variableID))
 	if err != nil {
-		return nil, nil, sql.Error(err)
+		return nil, sql.Error(err)
 	}
-	set := variableSetRow(row).convert()
-	// fish out variable from set so we can return it
-	_, v := set.hasVariable(variableID)
-	return set, v, nil
+	return variableSetRow(row).convert(), nil
 }
 
 func (pdb *pgdb) listVariableSets(ctx context.Context, organization string) ([]*VariableSet, error) {

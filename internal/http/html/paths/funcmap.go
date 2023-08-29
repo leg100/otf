@@ -93,6 +93,14 @@ func init() {
 	funcmap["updateVariableSetPath"] = UpdateVariableSet
 	funcmap["deleteVariableSetPath"] = DeleteVariableSet
 
+	funcmap["variableSetVariablesPath"] = VariableSetVariables
+	funcmap["createVariableSetVariablePath"] = CreateVariableSetVariable
+	funcmap["newVariableSetVariablePath"] = NewVariableSetVariable
+	funcmap["variableSetVariablePath"] = VariableSetVariable
+	funcmap["editVariableSetVariablePath"] = EditVariableSetVariable
+	funcmap["updateVariableSetVariablePath"] = UpdateVariableSetVariable
+	funcmap["deleteVariableSetVariablePath"] = DeleteVariableSetVariable
+
 	funcmap["organizationTokenPath"] = OrganizationToken
 	funcmap["createOrganizationTokenPath"] = CreateOrganizationToken
 	funcmap["deleteOrganizationTokenPath"] = DeleteOrganizationToken

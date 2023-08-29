@@ -1,0 +1,32 @@
+{{ define "variable-table" }}
+  <table class="table-fixed w-full text-left break-words border-collapse" id="variables-table">
+    <thead class="bg-gray-200 border-t border-b border-slate-900">
+      <tr>
+        <th class="p-2 w-[25%]">Key</th>
+        <th class="p-2 w-[50%]">Value</th>
+        <th class="p-2 w-[15%]">Category</th>
+        <th class="p-2 w-[10%]"></th>
+      </tr>
+    </thead>
+    <tbody class="border-b border-slate-900">
+      {{ range .Variables }}
+        <tr class="even:bg-gray-100">
+          <td class="p-2"><a class="show-underline" href="{{ call $.VariablesTable.EditPath .ID }}">{{ .Key }}</a></td>
+          <td class="p-2">{{ if .Sensitive }}<span class="data">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
+          <td class="p-2">{{ .Category }}</td>
+          <td class="p-2 text-right">
+            {{ if $.CanDeleteVariable }}
+              <form action="{{ call $.VariablesTable.DeletePath .ID }}" method="POST">
+                <button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
+              </form>
+            {{ end }}
+          </td>
+        </tr>
+      {{ else }}
+        <tr>
+          <td>No variables currently exist.</td>
+        </tr>
+      {{ end }}
+    </tbody>
+  </table>
+{{ end }}

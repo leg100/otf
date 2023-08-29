@@ -24,7 +24,18 @@
 
 {{ define "content-list-item" }}
   <div id="item-variable-set-{{ .ID }}" class="widget">
-    <span id="name">{{ .Name }}</span>
-    {{ template "identifier" . }}
+    <span id="name">
+      <a href="{{ editVariableSetPath .ID }}">{{ .Name }}</a>
+    </span>
+    <div>
+      {{ template "identifier" . }}
+      <span>
+        {{ if .Global }}
+          global
+        {{ else }}
+          {{ len .Workspaces }} workspaces
+        {{ end }}
+      </span>
+    </div>
   </div>
 {{ end }}

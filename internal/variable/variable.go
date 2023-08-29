@@ -2,6 +2,7 @@
 package variable
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"log/slog"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/run"
 	"golang.org/x/exp/maps"
 )
@@ -37,7 +39,7 @@ var (
 	ErrVariableDescriptionMaxExceeded = fmt.Errorf("maximum variable description size (%d chars) exceeded", VariableDescriptionMaxChars)
 	ErrVariableKeyMaxExceeded         = fmt.Errorf("maximum variable key size (%d chars) exceeded", VariableKeyMaxChars)
 	ErrVariableValueMaxExceeded       = fmt.Errorf("maximum variable value size of %d KB exceeded", VariableValueMaxKB)
-	ErrVariableConflict               = errors.New("variable conflicts with a variable with the same name and type")
+	ErrVariableConflict               = errors.New("variable conflicts with another variable with the same name and type")
 )
 
 type (
@@ -54,6 +56,7 @@ type (
 		// expect it to be a random value that changes on every update.
 		VersionID string
 	}
+
 	CreateVariableOptions struct {
 		Key         *string
 		Value       *string
@@ -61,7 +64,10 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         *bool
+
+		generateVersion
 	}
+
 	UpdateVariableOptions struct {
 		Key         *string
 		Value       *string
@@ -69,8 +75,77 @@ type (
 		Category    *VariableCategory
 		Sensitive   *bool
 		HCL         *bool
+
+		generateVersion
 	}
+
+	// generates random version IDs
+	generateVersion func() string
 )
+
+func newVariable(opts CreateVariableOptions) (*Variable, error) {
+	v := Variable{
+		ID: internal.NewID("var"),
+	}
+	if opts.generateVersion == nil {
+		opts.generateVersion = versionGenerator
+	}
+	v.VersionID = opts.generateVersion()
+
+	// Required fields
+	if opts.Key == nil {
+		return nil, errors.New("missing key")
+	}
+	if err := v.setKey(*opts.Key); err != nil {
+		return nil, err
+	}
+	if opts.Category == nil {
+		return nil, errors.New("missing category")
+	}
+	if err := v.setCategory(*opts.Category); err != nil {
+		return nil, err
+	}
+
+	// Optional fields
+	if opts.Value != nil {
+		if err := v.setValue(*opts.Value); err != nil {
+			return nil, err
+		}
+	}
+	if opts.Description != nil {
+		if err := v.setDescription(*opts.Description); err != nil {
+			return nil, err
+		}
+	}
+	if opts.Sensitive != nil {
+		v.Sensitive = *opts.Sensitive
+	}
+	if opts.HCL != nil {
+		v.HCL = *opts.HCL
+	}
+
+	return &v, nil
+}
+
+func newWorkspaceVariable(workspaceVariables []*Variable, opts CreateVariableOptions) (*Variable, error) {
+	v, err := newVariable(opts)
+	if err != nil {
+		return nil, err
+	}
+	// check for conflicts with other workspace variables
+	if err := v.conflicts(workspaceVariables); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+func versionGenerator() string {
+	// tfe appears to use 32 hex-encoded random bytes for its version
+	// ID, so OTF does the same
+	b := make([]byte, 32)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
+}
 
 func (v *Variable) LogValue() slog.Value {
 	attrs := []slog.Attr{
@@ -84,6 +159,54 @@ func (v *Variable) LogValue() slog.Value {
 		attrs = append(attrs, slog.String("value", v.Value))
 	}
 	return slog.GroupValue(attrs...)
+}
+
+func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) error {
+	if opts.Key != nil {
+		if v.Sensitive {
+			return errors.New("changing the key of a sensitive variable is not allowed")
+		}
+		if err := v.setKey(*opts.Key); err != nil {
+			return err
+		}
+	}
+	if opts.Value != nil {
+		if err := v.setValue(*opts.Value); err != nil {
+			return err
+		}
+	}
+	if opts.Description != nil {
+		if err := v.setDescription(*opts.Description); err != nil {
+			return err
+		}
+	}
+	if opts.Category != nil {
+		if err := v.setCategory(*opts.Category); err != nil {
+			return err
+		}
+	}
+	if opts.HCL != nil {
+		if v.Sensitive {
+			return errors.New("changing HCL mode on a sensitive variable is not allowed")
+		}
+		v.HCL = *opts.HCL
+	}
+	if opts.Sensitive != nil {
+		if err := v.setSensitive(*opts.Sensitive); err != nil {
+			return err
+		}
+	}
+	// check for conflicts with other variables in collection
+	if err := v.conflicts(collection); err != nil {
+		return err
+	}
+	// generate new version ID on every update call, even if nothing is actually
+	// updated
+	if opts.generateVersion == nil {
+		opts.generateVersion = versionGenerator
+	}
+	v.VersionID = opts.generateVersion()
+	return nil
 }
 
 func (v *Variable) setKey(key string) error {
@@ -127,13 +250,17 @@ func (v *Variable) setSensitive(sensitive bool) error {
 	return nil
 }
 
-func (v *Variable) conflicts(v2 *Variable) error {
-	if v.ID == v2.ID {
-		// cannot conflict with self
-		return nil
-	}
-	if v.Key == v2.Key && v.Category == v2.Category {
-		return ErrVariableConflict
+// conflicts checks for conflicts with other variables in the collection, i.e.
+// they share same key and category.
+func (v *Variable) conflicts(collection []*Variable) error {
+	for _, v2 := range collection {
+		if v.ID == v2.ID {
+			// cannot conflict with self
+			continue
+		}
+		if v.Key == v2.Key && v.Category == v2.Category {
+			return ErrVariableConflict
+		}
 	}
 	return nil
 }
@@ -176,7 +303,7 @@ func WriteTerraformVars(dir string, vars []*Variable) error {
 // documented here:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
-func mergeVariables(run *run.Run, workspaceVariables []*WorkspaceVariable, sets []*VariableSet) []*Variable {
+func mergeVariables(run *run.Run, workspaceVariables []*Variable, sets []*VariableSet) []*Variable {
 	// terraform variables keyed by variable key
 	tfVars := make(map[string]*Variable)
 	// environment variables keyed by variable key
@@ -231,9 +358,9 @@ func mergeVariables(run *run.Run, workspaceVariables []*WorkspaceVariable, sets 
 	for _, v := range workspaceVariables {
 		switch v.Category {
 		case CategoryTerraform:
-			tfVars[v.Key] = v.Variable
+			tfVars[v.Key] = v
 		case CategoryEnv:
-			envVars[v.Key] = v.Variable
+			envVars[v.Key] = v
 		}
 	}
 

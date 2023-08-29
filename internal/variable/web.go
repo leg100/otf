@@ -1,6 +1,8 @@
 package variable
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -22,28 +24,54 @@ type (
 
 		svc Service
 	}
+
 	workspaceInfo struct {
 		ID   string
 		Name string
+	}
+
+	createVariableParams struct {
+		Key         *string `schema:"key,required"`
+		Value       *string
+		Description *string
+		Category    *VariableCategory `schema:"category,required"`
+		Sensitive   bool
+		HCL         bool
+	}
+
+	updateVariableParams struct {
+		createVariableParams
+		VariableID string `schema:"variable_id,required"`
+	}
+
+	variablesTable struct {
+		EditPath   func(string) string
+		DeletePath func(string) string
 	}
 )
 
 func (h *web) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/workspaces/{workspace_id}/variables", h.listWorkspaceVariables)
-	r.HandleFunc("/workspaces/{workspace_id}/variables/new", h.newWorkspaceVariable)
-	r.HandleFunc("/workspaces/{workspace_id}/variables/create", h.createWorkspaceVariable)
-	r.HandleFunc("/variables/{variable_id}/edit", h.editWorkspaceVariable)
-	r.HandleFunc("/variables/{variable_id}/update", h.updateWorkspaceVariable)
-	r.HandleFunc("/variables/{variable_id}/delete", h.deleteWorkspaceVariable)
+	r.HandleFunc("/workspaces/{workspace_id}/variables", h.listWorkspaceVariables).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/variables/new", h.newWorkspaceVariable).Methods("GET")
+	r.HandleFunc("/workspaces/{workspace_id}/variables/create", h.createWorkspaceVariable).Methods("POST")
+	r.HandleFunc("/variables/{variable_id}/edit", h.editWorkspaceVariable).Methods("GET")
+	r.HandleFunc("/variables/{variable_id}/update", h.updateWorkspaceVariable).Methods("POST")
+	r.HandleFunc("/variables/{variable_id}/delete", h.deleteWorkspaceVariable).Methods("POST")
 
-	r.HandleFunc("/organizations/{organization_name}/variable-sets", h.listVariableSets)
-	r.HandleFunc("/organizations/{organization_name}/variable-sets/new", h.newVariableSet)
-	r.HandleFunc("/organizations/{organization_name}/variable-sets/create", h.createVariableSet)
-	r.HandleFunc("/variable-sets/{variable_set_id}/edit", h.editVariableSet)
-	r.HandleFunc("/variable-sets/{variable_set_id}/update", h.updateVariableSet)
-	r.HandleFunc("/variable-sets/{variable_set_id}/delete", h.deleteVariableSet)
+	r.HandleFunc("/organizations/{organization_name}/variable-sets", h.listVariableSets).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/variable-sets/new", h.newVariableSet).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/variable-sets/create", h.createVariableSet).Methods("POST")
+	r.HandleFunc("/variable-sets/{variable_set_id}/edit", h.editVariableSet).Methods("GET")
+	r.HandleFunc("/variable-sets/{variable_set_id}/update", h.updateVariableSet).Methods("POST")
+	r.HandleFunc("/variable-sets/{variable_set_id}/delete", h.deleteVariableSet).Methods("POST")
+
+	r.HandleFunc("/variable-sets/{variable_set_id}/variable-set-variables/new", h.newVariableSetVariable).Methods("GET")
+	r.HandleFunc("/variable-sets/{variable_set_id}/variable-set-variables/create", h.createVariableSetVariable).Methods("POST")
+	r.HandleFunc("/variable-set-variables/{variable_id}/edit", h.editVariableSetVariable).Methods("GET")
+	r.HandleFunc("/variable-set-variables/{variable_id}/update", h.updateVariableSetVariable).Methods("POST")
+	r.HandleFunc("/variable-set-variables/{variable_id}/delete", h.deleteVariableSetVariable).Methods("POST")
 }
 
 func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -58,40 +86,23 @@ func (h *web) newWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	policy, err := h.GetPolicy(r.Context(), ws.ID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	subject, err := internal.SubjectFromContext(r.Context())
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	h.Render("variable_new.tmpl", w, struct {
 		workspace.WorkspacePage
 		Variable   *Variable
 		EditMode   bool
 		FormAction string
-		CanAccess  bool
 	}{
 		WorkspacePage: workspace.NewPage(r, "new variable", ws),
 		Variable:      &Variable{},
 		EditMode:      false,
 		FormAction:    paths.CreateVariable(workspaceID),
-		CanAccess:     subject.CanAccessWorkspace(rbac.CreateWorkspaceVariableAction, policy),
 	})
 }
 
 func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Key         *string `schema:"key,required"`
-		Value       *string
-		Description *string
-		Category    *VariableCategory `schema:"category,required"`
-		Sensitive   bool
-		HCL         bool
+		createVariableParams
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -146,7 +157,7 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variables          []*WorkspaceVariable
+		Variables          []*Variable
 		Policy             internal.WorkspacePolicy
 		CanCreateVariable  bool
 		CanDeleteVariable  bool
@@ -168,12 +179,12 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
+	variable, workspaceID, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), variable.WorkspaceID)
+	ws, err := h.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -181,83 +192,45 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("variable_edit.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variable   *WorkspaceVariable
-		EditMode   bool
-		FormAction string
+		Variable       *Variable
+		EditMode       bool
+		FormAction     string
+		VariablesTable variablesTable
 	}{
 		WorkspacePage: workspace.NewPage(r, "edit | "+variable.ID, ws),
 		Variable:      variable,
 		EditMode:      true,
 		FormAction:    paths.UpdateVariable(variable.ID),
+		VariablesTable: variablesTable{
+			EditPath:   paths.EditVariable,
+			DeletePath: paths.DeleteVariable,
+		},
 	})
 }
 
 func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
-	variableID, err := decode.Param("variable_id", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	variable, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Handle updates to sensitive variables in a separate handler.
-	if variable.Sensitive {
-		h.updateSensitive(w, r, variable)
-		return
-	}
-
-	var params struct {
-		Key         *string
-		Value       *string
-		Description *string
-		Category    *VariableCategory
-		Sensitive   *bool // form checkbox can only be true/false, not nil
-		HCL         *bool // form checkbox can only be true/false, not nil
-	}
+	var params updateVariableParams
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	variable, err = h.svc.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
+	variable, workspaceID, err := h.svc.UpdateWorkspaceVariable(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
 		Category:    params.Category,
-		Sensitive:   params.Sensitive,
-		HCL:         params.HCL,
+		Sensitive:   &params.Sensitive,
+		HCL:         &params.HCL,
 	})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.EditVariable(params.VariableID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "updated variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
-}
-
-func (h *web) updateSensitive(w http.ResponseWriter, r *http.Request, variable *WorkspaceVariable) {
-	value, err := decode.Param("value", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	variable, err = h.svc.UpdateWorkspaceVariable(r.Context(), variable.ID, UpdateVariableOptions{
-		Value: internal.String(value),
-	})
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	html.FlashSuccess(w, "updated variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(workspaceID), http.StatusFound)
 }
 
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -267,14 +240,14 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := h.svc.DeleteWorkspaceVariable(r.Context(), variableID)
+	variable, workspaceID, err := h.svc.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	html.FlashSuccess(w, "deleted variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(variable.WorkspaceID), http.StatusFound)
+	http.Redirect(w, r, paths.Variables(workspaceID), http.StatusFound)
 }
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
@@ -315,22 +288,10 @@ func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// retrieve names of all workspaces in org to show in dropdown widget
-	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
-		return h.Service.ListWorkspaces(r.Context(), workspace.ListOptions{
-			Organization: &org,
-			PageOptions:  opts,
-		})
-	})
+	availableWorkspaces, err := h.getAvailableWorkspaces(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
-	}
-	availableWorkspaces := make([]workspaceInfo, len(workspaces))
-	for i, ws := range workspaces {
-		availableWorkspaces[i] = workspaceInfo{
-			ID:   ws.ID,
-			Name: ws.Name,
-		}
 	}
 
 	h.Render("variable_set_new.tmpl", w, struct {
@@ -339,39 +300,56 @@ func (h *web) newVariableSet(w http.ResponseWriter, r *http.Request) {
 		EditMode            bool
 		FormAction          string
 		AvailableWorkspaces []workspaceInfo
+		ExistingWorkspaces  []workspaceInfo
 	}{
-		OrganizationPage:    organization.NewPage(r, "variable sets", org),
-		VariableSet:         &VariableSet{},
+		OrganizationPage: organization.NewPage(r, "variable sets", org),
+		VariableSet: &VariableSet{
+			Global: true, // set global as default
+		},
 		EditMode:            false,
 		FormAction:          paths.CreateVariableSet(org),
 		AvailableWorkspaces: availableWorkspaces,
+		ExistingWorkspaces:  []workspaceInfo{},
 	})
 }
 
 func (h *web) createVariableSet(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name         *string `schema:"name,required"`
-		Description  string
-		Global       bool
-		Organization string `schema:"organization_name,required"`
+		Name           *string `schema:"name,required"`
+		Description    string
+		Global         bool
+		Organization   string `schema:"organization_name,required"`
+		WorkspacesJSON string `schema:"workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
+	var workspaces []workspaceInfo
+	if err := json.Unmarshal([]byte(params.WorkspacesJSON), &workspaces); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	workspaceIDs := make([]string, len(workspaces))
+	for i, ws := range workspaces {
+		workspaceIDs[i] = ws.ID
+	}
+
 	set, err := h.svc.createVariableSet(r.Context(), params.Organization, CreateVariableSetOptions{
 		Name:        *params.Name,
 		Description: params.Description,
 		Global:      params.Global,
+		Workspaces:  workspaceIDs,
 	})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.NewVariableSet(params.Organization), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "added variable set: "+set.Name)
-	http.Redirect(w, r, paths.VariableSet(set.ID), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -387,43 +365,96 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// retrieve names of workspaces in org to show in dropdown widget
+	availableWorkspaces, err := h.getAvailableWorkspaces(r.Context(), set.Organization)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	// create list of existing workspaces and remove them from available
+	// workspaces
+	existingWorkspaces := make([]workspaceInfo, len(set.Workspaces))
+	for i, existing := range set.Workspaces {
+		for j, avail := range availableWorkspaces {
+			if avail.ID == existing {
+				// add to existing
+				existingWorkspaces[i] = workspaceInfo{Name: avail.Name, ID: avail.ID}
+				// remove from available
+				availableWorkspaces = append(availableWorkspaces[:j], availableWorkspaces[j+1:]...)
+				break
+			}
+		}
+	}
+
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	h.Render("variable_set_edit.tmpl", w, struct {
 		organization.OrganizationPage
-		VariableSet *VariableSet
-		EditMode    bool
-		FormAction  string
+		*VariableSet
+		EditMode            bool
+		FormAction          string
+		AvailableWorkspaces []workspaceInfo
+		ExistingWorkspaces  []workspaceInfo
+		CanCreateVariable   bool
+		CanDeleteVariable   bool
+		VariablesTable      variablesTable
 	}{
-		OrganizationPage: organization.NewPage(r, "edit | "+set.ID, set.Organization),
-		VariableSet:      set,
-		EditMode:         true,
-		FormAction:       paths.UpdateVariableSet(set.ID),
+		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID, set.Organization),
+		VariableSet:         set,
+		EditMode:            true,
+		FormAction:          paths.UpdateVariableSet(set.ID),
+		AvailableWorkspaces: availableWorkspaces,
+		ExistingWorkspaces:  existingWorkspaces,
+		CanCreateVariable:   user.CanAccessOrganization(rbac.CreateWorkspaceVariableAction, set.Organization),
+		CanDeleteVariable:   user.CanAccessOrganization(rbac.DeleteWorkspaceVariableAction, set.Organization),
+		VariablesTable: variablesTable{
+			EditPath:   paths.EditVariableSetVariable,
+			DeletePath: paths.DeleteVariableSetVariable,
+		},
 	})
 }
 
 func (h *web) updateVariableSet(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		SetID       string `schema:"variable_set_id,required"`
-		Name        *string
-		Description *string
-		Global      *bool
+		SetID          string `schema:"variable_set_id,required"`
+		Name           *string
+		Description    *string
+		Global         *bool
+		WorkspacesJSON string `schema:"workspaces"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
+	var workspaces []workspaceInfo
+	if err := json.Unmarshal([]byte(params.WorkspacesJSON), &workspaces); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	workspaceIDs := make([]string, len(workspaces))
+	for i, ws := range workspaces {
+		workspaceIDs[i] = ws.ID
+	}
+
 	set, err := h.svc.updateVariableSet(r.Context(), params.SetID, UpdateVariableSetOptions{
 		Name:        params.Name,
 		Description: params.Description,
 		Global:      params.Global,
+		Workspaces:  workspaceIDs,
 	})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
 		return
 	}
 
 	html.FlashSuccess(w, "updated variable set: "+set.Name)
-	http.Redirect(w, r, paths.VariableSet(set.ID), http.StatusFound)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
 func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
@@ -441,4 +472,157 @@ func (h *web) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 
 	html.FlashSuccess(w, "deleted variable set: "+set.Name)
 	http.Redirect(w, r, paths.VariableSets(set.Organization), http.StatusFound)
+}
+
+func (h *web) newVariableSetVariable(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("variable_set_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, err := h.svc.getVariableSet(r.Context(), setID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("variable_set_new_variable.tmpl", w, struct {
+		organization.OrganizationPage
+		VariableSet *VariableSet
+		Variable    *Variable
+		EditMode    bool
+		FormAction  string
+	}{
+		OrganizationPage: organization.NewPage(r, "new variable | variable sets", set.Organization),
+		VariableSet:      set,
+		Variable:         &Variable{},
+		EditMode:         false,
+		FormAction:       paths.CreateVariableSetVariable(setID),
+	})
+}
+
+func (h *web) createVariableSetVariable(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		createVariableParams
+		SetID string `schema:"variable_set_id,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	variable, err := h.svc.createVariableSetVariable(r.Context(), params.SetID, CreateVariableOptions{
+		Key:         params.Key,
+		Value:       params.Value,
+		Description: params.Description,
+		Category:    params.Category,
+		Sensitive:   &params.Sensitive,
+		HCL:         &params.HCL,
+	})
+	if err != nil {
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.NewVariableSetVariable(params.SetID), http.StatusFound)
+		return
+	}
+
+	html.FlashSuccess(w, "added variable: "+variable.Key)
+	http.Redirect(w, r, paths.EditVariableSet(params.SetID), http.StatusFound)
+}
+
+func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, v, err := h.svc.getVariableSetVariable(r.Context(), variableID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("variable_set_edit_variable.tmpl", w, struct {
+		organization.OrganizationPage
+		VariableSet *VariableSet
+		Variable    *Variable
+		EditMode    bool
+		FormAction  string
+	}{
+		OrganizationPage: organization.NewPage(r, "edit variable", set.Organization),
+		VariableSet:      set,
+		Variable:         v,
+		EditMode:         true,
+		FormAction:       paths.UpdateVariableSetVariable(v.ID),
+	})
+}
+
+func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
+	var params updateVariableParams
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, variable, err := h.svc.updateVariableSetVariable(r.Context(), params.VariableID, UpdateVariableOptions{
+		Key:         params.Key,
+		Value:       params.Value,
+		Description: params.Description,
+		Category:    params.Category,
+		Sensitive:   &params.Sensitive,
+		HCL:         &params.HCL,
+	})
+	if err != nil {
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.EditVariableSetVariable(params.VariableID), http.StatusFound)
+		return
+	}
+
+	html.FlashSuccess(w, "updated variable: "+variable.Key)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
+}
+
+func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) {
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	set, variable, err := h.svc.getVariableSetVariable(r.Context(), variableID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.svc.deleteVariableSetVariable(r.Context(), variableID); err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "deleted variable: "+variable.Key)
+	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
+}
+
+func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspaceInfo, error) {
+	// retrieve names of all workspaces in org to show in dropdown widget
+	workspaces, err := resource.ListAll(func(opts resource.PageOptions) (*resource.Page[*workspace.Workspace], error) {
+		return h.Service.ListWorkspaces(ctx, workspace.ListOptions{
+			Organization: &org,
+			PageOptions:  opts,
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	availableWorkspaces := make([]workspaceInfo, len(workspaces))
+	for i, ws := range workspaces {
+		availableWorkspaces[i] = workspaceInfo{
+			ID:   ws.ID,
+			Name: ws.Name,
+		}
+	}
+	return availableWorkspaces, nil
 }
