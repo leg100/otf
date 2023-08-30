@@ -28,7 +28,7 @@ func TestVariable(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		v := svc.createVariable(t, ctx, nil)
 
-		got, err := svc.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
+		got, _, err := svc.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
 			Value: internal.String("luxembourg"),
 		})
 		require.NoError(t, err)
@@ -55,18 +55,18 @@ func TestVariable(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
-		got, err := svc.GetWorkspaceVariable(ctx, want.ID)
+		got, _, err := svc.GetWorkspaceVariable(ctx, want.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, want, got.Variable)
+		assert.Equal(t, want, got)
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
-		got, err := svc.DeleteWorkspaceVariable(ctx, want.ID)
+		got, _, err := svc.DeleteWorkspaceVariable(ctx, want.ID)
 		require.NoError(t, err)
-		assert.Equal(t, want, got.Variable)
+		assert.Equal(t, want, got)
 	})
 }

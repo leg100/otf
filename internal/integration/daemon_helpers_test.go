@@ -317,7 +317,7 @@ func (s *testDaemon) createVariable(t *testing.T, ctx context.Context, ws *works
 		Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
 	})
 	require.NoError(t, err)
-	return v.Variable
+	return v
 }
 
 func (s *testDaemon) createStateVersion(t *testing.T, ctx context.Context, ws *workspace.Workspace) *state.Version {
