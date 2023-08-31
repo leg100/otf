@@ -117,7 +117,6 @@ func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable,
 	if opts.HCL != nil {
 		v.HCL = *opts.HCL
 	}
-	// check for conflicts with other workspace variables
 	if err := v.checkConflicts(collection); err != nil {
 		return nil, err
 	}
