@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/http/html/paths"
 )
 
 type (
@@ -14,16 +15,20 @@ type (
 		Name         string
 		Description  string
 		Global       bool
-		Variables    []*Variable
 		Workspaces   []string // workspace IDs
 		Organization string   // org name
+		Variables    VariableSetVariables
 	}
+
+	VariableSetVariables []*Variable
+
 	CreateVariableSetOptions struct {
 		Name        string
 		Description string
 		Global      bool
 		Workspaces  []string // workspace IDs
 	}
+
 	UpdateVariableSetOptions struct {
 		Name        *string
 		Description *string
@@ -31,6 +36,16 @@ type (
 		Workspaces  []string // workspace IDs
 	}
 )
+
+func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
+	return &VariableSet{
+		ID:           internal.NewID("varset"),
+		Name:         opts.Name,
+		Description:  opts.Description,
+		Global:       opts.Global,
+		Organization: organization,
+	}, nil
+}
 
 func (s *VariableSet) LogValue() slog.Value {
 	attrs := []slog.Attr{
@@ -43,17 +58,32 @@ func (s *VariableSet) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
-func newSet(organization string, opts CreateVariableSetOptions) (*VariableSet, error) {
-	return &VariableSet{
-		ID:           internal.NewID("varset"),
-		Name:         opts.Name,
-		Description:  opts.Description,
-		Global:       opts.Global,
-		Organization: organization,
-	}, nil
+func (s *VariableSet) addVariable(organizationSets []*VariableSet, opts CreateVariableOptions) (*Variable, error) {
+	v, err := newVariable(s.Variables, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkGlobalConflicts(organizationSets); err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
-func (s *VariableSet) update(sets []*VariableSet, opts UpdateVariableSetOptions) error {
+func (s *VariableSet) updateVariable(organizationSets []*VariableSet, variableID string, opts UpdateVariableOptions) (*Variable, error) {
+	v := s.getVariable(variableID)
+	if v == nil {
+		return nil, fmt.Errorf("cannot find variable %s in set", v.ID)
+	}
+	if err := v.update(s.Variables, opts); err != nil {
+		return nil, err
+	}
+	if err := s.checkGlobalConflicts(organizationSets); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+func (s *VariableSet) updateProperties(organizationSets []*VariableSet, opts UpdateVariableSetOptions) error {
 	if opts.Name != nil {
 		s.Name = *opts.Name
 	}
@@ -66,36 +96,10 @@ func (s *VariableSet) update(sets []*VariableSet, opts UpdateVariableSetOptions)
 	if opts.Workspaces != nil {
 		s.Workspaces = opts.Workspaces
 	}
-	if err := s.checkConflicts(sets); err != nil {
+	if err := s.checkGlobalConflicts(organizationSets); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (s *VariableSet) createVariable(sets []*VariableSet, opts CreateVariableOptions) (*Variable, error) {
-	v, err := newVariable(opts)
-	if err != nil {
-		return nil, err
-	}
-	s.Variables = append(s.Variables, v)
-	if err := s.checkConflicts(sets); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-func (s *VariableSet) updateVariable(variableID string, sets []*VariableSet, opts UpdateVariableOptions) (*Variable, error) {
-	v := s.getVariable(variableID)
-	if v == nil {
-		return nil, fmt.Errorf("cannot find variable %s in set", v.ID)
-	}
-	if err := v.update(s.Variables, opts); err != nil {
-		return nil, err
-	}
-	if err := s.checkConflicts(sets); err != nil {
-		return nil, err
-	}
-	return v, nil
 }
 
 func (s *VariableSet) getVariable(variableID string) *Variable {
@@ -114,30 +118,35 @@ func (s *VariableSet) getVariable(variableID string) *Variable {
 // (a) set contains more than one variable sharing the same key and category
 // (b) set is global and contains a variable that shares the same key and category as another
 // variable in another global set in the given sets
-func (s *VariableSet) checkConflicts(sets []*VariableSet) error {
-	// check no variable in set conflicts with another variable in set
-	for _, v := range s.Variables {
-		if err := v.conflicts(s.Variables); err != nil {
-			return err
-		}
-	}
+func (s *VariableSet) checkGlobalConflicts(organizationSets []*VariableSet) error {
 	if !s.Global {
+		// only global sets conflict with one another
 		return nil
 	}
-	// check conflicts with other global sets
-	for _, other := range sets {
-		if !s.Global {
-			continue
-		}
-		if other.ID == s.ID {
+	for _, other := range organizationSets {
+		if s.ID == other.ID {
 			// skip same variable set
 			continue
 		}
+		if !other.Global {
+			// set can only conflict with other global sets
+			continue
+		}
+		// check for conflicts between each set variable and each variable in all
+		// the global sets
 		for _, v := range s.Variables {
-			if err := v.conflicts(other.Variables); err != nil {
+			if err := v.checkConflicts(other.Variables); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func (*VariableSetVariables) EditPath(variableID string) string {
+	return paths.EditVariable(variableID)
+}
+
+func (*VariableSetVariables) DeletePath(variableID string) string {
+	return paths.EditVariable(variableID)
 }

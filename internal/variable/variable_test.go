@@ -119,13 +119,13 @@ func TestVariable_Update(t *testing.T) {
 func TestWriteTerraformVariables(t *testing.T) {
 	dir := t.TempDir()
 
-	v1, err := newVariable(CreateVariableOptions{
+	v1, err := newVariable(nil, CreateVariableOptions{
 		Key:      internal.String("foo"),
 		Value:    internal.String("bar"),
 		Category: VariableCategoryPtr(CategoryTerraform),
 	})
 	require.NoError(t, err)
-	v2, err := newVariable(CreateVariableOptions{
+	v2, err := newVariable(nil, CreateVariableOptions{
 		Key: internal.String("images"),
 		Value: internal.String(`{
     us-east-1 = "image-1234"
@@ -293,7 +293,7 @@ func Test_mergeVariables(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := mergeVariables(&tt.run, tt.workspaceVariables, tt.sets)
+			got := mergeVariables(tt.sets, tt.workspaceVariables, &tt.run)
 			assert.Equal(t, tt.want, got)
 		})
 	}

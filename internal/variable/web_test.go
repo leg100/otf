@@ -63,7 +63,7 @@ func TestVariable_UpdateHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create existing variable for test to update
-			v, err := newVariable(tt.existing)
+			v, err := newVariable(nil, tt.existing)
 			require.NoError(t, err)
 
 			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.updated.Encode()))

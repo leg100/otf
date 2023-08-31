@@ -1168,6 +1168,11 @@ th, td {
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 
+.bg-orange-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 247 237 / var(--tw-bg-opacity));
+}
+
 .bg-\[size\:14px\] {
   background-size: 14px;
 }
@@ -1389,10 +1394,6 @@ th, td {
 
 .peer:checked ~ .peer-checked\:block {
   display: block;
-}
-
-.peer:checked ~ .peer-checked\:flex {
-  display: flex;
 }
 
 .peer:checked ~ .peer-checked\:hidden {

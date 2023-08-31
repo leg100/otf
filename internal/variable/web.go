@@ -44,9 +44,15 @@ type (
 		VariableID string `schema:"variable_id,required"`
 	}
 
-	variablesTable struct {
-		EditPath   func(string) string
-		DeletePath func(string) string
+	workspaceVariableTable struct {
+		Variables         []*Variable
+		CanDeleteVariable bool
+	}
+
+	setVariableTable struct {
+		*VariableSet
+		Merged            []*Variable
+		CanDeleteVariable bool
 	}
 )
 
@@ -119,7 +125,8 @@ func (h *web) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		HCL:         &params.HCL,
 	})
 	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.NewVariable(params.WorkspaceID), http.StatusFound)
 		return
 	}
 
@@ -154,17 +161,36 @@ func (h *web) listWorkspaceVariables(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	sets, err := h.svc.listWorkspaceVariableSets(r.Context(), workspaceID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	merged := mergeVariables(sets, variables, nil)
+	setVariableTables := make([]setVariableTable, len(sets))
+	for i := range sets {
+		setVariableTables[i] = setVariableTable{
+			VariableSet: sets[i],
+			Merged:      merged,
+			// hide delete button for set variables
+			CanDeleteVariable: false,
+		}
+	}
 	h.Render("variable_list.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variables          []*Variable
-		Policy             internal.WorkspacePolicy
-		CanCreateVariable  bool
-		CanDeleteVariable  bool
-		CanUpdateWorkspace bool
+		WorkspaceVariableTable workspaceVariableTable
+		VariableSetTables      []setVariableTable
+		Policy                 internal.WorkspacePolicy
+		CanCreateVariable      bool
+		CanDeleteVariable      bool
+		CanUpdateWorkspace     bool
 	}{
-		WorkspacePage:      workspace.NewPage(r, "variables", ws),
-		Variables:          variables,
+		WorkspacePage: workspace.NewPage(r, "variables", ws),
+		WorkspaceVariableTable: workspaceVariableTable{
+			Variables:         variables,
+			CanDeleteVariable: user.CanAccessWorkspace(rbac.DeleteWorkspaceVariableAction, policy),
+		},
+		VariableSetTables:  setVariableTables,
 		Policy:             policy,
 		CanCreateVariable:  user.CanAccessWorkspace(rbac.CreateWorkspaceVariableAction, policy),
 		CanDeleteVariable:  user.CanAccessWorkspace(rbac.DeleteWorkspaceVariableAction, policy),
@@ -179,12 +205,12 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, workspaceID, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
+	wv, err := h.svc.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := h.GetWorkspace(r.Context(), workspaceID)
+	ws, err := h.GetWorkspace(r.Context(), wv.WorkspaceID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -192,19 +218,14 @@ func (h *web) editWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("variable_edit.tmpl", w, struct {
 		workspace.WorkspacePage
-		Variable       *Variable
-		EditMode       bool
-		FormAction     string
-		VariablesTable variablesTable
+		Variable   *Variable
+		EditMode   bool
+		FormAction string
 	}{
-		WorkspacePage: workspace.NewPage(r, "edit | "+variable.ID, ws),
-		Variable:      variable,
+		WorkspacePage: workspace.NewPage(r, "edit | "+wv.ID, ws),
+		Variable:      wv.Variable,
 		EditMode:      true,
-		FormAction:    paths.UpdateVariable(variable.ID),
-		VariablesTable: variablesTable{
-			EditPath:   paths.EditVariable,
-			DeletePath: paths.DeleteVariable,
-		},
+		FormAction:    paths.UpdateVariable(wv.ID),
 	})
 }
 
@@ -215,7 +236,7 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, workspaceID, err := h.svc.UpdateWorkspaceVariable(r.Context(), params.VariableID, UpdateVariableOptions{
+	wv, err := h.svc.UpdateWorkspaceVariable(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -229,8 +250,8 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html.FlashSuccess(w, "updated variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(workspaceID), http.StatusFound)
+	html.FlashSuccess(w, "updated variable: "+wv.Key)
+	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
@@ -240,14 +261,14 @@ func (h *web) deleteWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, workspaceID, err := h.svc.DeleteWorkspaceVariable(r.Context(), variableID)
+	wv, err := h.svc.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	html.FlashSuccess(w, "deleted variable: "+variable.Key)
-	http.Redirect(w, r, paths.Variables(workspaceID), http.StatusFound)
+	html.FlashSuccess(w, "deleted variable: "+wv.Key)
+	http.Redirect(w, r, paths.Variables(wv.WorkspaceID), http.StatusFound)
 }
 
 func (h *web) listVariableSets(w http.ResponseWriter, r *http.Request) {
@@ -401,7 +422,7 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		ExistingWorkspaces  []workspaceInfo
 		CanCreateVariable   bool
 		CanDeleteVariable   bool
-		VariablesTable      variablesTable
+		VariableTable       setVariableTable
 	}{
 		OrganizationPage:    organization.NewPage(r, "edit | "+set.ID, set.Organization),
 		VariableSet:         set,
@@ -411,9 +432,9 @@ func (h *web) editVariableSet(w http.ResponseWriter, r *http.Request) {
 		ExistingWorkspaces:  existingWorkspaces,
 		CanCreateVariable:   user.CanAccessOrganization(rbac.CreateWorkspaceVariableAction, set.Organization),
 		CanDeleteVariable:   user.CanAccessOrganization(rbac.DeleteWorkspaceVariableAction, set.Organization),
-		VariablesTable: variablesTable{
-			EditPath:   paths.EditVariableSetVariable,
-			DeletePath: paths.DeleteVariableSetVariable,
+		VariableTable: setVariableTable{
+			VariableSet:       set,
+			CanDeleteVariable: user.CanAccessOrganization(rbac.DeleteWorkspaceVariableAction, set.Organization),
 		},
 	})
 }
@@ -537,11 +558,12 @@ func (h *web) editVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	set, v, err := h.svc.getVariableSetVariable(r.Context(), variableID)
+	set, err := h.svc.getVariableSetByVariableID(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	v := set.getVariable(variableID)
 
 	h.Render("variable_set_edit_variable.tmpl", w, struct {
 		organization.OrganizationPage
@@ -565,7 +587,7 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	set, variable, err := h.svc.updateVariableSetVariable(r.Context(), params.VariableID, UpdateVariableOptions{
+	set, err := h.svc.updateVariableSetVariable(r.Context(), params.VariableID, UpdateVariableOptions{
 		Key:         params.Key,
 		Value:       params.Value,
 		Description: params.Description,
@@ -578,8 +600,9 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		http.Redirect(w, r, paths.EditVariableSetVariable(params.VariableID), http.StatusFound)
 		return
 	}
+	v := set.getVariable(params.VariableID)
 
-	html.FlashSuccess(w, "updated variable: "+variable.Key)
+	html.FlashSuccess(w, "updated variable: "+v.Key)
 	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
@@ -590,18 +613,14 @@ func (h *web) deleteVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	set, variable, err := h.svc.getVariableSetVariable(r.Context(), variableID)
+	set, err := h.svc.deleteVariableSetVariable(r.Context(), variableID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	v := set.getVariable(variableID)
 
-	if err := h.svc.deleteVariableSetVariable(r.Context(), variableID); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	html.FlashSuccess(w, "deleted variable: "+variable.Key)
+	html.FlashSuccess(w, "deleted variable: "+v.Key)
 	http.Redirect(w, r, paths.EditVariableSet(set.ID), http.StatusFound)
 }
 
@@ -625,4 +644,32 @@ func (h *web) getAvailableWorkspaces(ctx context.Context, org string) ([]workspa
 		}
 	}
 	return availableWorkspaces, nil
+}
+
+func (workspaceVariableTable) EditPath(variableID string) string {
+	return paths.EditVariable(variableID)
+}
+
+func (workspaceVariableTable) DeletePath(variableID string) string {
+	return paths.EditVariable(variableID)
+}
+
+func (w workspaceVariableTable) IsOverwritten(v *Variable) bool {
+	// a workspace variable can never be overwritten
+	return false
+}
+
+func (setVariableTable) EditPath(variableID string) string {
+	return paths.EditVariableSetVariable(variableID)
+}
+
+func (setVariableTable) DeletePath(variableID string) string {
+	return paths.DeleteVariableSetVariable(variableID)
+}
+
+func (w setVariableTable) IsOverwritten(v *Variable) bool {
+	if w.Merged == nil {
+		return false
+	}
+	return !v.Matches(w.Merged)
 }

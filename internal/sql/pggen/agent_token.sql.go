@@ -930,12 +930,12 @@ type Querier interface {
 	// FindVariableSetsByWorkspaceScan scans the result of an executed FindVariableSetsByWorkspaceBatch query.
 	FindVariableSetsByWorkspaceScan(results pgx.BatchResults) ([]FindVariableSetsByWorkspaceRow, error)
 
-	FindVariableSetByID(ctx context.Context, variableSetID pgtype.Text) (FindVariableSetByIDRow, error)
-	// FindVariableSetByIDBatch enqueues a FindVariableSetByID query into batch to be executed
+	FindVariableSetBySetID(ctx context.Context, variableSetID pgtype.Text) (FindVariableSetBySetIDRow, error)
+	// FindVariableSetBySetIDBatch enqueues a FindVariableSetBySetID query into batch to be executed
 	// later by the batch.
-	FindVariableSetByIDBatch(batch genericBatch, variableSetID pgtype.Text)
-	// FindVariableSetByIDScan scans the result of an executed FindVariableSetByIDBatch query.
-	FindVariableSetByIDScan(results pgx.BatchResults) (FindVariableSetByIDRow, error)
+	FindVariableSetBySetIDBatch(batch genericBatch, variableSetID pgtype.Text)
+	// FindVariableSetBySetIDScan scans the result of an executed FindVariableSetBySetIDBatch query.
+	FindVariableSetBySetIDScan(results pgx.BatchResults) (FindVariableSetBySetIDRow, error)
 
 	FindVariableSetByVariableID(ctx context.Context, variableID pgtype.Text) (FindVariableSetByVariableIDRow, error)
 	// FindVariableSetByVariableIDBatch enqueues a FindVariableSetByVariableID query into batch to be executed
@@ -992,6 +992,13 @@ type Querier interface {
 	DeleteVariableSetWorkspaceBatch(batch genericBatch, variableSetID pgtype.Text, workspaceID pgtype.Text)
 	// DeleteVariableSetWorkspaceScan scans the result of an executed DeleteVariableSetWorkspaceBatch query.
 	DeleteVariableSetWorkspaceScan(results pgx.BatchResults) (DeleteVariableSetWorkspaceRow, error)
+
+	DeleteVariableSetWorkspaces(ctx context.Context, variableSetID pgtype.Text) (pgconn.CommandTag, error)
+	// DeleteVariableSetWorkspacesBatch enqueues a DeleteVariableSetWorkspaces query into batch to be executed
+	// later by the batch.
+	DeleteVariableSetWorkspacesBatch(batch genericBatch, variableSetID pgtype.Text)
+	// DeleteVariableSetWorkspacesScan scans the result of an executed DeleteVariableSetWorkspacesBatch query.
+	DeleteVariableSetWorkspacesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error)
 	// InsertVCSProviderBatch enqueues a InsertVCSProvider query into batch to be executed
@@ -1203,24 +1210,24 @@ type Querier interface {
 	// InsertWorkspaceVariableScan scans the result of an executed InsertWorkspaceVariableBatch query.
 	InsertWorkspaceVariableScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindVariablesByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindVariablesByWorkspaceIDRow, error)
-	// FindVariablesByWorkspaceIDBatch enqueues a FindVariablesByWorkspaceID query into batch to be executed
+	FindWorkspaceVariablesByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspaceVariablesByWorkspaceIDRow, error)
+	// FindWorkspaceVariablesByWorkspaceIDBatch enqueues a FindWorkspaceVariablesByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindVariablesByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
-	// FindVariablesByWorkspaceIDScan scans the result of an executed FindVariablesByWorkspaceIDBatch query.
-	FindVariablesByWorkspaceIDScan(results pgx.BatchResults) ([]FindVariablesByWorkspaceIDRow, error)
+	FindWorkspaceVariablesByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindWorkspaceVariablesByWorkspaceIDScan scans the result of an executed FindWorkspaceVariablesByWorkspaceIDBatch query.
+	FindWorkspaceVariablesByWorkspaceIDScan(results pgx.BatchResults) ([]FindWorkspaceVariablesByWorkspaceIDRow, error)
 
-	FindWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text) (FindWorkspaceVariableByIDRow, error)
-	// FindWorkspaceVariableByIDBatch enqueues a FindWorkspaceVariableByID query into batch to be executed
+	FindWorkspaceVariableByVariableID(ctx context.Context, variableID pgtype.Text) (FindWorkspaceVariableByVariableIDRow, error)
+	// FindWorkspaceVariableByVariableIDBatch enqueues a FindWorkspaceVariableByVariableID query into batch to be executed
 	// later by the batch.
-	FindWorkspaceVariableByIDBatch(batch genericBatch, variableID pgtype.Text)
-	// FindWorkspaceVariableByIDScan scans the result of an executed FindWorkspaceVariableByIDBatch query.
-	FindWorkspaceVariableByIDScan(results pgx.BatchResults) (FindWorkspaceVariableByIDRow, error)
+	FindWorkspaceVariableByVariableIDBatch(batch genericBatch, variableID pgtype.Text)
+	// FindWorkspaceVariableByVariableIDScan scans the result of an executed FindWorkspaceVariableByVariableIDBatch query.
+	FindWorkspaceVariableByVariableIDScan(results pgx.BatchResults) (FindWorkspaceVariableByVariableIDRow, error)
 
-	DeleteWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text, workspaceID pgtype.Text) (DeleteWorkspaceVariableByIDRow, error)
+	DeleteWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text) (DeleteWorkspaceVariableByIDRow, error)
 	// DeleteWorkspaceVariableByIDBatch enqueues a DeleteWorkspaceVariableByID query into batch to be executed
 	// later by the batch.
-	DeleteWorkspaceVariableByIDBatch(batch genericBatch, variableID pgtype.Text, workspaceID pgtype.Text)
+	DeleteWorkspaceVariableByIDBatch(batch genericBatch, variableID pgtype.Text)
 	// DeleteWorkspaceVariableByIDScan scans the result of an executed DeleteWorkspaceVariableByIDBatch query.
 	DeleteWorkspaceVariableByIDScan(results pgx.BatchResults) (DeleteWorkspaceVariableByIDRow, error)
 }
@@ -1687,8 +1694,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findVariableSetsByWorkspaceSQL, findVariableSetsByWorkspaceSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableSetsByWorkspace': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findVariableSetByIDSQL, findVariableSetByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindVariableSetByID': %w", err)
+	if _, err := p.Prepare(ctx, findVariableSetBySetIDSQL, findVariableSetBySetIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVariableSetBySetID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findVariableSetByVariableIDSQL, findVariableSetByVariableIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVariableSetByVariableID': %w", err)
@@ -1713,6 +1720,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteVariableSetWorkspaceSQL, deleteVariableSetWorkspaceSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVariableSetWorkspace': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteVariableSetWorkspacesSQL, deleteVariableSetWorkspacesSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteVariableSetWorkspaces': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertVCSProviderSQL, insertVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertVCSProvider': %w", err)
@@ -1804,11 +1814,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertWorkspaceVariableSQL, insertWorkspaceVariableSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspaceVariable': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findVariablesByWorkspaceIDSQL, findVariablesByWorkspaceIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindVariablesByWorkspaceID': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspaceVariablesByWorkspaceIDSQL, findWorkspaceVariablesByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceVariablesByWorkspaceID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspaceVariableByIDSQL, findWorkspaceVariableByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceVariableByID': %w", err)
+	if _, err := p.Prepare(ctx, findWorkspaceVariableByVariableIDSQL, findWorkspaceVariableByVariableIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceVariableByVariableID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceVariableByIDSQL, deleteWorkspaceVariableByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceVariableByID': %w", err)

@@ -43,13 +43,12 @@ func (q *DBQuerier) InsertWorkspaceVariableScan(results pgx.BatchResults) (pgcon
 	return cmdTag, err
 }
 
-const findVariablesByWorkspaceIDSQL = `SELECT v.*
+const findWorkspaceVariablesByWorkspaceIDSQL = `SELECT v.*
 FROM workspace_variables
 JOIN variables v USING (variable_id)
-WHERE workspace_id = $1
-;`
+WHERE workspace_id = $1;`
 
-type FindVariablesByWorkspaceIDRow struct {
+type FindWorkspaceVariablesByWorkspaceIDRow struct {
 	VariableID  pgtype.Text `json:"variable_id"`
 	Key         pgtype.Text `json:"key"`
 	Value       pgtype.Text `json:"value"`
@@ -60,132 +59,138 @@ type FindVariablesByWorkspaceIDRow struct {
 	VersionID   pgtype.Text `json:"version_id"`
 }
 
-// FindVariablesByWorkspaceID implements Querier.FindVariablesByWorkspaceID.
-func (q *DBQuerier) FindVariablesByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindVariablesByWorkspaceIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindVariablesByWorkspaceID")
-	rows, err := q.conn.Query(ctx, findVariablesByWorkspaceIDSQL, workspaceID)
+// FindWorkspaceVariablesByWorkspaceID implements Querier.FindWorkspaceVariablesByWorkspaceID.
+func (q *DBQuerier) FindWorkspaceVariablesByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindWorkspaceVariablesByWorkspaceIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceVariablesByWorkspaceID")
+	rows, err := q.conn.Query(ctx, findWorkspaceVariablesByWorkspaceIDSQL, workspaceID)
 	if err != nil {
-		return nil, fmt.Errorf("query FindVariablesByWorkspaceID: %w", err)
+		return nil, fmt.Errorf("query FindWorkspaceVariablesByWorkspaceID: %w", err)
 	}
 	defer rows.Close()
-	items := []FindVariablesByWorkspaceIDRow{}
+	items := []FindWorkspaceVariablesByWorkspaceIDRow{}
 	for rows.Next() {
-		var item FindVariablesByWorkspaceIDRow
+		var item FindWorkspaceVariablesByWorkspaceIDRow
 		if err := rows.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID); err != nil {
-			return nil, fmt.Errorf("scan FindVariablesByWorkspaceID row: %w", err)
+			return nil, fmt.Errorf("scan FindWorkspaceVariablesByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindVariablesByWorkspaceID rows: %w", err)
+		return nil, fmt.Errorf("close FindWorkspaceVariablesByWorkspaceID rows: %w", err)
 	}
 	return items, err
 }
 
-// FindVariablesByWorkspaceIDBatch implements Querier.FindVariablesByWorkspaceIDBatch.
-func (q *DBQuerier) FindVariablesByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
-	batch.Queue(findVariablesByWorkspaceIDSQL, workspaceID)
+// FindWorkspaceVariablesByWorkspaceIDBatch implements Querier.FindWorkspaceVariablesByWorkspaceIDBatch.
+func (q *DBQuerier) FindWorkspaceVariablesByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findWorkspaceVariablesByWorkspaceIDSQL, workspaceID)
 }
 
-// FindVariablesByWorkspaceIDScan implements Querier.FindVariablesByWorkspaceIDScan.
-func (q *DBQuerier) FindVariablesByWorkspaceIDScan(results pgx.BatchResults) ([]FindVariablesByWorkspaceIDRow, error) {
+// FindWorkspaceVariablesByWorkspaceIDScan implements Querier.FindWorkspaceVariablesByWorkspaceIDScan.
+func (q *DBQuerier) FindWorkspaceVariablesByWorkspaceIDScan(results pgx.BatchResults) ([]FindWorkspaceVariablesByWorkspaceIDRow, error) {
 	rows, err := results.Query()
 	if err != nil {
-		return nil, fmt.Errorf("query FindVariablesByWorkspaceIDBatch: %w", err)
+		return nil, fmt.Errorf("query FindWorkspaceVariablesByWorkspaceIDBatch: %w", err)
 	}
 	defer rows.Close()
-	items := []FindVariablesByWorkspaceIDRow{}
+	items := []FindWorkspaceVariablesByWorkspaceIDRow{}
 	for rows.Next() {
-		var item FindVariablesByWorkspaceIDRow
+		var item FindWorkspaceVariablesByWorkspaceIDRow
 		if err := rows.Scan(&item.VariableID, &item.Key, &item.Value, &item.Description, &item.Category, &item.Sensitive, &item.HCL, &item.VersionID); err != nil {
-			return nil, fmt.Errorf("scan FindVariablesByWorkspaceIDBatch row: %w", err)
+			return nil, fmt.Errorf("scan FindWorkspaceVariablesByWorkspaceIDBatch row: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindVariablesByWorkspaceIDBatch rows: %w", err)
+		return nil, fmt.Errorf("close FindWorkspaceVariablesByWorkspaceIDBatch rows: %w", err)
 	}
 	return items, err
 }
 
-const findWorkspaceVariableByIDSQL = `SELECT workspace_id, (v.*)::"variables" AS variable
+const findWorkspaceVariableByVariableIDSQL = `SELECT workspace_id, (v.*)::"variables" AS variable
 FROM workspace_variables
 JOIN variables v USING (variable_id)
-WHERE variable_id = $1
-;`
+WHERE variable_id = $1;`
 
-type FindWorkspaceVariableByIDRow struct {
+type FindWorkspaceVariableByVariableIDRow struct {
 	WorkspaceID pgtype.Text `json:"workspace_id"`
 	Variable    *Variables  `json:"variable"`
 }
 
-// FindWorkspaceVariableByID implements Querier.FindWorkspaceVariableByID.
-func (q *DBQuerier) FindWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text) (FindWorkspaceVariableByIDRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceVariableByID")
-	row := q.conn.QueryRow(ctx, findWorkspaceVariableByIDSQL, variableID)
-	var item FindWorkspaceVariableByIDRow
+// FindWorkspaceVariableByVariableID implements Querier.FindWorkspaceVariableByVariableID.
+func (q *DBQuerier) FindWorkspaceVariableByVariableID(ctx context.Context, variableID pgtype.Text) (FindWorkspaceVariableByVariableIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceVariableByVariableID")
+	row := q.conn.QueryRow(ctx, findWorkspaceVariableByVariableIDSQL, variableID)
+	var item FindWorkspaceVariableByVariableIDRow
 	variableRow := q.types.newVariables()
 	if err := row.Scan(&item.WorkspaceID, variableRow); err != nil {
-		return item, fmt.Errorf("query FindWorkspaceVariableByID: %w", err)
+		return item, fmt.Errorf("query FindWorkspaceVariableByVariableID: %w", err)
 	}
 	if err := variableRow.AssignTo(&item.Variable); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceVariableByID row: %w", err)
+		return item, fmt.Errorf("assign FindWorkspaceVariableByVariableID row: %w", err)
 	}
 	return item, nil
 }
 
-// FindWorkspaceVariableByIDBatch implements Querier.FindWorkspaceVariableByIDBatch.
-func (q *DBQuerier) FindWorkspaceVariableByIDBatch(batch genericBatch, variableID pgtype.Text) {
-	batch.Queue(findWorkspaceVariableByIDSQL, variableID)
+// FindWorkspaceVariableByVariableIDBatch implements Querier.FindWorkspaceVariableByVariableIDBatch.
+func (q *DBQuerier) FindWorkspaceVariableByVariableIDBatch(batch genericBatch, variableID pgtype.Text) {
+	batch.Queue(findWorkspaceVariableByVariableIDSQL, variableID)
 }
 
-// FindWorkspaceVariableByIDScan implements Querier.FindWorkspaceVariableByIDScan.
-func (q *DBQuerier) FindWorkspaceVariableByIDScan(results pgx.BatchResults) (FindWorkspaceVariableByIDRow, error) {
+// FindWorkspaceVariableByVariableIDScan implements Querier.FindWorkspaceVariableByVariableIDScan.
+func (q *DBQuerier) FindWorkspaceVariableByVariableIDScan(results pgx.BatchResults) (FindWorkspaceVariableByVariableIDRow, error) {
 	row := results.QueryRow()
-	var item FindWorkspaceVariableByIDRow
+	var item FindWorkspaceVariableByVariableIDRow
 	variableRow := q.types.newVariables()
 	if err := row.Scan(&item.WorkspaceID, variableRow); err != nil {
-		return item, fmt.Errorf("scan FindWorkspaceVariableByIDBatch row: %w", err)
+		return item, fmt.Errorf("scan FindWorkspaceVariableByVariableIDBatch row: %w", err)
 	}
 	if err := variableRow.AssignTo(&item.Variable); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceVariableByID row: %w", err)
+		return item, fmt.Errorf("assign FindWorkspaceVariableByVariableID row: %w", err)
 	}
 	return item, nil
 }
 
 const deleteWorkspaceVariableByIDSQL = `DELETE
-FROM workspace_variables
-WHERE variable_id = $1
-AND workspace_id = $2
-RETURNING *;`
+FROM workspace_variables wv USING variables v
+WHERE wv.variable_id = $1
+RETURNING wv.workspace_id, (v.*)::"variables" AS variable;`
 
 type DeleteWorkspaceVariableByIDRow struct {
 	WorkspaceID pgtype.Text `json:"workspace_id"`
-	VariableID  pgtype.Text `json:"variable_id"`
+	Variable    *Variables  `json:"variable"`
 }
 
 // DeleteWorkspaceVariableByID implements Querier.DeleteWorkspaceVariableByID.
-func (q *DBQuerier) DeleteWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text, workspaceID pgtype.Text) (DeleteWorkspaceVariableByIDRow, error) {
+func (q *DBQuerier) DeleteWorkspaceVariableByID(ctx context.Context, variableID pgtype.Text) (DeleteWorkspaceVariableByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceVariableByID")
-	row := q.conn.QueryRow(ctx, deleteWorkspaceVariableByIDSQL, variableID, workspaceID)
+	row := q.conn.QueryRow(ctx, deleteWorkspaceVariableByIDSQL, variableID)
 	var item DeleteWorkspaceVariableByIDRow
-	if err := row.Scan(&item.WorkspaceID, &item.VariableID); err != nil {
+	variableRow := q.types.newVariables()
+	if err := row.Scan(&item.WorkspaceID, variableRow); err != nil {
 		return item, fmt.Errorf("query DeleteWorkspaceVariableByID: %w", err)
+	}
+	if err := variableRow.AssignTo(&item.Variable); err != nil {
+		return item, fmt.Errorf("assign DeleteWorkspaceVariableByID row: %w", err)
 	}
 	return item, nil
 }
 
 // DeleteWorkspaceVariableByIDBatch implements Querier.DeleteWorkspaceVariableByIDBatch.
-func (q *DBQuerier) DeleteWorkspaceVariableByIDBatch(batch genericBatch, variableID pgtype.Text, workspaceID pgtype.Text) {
-	batch.Queue(deleteWorkspaceVariableByIDSQL, variableID, workspaceID)
+func (q *DBQuerier) DeleteWorkspaceVariableByIDBatch(batch genericBatch, variableID pgtype.Text) {
+	batch.Queue(deleteWorkspaceVariableByIDSQL, variableID)
 }
 
 // DeleteWorkspaceVariableByIDScan implements Querier.DeleteWorkspaceVariableByIDScan.
 func (q *DBQuerier) DeleteWorkspaceVariableByIDScan(results pgx.BatchResults) (DeleteWorkspaceVariableByIDRow, error) {
 	row := results.QueryRow()
 	var item DeleteWorkspaceVariableByIDRow
-	if err := row.Scan(&item.WorkspaceID, &item.VariableID); err != nil {
+	variableRow := q.types.newVariables()
+	if err := row.Scan(&item.WorkspaceID, variableRow); err != nil {
 		return item, fmt.Errorf("scan DeleteWorkspaceVariableByIDBatch row: %w", err)
+	}
+	if err := variableRow.AssignTo(&item.Variable); err != nil {
+		return item, fmt.Errorf("assign DeleteWorkspaceVariableByID row: %w", err)
 	}
 	return item, nil
 }

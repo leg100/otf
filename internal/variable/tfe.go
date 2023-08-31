@@ -77,13 +77,13 @@ func (a *tfe) get(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	variable, workspaceID, err := a.GetWorkspaceVariable(r.Context(), variableID)
+	wv, err := a.GetWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.Respond(w, r, a.convertWorkspaceVariable(variable, workspaceID), http.StatusOK)
+	a.Respond(w, r, a.convertWorkspaceVariable(wv.Variable, wv.WorkspaceID), http.StatusOK)
 }
 
 func (a *tfe) list(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +117,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		variableError(w, err)
 		return
 	}
-	updated, workspaceID, err := a.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
+	updated, err := a.UpdateWorkspaceVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -130,7 +130,7 @@ func (a *tfe) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, a.convertWorkspaceVariable(updated, workspaceID), http.StatusOK)
+	a.Respond(w, r, a.convertWorkspaceVariable(updated.Variable, updated.WorkspaceID), http.StatusOK)
 }
 
 func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +139,7 @@ func (a *tfe) delete(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	_, _, err = a.DeleteWorkspaceVariable(r.Context(), variableID)
+	_, err = a.DeleteWorkspaceVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -303,7 +303,7 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_, _, err = a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
+	_, err = a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -329,7 +329,7 @@ func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.Service.deleteVariableSetVariable(r.Context(), variableID)
+	_, err = a.Service.deleteVariableSetVariable(r.Context(), variableID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return

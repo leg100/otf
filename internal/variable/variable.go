@@ -17,22 +17,11 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// VariableCategory is the category of variable
-type VariableCategory string
-
-// VariableCategoryPtr returns a pointer to the given category type.
-func VariableCategoryPtr(v VariableCategory) *VariableCategory {
-	return &v
-}
-
 const (
 	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables/managing-variables#character-limits
 	VariableDescriptionMaxChars = 512
 	VariableKeyMaxChars         = 128
 	VariableValueMaxKB          = 256 // 256*1024 bytes
-
-	CategoryTerraform VariableCategory = "terraform"
-	CategoryEnv       VariableCategory = "env"
 )
 
 var (
@@ -83,7 +72,7 @@ type (
 	generateVersion func() string
 )
 
-func newVariable(opts CreateVariableOptions) (*Variable, error) {
+func newVariable(collection []*Variable, opts CreateVariableOptions) (*Variable, error) {
 	v := Variable{
 		ID: internal.NewID("var"),
 	}
@@ -123,20 +112,11 @@ func newVariable(opts CreateVariableOptions) (*Variable, error) {
 	if opts.HCL != nil {
 		v.HCL = *opts.HCL
 	}
-
-	return &v, nil
-}
-
-func newWorkspaceVariable(workspaceVariables []*Variable, opts CreateVariableOptions) (*Variable, error) {
-	v, err := newVariable(opts)
-	if err != nil {
-		return nil, err
-	}
 	// check for conflicts with other workspace variables
-	if err := v.conflicts(workspaceVariables); err != nil {
+	if err := v.checkConflicts(collection); err != nil {
 		return nil, err
 	}
-	return v, nil
+	return &v, nil
 }
 
 func versionGenerator() string {
@@ -197,7 +177,7 @@ func (v *Variable) update(collection []*Variable, opts UpdateVariableOptions) er
 		}
 	}
 	// check for conflicts with other variables in collection
-	if err := v.conflicts(collection); err != nil {
+	if err := v.checkConflicts(collection); err != nil {
 		return err
 	}
 	// generate new version ID on every update call, even if nothing is actually
@@ -250,9 +230,9 @@ func (v *Variable) setSensitive(sensitive bool) error {
 	return nil
 }
 
-// conflicts checks for conflicts with other variables in the collection, i.e.
-// they share same key and category.
-func (v *Variable) conflicts(collection []*Variable) error {
+// checkConflicts checks for conflicts with the given variable. i.e. they share
+// same key and category.
+func (v *Variable) checkConflicts(collection []*Variable) error {
 	for _, v2 := range collection {
 		if v.ID == v2.ID {
 			// cannot conflict with self
@@ -263,6 +243,17 @@ func (v *Variable) conflicts(collection []*Variable) error {
 		}
 	}
 	return nil
+}
+
+// Matches determines whether variable is contained in vars, i.e. shares the
+// same ID.
+func (v *Variable) Matches(vars []*Variable) bool {
+	for _, v2 := range vars {
+		if v.ID == v2.ID {
+			return true
+		}
+	}
+	return false
 }
 
 // WriteTerraformVars writes workspace variables to a file named
@@ -303,14 +294,16 @@ func WriteTerraformVars(dir string, vars []*Variable) error {
 // documented here:
 //
 // https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
-func mergeVariables(run *run.Run, workspaceVariables []*Variable, sets []*VariableSet) []*Variable {
+//
+// Note: If run is nil then it is ignored.
+func mergeVariables(workspaceSets []*VariableSet, workspaceVariables []*Variable, run *run.Run) []*Variable {
 	// terraform variables keyed by variable key
 	tfVars := make(map[string]*Variable)
 	// environment variables keyed by variable key
 	envVars := make(map[string]*Variable)
 
 	// global sets have lowest precedence
-	for _, s := range sets {
+	for _, s := range workspaceSets {
 		if s.Global {
 			for _, v := range s.Variables {
 				switch v.Category {
@@ -329,7 +322,7 @@ func mergeVariables(run *run.Run, workspaceVariables []*Variable, sets []*Variab
 	// over variable foo in set named B.
 	//
 	// sort sets by lexical order, A->Z
-	slices.SortFunc(sets, func(a, b *VariableSet) int {
+	slices.SortFunc(workspaceSets, func(a, b *VariableSet) int {
 		if a.Name < b.Name {
 			return -1
 		} else if a.Name > b.Name {
@@ -339,16 +332,14 @@ func mergeVariables(run *run.Run, workspaceVariables []*Variable, sets []*Variab
 		}
 	})
 	// reverse order sets (Z->A), so that sets later in the slice take precedence.
-	slices.Reverse(sets)
-	for _, s := range sets {
-		if slices.Contains(s.Workspaces, run.WorkspaceID) {
-			for _, v := range s.Variables {
-				switch v.Category {
-				case CategoryTerraform:
-					tfVars[v.Key] = v
-				case CategoryEnv:
-					envVars[v.Key] = v
-				}
+	slices.Reverse(workspaceSets)
+	for _, s := range workspaceSets {
+		for _, v := range s.Variables {
+			switch v.Category {
+			case CategoryTerraform:
+				tfVars[v.Key] = v
+			case CategoryEnv:
+				envVars[v.Key] = v
 			}
 		}
 	}
@@ -365,8 +356,10 @@ func mergeVariables(run *run.Run, workspaceVariables []*Variable, sets []*Variab
 	}
 
 	// run variables have highest precedence
-	for _, v := range run.Variables {
-		tfVars[v.Key] = &Variable{Key: v.Key, Value: v.Value, Category: CategoryTerraform, HCL: true}
+	if run != nil {
+		for _, v := range run.Variables {
+			tfVars[v.Key] = &Variable{Key: v.Key, Value: v.Value, Category: CategoryTerraform, HCL: true}
+		}
 	}
 
 	return append(maps.Values(tfVars), maps.Values(envVars)...)

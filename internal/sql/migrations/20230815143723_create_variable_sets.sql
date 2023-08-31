@@ -6,7 +6,8 @@
 --
 CREATE TABLE IF NOT EXISTS workspace_variables (
     workspace_id TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    variable_id TEXT REFERENCES variables ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+    variable_id TEXT REFERENCES variables ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    UNIQUE(workspace_id, variable_id)
 );
 
 INSERT INTO workspace_variables (
@@ -35,12 +36,14 @@ CREATE TABLE IF NOT EXISTS variable_sets (
 
 CREATE TABLE IF NOT EXISTS variable_set_variables (
     variable_set_id TEXT REFERENCES variable_sets ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    variable_id TEXT REFERENCES variables ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+    variable_id TEXT REFERENCES variables ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    UNIQUE(variable_set_id, variable_id)
 );
 
 CREATE TABLE IF NOT EXISTS variable_set_workspaces (
     variable_set_id TEXT REFERENCES variable_sets ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    workspace_id TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+    workspace_id TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    UNIQUE(variable_set_id, workspace_id)
 );
 
 -- +goose Down

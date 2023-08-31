@@ -11,12 +11,21 @@
     <tbody class="border-b border-slate-900">
       {{ range .Variables }}
         <tr class="even:bg-gray-100">
-          <td class="p-2"><a class="show-underline" href="{{ call $.VariablesTable.EditPath .ID }}">{{ .Key }}</a></td>
+          <td class="p-2 flex flex-row gap-2">
+            {{ if $.IsOverwritten . }}
+              <span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
+              <s>
+            {{ end }}
+            <a class="show-underline" href="{{ $.EditPath .ID }}">{{ .Key }}</a>
+            {{ if $.IsOverwritten . }}
+              </s>
+            {{ end }}
+          </td>
           <td class="p-2">{{ if .Sensitive }}<span class="data">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
           <td class="p-2">{{ .Category }}</td>
           <td class="p-2 text-right">
             {{ if $.CanDeleteVariable }}
-              <form action="{{ call $.VariablesTable.DeletePath .ID }}" method="POST">
+              <form action="{{ $.DeletePath .ID }}" method="POST">
                 <button id="delete-variable-button" class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
               </form>
             {{ end }}
