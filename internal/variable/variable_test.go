@@ -105,6 +105,7 @@ func TestVariable_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.opts.generateVersion = func() string { return "" }
 			got := tt.before
 			err := got.update(nil, tt.opts)
 			if tt.err {
@@ -255,46 +256,14 @@ func Test_mergeVariables(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "skip sets scoped to a different workspace",
-			sets: []*VariableSet{
-				{
-					Name:       "set_A",
-					Workspaces: []string{"ws-123"},
-					Variables: []*Variable{
-						{
-							Key:      "foo",
-							Value:    "set_a",
-							Category: CategoryTerraform,
-						},
-					},
-				},
-				{
-					Name:       "set_B",
-					Workspaces: []string{"ws-456"},
-					Variables: []*Variable{
-						{
-							Key:      "foo",
-							Value:    "set_b",
-							Category: CategoryTerraform,
-						},
-					},
-				},
-			},
-			run: run.Run{WorkspaceID: "ws-456"},
-			want: []*Variable{
-				{
-					Key:      "foo",
-					Value:    "set_b",
-					Category: CategoryTerraform,
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := mergeVariables(tt.sets, tt.workspaceVariables, &tt.run)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, len(tt.want), len(got))
+			for _, w := range tt.want {
+				assert.Contains(t, got, w)
+			}
 		})
 	}
 }

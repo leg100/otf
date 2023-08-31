@@ -40,8 +40,13 @@ type (
 	}
 
 	updateVariableParams struct {
-		createVariableParams
-		VariableID string `schema:"variable_id,required"`
+		Key         *string
+		Value       *string
+		Description *string
+		Category    *VariableCategory
+		Sensitive   *bool
+		HCL         *bool
+		VariableID  string `schema:"variable_id,required"`
 	}
 
 	workspaceVariableTable struct {
@@ -241,8 +246,8 @@ func (h *web) updateWorkspaceVariable(w http.ResponseWriter, r *http.Request) {
 		Value:       params.Value,
 		Description: params.Description,
 		Category:    params.Category,
-		Sensitive:   &params.Sensitive,
-		HCL:         &params.HCL,
+		Sensitive:   params.Sensitive,
+		HCL:         params.HCL,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
@@ -592,8 +597,8 @@ func (h *web) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		Value:       params.Value,
 		Description: params.Description,
 		Category:    params.Category,
-		Sensitive:   &params.Sensitive,
-		HCL:         &params.HCL,
+		Sensitive:   params.Sensitive,
+		HCL:         params.HCL,
 	})
 	if err != nil {
 		html.FlashError(w, err.Error())
