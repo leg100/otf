@@ -68,7 +68,9 @@ SELECT
         GROUP BY variable_set_id
     ) AS workspace_ids
 FROM variable_sets vs
-WHERE vs.global IS true;
+JOIN (organizations o JOIN workspaces w ON o.name = w.organization_name) ON o.name = vs.organization_name
+WHERE vs.global IS true
+AND w.workspace_id = pggen.arg('workspace_id');
 
 -- name: FindVariableSetBySetID :one
 SELECT

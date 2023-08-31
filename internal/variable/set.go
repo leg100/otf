@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/http/html/paths"
 )
 
 type (
@@ -17,10 +16,8 @@ type (
 		Global       bool
 		Workspaces   []string // workspace IDs
 		Organization string   // org name
-		Variables    VariableSetVariables
+		Variables    []*Variable
 	}
-
-	VariableSetVariables []*Variable
 
 	CreateVariableSetOptions struct {
 		Name        string
@@ -111,8 +108,8 @@ func (s *VariableSet) getVariable(variableID string) *Variable {
 	return nil
 }
 
-// checkConflicts checks for variable conflicts within not only the set, but
-// with the other given sets too. If any of the following is true, then
+// checkGlobalConflicts checks for variable conflicts within not only the set,
+// but with the other given sets too. If any of the following is true, then
 // ErrVariableConflict is returned:
 //
 // (a) set contains more than one variable sharing the same key and category
@@ -141,12 +138,4 @@ func (s *VariableSet) checkGlobalConflicts(organizationSets []*VariableSet) erro
 		}
 	}
 	return nil
-}
-
-func (*VariableSetVariables) EditPath(variableID string) string {
-	return paths.EditVariable(variableID)
-}
-
-func (*VariableSetVariables) DeletePath(variableID string) string {
-	return paths.EditVariable(variableID)
 }

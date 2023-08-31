@@ -244,7 +244,7 @@ func (s *service) DeleteWorkspaceVariable(ctx context.Context, variableID string
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "deleting workspace variable", "subject", subject, "workspace_id", wv.WorkspaceID, "variable", wv.Variable)
+		s.Error(err, "deleting workspace variable", "subject", subject, "variable_id", variableID)
 		return nil, err
 	}
 	s.V(1).Info("deleted workspace variable", "subject", subject, "workspace_id", wv.WorkspaceID, "variable", wv.Variable)
@@ -518,7 +518,7 @@ func (s *service) deleteVariableSetVariable(ctx context.Context, variableID stri
 
 func (s *service) applySetToWorkspaces(ctx context.Context, setID string, workspaceIDs []string) error {
 	// retrieve set first in order to retrieve organization name for authorization
-	set, err := s.db.getVariableSetByVariableID(ctx, setID)
+	set, err := s.db.getVariableSet(ctx, setID)
 	if err != nil {
 		return err
 	}

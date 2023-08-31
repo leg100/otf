@@ -46,6 +46,11 @@ type (
 		VersionID string
 	}
 
+	WorkspaceVariable struct {
+		*Variable
+		WorkspaceID string
+	}
+
 	CreateVariableOptions struct {
 		Key         *string
 		Value       *string
