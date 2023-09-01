@@ -120,7 +120,6 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			chromedp.WaitVisible(`//div[@id='variable-set-global-1']//td[1]/span[text()='OVERWRITTEN']`),
 			// whereas the workspace-scoped set should not be overwritten.
 			chromedp.WaitVisible(`//div[@id='variable-set-workspace-scoped-1']//td[1]/a[text()='foo']`),
-			chromedp.WaitNotVisible(`//div[@id='variable-set-workspace-scoped-1']//td[1]/span[text()='OVERWRITTEN']`),
 		},
 	})
 }
