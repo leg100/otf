@@ -18,8 +18,10 @@
   {{ end }}
   <span class="text-lg mt-4">Variable Sets ({{ len .VariableSetTables }})</span>
   {{ range .VariableSetTables }}
-    {{ template "variable-set-item" . }}
-    {{ template "variable-table" . }}
+    <div class="flex flex-col gap-2" id="variable-set-{{ .Name }}">
+      {{ template "variable-set-item" . }}
+      {{ template "variable-table" . }}
+    </div>
     <div class="my-2"></div>
   {{ end }}
 {{ end }}

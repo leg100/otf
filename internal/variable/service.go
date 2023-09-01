@@ -412,7 +412,7 @@ func (s *service) createVariableSetVariable(ctx context.Context, setID string, o
 		v       *Variable
 	)
 	err := s.db.Lock(ctx, "variables", func(ctx context.Context, q pggen.Querier) (err error) {
-		set, err := s.db.getVariableSet(ctx, setID)
+		set, err = s.db.getVariableSet(ctx, setID)
 		if err != nil {
 			return err
 		}

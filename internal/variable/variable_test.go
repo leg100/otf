@@ -256,6 +256,47 @@ func Test_mergeVariables(t *testing.T) {
 				},
 			},
 		},
+		// a variable set can be set both to global and also specify workspaces,
+		// in which case the workspaces should be ignored and not considered as
+		// part of determining precedence.
+		{
+			name: "ignore workspaces in global sets",
+			sets: []*VariableSet{
+				{
+					// even though this has lexical precedence, it is global and
+					// thus have lower precedence than the workspace-scoped set
+					// below.
+					Name:       "a - global with workspaces",
+					Global:     true,
+					Workspaces: []string{"ws-123"},
+					Variables: []*Variable{
+						{
+							Key:      "foo",
+							Value:    "global",
+							Category: CategoryTerraform,
+						},
+					},
+				},
+				{
+					Name:       "b - workspace-scoped",
+					Workspaces: []string{"ws-123"},
+					Variables: []*Variable{
+						{
+							Key:      "foo",
+							Value:    "workspace-scoped",
+							Category: CategoryTerraform,
+						},
+					},
+				},
+			},
+			want: []*Variable{
+				{
+					Key:      "foo",
+					Value:    "workspace-scoped",
+					Category: CategoryTerraform,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

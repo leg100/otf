@@ -338,6 +338,9 @@ func mergeVariables(workspaceSets []*VariableSet, workspaceVariables []*Variable
 	// reverse order sets (Z->A), so that sets later in the slice take precedence.
 	slices.Reverse(workspaceSets)
 	for _, s := range workspaceSets {
+		if s.Global {
+			continue
+		}
 		for _, v := range s.Variables {
 			switch v.Category {
 			case CategoryTerraform:
