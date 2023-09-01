@@ -235,6 +235,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Responder:           responder,
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
+		RunService:          runService,
 	})
 
 	agent, err := agent.NewAgent(

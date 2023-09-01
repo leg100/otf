@@ -656,7 +656,7 @@ func (workspaceVariableTable) EditPath(variableID string) string {
 }
 
 func (workspaceVariableTable) DeletePath(variableID string) string {
-	return paths.EditVariable(variableID)
+	return paths.DeleteVariable(variableID)
 }
 
 func (w workspaceVariableTable) IsOverwritten(v *Variable) bool {

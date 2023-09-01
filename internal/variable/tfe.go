@@ -43,6 +43,29 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.deleteVariableFromSet).Methods("DELETE")
 	r.HandleFunc("/varsets/{varset_id}/relationships/workspaces", a.applySetToWorkspaces).Methods("POST")
 	r.HandleFunc("/varsets/{varset_id}/relationships/workspaces", a.deleteSetFromWorkspaces).Methods("DELETE")
+
+	// endpoints bespoke to OTF
+	r.HandleFunc("/vars/effective/{run_id}", a.listEffectiveVariables).Methods("GET")
+}
+
+func (a *tfe) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+	variables, err := a.ListEffectiveVariables(r.Context(), runID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	to := make([]*types.Variable, len(variables))
+	for i, from := range variables {
+		to[i] = a.convertVariable(from)
+	}
+
+	a.Respond(w, r, to, http.StatusOK)
 }
 
 func (a *tfe) createWorkspaceVariable(w http.ResponseWriter, r *http.Request) {

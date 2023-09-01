@@ -20,13 +20,10 @@ type (
 	VariableService = Service
 
 	Service interface {
-		// MergeVariables merges variables for a workspace according to the
-		// precedence rules documented here:
-		//
-		// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables#precedence
-		MergeVariables(ctx context.Context, run *run.Run) ([]*Variable, error)
-
-		ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error)
+		// ListEffectiveVariables lists the effective variables for a run, i.e.
+		// merging variable sets, workspace variables, and run variables, and
+		// removing those that are overridden according to precedence rules.
+		ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error)
 
 		CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error)
 		UpdateWorkspaceVariable(ctx context.Context, variableID string, opts UpdateVariableOptions) (*WorkspaceVariable, error)
@@ -52,6 +49,7 @@ type (
 
 	service struct {
 		logr.Logger
+		run.RunService
 
 		db           *pgdb
 		web          *web
@@ -68,6 +66,7 @@ type (
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
+		run.RunService
 	}
 )
 
@@ -77,6 +76,7 @@ func NewService(opts Options) *service {
 		db:           &pgdb{opts.DB},
 		workspace:    opts.WorkspaceAuthorizer,
 		organization: &organization.Authorizer{Logger: opts.Logger},
+		RunService:   opts.RunService,
 	}
 
 	svc.web = &web{
@@ -97,7 +97,11 @@ func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
 }
 
-func (s *service) MergeVariables(ctx context.Context, run *run.Run) ([]*Variable, error) {
+func (s *service) ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error) {
+	run, err := s.GetRun(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
 	sets, err := s.listWorkspaceVariableSets(ctx, run.WorkspaceID)
 	if err != nil {
 		return nil, err
@@ -107,14 +111,6 @@ func (s *service) MergeVariables(ctx context.Context, run *run.Run) ([]*Variable
 		return nil, err
 	}
 	return mergeVariables(sets, vars, run), nil
-}
-
-func (s *service) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	vars, err := s.ListWorkspaceVariables(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	return vars, nil
 }
 
 func (s *service) CreateWorkspaceVariable(ctx context.Context, workspaceID string, opts CreateVariableOptions) (*Variable, error) {

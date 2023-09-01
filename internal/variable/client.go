@@ -12,8 +12,8 @@ type Client struct {
 	internal.JSONAPIClient
 }
 
-func (c *Client) ListVariables(ctx context.Context, workspaceID string) ([]*Variable, error) {
-	u := fmt.Sprintf("workspaces/%s/vars", workspaceID)
+func (c *Client) ListEffectiveVariables(ctx context.Context, runID string) ([]*Variable, error) {
+	u := fmt.Sprintf("vars/effective/%s", runID)
 	req, err := c.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err

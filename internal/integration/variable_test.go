@@ -42,7 +42,7 @@ func TestVariable(t *testing.T) {
 		v1 := svc.createVariable(t, ctx, ws)
 		v2 := svc.createVariable(t, ctx, ws)
 
-		got, err := svc.ListVariables(ctx, ws.ID)
+		got, err := svc.ListWorkspaceVariables(ctx, ws.ID)
 		require.NoError(t, err)
 
 		if assert.Equal(t, 2, len(got)) {
