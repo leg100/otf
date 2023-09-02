@@ -63,8 +63,10 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			// go to variable sets
 			chromedp.Click(`//a[text()='variable sets']`),
-			// click new variable set button
+			// click new variable set button and wait for alpine to load on new
+			// variable page
 			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery),
+			waitLoaded,
 			// enter name
 			chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("workspace-scoped-1"),
