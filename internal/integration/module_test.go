@@ -28,7 +28,6 @@ func TestModule(t *testing.T) {
 		svc, org, ctx := setup(t, nil, github.WithRepo("leg100/terraform-aws-stuff"))
 
 		vcsprov := svc.createVCSProvider(t, ctx, org)
-		mod := svc.createModule(t, ctx, org)
 
 		mod, err := svc.PublishModule(ctx, module.PublishOptions{
 			VCSProviderID: vcsprov.ID,

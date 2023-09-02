@@ -44,7 +44,7 @@ func (p *publisher) handleWithError(logger logr.Logger, event cloud.VCSEvent) er
 	// give spawner unlimited powers
 	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "run-spawner"})
 
-	// only create-tag events trigger the publishing of new module
+	// only create-tag events trigger the publishing of new module version
 	if event.Type != cloud.VCSEventTypeTag {
 		return nil
 	}

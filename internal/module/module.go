@@ -109,7 +109,7 @@ func newModule(opts CreateOptions) *Module {
 	}
 }
 
-func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
+func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
 		ID:        internal.NewID("modver"),
 		CreatedAt: internal.CurrentTimestamp(),
@@ -163,4 +163,14 @@ func (m *Module) Latest() *ModuleVersion {
 		}
 	}
 	return nil
+}
+
+func (v *ModuleVersion) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", v.ID),
+		slog.String("module_id", v.ModuleID),
+		slog.String("version", v.Version),
+		slog.String("status", string(v.Status)),
+	}
+	return slog.GroupValue(attrs...)
 }
