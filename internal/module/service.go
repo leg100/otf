@@ -135,7 +135,7 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 		return nil, err
 	}
 
-	mod := NewModule(CreateOptions{
+	mod := newModule(CreateOptions{
 		Name:         name,
 		Provider:     provider,
 		Organization: organization,
@@ -236,7 +236,7 @@ func (s *service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 		return nil, err
 	}
 
-	module := NewModule(opts)
+	module := newModule(opts)
 
 	if err := s.db.createModule(ctx, module); err != nil {
 		s.Error(err, "creating module", "subject", subject, "module", module)
