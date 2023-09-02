@@ -23,18 +23,6 @@ type (
 		cloud.Service
 		internal.HostnameService
 	}
-	manifest struct {
-		Name        string            `json:"name"`
-		URL         string            `json:"url"`
-		Redirect    string            `json:"redirect_url"`
-		Description string            `json:"description"`
-		Events      []string          `json:"default_events"`
-		Permissions map[string]string `json:"default_permissions"`
-		Public      bool              `json:"public"`
-		HookAttrs   struct {
-			URL string `json:"url"`
-		} `json:"hook_attributes"`
-	}
 )
 
 func (h *WebHandlers) AddHandlers(r *mux.Router) {
@@ -45,15 +33,25 @@ func (h *WebHandlers) AddHandlers(r *mux.Router) {
 }
 
 func (h *WebHandlers) new(w http.ResponseWriter, r *http.Request) {
+	type (
+		hookAttributes struct {
+			URL string `json:"url"`
+		}
+		manifest struct {
+			Name        string            `json:"name"`
+			URL         string            `json:"url"`
+			Redirect    string            `json:"redirect_url"`
+			Description string            `json:"description"`
+			Events      []string          `json:"default_events"`
+			Permissions map[string]string `json:"default_permissions"`
+			Public      bool              `json:"public"`
+			HookAttrs   hookAttributes    `json:"hook_attributes"`
+		}
+	)
 	m := manifest{
 		Name: "OTF",
-		URL: (&url.URL{
-			Scheme: "https",
-			Host:   h.Hostname(),
-		}).String(),
-		HookAttrs: struct {
-			URL string `json:"url"`
-		}{
+		URL:  (&url.URL{Scheme: "https", Host: h.Hostname()}).String(),
+		HookAttrs: hookAttributes{
 			URL: (&url.URL{
 				Scheme: "https",
 				Host:   h.Hostname(),
