@@ -6,15 +6,15 @@
 
 {{ define "content" }}
   <div class="flex gap-6 items-center mb-5">
-    <div class="new-module-tab {{ if eq .Step "connect-vcs" }}text-black{{ else }}text-gray-400{{ end }}">
+    <div class="{{ if eq .Step "connect-vcs" }}text-black{{ else }}text-gray-400{{ end }}">
       <a href="{{ newModulePath .Organization }}?step=connect-vcs">
         1. connect vcs
       </a>
     </div>
-    <div class="new-module-tab {{ if eq .Step "select-repo" }}text-black{{ else }}text-gray-400{{ end }}">
+    <div class="{{ if eq .Step "select-repo" }}text-black{{ else }}text-gray-400{{ end }}">
       2. select repo
     </div>
-    <div class="new-module-tab {{ if eq .Step "confirm-selection" }}text-black{{ else }}text-gray-400{{ end }}">
+    <div class="{{ if eq .Step "confirm-selection" }}text-black{{ else }}text-gray-400{{ end }}">
       3. confirm selection
     </div>
   </div>
@@ -23,7 +23,7 @@
     <div>
       Choose a VCS provider that hosts your module source code.
     </div>
-    <div id="content-list" class="content-list">
+    <div id="content-list">
       {{ range .Items }}
         <div class="widget">
           <div>
@@ -55,7 +55,7 @@
       <button class="btn">connect</button>
     </form>
 
-    <div id="content-list" class="content-list">
+    <div id="content-list">
       {{ range .Repos }}
         <div class="widget">
           <div>

@@ -28,7 +28,7 @@
     </div>
     <div class="flex gap-4 flex-col basis-1/5">
       {{ if .CanCreateRun }}
-        <div class="actions-container">
+        <div>
           <h3 class="font-semibold mb-2">Actions</h3>
           <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Workspace.ID }}" method="POST">
             <select name="operation" id="start-run-operation" onchange="this.form.submit()">

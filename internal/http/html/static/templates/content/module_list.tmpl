@@ -12,7 +12,7 @@
 
 
 {{ define "content" }}
-  <div id="content-list" class="content-list">
+  <div id="content-list">
     {{ range .Items }}
       {{ block "content-list-item" . }}{{ end }}
     {{ else }}
