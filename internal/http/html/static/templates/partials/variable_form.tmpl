@@ -13,7 +13,7 @@
         <legend>Category</legend>
         <div class="form-checkbox">
           <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.EditMode) }} required>
-          <label for="category">Terraform</label>
+          <label for="terraform">Terraform</label>
           <span>These variables should match the declarations in your configuration. Click the HCL box to use interpolation or set a non-string value.</span>
         </div>
         <div class="form-checkbox">

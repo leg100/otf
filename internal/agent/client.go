@@ -25,7 +25,7 @@ type (
 	// client allows the agent to communicate with the server endpoints.
 	client interface {
 		GetWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error)
-		ListVariables(ctx context.Context, workspaceID string) ([]*variable.Variable, error)
+		ListEffectiveVariables(ctx context.Context, runID string) ([]*variable.Variable, error)
 		GetPlanFile(ctx context.Context, id string, format run.PlanFormat) ([]byte, error)
 		UploadPlanFile(ctx context.Context, id string, plan []byte, format run.PlanFormat) error
 		GetLockFile(ctx context.Context, id string) ([]byte, error)

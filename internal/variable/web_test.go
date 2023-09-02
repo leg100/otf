@@ -23,9 +23,10 @@ func TestVariable_UpdateHandler(t *testing.T) {
 		{
 			name: "overwrite everything",
 			existing: CreateVariableOptions{
-				Key:      internal.String("foo"),
-				Value:    internal.String("bar"),
-				Category: VariableCategoryPtr(CategoryTerraform),
+				Key:             internal.String("foo"),
+				Value:           internal.String("bar"),
+				Category:        VariableCategoryPtr(CategoryTerraform),
+				generateVersion: func() string { return "" },
 			},
 			updated: url.Values{
 				"key":       {"new-key"},
@@ -45,10 +46,11 @@ func TestVariable_UpdateHandler(t *testing.T) {
 		{
 			name: "update sensitive value",
 			existing: CreateVariableOptions{
-				Key:       internal.String("foo"),
-				Value:     internal.String("topsecret"),
-				Category:  VariableCategoryPtr(CategoryTerraform),
-				Sensitive: internal.Bool(true),
+				Key:             internal.String("foo"),
+				Value:           internal.String("topsecret"),
+				Category:        VariableCategoryPtr(CategoryTerraform),
+				Sensitive:       internal.Bool(true),
+				generateVersion: func() string { return "" },
 			},
 			updated: url.Values{
 				"value": {"evenmoretopsecret"},
@@ -61,29 +63,30 @@ func TestVariable_UpdateHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create existing variable for test to update
-			v := newTestVariable(t, "ws-123", tt.existing)
+			v, err := newVariable(nil, tt.existing)
+			require.NoError(t, err)
 
 			r := httptest.NewRequest("POST", "/?variable_id="+v.ID, strings.NewReader(tt.updated.Encode()))
 			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
-			fakeHTMLApp(t, v).update(w, r)
+			fakeWebApp(t, "ws-123", v).updateWorkspaceVariable(w, r)
 
 			if assert.Equal(t, 302, w.Code, "got body: %s", w.Body.String()) {
 				redirect, err := w.Result().Location()
 				require.NoError(t, err)
-				assert.Equal(t, paths.Variables(v.WorkspaceID), redirect.Path)
+				assert.Equal(t, paths.Variables("ws-123"), redirect.Path)
 			}
 			tt.want(t, v)
 		})
 	}
 }
 
-func fakeHTMLApp(t *testing.T, variable *Variable) *web {
+func fakeWebApp(t *testing.T, workspaceID string, v *Variable) *web {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &web{
 		Renderer: renderer,
-		svc:      &fakeService{variable: variable},
+		svc:      &fakeService{v: v, workspaceID: workspaceID},
 	}
 }

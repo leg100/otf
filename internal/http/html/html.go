@@ -15,24 +15,6 @@ const (
 	pathCookie = "path"
 )
 
-type (
-	// DropdownUI populates a search/dropdown UI component.
-	DropdownUI struct {
-		// Name to send along with value in the POST form
-		Name string
-		// Existing values to NOT show in the dropdown
-		Existing []string
-		// Available values to show in the dropdown
-		Available []string
-		// Action is the form action URL
-		Action string
-		// Placeholder to show in the input element.
-		Placeholder string
-		// Width: "narrow" or "wide"
-		Width string
-	}
-)
-
 func MarkdownToHTML(md []byte) template.HTML {
 	return template.HTML(string(markdown.ToHTML(md, nil, nil)))
 }

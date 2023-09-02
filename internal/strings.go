@@ -2,6 +2,13 @@ package internal
 
 import "strings"
 
+func NewStringFromPtr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 // DiffStrings returns the elements in `a` that aren't in `b`.
 func DiffStrings(a, b []string) []string {
 	mb := make(map[string]struct{}, len(b))

@@ -67,8 +67,8 @@ func newEnvironment(
 	}
 	envs := internal.SafeAppend(agent.envs, internal.CredentialEnv(agent.Hostname(), token))
 
-	// retrieve workspace variables and add them to the environment
-	variables, err := agent.ListVariables(ctx, run.WorkspaceID)
+	// retrieve variables and add them to the environment
+	variables, err := agent.ListEffectiveVariables(ctx, run.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace variables")
 	}
