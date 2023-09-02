@@ -22,6 +22,8 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
+	// create vcs provider for authenticating to github backend
+	provider := daemon.createVCSProvider(t, ctx, org)
 
 	// demonstrate listing and searching
 	browser.Run(t, ctx, chromedp.Tasks{
@@ -43,8 +45,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 	// demonstrate setting vcs trigger patterns
 	browser.Run(t, ctx, chromedp.Tasks{
-		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.Name),
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),

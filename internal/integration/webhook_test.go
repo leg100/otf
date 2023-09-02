@@ -29,12 +29,13 @@ func TestWebhook(t *testing.T) {
 	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 	)
+	// create vcs provider for authenticating to github backend
+	provider := daemon.createVCSProvider(t, ctx, org)
 
 	// create and connect first workspace
 	browser.Run(t, ctx, chromedp.Tasks{
-		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-1"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.Name),
 	})
 
 	// webhook should be registered with github
@@ -44,7 +45,7 @@ func TestWebhook(t *testing.T) {
 	// create and connect second workspace
 	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, daemon.Hostname(), org.Name, "workspace-2"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-2", provider.Name),
 	})
 
 	// second workspace re-uses same webhook on github

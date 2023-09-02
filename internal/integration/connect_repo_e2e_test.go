@@ -25,11 +25,12 @@ func TestConnectRepoE2E(t *testing.T) {
 		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
 	)
+	// create vcs provider for authenticating to github backend
+	provider := daemon.createVCSProvider(t, ctx, org)
 
 	browser.Run(t, ctx, chromedp.Tasks{
-		createGithubVCSProviderTasks(t, daemon.Hostname(), org.Name, "github"),
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace"),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", provider.Name),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
 		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation),
@@ -103,6 +104,6 @@ func TestConnectRepoE2E(t *testing.T) {
 		// click delete button for one and only vcs provider
 		chromedp.Click(`//button[text()='delete']`),
 		screenshot(t),
-		matchText(t, "//div[@role='alert']", "deleted provider: github"),
+		matchText(t, "//div[@role='alert']", "deleted provider: "+provider.Name),
 	})
 }

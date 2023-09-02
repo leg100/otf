@@ -210,32 +210,6 @@ func addWorkspacePermission(t *testing.T, hostname, org, workspaceName, team, ro
 	}
 }
 
-func createGithubVCSProviderTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
-	t.Helper()
-
-	return chromedp.Tasks{
-		// go to org
-		chromedp.Navigate(organizationURL(hostname, org)),
-		screenshot(t, "organization_main_menu"),
-		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
-		screenshot(t, "vcs_providers_list"),
-		// click 'New Github VCS Provider' button
-		chromedp.Click(`//button[text()='New Github VCS Provider']`),
-		screenshot(t, "new_github_vcs_provider_form"),
-		// enter fake github token and name
-		chromedp.Focus("textarea#token", chromedp.NodeVisible, chromedp.ByQuery),
-		input.InsertText("fake-github-personal-token"),
-		chromedp.Focus("input#name", chromedp.ByQuery),
-		input.InsertText(name),
-		screenshot(t),
-		// submit form to create provider
-		chromedp.Submit("textarea#token", chromedp.ByQuery),
-		screenshot(t),
-		matchText(t, "//div[@role='alert']", "created provider: github"),
-	}
-}
-
 // startRunTasks starts a run via the UI
 func startRunTasks(t *testing.T, hostname, organization, workspaceName string, op run.Operation) chromedp.Tasks {
 	t.Helper()
@@ -277,7 +251,7 @@ func startRunTasks(t *testing.T, hostname, organization, workspaceName string, o
 	}
 }
 
-func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
+func connectWorkspaceTasks(t *testing.T, hostname, org, name, provider string) chromedp.Tasks {
 	t.Helper()
 
 	return chromedp.Tasks{
@@ -291,7 +265,7 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Ta
 		chromedp.Click(`//button[@id='list-workspace-vcs-providers-button']`),
 		screenshot(t, "workspace_vcs_providers_list"),
 		// select provider
-		chromedp.Click(`//a[normalize-space(text())='github']`),
+		chromedp.Click(fmt.Sprintf(`//a[normalize-space(text())='%s']`, provider)),
 		screenshot(t, "workspace_vcs_repo_list"),
 		// connect to first repo in list (there should only be one)
 		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`),
