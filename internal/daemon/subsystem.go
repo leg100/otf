@@ -55,15 +55,20 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 	// endpoint calls.
 	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: s.Name})
 
-	op := func() error {
+	op := func() (err error) {
 		if s.Exclusive {
 			// block on getting an exclusive lock
-			return s.DB.WaitAndLock(ctx, *s.LockID, func(ctx context.Context) error {
+			err = s.DB.WaitAndLock(ctx, *s.LockID, func(ctx context.Context) error {
 				return s.System.Start(ctx)
 			})
 		} else {
-			return s.System.Start(ctx)
+			err = s.System.Start(ctx)
 		}
+		if err != nil {
+			return err
+		}
+		s.V(1).Info("gracefully shutdown subsystem", "name", s.Name)
+		return nil
 	}
 	if s.BackoffRestart {
 		// Backoff and retry whenever operation returns an error. If context is
