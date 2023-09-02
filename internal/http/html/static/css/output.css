@@ -1113,6 +1113,18 @@ th, td {
   border-color: rgb(15 23 42 / var(--tw-border-opacity));
 }
 
+.border-x-black {
+  --tw-border-opacity: 1;
+  border-left-color: rgb(0 0 0 / var(--tw-border-opacity));
+  border-right-color: rgb(0 0 0 / var(--tw-border-opacity));
+}
+
+.border-y-black {
+  --tw-border-opacity: 1;
+  border-top-color: rgb(0 0 0 / var(--tw-border-opacity));
+  border-bottom-color: rgb(0 0 0 / var(--tw-border-opacity));
+}
+
 .bg-black {
   --tw-bg-opacity: 1;
   background-color: rgb(0 0 0 / var(--tw-bg-opacity));
@@ -1380,6 +1392,11 @@ th, td {
 .focus\:bg-gray-200:focus {
   --tw-bg-opacity: 1;
   background-color: rgb(229 231 235 / var(--tw-bg-opacity));
+}
+
+.group:hover .group-hover\:bg-gray-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(156 163 175 / var(--tw-bg-opacity));
 }
 
 .peer:checked ~ .peer-checked\:block {

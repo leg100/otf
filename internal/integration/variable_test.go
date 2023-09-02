@@ -16,7 +16,7 @@ func TestVariable(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		ws := svc.createWorkspace(t, ctx, nil)
 
-		_, err := svc.CreateVariable(ctx, ws.ID, variable.CreateVariableOptions{
+		_, err := svc.CreateWorkspaceVariable(ctx, ws.ID, variable.CreateVariableOptions{
 			Key:      internal.String("foo"),
 			Value:    internal.String("bar"),
 			Category: variable.VariableCategoryPtr(variable.CategoryTerraform),
@@ -28,12 +28,12 @@ func TestVariable(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		v := svc.createVariable(t, ctx, nil)
 
-		got, err := svc.UpdateVariable(ctx, v.ID, variable.UpdateVariableOptions{
+		got, err := svc.UpdateWorkspaceVariable(ctx, v.ID, variable.UpdateVariableOptions{
 			Value: internal.String("luxembourg"),
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "luxembourg", got.Value)
+		assert.Equal(t, "luxembourg", got.Variable.Value)
 	})
 
 	t.Run("list", func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestVariable(t *testing.T) {
 		v1 := svc.createVariable(t, ctx, ws)
 		v2 := svc.createVariable(t, ctx, ws)
 
-		got, err := svc.ListVariables(ctx, ws.ID)
+		got, err := svc.ListWorkspaceVariables(ctx, ws.ID)
 		require.NoError(t, err)
 
 		if assert.Equal(t, 2, len(got)) {
@@ -55,18 +55,18 @@ func TestVariable(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
-		got, err := svc.GetVariable(ctx, want.ID)
+		got, err := svc.GetWorkspaceVariable(ctx, want.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, want, got)
+		assert.Equal(t, want, got.Variable)
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		svc, _, ctx := setup(t, nil)
 		want := svc.createVariable(t, ctx, nil)
 
-		got, err := svc.DeleteVariable(ctx, want.ID)
+		got, err := svc.DeleteWorkspaceVariable(ctx, want.ID)
 		require.NoError(t, err)
-		assert.Equal(t, want, got)
+		assert.Equal(t, want, got.Variable)
 	})
 }

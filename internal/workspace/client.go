@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api/types"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/tfeapi/types"
 )
 
 type Client struct {
 	internal.JSONAPIClient
+
+	WorkspaceService
 }
 
 // GetWorkspaceByName retrieves a workspace by organization and

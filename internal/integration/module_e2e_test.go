@@ -26,10 +26,11 @@ func TestModuleE2E(t *testing.T) {
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),
 		github.WithArchive(testutils.ReadFile(t, "./fixtures/github.module.tar.gz")),
 	)
+	// create vcs provider for module to authenticate to github backend
+	provider := svc.createVCSProvider(t, ctx, org)
 
 	var moduleURL string // captures url for module page
 	browser.Run(t, ctx, chromedp.Tasks{
-		createGithubVCSProviderTasks(t, svc.Hostname(), org.Name, "github"),
 		// publish module
 		chromedp.Tasks{
 			// go to org
@@ -52,9 +53,14 @@ func TestModuleE2E(t *testing.T) {
 			screenshot(t, "newly_created_module_page"),
 			// flash message indicates success
 			matchText(t, `//div[@role='alert']`, `published module: mod`),
-			// TODO: confirm versions are populated
 			// capture module url so we can visit it later
 			chromedp.Location(&moduleURL),
+			// confirm versions are populated
+			chromedp.WaitEnabled(`//select[@id='version']/option[text()='0.0.1']`),
+			chromedp.WaitEnabled(`//select[@id='version']/option[text()='0.0.2']`),
+			chromedp.WaitEnabled(`//select[@id='version']/option[text()='0.1.0']`),
+			// should show vcs repo source
+			matchRegex(t, `//span[@id='vcs-repo']`, `.*/terraform-aws-mod`),
 		},
 	})
 
@@ -98,4 +104,26 @@ module "mod" {
 	require.Contains(t, out, "Plan: 2 to add, 0 to change, 0 to destroy.")
 	out = svc.tfcli(t, ctx, "apply", root, "-auto-approve")
 	require.Contains(t, string(out), "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.")
+
+	// delete vcs provider and visit the module page; it should be no longer
+	// connected. Then delete the module.
+	_, err = svc.DeleteVCSProvider(ctx, provider.ID)
+	require.NoError(t, err)
+	browser.Run(t, ctx, chromedp.Tasks{
+		chromedp.Tasks{
+			// go to org
+			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
+			screenshot(t),
+			// go to modules
+			chromedp.Click("#modules > a", chromedp.ByQuery),
+			// select existing module
+			chromedp.Click(`//a[text()='mod']`),
+			// confirm no longer connected
+			chromedp.WaitNotPresent(`//span[@id='vcs-repo']`),
+			// delete module
+			chromedp.Click(`//button[text()='Delete module']`),
+			// flash message indicates success
+			matchText(t, `//div[@role='alert']`, `deleted module: mod`),
+		},
+	})
 }

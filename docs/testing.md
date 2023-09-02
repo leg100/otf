@@ -43,6 +43,22 @@ export OTF_E2E_HEADLESS=false
 <figcaption>Integration tests with headless mode disabled</figcaption>
 </figure>
 
+#### More verbose logging
+
+By default, the integration tests don't print the logs from the OTF daemons they spawn. To enable logging with a verbosity of 1, set the following environment variable:
+
+```
+export OTF_INTEGRATION_TEST_ENABLE_LOGGER=yes go test -v ./internal/integration
+```
+
+Because the tests run in parallel and each test runs its own daemon, you'll see the logs from multiple daemons intermingled. You'll instead probably want to run one test at a time, and to stop at the first failing test:
+
+```
+export OTF_INTEGRATION_TEST_ENABLE_LOGGER=yes go test -v ./internal/integration -parallel 1 -failfast
+```
+
+This can be helpful for diagnosing the cause of a failing test.
+
 ### API tests
 
 Tests from the [go-tfe](https://github.com/hashicorp/go-tfe) project are routinely run to ensure OTF correctly implements the documented Terraform Cloud API.

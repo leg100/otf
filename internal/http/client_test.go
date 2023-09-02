@@ -9,7 +9,7 @@ import (
 
 	"github.com/DataDog/jsonapi"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/api/types"
+	"github.com/leg100/otf/internal/tfeapi/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

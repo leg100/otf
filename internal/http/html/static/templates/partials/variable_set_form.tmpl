@@ -1,0 +1,73 @@
+{{ define "variable-set-form" }}
+  <form class="flex flex-col gap-5" action="{{ .FormAction }}" method="POST">
+    {{ with .VariableSet }}
+      <div class="field">
+        <label class="font-semibold" for="name">Name</label>
+        <input class="text-input" type="text" name="name" id="name" value="{{ .Name }}" required placeholder="name">
+      </div>
+      <div class="field">
+        <label class="font-semibold" for="description">Description</label>
+        <textarea class="text-input" type="text" name="description" id="description">{{ .Description }}</textarea>
+      </div>
+      <fieldset class="border border-slate-900 px-3 py-3 flex flex-col gap-2">
+        <legend>Scope</legend>
+        <div class="form-checkbox">
+          <input type="radio" name="global" id="global" value="true" {{ checked .Global }} required>
+          <label for="global">Global</label>
+          <span>All current and future workspaces in this organization will access this variable set.</span>
+        </div>
+        <div class="form-checkbox">
+          <input class="peer" type="radio" name="global" value="false" id="workspace-scoped" {{ checked (not .Global) }} required>
+          <label for="workspace-scoped">Apply to specific workspaces</label>
+          <span class="col-start-2 description">Only the selected workspaces will access this variable set.</span>
+          <script src="{{ addHash "/static/js/variable_set_workspaces.js" }}"></script>
+          <div
+            class="hidden relative col-start-2 mt-2 w-full peer-checked:block"
+            x-data="variable_set_workspaces({{ toJson $.ExistingWorkspaces }}, {{ toJson $.AvailableWorkspaces }})"
+            x-ref="workspace_select"
+            @keydown.escape.prevent.stop="close($refs.workspace_input)"
+            @focusin.window="! $refs.workspace_select.contains($event.target) && close()"
+            >
+            <div
+              @click.outside="close()"
+              >
+              <input type="hidden" id="workspaces" name="workspaces" :value="JSON.stringify(existing)">
+              <input
+                class="text-input grow w-80"
+                type="text"
+                id="workspace-input"
+                x-ref="workspace_input"
+                x-model="search"
+                placeholder="Select workspace"
+                @focusin="open = true"
+                @click="open = true"
+                >
+              <div
+                x-ref="panel"
+                x-show="showPanel"
+                x-cloak
+                class="absolute flex flex-col w-80 mt-1 bg-white overflow-x-auto border border-black">
+                <template x-for="item in filterAvailable" :key="item.ID">
+                  <button @click="addWorkspace(item)" class="text-left focus:bg-gray-200 hover:bg-gray-200 py-1 px-2" x-text="item.Name"></button>
+                </template>
+              </div>
+            </div>
+            <div class="flex flex-row gap-2 mt-2" id="existing-workspaces">
+              <template x-for="item in existing">
+                <div class="flex p-1 gap-1 bg-gray-200 group">
+                  <span class="" x-text="item.Name"></span>
+                  <button @click="deleteWorkspace(item)" type="button" class="group-hover:bg-gray-400" id="button-remove-tag-{{ . }}" class="delete cross">x</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <div>
+        <button class="btn" id="save-variable-set-button">
+          Save variable set
+        </button>
+      </div>
+    {{ end }}
+  </form>
+{{ end }}

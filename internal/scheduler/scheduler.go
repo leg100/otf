@@ -134,6 +134,12 @@ func (s *scheduler) Start(ctx context.Context) error {
 				return err
 			}
 		case *run.Run:
+			if event.Type == pubsub.DeletedEvent {
+				// ignore deleted run events - the only way runs are deleted is
+				// if its workspace is deleted, in which case the workspace
+				// queue is deleted along with any runs.
+				continue
+			}
 			q, ok := s.queues[payload.WorkspaceID]
 			if !ok {
 				// should never happen

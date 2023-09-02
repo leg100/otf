@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
+	"github.com/leg100/otf/internal/tfeapi"
 )
 
 type (
@@ -45,12 +46,14 @@ type (
 		organization internal.Authorizer
 		db           *pgdb
 		web          *webHandlers
+		api          *tfe
 		deleteHook   *hooks.Hook[*VCSProvider]
 	}
 
 	Options struct {
 		CloudService
 		*sql.DB
+		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
 	}
@@ -73,12 +76,17 @@ func NewService(opts Options) *service {
 		Renderer:     opts.Renderer,
 		svc:          &svc,
 	}
+	svc.api = &tfe{
+		Service:   &svc,
+		Responder: opts.Responder,
+	}
 
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
+	a.api.addHandlers(r)
 }
 
 func (a *service) BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider]) {

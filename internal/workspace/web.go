@@ -14,7 +14,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/resource"
-	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -44,7 +43,6 @@ type (
 		html.Renderer
 		auth.TeamService
 		VCSProviderService
-		state.StateService
 
 		svc Service
 	}
@@ -271,7 +269,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		UnassignedTags     []string
 		TagsDropdown       html.DropdownUI
 	}{
-		WorkspacePage:      NewPage(r, ws.ID, ws),
+		WorkspacePage:      NewPage(r, ws.Name, ws),
 		LockButton:         lockButtonHelper(ws, policy, user),
 		VCSProvider:        provider,
 		CanApply:           user.CanAccessWorkspace(rbac.ApplyRunAction, policy),
@@ -287,7 +285,7 @@ func (h *webHandlers) getWorkspace(w http.ResponseWriter, r *http.Request) {
 			Existing:    ws.Tags,
 			Action:      paths.CreateTagWorkspace(ws.ID),
 			Placeholder: "Add tags",
-			Width:       "narrow",
+			Width:       html.NarrowDropDown,
 		},
 	})
 }

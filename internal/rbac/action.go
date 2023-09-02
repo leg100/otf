@@ -35,11 +35,28 @@ const (
 	DeleteModuleAction
 	DeleteModuleVersionAction
 
-	CreateVariableAction
-	UpdateVariableAction
-	ListVariablesAction
-	GetVariableAction
-	DeleteVariableAction
+	CreateWorkspaceVariableAction
+	UpdateWorkspaceVariableAction
+	ListWorkspaceVariablesAction
+	GetWorkspaceVariableAction
+	DeleteWorkspaceVariableAction
+
+	CreateVariableSetAction
+	UpdateVariableSetAction
+	ListVariableSetsAction
+	GetVariableSetAction
+	DeleteVariableSetAction
+
+	CreateVariableSetVariableAction
+	UpdateVariableSetVariableAction
+	GetVariableSetVariableAction
+	DeleteVariableSetVariableAction
+
+	AddVariableToSetAction
+	RemoveVariableFromSetAction
+
+	ApplyVariableSetToWorkspacesAction
+	DeleteVariableSetFromWorkspacesAction
 
 	GetRunAction
 	ListRunsAction

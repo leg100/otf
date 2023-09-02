@@ -101,7 +101,7 @@
           <span class="col-start-2 description">Supports glob patterns.</span>
           <script src="{{ addHash "/static/js/workspace_trigger_patterns.js" }}"></script>
           <div class="hidden bg-gray-100 p-2 col-start-2 mt-2 w-full peer-checked:block" x-data="workspace_trigger_patterns({{ toJson $.Workspace.TriggerPatterns }})">
-            <input type="hidden" id="paths" name="trigger_patterns" :value = "JSON.stringify(paths)">
+            <input type="hidden" id="paths" name="trigger_patterns" :value="JSON.stringify(paths)">
             <div class="flex flex-col gap-2">
               <div class="flex gap-2 items-center">
                 <label for="new_path">Path</label>

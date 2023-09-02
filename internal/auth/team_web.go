@@ -139,7 +139,7 @@ func (h *webHandlers) getTeam(w http.ResponseWriter, r *http.Request) {
 			Existing:    usernames,
 			Action:      paths.AddMemberTeam(team.ID),
 			Placeholder: "Add user",
-			Width:       "wide",
+			Width:       html.WideDropDown,
 		},
 	})
 }

@@ -716,7 +716,7 @@ JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuratio
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations ON workspaces.organization_name = organizations.name
 WHERE runs.run_id = $1
-FOR UPDATE of runs, plans, applies
+FOR UPDATE OF runs, plans, applies
 ;`
 
 type FindRunByIDForUpdateRow struct {

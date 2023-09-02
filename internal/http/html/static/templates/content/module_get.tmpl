@@ -20,9 +20,11 @@
             {{ end }}
           </select>
         </form>
-        <div>
-          Source <span class="bg-gray-200">{{ .Module.Connection.Repo }}</span>
-        </div>
+        {{ with .Module.Connection }}
+          <div>
+            Source <span class="bg-gray-200" id="vcs-repo">{{ .Repo }}</span>
+          </div>
+        {{ end }}
       </div>
       <div>
         <h3 class="font-semibold">
