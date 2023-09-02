@@ -31,21 +31,52 @@ func TestListModules(t *testing.T) {
 }
 
 func TestGetModule(t *testing.T) {
-	mod := Module{
-		Connection: &repo.Connection{},
-		Status:     ModuleStatusSetupComplete,
-		Versions:   []ModuleVersion{{Version: "1.0.0"}},
-	}
 	tarball, err := os.ReadFile("./testdata/module.tar.gz")
 	require.NoError(t, err)
-	h := newTestWebHandlers(t, withMod(&mod), withTarball(tarball), withHostname("fake-host.org"))
 
-	q := "/?module_id=mod-123&version=1.0.0"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-	h.get(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(w.Body.String())
+	tests := []struct {
+		name string
+		mod  Module
+	}{
+		{
+			name: "pending",
+			mod: Module{
+				Status: ModuleStatusPending,
+			},
+		},
+		{
+			name: "no versions",
+			mod: Module{
+				Status: ModuleStatusNoVersionTags,
+			},
+		},
+		{
+			name: "setup failed",
+			mod: Module{
+				Status: ModuleStatusSetupFailed,
+			},
+		},
+		{
+			name: "setup complete",
+			mod: Module{
+				Connection: &repo.Connection{},
+				Status:     ModuleStatusSetupComplete,
+				Versions:   []ModuleVersion{{Version: "1.0.0"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newTestWebHandlers(t, withMod(&tt.mod), withTarball(tarball), withHostname("fake-host.org"))
+
+			q := "/?module_id=mod-123&version=1.0.0"
+			r := httptest.NewRequest("GET", q, nil)
+			w := httptest.NewRecorder()
+			h.get(w, r)
+			if !assert.Equal(t, 200, w.Code) {
+				t.Log(w.Body.String())
+			}
+		})
 	}
 }
 
