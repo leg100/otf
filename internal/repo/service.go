@@ -18,16 +18,11 @@ import (
 type (
 	RepoService = Service
 
-	// Service manages VCS repositories
+	// Service manages webhooks
 	Service interface {
 		// Connect adds a connection between a VCS repo and an OTF resource. A
 		// webhook is created if one doesn't exist already.
-		Connect(ctx context.Context, opts ConnectOptions) (*Connection, error)
-
-		// Disconnect removes a connection between a VCS repo and an OTF
-		// resource. If there are no more connections then its
-		// webhook is removed.
-		Disconnect(ctx context.Context, opts DisconnectOptions) error
+		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error)
 
 		// Subscribe to incoming VCS events
 		Subscribe(cb Callback)
@@ -57,6 +52,18 @@ type (
 		internal.HostnameService
 		VCSProviderService vcsprovider.Service
 		organization.OrganizationService
+	}
+
+	// CreateOptions are options for creating a webhook.
+	CreateOptions struct {
+		Client        cloud.Client
+		VCSProviderID string
+		RepoPath      string
+	}
+
+	CreateWebhookOptions struct {
+		VCSProviderID string // vcs provider of repo
+		RepoPath      string
 	}
 )
 
@@ -111,18 +118,18 @@ func NewService(ctx context.Context, opts Options) *service {
 }
 
 // Connect an OTF resource to a VCS repo.
-func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
+func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
+		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving vcs client: %w", err)
+		return uuid.UUID{}, fmt.Errorf("retrieving vcs client: %w", err)
 	}
 	_, err = client.GetRepository(ctx, opts.RepoPath)
 	if err != nil {
-		return nil, fmt.Errorf("checking repository exists: %w", err)
+		return uuid.UUID{}, fmt.Errorf("checking repository exists: %w", err)
 	}
 
 	hook, err := s.newHook(newHookOptions{
@@ -131,7 +138,7 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		vcsProviderID: vcsProvider.ID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("constructing webhook: %w", err)
+		return uuid.UUID{}, fmt.Errorf("constructing webhook: %w", err)
 	}
 
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
@@ -144,20 +151,12 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 		if err := s.sync(ctx, client, hook); err != nil {
 			return fmt.Errorf("synchronising webhook: %w", err)
 		}
-		return s.db.createConnection(ctx, hook.id, opts)
+		return nil
 	})
 	if err != nil {
-		return nil, err
+		return uuid.UUID{}, err
 	}
-	return &Connection{
-		Repo:          opts.RepoPath,
-		VCSProviderID: opts.VCSProviderID,
-	}, nil
-}
-
-// Disconnect resource from repo
-func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	return s.db.deleteConnection(ctx, opts)
+	return hook.id, nil
 }
 
 func (s *service) deleteOrganizationWebhooks(ctx context.Context, org *organization.Organization) error {

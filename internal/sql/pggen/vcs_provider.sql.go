@@ -72,6 +72,7 @@ type FindVCSProvidersByOrganizationRow struct {
 	Name             pgtype.Text        `json:"name"`
 	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Text        `json:"github_app_id"`
 }
 
 // FindVCSProvidersByOrganization implements Querier.FindVCSProvidersByOrganization.
@@ -85,7 +86,7 @@ func (q *DBQuerier) FindVCSProvidersByOrganization(ctx context.Context, organiza
 	items := []FindVCSProvidersByOrganizationRow{}
 	for rows.Next() {
 		var item FindVCSProvidersByOrganizationRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByOrganization row: %w", err)
 		}
 		items = append(items, item)
@@ -111,7 +112,7 @@ func (q *DBQuerier) FindVCSProvidersByOrganizationScan(results pgx.BatchResults)
 	items := []FindVCSProvidersByOrganizationRow{}
 	for rows.Next() {
 		var item FindVCSProvidersByOrganizationRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByOrganizationBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -133,6 +134,7 @@ type FindVCSProvidersRow struct {
 	Name             pgtype.Text        `json:"name"`
 	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Text        `json:"github_app_id"`
 }
 
 // FindVCSProviders implements Querier.FindVCSProviders.
@@ -146,7 +148,7 @@ func (q *DBQuerier) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow
 	items := []FindVCSProvidersRow{}
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProviders row: %w", err)
 		}
 		items = append(items, item)
@@ -172,7 +174,7 @@ func (q *DBQuerier) FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSPro
 	items := []FindVCSProvidersRow{}
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -195,6 +197,7 @@ type FindVCSProviderRow struct {
 	Name             pgtype.Text        `json:"name"`
 	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Text        `json:"github_app_id"`
 }
 
 // FindVCSProvider implements Querier.FindVCSProvider.
@@ -202,7 +205,7 @@ func (q *DBQuerier) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Te
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProvider")
 	row := q.conn.QueryRow(ctx, findVCSProviderSQL, vcsProviderID)
 	var item FindVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
 		return item, fmt.Errorf("query FindVCSProvider: %w", err)
 	}
 	return item, nil
@@ -217,7 +220,7 @@ func (q *DBQuerier) FindVCSProviderBatch(batch genericBatch, vcsProviderID pgtyp
 func (q *DBQuerier) FindVCSProviderScan(results pgx.BatchResults) (FindVCSProviderRow, error) {
 	row := results.QueryRow()
 	var item FindVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
 		return item, fmt.Errorf("scan FindVCSProviderBatch row: %w", err)
 	}
 	return item, nil

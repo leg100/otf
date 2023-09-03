@@ -25,6 +25,7 @@ type (
 		Name             pgtype.Text        `json:"name"`
 		Cloud            pgtype.Text        `json:"cloud"`
 		OrganizationName pgtype.Text        `json:"organization_name"`
+		GithubAppID      pgtype.Text        `json:"github_app_id"`
 	}
 )
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -165,7 +165,7 @@ func (row moduleRow) toModule() *Module {
 		Organization: row.OrganizationName.String,
 	}
 	if row.ModuleConnection != nil {
-		module.Connection = &repo.Connection{
+		module.Connection = &connections.Connection{
 			VCSProviderID: row.Webhook.VCSProviderID.String,
 			Repo:          row.Webhook.Identifier.String,
 		}

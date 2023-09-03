@@ -28,8 +28,9 @@ type (
 func (h *WebHandlers) AddHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/admin/ghapp/new", h.new)
-	r.HandleFunc("/admin/ghapp/exchange-code", h.exchangeCode)
+	r.HandleFunc("/organizations/{organization_name}/ghapps/new", h.new)
+	r.HandleFunc("/organizations/{organization_name}/ghapps/exchange-code", h.exchangeCode)
+	r.HandleFunc("/organizations/{organization_name}/ghapps", h.list)
 }
 
 func (h *WebHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -113,3 +114,5 @@ func (h *WebHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(marshalled)
 }
+
+func (h *WebHandlers) list(w http.ResponseWriter, r *http.Request) {}

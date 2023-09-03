@@ -9,9 +9,9 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,7 +59,7 @@ func TestGetModule(t *testing.T) {
 		{
 			name: "setup complete",
 			mod: Module{
-				Connection: &repo.Connection{},
+				Connection: &connections.Connection{},
 				Status:     ModuleStatusSetupComplete,
 				Versions:   []ModuleVersion{{Version: "1.0.0"}},
 			},

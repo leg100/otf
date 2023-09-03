@@ -6,10 +6,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -61,8 +61,8 @@ func TestWorkspace(t *testing.T) {
 		require.Equal(t, github.WebhookCreated, hook.Action)
 
 		t.Run("delete workspace connection", func(t *testing.T) {
-			err := daemon.Disconnect(ctx, repo.DisconnectOptions{
-				ConnectionType: repo.WorkspaceConnection,
+			err := daemon.Disconnect(ctx, connections.DisconnectOptions{
+				ConnectionType: connections.WorkspaceConnection,
 				ResourceID:     ws.ID,
 			})
 			require.NoError(t, err)
@@ -105,19 +105,19 @@ func TestWorkspace(t *testing.T) {
 		ws := svc.createWorkspace(t, ctx, org)
 		vcsprov := svc.createVCSProvider(t, ctx, org)
 
-		got, err := svc.Connect(ctx, repo.ConnectOptions{
-			ConnectionType: repo.WorkspaceConnection,
+		got, err := svc.Connect(ctx, connections.ConnectOptions{
+			ConnectionType: connections.WorkspaceConnection,
 			VCSProviderID:  vcsprov.ID,
 			ResourceID:     ws.ID,
 			RepoPath:       "test/dummy",
 		})
 		require.NoError(t, err)
-		want := &repo.Connection{VCSProviderID: vcsprov.ID, Repo: "test/dummy"}
+		want := &connections.Connection{VCSProviderID: vcsprov.ID, Repo: "test/dummy"}
 		assert.Equal(t, want, got)
 
 		t.Run("delete workspace connection", func(t *testing.T) {
-			err := svc.Disconnect(ctx, repo.DisconnectOptions{
-				ConnectionType: repo.WorkspaceConnection,
+			err := svc.Disconnect(ctx, connections.DisconnectOptions{
+				ConnectionType: connections.WorkspaceConnection,
 				ResourceID:     ws.ID,
 			})
 			require.NoError(t, err)

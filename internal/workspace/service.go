@@ -8,12 +8,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -50,15 +50,15 @@ type (
 	service struct {
 		logr.Logger
 		pubsub.Publisher
+		connections.ConnectionService
 
 		site                internal.Authorizer
 		organization        internal.Authorizer
 		internal.Authorizer // workspace authorizer
 
-		db   *pgdb
-		repo repo.RepoService
-		web  *webHandlers
-		api  *tfe
+		db  *pgdb
+		web *webHandlers
+		api *tfe
 
 		createHook *hooks.Hook[*Workspace]
 	}
@@ -70,7 +70,7 @@ type (
 		html.Renderer
 		organization.OrganizationService
 		vcsprovider.VCSProviderService
-		repo.RepoService
+		connections.ConnectionService
 		auth.TeamService
 		logr.Logger
 	}
@@ -85,11 +85,11 @@ func NewService(opts Options) *service {
 			Logger: opts.Logger,
 			db:     db,
 		},
-		db:           db,
-		repo:         opts.RepoService,
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
-		createHook:   hooks.NewHook[*Workspace](opts.DB),
+		db:                db,
+		ConnectionService: opts.ConnectionService,
+		organization:      &organization.Authorizer{Logger: opts.Logger},
+		site:              &internal.SiteAuthorizer{Logger: opts.Logger},
+		createHook:        hooks.NewHook[*Workspace](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:           opts.Renderer,
@@ -313,8 +313,8 @@ func (s *service) connect(ctx context.Context, workspaceID string, connection *C
 		return err
 	}
 
-	_, err = s.repo.Connect(ctx, repo.ConnectOptions{
-		ConnectionType: repo.WorkspaceConnection,
+	_, err = s.Connect(ctx, connections.ConnectOptions{
+		ConnectionType: connections.WorkspaceConnection,
 		ResourceID:     workspaceID,
 		VCSProviderID:  connection.VCSProviderID,
 		RepoPath:       connection.Repo,
@@ -334,8 +334,8 @@ func (s *service) disconnect(ctx context.Context, workspaceID string) error {
 		return err
 	}
 
-	err = s.repo.Disconnect(ctx, repo.DisconnectOptions{
-		ConnectionType: repo.WorkspaceConnection,
+	err = s.Disconnect(ctx, connections.DisconnectOptions{
+		ConnectionType: connections.WorkspaceConnection,
 		ResourceID:     workspaceID,
 	})
 	if err != nil {

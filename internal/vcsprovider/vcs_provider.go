@@ -18,8 +18,9 @@ type (
 		CreatedAt    time.Time
 		Name         string       // TODO: rename to description (?)
 		CloudConfig  cloud.Config // cloud config for creating client
-		Token        string       // credential for creating client
 		Organization string       // vcs provider belongs to an organization
+		Token        string       // credential for creating client
+		GithubAppID  string       // id of github app. Mutually exclusive with Token.
 	}
 )
 

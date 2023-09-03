@@ -15,6 +15,7 @@ import (
 	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
 	"github.com/leg100/otf/internal/ghapp"
 	"github.com/leg100/otf/internal/http"
@@ -61,6 +62,7 @@ type (
 		repo.RepoService
 		logs.LogsService
 		notifications.NotificationService
+		connections.ConnectionService
 
 		Handlers []internal.Handlers
 
@@ -168,13 +170,19 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:  vcsProviderService,
 	})
 
+	connectionService := connections.NewService(ctx, connections.Options{
+		Logger:             logger,
+		DB:                 db,
+		VCSProviderService: vcsProviderService,
+	})
+
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
 		DB:                  db,
 		Broker:              broker,
 		Renderer:            renderer,
 		Responder:           responder,
-		RepoService:         repoService,
+		ConnectionService:   connectionService,
 		TeamService:         authService,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
@@ -218,6 +226,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		HostnameService:    hostnameService,
 		VCSProviderService: vcsProviderService,
 		Signer:             signer,
+		ConnectionService:  connectionService,
 		RepoService:        repoService,
 	})
 	stateService := state.NewService(state.Options{

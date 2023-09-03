@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
@@ -47,11 +48,11 @@ type (
 
 	service struct {
 		vcsprovider.VCSProviderService
+		connections.ConnectionService
 		logr.Logger
 		*publisher
 
-		db   *pgdb
-		repo repo.Service
+		db *pgdb
 
 		organization internal.Authorizer
 
@@ -67,6 +68,7 @@ type (
 		vcsprovider.VCSProviderService
 		*surl.Signer
 		html.Renderer
+		connections.ConnectionService
 		repo.RepoService
 	}
 )
@@ -75,9 +77,9 @@ func NewService(opts Options) *service {
 	svc := service{
 		Logger:             opts.Logger,
 		VCSProviderService: opts.VCSProviderService,
+		ConnectionService:  opts.ConnectionService,
 		organization:       &organization.Authorizer{Logger: opts.Logger},
 		db:                 &pgdb{opts.DB},
-		repo:               opts.RepoService,
 	}
 	svc.api = &api{
 		svc:    &svc,
@@ -150,8 +152,8 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 		tags   []string
 	)
 	setup := func() (err error) {
-		mod.Connection, err = s.repo.Connect(ctx, repo.ConnectOptions{
-			ConnectionType: repo.ModuleConnection,
+		mod.Connection, err = s.Connect(ctx, connections.ConnectOptions{
+			ConnectionType: connections.ModuleConnection,
 			ResourceID:     mod.ID,
 			VCSProviderID:  opts.VCSProviderID,
 			RepoPath:       string(opts.Repo),
@@ -314,8 +316,8 @@ func (s *service) DeleteModule(ctx context.Context, id string) (*Module, error) 
 	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
 		// disconnect module prior to deletion
 		if module.Connection != nil {
-			err := s.repo.Disconnect(ctx, repo.DisconnectOptions{
-				ConnectionType: repo.ModuleConnection,
+			err := s.Disconnect(ctx, connections.DisconnectOptions{
+				ConnectionType: connections.ModuleConnection,
 				ResourceID:     module.ID,
 			})
 			if err != nil {
