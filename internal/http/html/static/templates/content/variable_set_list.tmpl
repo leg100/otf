@@ -13,7 +13,7 @@
 {{ end }}
 
 {{ define "content" }}
-  <div id="content-list" class="content-list">
+  <div id="content-list">
     {{ range .VariableSets }}
       {{ template "variable-set-item" . }}
     {{ else }}

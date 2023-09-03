@@ -46,7 +46,7 @@ func TestModuleE2E(t *testing.T) {
 			chromedp.Click(`//button[text()='connect']`),
 			screenshot(t, "modules_select_repo"),
 			// connect to first repo in list (there should only be one)
-			chromedp.Click(`//div[@class='content-list']//button[text()='connect']`),
+			chromedp.Click(`//div[@id='content-list']//button[text()='connect']`),
 			screenshot(t, "modules_confirm"),
 			// confirm module details
 			chromedp.Click(`//button[text()='connect']`),

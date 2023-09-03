@@ -93,44 +93,53 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var modver *ModuleVersion
+	var (
+		modver *ModuleVersion
+		tfmod  *TerraformModule
+		readme template.HTML
+	)
 	if params.Version != nil {
 		modver = module.Version(*params.Version)
 	} else {
 		modver = module.Latest()
 	}
-	if modver == nil {
-		// TODO: set flash and render
-		h.Error(w, "no version found", http.StatusNotFound)
-		return
+	if modver != nil {
+		tfmod, err = h.svc.GetModuleInfo(r.Context(), modver.ID)
+		if err != nil {
+			h.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
-	modinfo, err := h.svc.GetModuleInfo(r.Context(), modver.ID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var readme template.HTML
 	switch module.Status {
 	case ModuleStatusSetupComplete:
-		readme = html.MarkdownToHTML(modinfo.readme)
+		readme = html.MarkdownToHTML(tfmod.readme)
 	}
 
 	h.Render("module_get.tmpl", w, struct {
 		organization.OrganizationPage
-		Module          *Module
-		TerraformModule *TerraformModule
-		Readme          template.HTML
-		CurrentVersion  *ModuleVersion
-		Hostname        string
+		Module                    *Module
+		TerraformModule           *TerraformModule
+		Readme                    template.HTML
+		CurrentVersion            *ModuleVersion
+		Hostname                  string
+		ModuleStatusPending       ModuleStatus
+		ModuleStatusNoVersionTags ModuleStatus
+		ModuleStatusSetupFailed   ModuleStatus
+		ModuleStatusSetupComplete ModuleStatus
+		ModuleVersionStatusOK     ModuleVersionStatus
 	}{
-		OrganizationPage: organization.NewPage(r, module.ID, module.Organization),
-		Module:           module,
-		TerraformModule:  modinfo,
-		Readme:           readme,
-		CurrentVersion:   modver,
-		Hostname:         h.Hostname(),
+		OrganizationPage:          organization.NewPage(r, module.ID, module.Organization),
+		Module:                    module,
+		TerraformModule:           tfmod,
+		Readme:                    readme,
+		CurrentVersion:            modver,
+		Hostname:                  h.Hostname(),
+		ModuleStatusPending:       ModuleStatusPending,
+		ModuleStatusNoVersionTags: ModuleStatusNoVersionTags,
+		ModuleStatusSetupFailed:   ModuleStatusSetupFailed,
+		ModuleStatusSetupComplete: ModuleStatusSetupComplete,
+		ModuleVersionStatusOK:     ModuleVersionStatusOK,
 	})
 }
 

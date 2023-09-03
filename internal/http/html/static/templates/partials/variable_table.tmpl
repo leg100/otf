@@ -16,12 +16,12 @@
               <span class="bg-orange-100 text-xs font-semibold p-1">OVERWRITTEN</span>
               <s>
             {{ end }}
-            <a class="show-underline" href="{{ $.EditPath .ID }}">{{ .Key }}</a>
+            <a class="underline" href="{{ $.EditPath .ID }}">{{ .Key }}</a>
             {{ if $.IsOverwritten . }}
               </s>
             {{ end }}
           </td>
-          <td class="p-2">{{ if .Sensitive }}<span class="data">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
+          <td class="p-2">{{ if .Sensitive }}<span class="bg-gray-200">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
           <td class="p-2">{{ .Category }}</td>
           <td class="p-2 text-right">
             {{ if $.CanDeleteVariable }}

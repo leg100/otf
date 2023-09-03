@@ -13,7 +13,7 @@
     Select a VCS provider to use to connect this workspace to a repository.
   </div>
 
-  <div id="content-list" class="content-list">
+  <div id="content-list">
     {{ range .Items }}
       <div class="widget">
         <div>
@@ -22,7 +22,7 @@
               {{ .Name }}
             </a>
           </span>
-          <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+          <span>{{ durationRound .CreatedAt }} ago</span>
         </div>
         <div>
           {{ template "identifier" . }}

@@ -13,11 +13,11 @@
 {{ end }}
 
 {{ define "content" }}
-  <div id="content-list" class="content-list">
+  <div id="content-list">
     {{ range .Teams }}
       <div id="item-team-{{ .Name }}" class="widget">
         <div>
-          <a class="status" href="{{ teamPath .ID }}">{{ .Name }}</a>
+          <a href="{{ teamPath .ID }}">{{ .Name }}</a>
         </div>
         <div>
           {{ template "identifier" . }}

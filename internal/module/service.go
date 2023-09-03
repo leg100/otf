@@ -79,7 +79,6 @@ func NewService(opts Options) *service {
 		db:                 &pgdb{opts.DB},
 		repo:               opts.RepoService,
 	}
-
 	svc.api = &api{
 		svc:    &svc,
 		Signer: opts.Signer,
@@ -135,18 +134,23 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 		return nil, err
 	}
 
-	mod := NewModule(CreateOptions{
+	mod := newModule(CreateOptions{
 		Name:         name,
 		Provider:     provider,
 		Organization: organization,
 	})
 
 	// persist module to db and connect to repository
-	err = s.db.Tx(ctx, func(ctx context.Context, _ pggen.Querier) error {
-		if err := s.db.createModule(ctx, mod); err != nil {
-			return err
-		}
-		connection, err := s.repo.Connect(ctx, repo.ConnectOptions{
+	if err := s.db.createModule(ctx, mod); err != nil {
+		return nil, err
+	}
+
+	var (
+		client cloud.Client
+		tags   []string
+	)
+	setup := func() (err error) {
+		mod.Connection, err = s.repo.Connect(ctx, repo.ConnectOptions{
 			ConnectionType: repo.ModuleConnection,
 			ResourceID:     mod.ID,
 			VCSProviderID:  opts.VCSProviderID,
@@ -155,24 +159,20 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 		if err != nil {
 			return err
 		}
-		mod.Connection = connection
+		client, err = s.GetVCSClient(ctx, opts.VCSProviderID)
+		if err != nil {
+			return err
+		}
+		tags, err = client.ListTags(ctx, cloud.ListTagsOptions{
+			Repo: string(opts.Repo),
+		})
+		if err != nil {
+			return err
+		}
 		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
-
-	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Make new version for each tag that looks like a semantic version.
-	tags, err := client.ListTags(ctx, cloud.ListTagsOptions{
-		Repo: string(opts.Repo),
-	})
-	if err != nil {
-		return nil, err
+	if err := setup(); err != nil {
+		return s.updateModuleStatus(ctx, mod, ModuleStatusSetupFailed)
 	}
 	if len(tags) == 0 {
 		return s.updateModuleStatus(ctx, mod, ModuleStatusNoVersionTags)
@@ -199,7 +199,9 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 			return nil, err
 		}
 	}
-
+	if _, err := s.updateModuleStatus(ctx, mod, ModuleStatusSetupComplete); err != nil {
+		return nil, err
+	}
 	// return module from db complete with versions
 	return s.GetModuleByID(ctx, mod.ID)
 }
@@ -236,7 +238,7 @@ func (s *service) CreateModule(ctx context.Context, opts CreateOptions) (*Module
 		return nil, err
 	}
 
-	module := NewModule(opts)
+	module := newModule(opts)
 
 	if err := s.db.createModule(ctx, module); err != nil {
 		s.Error(err, "creating module", "subject", subject, "module", module)
@@ -341,7 +343,7 @@ func (s *service) CreateVersion(ctx context.Context, opts CreateModuleVersionOpt
 		return nil, err
 	}
 
-	modver := NewModuleVersion(opts)
+	modver := newModuleVersion(opts)
 
 	if err := s.db.createModuleVersion(ctx, modver); err != nil {
 		s.Error(err, "creating module version", "organization", module.Organization, "subject", subject, "module_version", modver)
@@ -391,7 +393,7 @@ func (s *service) uploadVersion(ctx context.Context, versionID string, tarball [
 		if err := s.db.saveTarball(ctx, versionID, tarball); err != nil {
 			return err
 		}
-		err = s.db.updateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
+		err := s.db.updateModuleVersionStatus(ctx, UpdateModuleVersionStatusOptions{
 			ID:     versionID,
 			Status: ModuleVersionStatusOK,
 		})
@@ -400,7 +402,7 @@ func (s *service) uploadVersion(ctx context.Context, versionID string, tarball [
 		}
 		// re-retrieve module so that includes the above version with updated
 		// status
-		module, err = s.db.getModuleByID(ctx, module.ID)
+		_, err = s.db.getModuleByID(ctx, module.ID)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,7 @@
 {{ define "content-header-title" }}users{{ end }}
 
 {{ define "content" }}
-  <div id="content-list" class="content-list">
+  <div id="content-list">
     {{ range .Users }}
       {{ block "content-list-item" . }}{{ end }}
     {{ else }}

@@ -97,7 +97,7 @@ type (
 	}
 )
 
-func NewModule(opts CreateOptions) *Module {
+func newModule(opts CreateOptions) *Module {
 	return &Module{
 		ID:           internal.NewID("mod"),
 		CreatedAt:    internal.CurrentTimestamp(),
@@ -109,7 +109,7 @@ func NewModule(opts CreateOptions) *Module {
 	}
 }
 
-func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
+func newModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 	return &ModuleVersion{
 		ID:        internal.NewID("modver"),
 		CreatedAt: internal.CurrentTimestamp(),
@@ -123,12 +123,17 @@ func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 }
 
 func (m *Module) LogValue() slog.Value {
-	return slog.GroupValue(
+	attrs := []slog.Attr{
 		slog.String("id", m.ID),
 		slog.String("organization", m.Organization),
 		slog.String("name", m.Name),
 		slog.String("provider", m.Provider),
-	)
+		slog.String("status", string(m.Status)),
+	}
+	if m.Latest() != nil {
+		attrs = append(attrs, slog.String("latest_version", m.Latest().Version))
+	}
+	return slog.GroupValue(attrs...)
 }
 
 func (m *Module) AvailableVersions() (avail []ModuleVersion) {
@@ -150,7 +155,7 @@ func (m *Module) Version(v string) *ModuleVersion {
 }
 
 // Latest retrieves the latest version, which is the greatest version with an
-// ok status. If there is such version, nil is returned.
+// ok status. If there is no such version, nil is returned.
 func (m *Module) Latest() *ModuleVersion {
 	for _, modver := range m.Versions {
 		if modver.Status == ModuleVersionStatusOK {
@@ -158,4 +163,14 @@ func (m *Module) Latest() *ModuleVersion {
 		}
 	}
 	return nil
+}
+
+func (v *ModuleVersion) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("id", v.ID),
+		slog.String("module_id", v.ModuleID),
+		slog.String("version", v.Version),
+		slog.String("status", string(v.Status)),
+	}
+	return slog.GroupValue(attrs...)
 }
