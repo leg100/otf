@@ -1,9 +1,10 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS github_apps (
     github_app_id TEXT,
+    app_id BIGINT,
+    installation_id BIGINT,
     webhook_secret TEXT NOT NULL,
-    pem TEXT NOT NULL,
-    organization_name TEXT NOT NULL REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    private_key TEXT NOT NULL,
     PRIMARY KEY (github_app_id)
 );
 
@@ -23,6 +24,7 @@ ALTER TABLE vcs_providers
 
 -- +goose Down
 ALTER TABLE vcs_providers
+    DROP COLUMN github_app_id,
     ALTER COLUMN token SET NOT NULL;
 
 ALTER TABLE repo_connections

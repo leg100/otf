@@ -1,11 +1,15 @@
 package vcsprovider
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -14,6 +18,7 @@ import (
 
 type webHandlers struct {
 	html.Renderer
+	internal.HostnameService
 	CloudService
 
 	svc Service
@@ -25,7 +30,11 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list)
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new)
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create)
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get)
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete)
+
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new-github-app", h.newGithubApp)
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/exchange-github-app-code", h.githubAppExchangeCode)
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -98,6 +107,25 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("vcs_provider_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := h.svc.GetVCSProvider(r.Context(), id)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.Render("vcs_provider_get.tmpl", w, struct {
+		VCSProvider *VCSProvider
+	}{
+		VCSProvider: provider,
+	})
+}
+
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("vcs_provider_id", r)
 	if err != nil {
@@ -112,4 +140,111 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	html.FlashSuccess(w, "deleted provider: "+provider.Name)
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+}
+
+func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
+	org, err := decode.Param("organization_name", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	type (
+		hookAttributes struct {
+			URL string `json:"url"`
+		}
+		manifest struct {
+			Name        string            `json:"name"`
+			URL         string            `json:"url"`
+			Redirect    string            `json:"redirect_url"`
+			Description string            `json:"description"`
+			Events      []string          `json:"default_events"`
+			Permissions map[string]string `json:"default_permissions"`
+			Public      bool              `json:"public"`
+			HookAttrs   hookAttributes    `json:"hook_attributes"`
+		}
+	)
+	m := manifest{
+		Name: "OTF",
+		URL:  (&url.URL{Scheme: "https", Host: h.Hostname()}).String(),
+		HookAttrs: hookAttributes{
+			URL: (&url.URL{
+				Scheme: "https",
+				Host:   h.Hostname(),
+				Path:   "/ghapp/webhook",
+			}).String(),
+		},
+		Redirect: (&url.URL{
+			Scheme: "https",
+			Host:   h.Hostname(),
+			Path:   paths.ExchangeGithubAppCodeVCSProvider(org),
+		}).String(),
+		Description: "Trigger terraform runs in OTF from GitHub",
+		Events:      []string{"push", "pull_request"},
+		Public:      false,
+		Permissions: map[string]string{
+			"checks":        "write",
+			"contents":      "read",
+			"pull_requests": "write",
+			"statuses":      "write",
+		},
+	}
+	marshaled, err := json.Marshal(&m)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("ghapp_register.tmpl", w, struct {
+		html.SitePage
+		Manifest string
+	}{
+		SitePage: html.NewSitePage(r, "select app owner"),
+		Manifest: string(marshaled),
+	})
+}
+
+func (h *webHandlers) githubAppExchangeCode(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Organization string `schema:"organization_name,required"`
+		Code         string `schema:"code,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	// exchange code for credentials using an anonymous client
+	client, err := github.NewClient(r.Context(), cloud.ClientOptions{})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	cfg, err := client.ExchangeCode(r.Context(), params.Code)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	// TODO: stick cfg in a short-lived cookie and redirect user to install app.
+	// Github then redirects back to a (separate) web handler here where the vcs
+	// provider is created.
+
+	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
+		Organization: params.Organization,
+		Name:         cfg.GetSlug(),
+		Cloud:        cloud.Github,
+		GithubApp: newGithubApp(newGithubAppOptions{
+			AppID:         cfg.GetID(),
+			WebhookSecret: cfg.GetWebhookSecret(),
+			PrivateKey:    cfg.GetPEM(),
+		}),
+	})
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
+	http.Redirect(w, r, paths.VCSProvider(provider.ID), http.StatusFound)
 }

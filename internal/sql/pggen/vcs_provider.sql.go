@@ -13,10 +13,11 @@ import (
 
 const insertVCSProviderSQL = `INSERT INTO vcs_providers (
     vcs_provider_id,
-    token,
     created_at,
     name,
     cloud,
+    token,
+    github_app_id,
     organization_name
 ) VALUES (
     $1,
@@ -24,22 +25,24 @@ const insertVCSProviderSQL = `INSERT INTO vcs_providers (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 );`
 
 type InsertVCSProviderParams struct {
 	VCSProviderID    pgtype.Text
-	Token            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
 	Name             pgtype.Text
 	Cloud            pgtype.Text
+	Token            pgtype.Text
+	GithubAppID      pgtype.Int8
 	OrganizationName pgtype.Text
 }
 
 // InsertVCSProvider implements Querier.InsertVCSProvider.
 func (q *DBQuerier) InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertVCSProvider")
-	cmdTag, err := q.conn.Exec(ctx, insertVCSProviderSQL, params.VCSProviderID, params.Token, params.CreatedAt, params.Name, params.Cloud, params.OrganizationName)
+	cmdTag, err := q.conn.Exec(ctx, insertVCSProviderSQL, params.VCSProviderID, params.CreatedAt, params.Name, params.Cloud, params.Token, params.GithubAppID, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertVCSProvider: %w", err)
 	}
@@ -48,7 +51,7 @@ func (q *DBQuerier) InsertVCSProvider(ctx context.Context, params InsertVCSProvi
 
 // InsertVCSProviderBatch implements Querier.InsertVCSProviderBatch.
 func (q *DBQuerier) InsertVCSProviderBatch(batch genericBatch, params InsertVCSProviderParams) {
-	batch.Queue(insertVCSProviderSQL, params.VCSProviderID, params.Token, params.CreatedAt, params.Name, params.Cloud, params.OrganizationName)
+	batch.Queue(insertVCSProviderSQL, params.VCSProviderID, params.CreatedAt, params.Name, params.Cloud, params.Token, params.GithubAppID, params.OrganizationName)
 }
 
 // InsertVCSProviderScan implements Querier.InsertVCSProviderScan.
@@ -62,17 +65,20 @@ func (q *DBQuerier) InsertVCSProviderScan(results pgx.BatchResults) (pgconn.Comm
 
 const findVCSProvidersByOrganizationSQL = `SELECT *
 FROM vcs_providers
+LEFT JOIN github_apps USING (github_app_id)
 WHERE organization_name = $1
 ;`
 
 type FindVCSProvidersByOrganizationRow struct {
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
 	Token            pgtype.Text        `json:"token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Name             pgtype.Text        `json:"name"`
 	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
-	GithubAppID      pgtype.Text        `json:"github_app_id"`
+	WebhookSecret    pgtype.Text        `json:"webhook_secret"`
+	PrivateKey       pgtype.Text        `json:"private_key"`
 }
 
 // FindVCSProvidersByOrganization implements Querier.FindVCSProvidersByOrganization.
@@ -86,7 +92,7 @@ func (q *DBQuerier) FindVCSProvidersByOrganization(ctx context.Context, organiza
 	items := []FindVCSProvidersByOrganizationRow{}
 	for rows.Next() {
 		var item FindVCSProvidersByOrganizationRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
+		if err := rows.Scan(&item.GithubAppID, &item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.WebhookSecret, &item.PrivateKey); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByOrganization row: %w", err)
 		}
 		items = append(items, item)
@@ -112,7 +118,7 @@ func (q *DBQuerier) FindVCSProvidersByOrganizationScan(results pgx.BatchResults)
 	items := []FindVCSProvidersByOrganizationRow{}
 	for rows.Next() {
 		var item FindVCSProvidersByOrganizationRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
+		if err := rows.Scan(&item.GithubAppID, &item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.WebhookSecret, &item.PrivateKey); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByOrganizationBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -125,16 +131,19 @@ func (q *DBQuerier) FindVCSProvidersByOrganizationScan(results pgx.BatchResults)
 
 const findVCSProvidersSQL = `SELECT *
 FROM vcs_providers
+LEFT JOIN github_apps USING (github_app_id)
 ;`
 
 type FindVCSProvidersRow struct {
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
 	Token            pgtype.Text        `json:"token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Name             pgtype.Text        `json:"name"`
 	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
-	GithubAppID      pgtype.Text        `json:"github_app_id"`
+	WebhookSecret    pgtype.Text        `json:"webhook_secret"`
+	PrivateKey       pgtype.Text        `json:"private_key"`
 }
 
 // FindVCSProviders implements Querier.FindVCSProviders.
@@ -148,7 +157,7 @@ func (q *DBQuerier) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow
 	items := []FindVCSProvidersRow{}
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
+		if err := rows.Scan(&item.GithubAppID, &item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.WebhookSecret, &item.PrivateKey); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProviders row: %w", err)
 		}
 		items = append(items, item)
@@ -174,7 +183,7 @@ func (q *DBQuerier) FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSPro
 	items := []FindVCSProvidersRow{}
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
+		if err := rows.Scan(&item.GithubAppID, &item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.WebhookSecret, &item.PrivateKey); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -187,17 +196,20 @@ func (q *DBQuerier) FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSPro
 
 const findVCSProviderSQL = `SELECT *
 FROM vcs_providers
+LEFT JOIN github_apps USING (github_app_id)
 WHERE vcs_provider_id = $1
 ;`
 
 type FindVCSProviderRow struct {
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
 	Token            pgtype.Text        `json:"token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Name             pgtype.Text        `json:"name"`
 	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
-	GithubAppID      pgtype.Text        `json:"github_app_id"`
+	WebhookSecret    pgtype.Text        `json:"webhook_secret"`
+	PrivateKey       pgtype.Text        `json:"private_key"`
 }
 
 // FindVCSProvider implements Querier.FindVCSProvider.
@@ -205,7 +217,7 @@ func (q *DBQuerier) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Te
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProvider")
 	row := q.conn.QueryRow(ctx, findVCSProviderSQL, vcsProviderID)
 	var item FindVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.WebhookSecret, &item.PrivateKey); err != nil {
 		return item, fmt.Errorf("query FindVCSProvider: %w", err)
 	}
 	return item, nil
@@ -220,7 +232,7 @@ func (q *DBQuerier) FindVCSProviderBatch(batch genericBatch, vcsProviderID pgtyp
 func (q *DBQuerier) FindVCSProviderScan(results pgx.BatchResults) (FindVCSProviderRow, error) {
 	row := results.QueryRow()
 	var item FindVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.GithubAppID); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName, &item.WebhookSecret, &item.PrivateKey); err != nil {
 		return item, fmt.Errorf("scan FindVCSProviderBatch row: %w", err)
 	}
 	return item, nil
@@ -254,6 +266,119 @@ func (q *DBQuerier) DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan DeleteVCSProviderByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const insertGithubAppSQL = `INSERT INTO github_apps (
+    github_app_id,
+    webhook_secret,
+    private_key
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertGithubAppParams struct {
+	GithubAppID   pgtype.Int8
+	WebhookSecret pgtype.Text
+	PrivateKey    pgtype.Text
+}
+
+// InsertGithubApp implements Querier.InsertGithubApp.
+func (q *DBQuerier) InsertGithubApp(ctx context.Context, params InsertGithubAppParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertGithubApp")
+	cmdTag, err := q.conn.Exec(ctx, insertGithubAppSQL, params.GithubAppID, params.WebhookSecret, params.PrivateKey)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertGithubApp: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertGithubAppBatch implements Querier.InsertGithubAppBatch.
+func (q *DBQuerier) InsertGithubAppBatch(batch genericBatch, params InsertGithubAppParams) {
+	batch.Queue(insertGithubAppSQL, params.GithubAppID, params.WebhookSecret, params.PrivateKey)
+}
+
+// InsertGithubAppScan implements Querier.InsertGithubAppScan.
+func (q *DBQuerier) InsertGithubAppScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertGithubAppBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const findGithubAppByIDSQL = `SELECT *
+FROM github_apps
+WHERE github_app_id = $1;`
+
+type FindGithubAppByIDRow struct {
+	GithubAppID   pgtype.Int8 `json:"github_app_id"`
+	WebhookSecret pgtype.Text `json:"webhook_secret"`
+	PrivateKey    pgtype.Text `json:"private_key"`
+}
+
+// FindGithubAppByID implements Querier.FindGithubAppByID.
+func (q *DBQuerier) FindGithubAppByID(ctx context.Context, githubAppID pgtype.Int8) (FindGithubAppByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindGithubAppByID")
+	row := q.conn.QueryRow(ctx, findGithubAppByIDSQL, githubAppID)
+	var item FindGithubAppByIDRow
+	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey); err != nil {
+		return item, fmt.Errorf("query FindGithubAppByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindGithubAppByIDBatch implements Querier.FindGithubAppByIDBatch.
+func (q *DBQuerier) FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Int8) {
+	batch.Queue(findGithubAppByIDSQL, githubAppID)
+}
+
+// FindGithubAppByIDScan implements Querier.FindGithubAppByIDScan.
+func (q *DBQuerier) FindGithubAppByIDScan(results pgx.BatchResults) (FindGithubAppByIDRow, error) {
+	row := results.QueryRow()
+	var item FindGithubAppByIDRow
+	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey); err != nil {
+		return item, fmt.Errorf("scan FindGithubAppByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const deleteGithubAppByIDSQL = `DELETE
+FROM github_apps
+WHERE github_app_id = $1
+RETURNING *;`
+
+type DeleteGithubAppByIDRow struct {
+	GithubAppID   pgtype.Int8 `json:"github_app_id"`
+	WebhookSecret pgtype.Text `json:"webhook_secret"`
+	PrivateKey    pgtype.Text `json:"private_key"`
+}
+
+// DeleteGithubAppByID implements Querier.DeleteGithubAppByID.
+func (q *DBQuerier) DeleteGithubAppByID(ctx context.Context, githubAppID pgtype.Int8) (DeleteGithubAppByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteGithubAppByID")
+	row := q.conn.QueryRow(ctx, deleteGithubAppByIDSQL, githubAppID)
+	var item DeleteGithubAppByIDRow
+	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey); err != nil {
+		return item, fmt.Errorf("query DeleteGithubAppByID: %w", err)
+	}
+	return item, nil
+}
+
+// DeleteGithubAppByIDBatch implements Querier.DeleteGithubAppByIDBatch.
+func (q *DBQuerier) DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Int8) {
+	batch.Queue(deleteGithubAppByIDSQL, githubAppID)
+}
+
+// DeleteGithubAppByIDScan implements Querier.DeleteGithubAppByIDScan.
+func (q *DBQuerier) DeleteGithubAppByIDScan(results pgx.BatchResults) (DeleteGithubAppByIDRow, error) {
+	row := results.QueryRow()
+	var item DeleteGithubAppByIDRow
+	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey); err != nil {
+		return item, fmt.Errorf("scan DeleteGithubAppByIDBatch row: %w", err)
 	}
 	return item, nil
 }

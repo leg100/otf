@@ -52,6 +52,7 @@ type (
 
 	Options struct {
 		CloudService
+		internal.HostnameService
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
@@ -72,9 +73,10 @@ func NewService(opts Options) *service {
 	}
 
 	svc.web = &webHandlers{
-		CloudService: opts.CloudService,
-		Renderer:     opts.Renderer,
-		svc:          &svc,
+		CloudService:    opts.CloudService,
+		Renderer:        opts.Renderer,
+		HostnameService: opts.HostnameService,
+		svc:             &svc,
 	}
 	svc.api = &tfe{
 		Service:   &svc,

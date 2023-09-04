@@ -19,18 +19,42 @@ type (
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
-		VCSProviderID    pgtype.Text        `json:"id"`
+		GithubAppID      pgtype.Int8        `json:"github_app_id"`
+		VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
 		Token            pgtype.Text        `json:"token"`
 		CreatedAt        pgtype.Timestamptz `json:"created_at"`
 		Name             pgtype.Text        `json:"name"`
 		Cloud            pgtype.Text        `json:"cloud"`
 		OrganizationName pgtype.Text        `json:"organization_name"`
-		GithubAppID      pgtype.Text        `json:"github_app_id"`
+		WebhookSecret    pgtype.Text        `json:"webhook_secret"`
+		PrivateKey       pgtype.Text        `json:"private_key"`
 	}
 )
 
 func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
 	return &pgdb{db, &factory{cloudService}}
+}
+
+// unmarshal a vcs provider row from the database.
+func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
+	opts := CreateOptions{
+		ID:           &row.VCSProviderID.String,
+		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
+		Organization: row.OrganizationName.String,
+		Name:         row.Name.String,
+		Cloud:        row.Cloud.String,
+	}
+	if row.Token.Status == pgtype.Present {
+		opts.Token = &row.Token.String
+	}
+	if row.GithubAppID.Status == pgtype.Present {
+		opts.GithubApp = &GithubApp{
+			AppID:         row.GithubAppID.Int,
+			WebhookSecret: row.WebhookSecret.String,
+			PrivateKey:    row.PrivateKey.String,
+		}
+	}
+	return db.new(opts)
 }
 
 // GetByID implements pubsub.Getter
@@ -42,14 +66,20 @@ func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DB
 }
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
+	params := pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
-		Token:            sql.String(provider.Token),
+		Token:            sql.StringPtr(provider.Token),
 		Name:             sql.String(provider.Name),
 		Cloud:            sql.String(provider.CloudConfig.Name),
 		OrganizationName: sql.String(provider.Organization),
 		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
-	})
+	}
+	if provider.GithubApp != nil {
+		params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppID, Status: pgtype.Null}
+	} else {
+		params.GithubAppID.Status = pgtype.Null
+	}
+	_, err := db.Conn(ctx).InsertVCSProvider(ctx, params)
 	return err
 }
 
@@ -99,16 +129,4 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 		return sql.Error(err)
 	}
 	return nil
-}
-
-// unmarshal a vcs provider row from the database.
-func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
-	return db.new(CreateOptions{
-		ID:           &row.VCSProviderID.String,
-		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
-		Organization: row.OrganizationName.String,
-		Token:        row.Token.String,
-		Name:         row.Name.String,
-		Cloud:        row.Cloud.String,
-	})
 }

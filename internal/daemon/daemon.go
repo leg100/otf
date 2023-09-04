@@ -17,7 +17,6 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
-	"github.com/leg100/otf/internal/ghapp"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
@@ -154,11 +153,12 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	}
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		Logger:       logger,
-		DB:           db,
-		Renderer:     renderer,
-		Responder:    responder,
-		CloudService: cloudService,
+		Logger:          logger,
+		DB:              db,
+		Renderer:        renderer,
+		Responder:       responder,
+		CloudService:    cloudService,
+		HostnameService: hostnameService,
 	})
 	repoService := repo.NewService(ctx, repo.Options{
 		Logger:              logger,
@@ -316,7 +316,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		configService,
 		notificationService,
 		disco.Service{},
-		&ghapp.WebHandlers{Renderer: renderer, Service: cloudService, HostnameService: hostnameService},
 	}
 
 	return &Daemon{

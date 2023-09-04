@@ -16,12 +16,17 @@
   </div>
 
   <div class="flex flex-col gap-4 mt-4">
-    {{ range .CloudConfigs }}
-      <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
-        <button class="btn">New {{ title .String }} VCS Provider</button>
-        <input type="hidden" name="cloud" id="cloud" value="{{ .String }}">
-      </form>
-    {{ end }}
+    <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
+      <button class="btn">New Github VCS Provider (Personal Token)</button>
+      <input type="hidden" name="cloud" id="cloud" value="github">
+    </form>
+    <form action="{{ newVCSProviderPath $.Organization }}" method="GET">
+      <button class="btn">New Gitlab VCS Provider (Personal Token)</button>
+      <input type="hidden" name="cloud" id="cloud" value="gitlab">
+    </form>
+    <form action="{{ newGithubAppVCSProviderPath $.Organization }}" method="GET">
+      <button class="btn">New Github VCS Provider (App)</button>
+    </form>
   </div>
 {{ end }}
 

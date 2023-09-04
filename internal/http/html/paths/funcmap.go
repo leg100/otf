@@ -25,10 +25,6 @@ func init() {
 
 	funcmap["createTokenPath"] = CreateToken
 
-	funcmap["newGithubAppPath"] = NewGithubApp
-
-	funcmap["exchangeCodeGithubAppPath"] = ExchangeCodeGithubApp
-
 	funcmap["organizationsPath"] = Organizations
 	funcmap["createOrganizationPath"] = CreateOrganization
 	funcmap["newOrganizationPath"] = NewOrganization
@@ -134,6 +130,8 @@ func init() {
 	funcmap["editVCSProviderPath"] = EditVCSProvider
 	funcmap["updateVCSProviderPath"] = UpdateVCSProvider
 	funcmap["deleteVCSProviderPath"] = DeleteVCSProvider
+	funcmap["newGithubAppVCSProviderPath"] = NewGithubAppVCSProvider
+	funcmap["exchangeGithubAppCodeVCSProviderPath"] = ExchangeGithubAppCodeVCSProvider
 
 	funcmap["modulesPath"] = Modules
 	funcmap["createModulePath"] = CreateModule

@@ -42,6 +42,7 @@ type Credentials struct {
 	// tokens are mutually-exclusive - only one can be specified
 	OAuthToken    *oauth2.Token
 	PersonalToken *string
+	GithubApp     *GithubApp
 }
 
 // CloudOAuthConfig is the configuration for a cloud provider and its OAuth

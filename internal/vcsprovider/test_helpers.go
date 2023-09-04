@@ -18,7 +18,6 @@ func newTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvid
 		// key error upon insert/update
 		Cloud: "github",
 		Name:  uuid.NewString(),
-		Token: uuid.NewString(),
 	})
 	require.NoError(t, err)
 	return provider

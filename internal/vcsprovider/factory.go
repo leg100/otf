@@ -1,6 +1,7 @@
 package vcsprovider
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/leg100/otf/internal"
@@ -14,11 +15,14 @@ type (
 
 	CreateOptions struct {
 		Organization string
-		Token        string
 		Name         string
 		Cloud        string
 		ID           *string
 		CreatedAt    *time.Time
+
+		// Must specify either token or github app.
+		Token *string
+		*GithubApp
 	}
 )
 
@@ -28,6 +32,13 @@ func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 		return nil, err
 	}
 
+	if opts.Token == nil && opts.GithubApp == nil {
+		return nil, &internal.MissingParameterError{Parameter: "must specify either token or github-app"}
+	}
+	if opts.Token != nil && opts.GithubApp != nil {
+		return nil, fmt.Errorf("cannot specify both token and github app")
+	}
+
 	provider := &VCSProvider{
 		ID:           internal.NewID("vcs"),
 		CreatedAt:    internal.CurrentTimestamp(),
@@ -35,6 +46,7 @@ func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 		Organization: opts.Organization,
 		CloudConfig:  cloudConfig,
 		Token:        opts.Token,
+		GithubApp:    opts.GithubApp,
 	}
 	if opts.ID != nil {
 		provider.ID = *opts.ID
