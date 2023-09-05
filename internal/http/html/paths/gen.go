@@ -275,14 +275,24 @@ var specs = []controllerSpec{
 				controllerType: resourcePath,
 				camel:          "VCSProvider",
 				lowerCamel:     "vcsProvider",
+			},
+			{
+				Name:           "github_app",
+				controllerType: resourcePath,
 				actions: []action{
 					{
-						name:       "new-github-app",
+						name:       "exchange-code",
 						collection: true,
 					},
 					{
-						name:       "exchange-github-app-code",
+						name:       "complete",
 						collection: true,
+					},
+					{
+						name: "new-install",
+					},
+					{
+						name: "create-install",
 					},
 				},
 			},

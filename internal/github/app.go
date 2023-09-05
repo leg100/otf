@@ -1,4 +1,4 @@
-package vcsprovider
+package github
 
 import "github.com/leg100/otf/internal"
 
@@ -11,7 +11,7 @@ type (
 		PrivateKey     string
 	}
 
-	CreateGithubAppOptions struct {
+	newGithubAppOptions struct {
 		AppID          int64
 		InstallationID int64
 		WebhookSecret  string
@@ -19,7 +19,7 @@ type (
 	}
 )
 
-func newGithubApp(opts CreateGithubAppOptions) *GithubApp {
+func newGithubApp(opts newGithubAppOptions) *GithubApp {
 	return &GithubApp{
 		ID:             internal.NewID("github-app"),
 		AppID:          opts.AppID,

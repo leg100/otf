@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS github_apps (
     installation_id BIGINT,
     webhook_secret TEXT NOT NULL,
     private_key TEXT NOT NULL,
+    organization_name TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (github_app_id)
 );
 

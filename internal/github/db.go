@@ -1,4 +1,4 @@
-package ghapp
+package github
 
 import (
 	"context"

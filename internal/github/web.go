@@ -1,14 +1,14 @@
-package vcsprovider
+package github
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/google/go-github/v41/github"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -27,12 +27,6 @@ type webHandlers struct {
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
-
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list)
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new)
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create)
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get)
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete)
 
 	r.HandleFunc("/organizations/{organization_name}/github-apps", h.listGithubApps)
 	r.HandleFunc("/organizations/{organization_name}/github-apps/new", h.newGithubApp)

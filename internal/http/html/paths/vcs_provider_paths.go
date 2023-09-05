@@ -31,11 +31,3 @@ func UpdateVCSProvider(vcsProvider string) string {
 func DeleteVCSProvider(vcsProvider string) string {
 	return fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider)
 }
-
-func NewGithubAppVCSProvider(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization)
-}
-
-func ExchangeGithubAppCodeVCSProvider(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/vcs-providers/exchange-github-app-code", organization)
-}
