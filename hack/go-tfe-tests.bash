@@ -82,6 +82,7 @@ tests+=('TestVariableSetsListForWorkspace')
 tests+=('TestVariableSetsRead')
 tests+=('TestVariableSetsApplyToAndRemoveFromWorkspaces')
 tests+=('TestVariableSetsDelete')
+tests+=('TestVariableSetVariables')
 tests+=('TestStateVersion')
 
 # only run these tests if env vars are present - otherwise the tests fail early

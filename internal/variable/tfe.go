@@ -38,7 +38,9 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/varsets/{varset_id}", a.updateVariableSet).Methods("PATCH")
 	r.HandleFunc("/varsets/{varset_id}", a.deleteVariableSet).Methods("DELETE")
 
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars", a.listVariableSetVariables).Methods("GET")
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars", a.addVariableToSet).Methods("POST")
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.getVariableSetVariable).Methods("GET")
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.updateVariableSetVariable).Methods("PATCH")
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.deleteVariableFromSet).Methods("DELETE")
 	r.HandleFunc("/varsets/{varset_id}/relationships/workspaces", a.applySetToWorkspaces).Methods("POST")
@@ -288,19 +290,40 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (a *tfe) listVariableSetVariables(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("varset_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	set, err := a.Service.getVariableSet(r.Context(), setID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	to := make([]*types.VariableSetVariable, len(set.Variables))
+	for i, from := range set.Variables {
+		to[i] = a.convertVariableSetVariable(from, setID)
+	}
+
+	a.Respond(w, r, to, http.StatusOK)
+}
+
 func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 	setID, err := decode.Param("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts *types.VariableCreateOptions
-	if err := decode.All(&opts, r); err != nil {
+	var opts types.VariableCreateOptions
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	_, err = a.Service.createVariableSetVariable(r.Context(), setID, CreateVariableOptions{
+	v, err := a.Service.createVariableSetVariable(r.Context(), setID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -309,9 +332,11 @@ func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		tfeapi.Error(w, err)
+		variableError(w, err)
 		return
 	}
+
+	a.Respond(w, r, a.convertVariableSetVariable(v, setID), http.StatusOK)
 }
 
 func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -321,12 +346,12 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	var opts types.VariableUpdateOptions
-	if err := decode.All(&opts, r); err != nil {
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	_, err = a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
+	set, err := a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -335,19 +360,34 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		tfeapi.Error(w, err)
+		variableError(w, err)
 		return
 	}
+
+	v := set.getVariable(variableID)
+	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
 }
 
-func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) getVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.VariableCreateOptions
-	if err := decode.All(&opts, r); err != nil {
+
+	set, err := a.Service.getVariableSetByVariableID(r.Context(), variableID)
+	if err != nil {
+		variableError(w, err)
+		return
+	}
+
+	v := set.getVariable(variableID)
+	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
+}
+
+func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -444,6 +484,13 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 		}
 	}
 	return to
+}
+
+func (a *tfe) convertVariableSetVariable(from *Variable, setID string) *types.VariableSetVariable {
+	return &types.VariableSetVariable{
+		Variable:    a.convertVariable(from),
+		VariableSet: &types.VariableSet{ID: setID},
+	}
 }
 
 func (a *tfe) convertVariable(from *Variable) *types.Variable {
