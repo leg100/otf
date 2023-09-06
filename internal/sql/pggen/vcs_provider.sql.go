@@ -35,7 +35,7 @@ type InsertVCSProviderParams struct {
 	Name               pgtype.Text
 	Cloud              pgtype.Text
 	Token              pgtype.Text
-	GithubAppInstallID pgtype.Int8
+	GithubAppInstallID pgtype.Text
 	OrganizationName   pgtype.Text
 }
 
@@ -75,7 +75,7 @@ type FindVCSProvidersByOrganizationRow struct {
 	Name               pgtype.Text        `json:"name"`
 	Cloud              pgtype.Text        `json:"cloud"`
 	OrganizationName   pgtype.Text        `json:"organization_name"`
-	GithubAppInstallID pgtype.Int8        `json:"github_app_install_id"`
+	GithubAppInstallID pgtype.Text        `json:"github_app_install_id"`
 }
 
 // FindVCSProvidersByOrganization implements Querier.FindVCSProvidersByOrganization.
@@ -137,7 +137,7 @@ type FindVCSProvidersRow struct {
 	Name               pgtype.Text        `json:"name"`
 	Cloud              pgtype.Text        `json:"cloud"`
 	OrganizationName   pgtype.Text        `json:"organization_name"`
-	GithubAppInstallID pgtype.Int8        `json:"github_app_install_id"`
+	GithubAppInstallID pgtype.Text        `json:"github_app_install_id"`
 }
 
 // FindVCSProviders implements Querier.FindVCSProviders.
@@ -200,7 +200,7 @@ type FindVCSProviderRow struct {
 	Name               pgtype.Text        `json:"name"`
 	Cloud              pgtype.Text        `json:"cloud"`
 	OrganizationName   pgtype.Text        `json:"organization_name"`
-	GithubAppInstallID pgtype.Int8        `json:"github_app_install_id"`
+	GithubAppInstallID pgtype.Text        `json:"github_app_install_id"`
 }
 
 // FindVCSProvider implements Querier.FindVCSProvider.

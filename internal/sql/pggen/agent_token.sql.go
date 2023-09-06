@@ -165,38 +165,38 @@ type Querier interface {
 	// FindGithubAppsByOrganizationScan scans the result of an executed FindGithubAppsByOrganizationBatch query.
 	FindGithubAppsByOrganizationScan(results pgx.BatchResults) (FindGithubAppsByOrganizationRow, error)
 
-	FindGithubAppByID(ctx context.Context, githubAppID pgtype.Int8) (FindGithubAppByIDRow, error)
+	FindGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (FindGithubAppByIDRow, error)
 	// FindGithubAppByIDBatch enqueues a FindGithubAppByID query into batch to be executed
 	// later by the batch.
-	FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Int8)
+	FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Text)
 	// FindGithubAppByIDScan scans the result of an executed FindGithubAppByIDBatch query.
 	FindGithubAppByIDScan(results pgx.BatchResults) (FindGithubAppByIDRow, error)
 
-	DeleteGithubAppByID(ctx context.Context, githubAppID pgtype.Int8) (DeleteGithubAppByIDRow, error)
+	DeleteGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (DeleteGithubAppByIDRow, error)
 	// DeleteGithubAppByIDBatch enqueues a DeleteGithubAppByID query into batch to be executed
 	// later by the batch.
-	DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Int8)
+	DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Text)
 	// DeleteGithubAppByIDScan scans the result of an executed DeleteGithubAppByIDBatch query.
 	DeleteGithubAppByIDScan(results pgx.BatchResults) (DeleteGithubAppByIDRow, error)
 
-	InsertGithubAppInstall(ctx context.Context, githubAppInstallID pgtype.Int8, githubAppID pgtype.Int8) (pgconn.CommandTag, error)
+	InsertGithubAppInstall(ctx context.Context, params InsertGithubAppInstallParams) (pgconn.CommandTag, error)
 	// InsertGithubAppInstallBatch enqueues a InsertGithubAppInstall query into batch to be executed
 	// later by the batch.
-	InsertGithubAppInstallBatch(batch genericBatch, githubAppInstallID pgtype.Int8, githubAppID pgtype.Int8)
+	InsertGithubAppInstallBatch(batch genericBatch, params InsertGithubAppInstallParams)
 	// InsertGithubAppInstallScan scans the result of an executed InsertGithubAppInstallBatch query.
 	InsertGithubAppInstallScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Int8) (FindGithubAppInstallByIDRow, error)
+	FindGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Text) (FindGithubAppInstallByIDRow, error)
 	// FindGithubAppInstallByIDBatch enqueues a FindGithubAppInstallByID query into batch to be executed
 	// later by the batch.
-	FindGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Int8)
+	FindGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Text)
 	// FindGithubAppInstallByIDScan scans the result of an executed FindGithubAppInstallByIDBatch query.
 	FindGithubAppInstallByIDScan(results pgx.BatchResults) (FindGithubAppInstallByIDRow, error)
 
-	DeleteGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Int8) (DeleteGithubAppInstallByIDRow, error)
+	DeleteGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Text) (DeleteGithubAppInstallByIDRow, error)
 	// DeleteGithubAppInstallByIDBatch enqueues a DeleteGithubAppInstallByID query into batch to be executed
 	// later by the batch.
-	DeleteGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Int8)
+	DeleteGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Text)
 	// DeleteGithubAppInstallByIDScan scans the result of an executed DeleteGithubAppInstallByIDBatch query.
 	DeleteGithubAppInstallByIDScan(results pgx.BatchResults) (DeleteGithubAppInstallByIDRow, error)
 
@@ -1945,7 +1945,7 @@ type RepoConnections struct {
 	WebhookID          pgtype.UUID `json:"webhook_id"`
 	ModuleID           pgtype.Text `json:"module_id"`
 	WorkspaceID        pgtype.Text `json:"workspace_id"`
-	GithubAppInstallID pgtype.Int8 `json:"github_app_install_id"`
+	GithubAppInstallID pgtype.Text `json:"github_app_install_id"`
 }
 
 // Report represents the Postgres composite type "report".
@@ -2202,7 +2202,7 @@ func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
 		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
 		compositeField{"module_id", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"github_app_install_id", "int8", &pgtype.Int8{}},
+		compositeField{"github_app_install_id", "text", &pgtype.Text{}},
 	)
 }
 

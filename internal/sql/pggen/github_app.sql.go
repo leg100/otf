@@ -24,7 +24,7 @@ const insertGithubAppSQL = `INSERT INTO github_apps (
 );`
 
 type InsertGithubAppParams struct {
-	GithubAppID      pgtype.Int8
+	GithubAppID      pgtype.Text
 	WebhookSecret    pgtype.Text
 	PrivateKey       pgtype.Text
 	OrganizationName pgtype.Text
@@ -59,7 +59,8 @@ FROM github_apps
 WHERE organization_name = $1;`
 
 type FindGithubAppsByOrganizationRow struct {
-	GithubAppID      pgtype.Int8 `json:"github_app_id"`
+	GithubAppID      pgtype.Text `json:"github_app_id"`
+	AppID            pgtype.Int8 `json:"app_id"`
 	WebhookSecret    pgtype.Text `json:"webhook_secret"`
 	PrivateKey       pgtype.Text `json:"private_key"`
 	OrganizationName pgtype.Text `json:"organization_name"`
@@ -70,7 +71,7 @@ func (q *DBQuerier) FindGithubAppsByOrganization(ctx context.Context, organizati
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindGithubAppsByOrganization")
 	row := q.conn.QueryRow(ctx, findGithubAppsByOrganizationSQL, organizationName)
 	var item FindGithubAppsByOrganizationRow
-	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindGithubAppsByOrganization: %w", err)
 	}
 	return item, nil
@@ -85,7 +86,7 @@ func (q *DBQuerier) FindGithubAppsByOrganizationBatch(batch genericBatch, organi
 func (q *DBQuerier) FindGithubAppsByOrganizationScan(results pgx.BatchResults) (FindGithubAppsByOrganizationRow, error) {
 	row := results.QueryRow()
 	var item FindGithubAppsByOrganizationRow
-	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindGithubAppsByOrganizationBatch row: %w", err)
 	}
 	return item, nil
@@ -96,25 +97,26 @@ FROM github_apps
 WHERE github_app_id = $1;`
 
 type FindGithubAppByIDRow struct {
-	GithubAppID      pgtype.Int8 `json:"github_app_id"`
+	GithubAppID      pgtype.Text `json:"github_app_id"`
+	AppID            pgtype.Int8 `json:"app_id"`
 	WebhookSecret    pgtype.Text `json:"webhook_secret"`
 	PrivateKey       pgtype.Text `json:"private_key"`
 	OrganizationName pgtype.Text `json:"organization_name"`
 }
 
 // FindGithubAppByID implements Querier.FindGithubAppByID.
-func (q *DBQuerier) FindGithubAppByID(ctx context.Context, githubAppID pgtype.Int8) (FindGithubAppByIDRow, error) {
+func (q *DBQuerier) FindGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (FindGithubAppByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindGithubAppByID")
 	row := q.conn.QueryRow(ctx, findGithubAppByIDSQL, githubAppID)
 	var item FindGithubAppByIDRow
-	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindGithubAppByID: %w", err)
 	}
 	return item, nil
 }
 
 // FindGithubAppByIDBatch implements Querier.FindGithubAppByIDBatch.
-func (q *DBQuerier) FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Int8) {
+func (q *DBQuerier) FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Text) {
 	batch.Queue(findGithubAppByIDSQL, githubAppID)
 }
 
@@ -122,7 +124,7 @@ func (q *DBQuerier) FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtyp
 func (q *DBQuerier) FindGithubAppByIDScan(results pgx.BatchResults) (FindGithubAppByIDRow, error) {
 	row := results.QueryRow()
 	var item FindGithubAppByIDRow
-	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindGithubAppByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -134,25 +136,26 @@ WHERE github_app_id = $1
 RETURNING *;`
 
 type DeleteGithubAppByIDRow struct {
-	GithubAppID      pgtype.Int8 `json:"github_app_id"`
+	GithubAppID      pgtype.Text `json:"github_app_id"`
+	AppID            pgtype.Int8 `json:"app_id"`
 	WebhookSecret    pgtype.Text `json:"webhook_secret"`
 	PrivateKey       pgtype.Text `json:"private_key"`
 	OrganizationName pgtype.Text `json:"organization_name"`
 }
 
 // DeleteGithubAppByID implements Querier.DeleteGithubAppByID.
-func (q *DBQuerier) DeleteGithubAppByID(ctx context.Context, githubAppID pgtype.Int8) (DeleteGithubAppByIDRow, error) {
+func (q *DBQuerier) DeleteGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (DeleteGithubAppByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteGithubAppByID")
 	row := q.conn.QueryRow(ctx, deleteGithubAppByIDSQL, githubAppID)
 	var item DeleteGithubAppByIDRow
-	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query DeleteGithubAppByID: %w", err)
 	}
 	return item, nil
 }
 
 // DeleteGithubAppByIDBatch implements Querier.DeleteGithubAppByIDBatch.
-func (q *DBQuerier) DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Int8) {
+func (q *DBQuerier) DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Text) {
 	batch.Queue(deleteGithubAppByIDSQL, githubAppID)
 }
 
@@ -160,7 +163,7 @@ func (q *DBQuerier) DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgt
 func (q *DBQuerier) DeleteGithubAppByIDScan(results pgx.BatchResults) (DeleteGithubAppByIDRow, error) {
 	row := results.QueryRow()
 	var item DeleteGithubAppByIDRow
-	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan DeleteGithubAppByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -168,16 +171,24 @@ func (q *DBQuerier) DeleteGithubAppByIDScan(results pgx.BatchResults) (DeleteGit
 
 const insertGithubAppInstallSQL = `INSERT INTO github_app_installs (
     github_app_install_id,
+    install_id,
     github_app_id
 ) VALUES (
     $1,
-    $2
+    $2,
+    $3
 );`
 
+type InsertGithubAppInstallParams struct {
+	GithubAppInstallID pgtype.Text
+	InstallID          pgtype.Int8
+	GithubAppID        pgtype.Text
+}
+
 // InsertGithubAppInstall implements Querier.InsertGithubAppInstall.
-func (q *DBQuerier) InsertGithubAppInstall(ctx context.Context, githubAppInstallID pgtype.Int8, githubAppID pgtype.Int8) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertGithubAppInstall(ctx context.Context, params InsertGithubAppInstallParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertGithubAppInstall")
-	cmdTag, err := q.conn.Exec(ctx, insertGithubAppInstallSQL, githubAppInstallID, githubAppID)
+	cmdTag, err := q.conn.Exec(ctx, insertGithubAppInstallSQL, params.GithubAppInstallID, params.InstallID, params.GithubAppID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertGithubAppInstall: %w", err)
 	}
@@ -185,8 +196,8 @@ func (q *DBQuerier) InsertGithubAppInstall(ctx context.Context, githubAppInstall
 }
 
 // InsertGithubAppInstallBatch implements Querier.InsertGithubAppInstallBatch.
-func (q *DBQuerier) InsertGithubAppInstallBatch(batch genericBatch, githubAppInstallID pgtype.Int8, githubAppID pgtype.Int8) {
-	batch.Queue(insertGithubAppInstallSQL, githubAppInstallID, githubAppID)
+func (q *DBQuerier) InsertGithubAppInstallBatch(batch genericBatch, params InsertGithubAppInstallParams) {
+	batch.Queue(insertGithubAppInstallSQL, params.GithubAppInstallID, params.InstallID, params.GithubAppID)
 }
 
 // InsertGithubAppInstallScan implements Querier.InsertGithubAppInstallScan.
@@ -204,26 +215,28 @@ JOIN github_apps USING (github_app_id)
 WHERE github_app_install_id = $1;`
 
 type FindGithubAppInstallByIDRow struct {
-	GithubAppID        pgtype.Int8 `json:"github_app_id"`
-	GithubAppInstallID pgtype.Int8 `json:"github_app_install_id"`
+	GithubAppID        pgtype.Text `json:"github_app_id"`
+	GithubAppInstallID pgtype.Text `json:"github_app_install_id"`
+	InstallID          pgtype.Int8 `json:"install_id"`
+	AppID              pgtype.Int8 `json:"app_id"`
 	WebhookSecret      pgtype.Text `json:"webhook_secret"`
 	PrivateKey         pgtype.Text `json:"private_key"`
 	OrganizationName   pgtype.Text `json:"organization_name"`
 }
 
 // FindGithubAppInstallByID implements Querier.FindGithubAppInstallByID.
-func (q *DBQuerier) FindGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Int8) (FindGithubAppInstallByIDRow, error) {
+func (q *DBQuerier) FindGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Text) (FindGithubAppInstallByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindGithubAppInstallByID")
 	row := q.conn.QueryRow(ctx, findGithubAppInstallByIDSQL, githubAppInstallID)
 	var item FindGithubAppInstallByIDRow
-	if err := row.Scan(&item.GithubAppID, &item.GithubAppInstallID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.GithubAppInstallID, &item.InstallID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindGithubAppInstallByID: %w", err)
 	}
 	return item, nil
 }
 
 // FindGithubAppInstallByIDBatch implements Querier.FindGithubAppInstallByIDBatch.
-func (q *DBQuerier) FindGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Int8) {
+func (q *DBQuerier) FindGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Text) {
 	batch.Queue(findGithubAppInstallByIDSQL, githubAppInstallID)
 }
 
@@ -231,7 +244,7 @@ func (q *DBQuerier) FindGithubAppInstallByIDBatch(batch genericBatch, githubAppI
 func (q *DBQuerier) FindGithubAppInstallByIDScan(results pgx.BatchResults) (FindGithubAppInstallByIDRow, error) {
 	row := results.QueryRow()
 	var item FindGithubAppInstallByIDRow
-	if err := row.Scan(&item.GithubAppID, &item.GithubAppInstallID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.GithubAppID, &item.GithubAppInstallID, &item.InstallID, &item.AppID, &item.WebhookSecret, &item.PrivateKey, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindGithubAppInstallByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -243,23 +256,24 @@ WHERE github_app_install_id = $1
 RETURNING *;`
 
 type DeleteGithubAppInstallByIDRow struct {
-	GithubAppInstallID pgtype.Int8 `json:"github_app_install_id"`
-	GithubAppID        pgtype.Int8 `json:"github_app_id"`
+	GithubAppInstallID pgtype.Text `json:"github_app_install_id"`
+	InstallID          pgtype.Int8 `json:"install_id"`
+	GithubAppID        pgtype.Text `json:"github_app_id"`
 }
 
 // DeleteGithubAppInstallByID implements Querier.DeleteGithubAppInstallByID.
-func (q *DBQuerier) DeleteGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Int8) (DeleteGithubAppInstallByIDRow, error) {
+func (q *DBQuerier) DeleteGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Text) (DeleteGithubAppInstallByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteGithubAppInstallByID")
 	row := q.conn.QueryRow(ctx, deleteGithubAppInstallByIDSQL, githubAppInstallID)
 	var item DeleteGithubAppInstallByIDRow
-	if err := row.Scan(&item.GithubAppInstallID, &item.GithubAppID); err != nil {
+	if err := row.Scan(&item.GithubAppInstallID, &item.InstallID, &item.GithubAppID); err != nil {
 		return item, fmt.Errorf("query DeleteGithubAppInstallByID: %w", err)
 	}
 	return item, nil
 }
 
 // DeleteGithubAppInstallByIDBatch implements Querier.DeleteGithubAppInstallByIDBatch.
-func (q *DBQuerier) DeleteGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Int8) {
+func (q *DBQuerier) DeleteGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Text) {
 	batch.Queue(deleteGithubAppInstallByIDSQL, githubAppInstallID)
 }
 
@@ -267,7 +281,7 @@ func (q *DBQuerier) DeleteGithubAppInstallByIDBatch(batch genericBatch, githubAp
 func (q *DBQuerier) DeleteGithubAppInstallByIDScan(results pgx.BatchResults) (DeleteGithubAppInstallByIDRow, error) {
 	row := results.QueryRow()
 	var item DeleteGithubAppInstallByIDRow
-	if err := row.Scan(&item.GithubAppInstallID, &item.GithubAppID); err != nil {
+	if err := row.Scan(&item.GithubAppInstallID, &item.InstallID, &item.GithubAppID); err != nil {
 		return item, fmt.Errorf("scan DeleteGithubAppInstallByIDBatch row: %w", err)
 	}
 	return item, nil

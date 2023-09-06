@@ -30,9 +30,11 @@ RETURNING *;
 -- name: InsertGithubAppInstall :exec
 INSERT INTO github_app_installs (
     github_app_install_id,
+    install_id,
     github_app_id
 ) VALUES (
     pggen.arg('github_app_install_id'),
+    pggen.arg('install_id'),
     pggen.arg('github_app_id')
 );
 
