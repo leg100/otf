@@ -23,7 +23,7 @@ type (
 	}
 )
 
-func (db *pgdb) create(ctx context.Context, app *ghapp) error {
+func (db *pgdb) create(ctx context.Context, app *GithubApp) error {
 	_, err := db.Conn(ctx).InsertGithubApp(ctx, pggen.InsertGithubAppParams{
 		GithubAppID:      sql.String(app.ID),
 		WebhookSecret:    sql.String(app.WebhookSecret),
