@@ -438,7 +438,7 @@ func (s *service) createVariableSetVariable(ctx context.Context, setID string, o
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "adding variable to set", "subject", subject, "set", set, "variable", v)
+		s.Error(err, "adding variable to set", "set_id", setID)
 		return nil, err
 	}
 
