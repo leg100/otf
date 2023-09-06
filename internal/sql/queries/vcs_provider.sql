@@ -5,7 +5,7 @@ INSERT INTO vcs_providers (
     name,
     cloud,
     token,
-    github_app_id,
+    github_app_install_id,
     organization_name
 ) VALUES (
     pggen.arg('vcs_provider_id'),
@@ -13,27 +13,24 @@ INSERT INTO vcs_providers (
     pggen.arg('name'),
     pggen.arg('cloud'),
     pggen.arg('token'),
-    pggen.arg('github_app_id'),
+    pggen.arg('github_app_install_id'),
     pggen.arg('organization_name')
 );
 
 -- name: FindVCSProvidersByOrganization :many
 SELECT *
 FROM vcs_providers
-LEFT JOIN github_apps USING (github_app_id)
 WHERE organization_name = pggen.arg('organization_name')
 ;
 
 -- name: FindVCSProviders :many
 SELECT *
 FROM vcs_providers
-LEFT JOIN github_apps USING (github_app_id)
 ;
 
 -- name: FindVCSProvider :one
 SELECT *
 FROM vcs_providers
-LEFT JOIN github_apps USING (github_app_id)
 WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
 ;
 
