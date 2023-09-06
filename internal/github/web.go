@@ -20,7 +20,7 @@ const githubAppConfigCookie = "github-app-config"
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
-	CloudService
+	CloudService cloud.Service
 
 	svc Service
 }
