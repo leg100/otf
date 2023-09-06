@@ -487,25 +487,10 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 }
 
 func (a *tfe) convertVariableSetVariable(from *Variable, setID string) *types.VariableSetVariable {
-	to := &types.VariableSetVariable{
-		Variable: &types.Variable{
-			ID:          from.ID,
-			Key:         from.Key,
-			Value:       from.Value,
-			Description: from.Description,
-			Category:    string(from.Category),
-			Sensitive:   from.Sensitive,
-			HCL:         from.HCL,
-			VersionID:   from.VersionID,
-		},
-		VariableSet: &types.VariableSet{
-			ID: setID,
-		},
+	return &types.VariableSetVariable{
+		Variable:    a.convertVariable(from),
+		VariableSet: &types.VariableSet{ID: setID},
 	}
-	if to.Sensitive {
-		to.Value = "" // scrub sensitive values
-	}
-	return to
 }
 
 func (a *tfe) convertVariable(from *Variable) *types.Variable {
