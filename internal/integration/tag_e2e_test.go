@@ -81,7 +81,7 @@ resource "null_resource" "tags_e2e" {}
 		screenshot(t),
 		matchText(t, "//div[@role='alert']", "removed tag: bar"),
 		// add new tag
-		chromedp.Focus(`//input[@x-ref='input-search']`),
+		chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
 		input.InsertText("baz"),
 		chromedp.Submit(`//input[@x-ref='input-search']`),
 		screenshot(t),

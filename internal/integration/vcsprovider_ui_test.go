@@ -27,7 +27,7 @@ func TestIntegration_VCSProviderUI(t *testing.T) {
 		// enter fake github token and name
 		chromedp.Focus("textarea#token", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("fake-github-personal-token"),
-		chromedp.Focus("input#name", chromedp.ByQuery),
+		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText("my-token"),
 		// submit form to create provider
 		chromedp.Submit("textarea#token", chromedp.ByQuery),

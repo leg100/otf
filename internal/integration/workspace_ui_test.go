@@ -54,7 +54,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// select trigger patterns strategy
 		chromedp.Click(`input#vcs-triggers-patterns`, chromedp.ByQuery),
 		// add glob patterns
-		chromedp.Focus(`#new_path`),
+		chromedp.Focus(`#new_path`, chromedp.NodeVisible),
 		input.InsertText(`/foo/*.tf`),
 		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
 		input.InsertText(`/bar/*.tf`),
@@ -117,7 +117,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// tag regex strategy should be set
 		chromedp.WaitVisible(`input#vcs-triggers-tag:checked`, chromedp.ByQuery),
 		// set vcs branch
-		chromedp.Focus(`input#vcs-branch`, chromedp.ByQuery),
+		chromedp.Focus(`input#vcs-branch`, chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText(`dev`),
 		// submit
 		chromedp.Submit(`//button[text()='Save changes']`),
@@ -152,7 +152,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
 		// enter a description
-		chromedp.Focus(`textarea#description`, chromedp.ByQuery),
+		chromedp.Focus(`textarea#description`, chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText(`my big fat workspace`),
 		// submit
 		chromedp.Submit(`//button[text()='Save changes']`),
