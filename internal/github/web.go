@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/go-github/v41/github"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
@@ -14,8 +13,6 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
 )
-
-const githubAppConfigCookie = "github-app-config"
 
 type webHandlers struct {
 	html.Renderer
@@ -28,122 +25,18 @@ type webHandlers struct {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/github-apps", h.listGithubApps)
-	r.HandleFunc("/organizations/{organization_name}/github-apps/new", h.newGithubApp)
-	r.HandleFunc("/organizations/{organization_name}/github-apps/exchange-code", h.githubAppExchangeCode)
-	r.HandleFunc("/organizations/{organization_name}/github-apps/complete", h.completeGithubSetup)
-	r.HandleFunc("/github-apps/{github_app_id}/delete", h.deleteGithubApp)
+	r.HandleFunc("/organizations/{organization_name}/github-apps", h.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/github-apps/new", h.new).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/github-apps/exchange-code", h.exchangeCode).Methods("POST")
+	r.HandleFunc("/organizations/{organization_name}/github-apps/complete", h.completeGithubSetup).Methods("POST")
+	r.HandleFunc("/github-apps/{github_app_id}/delete", h.delete).Methods("POST")
 
-	r.HandleFunc("/github-apps/{github_app_id}/new-install", h.newGithubAppInstall)
-	r.HandleFunc("/github-apps/{github_app_id}/create-install", h.createGithubAppInstall)
+	// prompt user to add github app installation to OTF as a VCS provider
+	r.HandleFunc("/github-apps/{github_app_id}/new-install", h.newInstall).Methods("GET")
+	r.HandleFunc("/github-apps/{github_app_id}/create-install", h.createInstall).Methods("POST")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization string `schema:"organization_name,required"`
-		Cloud        string `schema:"cloud,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
-	h.Render(tmpl, w, struct {
-		organization.OrganizationPage
-		Cloud string
-	}{
-		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		Cloud:            params.Cloud,
-	})
-}
-
-func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		OrganizationName string `schema:"organization_name,required"`
-		Token            string `schema:"token,required"`
-		Name             string `schema:"name,required"`
-		Cloud            string `schema:"cloud,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
-		Organization: params.OrganizationName,
-		Token:        &params.Token,
-		Name:         params.Name,
-		Cloud:        params.Cloud,
-	})
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	html.FlashSuccess(w, "created provider: "+provider.Name)
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
-}
-
-func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	providers, err := h.svc.ListVCSProviders(r.Context(), org)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	h.Render("vcs_provider_list.tmpl", w, struct {
-		organization.OrganizationPage
-		Items        []*VCSProvider
-		CloudConfigs []cloud.Config
-	}{
-		OrganizationPage: organization.NewPage(r, "vcs providers", org),
-		Items:            providers,
-		CloudConfigs:     h.ListCloudConfigs(),
-	})
-}
-
-func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("vcs_provider_id", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	provider, err := h.svc.GetVCSProvider(r.Context(), id)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	h.Render("vcs_provider_get.tmpl", w, struct {
-		VCSProvider *VCSProvider
-	}{
-		VCSProvider: provider,
-	})
-}
-
-func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("vcs_provider_id", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	provider, err := h.svc.DeleteVCSProvider(r.Context(), id)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	html.FlashSuccess(w, "deleted provider: "+provider.Name)
-	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
-}
-
-func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -199,31 +92,29 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *webHandlers) listGithubApps(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	org, err := decode.Param("organization_name", r)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	providers, err := h.svc.ListVCSProviders(r.Context(), org)
+	apps, err := h.svc.ListGithubApps(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.Render("vcs_provider_list.tmpl", w, struct {
+	h.Render("github_list_apps.tmpl", w, struct {
 		organization.OrganizationPage
-		Items        []*VCSProvider
-		CloudConfigs []cloud.Config
+		Items []*GithubApp
 	}{
-		OrganizationPage: organization.NewPage(r, "vcs providers", org),
-		Items:            providers,
-		CloudConfigs:     h.ListCloudConfigs(),
+		OrganizationPage: organization.NewPage(r, "github apps", org),
+		Items:            apps,
 	})
 }
 
-func (h *webHandlers) githubAppExchangeCode(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization string `schema:"organization_name,required"`
 		Code         string `schema:"code,required"`
@@ -234,7 +125,7 @@ func (h *webHandlers) githubAppExchangeCode(w http.ResponseWriter, r *http.Reque
 	}
 
 	// exchange code for credentials using an anonymous client
-	client, err := github.NewClient(r.Context(), cloud.ClientOptions{})
+	client, err := NewClient(r.Context(), cloud.ClientOptions{})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -245,15 +136,11 @@ func (h *webHandlers) githubAppExchangeCode(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
-		Organization: params.Organization,
-		Name:         cfg.GetSlug(),
-		Cloud:        cloud.Github,
-		GithubApp: newGithubApp(newGithubAppOptions{
-			AppID:         cfg.GetID(),
-			WebhookSecret: cfg.GetWebhookSecret(),
-			PrivateKey:    cfg.GetPEM(),
-		}),
+	app, err := h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
+		Organization:  params.Organization,
+		AppID:         cfg.GetID(),
+		WebhookSecret: cfg.GetWebhookSecret(),
+		PrivateKey:    cfg.GetPEM(),
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -261,7 +148,7 @@ func (h *webHandlers) githubAppExchangeCode(w http.ResponseWriter, r *http.Reque
 	}
 
 	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
-	http.Redirect(w, r, paths.VCSProvider(provider.ID), http.StatusFound)
+	http.Redirect(w, r, paths.GithubApp(app.ID), http.StatusFound)
 }
 
 func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request) {
@@ -275,7 +162,7 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 	}
 
 	// exchange code for credentials using an anonymous client
-	client, err := github.NewClient(r.Context(), cloud.ClientOptions{})
+	client, err := NewClient(r.Context(), cloud.ClientOptions{})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -286,15 +173,11 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
-		Organization: params.Organization,
-		Name:         cfg.GetSlug(),
-		Cloud:        cloud.Github,
-		GithubApp: newGithubApp(newGithubAppOptions{
-			AppID:         cfg.GetID(),
-			WebhookSecret: cfg.GetWebhookSecret(),
-			PrivateKey:    cfg.GetPEM(),
-		}),
+	app, err := h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
+		Organization:  params.Organization,
+		AppID:         cfg.GetID(),
+		WebhookSecret: cfg.GetWebhookSecret(),
+		PrivateKey:    cfg.GetPEM(),
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -302,5 +185,59 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 	}
 
 	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
-	http.Redirect(w, r, paths.VCSProvider(provider.ID), http.StatusFound)
+	http.Redirect(w, r, paths.GithubApp(app.ID), http.StatusFound)
+}
+
+func (h *webHandlers) newInstall(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		AppID     string `schema:"github_app_id,required"`
+		InstallID string `schema:"installation_id,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	app, err := h.svc.DeleteGithubApp(r.Context(), params.AppID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "deleted app: "+app.ID)
+	http.Redirect(w, r, paths.GithubApps(app.Organization), http.StatusFound)
+}
+
+func (h *webHandlers) createInstall(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		AppID     string `schema:"github_app_id,required"`
+		InstallID string `schema:"installation_id,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	app, err := h.svc.DeleteGithubApp(r.Context(), params.AppID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "deleted app: "+app.ID)
+	http.Redirect(w, r, paths.GithubApps(app.Organization), http.StatusFound)
+}
+
+func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
+	id, err := decode.Param("github_app_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	app, err := h.svc.DeleteGithubApp(r.Context(), id)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "deleted app: "+app.ID)
+	http.Redirect(w, r, paths.GithubApps(app.Organization), http.StatusFound)
 }

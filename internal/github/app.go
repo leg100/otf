@@ -4,29 +4,33 @@ import "github.com/leg100/otf/internal"
 
 type (
 	GithubApp struct {
-		ID            string
-		AppID         int64
+		ID            string // OTF's app ID
+		AppID         int64  // github's app ID
 		WebhookSecret string
 		PrivateKey    string
+		Organization  string // org name
 	}
 
 	Install struct {
-		InstallID int64
-		GithubApp
-	}
-
-	newGithubAppOptions struct {
-		AppID         int64
-		WebhookSecret string
-		PrivateKey    string
+		ID        string // OTF's install ID
+		InstallID int64  // github's install ID
+		*GithubApp
 	}
 )
 
-func newGithubApp(opts newGithubAppOptions) *GithubApp {
+func newApp(opts CreateAppOptions) *GithubApp {
 	return &GithubApp{
 		ID:            internal.NewID("ghapp"),
 		AppID:         opts.AppID,
 		WebhookSecret: opts.WebhookSecret,
 		PrivateKey:    opts.PrivateKey,
+		Organization:  opts.Organization,
+	}
+}
+func newInstall(installID int64, app *GithubApp) Install {
+	return Install{
+		ID:        internal.NewID("ghain"),
+		InstallID: installID,
+		GithubApp: app,
 	}
 }

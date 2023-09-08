@@ -158,12 +158,12 @@ type Querier interface {
 	// InsertGithubAppScan scans the result of an executed InsertGithubAppBatch query.
 	InsertGithubAppScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindGithubAppsByOrganization(ctx context.Context, organizationName pgtype.Text) (FindGithubAppsByOrganizationRow, error)
+	FindGithubAppsByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindGithubAppsByOrganizationRow, error)
 	// FindGithubAppsByOrganizationBatch enqueues a FindGithubAppsByOrganization query into batch to be executed
 	// later by the batch.
 	FindGithubAppsByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
 	// FindGithubAppsByOrganizationScan scans the result of an executed FindGithubAppsByOrganizationBatch query.
-	FindGithubAppsByOrganizationScan(results pgx.BatchResults) (FindGithubAppsByOrganizationRow, error)
+	FindGithubAppsByOrganizationScan(results pgx.BatchResults) ([]FindGithubAppsByOrganizationRow, error)
 
 	FindGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (FindGithubAppByIDRow, error)
 	// FindGithubAppByIDBatch enqueues a FindGithubAppByID query into batch to be executed

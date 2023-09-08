@@ -1,17 +1,19 @@
 -- name: InsertGithubApp :exec
 INSERT INTO github_apps (
     github_app_id,
+    app_id,
     webhook_secret,
     private_key,
     organization_name
 ) VALUES (
     pggen.arg('github_app_id'),
+    pggen.arg('app_id'),
     pggen.arg('webhook_secret'),
     pggen.arg('private_key'),
     pggen.arg('organization_name')
 );
 
--- name: FindGithubAppsByOrganization :one
+-- name: FindGithubAppsByOrganization :many
 SELECT *
 FROM github_apps
 WHERE organization_name = pggen.arg('organization_name');
