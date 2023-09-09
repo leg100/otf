@@ -22,10 +22,12 @@ type webHandlers struct {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list)
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new)
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create)
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete)
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +73,55 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html.FlashSuccess(w, "created provider: "+provider.Name)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+}
+
+func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
+	providerID, err := decode.Param("vcs_provider_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := h.svc.GetVCSProvider(r.Context(), providerID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("vcs_provider_edit.tmpl", w, struct {
+		organization.OrganizationPage
+		VCSProvider *VCSProvider
+	}{
+		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
+		VCSProvider:      provider,
+	})
+}
+
+func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		ID    string `schema:"vcs_provider_id,required"`
+		Token string `schema:"token"`
+		Name  string `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	opts := UpdateOptions{
+		Name: &params.Name,
+	}
+	// avoid setting token to empty string
+	if params.Token != "" {
+		opts.Token = &params.Token
+	}
+	provider, err := h.svc.UpdateVCSProvider(r.Context(), params.ID, opts)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "updated provider: "+provider.Name)
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 

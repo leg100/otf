@@ -52,6 +52,33 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	return err
 }
 
+func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) error) error {
+	var provider *VCSProvider
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		row, err := q.FindVCSProviderForUpdate(ctx, sql.String(id))
+		if err != nil {
+			return sql.Error(err)
+		}
+		provider, err = db.unmarshal(pgRow(row))
+		if err != nil {
+			return err
+		}
+		if err := fn(provider); err != nil {
+			return err
+		}
+		_, err = q.UpdateVCSProvider(ctx, pggen.UpdateVCSProviderParams{
+			VCSProviderID: sql.String(id),
+			Token:         sql.String(provider.Token),
+			Name:          sql.String(provider.Name),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
 func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 	row, err := db.Conn(ctx).FindVCSProvider(ctx, sql.String(id))
 	if err != nil {

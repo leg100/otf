@@ -223,6 +223,94 @@ func (q *DBQuerier) FindVCSProviderScan(results pgx.BatchResults) (FindVCSProvid
 	return item, nil
 }
 
+const findVCSProviderForUpdateSQL = `SELECT *
+FROM vcs_providers
+WHERE vcs_provider_id = $1
+FOR UPDATE
+;`
+
+type FindVCSProviderForUpdateRow struct {
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// FindVCSProviderForUpdate implements Querier.FindVCSProviderForUpdate.
+func (q *DBQuerier) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProviderForUpdate")
+	row := q.conn.QueryRow(ctx, findVCSProviderForUpdateSQL, vcsProviderID)
+	var item FindVCSProviderForUpdateRow
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("query FindVCSProviderForUpdate: %w", err)
+	}
+	return item, nil
+}
+
+// FindVCSProviderForUpdateBatch implements Querier.FindVCSProviderForUpdateBatch.
+func (q *DBQuerier) FindVCSProviderForUpdateBatch(batch genericBatch, vcsProviderID pgtype.Text) {
+	batch.Queue(findVCSProviderForUpdateSQL, vcsProviderID)
+}
+
+// FindVCSProviderForUpdateScan implements Querier.FindVCSProviderForUpdateScan.
+func (q *DBQuerier) FindVCSProviderForUpdateScan(results pgx.BatchResults) (FindVCSProviderForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindVCSProviderForUpdateRow
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("scan FindVCSProviderForUpdateBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateVCSProviderSQL = `UPDATE vcs_providers
+SET name = $1, token = $2
+WHERE vcs_provider_id = $3
+RETURNING *
+;`
+
+type UpdateVCSProviderParams struct {
+	Name          pgtype.Text
+	Token         pgtype.Text
+	VCSProviderID pgtype.Text
+}
+
+type UpdateVCSProviderRow struct {
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// UpdateVCSProvider implements Querier.UpdateVCSProvider.
+func (q *DBQuerier) UpdateVCSProvider(ctx context.Context, params UpdateVCSProviderParams) (UpdateVCSProviderRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateVCSProvider")
+	row := q.conn.QueryRow(ctx, updateVCSProviderSQL, params.Name, params.Token, params.VCSProviderID)
+	var item UpdateVCSProviderRow
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("query UpdateVCSProvider: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateVCSProviderBatch implements Querier.UpdateVCSProviderBatch.
+func (q *DBQuerier) UpdateVCSProviderBatch(batch genericBatch, params UpdateVCSProviderParams) {
+	batch.Queue(updateVCSProviderSQL, params.Name, params.Token, params.VCSProviderID)
+}
+
+// UpdateVCSProviderScan implements Querier.UpdateVCSProviderScan.
+func (q *DBQuerier) UpdateVCSProviderScan(results pgx.BatchResults) (UpdateVCSProviderRow, error) {
+	row := results.QueryRow()
+	var item UpdateVCSProviderRow
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("scan UpdateVCSProviderBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const deleteVCSProviderByIDSQL = `DELETE
 FROM vcs_providers
 WHERE vcs_provider_id = $1

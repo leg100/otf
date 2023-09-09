@@ -28,7 +28,9 @@
 {{ define "content-list-item" }}
   <div class="widget">
     <div>
-      <span>{{ .Name }}</span>
+      <span>
+        <a href="{{ editVCSProviderPath .ID }}">{{ .Name }}</a>
+      </span>
       <span>{{ durationRound .CreatedAt }} ago</span>
     </div>
     <div>

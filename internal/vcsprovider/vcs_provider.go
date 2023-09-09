@@ -3,10 +3,12 @@ package vcsprovider
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"log/slog"
 
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 )
 
@@ -31,6 +33,20 @@ func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 	})
 }
 
+func (t *VCSProvider) Update(opts UpdateOptions) error {
+	if opts.Name != nil {
+		if err := t.setName(*opts.Name); err != nil {
+			return err
+		}
+	}
+	if opts.Token != nil {
+		if err := t.setToken(*opts.Token); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // LogValue implements slog.LogValuer.
 func (t *VCSProvider) LogValue() slog.Value {
 	return slog.GroupValue(
@@ -39,4 +55,20 @@ func (t *VCSProvider) LogValue() slog.Value {
 		slog.String("name", t.Name),
 		slog.String("cloud", t.CloudConfig.Name),
 	)
+}
+
+func (t *VCSProvider) setName(name string) error {
+	if name == "" {
+		return fmt.Errorf("name: %w", internal.ErrEmptyValue)
+	}
+	t.Name = name
+	return nil
+}
+
+func (t *VCSProvider) setToken(token string) error {
+	if token == "" {
+		return fmt.Errorf("token: %w", internal.ErrEmptyValue)
+	}
+	t.Token = token
+	return nil
 }

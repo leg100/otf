@@ -28,6 +28,9 @@ var (
 	// ErrInvalidName is returned when the name option has invalid value.
 	ErrInvalidName = errors.New("invalid value for name")
 
+	// ErrEmptyValue is returned when a value is set to an empty string
+	ErrEmptyValue = errors.New("value cannot be empty")
+
 	// ErrUploadTooLarge is returned when a user attempts to upload data that
 	// is too large.
 	ErrUploadTooLarge = errors.New("upload is too large")

@@ -20,6 +20,11 @@ type (
 		ID           *string
 		CreatedAt    *time.Time
 	}
+
+	UpdateOptions struct {
+		Token *string
+		Name  *string
+	}
 )
 
 func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
@@ -31,10 +36,14 @@ func (f *factory) new(opts CreateOptions) (*VCSProvider, error) {
 	provider := &VCSProvider{
 		ID:           internal.NewID("vcs"),
 		CreatedAt:    internal.CurrentTimestamp(),
-		Name:         opts.Name,
 		Organization: opts.Organization,
 		CloudConfig:  cloudConfig,
-		Token:        opts.Token,
+	}
+	if err := provider.setName(opts.Name); err != nil {
+		return nil, err
+	}
+	if err := provider.setToken(opts.Token); err != nil {
+		return nil, err
 	}
 	if opts.ID != nil {
 		provider.ID = *opts.ID
