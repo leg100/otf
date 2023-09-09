@@ -32,5 +32,23 @@ func TestIntegration_VCSProviderUI(t *testing.T) {
 		// submit form to create provider
 		chromedp.Submit("textarea#token", chromedp.ByQuery),
 		matchText(t, "//div[@role='alert']", "created provider: my-token"),
+		// edit provider
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		// change name
+		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
+		chromedp.Clear("input#name", chromedp.ByQuery),
+		input.InsertText("my-updated-name"),
+		chromedp.Click(`//button[text()='Update']`),
+		matchText(t, "//div[@role='alert']", "updated provider: my-updated-name"),
+		// change token
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		chromedp.Focus("input#token", chromedp.ByQuery, chromedp.NodeVisible),
+		input.InsertText("my-updated-token"),
+		chromedp.Click(`//button[text()='Update']`),
+		matchText(t, "//div[@role='alert']", "updated provider: my-updated-name"),
+		// delete token
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		chromedp.Click(`//button[@id='delete-vcs-provider-button']`),
+		matchText(t, "//div[@role='alert']", "deleted provider: my-updated-name"),
 	})
 }
