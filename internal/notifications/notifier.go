@@ -72,7 +72,7 @@ func (s *Notifier) Start(ctx context.Context) error {
 			s.Error(err, "handling event", "event", event.Type)
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }
 
 func (s *Notifier) handle(ctx context.Context, event pubsub.Event) error {

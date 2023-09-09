@@ -77,7 +77,7 @@ func (p *proxy) Start(ctx context.Context) error {
 			p.Error(err, "caching log chunk")
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
