@@ -64,7 +64,10 @@ func (a *tfe) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {
 
 	to := make([]*types.Variable, len(variables))
 	for i, from := range variables {
-		to[i] = a.convertVariable(from)
+		// sensitive values are normally scrubbed prior to being sent over the
+		// wire; however this particular endpoint is called by the agent, which
+		// needs to provide sensitive values for runs
+		to[i] = a.convertVariable(from, false)
 	}
 
 	a.Respond(w, r, to, http.StatusOK)
@@ -451,7 +454,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID string) *types.WorkspaceVariable {
 	return &types.WorkspaceVariable{
-		Variable: a.convertVariable(from),
+		Variable: a.convertVariable(from, true),
 		Workspace: &types.Workspace{
 			ID: workspaceID,
 		},
@@ -471,7 +474,7 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	to.Variables = make([]*types.VariableSetVariable, len(from.Variables))
 	for i, v := range from.Variables {
 		to.Variables[i] = &types.VariableSetVariable{
-			Variable: a.convertVariable(v),
+			Variable: a.convertVariable(v, true),
 			VariableSet: &types.VariableSet{
 				ID: v.ID,
 			},
@@ -488,12 +491,12 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 
 func (a *tfe) convertVariableSetVariable(from *Variable, setID string) *types.VariableSetVariable {
 	return &types.VariableSetVariable{
-		Variable:    a.convertVariable(from),
+		Variable:    a.convertVariable(from, true),
 		VariableSet: &types.VariableSet{ID: setID},
 	}
 }
 
-func (a *tfe) convertVariable(from *Variable) *types.Variable {
+func (a *tfe) convertVariable(from *Variable, scrubSensitiveValue bool) *types.Variable {
 	to := &types.Variable{
 		ID:          from.ID,
 		Key:         from.Key,
@@ -504,7 +507,7 @@ func (a *tfe) convertVariable(from *Variable) *types.Variable {
 		HCL:         from.HCL,
 		VersionID:   from.VersionID,
 	}
-	if to.Sensitive {
+	if to.Sensitive && scrubSensitiveValue {
 		to.Value = "" // scrub sensitive values
 	}
 	return to
