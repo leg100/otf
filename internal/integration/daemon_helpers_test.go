@@ -183,7 +183,6 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
 		Cloud: "github",
-		Name:  uuid.NewString(),
 		Token: uuid.NewString(),
 	})
 	require.NoError(t, err)

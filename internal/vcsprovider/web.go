@@ -65,7 +65,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
 		Organization: params.OrganizationName,
 		Token:        params.Token,
-		Name:         params.Name,
+		Name:         &params.Name,
 		Cloud:        params.Cloud,
 	})
 	if err != nil {

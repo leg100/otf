@@ -23,7 +23,55 @@ type (
 		Token        string       // credential for creating client
 		Organization string       // vcs provider belongs to an organization
 	}
+
+	CreateOptions struct {
+		Organization string
+		Token        string
+		Cloud        string
+		ID           *string
+		// name is optional; if not provided then it defaults to the cloud
+		// provider name
+		Name      *string
+		CreatedAt *time.Time
+	}
+
+	UpdateOptions struct {
+		Token *string
+		Name  *string
+	}
 )
+
+func newProvider(cloudService CloudService, opts CreateOptions) (*VCSProvider, error) {
+	cloudConfig, err := cloudService.GetCloudConfig(opts.Cloud)
+	if err != nil {
+		return nil, err
+	}
+
+	provider := &VCSProvider{
+		ID:           internal.NewID("vcs"),
+		CreatedAt:    internal.CurrentTimestamp(),
+		Organization: opts.Organization,
+		CloudConfig:  cloudConfig,
+		// name defaults to name of cloud provider
+		Name: cloudConfig.Name,
+	}
+	// override name if provided
+	if opts.Name != nil {
+		if err := provider.setName(*opts.Name); err != nil {
+			return nil, err
+		}
+	}
+	if err := provider.setToken(opts.Token); err != nil {
+		return nil, err
+	}
+	if opts.ID != nil {
+		provider.ID = *opts.ID
+	}
+	if opts.CreatedAt != nil {
+		provider.CreatedAt = *opts.CreatedAt
+	}
+	return provider, nil
+}
 
 func (t *VCSProvider) String() string { return t.Name }
 

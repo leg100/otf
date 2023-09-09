@@ -49,7 +49,7 @@
     @apply text-blue-600
   }
   .widget {
-    @apply flex flex-col gap-3 place-content-between border border-black mt-3 p-2;
+    @apply flex flex-col gap-3 place-content-between border border-black mt-3 p-2 hover:bg-gray-100;
   }
   .widget > div:first-child {
     @apply flex gap-2 items-center pb-2;

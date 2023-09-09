@@ -15,7 +15,7 @@ type (
 	// pgdb is a VCS provider database on postgres
 	pgdb struct {
 		*sql.DB // provides access to generated SQL queries
-		*factory
+		CloudService
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
@@ -29,7 +29,7 @@ type (
 )
 
 func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
-	return &pgdb{db, &factory{cloudService}}
+	return &pgdb{db, cloudService}
 }
 
 // GetByID implements pubsub.Getter
@@ -129,12 +129,12 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 
 // unmarshal a vcs provider row from the database.
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
-	return db.new(CreateOptions{
+	return newProvider(db.CloudService, CreateOptions{
 		ID:           &row.VCSProviderID.String,
 		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
 		Token:        row.Token.String,
-		Name:         row.Name.String,
+		Name:         &row.Name.String,
 		Cloud:        row.Cloud.String,
 	})
 }

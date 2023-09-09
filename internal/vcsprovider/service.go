@@ -40,8 +40,7 @@ type (
 
 	service struct {
 		logr.Logger
-
-		*factory
+		CloudService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
@@ -66,10 +65,8 @@ func NewService(opts Options) *service {
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.CloudService),
-		factory: &factory{
-			CloudService: opts.CloudService,
-		},
-		deleteHook: hooks.NewHook[*VCSProvider](opts.DB),
+		CloudService: opts.CloudService,
+		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
 	}
 
 	svc.web = &webHandlers{
@@ -100,7 +97,7 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 		return nil, err
 	}
 
-	provider, err := a.new(opts)
+	provider, err := newProvider(a.CloudService, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -90,13 +90,8 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// default parameters
-	if params.Name == nil {
-		params.Name = internal.String("")
-	}
-
 	oauthClient, err := a.CreateVCSProvider(r.Context(), CreateOptions{
-		Name:         *params.Name,
+		Name:         params.Name,
 		Organization: org,
 		Token:        *params.OAuthToken,
 		Cloud:        "github",
