@@ -64,7 +64,7 @@ func (r *Reporter) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }
 
 func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
