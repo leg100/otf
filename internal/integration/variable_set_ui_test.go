@@ -22,7 +22,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			// go to variable sets
 			chromedp.Click(`//a[text()='variable sets']`), waitLoaded,
 			// click new variable set button
-			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery),
+			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery), waitLoaded,
 			// enter name
 			chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("global-1"),
