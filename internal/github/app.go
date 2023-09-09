@@ -8,7 +8,6 @@ type (
 		AppID         int64  // github's app ID
 		WebhookSecret string
 		PrivateKey    string
-		Organization  string // org name
 	}
 
 	Install struct {
@@ -24,7 +23,6 @@ func newApp(opts CreateAppOptions) *GithubApp {
 		AppID:         opts.AppID,
 		WebhookSecret: opts.WebhookSecret,
 		PrivateKey:    opts.PrivateKey,
-		Organization:  opts.Organization,
 	}
 }
 func newInstall(installID int64, app *GithubApp) Install {

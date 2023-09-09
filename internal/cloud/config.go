@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net/http"
 
+	"github.com/google/go-github/v41/github"
 	"golang.org/x/oauth2"
 )
 
@@ -42,7 +43,7 @@ type Credentials struct {
 	// tokens are mutually-exclusive - only one can be specified
 	OAuthToken    *oauth2.Token
 	PersonalToken *string
-	GithubApp     *GithubApp
+	GithubApp     *github.App
 }
 
 // CloudOAuthConfig is the configuration for a cloud provider and its OAuth

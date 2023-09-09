@@ -158,12 +158,12 @@ type Querier interface {
 	// InsertGithubAppScan scans the result of an executed InsertGithubAppBatch query.
 	InsertGithubAppScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindGithubAppsByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindGithubAppsByOrganizationRow, error)
-	// FindGithubAppsByOrganizationBatch enqueues a FindGithubAppsByOrganization query into batch to be executed
+	FindGithubApps(ctx context.Context) ([]FindGithubAppsRow, error)
+	// FindGithubAppsBatch enqueues a FindGithubApps query into batch to be executed
 	// later by the batch.
-	FindGithubAppsByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
-	// FindGithubAppsByOrganizationScan scans the result of an executed FindGithubAppsByOrganizationBatch query.
-	FindGithubAppsByOrganizationScan(results pgx.BatchResults) ([]FindGithubAppsByOrganizationRow, error)
+	FindGithubAppsBatch(batch genericBatch)
+	// FindGithubAppsScan scans the result of an executed FindGithubAppsBatch query.
+	FindGithubAppsScan(results pgx.BatchResults) ([]FindGithubAppsRow, error)
 
 	FindGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (FindGithubAppByIDRow, error)
 	// FindGithubAppByIDBatch enqueues a FindGithubAppByID query into batch to be executed
@@ -1413,8 +1413,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertGithubAppSQL, insertGithubAppSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertGithubApp': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findGithubAppsByOrganizationSQL, findGithubAppsByOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindGithubAppsByOrganization': %w", err)
+	if _, err := p.Prepare(ctx, findGithubAppsSQL, findGithubAppsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindGithubApps': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findGithubAppByIDSQL, findGithubAppByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindGithubAppByID': %w", err)

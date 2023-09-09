@@ -1,17 +1,16 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS github_apps (
-    github_app_id TEXT,
-    app_id BIGINT,
+    github_app_id BIGINT,
     webhook_secret TEXT NOT NULL,
     private_key TEXT NOT NULL,
-    organization_name TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (github_app_id)
 );
 
 CREATE TABLE IF NOT EXISTS github_app_installs (
     github_app_install_id TEXT,
     install_id BIGINT,
-    github_app_id TEXT REFERENCES github_apps (github_app_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    github_app_id BIGINT REFERENCES github_apps (github_app_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    organization_name TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (github_app_install_id),
     UNIQUE (github_app_install_id, github_app_id)
 );
