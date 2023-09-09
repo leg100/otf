@@ -13,14 +13,12 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <a href="{{ organizationPath .Name }}">
-    <div class="widget">
-      <div>
-        <a href="{{ organizationPath .Name }}">{{ .Name }}</a>
-      </div>
-      <div>
-        {{ template "identifier" . }}
-      </div>
+  <div class="widget">
+    <div>
+      <a href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
-  </a>
+    <div>
+      {{ template "identifier" . }}
+    </div>
+  </div>
 {{ end }}
