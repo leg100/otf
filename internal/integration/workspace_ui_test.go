@@ -150,12 +150,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		chromedp.Click(`//a[text()='settings']`), waitLoaded,
 		// enter a description
 		chromedp.Focus(`textarea#description`, chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText(`my big fat workspace`),
 		// submit
-		chromedp.Submit(`//button[text()='Save changes']`),
+		chromedp.Submit(`//button[text()='Save changes']`), waitLoaded,
 		// confirm updated
 		matchText(t, "//div[@role='alert']", "updated workspace"),
 		// confirm updated description shows up
