@@ -18,10 +18,10 @@ type (
 	VCSProvider struct {
 		ID           string
 		CreatedAt    time.Time
-		Name         string       // TODO: rename to description (?)
 		CloudConfig  cloud.Config // cloud config for creating client
 		Token        string       // credential for creating client
 		Organization string       // vcs provider belongs to an organization
+		Name         *string      // name is optional
 	}
 
 	CreateOptions struct {
@@ -29,10 +29,8 @@ type (
 		Token        string
 		Cloud        string
 		ID           *string
-		// name is optional; if not provided then it defaults to the cloud
-		// provider name
-		Name      *string
-		CreatedAt *time.Time
+		Name         *string
+		CreatedAt    *time.Time
 	}
 
 	UpdateOptions struct {
@@ -52,10 +50,7 @@ func newProvider(cloudService CloudService, opts CreateOptions) (*VCSProvider, e
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
 		CloudConfig:  cloudConfig,
-		// name defaults to name of cloud provider
-		Name: cloudConfig.Name,
 	}
-	// override name if provided
 	if opts.Name != nil {
 		if err := provider.setName(*opts.Name); err != nil {
 			return nil, err
@@ -73,7 +68,14 @@ func newProvider(cloudService CloudService, opts CreateOptions) (*VCSProvider, e
 	return provider, nil
 }
 
-func (t *VCSProvider) String() string { return t.Name }
+// String provides a human meaningful description of the vcs provider, using the
+// name if set, otherwise using the name of the underlying cloud provider.
+func (t *VCSProvider) String() string {
+	if t.Name != nil {
+		return *t.Name
+	}
+	return t.CloudConfig.Name
+}
 
 func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 	return t.CloudConfig.NewClient(ctx, cloud.Credentials{
@@ -100,7 +102,7 @@ func (t *VCSProvider) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("id", t.ID),
 		slog.String("organization", t.Organization),
-		slog.String("name", t.Name),
+		slog.String("name", t.String()),
 		slog.String("cloud", t.CloudConfig.Name),
 	)
 }
@@ -109,7 +111,7 @@ func (t *VCSProvider) setName(name string) error {
 	if name == "" {
 		return fmt.Errorf("name: %w", internal.ErrEmptyValue)
 	}
-	t.Name = name
+	t.Name = &name
 	return nil
 }
 

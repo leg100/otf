@@ -19,7 +19,7 @@
         <div>
           <span class="font-semibold">
             <a href="{{ setupConnectionRepoWorkspacePath $.Workspace.ID }}?vcs_provider_id={{ .ID }}">
-              {{ .Name }}
+              {{ .String }}
             </a>
           </span>
           <span>{{ durationRound .CreatedAt }} ago</span>

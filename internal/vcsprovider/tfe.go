@@ -157,7 +157,7 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) convert(from *VCSProvider) *types.OAuthClient {
-	to := &types.OAuthClient{
+	return &types.OAuthClient{
 		ID:        from.ID,
 		CreatedAt: from.CreatedAt,
 		// Only github via github.com is supported currently, so hardcode these values.
@@ -171,12 +171,6 @@ func (a *tfe) convert(from *VCSProvider) *types.OAuthClient {
 			{ID: from.ID},
 		},
 		Organization: &types.Organization{Name: from.Organization},
+		Name:         from.Name,
 	}
-	// A name is mandatory in OTF, but in go-tfe integration tests it is
-	// optional; therefore OTF takes an empty string to mean nil (this is
-	// necessary in order to pass the go-tfe integration tests).
-	if from.Name != "" {
-		to.Name = &from.Name
-	}
-	return to
 }

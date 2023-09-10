@@ -72,7 +72,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "created provider: "+provider.Name)
+	html.FlashSuccess(w, "created provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
@@ -121,7 +121,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "updated provider: "+provider.Name)
+	html.FlashSuccess(w, "updated provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
@@ -161,6 +161,6 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted provider: "+provider.Name)
+	html.FlashSuccess(w, "deleted provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }

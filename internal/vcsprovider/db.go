@@ -44,7 +44,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
 		Token:            sql.String(provider.Token),
-		Name:             sql.String(provider.Name),
+		Name:             sql.StringPtr(provider.Name),
 		Cloud:            sql.String(provider.CloudConfig.Name),
 		OrganizationName: sql.String(provider.Organization),
 		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
@@ -69,7 +69,7 @@ func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) err
 		_, err = q.UpdateVCSProvider(ctx, pggen.UpdateVCSProviderParams{
 			VCSProviderID: sql.String(id),
 			Token:         sql.String(provider.Token),
-			Name:          sql.String(provider.Name),
+			Name:          sql.StringPtr(provider.Name),
 		})
 		if err != nil {
 			return err
@@ -129,12 +129,15 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 
 // unmarshal a vcs provider row from the database.
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
-	return newProvider(db.CloudService, CreateOptions{
+	opts := CreateOptions{
 		ID:           &row.VCSProviderID.String,
 		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
 		Token:        row.Token.String,
-		Name:         &row.Name.String,
 		Cloud:        row.Cloud.String,
-	})
+	}
+	if row.Name.Status == pgtype.Present {
+		opts.Name = &row.Name.String
+	}
+	return newProvider(db.CloudService, opts)
 }
