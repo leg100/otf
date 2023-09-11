@@ -11,8 +11,8 @@ import (
 )
 
 func newTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvider {
-	factory := &factory{inmem.NewCloudServiceWithDefaults()}
-	provider, err := factory.new(CreateOptions{
+	cloudService := inmem.NewCloudServiceWithDefaults()
+	provider, err := newProvider(cloudService, CreateOptions{
 		Organization: org.Name,
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update

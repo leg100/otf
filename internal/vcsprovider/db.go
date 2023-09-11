@@ -15,7 +15,7 @@ type (
 	// pgdb is a VCS provider database on postgres
 	pgdb struct {
 		*sql.DB // provides access to generated SQL queries
-		*factory
+		CloudService
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
@@ -29,7 +29,7 @@ type (
 )
 
 func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
-	return &pgdb{db, &factory{cloudService}}
+	return &pgdb{db, cloudService}
 }
 
 // GetByID implements pubsub.Getter
@@ -48,6 +48,33 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 		Cloud:            sql.String(provider.CloudConfig.Name),
 		OrganizationName: sql.String(provider.Organization),
 		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
+	})
+	return err
+}
+
+func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) error) error {
+	var provider *VCSProvider
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		row, err := q.FindVCSProviderForUpdate(ctx, sql.String(id))
+		if err != nil {
+			return sql.Error(err)
+		}
+		provider, err = db.unmarshal(pgRow(row))
+		if err != nil {
+			return err
+		}
+		if err := fn(provider); err != nil {
+			return err
+		}
+		_, err = q.UpdateVCSProvider(ctx, pggen.UpdateVCSProviderParams{
+			VCSProviderID: sql.String(id),
+			Token:         sql.String(provider.Token),
+			Name:          sql.String(provider.Name),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	return err
 }
@@ -102,12 +129,13 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 
 // unmarshal a vcs provider row from the database.
 func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
-	return db.new(CreateOptions{
+	opts := CreateOptions{
 		ID:           &row.VCSProviderID.String,
 		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
 		Token:        row.Token.String,
-		Name:         row.Name.String,
 		Cloud:        row.Cloud.String,
-	})
+		Name:         row.Name.String,
+	}
+	return newProvider(db.CloudService, opts)
 }

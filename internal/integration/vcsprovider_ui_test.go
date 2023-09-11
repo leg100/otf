@@ -24,13 +24,34 @@ func TestIntegration_VCSProviderUI(t *testing.T) {
 		// click 'New Github VCS Provider' button
 		chromedp.Click(`//button[text()='New Github VCS Provider']`),
 		screenshot(t, "new_github_vcs_provider_form"),
-		// enter fake github token and name
+		// enter fake github token
 		chromedp.Focus("textarea#token", chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("fake-github-personal-token"),
-		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
-		input.InsertText("my-token"),
 		// submit form to create provider
 		chromedp.Submit("textarea#token", chromedp.ByQuery),
-		matchText(t, "//div[@role='alert']", "created provider: my-token"),
+		matchText(t, "//div[@role='alert']", "created provider: github"),
+		// edit provider
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		// give it a name
+		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
+		input.InsertText("my-token"),
+		chromedp.Click(`//button[text()='Update']`),
+		matchText(t, "//div[@role='alert']", "updated provider: my-token"),
+		// change token
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		chromedp.Focus("textarea#token", chromedp.ByQuery, chromedp.NodeVisible),
+		input.InsertText("my-updated-fake-github-personal-token"),
+		chromedp.Click(`//button[text()='Update']`),
+		matchText(t, "//div[@role='alert']", "updated provider: my-token"),
+		// clear name
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		chromedp.Focus("input#name", chromedp.ByQuery, chromedp.NodeVisible),
+		chromedp.Clear("input#name", chromedp.ByQuery),
+		chromedp.Click(`//button[text()='Update']`),
+		matchText(t, "//div[@role='alert']", "updated provider: github"),
+		// delete token
+		chromedp.Click(`//a[@id='edit-vcs-provider-link']`), waitLoaded,
+		chromedp.Click(`//button[@id='delete-vcs-provider-button']`),
+		matchText(t, "//div[@role='alert']", "deleted provider: github"),
 	})
 }

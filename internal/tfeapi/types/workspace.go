@@ -330,9 +330,6 @@ type VCSRepoOptions struct {
 	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
 	TagsRegex         *string `json:"tags-regex,omitempty"`
-
-	Valid bool `json:"-"`
-	Set   bool `json:"-"`
 }
 
 // VCSRepoOptionsJSON wraps VCSRepoOptions and implements json.Unmarshaler in order to differentiate

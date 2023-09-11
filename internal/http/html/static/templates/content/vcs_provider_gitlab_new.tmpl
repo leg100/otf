@@ -7,7 +7,6 @@
 {{ define "content" }}
   <div>
     Create a Gitlab VCS provider using a <a class="underline" href="https://gitlab.com/-/profile/personal_access_tokens">personal token</a> with the <span class="bg-gray-200">api</span> scope.
-    Enter the token below along with a descriptive name.
   </div>
-  {{ template "create_vcs_provider_form" . }}
+  {{ template "vcs_provider_form" . }}
 {{ end }}

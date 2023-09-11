@@ -18,7 +18,6 @@ func TestVCSProvider(t *testing.T) {
 		_, err := svc.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 			Organization: org.Name,
 			Token:        uuid.NewString(),
-			Name:         uuid.NewString(),
 			Cloud:        "github",
 		})
 		require.NoError(t, err)

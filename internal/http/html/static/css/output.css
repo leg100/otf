@@ -936,6 +936,10 @@ th, td {
   width: 100%;
 }
 
+.w-20 {
+  width: 5rem;
+}
+
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -1111,18 +1115,6 @@ th, td {
 .border-slate-900 {
   --tw-border-opacity: 1;
   border-color: rgb(15 23 42 / var(--tw-border-opacity));
-}
-
-.border-x-black {
-  --tw-border-opacity: 1;
-  border-left-color: rgb(0 0 0 / var(--tw-border-opacity));
-  border-right-color: rgb(0 0 0 / var(--tw-border-opacity));
-}
-
-.border-y-black {
-  --tw-border-opacity: 1;
-  border-top-color: rgb(0 0 0 / var(--tw-border-opacity));
-  border-bottom-color: rgb(0 0 0 / var(--tw-border-opacity));
 }
 
 .bg-black {

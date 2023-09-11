@@ -45,7 +45,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 	// demonstrate setting vcs trigger patterns
 	browser.Run(t, ctx, chromedp.Tasks{
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.Name),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.String()),
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
