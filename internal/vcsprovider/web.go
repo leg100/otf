@@ -43,10 +43,14 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
 	h.Render(tmpl, w, struct {
 		organization.OrganizationPage
-		Cloud string
+		VCSProvider *VCSProvider
+		FormAction  string
+		EditMode    bool
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		Cloud:            params.Cloud,
+		VCSProvider:      &VCSProvider{CloudConfig: cloud.Config{Name: params.Cloud}},
+		FormAction:       paths.CreateVCSProvider(params.Organization),
+		EditMode:         false,
 	})
 }
 
@@ -54,7 +58,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		OrganizationName string `schema:"organization_name,required"`
 		Token            string `schema:"token,required"`
-		Name             string `schema:"name,required"`
+		Name             string `schema:"name"`
 		Cloud            string `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -65,8 +69,8 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
 		Organization: params.OrganizationName,
 		Token:        params.Token,
-		Name:         &params.Name,
 		Cloud:        params.Cloud,
+		Name:         params.Name,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -92,9 +96,13 @@ func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
 	h.Render("vcs_provider_edit.tmpl", w, struct {
 		organization.OrganizationPage
 		VCSProvider *VCSProvider
+		FormAction  string
+		EditMode    bool
 	}{
 		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
 		VCSProvider:      provider,
+		FormAction:       paths.UpdateVCSProvider(providerID),
+		EditMode:         true,
 	})
 }
 
@@ -110,7 +118,7 @@ func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := UpdateOptions{
-		Name: &params.Name,
+		Name: params.Name,
 	}
 	// avoid setting token to empty string
 	if params.Token != "" {

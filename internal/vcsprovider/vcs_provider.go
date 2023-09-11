@@ -21,7 +21,7 @@ type (
 		CloudConfig  cloud.Config // cloud config for creating client
 		Token        string       // credential for creating client
 		Organization string       // vcs provider belongs to an organization
-		Name         *string      // name is optional
+		Name         string
 	}
 
 	CreateOptions struct {
@@ -29,13 +29,13 @@ type (
 		Token        string
 		Cloud        string
 		ID           *string
-		Name         *string
+		Name         string
 		CreatedAt    *time.Time
 	}
 
 	UpdateOptions struct {
 		Token *string
-		Name  *string
+		Name  string
 	}
 )
 
@@ -50,11 +50,7 @@ func newProvider(cloudService CloudService, opts CreateOptions) (*VCSProvider, e
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
 		CloudConfig:  cloudConfig,
-	}
-	if opts.Name != nil {
-		if err := provider.setName(*opts.Name); err != nil {
-			return nil, err
-		}
+		Name:         opts.Name,
 	}
 	if err := provider.setToken(opts.Token); err != nil {
 		return nil, err
@@ -71,8 +67,8 @@ func newProvider(cloudService CloudService, opts CreateOptions) (*VCSProvider, e
 // String provides a human meaningful description of the vcs provider, using the
 // name if set, otherwise using the name of the underlying cloud provider.
 func (t *VCSProvider) String() string {
-	if t.Name != nil {
-		return *t.Name
+	if t.Name != "" {
+		return t.Name
 	}
 	return t.CloudConfig.Name
 }
@@ -84,11 +80,7 @@ func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 }
 
 func (t *VCSProvider) Update(opts UpdateOptions) error {
-	if opts.Name != nil {
-		if err := t.setName(*opts.Name); err != nil {
-			return err
-		}
-	}
+	t.Name = opts.Name
 	if opts.Token != nil {
 		if err := t.setToken(*opts.Token); err != nil {
 			return err
@@ -105,14 +97,6 @@ func (t *VCSProvider) LogValue() slog.Value {
 		slog.String("name", t.String()),
 		slog.String("cloud", t.CloudConfig.Name),
 	)
-}
-
-func (t *VCSProvider) setName(name string) error {
-	if name == "" {
-		return fmt.Errorf("name: %w", internal.ErrEmptyValue)
-	}
-	t.Name = &name
-	return nil
 }
 
 func (t *VCSProvider) setToken(token string) error {

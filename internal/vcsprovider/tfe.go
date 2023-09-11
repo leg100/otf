@@ -90,8 +90,13 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// default parameters
+	if params.Name == nil {
+		params.Name = internal.String("")
+	}
+
 	oauthClient, err := a.CreateVCSProvider(r.Context(), CreateOptions{
-		Name:         params.Name,
+		Name:         *params.Name,
 		Organization: org,
 		Token:        *params.OAuthToken,
 		Cloud:        "github",
@@ -157,7 +162,7 @@ func (a *tfe) deleteOAuthClient(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) convert(from *VCSProvider) *types.OAuthClient {
-	return &types.OAuthClient{
+	to := &types.OAuthClient{
 		ID:        from.ID,
 		CreatedAt: from.CreatedAt,
 		// Only github via github.com is supported currently, so hardcode these values.
@@ -171,6 +176,10 @@ func (a *tfe) convert(from *VCSProvider) *types.OAuthClient {
 			{ID: from.ID},
 		},
 		Organization: &types.Organization{Name: from.Organization},
-		Name:         from.Name,
 	}
+	// an empty name in otf is equivalent to a nil name in tfe
+	if from.Name != "" {
+		to.Name = &from.Name
+	}
+	return to
 }

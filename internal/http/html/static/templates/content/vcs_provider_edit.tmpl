@@ -3,25 +3,13 @@
 {{ define "content-header-title" }}
   <a href="{{ vcsProvidersPath .Organization }}">vcs providers</a>
   /
-  {{ .VCSProvider.Name }}
+  {{ .VCSProvider.String }}
   /
   settings
 {{ end }}
 
 {{ define "content" }}
-  <form class="flex flex-col gap-5" action="{{ updateVCSProviderPath .VCSProvider.ID }}" method="POST">
-    <div class="field">
-      <label for="name">Name</label>
-      <input class="text-input w-80" type="text" name="name" id="name" value="{{ .VCSProvider.Name }}" required>
-    </div>
-    <div class="field">
-      <label for="token">Token</label>
-      <input class="text-input w-80" type="text" name="token" id="token" placeholder="*****">
-    </div>
-    <div class="field">
-      <button class="btn w-32">Update</button>
-    </div>
-  </form>
+  {{ template "vcs_provider_form" . }}
   <hr class="my-4">
   <h3 class="font-semibold text-lg mb-2">Advanced</h3>
   <form action="{{ deleteVCSProviderPath .VCSProvider.ID }}" method="POST">
