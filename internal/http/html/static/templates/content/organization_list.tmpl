@@ -13,7 +13,7 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="widget">
+  <div class="widget" x-data="block_link($el, '{{ organizationPath .Name }}')">
     <div>
       <a href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
