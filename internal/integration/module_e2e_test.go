@@ -117,7 +117,7 @@ module "mod" {
 			// go to modules
 			chromedp.Click("#modules > a", chromedp.ByQuery),
 			// select existing module
-			chromedp.Click(`//a[text()='mod']`),
+			chromedp.Click(`.widget`, chromedp.ByQuery),
 			// confirm no longer connected
 			chromedp.WaitNotPresent(`//span[@id='vcs-repo']`),
 			// delete module

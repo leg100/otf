@@ -39,7 +39,7 @@ func TestWeb(t *testing.T) {
 			chromedp.Click("#teams > a", chromedp.ByQuery),
 			screenshot(t),
 			// select devops team
-			chromedp.Click("#item-team-devops a", chromedp.ByQuery),
+			chromedp.Click("#item-team-devops", chromedp.ByQuery),
 			screenshot(t),
 			// tick checkbox for workspace manager role
 			chromedp.Click("#manage_workspaces", chromedp.ByQuery),
@@ -69,7 +69,7 @@ func TestWeb(t *testing.T) {
 			// list teams
 			chromedp.Click("#teams > a", chromedp.ByQuery),
 			// select owners team
-			chromedp.Click("#item-team-owners a", chromedp.ByQuery),
+			chromedp.Click("#item-team-owners", chromedp.ByQuery),
 			screenshot(t),
 			matchText(t, fmt.Sprintf("#item-user-%s #username", user.Username), user.Username, chromedp.ByQuery),
 		},

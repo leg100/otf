@@ -96,7 +96,7 @@ resource "null_resource" "tags_e2e" {}
 		chromedp.Click(`//label[@for='workspace-tag-filter-baz']`),
 		screenshot(t),
 		// confirm workspace listing contains tagged workspace
-		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`),
+		chromedp.WaitVisible(`//div[@id='content-list']/div[@id='item-workspace-tagged']`),
 	})
 
 	// should be tags 'foo' and 'baz'
