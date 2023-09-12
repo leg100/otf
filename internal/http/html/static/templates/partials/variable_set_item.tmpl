@@ -1,5 +1,5 @@
 {{ define "variable-set-item" }}
-  <div class="widget" id="item-variable-set-{{ .Name }}">
+  <div class="widget" id="item-variable-set-{{ .Name }}" x-data="block_link($el, '{{ editVariableSetPath .ID }}')">
     <span id="name">
       <a href="{{ editVariableSetPath .ID }}">{{ .Name }}</a>
     </span>

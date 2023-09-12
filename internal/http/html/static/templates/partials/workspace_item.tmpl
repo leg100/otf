@@ -1,5 +1,5 @@
 {{ define "workspace-item" }}
-  <div class="widget" id="item-workspace-{{ .Name }}">
+  <div x-data="block_link($el, '{{ workspacePath .ID }}')" class="widget" id="item-workspace-{{ .Name }}">
     <div>
       <a class="text-lg" href="{{ workspacePath .ID }}">{{ .Name }}</a>
       {{ with .LatestRun }}

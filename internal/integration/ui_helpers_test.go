@@ -265,7 +265,7 @@ func connectWorkspaceTasks(t *testing.T, hostname, org, name, provider string) c
 		chromedp.Click(`//button[@id='list-workspace-vcs-providers-button']`),
 		screenshot(t, "workspace_vcs_providers_list"),
 		// select provider
-		chromedp.Click(fmt.Sprintf(`//a[normalize-space(text())='%s']`, provider)),
+		chromedp.Click(`div.widget`, chromedp.ByQuery),
 		screenshot(t, "workspace_vcs_repo_list"),
 		// connect to first repo in list (there should only be one)
 		chromedp.Click(`//div[@id='content-list']//button[text()='connect']`),
