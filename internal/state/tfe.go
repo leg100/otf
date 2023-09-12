@@ -388,14 +388,26 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 	if err != nil {
 		return nil, err
 	}
-	var include []any
+	include := make([]any, len(sv.Outputs))
+	// TODO: we both include the full output types and populate the list of IDs
+	// in ws.Outputs, but really the latter should *always* be populated, and
+	// that should be the responsibility of the workspace pkg. To avoid an
+	// import cycle, perhaps the workspace SQL queries could return a list of
+	// output IDs.
+	ws.Outputs = make([]*types.WorkspaceOutput, len(sv.Outputs))
+	var i int
 	for _, from := range sv.Outputs {
-		// scrub sensitive values for included outputs
-		to := a.toOutput(from, true)
-		include = append(include, to)
-		ws.Outputs = append(ws.Outputs, &types.StateVersionOutput{
-			ID: to.ID,
-		})
+		include[i] = &types.WorkspaceOutput{
+			ID:        from.ID,
+			Name:      from.Name,
+			Sensitive: from.Sensitive,
+			Type:      from.Type,
+			Value:     from.Value,
+		}
+		ws.Outputs[i] = &types.WorkspaceOutput{
+			ID: from.ID,
+		}
+		i++
 	}
 	return include, nil
 }
