@@ -450,7 +450,6 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		TagNames:                   from.Tags,
 		UpdatedAt:                  from.UpdatedAt,
 		Organization:               &types.Organization{Name: from.Organization},
-		Outputs:                    []*types.StateVersionOutput{},
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true
