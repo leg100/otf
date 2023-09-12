@@ -15,13 +15,6 @@ window.addEventListener('load', (e) => {
   });
 });
 
-// window.addEventListener('htmx:afterSwap', (e) => {
-//   const widgets = e.detail.elt.querySelectorAll(".widget");
-//   widgets.forEach(widget => {
-//     blockLink(widget);
-//   });
-// });
-
 // https://css-tricks.com/block-links-the-search-for-a-perfect-solution/#method-4-sprinkle-javascript-on-the-second-method
 document.addEventListener('alpine:init', () => {
   Alpine.data('block_link', (block, link) => ({

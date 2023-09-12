@@ -99,7 +99,7 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 		screenshot(t),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a"),
+		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
 		screenshot(t),
 		// click delete button for one and only vcs provider
 		chromedp.Click(`//button[text()='delete']`),
