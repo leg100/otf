@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
@@ -37,14 +36,12 @@ type (
 		username   *usernameClaim
 
 		oauthClient
-		logr.Logger
 	}
 
 	oidcAuthenticatorOptions struct {
 		tokens.TokensService     // for creating session
 		internal.HostnameService // for constructing redirect URL
 		cloud.OIDCConfig
-		logr.Logger
 	}
 )
 
@@ -73,7 +70,6 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 	}
 
 	return &oidcAuthenticator{
-		Logger:        opts.Logger,
 		TokensService: opts.TokensService,
 		oidcConfig:    opts.OIDCConfig,
 		provider:      provider,
