@@ -33,6 +33,7 @@ type (
 		oidcConfig cloud.OIDCConfig
 		provider   *oidc.Provider
 		verifier   *oidc.IDTokenVerifier
+		username   *usernameClaim
 
 		oauthClient
 	}
@@ -41,12 +42,6 @@ type (
 		tokens.TokensService     // for creating session
 		internal.HostnameService // for constructing redirect URL
 		cloud.OIDCConfig
-	}
-
-	// oidcClaims depicts the claims returned from the OIDC id-token.
-	oidcClaims struct {
-		Name   string   `json:"name"`
-		Groups []string `json:"groups"`
 	}
 )
 
@@ -68,18 +63,25 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 		return nil, fmt.Errorf("constructing OIDC provider: %w", err)
 	}
 
+	// parse claim to be used for username
+	username, err := newUsernameClaim(opts.OIDCConfig.UsernameClaim)
+	if err != nil {
+		return nil, err
+	}
+
 	return &oidcAuthenticator{
 		TokensService: opts.TokensService,
 		oidcConfig:    opts.OIDCConfig,
 		provider:      provider,
 		verifier:      provider.Verifier(&oidc.Config{ClientID: opts.ClientID}),
+		username:      username,
 		oauthClient: &OAuthClient{
 			HostnameService: opts.HostnameService,
 			Config: &oauth2.Config{
 				ClientID:     opts.ClientID,
 				ClientSecret: opts.ClientSecret,
 				Endpoint:     provider.Endpoint(),
-				Scopes:       DefaultScopes,
+				Scopes:       opts.Scopes,
 			},
 			cloudConfig: cloudConfig,
 		},
@@ -110,15 +112,14 @@ func (o oidcAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Extract custom claims
-	var claims oidcClaims
-	if err := idt.Claims(&claims); err != nil {
+	// Extract username from claim
+	if err := idt.Claims(&o.username); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
 	err = o.StartSession(w, r, tokens.StartSessionOptions{
-		Username: &claims.Name,
+		Username: &o.username.value,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
