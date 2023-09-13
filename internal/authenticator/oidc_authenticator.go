@@ -7,19 +7,13 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/tokens"
 	"golang.org/x/oauth2"
-)
-
-// List of valid claims that can be used as username
-const (
-	EmailClaim UsernameClaim = "email"
-	SubClaim   UsernameClaim = "sub"
-	NameClaim  UsernameClaim = "name"
 )
 
 var (
@@ -40,18 +34,18 @@ type (
 		oidcConfig cloud.OIDCConfig
 		provider   *oidc.Provider
 		verifier   *oidc.IDTokenVerifier
+		username   *usernameClaim
 
 		oauthClient
+		logr.Logger
 	}
 
 	oidcAuthenticatorOptions struct {
 		tokens.TokensService     // for creating session
 		internal.HostnameService // for constructing redirect URL
 		cloud.OIDCConfig
+		logr.Logger
 	}
-
-	// OIDC claim that can be used as a username
-	UsernameClaim string
 )
 
 func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*oidcAuthenticator, error) {
@@ -72,11 +66,19 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 		return nil, fmt.Errorf("constructing OIDC provider: %w", err)
 	}
 
+	// parse claim to be used for username
+	username, err := newUsernameClaim(opts.OIDCConfig.UsernameClaim)
+	if err != nil {
+		return nil, err
+	}
+
 	return &oidcAuthenticator{
+		Logger:        opts.Logger,
 		TokensService: opts.TokensService,
 		oidcConfig:    opts.OIDCConfig,
 		provider:      provider,
 		verifier:      provider.Verifier(&oidc.Config{ClientID: opts.ClientID}),
+		username:      username,
 		oauthClient: &OAuthClient{
 			HostnameService: opts.HostnameService,
 			Config: &oauth2.Config{
@@ -114,34 +116,14 @@ func (o oidcAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// oidcClaims depicts the claims returned from the OIDC id-token.
-	type oidcClaims struct {
-		Name  string `json:"name"`
-		Sub   string `json:"sub"`
-		Email string `json:"email"`
-	}
-
 	// Extract username from claim
-	var (
-		claims   oidcClaims
-		username string
-	)
-	if err := idt.Claims(&claims); err != nil {
+	if err := idt.Claims(&o.username); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
-	switch o.oidcConfig.UsernameClaim {
-	case string(EmailClaim):
-		username = claims.Email
-	case string(SubClaim):
-		username = claims.Sub
-	case string(NameClaim):
-		username = claims.Name
-	}
-
 	err = o.StartSession(w, r, tokens.StartSessionOptions{
-		Username: &username,
+		Username: &o.username.value,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)

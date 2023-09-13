@@ -45,6 +45,7 @@ func NewAuthenticatorService(opts Options) (*service, error) {
 			TokensService:   opts.TokensService,
 			HostnameService: opts.HostnameService,
 			OIDCConfig:      cfg,
+			Logger:          opts.Logger,
 		})
 		if err != nil {
 			return nil, err
