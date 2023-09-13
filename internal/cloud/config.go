@@ -63,6 +63,10 @@ type OIDCConfig struct {
 	ClientID string
 	// ClientSecret is the client secret for the oidc provider.
 	ClientSecret string
-	// Skip TLS Verification when communicating with issuer
+	// Skip TLS Verification when communicating with issuer>
 	SkipTLSVerification bool
+	// Scopes to request from the oidc provider.
+	Scopes []string
+	// UsernameClaim is the claim that provides the username.
+	UsernameClaim string
 }

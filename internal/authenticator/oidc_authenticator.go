@@ -15,6 +15,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// List of valid claims that can be used as username
+const (
+	EmailClaim UsernameClaim = "email"
+	SubClaim   UsernameClaim = "sub"
+	NameClaim  UsernameClaim = "name"
+)
+
 var (
 	_ authenticator = &oidcAuthenticator{}
 
@@ -43,11 +50,8 @@ type (
 		cloud.OIDCConfig
 	}
 
-	// oidcClaims depicts the claims returned from the OIDC id-token.
-	oidcClaims struct {
-		Name   string   `json:"name"`
-		Groups []string `json:"groups"`
-	}
+	// OIDC claim that can be used as a username
+	UsernameClaim string
 )
 
 func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*oidcAuthenticator, error) {
@@ -79,7 +83,7 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 				ClientID:     opts.ClientID,
 				ClientSecret: opts.ClientSecret,
 				Endpoint:     provider.Endpoint(),
-				Scopes:       DefaultScopes,
+				Scopes:       opts.Scopes,
 			},
 			cloudConfig: cloudConfig,
 		},
@@ -110,15 +114,34 @@ func (o oidcAuthenticator) ResponseHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Extract custom claims
-	var claims oidcClaims
+	// oidcClaims depicts the claims returned from the OIDC id-token.
+	type oidcClaims struct {
+		Name  string `json:"name"`
+		Sub   string `json:"sub"`
+		Email string `json:"email"`
+	}
+
+	// Extract username from claim
+	var (
+		claims   oidcClaims
+		username string
+	)
 	if err := idt.Claims(&claims); err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
 		return
 	}
 
+	switch o.oidcConfig.UsernameClaim {
+	case string(EmailClaim):
+		username = claims.Email
+	case string(SubClaim):
+		username = claims.Sub
+	case string(NameClaim):
+		username = claims.Name
+	}
+
 	err = o.StartSession(w, r, tokens.StartSessionOptions{
-		Username: &claims.Name,
+		Username: &username,
 	})
 	if err != nil {
 		html.Error(w, err.Error(), http.StatusInternalServerError, false)
