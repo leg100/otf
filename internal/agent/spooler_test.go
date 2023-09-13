@@ -44,7 +44,7 @@ func TestSpooler(t *testing.T) {
 	assert.Equal(t, cancelation{Run: run4, Forceful: false}, <-spooler.getCancelation())
 	assert.Equal(t, cancelation{Run: run5, Forceful: true}, <-spooler.getCancelation())
 	cancel()
-	assert.NoError(t, <-errch)
+	assert.Equal(t, pubsub.ErrSubscriptionTerminated, <-errch)
 }
 
 func TestSpooler_handleEvent(t *testing.T) {
