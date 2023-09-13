@@ -18,8 +18,6 @@ type (
 		Name string
 		// System is the underlying system to be invoked and supervised.
 		System Startable
-		// Backoff and restart subsystem in the event of an error
-		BackoffRestart bool
 		// Exclusive: permit only one instance of this subsystem on an OTF
 		// cluster
 		Exclusive bool
@@ -64,24 +62,22 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 		} else {
 			err = s.System.Start(ctx)
 		}
-		if err != nil {
-			return err
+		if ctx.Err() != nil {
+			// don't return an error if subsystem was terminated via a
+			// canceled context.
+			s.V(1).Info("gracefully shutdown subsystem", "name", s.Name)
+			return nil
 		}
-		s.V(1).Info("gracefully shutdown subsystem", "name", s.Name)
-		return nil
+		return err
 	}
-	if s.BackoffRestart {
-		// Backoff and retry whenever operation returns an error. If context is
-		// cancelled then it'll stop retrying and return the context error.
-		policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-		g.Go(func() error {
-			return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-				s.Error(err, "restarting subsystem", "name", s.Name, "backoff", next)
-			})
+	// Backoff and retry whenever operation returns an error. If context is
+	// cancelled then it'll stop retrying and return the context error.
+	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
+	g.Go(func() error {
+		return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
+			s.Error(err, "restarting subsystem", "name", s.Name, "backoff", next)
 		})
-	} else {
-		g.Go(op)
-	}
+	})
 	s.V(1).Info("started subsystem", "name", s.Name)
 	return nil
 }
