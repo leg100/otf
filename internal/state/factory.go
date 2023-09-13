@@ -130,39 +130,3 @@ func (f *factory) rollback(ctx context.Context, svID string) (*Version, error) {
 	}
 	return clone, nil
 }
-
-func newVersion(opts newVersionOptions) (Version, error) {
-	sv := Version{
-		ID:          internal.NewID("sv"),
-		CreatedAt:   internal.CurrentTimestamp(),
-		Serial:      opts.serial,
-		State:       opts.state,
-		WorkspaceID: opts.workspaceID,
-	}
-
-	var f File
-	if err := json.Unmarshal(opts.state, &f); err != nil {
-		return Version{}, err
-	}
-
-	// extract outputs from state file
-	outputs := make(map[string]*Output, len(f.Outputs))
-	for k, v := range f.Outputs {
-		typ, err := v.Type()
-		if err != nil {
-			return Version{}, err
-		}
-
-		outputs[k] = &Output{
-			ID:             internal.NewID("wsout"),
-			Name:           k,
-			Type:           typ,
-			Value:          v.Value,
-			Sensitive:      v.Sensitive,
-			StateVersionID: sv.ID,
-		}
-	}
-	sv.Outputs = outputs
-
-	return sv, nil
-}

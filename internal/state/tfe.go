@@ -362,18 +362,20 @@ func (*tfe) toOutput(from *Output, scrubSensitive bool) *types.StateVersionOutpu
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#outputs
 func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
-	sv, ok := v.(*types.StateVersion)
+	to, ok := v.(*types.StateVersion)
 	if !ok {
 		return nil, nil
 	}
-	var include []any
-	for _, outWithOnlyID := range sv.Outputs {
-		out, err := a.GetStateVersionOutput(ctx, outWithOnlyID.ID)
-		if err != nil {
-			return nil, err
-		}
+	// re-retrieve the state version, because the tfe state version only
+	// possesses the IDs of the outputs, whereas we need the full output structs
+	from, err := a.GetStateVersion(ctx, to.ID)
+	if err != nil {
+		return nil, err
+	}
+	include := make([]any, len(from.Outputs))
+	for i, out := range maps.Values(from.Outputs) {
 		// do not scrub sensitive values for included outputs
-		include = append(include, a.toOutput(out, false))
+		include[i] = a.toOutput(out, false)
 	}
 	return include, nil
 }

@@ -32,6 +32,7 @@ var (
 			GetPlanFileAction:                    true,
 			GetWorkspaceAction:                   true,
 			GetStateVersionAction:                true,
+			GetStateVersionOutputAction:          true,
 			DownloadStateAction:                  true,
 			DownloadConfigurationVersionAction:   true,
 			GetRunAction:                         true,
