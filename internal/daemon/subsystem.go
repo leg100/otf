@@ -76,8 +76,7 @@ func (s *Subsystem) Start(ctx context.Context, g *errgroup.Group) error {
 		policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 		g.Go(func() error {
 			return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-				// re-open semaphore
-				s.Error(err, "restarting "+s.Name)
+				s.Error(err, "restarting subsystem", "name", s.Name, "backoff", next)
 			})
 		})
 	} else {

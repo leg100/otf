@@ -57,14 +57,14 @@ func newSpooler(app client, logger logr.Logger, cfg Config) *spoolerDaemon {
 	}
 }
 
-// start starts the spooler
+// start the spooler
 func (s *spoolerDaemon) start(ctx context.Context) error {
 	op := func() error {
 		return s.reinitialize(ctx)
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-		s.Error(fmt.Errorf("%w: reconnecting in %s", err, next), "stream update")
+		s.Error(err, "restarting spooler", "backoff", next)
 	})
 }
 
@@ -114,7 +114,7 @@ func (s *spoolerDaemon) reinitialize(ctx context.Context) error {
 			return err
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }
 
 func (s *spoolerDaemon) handleEvent(ev pubsub.Event) error {
