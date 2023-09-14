@@ -54,8 +54,8 @@ var (
 		permissions: map[Action]bool{
 			CreateRunAction:                  true,
 			CreateConfigurationVersionAction: true,
-			// includes WorkspaceReadRole perms too (see below)
 		},
+		inherits: &WorkspaceReadRole,
 	}
 
 	// WorkspaceWriteRole is scoped to a workspace and permits write actions on
@@ -72,8 +72,8 @@ var (
 			CreateNotificationConfigurationAction: true,
 			UpdateNotificationConfigurationAction: true,
 			DeleteNotificationConfigurationAction: true,
-			// includes WorkspacePlanRole perms too (see below)
 		},
+		inherits: &WorkspacePlanRole,
 	}
 
 	// WorkspaceAdminRole is scoped to a workspace and permits management of the
@@ -86,8 +86,8 @@ var (
 			DeleteWorkspaceAction:          true,
 			ForceUnlockWorkspaceAction:     true,
 			UpdateWorkspaceAction:          true,
-			// includes WorkspaceWriteRole perms too (see below)
 		},
+		inherits: &WorkspaceWriteRole,
 	}
 
 	// WorkspaceManagerRole is scoped to an organization and permits management
@@ -100,8 +100,8 @@ var (
 			UpdateWorkspaceAction: true,
 			AddTagsAction:         true,
 			RemoveTagsAction:      true,
-			// includes WorkspaceAdminRole perms too (see below)
 		},
+		inherits: &WorkspaceAdminRole,
 	}
 
 	// VCSManagerRole is scoped to an organization and permits management of VCS
@@ -127,33 +127,23 @@ var (
 	}
 )
 
-func init() {
-	// plan role includes read permissions
-	for p := range WorkspaceReadRole.permissions {
-		WorkspacePlanRole.permissions[p] = true
-	}
-	// write role includes plan permissions
-	for p := range WorkspacePlanRole.permissions {
-		WorkspaceWriteRole.permissions[p] = true
-	}
-	// admin role includes write permissions
-	for p := range WorkspaceWriteRole.permissions {
-		WorkspaceAdminRole.permissions[p] = true
-	}
-	// workspace manager role includes admin permissions
-	for p := range WorkspaceAdminRole.permissions {
-		WorkspaceManagerRole.permissions[p] = true
-	}
-}
-
 // Role is a set of permitted actions
 type Role struct {
 	name        string
 	permissions map[Action]bool
+	inherits    *Role // inherit perms from this role too
 }
 
 func (r Role) IsAllowed(action Action) bool {
-	return r.permissions[action]
+	if r.permissions[action] {
+		return true
+	}
+	if r.inherits != nil {
+		if r.inherits.IsAllowed(action) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r Role) String() string {
