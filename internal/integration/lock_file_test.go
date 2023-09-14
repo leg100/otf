@@ -27,7 +27,7 @@ func TestLockFile(t *testing.T) {
 	root := t.TempDir()
 	config := []byte(fmt.Sprintf(`
 terraform {
-  backend "remote" {
+  cloud {
 	hostname = "%s"
 	organization = "%s"
 

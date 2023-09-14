@@ -92,7 +92,7 @@ Now we'll write some terraform configuration. Configure the terraform backend an
 ```bash
 cat > main.tf <<EOF
 terraform {
-  backend "remote" {
+  cloud {
     hostname = "localhost:8080"
     organization = "default"
 
