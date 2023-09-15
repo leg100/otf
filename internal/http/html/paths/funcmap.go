@@ -25,6 +25,16 @@ func init() {
 
 	funcmap["createTokenPath"] = CreateToken
 
+	funcmap["githubAppsPath"] = GithubApps
+	funcmap["createGithubAppPath"] = CreateGithubApp
+	funcmap["newGithubAppPath"] = NewGithubApp
+	funcmap["githubAppPath"] = GithubApp
+	funcmap["editGithubAppPath"] = EditGithubApp
+	funcmap["updateGithubAppPath"] = UpdateGithubApp
+	funcmap["deleteGithubAppPath"] = DeleteGithubApp
+	funcmap["exchangeCodeGithubAppPath"] = ExchangeCodeGithubApp
+	funcmap["completeGithubAppPath"] = CompleteGithubApp
+
 	funcmap["organizationsPath"] = Organizations
 	funcmap["createOrganizationPath"] = CreateOrganization
 	funcmap["newOrganizationPath"] = NewOrganization
@@ -130,18 +140,6 @@ func init() {
 	funcmap["editVCSProviderPath"] = EditVCSProvider
 	funcmap["updateVCSProviderPath"] = UpdateVCSProvider
 	funcmap["deleteVCSProviderPath"] = DeleteVCSProvider
-
-	funcmap["githubAppsPath"] = GithubApps
-	funcmap["createGithubAppPath"] = CreateGithubApp
-	funcmap["newGithubAppPath"] = NewGithubApp
-	funcmap["githubAppPath"] = GithubApp
-	funcmap["editGithubAppPath"] = EditGithubApp
-	funcmap["updateGithubAppPath"] = UpdateGithubApp
-	funcmap["deleteGithubAppPath"] = DeleteGithubApp
-	funcmap["exchangeCodeGithubAppPath"] = ExchangeCodeGithubApp
-	funcmap["completeGithubAppPath"] = CompleteGithubApp
-	funcmap["newInstallGithubAppPath"] = NewInstallGithubApp
-	funcmap["createInstallGithubAppPath"] = CreateInstallGithubApp
 
 	funcmap["modulesPath"] = Modules
 	funcmap["createModulePath"] = CreateModule

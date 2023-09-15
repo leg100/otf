@@ -4,16 +4,16 @@ package paths
 
 import "fmt"
 
-func GithubApps(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/github-apps", organization)
+func GithubApps() string {
+	return "/app/github-apps"
 }
 
-func CreateGithubApp(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/github-apps/create", organization)
+func CreateGithubApp() string {
+	return "/app/github-apps/create"
 }
 
-func NewGithubApp(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/github-apps/new", organization)
+func NewGithubApp() string {
+	return "/app/github-apps/new"
 }
 
 func GithubApp(githubApp string) string {
@@ -32,18 +32,10 @@ func DeleteGithubApp(githubApp string) string {
 	return fmt.Sprintf("/app/github-apps/%s/delete", githubApp)
 }
 
-func ExchangeCodeGithubApp(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/github-apps/exchange-code", organization)
+func ExchangeCodeGithubApp() string {
+	return "/app/github-apps/exchange-code"
 }
 
-func CompleteGithubApp(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/github-apps/complete", organization)
-}
-
-func NewInstallGithubApp(githubApp string) string {
-	return fmt.Sprintf("/app/github-apps/%s/new-install", githubApp)
-}
-
-func CreateInstallGithubApp(githubApp string) string {
-	return fmt.Sprintf("/app/github-apps/%s/create-install", githubApp)
+func CompleteGithubApp() string {
+	return "/app/github-apps/complete"
 }

@@ -20,10 +20,11 @@ type (
 
 	Service interface {
 		CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*GithubApp, error)
-		GetGithubApp(ctx context.Context, id string) (*GithubApp, error)
-		DeleteGithubApp(ctx context.Context, id string) error
+		GetGithubApp(ctx context.Context) (*GithubApp, error)
+		DeleteGithubApp(ctx context.Context) error
 
 		CreateGithubInstall(ctx context.Context, opts CreateInstallOptions) (*Install, error)
+		DeleteGithubInstall(ctx context.Context, installID string) (*Install, error)
 	}
 
 	service struct {
@@ -93,7 +94,7 @@ func (a *service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*
 	return app, nil
 }
 
-func (a *service) GetGithubApp(ctx context.Context, id string) (*GithubApp, error) {
+func (a *service) GetGithubApp(ctx context.Context) (*GithubApp, error) {
 	subject, err := a.site.CanAccess(ctx, rbac.GetGithubAppAction, "")
 	if err != nil {
 		return nil, err
@@ -101,7 +102,7 @@ func (a *service) GetGithubApp(ctx context.Context, id string) (*GithubApp, erro
 
 	app, err := a.db.get(ctx)
 	if err != nil {
-		a.Error(err, "retrieving github app", "id", id)
+		a.Error(err, "retrieving github app")
 		return nil, err
 	}
 	a.V(9).Info("retrieved github app", "app", app, "subject", subject)
@@ -109,13 +110,13 @@ func (a *service) GetGithubApp(ctx context.Context, id string) (*GithubApp, erro
 	return app, nil
 }
 
-func (a *service) DeleteGithubApp(ctx context.Context, id string) error {
+func (a *service) DeleteGithubApp(ctx context.Context) error {
 	subject, err := a.site.CanAccess(ctx, rbac.DeleteGithubAppAction, "")
 	if err != nil {
 		return err
 	}
 
-	err = a.db.delete(ctx, id)
+	err = a.db.delete(ctx)
 	if err != nil {
 		a.Error(err, "deleting github app", "subject", subject)
 		return err
@@ -130,7 +131,29 @@ func (a *service) CreateGithubInstall(ctx context.Context, opts CreateInstallOpt
 		return nil, err
 	}
 
-	app, err := a.db.get(ctx, opts.AppID)
+	app, err := a.db.get(ctx)
+	if err != nil {
+		a.Error(err, "retrieving github app", "id", opts.AppID)
+		return nil, err
+	}
+
+	install := newInstall(opts.InstallID, app)
+
+	if err := a.db.createInstall(ctx, install); err != nil {
+		a.Error(err, "creating github install", "install", install, "subject", subject)
+		return nil, err
+	}
+	a.V(0).Info("created github install", "install", install, "subject", subject)
+	return &install, nil
+}
+
+func (a *service) DeleteGithubInstall(ctx context.Context, installID string) (*Install, error) {
+	subject, err := a.organization.CanAccess(ctx, rbac.DeleteGithubAppInstallAction, opts.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	app, err := a.db.get(ctx)
 	if err != nil {
 		a.Error(err, "retrieving github app", "id", opts.AppID)
 		return nil, err

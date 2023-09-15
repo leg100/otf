@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
-	"github.com/leg100/otf/internal/organization"
 )
 
 type webHandlers struct {
@@ -25,24 +24,18 @@ type webHandlers struct {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/github-apps", h.list).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/github-apps/new", h.new).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/github-apps/exchange-code", h.exchangeCode).Methods("POST")
-	r.HandleFunc("/organizations/{organization_name}/github-apps/complete", h.completeGithubSetup).Methods("POST")
-	r.HandleFunc("/github-apps/{github_app_id}/delete", h.delete).Methods("POST")
+	r.HandleFunc("/admin/github-app", h.get).Methods("GET")
+	r.HandleFunc("/admin/github-app/new", h.new).Methods("GET")
+	r.HandleFunc("/admin/github-app/exchange-code", h.exchangeCode).Methods("POST")
+	r.HandleFunc("/admin/github-app/complete", h.completeGithubSetup).Methods("POST")
+	r.HandleFunc("/admin/github-app/delete", h.delete).Methods("POST")
 
 	// prompt user to add github app installation to OTF as a VCS provider
-	r.HandleFunc("/github-apps/{github_app_id}/new-install", h.newInstall).Methods("GET")
-	r.HandleFunc("/github-apps/{github_app_id}/create-install", h.createInstall).Methods("POST")
+	r.HandleFunc("/github-apps/new-install", h.newInstall).Methods("GET")
+	r.HandleFunc("/github-apps/create-install", h.createInstall).Methods("POST")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
 	type (
 		hookAttributes struct {
 			URL string `json:"url"`
@@ -66,7 +59,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 			URL: fmt.Sprintf("https://%s/ghapp/webhook", h.Hostname()),
 		},
 		Redirect: fmt.Sprintf("https://%s%s", h.Hostname(),
-			paths.ExchangeCodeGithubApp(org)),
+			paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},
 		Public:      false,
@@ -92,25 +85,19 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
-	org, err := decode.Param("organization_name", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	apps, err := h.svc.ListGithubApps(r.Context(), org)
+func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
+	app, err := h.svc.GetGithubApp(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.Render("github_list_apps.tmpl", w, struct {
-		organization.OrganizationPage
-		Items []*GithubApp
+		html.SitePage
+		App *GithubApp
 	}{
-		OrganizationPage: organization.NewPage(r, "github apps", org),
-		Items:            apps,
+		SitePage: html.NewSitePage(r, "github app"),
+		App:      app,
 	})
 }
 
@@ -136,7 +123,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
+	_, err = h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
 		Organization:  params.Organization,
 		AppID:         cfg.GetID(),
 		WebhookSecret: cfg.GetWebhookSecret(),
@@ -148,7 +135,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
-	http.Redirect(w, r, paths.GithubApp(app.ID), http.StatusFound)
+	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
 
 func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +160,7 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	app, err := h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
+	_, err = h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
 		Organization:  params.Organization,
 		AppID:         cfg.GetID(),
 		WebhookSecret: cfg.GetWebhookSecret(),
@@ -185,7 +172,7 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 	}
 
 	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
-	http.Redirect(w, r, paths.GithubApp(app.ID), http.StatusFound)
+	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
 
 func (h *webHandlers) newInstall(w http.ResponseWriter, r *http.Request) {
@@ -198,13 +185,12 @@ func (h *webHandlers) newInstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := h.svc.DeleteGithubApp(r.Context(), params.AppID)
-	if err != nil {
+	if err := h.svc.DeleteGithubApp(r.Context()); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted app: "+app.ID)
-	http.Redirect(w, r, paths.GithubApps(app.Organization), http.StatusFound)
+	html.FlashSuccess(w, "deleted github app")
+	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }
 
 func (h *webHandlers) createInstall(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +203,7 @@ func (h *webHandlers) createInstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := h.svc.DeleteGithubApp(r.Context(), params.AppID)
+	app, err := h.svc.CreateGithubInstall(r.Context(), params.AppID)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -227,17 +213,10 @@ func (h *webHandlers) createInstall(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("github_app_id", r)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	app, err := h.svc.DeleteGithubApp(r.Context(), id)
-	if err != nil {
+	if err := h.svc.DeleteGithubApp(r.Context()); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted app: "+app.ID)
-	http.Redirect(w, r, paths.GithubApps(app.Organization), http.StatusFound)
+	html.FlashSuccess(w, "deleted github app")
+	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }

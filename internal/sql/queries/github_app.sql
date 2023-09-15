@@ -1,40 +1,34 @@
 -- name: InsertGithubApp :exec
 INSERT INTO github_apps (
     github_app_id,
-    app_id,
     webhook_secret,
     private_key
 ) VALUES (
     pggen.arg('github_app_id'),
-    pggen.arg('app_id'),
     pggen.arg('webhook_secret'),
     pggen.arg('private_key')
 );
 
--- name: FindGithubApps :many
+-- name: FindGithubApp :one
 SELECT *
 FROM github_apps;
 
--- name: FindGithubAppByID :one
-SELECT *
-FROM github_apps
-WHERE github_app_id = pggen.arg('github_app_id');
-
--- name: DeleteGithubAppByID :one
+-- name: DeleteGithubApp :one
 DELETE
 FROM github_apps
-WHERE github_app_id = pggen.arg('github_app_id')
 RETURNING *;
 
 -- name: InsertGithubAppInstall :exec
 INSERT INTO github_app_installs (
     github_app_install_id,
     install_id,
-    github_app_id
+    github_app_id,
+    organization_name
 ) VALUES (
     pggen.arg('github_app_install_id'),
     pggen.arg('install_id'),
-    pggen.arg('github_app_id')
+    pggen.arg('github_app_id'),
+    pggen.arg('organization_name')
 );
 
 -- name: FindGithubAppInstallByID :one

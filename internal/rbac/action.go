@@ -135,4 +135,5 @@ const (
 	ListGithubAppsAction
 	DeleteGithubAppAction
 	CreateGithubAppInstallAction
+	DeleteGithubAppInstallAction
 )

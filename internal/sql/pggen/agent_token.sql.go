@@ -158,26 +158,19 @@ type Querier interface {
 	// InsertGithubAppScan scans the result of an executed InsertGithubAppBatch query.
 	InsertGithubAppScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindGithubApps(ctx context.Context) ([]FindGithubAppsRow, error)
-	// FindGithubAppsBatch enqueues a FindGithubApps query into batch to be executed
+	FindGithubApp(ctx context.Context) (FindGithubAppRow, error)
+	// FindGithubAppBatch enqueues a FindGithubApp query into batch to be executed
 	// later by the batch.
-	FindGithubAppsBatch(batch genericBatch)
-	// FindGithubAppsScan scans the result of an executed FindGithubAppsBatch query.
-	FindGithubAppsScan(results pgx.BatchResults) ([]FindGithubAppsRow, error)
+	FindGithubAppBatch(batch genericBatch)
+	// FindGithubAppScan scans the result of an executed FindGithubAppBatch query.
+	FindGithubAppScan(results pgx.BatchResults) (FindGithubAppRow, error)
 
-	FindGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (FindGithubAppByIDRow, error)
-	// FindGithubAppByIDBatch enqueues a FindGithubAppByID query into batch to be executed
+	DeleteGithubApp(ctx context.Context) (DeleteGithubAppRow, error)
+	// DeleteGithubAppBatch enqueues a DeleteGithubApp query into batch to be executed
 	// later by the batch.
-	FindGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Text)
-	// FindGithubAppByIDScan scans the result of an executed FindGithubAppByIDBatch query.
-	FindGithubAppByIDScan(results pgx.BatchResults) (FindGithubAppByIDRow, error)
-
-	DeleteGithubAppByID(ctx context.Context, githubAppID pgtype.Text) (DeleteGithubAppByIDRow, error)
-	// DeleteGithubAppByIDBatch enqueues a DeleteGithubAppByID query into batch to be executed
-	// later by the batch.
-	DeleteGithubAppByIDBatch(batch genericBatch, githubAppID pgtype.Text)
-	// DeleteGithubAppByIDScan scans the result of an executed DeleteGithubAppByIDBatch query.
-	DeleteGithubAppByIDScan(results pgx.BatchResults) (DeleteGithubAppByIDRow, error)
+	DeleteGithubAppBatch(batch genericBatch)
+	// DeleteGithubAppScan scans the result of an executed DeleteGithubAppBatch query.
+	DeleteGithubAppScan(results pgx.BatchResults) (DeleteGithubAppRow, error)
 
 	InsertGithubAppInstall(ctx context.Context, params InsertGithubAppInstallParams) (pgconn.CommandTag, error)
 	// InsertGithubAppInstallBatch enqueues a InsertGithubAppInstall query into batch to be executed
@@ -1413,14 +1406,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertGithubAppSQL, insertGithubAppSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertGithubApp': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findGithubAppsSQL, findGithubAppsSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindGithubApps': %w", err)
+	if _, err := p.Prepare(ctx, findGithubAppSQL, findGithubAppSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindGithubApp': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findGithubAppByIDSQL, findGithubAppByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindGithubAppByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteGithubAppByIDSQL, deleteGithubAppByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteGithubAppByID': %w", err)
+	if _, err := p.Prepare(ctx, deleteGithubAppSQL, deleteGithubAppSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteGithubApp': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertGithubAppInstallSQL, insertGithubAppInstallSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertGithubAppInstall': %w", err)

@@ -139,6 +139,20 @@ var specs = []controllerSpec{
 		path:           "/profile/tokens/create",
 	},
 	{
+		Name:           "github_app",
+		controllerType: resourcePath,
+		actions: []action{
+			{
+				name:       "exchange-code",
+				collection: true,
+			},
+			{
+				name:       "complete",
+				collection: true,
+			},
+		},
+	},
+	{
 		Name:           "organization",
 		controllerType: resourcePath,
 		nested: []controllerSpec{
@@ -275,26 +289,6 @@ var specs = []controllerSpec{
 				controllerType: resourcePath,
 				camel:          "VCSProvider",
 				lowerCamel:     "vcsProvider",
-			},
-			{
-				Name:           "github_app",
-				controllerType: resourcePath,
-				actions: []action{
-					{
-						name:       "exchange-code",
-						collection: true,
-					},
-					{
-						name:       "complete",
-						collection: true,
-					},
-					{
-						name: "new-install",
-					},
-					{
-						name: "create-install",
-					},
-				},
 			},
 			{
 				Name:           "module",
