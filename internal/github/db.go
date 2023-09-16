@@ -22,15 +22,15 @@ type (
 	}
 )
 
-func (r row) convert() *GithubApp {
-	return &GithubApp{
+func (r row) convert() *App {
+	return &App{
 		ID:            r.GithubAppID.Int,
 		WebhookSecret: r.WebhookSecret.String,
 		PrivateKey:    r.PrivateKey.String,
 	}
 }
 
-func (db *pgdb) create(ctx context.Context, app *GithubApp) error {
+func (db *pgdb) create(ctx context.Context, app *App) error {
 	_, err := db.Conn(ctx).InsertGithubApp(ctx, pggen.InsertGithubAppParams{
 		GithubAppID:   pgtype.Int8{Int: app.ID, Status: pgtype.Present},
 		WebhookSecret: sql.String(app.WebhookSecret),
@@ -39,7 +39,7 @@ func (db *pgdb) create(ctx context.Context, app *GithubApp) error {
 	return err
 }
 
-func (db *pgdb) get(ctx context.Context) (*GithubApp, error) {
+func (db *pgdb) get(ctx context.Context) (*App, error) {
 	result, err := db.Conn(ctx).FindGithubApp(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
@@ -53,18 +53,4 @@ func (db *pgdb) delete(ctx context.Context) error {
 		return sql.Error(err)
 	}
 	return nil
-}
-
-func (db *pgdb) createInstall(ctx context.Context, install Install) error {
-	_, err := db.Conn(ctx).InsertGithubAppInstall(ctx, pggen.InsertGithubAppInstallParams{
-		GithubAppInstallID: sql.String(install.ID),
-		InstallID:          pgtype.Int8{Int: install.GithubID, Status: pgtype.Present},
-		GithubAppID:        pgtype.Int8{Int: install.App.ID, Status: pgtype.Present},
-	})
-	return err
-}
-
-func (db *pgdb) deleteInstall(ctx context.Context, installID string) error {
-	_, err := db.Conn(ctx).DeleteGithubAppInstallByID(ctx, sql.String(installID))
-	return err
 }

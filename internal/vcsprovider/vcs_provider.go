@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 )
 
 type (
@@ -20,8 +21,8 @@ type (
 		CloudConfig  cloud.Config // cloud config for creating client
 		Organization string       // vcs provider belongs to an organization
 
-		Token      *string // personal access token.
-		*GithubApp         // github app. Mutually exclusive with Token.
+		Token     *string         // personal access token.
+		GithubApp *github.Install // mutually exclusive with Token.
 	}
 )
 
@@ -29,7 +30,7 @@ func (t *VCSProvider) String() string { return t.Name }
 
 func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 	return t.CloudConfig.NewClient(ctx, cloud.Credentials{
-		PersonalToken: &t.Token,
+		PersonalToken: t.Token,
 	})
 }
 

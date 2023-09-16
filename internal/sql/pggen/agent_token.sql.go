@@ -172,27 +172,6 @@ type Querier interface {
 	// DeleteGithubAppScan scans the result of an executed DeleteGithubAppBatch query.
 	DeleteGithubAppScan(results pgx.BatchResults) (DeleteGithubAppRow, error)
 
-	InsertGithubAppInstall(ctx context.Context, params InsertGithubAppInstallParams) (pgconn.CommandTag, error)
-	// InsertGithubAppInstallBatch enqueues a InsertGithubAppInstall query into batch to be executed
-	// later by the batch.
-	InsertGithubAppInstallBatch(batch genericBatch, params InsertGithubAppInstallParams)
-	// InsertGithubAppInstallScan scans the result of an executed InsertGithubAppInstallBatch query.
-	InsertGithubAppInstallScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Text) (FindGithubAppInstallByIDRow, error)
-	// FindGithubAppInstallByIDBatch enqueues a FindGithubAppInstallByID query into batch to be executed
-	// later by the batch.
-	FindGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Text)
-	// FindGithubAppInstallByIDScan scans the result of an executed FindGithubAppInstallByIDBatch query.
-	FindGithubAppInstallByIDScan(results pgx.BatchResults) (FindGithubAppInstallByIDRow, error)
-
-	DeleteGithubAppInstallByID(ctx context.Context, githubAppInstallID pgtype.Text) (DeleteGithubAppInstallByIDRow, error)
-	// DeleteGithubAppInstallByIDBatch enqueues a DeleteGithubAppInstallByID query into batch to be executed
-	// later by the batch.
-	DeleteGithubAppInstallByIDBatch(batch genericBatch, githubAppInstallID pgtype.Text)
-	// DeleteGithubAppInstallByIDScan scans the result of an executed DeleteGithubAppInstallByIDBatch query.
-	DeleteGithubAppInstallByIDScan(results pgx.BatchResults) (DeleteGithubAppInstallByIDRow, error)
-
 	InsertIngressAttributes(ctx context.Context, params InsertIngressAttributesParams) (pgconn.CommandTag, error)
 	// InsertIngressAttributesBatch enqueues a InsertIngressAttributes query into batch to be executed
 	// later by the batch.
@@ -1412,15 +1391,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteGithubAppSQL, deleteGithubAppSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteGithubApp': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertGithubAppInstallSQL, insertGithubAppInstallSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertGithubAppInstall': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findGithubAppInstallByIDSQL, findGithubAppInstallByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindGithubAppInstallByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteGithubAppInstallByIDSQL, deleteGithubAppInstallByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteGithubAppInstallByID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
 	}
@@ -1935,7 +1905,8 @@ type RepoConnections struct {
 	WebhookID          pgtype.UUID `json:"webhook_id"`
 	ModuleID           pgtype.Text `json:"module_id"`
 	WorkspaceID        pgtype.Text `json:"workspace_id"`
-	GithubAppInstallID pgtype.Text `json:"github_app_install_id"`
+	GithubAppID        pgtype.Int8 `json:"github_app_id"`
+	GithubAppInstallID pgtype.Int8 `json:"github_app_install_id"`
 }
 
 // Report represents the Postgres composite type "report".
@@ -2192,7 +2163,8 @@ func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
 		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
 		compositeField{"module_id", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"github_app_install_id", "text", &pgtype.Text{}},
+		compositeField{"github_app_id", "int8", &pgtype.Int8{}},
+		compositeField{"github_app_install_id", "int8", &pgtype.Int8{}},
 	)
 }
 

@@ -29,10 +29,6 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/admin/github-app/exchange-code", h.exchangeCode).Methods("POST")
 	r.HandleFunc("/admin/github-app/complete", h.completeGithubSetup).Methods("POST")
 	r.HandleFunc("/admin/github-app/delete", h.delete).Methods("POST")
-
-	// prompt user to add github app installation to OTF as a VCS provider
-	r.HandleFunc("/github-apps/new-install", h.newInstall).Methods("GET")
-	r.HandleFunc("/github-apps/create-install", h.createInstall).Methods("POST")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +90,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("github_list_apps.tmpl", w, struct {
 		html.SitePage
-		App *GithubApp
+		App *App
 	}{
 		SitePage: html.NewSitePage(r, "github app"),
 		App:      app,
@@ -173,43 +169,6 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 
 	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
-}
-
-func (h *webHandlers) newInstall(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		AppID     string `schema:"github_app_id,required"`
-		InstallID string `schema:"installation_id,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	if err := h.svc.DeleteGithubApp(r.Context()); err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	html.FlashSuccess(w, "deleted github app")
-	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
-}
-
-func (h *webHandlers) createInstall(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		AppID     string `schema:"github_app_id,required"`
-		InstallID string `schema:"installation_id,required"`
-	}
-	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	app, err := h.svc.CreateGithubInstall(r.Context(), params.AppID)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	html.FlashSuccess(w, "deleted app: "+app.ID)
-	http.Redirect(w, r, paths.GithubApps(app.Organization), http.StatusFound)
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {

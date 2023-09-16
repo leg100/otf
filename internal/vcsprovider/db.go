@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -48,7 +49,7 @@ func (db *pgdb) unmarshal(row pgRow) (*VCSProvider, error) {
 		opts.Token = &row.Token.String
 	}
 	if row.GithubAppID.Status == pgtype.Present {
-		opts.GithubApp = &GithubApp{
+		opts.GithubApp = &github.Install{
 			AppID:         row.GithubAppID.Int,
 			WebhookSecret: row.WebhookSecret.String,
 			PrivateKey:    row.PrivateKey.String,

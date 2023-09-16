@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/github"
 )
 
 type (
@@ -20,9 +21,8 @@ type (
 		ID           *string
 		CreatedAt    *time.Time
 
-		// Must specify either token or github app.
-		Token *string
-		*GithubApp
+		Token     *string
+		GithubApp *github.Install // mutually exclusive with Token.
 	}
 )
 
