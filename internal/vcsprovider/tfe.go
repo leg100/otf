@@ -177,9 +177,7 @@ func (a *tfe) convert(from *VCSProvider) *types.OAuthClient {
 		},
 		Organization: &types.Organization{Name: from.Organization},
 	}
-	// A name is mandatory in OTF, but in go-tfe integration tests it is
-	// optional; therefore OTF takes an empty string to mean nil (this is
-	// necessary in order to pass the go-tfe integration tests).
+	// an empty name in otf is equivalent to a nil name in tfe
 	if from.Name != "" {
 		to.Name = &from.Name
 	}

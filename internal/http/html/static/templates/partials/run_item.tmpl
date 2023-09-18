@@ -1,6 +1,6 @@
 {{ define "run-item" }}
   <div sse-swap="run-item-{{ .ID }}">
-    <div id="{{ .ID }}" class="widget">
+    <div x-data="block_link($el, '{{ runPath .ID }}')" id="{{ .ID }}" class="widget">
       <div>
         {{ template "run-status" . }}
         {{ if .PlanOnly }}

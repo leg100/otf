@@ -81,7 +81,7 @@ resource "null_resource" "tags_e2e" {}
 		screenshot(t),
 		matchText(t, "//div[@role='alert']", "removed tag: bar"),
 		// add new tag
-		chromedp.Focus(`//input[@x-ref='input-search']`),
+		chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
 		input.InsertText("baz"),
 		chromedp.Submit(`//input[@x-ref='input-search']`),
 		screenshot(t),
@@ -96,7 +96,7 @@ resource "null_resource" "tags_e2e" {}
 		chromedp.Click(`//label[@for='workspace-tag-filter-baz']`),
 		screenshot(t),
 		// confirm workspace listing contains tagged workspace
-		chromedp.WaitVisible(`//div[@id='content-list']//a[text()='tagged']`),
+		chromedp.WaitVisible(`//div[@id='content-list']/div[@id='item-workspace-tagged']`),
 	})
 
 	// should be tags 'foo' and 'baz'

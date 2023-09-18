@@ -8,6 +8,7 @@ import (
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/logr"
 	"github.com/pkg/errors"
@@ -94,6 +95,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.OIDC.IssuerURL, "oidc-issuer-url", cfg.OIDC.IssuerURL, "OIDC issuer URL")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientID, "oidc-client-id", "", "OIDC client ID")
 	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret")
+	cmd.Flags().StringSliceVar(&cfg.OIDC.Scopes, "oidc-scopes", authenticator.DefaultScopes, "OIDC scopes")
+	cmd.Flags().StringVar(&cfg.OIDC.UsernameClaim, "oidc-username-claim", string(authenticator.DefaultUsernameClaim), "OIDC claim to be used for username (name, email, or sub)")
 
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")
 

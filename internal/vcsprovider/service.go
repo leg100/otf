@@ -22,6 +22,7 @@ type (
 
 	Service interface {
 		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
+		UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error)
 		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 		ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error)
@@ -39,8 +40,7 @@ type (
 
 	service struct {
 		logr.Logger
-
-		*factory
+		CloudService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
@@ -66,10 +66,8 @@ func NewService(opts Options) *service {
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		organization: &organization.Authorizer{Logger: opts.Logger},
 		db:           newDB(opts.DB, opts.CloudService),
-		factory: &factory{
-			CloudService: opts.CloudService,
-		},
-		deleteHook: hooks.NewHook[*VCSProvider](opts.DB),
+		CloudService: opts.CloudService,
+		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
 	}
 
 	svc.web = &webHandlers{
@@ -101,7 +99,7 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 		return nil, err
 	}
 
-	provider, err := a.new(opts)
+	provider, err := newProvider(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +110,33 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 	}
 	a.V(0).Info("created vcs provider", "provider", provider, "subject", subject)
 	return provider, nil
+}
+
+func (a *service) UpdateVCSProvider(ctx context.Context, id string, opts UpdateOptions) (*VCSProvider, error) {
+	var (
+		subject internal.Subject
+		before  VCSProvider
+		after   *VCSProvider
+	)
+	err := a.db.update(ctx, id, func(provider *VCSProvider) (err error) {
+		subject, err = a.organization.CanAccess(ctx, rbac.UpdateVariableSetAction, provider.Organization)
+		if err != nil {
+			return err
+		}
+		// keep copy for logging the differences before and after update
+		before = *provider
+		after = provider
+		if err := after.Update(opts); err != nil {
+			return err
+		}
+		return err
+	})
+	if err != nil {
+		a.Error(err, "updating vcs provider", "vcs_provider_id", id)
+		return nil, err
+	}
+	a.V(0).Info("updated vcs provider", "before", &before, "after", after, "subject", subject)
+	return after, nil
 }
 
 func (a *service) ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error) {

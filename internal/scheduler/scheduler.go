@@ -151,5 +151,5 @@ func (s *scheduler) Start(ctx context.Context) error {
 			}
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }

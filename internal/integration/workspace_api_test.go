@@ -82,7 +82,7 @@ func TestIntegration_WorkspaceAPI_CreateConnected(t *testing.T) {
 	provider := daemon.createVCSProvider(t, ctx, org)
 
 	oauth, err := client.OAuthClients.Create(ctx, org.Name, tfe.OAuthClientCreateOptions{
-		OAuthToken:      internal.String(provider.Token),
+		OAuthToken:      provider.Token,
 		APIURL:          internal.String(vcsprovider.GithubAPIURL),
 		HTTPURL:         internal.String(vcsprovider.GithubHTTPURL),
 		ServiceProvider: tfe.ServiceProvider(tfe.ServiceProviderGithub),

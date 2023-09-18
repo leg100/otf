@@ -57,11 +57,11 @@ func TestIntegration_OrganizationUI(t *testing.T) {
 		// go to the list of organizations
 		chromedp.Navigate("https://" + daemon.Hostname() + "/app/organizations"),
 		// should be 100 orgs listed on page one
-		chromedp.Nodes(`//*[@class='widget']`, &pageOneWidgets, chromedp.NodeVisible),
+		chromedp.Nodes(`.widget`, &pageOneWidgets, chromedp.NodeVisible),
 		// go to page two
 		chromedp.Click(`#next-page-link`, chromedp.ByQuery),
 		// should be one org listed
-		chromedp.Nodes(`//*[@class='widget']`, &pageTwoWidgets, chromedp.NodeVisible),
+		chromedp.Nodes(`.widget`, &pageTwoWidgets, chromedp.NodeVisible),
 	})
 	assert.Equal(t, 100, len(pageOneWidgets))
 	assert.Equal(t, 1, len(pageTwoWidgets))

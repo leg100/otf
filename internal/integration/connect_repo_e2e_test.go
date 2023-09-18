@@ -30,7 +30,7 @@ func TestConnectRepoE2E(t *testing.T) {
 
 	browser.Run(t, ctx, chromedp.Tasks{
 		createWorkspace(t, daemon.Hostname(), org.Name, "my-test-workspace"),
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", provider.Name),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", provider.String()),
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server
 		startRunTasks(t, daemon.Hostname(), org.Name, "my-test-workspace", run.PlanAndApplyOperation),
@@ -99,11 +99,11 @@ func TestConnectRepoE2E(t *testing.T) {
 		chromedp.Navigate(organizationURL(daemon.Hostname(), org.Name)),
 		screenshot(t),
 		// go to vcs providers
-		chromedp.Click("#vcs_providers > a"),
+		chromedp.Click("#vcs_providers > a", chromedp.ByQuery),
 		screenshot(t),
 		// click delete button for one and only vcs provider
 		chromedp.Click(`//button[text()='delete']`),
 		screenshot(t),
-		matchText(t, "//div[@role='alert']", "deleted provider: "+provider.Name),
+		matchText(t, "//div[@role='alert']", "deleted provider: "+provider.String()),
 	})
 }

@@ -38,7 +38,9 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/varsets/{varset_id}", a.updateVariableSet).Methods("PATCH")
 	r.HandleFunc("/varsets/{varset_id}", a.deleteVariableSet).Methods("DELETE")
 
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars", a.listVariableSetVariables).Methods("GET")
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars", a.addVariableToSet).Methods("POST")
+	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.getVariableSetVariable).Methods("GET")
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.updateVariableSetVariable).Methods("PATCH")
 	r.HandleFunc("/varsets/{varset_id}/relationships/vars/{variable_id}", a.deleteVariableFromSet).Methods("DELETE")
 	r.HandleFunc("/varsets/{varset_id}/relationships/workspaces", a.applySetToWorkspaces).Methods("POST")
@@ -62,7 +64,10 @@ func (a *tfe) listEffectiveVariables(w http.ResponseWriter, r *http.Request) {
 
 	to := make([]*types.Variable, len(variables))
 	for i, from := range variables {
-		to[i] = a.convertVariable(from)
+		// sensitive values are normally scrubbed prior to being sent over the
+		// wire; however this particular endpoint is called by the agent, which
+		// needs to provide sensitive values for runs
+		to[i] = a.convertVariable(from, false)
 	}
 
 	a.Respond(w, r, to, http.StatusOK)
@@ -288,19 +293,40 @@ func (a *tfe) deleteVariableSet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (a *tfe) listVariableSetVariables(w http.ResponseWriter, r *http.Request) {
+	setID, err := decode.Param("varset_id", r)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	set, err := a.Service.getVariableSet(r.Context(), setID)
+	if err != nil {
+		tfeapi.Error(w, err)
+		return
+	}
+
+	to := make([]*types.VariableSetVariable, len(set.Variables))
+	for i, from := range set.Variables {
+		to[i] = a.convertVariableSetVariable(from, setID)
+	}
+
+	a.Respond(w, r, to, http.StatusOK)
+}
+
 func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 	setID, err := decode.Param("varset_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts *types.VariableCreateOptions
-	if err := decode.All(&opts, r); err != nil {
+	var opts types.VariableCreateOptions
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	_, err = a.Service.createVariableSetVariable(r.Context(), setID, CreateVariableOptions{
+	v, err := a.Service.createVariableSetVariable(r.Context(), setID, CreateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -309,9 +335,11 @@ func (a *tfe) addVariableToSet(w http.ResponseWriter, r *http.Request) {
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		tfeapi.Error(w, err)
+		variableError(w, err)
 		return
 	}
+
+	a.Respond(w, r, a.convertVariableSetVariable(v, setID), http.StatusOK)
 }
 
 func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) {
@@ -321,12 +349,12 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	var opts types.VariableUpdateOptions
-	if err := decode.All(&opts, r); err != nil {
+	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	_, err = a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
+	set, err := a.Service.updateVariableSetVariable(r.Context(), variableID, UpdateVariableOptions{
 		Key:         opts.Key,
 		Value:       opts.Value,
 		Description: opts.Description,
@@ -335,19 +363,34 @@ func (a *tfe) updateVariableSetVariable(w http.ResponseWriter, r *http.Request) 
 		HCL:         opts.HCL,
 	})
 	if err != nil {
-		tfeapi.Error(w, err)
+		variableError(w, err)
 		return
 	}
+
+	v := set.getVariable(variableID)
+	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
 }
 
-func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
+func (a *tfe) getVariableSetVariable(w http.ResponseWriter, r *http.Request) {
 	variableID, err := decode.Param("variable_id", r)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	var opts types.VariableCreateOptions
-	if err := decode.All(&opts, r); err != nil {
+
+	set, err := a.Service.getVariableSetByVariableID(r.Context(), variableID)
+	if err != nil {
+		variableError(w, err)
+		return
+	}
+
+	v := set.getVariable(variableID)
+	a.Respond(w, r, a.convertVariableSetVariable(v, set.ID), http.StatusOK)
+}
+
+func (a *tfe) deleteVariableFromSet(w http.ResponseWriter, r *http.Request) {
+	variableID, err := decode.Param("variable_id", r)
+	if err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -411,7 +454,7 @@ func (a *tfe) deleteSetFromWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 func (a *tfe) convertWorkspaceVariable(from *Variable, workspaceID string) *types.WorkspaceVariable {
 	return &types.WorkspaceVariable{
-		Variable: a.convertVariable(from),
+		Variable: a.convertVariable(from, true),
 		Workspace: &types.Workspace{
 			ID: workspaceID,
 		},
@@ -431,7 +474,7 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	to.Variables = make([]*types.VariableSetVariable, len(from.Variables))
 	for i, v := range from.Variables {
 		to.Variables[i] = &types.VariableSetVariable{
-			Variable: a.convertVariable(v),
+			Variable: a.convertVariable(v, true),
 			VariableSet: &types.VariableSet{
 				ID: v.ID,
 			},
@@ -446,7 +489,14 @@ func (a *tfe) convertVariableSet(from *VariableSet) *types.VariableSet {
 	return to
 }
 
-func (a *tfe) convertVariable(from *Variable) *types.Variable {
+func (a *tfe) convertVariableSetVariable(from *Variable, setID string) *types.VariableSetVariable {
+	return &types.VariableSetVariable{
+		Variable:    a.convertVariable(from, true),
+		VariableSet: &types.VariableSet{ID: setID},
+	}
+}
+
+func (a *tfe) convertVariable(from *Variable, scrubSensitiveValue bool) *types.Variable {
 	to := &types.Variable{
 		ID:          from.ID,
 		Key:         from.Key,
@@ -457,7 +507,7 @@ func (a *tfe) convertVariable(from *Variable) *types.Variable {
 		HCL:         from.HCL,
 		VersionID:   from.VersionID,
 	}
-	if to.Sensitive {
+	if to.Sensitive && scrubSensitiveValue {
 		to.Value = "" // scrub sensitive values
 	}
 	return to

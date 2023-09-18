@@ -50,9 +50,17 @@ type Workspace struct {
 	TagNames                   []string              `jsonapi:"attribute" json:"tag-names"`
 
 	// Relations
-	CurrentRun   *Run                  `jsonapi:"relationship" json:"current-run"`
-	Organization *Organization         `jsonapi:"relationship" json:"organization"`
-	Outputs      []*StateVersionOutput `jsonapi:"relationship" json:"outputs"`
+	CurrentRun   *Run               `jsonapi:"relationship" json:"current-run"`
+	Organization *Organization      `jsonapi:"relationship" json:"organization"`
+	Outputs      []*WorkspaceOutput `jsonapi:"relationship" json:"outputs"`
+}
+
+type WorkspaceOutput struct {
+	ID        string `jsonapi:"primary,workspace-outputs"`
+	Name      string `jsonapi:"attribute" json:"name"`
+	Sensitive bool   `jsonapi:"attribute" json:"sensitive"`
+	Type      string `jsonapi:"attribute" json:"output-type"`
+	Value     any    `jsonapi:"attribute" json:"value"`
 }
 
 // WorkspaceList represents a list of workspaces.
@@ -330,9 +338,6 @@ type VCSRepoOptions struct {
 	IngressSubmodules *bool   `json:"ingress-submodules,omitempty"`
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
 	TagsRegex         *string `json:"tags-regex,omitempty"`
-
-	Valid bool `json:"-"`
-	Set   bool `json:"-"`
 }
 
 // VCSRepoOptionsJSON wraps VCSRepoOptions and implements json.Unmarshaler in order to differentiate

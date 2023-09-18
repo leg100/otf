@@ -36,6 +36,20 @@ FROM vcs_providers
 WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
 ;
 
+-- name: FindVCSProviderForUpdate :one
+SELECT *
+FROM vcs_providers
+WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
+FOR UPDATE
+;
+
+-- name: UpdateVCSProvider :one
+UPDATE vcs_providers
+SET name = pggen.arg('name'), token = pggen.arg('token')
+WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
+RETURNING *
+;
+
 -- name: DeleteVCSProviderByID :one
 DELETE
 FROM vcs_providers

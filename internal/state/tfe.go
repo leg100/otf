@@ -362,18 +362,20 @@ func (*tfe) toOutput(from *Output, scrubSensitive bool) *types.StateVersionOutpu
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-versions#outputs
 func (a *tfe) includeOutputs(ctx context.Context, v any) ([]any, error) {
-	sv, ok := v.(*types.StateVersion)
+	to, ok := v.(*types.StateVersion)
 	if !ok {
 		return nil, nil
 	}
-	var include []any
-	for _, outWithOnlyID := range sv.Outputs {
-		out, err := a.GetStateVersionOutput(ctx, outWithOnlyID.ID)
-		if err != nil {
-			return nil, err
-		}
+	// re-retrieve the state version, because the tfe state version only
+	// possesses the IDs of the outputs, whereas we need the full output structs
+	from, err := a.GetStateVersion(ctx, to.ID)
+	if err != nil {
+		return nil, err
+	}
+	include := make([]any, len(from.Outputs))
+	for i, out := range maps.Values(from.Outputs) {
 		// do not scrub sensitive values for included outputs
-		include = append(include, a.toOutput(out, false))
+		include[i] = a.toOutput(out, false)
 	}
 	return include, nil
 }
@@ -388,14 +390,26 @@ func (a *tfe) includeWorkspaceCurrentOutputs(ctx context.Context, v any) ([]any,
 	if err != nil {
 		return nil, err
 	}
-	var include []any
+	include := make([]any, len(sv.Outputs))
+	// TODO: we both include the full output types and populate the list of IDs
+	// in ws.Outputs, but really the latter should *always* be populated, and
+	// that should be the responsibility of the workspace pkg. To avoid an
+	// import cycle, perhaps the workspace SQL queries could return a list of
+	// output IDs.
+	ws.Outputs = make([]*types.WorkspaceOutput, len(sv.Outputs))
+	var i int
 	for _, from := range sv.Outputs {
-		// scrub sensitive values for included outputs
-		to := a.toOutput(from, true)
-		include = append(include, to)
-		ws.Outputs = append(ws.Outputs, &types.StateVersionOutput{
-			ID: to.ID,
-		})
+		include[i] = &types.WorkspaceOutput{
+			ID:        from.ID,
+			Name:      from.Name,
+			Sensitive: from.Sensitive,
+			Type:      from.Type,
+			Value:     from.Value,
+		}
+		ws.Outputs[i] = &types.WorkspaceOutput{
+			ID: from.ID,
+		}
+		i++
 	}
 	return include, nil
 }

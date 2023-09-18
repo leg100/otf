@@ -14,15 +14,6 @@ type (
 	db struct {
 		*sql.DB
 	}
-
-	hookRow struct {
-		WebhookID     pgtype.UUID `json:"webhook_id"`
-		VCSID         pgtype.Text `json:"vcs_id"`
-		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
-		Secret        pgtype.Text `json:"secret"`
-		Identifier    pgtype.Text `json:"identifier"`
-		Cloud         pgtype.Text `json:"cloud"`
-	}
 )
 
 func (db *db) createConnection(ctx context.Context, hookID uuid.UUID, opts ConnectOptions) error {
@@ -59,13 +50,4 @@ func (db *db) deleteConnection(ctx context.Context, opts DisconnectOptions) (err
 		return fmt.Errorf("unknown connection type: %v", opts.ConnectionType)
 	}
 	return err
-}
-
-func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
-	q := db.Conn(ctx)
-	_, err := q.DeleteWebhookByID(ctx, sql.UUID(id))
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
 }

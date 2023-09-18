@@ -22,6 +22,7 @@ func TestIntegration_OIDC(t *testing.T) {
 				ClientID:            "stub-client-id",
 				ClientSecret:        "stub-client-secret",
 				SkipTLSVerification: true,
+				UsernameClaim:       string(authenticator.DefaultUsernameClaim),
 			},
 		},
 	}

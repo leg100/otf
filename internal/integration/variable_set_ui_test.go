@@ -20,9 +20,9 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			// go to org
 			chromedp.Navigate(organizationURL(svc.Hostname(), org.Name)),
 			// go to variable sets
-			chromedp.Click(`//a[text()='variable sets']`),
+			chromedp.Click(`//a[text()='variable sets']`), waitLoaded,
 			// click new variable set button
-			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery),
+			chromedp.Click(`button#new-variable-set-button`, chromedp.ByQuery), waitLoaded,
 			// enter name
 			chromedp.Focus("input#name", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("global-1"),
@@ -32,11 +32,11 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			// global radio button should be set by default
 			chromedp.WaitVisible(`input#global:checked`, chromedp.ByQuery),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-set-button']`),
+			chromedp.Click(`//button[@id='save-variable-set-button']`), waitLoaded,
 			// confirm variable set added
 			matchText(t, "//div[@role='alert']", "added variable set: global-1"),
 			// add a variable
-			chromedp.Click(`//button[@id='add-variable-button']`),
+			chromedp.Click(`//button[@id='add-variable-button']`), waitLoaded,
 			// enter key
 			chromedp.Focus("input#key", chromedp.NodeVisible, chromedp.ByQuery),
 			input.InsertText("foo"),
@@ -46,7 +46,7 @@ func TestIntegration_VariableSetUI(t *testing.T) {
 			// select terraform variable category
 			chromedp.Click("input#terraform", chromedp.ByQuery),
 			// submit form
-			chromedp.Click(`//button[@id='save-variable-button']`),
+			chromedp.Click(`//button[@id='save-variable-button']`), waitLoaded,
 			// confirm variable added
 			matchText(t, "//div[@role='alert']", "added variable: foo"),
 		},

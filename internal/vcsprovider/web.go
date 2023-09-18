@@ -13,8 +13,6 @@ import (
 	"github.com/leg100/otf/internal/organization"
 )
 
-const githubAppConfigCookie = "github-app-config"
-
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
@@ -26,11 +24,13 @@ type webHandlers struct {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list)
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new)
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create)
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get)
-	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete)
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}/delete", h.delete).Methods("POST")
+	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get).Methods("GET")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -46,10 +46,14 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
 	h.Render(tmpl, w, struct {
 		organization.OrganizationPage
-		Cloud string
+		VCSProvider *VCSProvider
+		FormAction  string
+		EditMode    bool
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		Cloud:            params.Cloud,
+		VCSProvider:      &VCSProvider{CloudConfig: cloud.Config{Name: params.Cloud}},
+		FormAction:       paths.CreateVCSProvider(params.Organization),
+		EditMode:         false,
 	})
 }
 
@@ -57,7 +61,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		OrganizationName string `schema:"organization_name,required"`
 		Token            string `schema:"token,required"`
-		Name             string `schema:"name,required"`
+		Name             string `schema:"name"`
 		Cloud            string `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
@@ -75,7 +79,60 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "created provider: "+provider.Name)
+	html.FlashSuccess(w, "created provider: "+provider.String())
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
+}
+
+func (h *webHandlers) edit(w http.ResponseWriter, r *http.Request) {
+	providerID, err := decode.Param("vcs_provider_id", r)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := h.svc.GetVCSProvider(r.Context(), providerID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("vcs_provider_edit.tmpl", w, struct {
+		organization.OrganizationPage
+		VCSProvider *VCSProvider
+		FormAction  string
+		EditMode    bool
+	}{
+		OrganizationPage: organization.NewPage(r, "edit vcs provider", provider.Organization),
+		VCSProvider:      provider,
+		FormAction:       paths.UpdateVCSProvider(providerID),
+		EditMode:         true,
+	})
+}
+
+func (h *webHandlers) update(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		ID    string `schema:"vcs_provider_id,required"`
+		Token string `schema:"token"`
+		Name  string `schema:"name"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	opts := UpdateOptions{
+		Name: params.Name,
+	}
+	// avoid setting token to empty string
+	if params.Token != "" {
+		opts.Token = &params.Token
+	}
+	provider, err := h.svc.UpdateVCSProvider(r.Context(), params.ID, opts)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, "updated provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }
 
@@ -134,6 +191,6 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted provider: "+provider.Name)
+	html.FlashSuccess(w, "deleted provider: "+provider.String())
 	http.Redirect(w, r, paths.VCSProviders(provider.Organization), http.StatusFound)
 }

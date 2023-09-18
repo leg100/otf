@@ -35,7 +35,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		chromedp.Focus(`input[type="search"]`, chromedp.NodeVisible, chromedp.ByQuery),
 		input.InsertText("workspace-1"),
 		chromedp.Submit(`input[type="search"]`, chromedp.ByQuery),
-		chromedp.WaitVisible(`//*[@class="widget"]`, chromedp.AtLeast(2)),
+		chromedp.WaitVisible(`div.widget`, chromedp.AtLeast(2)),
 		// and workspace-2 should not be visible
 		chromedp.WaitNotPresent(`//*[@id="item-workspace-workspace-2"]`),
 		// clear search term
@@ -45,7 +45,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	})
 	// demonstrate setting vcs trigger patterns
 	browser.Run(t, ctx, chromedp.Tasks{
-		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.Name),
+		connectWorkspaceTasks(t, daemon.Hostname(), org.Name, "workspace-1", provider.String()),
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`),
@@ -54,7 +54,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// select trigger patterns strategy
 		chromedp.Click(`input#vcs-triggers-patterns`, chromedp.ByQuery),
 		// add glob patterns
-		chromedp.Focus(`#new_path`),
+		chromedp.Focus(`#new_path`, chromedp.NodeVisible),
 		input.InsertText(`/foo/*.tf`),
 		chromedp.Click(`button#add-pattern`, chromedp.ByQuery),
 		input.InsertText(`/bar/*.tf`),
@@ -117,7 +117,7 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 		// tag regex strategy should be set
 		chromedp.WaitVisible(`input#vcs-triggers-tag:checked`, chromedp.ByQuery),
 		// set vcs branch
-		chromedp.Focus(`input#vcs-branch`, chromedp.ByQuery),
+		chromedp.Focus(`input#vcs-branch`, chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText(`dev`),
 		// submit
 		chromedp.Submit(`//button[text()='Save changes']`),
@@ -150,12 +150,12 @@ func TestIntegration_WorkspaceUI(t *testing.T) {
 	browser.Run(t, ctx, chromedp.Tasks{
 		chromedp.Navigate(workspaceURL(daemon.Hostname(), org.Name, "workspace-1")),
 		// go to workspace settings
-		chromedp.Click(`//a[text()='settings']`),
+		chromedp.Click(`//a[text()='settings']`), waitLoaded,
 		// enter a description
-		chromedp.Focus(`textarea#description`, chromedp.ByQuery),
+		chromedp.Focus(`textarea#description`, chromedp.ByQuery, chromedp.NodeVisible),
 		input.InsertText(`my big fat workspace`),
 		// submit
-		chromedp.Submit(`//button[text()='Save changes']`),
+		chromedp.Submit(`//button[text()='Save changes']`), waitLoaded,
 		// confirm updated
 		matchText(t, "//div[@role='alert']", "updated workspace"),
 		// confirm updated description shows up

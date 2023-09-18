@@ -11,13 +11,13 @@ import (
 )
 
 func newTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvider {
-	factory := &factory{inmem.NewCloudServiceWithDefaults()}
-	provider, err := factory.new(CreateOptions{
+	provider, err := newProvider(context.Background(), CreateOptions{
 		Organization: org.Name,
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		Cloud: "github",
-		Name:  uuid.NewString(),
+		Cloud:        "github",
+		Name:         uuid.NewString(),
+		CloudService: inmem.NewCloudServiceWithDefaults(),
 	})
 	require.NoError(t, err)
 	return provider

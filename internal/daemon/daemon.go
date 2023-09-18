@@ -381,24 +381,21 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 
 	subsystems := []*Subsystem{
 		{
-			Name:           "broker",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			System:         d.Broker,
+			Name:   "broker",
+			Logger: d.Logger,
+			System: d.Broker,
 		},
 		{
-			Name:           "proxy",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			System:         d.LogsService,
+			Name:   "proxy",
+			Logger: d.Logger,
+			System: d.LogsService,
 		},
 		{
-			Name:           "reporter",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			Exclusive:      true,
-			DB:             d.DB,
-			LockID:         internal.Int64(run.ReporterLockID),
+			Name:      "reporter",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(run.ReporterLockID),
 			System: &run.Reporter{
 				Logger:                      d.Logger.WithValues("component", "reporter"),
 				VCSProviderService:          d.VCSProviderService,
@@ -409,9 +406,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
-			Name:           "webhook purger",
-			BackoffRestart: true,
-			Logger:         d.Logger,
+			Name:   "webhook purger",
+			Logger: d.Logger,
 			System: &repo.Purger{
 				Logger:     d.Logger.WithValues("component", "purger"),
 				Subscriber: d.Broker,
@@ -420,12 +416,11 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			},
 		},
 		{
-			Name:           "notifier",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			Exclusive:      true,
-			DB:             d.DB,
-			LockID:         internal.Int64(notifications.LockID),
+			Name:      "notifier",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(notifications.LockID),
 			System: notifications.NewNotifier(notifications.NotifierOptions{
 				Logger:           d.Logger,
 				Subscriber:       d.Broker,
@@ -437,12 +432,11 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 	}
 	if !d.DisableScheduler {
 		subsystems = append(subsystems, &Subsystem{
-			Name:           "scheduler",
-			BackoffRestart: true,
-			Logger:         d.Logger,
-			Exclusive:      true,
-			DB:             d.DB,
-			LockID:         internal.Int64(scheduler.LockID),
+			Name:      "scheduler",
+			Logger:    d.Logger,
+			Exclusive: true,
+			DB:        d.DB,
+			LockID:    internal.Int64(scheduler.LockID),
 			System: scheduler.NewScheduler(scheduler.Options{
 				Logger:           d.Logger,
 				WorkspaceService: d.WorkspaceService,

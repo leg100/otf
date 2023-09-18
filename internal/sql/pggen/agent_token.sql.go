@@ -1049,6 +1049,20 @@ type Querier interface {
 	// FindVCSProviderScan scans the result of an executed FindVCSProviderBatch query.
 	FindVCSProviderScan(results pgx.BatchResults) (FindVCSProviderRow, error)
 
+	FindVCSProviderForUpdate(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderForUpdateRow, error)
+	// FindVCSProviderForUpdateBatch enqueues a FindVCSProviderForUpdate query into batch to be executed
+	// later by the batch.
+	FindVCSProviderForUpdateBatch(batch genericBatch, vcsProviderID pgtype.Text)
+	// FindVCSProviderForUpdateScan scans the result of an executed FindVCSProviderForUpdateBatch query.
+	FindVCSProviderForUpdateScan(results pgx.BatchResults) (FindVCSProviderForUpdateRow, error)
+
+	UpdateVCSProvider(ctx context.Context, params UpdateVCSProviderParams) (UpdateVCSProviderRow, error)
+	// UpdateVCSProviderBatch enqueues a UpdateVCSProvider query into batch to be executed
+	// later by the batch.
+	UpdateVCSProviderBatch(batch genericBatch, params UpdateVCSProviderParams)
+	// UpdateVCSProviderScan scans the result of an executed UpdateVCSProviderBatch query.
+	UpdateVCSProviderScan(results pgx.BatchResults) (UpdateVCSProviderRow, error)
+
 	DeleteVCSProviderByID(ctx context.Context, vcsProviderID pgtype.Text) (pgtype.Text, error)
 	// DeleteVCSProviderByIDBatch enqueues a DeleteVCSProviderByID query into batch to be executed
 	// later by the batch.
@@ -1765,6 +1779,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findVCSProviderSQL, findVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVCSProvider': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVCSProviderForUpdateSQL, findVCSProviderForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVCSProviderForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateVCSProviderSQL, updateVCSProviderSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateVCSProvider': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteVCSProviderByIDSQL, deleteVCSProviderByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVCSProviderByID': %w", err)

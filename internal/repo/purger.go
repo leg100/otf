@@ -70,7 +70,7 @@ func (p *Purger) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	return nil
+	return pubsub.ErrSubscriptionTerminated
 }
 
 func (p *Purger) deleteUnreferencedWebhooks(ctx context.Context) error {

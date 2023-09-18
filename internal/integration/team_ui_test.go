@@ -28,10 +28,10 @@ func TestIntegration_TeamUI(t *testing.T) {
 			chromedp.Click(`//a[text()='teams']`),
 			screenshot(t),
 			// go to owners team page
-			chromedp.Click(`//div[@id='content-list']//a[text()='owners']`),
+			chromedp.Click(`//div[@id='item-team-owners']`),
 			screenshot(t, "owners_team_page"),
 			// set focus to search box
-			chromedp.Focus(`//input[@x-ref='input-search']`),
+			chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
 			input.InsertText(""),
 			// should trigger dropdown box showing both alice and bob
 			chromedp.WaitVisible(`//div[@x-ref='searchdrop']//button[text()='bob']`),
@@ -52,7 +52,7 @@ func TestIntegration_TeamUI(t *testing.T) {
 			// now demonstrate specifying a username that doesn't belong to an
 			// existing user. The dropdown box should prompt to create the user
 			// and add them to the team.
-			chromedp.Focus(`//input[@x-ref='input-search']`),
+			chromedp.Focus(`//input[@x-ref='input-search']`, chromedp.NodeVisible),
 			input.InsertText("sarah"),
 			matchRegex(t, `//div[@x-ref='searchdrop']//button`, `Create:.*sarah`),
 			// submit

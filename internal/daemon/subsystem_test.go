@@ -15,21 +15,18 @@ func TestSubsystem(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		backoff   bool
 		exclusive bool
 	}{
-		{"default", false, false},
-		{"backoff", true, false},
-		{"backoff and wait and lock", true, true},
+		{"backoff", false},
+		{"backoff and wait and lock", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sub := &Subsystem{
-				Name:           tt.name,
-				System:         &fakeStartable{},
-				Logger:         logr.Discard(),
-				BackoffRestart: tt.backoff,
-				Exclusive:      tt.exclusive,
+				Name:      tt.name,
+				System:    &fakeStartable{},
+				Logger:    logr.Discard(),
+				Exclusive: tt.exclusive,
 			}
 			if tt.exclusive {
 				sub.DB = &fakeWaitAndLock{}

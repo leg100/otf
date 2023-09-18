@@ -3,6 +3,7 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -21,6 +22,10 @@ const (
 	// subBufferSize is the buffer size of the channel for each subscription.
 	subBufferSize = 100
 )
+
+// ErrSubscriptionTerminated is for use by subscribers to indicate that their
+// subscription has been terminated by the broker.
+var ErrSubscriptionTerminated = errors.New("broker terminated the subscription")
 
 type (
 

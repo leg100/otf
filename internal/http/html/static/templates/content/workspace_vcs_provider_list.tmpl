@@ -15,13 +15,10 @@
 
   <div id="content-list">
     {{ range .Items }}
-      <div class="widget">
+      {{ $path := (printf "%s?vcs_provider_id=%s" (setupConnectionRepoWorkspacePath $.Workspace.ID) .ID) }}
+      <div class="widget" x-data="block_link($el, '{{ $path }}')" id="{{ .ID }}">
         <div>
-          <span class="font-semibold">
-            <a href="{{ setupConnectionRepoWorkspacePath $.Workspace.ID }}?vcs_provider_id={{ .ID }}">
-              {{ .Name }}
-            </a>
-          </span>
+          <span class="font-semibold">{{ .String }}</span>
           <span>{{ durationRound .CreatedAt }} ago</span>
         </div>
         <div>
