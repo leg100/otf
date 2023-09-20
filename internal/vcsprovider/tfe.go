@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal/cloud"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/tfeapi"
@@ -99,7 +100,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Name:         *params.Name,
 		Organization: org,
 		Token:        params.OAuthToken,
-		Cloud:        "github",
+		Kind:         cloud.GithubKind,
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

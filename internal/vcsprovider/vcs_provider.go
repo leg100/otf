@@ -12,34 +12,40 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 )
 
 type (
-	// VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
-	// TFE.
+	// VCSProvider provides authenticated access to a VCS.
 	VCSProvider struct {
 		ID           string
-		CreatedAt    time.Time
-		CloudConfig  cloud.Config // cloud config for creating client
-		Organization string       // vcs provider belongs to an organization
 		Name         string
+		CreatedAt    time.Time
+		Organization string     // name of OTF organization
+		Kind         cloud.Kind // github/gitlab etc
+		Hostname     string     // hostname of github/gitlab etc
 
-		Token     *string         // personal access token.
-		GithubApp *github.Install // mutually exclusive with Token.
+		Token     *string                    // personal access token.
+		GithubApp *github.InstallCredentials // mutually exclusive with Token.
 	}
 
 	CreateOptions struct {
 		Organization string
-		Cloud        string
-		ID           *string
 		Name         string
-		CreatedAt    *time.Time
+		Kind         cloud.Kind
 
+		// Specify only one of these.
 		Token              *string
 		GithubAppInstallID *int64
 
-		CloudService
+		internal.HostnameService
+
+		// Must be specified if GithubAppInstallID is non-nil
 		github.GithubAppService
+
+		// These are only for re-creating a vcs provider from a DB query
+		ID        *string
+		CreatedAt *time.Time
 	}
 
 	UpdateOptions struct {
@@ -49,16 +55,11 @@ type (
 )
 
 func newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
-	cloudConfig, err := opts.GetCloudConfig(opts.Cloud)
-	if err != nil {
-		return nil, err
-	}
 	provider := &VCSProvider{
 		ID:           internal.NewID("vcs"),
+		Name:         opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
-		CloudConfig:  cloudConfig,
-		Name:         opts.Name,
 	}
 	if opts.ID != nil {
 		provider.ID = *opts.ID
@@ -75,9 +76,12 @@ func newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) 
 		if err != nil {
 			return nil, err
 		}
-		provider.GithubApp = &github.Install{
-			ID:  *opts.GithubAppInstallID,
-			App: app,
+		provider.GithubApp = &github.InstallCredentials{
+			ID: *opts.GithubAppInstallID,
+			AppCredentials: github.AppCredentials{
+				ID:         app.ID,
+				PrivateKey: app.PrivateKey,
+			},
 		}
 	} else {
 		return nil, errors.New("must specify either token or github app installation ID")
@@ -91,13 +95,30 @@ func (t *VCSProvider) String() string {
 	if t.Name != "" {
 		return t.Name
 	}
-	return t.CloudConfig.Name
+	return string(t.Kind)
 }
 
 func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
-	return t.CloudConfig.NewClient(ctx, cloud.Credentials{
-		PersonalToken: t.Token,
-	})
+	switch t.Kind {
+	case cloud.GithubKind:
+		if t.GithubApp != nil {
+			return github.NewClient(ctx, github.ClientOptions{
+				InstallCredentials: t.GithubApp,
+			})
+		} else if t.Token != nil {
+			return github.NewClient(ctx, github.ClientOptions{
+				PersonalToken: t.Token,
+			})
+		} else {
+			return nil, fmt.Errorf("missing credentials")
+		}
+	case cloud.GitlabKind:
+		return gitlab.NewClient(ctx, gitlab.ClientOptions{
+			PersonalToken: t.Token,
+		})
+	default:
+		return nil, fmt.Errorf("unknown vcs kind: %s", t.Kind)
+	}
 }
 
 func (t *VCSProvider) Update(opts UpdateOptions) error {
@@ -116,7 +137,7 @@ func (t *VCSProvider) LogValue() slog.Value {
 		slog.String("id", t.ID),
 		slog.String("organization", t.Organization),
 		slog.String("name", t.String()),
-		slog.String("cloud", t.CloudConfig.Name),
+		slog.String("kind", string(t.Kind)),
 	)
 }
 

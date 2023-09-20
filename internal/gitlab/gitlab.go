@@ -2,22 +2,14 @@
 package gitlab
 
 import (
-	"github.com/leg100/otf/internal/cloud"
-	"golang.org/x/oauth2"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )
 
-func Defaults() cloud.Config {
-	return cloud.Config{
-		Name:     "gitlab",
-		Hostname: "gitlab.com",
-		Cloud:    &Cloud{},
-	}
-}
+const (
+	DefaultHostname string = "gitlab.com"
+)
 
-func OAuthDefaults() *oauth2.Config {
-	return &oauth2.Config{
-		Endpoint: oauth2gitlab.Endpoint,
-		Scopes:   []string{"read_user", "read_api"},
-	}
-}
+var (
+	OAuthEndpoint = oauth2gitlab.Endpoint
+	OAuthScopes   = []string{"read_user", "read_api"}
+)

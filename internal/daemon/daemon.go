@@ -17,6 +17,8 @@ import (
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/inmem"
@@ -65,8 +67,7 @@ type (
 
 		Handlers []internal.Handlers
 
-		agent        process
-		cloudService *inmem.CloudService
+		agent process
 	}
 
 	process interface {
@@ -90,10 +91,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	renderer, err := html.NewRenderer(cfg.DevMode)
 	if err != nil {
 		return nil, fmt.Errorf("setting up web page renderer: %w", err)
-	}
-	cloudService, err := inmem.NewCloudService(cfg.Github.Config, cfg.Gitlab.Config)
-	if err != nil {
-		return nil, err
 	}
 	cache, err := inmem.NewCache(*cfg.CacheConfig)
 	if err != nil {
@@ -157,13 +154,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:              db,
 		Renderer:        renderer,
 		Responder:       responder,
-		CloudService:    cloudService,
 		HostnameService: hostnameService,
 	})
 	repoService := repo.NewService(ctx, repo.Options{
 		Logger:              logger,
 		DB:                  db,
-		CloudService:        cloudService,
 		HostnameService:     hostnameService,
 		Broker:              broker,
 		OrganizationService: orgService,
@@ -266,15 +261,36 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 
-	authenticatorService, err := authenticator.NewAuthenticatorService(authenticator.Options{
-		Logger:              logger,
-		Renderer:            renderer,
-		HostnameService:     hostnameService,
-		OrganizationService: orgService,
-		AuthService:         authService,
-		TokensService:       tokensService,
-		Configs:             []cloud.CloudOAuthConfig{cfg.Github, cfg.Gitlab},
-		OIDCConfigs:         []cloud.OIDCConfig{cfg.OIDC},
+	authenticatorService, err := authenticator.NewAuthenticatorService(ctx, authenticator.Options{
+		Logger:          logger,
+		Renderer:        renderer,
+		HostnameService: hostnameService,
+		TokensService:   tokensService,
+		OpaqueHandlerConfigs: []authenticator.OpaqueHandlerConfig{
+			{
+				Kind: cloud.GithubKind,
+				OAuthConfig: authenticator.OAuthConfig{
+					Hostname:     cfg.GithubHostname,
+					Name:         string(cloud.GithubKind),
+					Endpoint:     github.OAuthEndpoint,
+					Scopes:       github.OAuthScopes,
+					ClientID:     cfg.GithubClientID,
+					ClientSecret: cfg.GithubClientSecret,
+				},
+			},
+			{
+				Kind: cloud.GitlabKind,
+				OAuthConfig: authenticator.OAuthConfig{
+					Hostname:     cfg.GitlabHostname,
+					Name:         string(cloud.GitlabKind),
+					Endpoint:     gitlab.OAuthEndpoint,
+					Scopes:       gitlab.OAuthScopes,
+					ClientID:     cfg.GitlabClientID,
+					ClientSecret: cfg.GitlabClientSecret,
+				},
+			},
+		},
+		IDTokenHandlerConfig: cfg.OIDC,
 	})
 	if err != nil {
 		return nil, err
@@ -288,6 +304,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
 		HostnameService:     hostnameService,
+	})
+
+	githubAppService := github.NewService(github.Options{
+		Logger:          logger,
+		DB:              db,
+		Renderer:        renderer,
+		HostnameService: hostnameService,
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{
@@ -315,6 +338,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		loginServer,
 		configService,
 		notificationService,
+		githubAppService,
 		disco.Service{},
 	}
 
@@ -339,7 +363,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,
-		cloudService:                cloudService,
 	}, nil
 }
 

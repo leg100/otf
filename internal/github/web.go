@@ -1,13 +1,13 @@
 package github
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -16,7 +16,6 @@ import (
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
-	CloudService cloud.Service
 
 	svc Service
 }
@@ -24,16 +23,15 @@ type webHandlers struct {
 func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
-	r.HandleFunc("/admin/github-app", h.get).Methods("GET")
-	r.HandleFunc("/admin/github-app/new", h.new).Methods("GET")
-	r.HandleFunc("/admin/github-app/exchange-code", h.exchangeCode).Methods("POST")
-	r.HandleFunc("/admin/github-app/complete", h.completeGithubSetup).Methods("POST")
-	r.HandleFunc("/admin/github-app/delete", h.delete).Methods("POST")
+	r.HandleFunc("/github-apps", h.get).Methods("GET")
+	r.HandleFunc("/github-apps/new", h.new).Methods("GET")
+	r.HandleFunc("/github-apps/exchange-code", h.exchangeCode).Methods("GET")
+	r.HandleFunc("/github-apps/{github_app_id}/delete", h.delete).Methods("POST")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	type (
-		hookAttributes struct {
+		hookAttrs struct {
 			URL string `json:"url"`
 		}
 		manifest struct {
@@ -45,13 +43,13 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 			Events      []string          `json:"default_events"`
 			Permissions map[string]string `json:"default_permissions"`
 			Public      bool              `json:"public"`
-			HookAttrs   hookAttributes    `json:"hook_attributes"`
+			HookAttrs   hookAttrs         `json:"hook_attributes"`
 		}
 	)
 	m := manifest{
 		Name: "OTF",
 		URL:  fmt.Sprintf("https://%s", h.Hostname()),
-		HookAttrs: hookAttributes{
+		HookAttrs: hookAttrs{
 			URL: fmt.Sprintf("https://%s/ghapp/webhook", h.Hostname()),
 		},
 		Redirect: fmt.Sprintf("https://%s%s", h.Hostname(),
@@ -88,7 +86,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("github_list_apps.tmpl", w, struct {
+	h.Render("github_apps_list.tmpl", w, struct {
 		html.SitePage
 		App *App
 	}{
@@ -99,8 +97,7 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization string `schema:"organization_name,required"`
-		Code         string `schema:"code,required"`
+		Code string `schema:"code,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -108,7 +105,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code for credentials using an anonymous client
-	client, err := NewClient(r.Context(), cloud.ClientOptions{})
+	client, err := NewClient(r.Context(), ClientOptions{})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -119,49 +116,16 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
-		Organization:  params.Organization,
+	opts := CreateAppOptions{
 		AppID:         cfg.GetID(),
+		Slug:          cfg.GetSlug(),
 		WebhookSecret: cfg.GetWebhookSecret(),
 		PrivateKey:    cfg.GetPEM(),
-	})
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	html.FlashSuccess(w, "created github app: "+cfg.GetSlug())
-	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
-}
-
-func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		Organization string `schema:"organization_name,required"`
-		Code         string `schema:"code,required"`
+	if cfg.GetOwner().GetType() == "Organization" {
+		opts.Organization = cfg.GetOwner().Login
 	}
-	if err := decode.All(&params, r); err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	// exchange code for credentials using an anonymous client
-	client, err := NewClient(r.Context(), cloud.ClientOptions{})
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	cfg, err := client.ExchangeCode(r.Context(), params.Code)
-	if err != nil {
-		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	_, err = h.svc.CreateGithubApp(r.Context(), CreateAppOptions{
-		Organization:  params.Organization,
-		AppID:         cfg.GetID(),
-		WebhookSecret: cfg.GetWebhookSecret(),
-		PrivateKey:    cfg.GetPEM(),
-	})
+	_, err = h.svc.CreateGithubApp(r.Context(), opts)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -172,10 +136,22 @@ func (h *webHandlers) completeGithubSetup(w http.ResponseWriter, r *http.Request
 }
 
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
+	app, err := h.svc.GetGithubApp(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	if err := h.svc.DeleteGithubApp(r.Context()); err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html.FlashSuccess(w, "deleted github app")
+	// render a small templated flash message
+	buf := new(bytes.Buffer)
+	err = h.RenderTemplate("github_delete_message.tmpl", buf, app)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	html.FlashSuccess(w, buf.String())
+
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }

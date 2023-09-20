@@ -2,11 +2,11 @@ package github
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/rbac"
@@ -16,10 +16,11 @@ import (
 type (
 	// Alias services so they don't conflict when nested together in struct
 	GithubAppService Service
-	CloudService     cloud.Service
 
 	Service interface {
 		CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error)
+		// GetGithubApp returns the github app. If no github app has been
+		// created then nil is returned without an error.
 		GetGithubApp(ctx context.Context) (*App, error)
 		DeleteGithubApp(ctx context.Context) error
 	}
@@ -34,24 +35,10 @@ type (
 	}
 
 	Options struct {
-		CloudService
 		internal.HostnameService
 		*sql.DB
 		html.Renderer
 		logr.Logger
-	}
-
-	CreateAppOptions struct {
-		Organization  string
-		AppID         int64
-		WebhookSecret string
-		PrivateKey    string
-	}
-
-	CreateInstallOptions struct {
-		InstallID    int64  // github's install id
-		AppID        string // otf's app id
-		Organization string // name of otf org to install into
 	}
 )
 
@@ -63,7 +50,6 @@ func NewService(opts Options) *service {
 		db:           &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{
-		CloudService:    opts.CloudService,
 		Renderer:        opts.Renderer,
 		HostnameService: opts.HostnameService,
 		svc:             &svc,
@@ -76,7 +62,7 @@ func (a *service) AddHandlers(r *mux.Router) {
 }
 
 func (a *service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error) {
-	subject, err := a.organization.CanAccess(ctx, rbac.CreateGithubAppAction, opts.Organization)
+	subject, err := a.site.CanAccess(ctx, rbac.CreateGithubAppAction, "")
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +84,9 @@ func (a *service) GetGithubApp(ctx context.Context) (*App, error) {
 	}
 
 	app, err := a.db.get(ctx)
-	if err != nil {
-		a.Error(err, "retrieving github app")
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 	a.V(9).Info("retrieved github app", "app", app, "subject", subject)

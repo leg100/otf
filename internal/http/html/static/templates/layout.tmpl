@@ -20,10 +20,10 @@
       {{ with .CurrentUser }}
         <input class="hidden peer" id="hamburger-toggle" type="checkbox">
         <label for="hamburger-toggle" class="peer-checked:hidden md:hidden">
-            <img src="{{ addHash "/static/images/hamburger.svg" }}" alt="open menu">
+          <img src="{{ addHash "/static/images/hamburger.svg" }}" alt="open menu">
         </label>
         <label for="hamburger-toggle" class="hidden peer-checked:block md:hidden">
-            <img src="{{ addHash "/static/images/cross.svg" }}" alt="close menu">
+          <img src="{{ addHash "/static/images/cross.svg" }}" alt="close menu">
         </label>
       {{ end }}
 
@@ -40,9 +40,12 @@
         <img src="{{ addHash "/static/images/logo.svg" }}" alt="logo">
       </div>
 
-      {{ if .CurrentUser }}
+      {{ with .CurrentUser }}
         <div class="hidden peer-checked:block w-full md:block md:ml-auto md:w-auto">
           <div class="flex flex-col items-center gap-4 py-0.5 md:flex-row">
+            {{ if .IsSiteAdmin }}
+              <a href="{{ adminPath }}">site</a>
+            {{ end }}
             <a href="{{ organizationsPath }}">organizations</a>
             <a href="{{ profilePath }}">profile</a>
           </div>

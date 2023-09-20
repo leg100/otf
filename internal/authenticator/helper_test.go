@@ -2,26 +2,22 @@ package authenticator
 
 import (
 	"context"
-	"crypto"
 	"crypto/rsa"
 	"net/http"
 	"testing"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/tokens"
 	"golang.org/x/oauth2"
 )
 
 type (
-	fakeAuthenticatorService struct {
+	fakeTokensService struct {
 		tokens.TokensService
 	}
 
 	fakeOAuthClient struct {
-		user cloud.User
-		oauthClient
+		user  cloud.User
 		token *oauth2.Token
 	}
 
@@ -29,10 +25,18 @@ type (
 		user cloud.User
 		cloud.Client
 	}
+
+	fakeTokenHandler struct {
+		username string
+	}
 )
 
-func (f *fakeAuthenticatorService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
-	http.Redirect(w, r, paths.Profile(), http.StatusFound)
+func (f fakeTokenHandler) getUsername(ctx context.Context, token *oauth2.Token) (string, error) {
+	return f.username, nil
+}
+
+func (fakeTokensService) StartSession(w http.ResponseWriter, r *http.Request, opts tokens.StartSessionOptions) error {
+	w.Header().Set("username", *opts.Username)
 	return nil
 }
 
@@ -51,11 +55,4 @@ func (f *fakeCloudClient) GetCurrentUser(context.Context) (cloud.User, error) {
 func fakeOAuthToken(t *testing.T, username, aud string, key *rsa.PrivateKey) *oauth2.Token {
 	idtoken := fakeIDToken(t, username, aud, "", key)
 	return (&oauth2.Token{}).WithExtra(map[string]any{"id_token": idtoken})
-}
-
-func fakeVerifier(t *testing.T, aud string, key *rsa.PrivateKey) *oidc.IDTokenVerifier {
-	keySet := &oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{key.Public()}}
-	return oidc.NewVerifier("", keySet, &oidc.Config{
-		ClientID: "otf",
-	})
 }

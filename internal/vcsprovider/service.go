@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -18,7 +19,6 @@ import (
 type (
 	// Alias services so they don't conflict when nested together in struct
 	VCSProviderService Service
-	CloudService       cloud.Service
 
 	Service interface {
 		CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error)
@@ -40,7 +40,6 @@ type (
 
 	service struct {
 		logr.Logger
-		CloudService
 
 		site         internal.Authorizer
 		organization internal.Authorizer
@@ -51,12 +50,12 @@ type (
 	}
 
 	Options struct {
-		CloudService
 		internal.HostnameService
 		*sql.DB
 		*tfeapi.Responder
 		html.Renderer
 		logr.Logger
+		github.GithubAppService
 	}
 )
 
@@ -65,13 +64,11 @@ func NewService(opts Options) *service {
 		Logger:       opts.Logger,
 		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
 		organization: &organization.Authorizer{Logger: opts.Logger},
-		db:           newDB(opts.DB, opts.CloudService),
-		CloudService: opts.CloudService,
+		db:           newDB(opts.DB, nil),
 		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
 	}
 
 	svc.web = &webHandlers{
-		CloudService:    opts.CloudService,
 		Renderer:        opts.Renderer,
 		HostnameService: opts.HostnameService,
 		svc:             &svc,

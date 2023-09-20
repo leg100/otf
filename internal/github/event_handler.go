@@ -33,7 +33,7 @@ func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 
 	// convert github event to an OTF event
 	to := cloud.VCSEvent{
-		Cloud: cloud.Github,
+		Cloud: cloud.GithubKind,
 	}
 
 	switch event := rawEvent.(type) {

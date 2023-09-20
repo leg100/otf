@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -14,8 +15,10 @@ import (
 type (
 	// pgdb is a VCS provider database on postgres
 	pgdb struct {
-		*sql.DB // provides access to generated SQL queries
-		CloudService
+		// provides access to generated SQL queries
+		*sql.DB
+		// github app service for re-constructing vcs provider from a DB query
+		github.GithubAppService
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
@@ -30,8 +33,8 @@ type (
 	}
 )
 
-func newDB(db *sql.DB, cloudService cloud.Service) *pgdb {
-	return &pgdb{db, cloudService}
+func newDB(sqldb *sql.DB, appService github.GithubAppService) *pgdb {
+	return &pgdb{sqldb, appService}
 }
 
 // GetByID implements pubsub.Getter
@@ -46,12 +49,12 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	params := pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
 		Name:             sql.String(provider.Name),
-		Cloud:            sql.String(provider.CloudConfig.Name),
+		Cloud:            sql.String(string(provider.Kind)),
 		OrganizationName: sql.String(provider.Organization),
 		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
 	}
 	if provider.GithubApp != nil {
-		params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.App.ID, Status: pgtype.Null}
+		params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Null}
 		params.GithubAppInstallID = pgtype.Int8{Int: provider.GithubApp.ID, Status: pgtype.Null}
 	}
 	if provider.Token != nil {
@@ -142,9 +145,8 @@ func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error)
 		ID:           &row.VCSProviderID.String,
 		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
-		Cloud:        row.Cloud.String,
+		Kind:         cloud.Kind(row.Cloud.String),
 		Name:         row.Name.String,
-		CloudService: db.CloudService,
 		// GithubAppService: db.Git
 	}
 	if row.Token.Status == pgtype.Present {

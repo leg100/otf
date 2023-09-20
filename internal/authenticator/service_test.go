@@ -1,6 +1,7 @@
 package authenticator
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
 
@@ -10,35 +11,35 @@ import (
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2"
 )
 
 func TestNewAuthenticatorService(t *testing.T) {
 	opts := Options{
 		Logger:          logr.Discard(),
 		HostnameService: internal.FakeHostnameService{Host: "fake-host.org"},
-		Configs: []cloud.CloudOAuthConfig{
+		OpaqueHandlerConfigs: []OpaqueHandlerConfig{
 			{
-				OAuthConfig: &oauth2.Config{
+				Kind: cloud.GithubKind,
+				OAuthConfig: OAuthConfig{
 					ClientID:     "id-1",
 					ClientSecret: "secret-1",
 				},
 			},
 			{
-				OAuthConfig: &oauth2.Config{
+				OAuthConfig: OAuthConfig{
 					ClientID:     "id-2",
 					ClientSecret: "secret-2",
 				},
 			},
 			{
 				// should be skipped
-				OAuthConfig: &oauth2.Config{},
+				OAuthConfig: OAuthConfig{},
 			},
 		},
 	}
-	got, err := NewAuthenticatorService(opts)
+	got, err := NewAuthenticatorService(context.Background(), opts)
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(got.authenticators))
+	assert.Equal(t, 2, len(got.clients))
 }
 
 // TestLoginHandler tests the login page handler, testing for the presence of a
@@ -46,21 +47,11 @@ func TestNewAuthenticatorService(t *testing.T) {
 func TestLoginHandler(t *testing.T) {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
-	svc := &service{
-		renderer: renderer,
-	}
+	svc := &service{Renderer: renderer}
 
-	svc.authenticators = []authenticator{
-		&oauthAuthenticator{
-			oauthClient: &OAuthClient{
-				cloudConfig: cloud.Config{Name: "cloud1"},
-			},
-		},
-		&oauthAuthenticator{
-			oauthClient: &OAuthClient{
-				cloudConfig: cloud.Config{Name: "cloud2"},
-			},
-		},
+	svc.clients = []*OAuthClient{
+		{OAuthConfig: OAuthConfig{Name: "cloud1"}},
+		{OAuthConfig: OAuthConfig{Name: "cloud1"}},
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)

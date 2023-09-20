@@ -19,19 +19,19 @@ type hook struct {
 	cloudID       *string   // cloud's hook ID; populated following synchronisation
 	vcsProviderID string
 
-	secret     string // secret token
-	identifier string // repo identifier: <repo_owner>/<repo_name>
-	cloud      string // cloud name
-	endpoint   string // otf URL that receives events
+	secret     string     // secret token
+	identifier string     // repo identifier: <repo_owner>/<repo_name>
+	cloud      cloud.Kind // origin of events
+	endpoint   string     // OTF URL that receives events
 
-	cloud.EventHandler // handles incoming vcs events
+	cloudHandler // handles incoming vcs events
 }
 
 func (h *hook) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", h.id.String()),
 		slog.String("vcs_provider_id", h.vcsProviderID),
-		slog.String("cloud", h.cloud),
+		slog.String("cloud", string(h.cloud)),
 		slog.String("repo", h.identifier),
 		slog.String("endpoint", h.endpoint),
 	}

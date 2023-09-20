@@ -16,7 +16,6 @@ import (
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
-	CloudService
 
 	svc Service
 }
@@ -35,8 +34,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization string `schema:"organization_name,required"`
-		Cloud        string `schema:"cloud,required"`
+		Organization string     `schema:"organization_name,required"`
+		Cloud        cloud.Kind `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -51,7 +50,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		EditMode    bool
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
-		VCSProvider:      &VCSProvider{CloudConfig: cloud.Config{Name: params.Cloud}},
+		VCSProvider:      &VCSProvider{Kind: params.Cloud},
 		FormAction:       paths.CreateVCSProvider(params.Organization),
 		EditMode:         false,
 	})
@@ -59,10 +58,10 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		OrganizationName string `schema:"organization_name,required"`
-		Token            string `schema:"token,required"`
-		Name             string `schema:"name"`
-		Cloud            string `schema:"cloud,required"`
+		OrganizationName string     `schema:"organization_name,required"`
+		Token            string     `schema:"token,required"`
+		Name             string     `schema:"name"`
+		Cloud            cloud.Kind `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -73,7 +72,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		Organization: params.OrganizationName,
 		Token:        &params.Token,
 		Name:         params.Name,
-		Cloud:        params.Cloud,
+		Kind:         params.Cloud,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -151,12 +150,10 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("vcs_provider_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Items        []*VCSProvider
-		CloudConfigs []cloud.Config
+		Items []*VCSProvider
 	}{
 		OrganizationPage: organization.NewPage(r, "vcs providers", org),
 		Items:            providers,
-		CloudConfigs:     h.ListCloudConfigs(),
 	})
 }
 

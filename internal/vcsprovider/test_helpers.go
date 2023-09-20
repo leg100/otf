@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/leg100/otf/internal/inmem"
+	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/stretchr/testify/require"
 )
@@ -15,9 +15,8 @@ func newTestVCSProvider(t *testing.T, org *organization.Organization) *VCSProvid
 		Organization: org.Name,
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		Cloud:        "github",
-		Name:         uuid.NewString(),
-		CloudService: inmem.NewCloudServiceWithDefaults(),
+		Kind: cloud.GithubKind,
+		Name: uuid.NewString(),
 	})
 	require.NoError(t, err)
 	return provider

@@ -2,15 +2,18 @@ package authenticator
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/http/html"
+	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/tokens"
 	"golang.org/x/oauth2"
 )
 
@@ -19,75 +22,84 @@ const oauthCookieName = "oauth-state"
 var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and client secret")
 
 type (
-	oauthClient interface {
-		RequestHandler(w http.ResponseWriter, r *http.Request)
-		CallbackHandler(*http.Request) (*oauth2.Token, error)
-		NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error)
-		RequestPath() string
-		CallbackPath() string
-		String() string
+	// tokenHandler takes an OAuth access token and returns the username
+	// associated with the token.
+	tokenHandler interface {
+		getUsername(context.Context, *oauth2.Token) (string, error)
 	}
 
 	// OAuthClient performs the client role in an oauth handshake, requesting
 	// authorization from the user to access their account details on a particular
 	// cloud.
 	OAuthClient struct {
-		internal.HostnameService // for retrieving otf system hostname for use in redirects back to otf
-		cloudConfig              cloud.Config
-		*oauth2.Config
+		// extract username from token
+		tokenHandler
+		// for creating session
+		tokens.TokensService
+		// for retrieving OTF system hostname to construct redirect URLs
+		internal.HostnameService
+
+		OAuthConfig
 	}
 
-	// OAuthClientConfig is configuration for constructing an OAuth client
-	OAuthClientConfig struct {
-		cloud.CloudOAuthConfig
-		otfHostname internal.HostnameService
+	// OAuthConfig is configuration for constructing an OAuth client
+	OAuthConfig struct {
+		Hostname            string
+		ClientID            string
+		ClientSecret        string
+		Endpoint            oauth2.Endpoint
+		Scopes              []string
+		Name                string
+		SkipTLSVerification bool
 	}
 )
 
-func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
-	if cfg.OAuthConfig.ClientID == "" && cfg.OAuthConfig.ClientSecret != "" {
+func newOAuthClient(
+	handler tokenHandler,
+	hostnameService internal.HostnameService,
+	tokensService tokens.TokensService,
+	cfg OAuthConfig,
+) (*OAuthClient, error) {
+
+	if cfg.ClientID == "" && cfg.ClientSecret != "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
-	if cfg.OAuthConfig.ClientID != "" && cfg.OAuthConfig.ClientSecret == "" {
+	if cfg.ClientID != "" && cfg.ClientSecret == "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
-
-	authURL, err := updateHost(cfg.OAuthConfig.Endpoint.AuthURL, cfg.Hostname)
-	if err != nil {
-		return nil, err
+	// if OAuth provider hostname specified then update its OAuth endpoint
+	// accordingly.
+	if cfg.Hostname != "" {
+		authURL, err := updateHost(cfg.Endpoint.AuthURL, cfg.Hostname)
+		if err != nil {
+			return nil, err
+		}
+		tokenURL, err := updateHost(cfg.Endpoint.TokenURL, cfg.Hostname)
+		if err != nil {
+			return nil, err
+		}
+		cfg.Endpoint.AuthURL = authURL
+		cfg.Endpoint.TokenURL = tokenURL
 	}
-
-	tokenURL, err := updateHost(cfg.OAuthConfig.Endpoint.TokenURL, cfg.Hostname)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.OAuthConfig.Endpoint.AuthURL = authURL
-	cfg.OAuthConfig.Endpoint.TokenURL = tokenURL
-
 	return &OAuthClient{
-		HostnameService: cfg.otfHostname,
-		cloudConfig:     cfg.Config,
-		Config:          cfg.OAuthConfig,
+		tokenHandler:    handler,
+		HostnameService: hostnameService,
+		TokensService:   tokensService,
+		OAuthConfig:     cfg,
 	}, nil
 }
 
 // String provides a human-readable identifier for the oauth client, using the
 // name of its underlying cloud provider
-func (a *OAuthClient) String() string { return a.cloudConfig.Name }
+func (a *OAuthClient) String() string { return a.Name }
 
-func (a *OAuthClient) RequestPath() string {
-	return path.Join("/oauth", a.cloudConfig.Name, "login")
-}
-
-// RequestHandler initiates the oauth flow, redirecting user to the auth server
-func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
+// requestHandler initiates the oauth flow, redirecting user to the auth server
+func (a *OAuthClient) requestHandler(w http.ResponseWriter, r *http.Request) {
 	state, err := internal.GenerateToken()
 	if err != nil {
 		http.Error(w, "unable to generate state token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	http.SetCookie(w, &http.Cookie{
 		Name:     oauthCookieName,
 		Value:    state,
@@ -96,83 +108,83 @@ func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true, // HTTPS only
 	})
-
-	cfg, err := a.config()
-	if err != nil {
-		http.Error(w, "unable to get redirect url: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	redirectURL := cfg.AuthCodeURL(state)
+	redirectURL := a.config().AuthCodeURL(state)
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
-func (a *OAuthClient) CallbackPath() string {
-	return path.Join("/oauth", a.cloudConfig.Name, "callback")
-}
-
-func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
-	// Parse query string
-	var resp struct {
-		AuthCode         string `schema:"code"`
-		State            string
-		Error            string
-		ErrorDescription string `schema:"error_description"`
-		ErrorURI         string `schema:"error_uri"`
+// callbackHandler handles the response from the identity provider, exchanging
+// the code it receives for an access token, which it then uses to retrieve its
+// corresponding username and start a new OTF user session.
+func (a *OAuthClient) callbackHandler(w http.ResponseWriter, r *http.Request) {
+	getToken := func() (*oauth2.Token, error) {
+		// Parse query string
+		var resp struct {
+			AuthCode         string `schema:"code"`
+			State            string
+			Error            string
+			ErrorDescription string `schema:"error_description"`
+			ErrorURI         string `schema:"error_uri"`
+		}
+		if err := decode.Query(&resp, r.URL.Query()); err != nil {
+			return nil, err
+		}
+		if resp.Error != "" {
+			return nil, fmt.Errorf("%s: %s\n\nSee %s", resp.Error, resp.ErrorDescription, resp.ErrorURI)
+		}
+		// Validate state
+		cookie, err := r.Cookie(oauthCookieName)
+		if err != nil {
+			return nil, fmt.Errorf("missing state cookie (the cookie expires after 60 seconds)")
+		}
+		if resp.State != cookie.Value || resp.State == "" {
+			return nil, fmt.Errorf("state mismatch between cookie and callback response")
+		}
+		// Exchange code for an access token (optionally skipping TLS verification
+		// for testing purposes).
+		ctx := contextWithClient(r.Context(), a.SkipTLSVerification)
+		return a.config().Exchange(ctx, resp.AuthCode)
 	}
-	if err := decode.Query(&resp, r.URL.Query()); err != nil {
-		return nil, err
-	}
-	if resp.Error != "" {
-		return nil, fmt.Errorf("%s: %s\n\nSee %s", resp.Error, resp.ErrorDescription, resp.ErrorURI)
-	}
-
-	// Validate state
-	cookie, err := r.Cookie(oauthCookieName)
+	// Get token; if there is an error, return user to login page along with
+	// flash error.
+	token, err := getToken()
 	if err != nil {
-		return nil, fmt.Errorf("missing state cookie (the cookie expires after 60 seconds)")
+		html.FlashError(w, err.Error())
+		http.Redirect(w, r, paths.Login(), http.StatusFound)
+		return
 	}
-	if resp.State != cookie.Value || resp.State == "" {
-		return nil, fmt.Errorf("state mismatch between cookie and callback response")
-	}
-
-	ctx := context.WithValue(r.Context(), oauth2.HTTPClient, a.cloudConfig.HTTPClient())
-
-	// Exchange code for an access token
-	cfg, err := a.config()
+	// Extract username from OAuth token
+	username, err := a.getUsername(r.Context(), token)
 	if err != nil {
-		return nil, err
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		return
 	}
-
-	return cfg.Exchange(ctx, resp.AuthCode)
-}
-
-// NewClient constructs a cloud client configured with the given oauth token for authentication.
-func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error) {
-	return a.cloudConfig.NewClient(ctx, cloud.Credentials{
-		OAuthToken: token,
-	})
-}
-
-func (a *OAuthClient) getRedirectURL() (string, error) {
-	return (&url.URL{Scheme: "https", Host: a.Hostname(), Path: a.CallbackPath()}).String(), nil
+	err = a.StartSession(w, r, tokens.StartSessionOptions{Username: &username})
+	if err != nil {
+		html.Error(w, err.Error(), http.StatusInternalServerError, false)
+		return
+	}
 }
 
 // config generates an oauth2 config for the client - note this is done at
-// run-time because the otf hostname may only be determined at run-time.
-func (a *OAuthClient) config() (*oauth2.Config, error) {
-	redirectURL, err := a.getRedirectURL()
-	if err != nil {
-		return nil, err
-	}
-
+// run-time because the redirect URL uses an OTF hostname that may only be
+// determined at run-time.
+func (a *OAuthClient) config() *oauth2.Config {
 	return &oauth2.Config{
-		Endpoint:     a.Config.Endpoint,
-		ClientID:     a.Config.ClientID,
-		ClientSecret: a.Config.ClientSecret,
-		RedirectURL:  redirectURL,
-		Scopes:       a.Config.Scopes,
-	}, nil
+		Endpoint:     a.Endpoint,
+		ClientID:     a.ClientID,
+		ClientSecret: a.ClientSecret,
+		RedirectURL:  a.URL(a.callbackPath()),
+		Scopes:       a.Scopes,
+	}
+}
+
+func (a *OAuthClient) callbackPath() string {
+	return "/oauth/" + a.String() + "/callback"
+}
+
+func (a *OAuthClient) addHandlers(r *mux.Router) {
+	r.HandleFunc("/oauth/"+a.String()+"/login", a.requestHandler)
+	r.HandleFunc(a.callbackPath(), a.callbackHandler)
 }
 
 // updateHost updates the hostname in a URL
@@ -183,4 +195,18 @@ func updateHost(u, host string) (string, error) {
 	}
 	parsed.Host = host
 	return parsed.String(), nil
+}
+
+// contextWithClient returns a context that embeds an OAuth2 http client.
+func contextWithClient(ctx context.Context, skipTLSVerification bool) context.Context {
+	if skipTLSVerification {
+		return context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: skipTLSVerification,
+				},
+			},
+		})
+	}
+	return ctx
 }

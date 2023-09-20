@@ -14,13 +14,24 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/xanzy/go-gitlab"
+	"golang.org/x/oauth2"
 )
 
-type Client struct {
-	client *gitlab.Client
-}
+type (
+	Client struct {
+		client *gitlab.Client
+	}
 
-func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
+	ClientOptions struct {
+		Hostname            string
+		SkipTLSVerification bool
+
+		OAuthToken    *oauth2.Token
+		PersonalToken *string
+	}
+)
+
+func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	var (
 		client *gitlab.Client
 		err    error

@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS github_apps (
     github_app_id BIGINT,
     webhook_secret TEXT NOT NULL,
     private_key TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    organization TEXT,
     PRIMARY KEY (github_app_id)
 );
 

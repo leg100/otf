@@ -100,6 +100,10 @@ type controller struct {
 
 var specs = []controllerSpec{
 	{
+		Name:           "admin",
+		controllerType: singlePath,
+	},
+	{
 		Name:           "login",
 		controllerType: singlePath,
 		noprefix:       true,
@@ -289,6 +293,14 @@ var specs = []controllerSpec{
 				controllerType: resourcePath,
 				camel:          "VCSProvider",
 				lowerCamel:     "vcsProvider",
+				actions: []action{
+					{
+						name: "new-github-app",
+					},
+					{
+						name: "remove-member",
+					},
+				},
 			},
 			{
 				Name:           "module",

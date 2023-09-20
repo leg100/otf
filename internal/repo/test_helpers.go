@@ -14,12 +14,9 @@ import (
 type (
 	fakeCloudService struct {
 		event cloud.VCSEvent
-		cloud.Service
 	}
 	fakeCloud struct {
 		event cloud.VCSEvent
-
-		cloud.Cloud
 	}
 	fakeHostnameService struct {
 		hostname string
@@ -53,12 +50,7 @@ func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string)
 func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	return factory{
 		HostnameService: fakeHostnameService{},
-		Service:         fakeCloudService{event: event},
 	}
-}
-
-func (f fakeCloudService) GetCloudConfig(string) (cloud.Config, error) {
-	return cloud.Config{Cloud: &fakeCloud{event: f.event}}, nil
 }
 
 func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, string) *cloud.VCSEvent {

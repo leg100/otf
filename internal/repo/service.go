@@ -45,8 +45,6 @@ type (
 	Options struct {
 		logr.Logger
 
-		CloudService cloud.Service
-
 		*sql.DB
 		*pubsub.Broker
 		internal.HostnameService
@@ -70,7 +68,6 @@ type (
 func NewService(ctx context.Context, opts Options) *service {
 	factory := factory{
 		HostnameService: opts.HostnameService,
-		Service:         opts.CloudService,
 	}
 	db := &db{opts.DB, factory}
 	broker := &broker{}
@@ -131,16 +128,14 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("checking repository exists: %w", err)
 	}
-
 	hook, err := s.newHook(newHookOptions{
 		identifier:    opts.RepoPath,
-		cloud:         vcsProvider.CloudConfig.Name,
+		cloud:         vcsProvider.Kind,
 		vcsProviderID: vcsProvider.ID,
 	})
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("constructing webhook: %w", err)
 	}
-
 	// lock webhooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
 	err = s.db.Lock(ctx, "webhooks", func(ctx context.Context, q pggen.Querier) error {

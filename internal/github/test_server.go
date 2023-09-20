@@ -78,7 +78,7 @@ type (
 	}
 )
 
-func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.Config) {
+func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, string) {
 	srv := TestServer{
 		testdb:        &testdb{},
 		statuses:      make(chan *github.StatusEvent, 999),
@@ -303,14 +303,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, cloud.C
 
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
-
-	cfg := cloud.Config{
-		Name:                "github",
-		Hostname:            u.Host,
-		Cloud:               &Cloud{},
-		SkipTLSVerification: true,
-	}
-	return &srv, cfg
+	return &srv, u.String()
 }
 
 func WithUser(user *cloud.User) TestServerOption {

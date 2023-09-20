@@ -19,18 +19,46 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type Client struct {
-	client *github.Client
-}
+type (
+	// Client is a wrapper around the upstream go-github client
+	Client struct {
+		client *github.Client
+	}
 
-func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
+	ClientOptions struct {
+		Hostname            string
+		SkipTLSVerification bool
+
+		// Only specify one of the following
+		OAuthToken    *oauth2.Token
+		PersonalToken *string
+		*AppCredentials
+		*InstallCredentials
+	}
+
+	// Credentials for authenticating as an app:
+	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-a-github-app
+	AppCredentials struct {
+		ID         int64
+		PrivateKey string
+	}
+
+	// Credentials for authenticating as an app installation:
+	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-an-app-installation
+	InstallCredentials struct {
+		ID int64
+		AppCredentials
+	}
+)
+
+func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	var (
 		client     *github.Client
 		httpClient = http.DefaultClient
 		err        error
 	)
 	if cfg.Hostname == "" {
-		cfg.Hostname = DefaultGithubHostname
+		cfg.Hostname = DefaultHostname
 	}
 
 	// Optionally skip TLS verification of github API
@@ -52,8 +80,8 @@ func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	if src != nil {
 		httpClient = oauth2.NewClient(ctx, src)
 	}
-
-	if cfg.Hostname != DefaultGithubHostname {
+	// decide whether to use an enterprise client or not based on hostname.
+	if cfg.Hostname != DefaultHostname {
 		client, err = NewEnterpriseClient(cfg.Hostname, httpClient)
 		if err != nil {
 			return nil, err
@@ -439,4 +467,15 @@ func (g *Client) GetCommit(ctx context.Context, repo, ref string) (cloud.Commit,
 			ProfileURL: commit.GetAuthor().GetHTMLURL(),
 		},
 	}, nil
+}
+
+// ListInstallations lists installations of the currently authenticated app.
+func (g *Client) ListInstallations(ctx context.Context) ([]*github.Installation, error) {
+	installs, resp, err := g.client.Apps.ListInstallations(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return installs, err
 }

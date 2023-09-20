@@ -2,11 +2,15 @@
 INSERT INTO github_apps (
     github_app_id,
     webhook_secret,
-    private_key
+    private_key,
+    slug,
+    organization
 ) VALUES (
     pggen.arg('github_app_id'),
     pggen.arg('webhook_secret'),
-    pggen.arg('private_key')
+    pggen.arg('private_key'),
+    pggen.arg('slug'),
+    pggen.arg('organization')
 );
 
 -- name: FindGithubApp :one

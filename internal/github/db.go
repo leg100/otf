@@ -19,15 +19,22 @@ type (
 		GithubAppID   pgtype.Int8 `json:"github_app_id"`
 		WebhookSecret pgtype.Text `json:"webhook_secret"`
 		PrivateKey    pgtype.Text `json:"private_key"`
+		Slug          pgtype.Text `json:"slug"`
+		Organization  pgtype.Text `json:"organization"`
 	}
 )
 
 func (r row) convert() *App {
-	return &App{
+	app := &App{
 		ID:            r.GithubAppID.Int,
+		Slug:          r.Slug.String,
 		WebhookSecret: r.WebhookSecret.String,
 		PrivateKey:    r.PrivateKey.String,
 	}
+	if r.Organization.Status == pgtype.Present {
+		app.Organization = &r.Organization.String
+	}
+	return app
 }
 
 func (db *pgdb) create(ctx context.Context, app *App) error {
@@ -35,6 +42,8 @@ func (db *pgdb) create(ctx context.Context, app *App) error {
 		GithubAppID:   pgtype.Int8{Int: app.ID, Status: pgtype.Present},
 		WebhookSecret: sql.String(app.WebhookSecret),
 		PrivateKey:    sql.String(app.PrivateKey),
+		Slug:          sql.String(app.Slug),
+		Organization:  sql.StringPtr(app.Organization),
 	})
 	return err
 }

@@ -6,8 +6,6 @@ import (
 
 type (
 	Client interface {
-		// GetCurrentUser retrieves the current user
-		GetCurrentUser(ctx context.Context) (User, error)
 		// ListRepositories lists repositories accessible to the current user.
 		ListRepositories(ctx context.Context, opts ListRepositoriesOptions) ([]string, error)
 		GetRepository(ctx context.Context, identifier string) (Repository, error)
@@ -27,13 +25,6 @@ type (
 		ListPullRequestFiles(ctx context.Context, repo string, pull int) ([]string, error)
 		// GetCommit retrieves commit from the repo with the given git ref
 		GetCommit(ctx context.Context, repo, ref string) (Commit, error)
-	}
-
-	// ClientOptions are options for constructing a cloud client
-	ClientOptions struct {
-		Hostname            string
-		SkipTLSVerification bool
-		Credentials
 	}
 
 	GetRepoTarballOptions struct {

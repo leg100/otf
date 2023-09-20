@@ -2,18 +2,18 @@ package repo
 
 import (
 	"fmt"
-	"net/url"
 	"path"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 )
 
 type (
 	factory struct {
-		cloud.Service
 		internal.HostnameService
 	}
 
@@ -22,7 +22,7 @@ type (
 		vcsProviderID string
 		secret        *string
 		identifier    string
-		cloud         string  // cloud name
+		cloud         cloud.Kind
 		cloudID       *string // cloud's webhook id
 	}
 )
@@ -34,7 +34,7 @@ func (f factory) fromRow(row hookRow) (*hook, error) {
 		vcsProviderID: row.VCSProviderID.String,
 		secret:        internal.String(row.Secret.String),
 		identifier:    row.Identifier.String,
-		cloud:         row.Cloud.String,
+		cloud:         cloud.Kind(row.Cloud.String),
 	}
 	if row.VCSID.Status == pgtype.Present {
 		opts.cloudID = internal.String(row.VCSID.String)
@@ -43,17 +43,20 @@ func (f factory) fromRow(row hookRow) (*hook, error) {
 }
 
 func (f factory) newHook(opts newHookOptions) (*hook, error) {
-	cloudConfig, err := f.GetCloudConfig(opts.cloud)
-	if err != nil {
-		return nil, fmt.Errorf("unknown cloud: %s", opts.cloud)
-	}
-
 	hook := hook{
 		identifier:    opts.identifier,
 		cloud:         opts.cloud,
-		EventHandler:  cloudConfig.Cloud,
 		cloudID:       opts.cloudID,
 		vcsProviderID: opts.vcsProviderID,
+	}
+
+	switch opts.cloud {
+	case cloud.GithubKind:
+		hook.cloudHandler = github.HandleEvent
+	case cloud.GitlabKind:
+		hook.cloudHandler = gitlab.HandleEvent
+	default:
+		return nil, fmt.Errorf("unknown cloud kind: %s", opts.cloud)
 	}
 
 	if opts.id != nil {
@@ -72,11 +75,7 @@ func (f factory) newHook(opts newHookOptions) (*hook, error) {
 		hook.secret = secret
 	}
 
-	hook.endpoint = (&url.URL{
-		Scheme: "https",
-		Host:   f.Hostname(),
-		Path:   path.Join(handlerPrefix, hook.id.String()),
-	}).String()
+	hook.endpoint = f.URL(path.Join(handlerPrefix, hook.id.String()))
 
 	return &hook, nil
 }

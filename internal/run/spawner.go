@@ -185,10 +185,10 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 		}
 		runOpts := CreateOptions{}
 		switch event.Cloud {
-		case cloud.Github:
+		case cloud.GithubKind:
 			cvOpts.Source = configversion.SourceGithub
 			runOpts.Source = SourceGithub
-		case cloud.Gitlab:
+		case cloud.GitlabKind:
 			cvOpts.Source = configversion.SourceGitlab
 			runOpts.Source = SourceGitlab
 		}
