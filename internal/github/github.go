@@ -11,5 +11,8 @@ const (
 
 var (
 	OAuthEndpoint = oauth2github.Endpoint
-	OAuthScopes   = []string{"user:email", "read:org"}
+
+	// TODO: don't think read:org scope is necessary any more...not since OTF
+	// stopped sync'ing org and team memberships from github.
+	OAuthScopes = []string{"user:email", "read:org"}
 )

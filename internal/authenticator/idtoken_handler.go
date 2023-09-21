@@ -65,6 +65,7 @@ func newIDTokenHandler(ctx context.Context, opts OIDCConfig) (*idtokenHandler, e
 	return &idtokenHandler{
 		verifier: provider.Verifier(&oidc.Config{ClientID: opts.ClientID}),
 		username: username,
+		provider: provider,
 	}, nil
 }
 
