@@ -7,8 +7,6 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
-	"golang.org/x/oauth2"
-	oauth2github "golang.org/x/oauth2/github"
 )
 
 // TestGithubLogin demonstrates logging into the UI via Github OAuth.
@@ -18,16 +16,10 @@ func TestGithubLogin(t *testing.T) {
 	// Start daemon with a stub github server populated with a user.
 	cfg := config{
 		Config: daemon.Config{
-			Github: cloud.CloudOAuthConfig{
-				// specifying oauth credentials turns on the option to login via
-				// github
-				OAuthConfig: &oauth2.Config{
-					Endpoint:     oauth2github.Endpoint,
-					Scopes:       []string{"user:email", "read:org"},
-					ClientID:     "stub-client-id",
-					ClientSecret: "stub-client-secret",
-				},
-			},
+			// specifying oauth credentials turns on the option to login via
+			// github
+			GithubClientID:     "stub-client-id",
+			GithubClientSecret: "stub-client-secret",
 		},
 	}
 	user := cloud.User{Name: "bobby"}

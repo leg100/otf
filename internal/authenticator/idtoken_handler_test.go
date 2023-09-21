@@ -22,6 +22,8 @@ func Test_newIDTokenHandler(t *testing.T) {
 	assert.Equal(t, ErrMissingOIDCIssuerURL, err)
 }
 
+// Test_idtokenHandler_getUsername tests extracting the 'name' claim from an ID
+// token.
 func Test_idtokenHandler_getUsername(t *testing.T) {
 	// create id token
 	token, err := jwt.NewBuilder().

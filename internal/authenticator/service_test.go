@@ -16,7 +16,7 @@ import (
 func TestNewAuthenticatorService(t *testing.T) {
 	opts := Options{
 		Logger:          logr.Discard(),
-		HostnameService: internal.FakeHostnameService{Host: "fake-host.org"},
+		HostnameService: internal.NewHostnameService("fake-host.org"),
 		OpaqueHandlerConfigs: []OpaqueHandlerConfig{
 			{
 				Kind: cloud.GithubKind,
@@ -51,7 +51,7 @@ func TestLoginHandler(t *testing.T) {
 
 	svc.clients = []*OAuthClient{
 		{OAuthConfig: OAuthConfig{Name: "cloud1"}},
-		{OAuthConfig: OAuthConfig{Name: "cloud1"}},
+		{OAuthConfig: OAuthConfig{Name: "cloud2"}},
 	}
 
 	r := httptest.NewRequest("GET", "/?", nil)

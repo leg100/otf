@@ -12,15 +12,15 @@ import (
 )
 
 func TestOpaqueHandler_getUsername(t *testing.T) {
-	want := cloud.User{Name: "fake-user"}
+	want := "fake-user"
 
-	_, githubURL := github.NewTestServer(t, github.WithUser(&want))
+	_, githubURL := github.NewTestServer(t, github.WithUser(&cloud.User{Name: want}))
 
 	handler := &opaqueHandler{
 		OpaqueHandlerConfig: OpaqueHandlerConfig{
 			Kind: cloud.GithubKind,
 			OAuthConfig: OAuthConfig{
-				Hostname:            githubURL,
+				Hostname:            githubURL.Host,
 				SkipTLSVerification: true,
 			},
 		},

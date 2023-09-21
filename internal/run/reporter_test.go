@@ -65,7 +65,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				WorkspaceService:            &fakeReporterWorkspaceService{ws: tt.ws},
 				ConfigurationVersionService: &fakeReporterConfigurationVersionService{cv: tt.cv},
 				VCSProviderService:          &fakeReporterVCSProviderService{got: &got},
-				HostnameService:             internal.FakeHostnameService{Host: "otf-host.org"},
+				HostnameService:             internal.NewHostnameService("otf-host.org"),
 			}
 			err := reporter.handleRun(ctx, tt.run)
 			require.NoError(t, err)

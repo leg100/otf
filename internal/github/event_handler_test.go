@@ -23,7 +23,7 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push.json",
 			&cloud.VCSEvent{
-				Cloud:           cloud.Github,
+				Cloud:           cloud.GithubKind,
 				Type:            cloud.VCSEventTypePush,
 				Branch:          "master",
 				DefaultBranch:   "master",
@@ -41,7 +41,7 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_opened.json",
 			&cloud.VCSEvent{
-				Cloud:             cloud.Github,
+				Cloud:             cloud.GithubKind,
 				Type:              cloud.VCSEventTypePull,
 				Branch:            "pr-2",
 				DefaultBranch:     "master",
@@ -61,7 +61,7 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_update.json",
 			&cloud.VCSEvent{
-				Cloud:             cloud.Github,
+				Cloud:             cloud.GithubKind,
 				Type:              cloud.VCSEventTypePull,
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
@@ -81,7 +81,7 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push_tag.json",
 			&cloud.VCSEvent{
-				Cloud:           cloud.Github,
+				Cloud:           cloud.GithubKind,
 				Type:            cloud.VCSEventTypeTag,
 				Tag:             "v1.0.0",
 				DefaultBranch:   "master",
@@ -104,7 +104,7 @@ func TestEventHandler(t *testing.T) {
 			r.Header.Add("Content-type", "application/json")
 			r.Header.Add(github.EventTypeHeader, tt.eventType)
 			w := httptest.NewRecorder()
-			got := HandleEvent(w, r, "")
+			got := (&EventHandler{}).HandleEvent(w, r, "")
 			assert.Equal(t, 202, w.Code)
 			assert.Equal(t, tt.want, got)
 		})

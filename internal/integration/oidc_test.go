@@ -5,7 +5,6 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal/authenticator"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/daemon"
 )
 
@@ -16,7 +15,7 @@ func TestIntegration_OIDC(t *testing.T) {
 	// Start daemon with a stub github server populated with a user.
 	cfg := config{
 		Config: daemon.Config{
-			OIDC: cloud.OIDCConfig{
+			OIDC: authenticator.OIDCConfig{
 				Name:                "google",
 				IssuerURL:           authenticator.NewOIDCIssuer(t, "bobby", "stub-client-id", "google"),
 				ClientID:            "stub-client-id",

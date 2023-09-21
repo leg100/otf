@@ -11,7 +11,9 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+type EventHandler struct{}
+
+func (EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
 	event, err := handle(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

@@ -13,7 +13,7 @@
       <button class="btn w-32">Update</button>
     {{ else }}
       <button class="btn w-32">Create</button>
-      <input type="hidden" name="cloud" id="cloud" value="{{ .VCSProvider.CloudConfig.Name }}">
+      <input type="hidden" name="cloud" id="cloud" value="{{ .VCSProvider.Kind }}">
     {{ end }}
   </form>
 {{ end }}

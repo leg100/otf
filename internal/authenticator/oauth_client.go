@@ -178,12 +178,16 @@ func (a *OAuthClient) config() *oauth2.Config {
 	}
 }
 
+func (a *OAuthClient) RequestPath() string {
+	return "/oauth/" + a.String() + "/login"
+}
+
 func (a *OAuthClient) callbackPath() string {
 	return "/oauth/" + a.String() + "/callback"
 }
 
 func (a *OAuthClient) addHandlers(r *mux.Router) {
-	r.HandleFunc("/oauth/"+a.String()+"/login", a.requestHandler)
+	r.HandleFunc(a.RequestPath(), a.requestHandler)
 	r.HandleFunc(a.callbackPath(), a.callbackHandler)
 }
 

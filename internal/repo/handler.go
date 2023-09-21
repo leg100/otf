@@ -36,7 +36,9 @@ type (
 
 	// cloudHandler extracts a cloud-specific event from the http request, converting it into a
 	// VCS event. Returns nil if the event is to be ignored.
-	cloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
+	cloudHandler interface {
+		HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
+	}
 )
 
 func (h *handler) AddHandlers(r *mux.Router) {
@@ -59,8 +61,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.V(2).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-	event := hook.cloudHandler(w, r, hook.secret)
-	if event != nil {
+	if event := hook.HandleEvent(w, r, hook.secret); event != nil {
 		// add non-cloud specific info to event before publishing
 		event.RepoID = hook.id
 		event.RepoPath = hook.identifier

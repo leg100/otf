@@ -31,7 +31,7 @@ func TestOAuthClient_requestHandler(t *testing.T) {
 	}
 }
 
-func TestOAuthClient_CallbackHandler(t *testing.T) {
+func TestOAuthClient_callbackHandler(t *testing.T) {
 	client := newTestOAuthServerClient(t, "bobby")
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
@@ -56,7 +56,7 @@ func newTestOAuthServerClient(t *testing.T, username string) *OAuthClient {
 
 	client, err := newOAuthClient(
 		fakeTokenHandler{username},
-		internal.FakeHostnameService{Host: "otf-server.com"},
+		internal.NewHostnameService("otf-server.com"),
 		fakeTokensService{},
 		OAuthConfig{
 			Hostname: u.Host,

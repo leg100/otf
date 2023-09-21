@@ -9,9 +9,11 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 )
 
+type EventHandler struct{}
+
 // HandleEvent handles incoming events from github
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
-	event, err := handle(r, secret)
+func (EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+	event, err := handleEventWithError(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -20,7 +22,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.V
 	return event
 }
 
-func handle(r *http.Request, secret string) (*cloud.VCSEvent, error) {
+func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, error) {
 	payload, err := github.ValidatePayload(r, []byte(secret))
 	if err != nil {
 		return nil, err

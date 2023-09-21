@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cli"
+	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
@@ -71,8 +72,8 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	cfg.KeyFile = "./fixtures/key.pem"
 
 	// Start stub github server
-	githubServer, githubCfg := github.NewTestServer(t, gopts...)
-	cfg.Github.Config = githubCfg
+	githubServer, githubURL := github.NewTestServer(t, gopts...)
+	cfg.GithubHostname = githubURL.Host
 
 	// Configure logger; discard logs by default
 	var logger logr.Logger
@@ -182,7 +183,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		Cloud: "github",
+		Kind:  cloud.GithubKind,
 		Token: internal.String(uuid.NewString()),
 	})
 	require.NoError(t, err)

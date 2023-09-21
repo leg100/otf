@@ -52,9 +52,9 @@ func (f factory) newHook(opts newHookOptions) (*hook, error) {
 
 	switch opts.cloud {
 	case cloud.GithubKind:
-		hook.cloudHandler = github.HandleEvent
+		hook.cloudHandler = github.EventHandler{}
 	case cloud.GitlabKind:
-		hook.cloudHandler = gitlab.HandleEvent
+		hook.cloudHandler = gitlab.EventHandler{}
 	default:
 		return nil, fmt.Errorf("unknown cloud kind: %s", opts.cloud)
 	}

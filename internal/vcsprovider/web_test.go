@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/inmem"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,8 +86,7 @@ func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &webHandlers{
-		Renderer:     renderer,
-		svc:          &fakeService{provider: provider},
-		CloudService: inmem.NewCloudServiceWithDefaults(),
+		Renderer: renderer,
+		svc:      &fakeService{provider: provider},
 	}
 }

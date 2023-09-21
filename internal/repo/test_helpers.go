@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,17 +11,6 @@ import (
 )
 
 type (
-	fakeCloudService struct {
-		event cloud.VCSEvent
-	}
-	fakeCloud struct {
-		event cloud.VCSEvent
-	}
-	fakeHostnameService struct {
-		hostname string
-
-		internal.HostnameService
-	}
 	fakeCloudClient struct {
 		hook      cloud.Webhook // seed cloud with hook
 		gotUpdate bool
@@ -40,7 +28,7 @@ func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string)
 		vcsProviderID: vcsProviderID,
 		secret:        internal.String("top-secret"),
 		identifier:    "leg100/" + uuid.NewString(),
-		cloud:         "github",
+		cloud:         cloud.GithubKind,
 		cloudID:       cloudID,
 	})
 	require.NoError(t, err)
@@ -49,15 +37,9 @@ func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string)
 
 func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
 	return factory{
-		HostnameService: fakeHostnameService{},
+		HostnameService: internal.NewHostnameService(""),
 	}
 }
-
-func (f *fakeCloud) HandleEvent(http.ResponseWriter, *http.Request, string) *cloud.VCSEvent {
-	return &f.event
-}
-
-func (f fakeHostnameService) Hostname() string { return f.hostname }
 
 func (f *fakeCloudClient) CreateWebhook(context.Context, cloud.CreateWebhookOptions) (string, error) {
 	return f.hook.ID, nil

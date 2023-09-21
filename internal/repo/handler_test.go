@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -16,6 +17,7 @@ func TestWebhookHandler(t *testing.T) {
 	broker := &fakeBroker{}
 	f := newTestFactory(t, cloud.VCSEvent{})
 	hook := newTestHook(t, f, "vcs-123", internal.String("123"))
+	hook.cloudHandler = fakeCloudHandler{}
 	want := cloud.VCSEvent{RepoID: hook.id, VCSProviderID: "vcs-123", RepoPath: hook.identifier}
 	handler := handler{
 		Logger:        logr.Discard(),
@@ -26,8 +28,7 @@ func TestWebhookHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/?webhook_id=158c758a-7090-11ed-a843-d398c839c7ad", nil)
 	handler.ServeHTTP(w, r)
-	assert.Equal(t, 200, w.Code)
-
+	assert.Equal(t, 200, w.Code, "response body: %s", w.Body.String())
 	assert.Equal(t, want, broker.got)
 }
 
@@ -38,6 +39,7 @@ type (
 	fakeBroker struct {
 		got cloud.VCSEvent
 	}
+	fakeCloudHandler struct{}
 )
 
 func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) {
@@ -45,3 +47,7 @@ func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) 
 }
 
 func (f *fakeBroker) publish(got cloud.VCSEvent) { f.got = got }
+
+func (fakeCloudHandler) HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+	return &cloud.VCSEvent{}
+}
