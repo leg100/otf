@@ -57,9 +57,15 @@ func (db *pgdb) get(ctx context.Context) (*App, error) {
 }
 
 func (db *pgdb) delete(ctx context.Context) error {
-	_, err := db.Conn(ctx).DeleteGithubApp(ctx)
-	if err != nil {
-		return sql.Error(err)
-	}
-	return nil
+	return db.Lock(ctx, "github_apps", func(ctx context.Context, q pggen.Querier) error {
+		result, err := db.Conn(ctx).FindGithubApp(ctx)
+		if err != nil {
+			return sql.Error(err)
+		}
+		_, err = db.Conn(ctx).DeleteGithubApp(ctx, result.GithubAppID)
+		if err != nil {
+			return sql.Error(err)
+		}
+		return nil
+	})
 }

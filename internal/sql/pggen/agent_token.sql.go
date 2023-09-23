@@ -165,10 +165,10 @@ type Querier interface {
 	// FindGithubAppScan scans the result of an executed FindGithubAppBatch query.
 	FindGithubAppScan(results pgx.BatchResults) (FindGithubAppRow, error)
 
-	DeleteGithubApp(ctx context.Context) (DeleteGithubAppRow, error)
+	DeleteGithubApp(ctx context.Context, githubAppID pgtype.Int8) (DeleteGithubAppRow, error)
 	// DeleteGithubAppBatch enqueues a DeleteGithubApp query into batch to be executed
 	// later by the batch.
-	DeleteGithubAppBatch(batch genericBatch)
+	DeleteGithubAppBatch(batch genericBatch, githubAppID pgtype.Int8)
 	// DeleteGithubAppScan scans the result of an executed DeleteGithubAppBatch query.
 	DeleteGithubAppScan(results pgx.BatchResults) (DeleteGithubAppRow, error)
 

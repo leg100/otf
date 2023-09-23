@@ -20,4 +20,5 @@ FROM github_apps;
 -- name: DeleteGithubApp :one
 DELETE
 FROM github_apps
+WHERE github_app_id = pggen.arg('github_app_id')
 RETURNING *;

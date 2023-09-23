@@ -96,6 +96,7 @@ func (q *DBQuerier) FindGithubAppScan(results pgx.BatchResults) (FindGithubAppRo
 
 const deleteGithubAppSQL = `DELETE
 FROM github_apps
+WHERE github_app_id = $1
 RETURNING *;`
 
 type DeleteGithubAppRow struct {
@@ -107,9 +108,9 @@ type DeleteGithubAppRow struct {
 }
 
 // DeleteGithubApp implements Querier.DeleteGithubApp.
-func (q *DBQuerier) DeleteGithubApp(ctx context.Context) (DeleteGithubAppRow, error) {
+func (q *DBQuerier) DeleteGithubApp(ctx context.Context, githubAppID pgtype.Int8) (DeleteGithubAppRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteGithubApp")
-	row := q.conn.QueryRow(ctx, deleteGithubAppSQL)
+	row := q.conn.QueryRow(ctx, deleteGithubAppSQL, githubAppID)
 	var item DeleteGithubAppRow
 	if err := row.Scan(&item.GithubAppID, &item.WebhookSecret, &item.PrivateKey, &item.Slug, &item.Organization); err != nil {
 		return item, fmt.Errorf("query DeleteGithubApp: %w", err)
@@ -118,8 +119,8 @@ func (q *DBQuerier) DeleteGithubApp(ctx context.Context) (DeleteGithubAppRow, er
 }
 
 // DeleteGithubAppBatch implements Querier.DeleteGithubAppBatch.
-func (q *DBQuerier) DeleteGithubAppBatch(batch genericBatch) {
-	batch.Queue(deleteGithubAppSQL)
+func (q *DBQuerier) DeleteGithubAppBatch(batch genericBatch, githubAppID pgtype.Int8) {
+	batch.Queue(deleteGithubAppSQL, githubAppID)
 }
 
 // DeleteGithubAppScan implements Querier.DeleteGithubAppScan.

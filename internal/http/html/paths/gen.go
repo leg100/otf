@@ -154,6 +154,9 @@ var specs = []controllerSpec{
 				name:       "complete",
 				collection: true,
 			},
+			{
+				name: "delete-install",
+			},
 		},
 	},
 	{
@@ -295,10 +298,8 @@ var specs = []controllerSpec{
 				lowerCamel:     "vcsProvider",
 				actions: []action{
 					{
-						name: "new-github-app",
-					},
-					{
-						name: "remove-member",
+						name:       "new-github-app",
+						collection: true,
 					},
 				},
 			},

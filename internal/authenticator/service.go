@@ -51,7 +51,7 @@ func NewAuthenticatorService(ctx context.Context, opts Options) (*service, error
 			return nil, err
 		}
 		svc.clients = append(svc.clients, client)
-		opts.V(2).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.Hostname)
+		opts.V(0).Info("activated OAuth client", "name", cfg.Name, "hostname", cfg.Hostname)
 	}
 	// Construct client with OIDC IDToken handler
 	if opts.IDTokenHandlerConfig.ClientID == "" && opts.IDTokenHandlerConfig.ClientSecret == "" {

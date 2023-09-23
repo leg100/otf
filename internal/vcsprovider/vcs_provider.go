@@ -43,7 +43,8 @@ type (
 		// Must be specified if GithubAppInstallID is non-nil
 		github.GithubAppService
 
-		// These are only for re-creating a vcs provider from a DB query
+		// These fields are only needed for re-creating a vcs provider from a DB
+		// query
 		ID        *string
 		CreatedAt *time.Time
 	}
@@ -60,6 +61,8 @@ func newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) 
 		Name:         opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
+		Kind:         opts.Kind,
+		// TODO: set hostname
 	}
 	if opts.ID != nil {
 		provider.ID = *opts.ID

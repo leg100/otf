@@ -59,7 +59,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	h.V(2).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
+	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
 	if event := hook.HandleEvent(w, r, hook.secret); event != nil {
 		// add non-cloud specific info to event before publishing

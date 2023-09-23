@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v41/github"
+	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"golang.org/x/oauth2"
@@ -53,41 +54,54 @@ type (
 
 func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	var (
-		client     *github.Client
-		httpClient = http.DefaultClient
-		err        error
+		rt  http.RoundTripper = http.DefaultTransport
+		err error
 	)
 	if cfg.Hostname == "" {
 		cfg.Hostname = DefaultHostname
 	}
-
 	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		})
+		rt = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 	}
-
-	// Github's oauth access token never expires
-	var src oauth2.TokenSource
-	if cfg.OAuthToken != nil {
-		src = oauth2.StaticTokenSource(cfg.OAuthToken)
-	} else if cfg.PersonalToken != nil {
-		src = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *cfg.PersonalToken})
-	}
-	if src != nil {
-		httpClient = oauth2.NewClient(ctx, src)
-	}
-	// decide whether to use an enterprise client or not based on hostname.
-	if cfg.Hostname != DefaultHostname {
-		client, err = NewEnterpriseClient(cfg.Hostname, httpClient)
+	// build http roundtripper using provided credentials
+	switch {
+	case cfg.AppCredentials != nil:
+		rt, err = ghinstallation.NewAppsTransport(rt, cfg.AppCredentials.ID, []byte(cfg.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		client = github.NewClient(httpClient)
+	case cfg.InstallCredentials != nil:
+		creds := cfg.InstallCredentials
+		rt, err = ghinstallation.New(rt, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
+		if err != nil {
+			return nil, err
+		}
+	case cfg.PersonalToken != nil:
+		// personal token is actually an OAuth2 access token, so wrap
+		// inside an OAuth2 token and handle it the same as an OAuth2 token
+		cfg.OAuthToken = &oauth2.Token{AccessToken: *cfg.PersonalToken}
+		fallthrough
+	case cfg.OAuthToken != nil:
+		rt = &oauth2.Transport{
+			Base: rt,
+			// Github's oauth access token never expires
+			Source: oauth2.ReuseTokenSource(nil, oauth2.StaticTokenSource(cfg.OAuthToken)),
+		}
+	}
+	// create upstream client with roundtripper
+	client := github.NewClient(&http.Client{Transport: rt})
+	// Assume github enterprise if using non-default hostname
+	if cfg.Hostname != DefaultHostname {
+		client, err = client.WithEnterpriseURLs(
+			"https://"+cfg.Hostname,
+			"https://"+cfg.Hostname,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &Client{client: client}, nil
 }
@@ -478,4 +492,15 @@ func (g *Client) ListInstallations(ctx context.Context) ([]*github.Installation,
 	defer resp.Body.Close()
 
 	return installs, err
+}
+
+// DeleteInstallation deletes an installation of a github app with the given
+// installation ID.
+func (g *Client) DeleteInstallation(ctx context.Context, installID int64) error {
+	resp, err := g.client.Apps.DeleteInstallation(ctx, installID)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return err
 }

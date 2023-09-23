@@ -23,6 +23,9 @@ type (
 		// created then nil is returned without an error.
 		GetGithubApp(ctx context.Context) (*App, error)
 		DeleteGithubApp(ctx context.Context) error
+
+		ListInstallations(ctx context.Context) ([]*Installation, error)
+		DeleteInstallation(ctx context.Context, installID int64) error
 	}
 
 	service struct {
@@ -106,5 +109,52 @@ func (a *service) DeleteGithubApp(ctx context.Context) error {
 		return err
 	}
 	a.V(0).Info("deleted github app", "subject", subject)
+	return nil
+}
+
+func (a *service) ListInstallations(ctx context.Context) ([]*Installation, error) {
+	app, err := a.db.get(ctx)
+	if errors.Is(err, internal.ErrResourceNotFound) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	client, err := NewClient(ctx, ClientOptions{
+		AppCredentials: &AppCredentials{
+			ID:         app.ID,
+			PrivateKey: app.PrivateKey,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	from, err := client.ListInstallations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	to := make([]*Installation, len(from))
+	for i, f := range from {
+		to[i] = &Installation{Installation: f}
+	}
+	return to, nil
+}
+
+func (a *service) DeleteInstallation(ctx context.Context, installID int64) error {
+	app, err := a.db.get(ctx)
+	if err != nil {
+		return err
+	}
+	client, err := NewClient(ctx, ClientOptions{
+		AppCredentials: &AppCredentials{
+			ID:         app.ID,
+			PrivateKey: app.PrivateKey,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if err := client.DeleteInstallation(ctx, installID); err != nil {
+		return err
+	}
 	return nil
 }

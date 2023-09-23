@@ -32,10 +32,6 @@ func DeleteVCSProvider(vcsProvider string) string {
 	return fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider)
 }
 
-func NewGithubAppVCSProvider(vcsProvider string) string {
-	return fmt.Sprintf("/app/vcs-providers/%s/new-github-app", vcsProvider)
-}
-
-func RemoveMemberVCSProvider(vcsProvider string) string {
-	return fmt.Sprintf("/app/vcs-providers/%s/remove-member", vcsProvider)
+func NewGithubAppVCSProvider(organization string) string {
+	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization)
 }

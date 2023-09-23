@@ -36,6 +36,7 @@ func init() {
 	funcmap["deleteGithubAppPath"] = DeleteGithubApp
 	funcmap["exchangeCodeGithubAppPath"] = ExchangeCodeGithubApp
 	funcmap["completeGithubAppPath"] = CompleteGithubApp
+	funcmap["deleteInstallGithubAppPath"] = DeleteInstallGithubApp
 
 	funcmap["organizationsPath"] = Organizations
 	funcmap["createOrganizationPath"] = CreateOrganization
@@ -143,7 +144,6 @@ func init() {
 	funcmap["updateVCSProviderPath"] = UpdateVCSProvider
 	funcmap["deleteVCSProviderPath"] = DeleteVCSProvider
 	funcmap["newGithubAppVCSProviderPath"] = NewGithubAppVCSProvider
-	funcmap["removeMemberVCSProviderPath"] = RemoveMemberVCSProvider
 
 	funcmap["modulesPath"] = Modules
 	funcmap["createModulePath"] = CreateModule

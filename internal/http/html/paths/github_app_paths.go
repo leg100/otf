@@ -39,3 +39,7 @@ func ExchangeCodeGithubApp() string {
 func CompleteGithubApp() string {
 	return "/app/github-apps/complete"
 }
+
+func DeleteInstallGithubApp(githubApp string) string {
+	return fmt.Sprintf("/app/github-apps/%s/delete-install", githubApp)
+}

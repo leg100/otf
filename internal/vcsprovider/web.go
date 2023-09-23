@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
@@ -24,7 +25,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r = html.UIRouter(r)
 
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers", h.list).Methods("GET")
-	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.new).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new", h.newPersonalToken).Methods("GET")
+	r.HandleFunc("/organizations/{organization_name}/vcs-providers/new-github-app", h.newGithubApp).Methods("GET")
 	r.HandleFunc("/organizations/{organization_name}/vcs-providers/create", h.create).Methods("POST")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/edit", h.edit).Methods("GET")
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}/update", h.update).Methods("POST")
@@ -32,7 +34,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/vcs-providers/{vcs_provider_id}", h.get).Methods("GET")
 }
 
-func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
+func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Organization string     `schema:"organization_name,required"`
 		Cloud        cloud.Kind `schema:"cloud,required"`
@@ -56,12 +58,37 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Organization string `schema:"organization_name,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	installs, err := h.svc.ListInstallations(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("vcs_provider_new_github_app.tmpl", w, struct {
+		organization.OrganizationPage
+		Installations []*github.Installation
+	}{
+		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
+		Installations:    installs,
+	})
+}
+
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		OrganizationName string     `schema:"organization_name,required"`
-		Token            string     `schema:"token,required"`
-		Name             string     `schema:"name"`
-		Cloud            cloud.Kind `schema:"cloud,required"`
+		OrganizationName   string     `schema:"organization_name,required"`
+		Token              *string    `schema:"token"`
+		GithubAppInstallID *int64     `schema:"github_app_install_id"`
+		Name               string     `schema:"name"`
+		Cloud              cloud.Kind `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -69,10 +96,11 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
-		Organization: params.OrganizationName,
-		Token:        &params.Token,
-		Name:         params.Name,
-		Kind:         params.Cloud,
+		Organization:       params.OrganizationName,
+		Token:              params.Token,
+		GithubAppInstallID: params.GithubAppInstallID,
+		Name:               params.Name,
+		Kind:               params.Cloud,
 	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)

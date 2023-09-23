@@ -27,6 +27,7 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/github-apps/new", h.new).Methods("GET")
 	r.HandleFunc("/github-apps/exchange-code", h.exchangeCode).Methods("GET")
 	r.HandleFunc("/github-apps/{github_app_id}/delete", h.delete).Methods("POST")
+	r.HandleFunc("/github-apps/{github_app_id}/delete-install", h.deleteInstall).Methods("POST")
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
@@ -86,12 +87,20 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("github_apps_list.tmpl", w, struct {
+	installs, err := h.svc.ListInstallations(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.Render("github_apps_get.tmpl", w, struct {
 		html.SitePage
-		App *App
+		App           *App
+		Installations []*Installation
 	}{
-		SitePage: html.NewSitePage(r, "github app"),
-		App:      app,
+		SitePage:      html.NewSitePage(r, "github app"),
+		App:           app,
+		Installations: installs,
 	})
 }
 
@@ -153,5 +162,22 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	html.FlashSuccess(w, buf.String())
 
+	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
+}
+
+func (h *webHandlers) deleteInstall(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		InstallID int64 `schema:"install_id,required"`
+	}
+	if err := decode.All(&params, r); err != nil {
+		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	err := h.svc.DeleteInstallation(r.Context(), params.InstallID)
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	html.FlashSuccess(w, fmt.Sprintf("deleted installation: %d", params.InstallID))
 	http.Redirect(w, r, paths.GithubApps(), http.StatusFound)
 }

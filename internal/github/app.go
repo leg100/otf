@@ -18,11 +18,6 @@ type (
 		Organization *string
 	}
 
-	Install struct {
-		ID  int64 // github's install ID
-		App *App
-	}
-
 	CreateAppOptions struct {
 		AppID         int64
 		WebhookSecret string
