@@ -19,6 +19,8 @@ type (
 		*sql.DB
 		// github app service for re-constructing vcs provider from a DB query
 		github.GithubAppService
+		// map of cloud kind to cloud hostname
+		cloudHostnames map[cloud.Kind]string
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
@@ -32,10 +34,6 @@ type (
 		GithubAppInstallID pgtype.Int8        `json:"github_app_install_id"`
 	}
 )
-
-func newDB(sqldb *sql.DB, appService github.GithubAppService) *pgdb {
-	return &pgdb{sqldb, appService}
-}
 
 // GetByID implements pubsub.Getter
 func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DBAction) (any, error) {
@@ -52,13 +50,14 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 		Cloud:            sql.String(string(provider.Kind)),
 		OrganizationName: sql.String(provider.Organization),
 		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
+		Token:            sql.StringPtr(provider.Token),
 	}
 	if provider.GithubApp != nil {
-		params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Null}
-		params.GithubAppInstallID = pgtype.Int8{Int: provider.GithubApp.ID, Status: pgtype.Null}
-	}
-	if provider.Token != nil {
-		params.Token = sql.StringPtr(provider.Token)
+		params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Present}
+		params.GithubAppInstallID = pgtype.Int8{Int: provider.GithubApp.ID, Status: pgtype.Present}
+	} else {
+		params.GithubAppID = pgtype.Int8{Status: pgtype.Null}
+		params.GithubAppInstallID = pgtype.Int8{Status: pgtype.Null}
 	}
 	_, err := db.Conn(ctx).InsertVCSProvider(ctx, params)
 	return err
@@ -142,8 +141,6 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 // unmarshal a vcs provider row from the database.
 func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error) {
 	opts := CreateOptions{
-		ID:           &row.VCSProviderID.String,
-		CreatedAt:    internal.Time(row.CreatedAt.Time.UTC()),
 		Organization: row.OrganizationName.String,
 		Kind:         cloud.Kind(row.Cloud.String),
 		Name:         row.Name.String,
@@ -155,5 +152,11 @@ func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error)
 	if row.GithubAppID.Status == pgtype.Present {
 		opts.GithubAppInstallID = &row.GithubAppInstallID.Int
 	}
-	return newProvider(ctx, opts)
+	return newProvider(ctx, newOptions{
+		CreateOptions:    opts,
+		ID:               &row.VCSProviderID.String,
+		CreatedAt:        internal.Time(row.CreatedAt.Time.UTC()),
+		GithubAppService: db.GithubAppService,
+		cloudHostnames:   db.cloudHostnames,
+	})
 }

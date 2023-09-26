@@ -17,6 +17,7 @@ import (
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
+	github.GithubAppService
 
 	svc Service
 }
@@ -67,7 +68,7 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	installs, err := h.svc.ListInstallations(r.Context())
+	installs, err := h.ListInstallations(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -76,9 +77,11 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	h.Render("vcs_provider_new_github_app.tmpl", w, struct {
 		organization.OrganizationPage
 		Installations []*github.Installation
+		Cloud         cloud.Kind
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
 		Installations:    installs,
+		Cloud:            cloud.GithubKind,
 	})
 }
 
@@ -86,7 +89,7 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		OrganizationName   string     `schema:"organization_name,required"`
 		Token              *string    `schema:"token"`
-		GithubAppInstallID *int64     `schema:"github_app_install_id"`
+		GithubAppInstallID *int64     `schema:"install_id"`
 		Name               string     `schema:"name"`
 		Cloud              cloud.Kind `schema:"cloud,required"`
 	}
@@ -94,7 +97,6 @@ func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	provider, err := h.svc.CreateVCSProvider(r.Context(), CreateOptions{
 		Organization:       params.OrganizationName,
 		Token:              params.Token,

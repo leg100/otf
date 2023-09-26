@@ -36,6 +36,7 @@ import (
 	"github.com/leg100/otf/internal/tfeapi"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"golang.org/x/sync/errgroup"
@@ -149,12 +150,22 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		return nil, fmt.Errorf("setting up authentication middleware: %w", err)
 	}
 
-	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+	githubAppService := github.NewService(github.Options{
 		Logger:          logger,
 		DB:              db,
 		Renderer:        renderer,
-		Responder:       responder,
 		HostnameService: hostnameService,
+	})
+
+	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
+		Logger:           logger,
+		DB:               db,
+		Renderer:         renderer,
+		Responder:        responder,
+		HostnameService:  hostnameService,
+		GithubAppService: githubAppService,
+		GithubHostname:   cfg.GithubHostname,
+		GitlabHostname:   cfg.GitlabHostname,
 	})
 	repoService := repo.NewService(ctx, repo.Options{
 		Logger:              logger,
@@ -191,6 +202,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Signer:              signer,
 		MaxConfigSize:       cfg.MaxConfigSize,
 	})
+	vcsEventBroker := &vcs.Broker{}
+
 	runService := run.NewService(run.Options{
 		Logger:                      logger,
 		DB:                          db,
@@ -203,7 +216,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:          vcsProviderService,
 		Broker:                      broker,
 		Cache:                       cache,
-		Subscriber:                  repoService,
+		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
 	})
 	logsService := logs.NewService(logs.Options{
@@ -223,6 +236,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Signer:             signer,
 		ConnectionService:  connectionService,
 		RepoService:        repoService,
+		VCSEventSubscriber: vcsEventBroker,
 	})
 	stateService := state.NewService(state.Options{
 		Logger:              logger,
@@ -304,13 +318,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceAuthorizer: workspaceService,
 		WorkspaceService:    workspaceService,
 		HostnameService:     hostnameService,
-	})
-
-	githubAppService := github.NewService(github.Options{
-		Logger:          logger,
-		DB:              db,
-		Renderer:        renderer,
-		HostnameService: hostnameService,
 	})
 
 	loginServer, err := loginserver.NewServer(loginserver.Options{

@@ -16,6 +16,7 @@ import (
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
+	EventHandler
 
 	svc Service
 }
@@ -28,6 +29,26 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 	r.HandleFunc("/github-apps/exchange-code", h.exchangeCode).Methods("GET")
 	r.HandleFunc("/github-apps/{github_app_id}/delete", h.delete).Methods("POST")
 	r.HandleFunc("/github-apps/{github_app_id}/delete-install", h.deleteInstall).Methods("POST")
+
+	r.HandleFunc("/ghapp/webhook", h.webhook).Methods("POST")
+}
+
+func (h *webHandlers) webhook(w http.ResponseWriter, r *http.Request) {
+	//h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
+
+	//app, err := h.svc.GetGithubApp(r.Context())
+	//if err != nil {
+	//	h.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//if event := h.HandleEvent(w, r, app.WebhookSecret); event != nil {
+	//	// add non-cloud specific info to event before publishing
+	//	event.RepoID = hook.id
+	//	event.RepoPath = hook.identifier
+	//	event.VCSProviderID = hook.vcsProviderID
+
+	//	h.publish(*event)
+	//}
 }
 
 func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {

@@ -83,6 +83,20 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
+	ws, err := r.GetWorkspace(ctx, run.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	if ws.Connection == nil {
+		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
+	}
+
+	client, err := r.GetVCSClient(ctx, ws.Connection.VCSProviderID)
+	if err != nil {
+		return err
+	}
+
+	// Report the status and description of the run state
 	var (
 		status      cloud.VCSStatus
 		description string
@@ -108,20 +122,6 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 	default:
 		return fmt.Errorf("unknown run status: %s", run.Status)
 	}
-
-	ws, err := r.GetWorkspace(ctx, run.WorkspaceID)
-	if err != nil {
-		return err
-	}
-	if ws.Connection == nil {
-		return fmt.Errorf("workspace not connected to repo: %s", ws.ID)
-	}
-
-	client, err := r.GetVCSClient(ctx, ws.Connection.VCSProviderID)
-	if err != nil {
-		return err
-	}
-
 	return client.SetStatus(ctx, cloud.SetStatusOptions{
 		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes.CommitSHA,

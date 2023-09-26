@@ -13,10 +13,10 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
-	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/leg100/surl"
@@ -93,6 +93,7 @@ type (
 
 	Options struct {
 		WorkspaceAuthorizer internal.Authorizer
+		VCSEventSubscriber  vcs.Subscriber
 
 		OrganizationService
 		WorkspaceService
@@ -106,7 +107,6 @@ type (
 		*surl.Signer
 		html.Renderer
 		*pubsub.Broker
-		repo.Subscriber
 	}
 )
 
@@ -160,7 +160,7 @@ func NewService(opts Options) *service {
 	opts.Responder.Register(tfeapi.IncludeCurrentRun, svc.api.includeCurrentRun)
 
 	// Subscribe run spawner to incoming vcs events
-	opts.Subscriber.Subscribe(spawner.handle)
+	opts.VCSEventSubscriber.Subscribe(spawner.handle)
 
 	// After a workspace is created, if auto-queue-runs is set, then create a
 	// run as well.

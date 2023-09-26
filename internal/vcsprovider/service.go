@@ -47,6 +47,21 @@ type (
 		web          *webHandlers
 		api          *tfe
 		deleteHook   *hooks.Hook[*VCSProvider]
+
+		internal.HostnameService
+		github.GithubAppService
+
+		cloudHostnames map[cloud.Kind]string
+	}
+
+	CreateOptions struct {
+		Organization string
+		Name         string
+		Kind         cloud.Kind
+
+		// Specify only one of these.
+		Token              *string
+		GithubAppInstallID *int64
 	}
 
 	Options struct {
@@ -56,22 +71,37 @@ type (
 		html.Renderer
 		logr.Logger
 		github.GithubAppService
+
+		GithubHostname string
+		GitlabHostname string
 	}
 )
 
 func NewService(opts Options) *service {
+	cloudHostnames := map[cloud.Kind]string{
+		cloud.GithubKind: opts.GithubHostname,
+		cloud.GitlabKind: opts.GitlabHostname,
+	}
 	svc := service{
-		Logger:       opts.Logger,
-		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		db:           newDB(opts.DB, nil),
-		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
+		Logger:           opts.Logger,
+		HostnameService:  opts.HostnameService,
+		GithubAppService: opts.GithubAppService,
+		site:             &internal.SiteAuthorizer{Logger: opts.Logger},
+		organization:     &organization.Authorizer{Logger: opts.Logger},
+		db: &pgdb{
+			DB:               opts.DB,
+			GithubAppService: opts.GithubAppService,
+			cloudHostnames:   cloudHostnames,
+		},
+		deleteHook:     hooks.NewHook[*VCSProvider](opts.DB),
+		cloudHostnames: cloudHostnames,
 	}
 
 	svc.web = &webHandlers{
-		Renderer:        opts.Renderer,
-		HostnameService: opts.HostnameService,
-		svc:             &svc,
+		Renderer:         opts.Renderer,
+		HostnameService:  opts.HostnameService,
+		GithubAppService: opts.GithubAppService,
+		svc:              &svc,
 	}
 	svc.api = &tfe{
 		Service:   &svc,
@@ -96,7 +126,11 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 		return nil, err
 	}
 
-	provider, err := newProvider(ctx, opts)
+	provider, err := newProvider(ctx, newOptions{
+		CreateOptions:    opts,
+		GithubAppService: a.GithubAppService,
+		cloudHostnames:   a.cloudHostnames,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/surl"
 )
@@ -70,6 +71,8 @@ type (
 		html.Renderer
 		connections.ConnectionService
 		repo.RepoService
+
+		VCSEventSubscriber vcs.Subscriber
 	}
 )
 
@@ -97,7 +100,7 @@ func NewService(opts Options) *service {
 		ModuleService:      &svc,
 	}
 	// Subscribe module publisher to incoming vcs events
-	opts.RepoService.Subscribe(publisher.handle)
+	opts.VCSEventSubscriber.Subscribe(publisher.handle)
 
 	return &svc
 }

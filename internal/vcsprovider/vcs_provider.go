@@ -29,16 +29,11 @@ type (
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
 	}
 
-	CreateOptions struct {
-		Organization string
-		Name         string
-		Kind         cloud.Kind
+	newOptions struct {
+		CreateOptions
 
-		// Specify only one of these.
-		Token              *string
-		GithubAppInstallID *int64
-
-		internal.HostnameService
+		// map of cloud kind to hostname
+		cloudHostnames map[cloud.Kind]string
 
 		// Must be specified if GithubAppInstallID is non-nil
 		github.GithubAppService
@@ -55,15 +50,19 @@ type (
 	}
 )
 
-func newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
+func newProvider(ctx context.Context, opts newOptions) (*VCSProvider, error) {
 	provider := &VCSProvider{
 		ID:           internal.NewID("vcs"),
 		Name:         opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
 		Kind:         opts.Kind,
-		// TODO: set hostname
 	}
+	host, ok := opts.cloudHostnames[opts.Kind]
+	if !ok {
+		return nil, fmt.Errorf("cloud kind %s has no hostname", opts.Kind)
+	}
+	provider.Hostname = host
 	if opts.ID != nil {
 		provider.ID = *opts.ID
 	}
@@ -93,12 +92,20 @@ func newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) 
 }
 
 // String provides a human meaningful description of the vcs provider, using the
-// name if set, otherwise using the name of the underlying cloud provider.
+// name if set; otherwise a name is constructed using both the underlying cloud
+// kind and the auth kind.
 func (t *VCSProvider) String() string {
 	if t.Name != "" {
 		return t.Name
 	}
-	return string(t.Kind)
+	s := string(t.Kind)
+	if t.Token != nil {
+		s += " (token)"
+	}
+	if t.GithubApp != nil {
+		s += " (app)"
+	}
+	return s
 }
 
 func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {

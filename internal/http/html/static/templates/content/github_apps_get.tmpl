@@ -42,7 +42,7 @@
           <div>
             {{ template "identifier" . }}
             <form action="{{ deleteInstallGithubAppPath (toString .ID) }}" method="POST">
-              <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+              <button class="btn-danger" onclick="return confirm('Are you sure you want to uninstall?')">uninstall</button>
               <input type="hidden" name="install_id" value="{{ .ID }}">
             </form>
           </div>

@@ -12,6 +12,7 @@ import (
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -23,9 +24,6 @@ type (
 		// Connect adds a connection between a VCS repo and an OTF resource. A
 		// webhook is created if one doesn't exist already.
 		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error)
-
-		// Subscribe to incoming VCS events
-		Subscribe(cb Callback)
 
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
@@ -39,7 +37,6 @@ type (
 		*handler      // handles incoming vcs events
 		factory       // produce new hooks
 		*synchroniser // synchronise hooks
-		*broker       // relay VCS events to subscribers
 	}
 
 	Options struct {
@@ -47,6 +44,7 @@ type (
 
 		*sql.DB
 		*pubsub.Broker
+		VCSEventBroker *vcs.Broker
 		internal.HostnameService
 		VCSProviderService vcsprovider.Service
 		organization.OrganizationService
@@ -70,11 +68,10 @@ func NewService(ctx context.Context, opts Options) *service {
 		HostnameService: opts.HostnameService,
 	}
 	db := &db{opts.DB, factory}
-	broker := &broker{}
 	handler := &handler{
 		Logger:        opts.Logger,
 		handlerDB:     db,
-		handlerBroker: broker,
+		handlerBroker: opts.VCSEventBroker,
 	}
 	svc := &service{
 		Logger:       opts.Logger,
@@ -83,7 +80,6 @@ func NewService(ctx context.Context, opts Options) *service {
 		factory:      factory,
 		handler:      handler,
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
-		broker:       broker,
 	}
 
 	// Delete webhooks prior to the deletion of VCS providers. VCS providers are

@@ -31,7 +31,7 @@ type (
 	}
 
 	handlerBroker interface {
-		publish(cloud.VCSEvent)
+		Publish(cloud.VCSEvent)
 	}
 
 	// cloudHandler extracts a cloud-specific event from the http request, converting it into a
@@ -67,6 +67,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		event.RepoPath = hook.identifier
 		event.VCSProviderID = hook.vcsProviderID
 
-		h.publish(*event)
+		h.Publish(*event)
 	}
 }

@@ -22,7 +22,7 @@ func TestVCSProvider_NewHandler(t *testing.T) {
 			q := "/?organization_name=acme-corp&cloud=" + cloud
 			r := httptest.NewRequest("GET", q, nil)
 			w := httptest.NewRecorder()
-			svc.new(w, r)
+			svc.newPersonalToken(w, r)
 			assert.Equal(t, 200, w.Code, w.Body.String())
 		})
 	}

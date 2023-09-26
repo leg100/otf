@@ -1,4 +1,4 @@
-package repo
+package vcs
 
 import (
 	"sync"
@@ -7,10 +7,12 @@ import (
 )
 
 type (
-	broker struct {
+	// Broker is a brokerage for publishers and subscribers of VCS events.
+	Broker struct {
 		subscribers []func(event cloud.VCSEvent)
 		mu          sync.RWMutex
 	}
+
 	Callback func(event cloud.VCSEvent)
 
 	Subscriber interface {
@@ -18,14 +20,14 @@ type (
 	}
 )
 
-func (b *broker) Subscribe(cb Callback) {
+func (b *Broker) Subscribe(cb Callback) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	b.subscribers = append(b.subscribers, cb)
 }
 
-func (b *broker) publish(event cloud.VCSEvent) {
+func (b *Broker) Publish(event cloud.VCSEvent) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 

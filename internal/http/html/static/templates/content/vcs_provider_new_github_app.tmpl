@@ -5,27 +5,23 @@
 {{ end }}
 
 {{ define "content" }}
-  <div>
-    Select a Github App installation to add as a VCS provider.
-  </div>
-  {{ range .Installations }}
-    <div class="flex flex-col gap-2 text-lg">
-      <div class="widget">
-        <div>
-          <span>
-            <a class="flex underline gap-1 items-center"  href="{{ .HTMLURL }}" target="GithubTab">
-              {{ .String }}<img class="h-4" src="{{ addHash "/static/images/external_link_icon.svg" }}">
-            </a>
-          </span>
-        </div>
-        <div>
-          {{ template "identifier" . }}
-          <form action="{{ deleteInstallGithubAppPath (toString .ID) }}" method="POST">
-            <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-            <input type="hidden" name="install_id" value="{{ .ID }}">
-          </form>
-        </div>
-      </div>
+  Create a VCS provider that leverages the permissions of a GitHub app installation.
+  <form class="flex flex-col gap-4" action="{{ createVCSProviderPath $.Organization }}" method="POST">
+    <div class="field">
+      <label for="name">Name</label>
+      <input class="text-input w-64" type="text" name="name" id="name" placeholder="github">
+      <span class="description">An optional display name for your VCS provider.</span>
     </div>
-  {{ end }}
+    <div class="field">
+      <label for="install_id">Installation</label>
+      <select class="w-48" name="install_id" id="select-install-id">
+        {{ range .Installations }}
+          <option value="{{ .ID }}">{{ .String }}</option>
+        {{ end }}
+      </select>
+      <span class="description">Select a Github App installation.</span>
+    </div>
+    <input type="hidden" name="cloud" id="cloud" value="{{ .Cloud }}">
+    <button class="btn w-32" id="create-vcs-provider-button">Create</button>
+  </form>
 {{ end }}

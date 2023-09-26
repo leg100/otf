@@ -62,9 +62,7 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	}
 	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {
-		rt = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
+		rt.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 	// build http roundtripper using provided credentials
 	switch {

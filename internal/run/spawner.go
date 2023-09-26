@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
-	"github.com/leg100/otf/internal/repo"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -22,7 +22,7 @@ type (
 		WorkspaceService
 		VCSProviderService
 		RunService
-		repo.Subscriber
+		vcs.Subscriber
 	}
 )
 
