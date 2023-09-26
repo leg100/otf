@@ -5,12 +5,17 @@ import (
 	"net/http"
 )
 
+// DefaultTransport wraps the stdlib http.DefaultTransport, optionally disabling
+// TLS verification.
 func DefaultTransport(skipTLSVerification bool) http.RoundTripper {
-	dt := http.DefaultTransport
 	if skipTLSVerification {
-		dt.(*http.Transport).TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: skipTLSVerification,
+		// http.DefaultTransport is a pkg variable, so we need to clone it to
+		// avoid disabling TLS verification globally.
+		cloned := http.DefaultTransport.(*http.Transport).Clone()
+		cloned.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
 		}
+		return cloned
 	}
-	return dt
+	return http.DefaultTransport
 }
