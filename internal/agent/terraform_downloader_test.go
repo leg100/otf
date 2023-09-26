@@ -3,13 +3,13 @@ package agent
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
 
+	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,10 +28,7 @@ func TestDownloader(t *testing.T) {
 	dl := NewDownloader(pathFinder)
 	dl.host = u.Host
 	dl.client = &http.Client{
-		Transport: &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
+		Transport: otfhttp.DefaultTransport(true),
 	}
 
 	buf := new(bytes.Buffer)

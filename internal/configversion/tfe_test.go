@@ -2,11 +2,12 @@ package configversion
 
 import (
 	"crypto/rand"
-	"crypto/tls"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	otfhttp "github.com/leg100/otf/internal/http"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -29,10 +30,7 @@ func TestUploadConfigurationVersion(t *testing.T) {
 
 	// setup client
 	client := http.Client{
-		Transport: &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
+		Transport: otfhttp.DefaultTransport(true),
 	}
 
 	// upload config smaller than MaxConfigSize

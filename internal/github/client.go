@@ -2,7 +2,7 @@ package github
 
 import (
 	"context"
-	"crypto/tls"
+
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	otfhttp "github.com/leg100/otf/internal/http"
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/internal"
@@ -32,10 +34,7 @@ func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-			Transport: &http.Transport{
-				Proxy:           http.ProxyFromEnvironment,
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
+			Transport: otfhttp.DefaultTransport(true),
 		})
 	}
 

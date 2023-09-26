@@ -2,8 +2,9 @@ package cloud
 
 import (
 	"context"
-	"crypto/tls"
 	"net/http"
+
+	otfhttp "github.com/leg100/otf/internal/http"
 
 	"golang.org/x/oauth2"
 )
@@ -29,12 +30,7 @@ func (cfg *Config) NewClient(ctx context.Context, creds Credentials) (Client, er
 
 func (cfg *Config) HTTPClient() *http.Client {
 	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: cfg.SkipTLSVerification,
-			},
-		},
+		Transport: otfhttp.DefaultTransport(cfg.SkipTLSVerification),
 	}
 }
 
