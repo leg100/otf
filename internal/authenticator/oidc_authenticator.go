@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/leg100/otf/internal"
@@ -54,6 +55,11 @@ func newOIDCAuthenticator(ctx context.Context, opts oidcAuthenticatorOptions) (*
 		Name:                opts.Name,
 		SkipTLSVerification: opts.SkipTLSVerification,
 	}
+
+	// here we are adding a timeout to prevent NewProvider from silently locking
+	// permanently in the case of networking issues.
+	ctx, cancelFn := context.WithTimeout(ctx, time.Second*10)
+	defer cancelFn()
 
 	// construct oidc provider, using our own http client, which lets us disable
 	// tls verification for testing purposes.

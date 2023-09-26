@@ -30,6 +30,7 @@ func (cfg *Config) NewClient(ctx context.Context, creds Credentials) (Client, er
 func (cfg *Config) HTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: cfg.SkipTLSVerification,
 			},

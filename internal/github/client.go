@@ -33,6 +33,7 @@ func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	if cfg.SkipTLSVerification {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 			Transport: &http.Transport{
+				Proxy:           http.ProxyFromEnvironment,
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		})

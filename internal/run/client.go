@@ -228,6 +228,7 @@ func newSSEClient(config http.Config, notifications chan pubsub.Event, opts Watc
 	}
 	if config.Insecure {
 		client.Connection.Transport = &gohttp.Transport{
+			Proxy:           gohttp.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 	}
