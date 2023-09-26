@@ -3,9 +3,7 @@ package run
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
-	gohttp "net/http"
 	"net/url"
 	"path"
 	"strings"
@@ -227,9 +225,7 @@ func newSSEClient(config http.Config, notifications chan pubsub.Event, opts Watc
 		"Authorization": "Bearer " + config.Token,
 	}
 	if config.Insecure {
-		client.Connection.Transport = &gohttp.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
+		client.Connection.Transport = http.DefaultTransport(true)
 	}
 	return client, nil
 }
