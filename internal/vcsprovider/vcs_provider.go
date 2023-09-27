@@ -10,6 +10,7 @@ import (
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/bitbucketserver"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/vcs"
@@ -36,9 +37,10 @@ type (
 	factory struct {
 		github.GithubAppService
 
-		githubHostname      string
-		gitlabHostname      string
-		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
+		githubHostname          string
+		gitlabHostname          string
+		bitbucketServerHostname string
+		skipTLSVerification     bool // toggle skipping verification of VCS host's TLS cert.
 	}
 
 	CreateOptions struct {
@@ -89,6 +91,8 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 			provider.Hostname = f.githubHostname
 		case vcs.GitlabKind:
 			provider.Hostname = f.gitlabHostname
+		case vcs.BitbucketServerKind:
+			provider.Hostname = f.bitbucketServerHostname
 		default:
 			return nil, errors.New("no hostname found for vcs kind")
 		}
@@ -150,6 +154,8 @@ func (t *VCSProvider) NewClient() (vcs.Client, error) {
 			return github.NewTokenClient(opts)
 		case vcs.GitlabKind:
 			return gitlab.NewTokenClient(opts)
+		case vcs.BitbucketServerKind:
+			return bitbucketserver.NewTokenClient(opts)
 		default:
 			return nil, fmt.Errorf("unknown kind: %s", t.Kind)
 		}

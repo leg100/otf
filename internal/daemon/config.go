@@ -24,6 +24,7 @@ type Config struct {
 	GitlabHostname               string
 	GitlabClientID               string
 	GitlabClientSecret           string
+	BitbucketServerHostname      string
 	OIDC                         authenticator.OIDCConfig
 	Secret                       []byte // 16-byte secret for signing URLs and encrypting payloads
 	SiteToken                    string

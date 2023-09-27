@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/api"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
+	"github.com/leg100/otf/internal/bitbucketserver"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
@@ -165,16 +166,17 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	vcsEventBroker := &vcs.Broker{}
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
-		Logger:              logger,
-		DB:                  db,
-		Renderer:            renderer,
-		Responder:           responder,
-		HostnameService:     hostnameService,
-		GithubAppService:    githubAppService,
-		GithubHostname:      cfg.GithubHostname,
-		GitlabHostname:      cfg.GitlabHostname,
-		SkipTLSVerification: cfg.SkipTLSVerification,
-		Subscriber:          vcsEventBroker,
+		Logger:                  logger,
+		DB:                      db,
+		Renderer:                renderer,
+		Responder:               responder,
+		HostnameService:         hostnameService,
+		GithubAppService:        githubAppService,
+		GithubHostname:          cfg.GithubHostname,
+		GitlabHostname:          cfg.GitlabHostname,
+		BitbucketServerHostname: cfg.BitbucketServerHostname,
+		SkipTLSVerification:     cfg.SkipTLSVerification,
+		Subscriber:              vcsEventBroker,
 	})
 	repoService := repohooks.NewService(ctx, repohooks.Options{
 		Logger:              logger,
@@ -187,6 +189,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 	})
 	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
 	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
+	repoService.RegisterCloudHandler(vcs.BitbucketServerKind, bitbucketserver.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
 		Logger:             logger,

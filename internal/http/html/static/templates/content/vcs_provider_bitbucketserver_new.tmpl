@@ -1,0 +1,12 @@
+{{ template "layout" . }}
+
+{{ define "content-header-title" }}
+  <div>New Bitbucket Server VCS Provider</div>
+{{ end }}
+
+{{ define "content" }}
+  <div>
+    Create a Bitbucket Server VCS provider using a <a class="underline" href="https://confluence.atlassian.com/bitbucketserver/http-access-tokens-939515499.html">personal token</a> with the <span class="bg-gray-200">api</span> scope.
+  </div>
+  {{ template "vcs_provider_form" . }}
+{{ end }}

@@ -34,10 +34,14 @@
         <div class="flex flex-col gap-2">
           <label for="usage">Usage</label>
           <textarea class="text-input font-normal font-mono" id="usage" cols="60" rows="5" readonly wrap="off">
-  module "{{ .Module.Name }}" {
-    source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
-    version = "{{ .CurrentVersion.Version }}"
-  }
+module "{{ .Module.Name }}" {
+  source  = "{{ .Hostname }}/{{ .Organization }}/{{ .Module.Name }}/{{ .Module.Provider }}"
+{{ if .CurrentVersion }}
+  version = "{{ .CurrentVersion.Version }}"
+{{ else }}
+  version = ""
+{{ end }}
+}
           </textarea>
         </div>
       </div>
@@ -46,26 +50,32 @@
       </div>
       <div>
         <h3 class="font-semibold">Resources</h3>
+        {{ if .TerraformModule }}
         {{ range $k, $v := .TerraformModule.ManagedResources }}
           <div>
             <span class="bg-gray-200">{{ $k }}</span>
           </div>
         {{ end }}
+        {{ end }}
       </div>
       <div>
         <h3 class="font-semibold">Variables</h3>
+        {{ if .TerraformModule }}
         {{ range $k, $v := .TerraformModule.Variables }}
           <div>
             <span class="bg-gray-200">{{ $k }}</span>
           </div>
         {{ end }}
+        {{ end }}
       </div>
       <div>
         <h3 class="font-semibold">Outputs</h3>
+        {{ if .TerraformModule }}
         {{ range $k, $v := .TerraformModule.Outputs }}
           <div>
             <span class="bg-gray-200">{{ $k }}</span>
           </div>
+        {{ end }}
         {{ end }}
       </div>
     {{ end }}
