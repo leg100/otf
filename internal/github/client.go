@@ -2,7 +2,7 @@ package github
 
 import (
 	"context"
-	"crypto/tls"
+
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,6 +17,7 @@ import (
 	"github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	otfhttp "github.com/leg100/otf/internal/http"
 	"golang.org/x/oauth2"
 )
 
@@ -62,7 +63,9 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	}
 	// Optionally skip TLS verification of github API
 	if cfg.SkipTLSVerification {
-		rt.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+			Transport: otfhttp.DefaultTransport(true),
+		})
 	}
 	// build http roundtripper using provided credentials
 	switch {
