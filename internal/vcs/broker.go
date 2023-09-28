@@ -18,6 +18,10 @@ type (
 	Subscriber interface {
 		Subscribe(cb Callback)
 	}
+
+	Publisher interface {
+		Publish(cloud.VCSEvent)
+	}
 )
 
 func (b *Broker) Subscribe(cb Callback) {

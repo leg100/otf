@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/organization"
@@ -21,9 +22,14 @@ type (
 
 	// Service manages webhooks
 	Service interface {
-		// Connect adds a connection between a VCS repo and an OTF resource. A
-		// webhook is created if one doesn't exist already.
+		// CreateWebhook creates a webhook on a VCS repository. If the webhook
+		// already exists, it is updated if there are discrepancies; otherwise
+		// no action is taken. In any case an identifier is returned uniquely
+		// identifying the webhook.
 		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error)
+
+		// RegisterHandler registers a handler to handle an incoming VCS event.
+		RegisterHandler(*mux.Route)
 
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
@@ -199,7 +205,7 @@ func (s *service) deleteUnreferencedWebhooks(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) deleteWebhook(ctx context.Context, webhook *hook) error {
+func (s *service) deleteWebhook(ctx context.Context, webhook *Hook) error {
 	if err := s.db.deleteHook(ctx, webhook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}

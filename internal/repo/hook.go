@@ -13,8 +13,8 @@ var defaultEvents = []cloud.VCSEventType{
 	cloud.VCSEventTypePull,
 }
 
-// hook is a webhook for a VCS repo
-type hook struct {
+// Hook is a webhook for a VCS repo
+type Hook struct {
 	id            uuid.UUID // internal otf ID
 	cloudID       *string   // cloud's hook ID; populated following synchronisation
 	vcsProviderID string
@@ -27,7 +27,7 @@ type hook struct {
 	cloudHandler // handles incoming vcs events
 }
 
-func (h *hook) LogValue() slog.Value {
+func (h *Hook) LogValue() slog.Value {
 	attrs := []slog.Attr{
 		slog.String("id", h.id.String()),
 		slog.String("vcs_provider_id", h.vcsProviderID),

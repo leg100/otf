@@ -53,30 +53,26 @@ type (
 	}
 )
 
+// NewClient etc[
+// TODO: ctx is not used, consider removing.
 func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
-	var (
-		rt  http.RoundTripper = http.DefaultTransport
-		err error
-	)
 	if cfg.Hostname == "" {
 		cfg.Hostname = DefaultHostname
 	}
-	// Optionally skip TLS verification of github API
-	if cfg.SkipTLSVerification {
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
-			Transport: otfhttp.DefaultTransport(true),
-		})
-	}
 	// build http roundtripper using provided credentials
+	var (
+		tripper = otfhttp.DefaultTransport(cfg.SkipTLSVerification)
+		err     error
+	)
 	switch {
 	case cfg.AppCredentials != nil:
-		rt, err = ghinstallation.NewAppsTransport(rt, cfg.AppCredentials.ID, []byte(cfg.AppCredentials.PrivateKey))
+		tripper, err = ghinstallation.NewAppsTransport(tripper, cfg.AppCredentials.ID, []byte(cfg.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
 	case cfg.InstallCredentials != nil:
 		creds := cfg.InstallCredentials
-		rt, err = ghinstallation.New(rt, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
+		tripper, err = ghinstallation.New(tripper, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
@@ -86,14 +82,14 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 		cfg.OAuthToken = &oauth2.Token{AccessToken: *cfg.PersonalToken}
 		fallthrough
 	case cfg.OAuthToken != nil:
-		rt = &oauth2.Transport{
-			Base: rt,
+		tripper = &oauth2.Transport{
+			Base: tripper,
 			// Github's oauth access token never expires
 			Source: oauth2.ReuseTokenSource(nil, oauth2.StaticTokenSource(cfg.OAuthToken)),
 		}
 	}
 	// create upstream client with roundtripper
-	client := github.NewClient(&http.Client{Transport: rt})
+	client := github.NewClient(&http.Client{Transport: tripper})
 	// Assume github enterprise if using non-default hostname
 	if cfg.Hostname != DefaultHostname {
 		client, err = client.WithEnterpriseURLs(
@@ -105,13 +101,6 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 		}
 	}
 	return &Client{client: client}, nil
-}
-
-func NewEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
-	return github.NewEnterpriseClient(
-		"https://"+hostname,
-		"https://"+hostname,
-		httpClient)
 }
 
 func (g *Client) GetCurrentUser(ctx context.Context) (cloud.User, error) {

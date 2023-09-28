@@ -12,8 +12,12 @@ import (
 	"github.com/leg100/otf/internal/http/decode"
 )
 
-// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
-const handlerPrefix = "/webhooks/vcs"
+const (
+	// HandlerPrefix is the URL path prefix for the endpoint receiving vcs events
+	HandlerPrefix = "/webhooks/vcs"
+
+	WebhookContextKey key = 0
+)
 
 type (
 	// handler is the first point of entry for incoming VCS events, relaying them onto
@@ -27,7 +31,7 @@ type (
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
-		getHookByID(context.Context, uuid.UUID) (*hook, error)
+		getHookByID(context.Context, uuid.UUID) (*Hook, error)
 	}
 
 	handlerBroker interface {
@@ -39,34 +43,39 @@ type (
 	cloudHandler interface {
 		HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
 	}
+
+	key int
 )
 
 func (h *handler) AddHandlers(r *mux.Router) {
-	r.Handle(path.Join(handlerPrefix, "{webhook_id}"), h)
+	r = r.Path(path.Join(HandlerPrefix, "{webhook_id}")).Subrouter()
+	r.Use(h.getHook)
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	opts := struct {
-		ID uuid.UUID `schema:"webhook_id,required"`
-	}{}
-	if err := decode.All(&opts, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
+func (h *handler) getHook(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var opts struct {
+			ID uuid.UUID `schema:"webhook_id,required"`
+		}
+		if err := decode.All(&opts, r); err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		hook, err := h.getHookByID(r.Context(), opts.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-	hook, err := h.getHookByID(r.Context(), opts.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
+		if event := hook.HandleEvent(w, r, hook.secret); event != nil {
+			// add non-cloud specific info to event before publishing
+			event.RepoID = hook.id
+			event.RepoPath = hook.identifier
+			// TODO: set oauth-token-id instead of vcs provider id
+			event.VCSProviderID = hook.vcsProviderID
 
-	if event := hook.HandleEvent(w, r, hook.secret); event != nil {
-		// add non-cloud specific info to event before publishing
-		event.RepoID = hook.id
-		event.RepoPath = hook.identifier
-		event.VCSProviderID = hook.vcsProviderID
-
-		h.Publish(*event)
-	}
+			h.Publish(*event)
+		}
+	})
 }

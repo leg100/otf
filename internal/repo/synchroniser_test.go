@@ -17,8 +17,8 @@ func TestSynchroniser(t *testing.T) {
 	tests := []struct {
 		name  string
 		cloud cloud.Webhook // seed cloud with hook
-		got   *hook         // seed db with hook
-		want  *hook         // hook after synchronisation
+		got   *Hook         // seed db with hook
+		want  *Hook         // hook after synchronisation
 	}{
 		{
 			name: "synchronised",
@@ -27,11 +27,11 @@ func TestSynchroniser(t *testing.T) {
 				Events:   defaultEvents,
 				Endpoint: "fake-host.org/xyz",
 			},
-			got: &hook{
+			got: &Hook{
 				cloudID:  internal.String("123"),
 				endpoint: "fake-host.org/xyz",
 			},
-			want: &hook{
+			want: &Hook{
 				cloudID:  internal.String("123"),
 				endpoint: "fake-host.org/xyz",
 			},
@@ -39,10 +39,10 @@ func TestSynchroniser(t *testing.T) {
 		{
 			name:  "new hook",
 			cloud: cloud.Webhook{ID: "123"}, // new id that cloud returns
-			got: &hook{
+			got: &Hook{
 				endpoint: "fake-host.org/xyz",
 			},
-			want: &hook{
+			want: &Hook{
 				endpoint: "fake-host.org/xyz",
 				cloudID:  internal.String("123"),
 			},
@@ -53,11 +53,11 @@ func TestSynchroniser(t *testing.T) {
 				ID:       "123",
 				Endpoint: "fake-host.org/xyz",
 			},
-			got: &hook{
+			got: &Hook{
 				endpoint: "fake-host.org/xyz",
 				cloudID:  internal.String("123"),
 			},
-			want: &hook{
+			want: &Hook{
 				endpoint: "fake-host.org/xyz",
 				cloudID:  internal.String("123"),
 			},

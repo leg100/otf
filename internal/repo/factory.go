@@ -1,15 +1,12 @@
 package repo
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/gitlab"
 )
 
 type (
@@ -28,7 +25,7 @@ type (
 )
 
 // fromRow creates a hook from a database row
-func (f factory) fromRow(row hookRow) (*hook, error) {
+func (f factory) fromRow(row hookRow) (*Hook, error) {
 	opts := newHookOptions{
 		id:            internal.UUID(row.WebhookID.Bytes),
 		vcsProviderID: row.VCSProviderID.String,
@@ -42,21 +39,12 @@ func (f factory) fromRow(row hookRow) (*hook, error) {
 	return f.newHook(opts)
 }
 
-func (f factory) newHook(opts newHookOptions) (*hook, error) {
-	hook := hook{
+func (f factory) newHook(opts newHookOptions) (*Hook, error) {
+	hook := Hook{
 		identifier:    opts.identifier,
 		cloud:         opts.cloud,
 		cloudID:       opts.cloudID,
 		vcsProviderID: opts.vcsProviderID,
-	}
-
-	switch opts.cloud {
-	case cloud.GithubKind:
-		hook.cloudHandler = github.EventHandler{}
-	case cloud.GitlabKind:
-		hook.cloudHandler = gitlab.EventHandler{}
-	default:
-		return nil, fmt.Errorf("unknown cloud kind: %s", opts.cloud)
 	}
 
 	if opts.id != nil {
@@ -75,7 +63,7 @@ func (f factory) newHook(opts newHookOptions) (*hook, error) {
 		hook.secret = secret
 	}
 
-	hook.endpoint = f.URL(path.Join(handlerPrefix, hook.id.String()))
+	hook.endpoint = f.URL(path.Join(HandlerPrefix, hook.id.String()))
 
 	return &hook, nil
 }

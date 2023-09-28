@@ -18,11 +18,11 @@ type (
 		cloud.Client
 	}
 	fakeDB struct {
-		hook *hook
+		hook *Hook
 	}
 )
 
-func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string) *hook {
+func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string) *Hook {
 	want, err := f.newHook(newHookOptions{
 		id:            internal.UUID(uuid.New()),
 		vcsProviderID: vcsProviderID,

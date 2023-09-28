@@ -31,6 +31,9 @@ type (
 	}
 )
 
+// NewClient ...
+//
+// TODO: ctx is not used, consider removing.
 func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	var (
 		client *gitlab.Client

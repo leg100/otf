@@ -34,7 +34,7 @@ func TestWebhookHandler(t *testing.T) {
 
 type (
 	fakeHandlerDB struct {
-		hook *hook
+		hook *Hook
 	}
 	fakeBroker struct {
 		got cloud.VCSEvent
@@ -42,7 +42,7 @@ type (
 	fakeCloudHandler struct{}
 )
 
-func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) {
+func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*Hook, error) {
 	return db.hook, nil
 }
 

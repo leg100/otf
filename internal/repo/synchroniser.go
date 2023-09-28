@@ -24,7 +24,7 @@ type (
 )
 
 // sync should be called from within a tx to avoid inconsistent results.
-func (s *synchroniser) sync(ctx context.Context, client cloud.Client, hook *hook) error {
+func (s *synchroniser) sync(ctx context.Context, client cloud.Client, hook *Hook) error {
 	createAndSync := func() error {
 		cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
 			Repo:     hook.identifier,

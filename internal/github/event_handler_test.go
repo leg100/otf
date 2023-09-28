@@ -104,7 +104,7 @@ func TestEventHandler(t *testing.T) {
 			r.Header.Add("Content-type", "application/json")
 			r.Header.Add(github.EventTypeHeader, tt.eventType)
 			w := httptest.NewRecorder()
-			got := (&EventHandler{}).HandleEvent(w, r, "")
+			got := (&RepoHookHandler{}).HandleEvent(w, r, "")
 			assert.Equal(t, 202, w.Code)
 			assert.Equal(t, tt.want, got)
 		})
