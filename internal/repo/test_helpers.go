@@ -2,12 +2,10 @@ package repo
 
 import (
 	"context"
-	"testing"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
-	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -18,28 +16,9 @@ type (
 		cloud.Client
 	}
 	fakeDB struct {
-		hook *Hook
+		hook *hook
 	}
 )
-
-func newTestHook(t *testing.T, f factory, vcsProviderID string, cloudID *string) *Hook {
-	want, err := f.newHook(newHookOptions{
-		id:            internal.UUID(uuid.New()),
-		vcsProviderID: vcsProviderID,
-		secret:        internal.String("top-secret"),
-		identifier:    "leg100/" + uuid.NewString(),
-		cloud:         cloud.GithubKind,
-		cloudID:       cloudID,
-	})
-	require.NoError(t, err)
-	return want
-}
-
-func newTestFactory(t *testing.T, event cloud.VCSEvent) factory {
-	return factory{
-		HostnameService: internal.NewHostnameService(""),
-	}
-}
 
 func (f *fakeCloudClient) CreateWebhook(context.Context, cloud.CreateWebhookOptions) (string, error) {
 	return f.hook.ID, nil

@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/organization"
@@ -28,9 +27,6 @@ type (
 		// identifying the webhook.
 		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error)
 
-		// RegisterHandler registers a handler to handle an incoming VCS event.
-		RegisterHandler(*mux.Route)
-
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
 
@@ -41,7 +37,6 @@ type (
 		*db
 
 		*handler      // handles incoming vcs events
-		factory       // produce new hooks
 		*synchroniser // synchronise hooks
 	}
 
@@ -70,21 +65,16 @@ type (
 )
 
 func NewService(ctx context.Context, opts Options) *service {
-	factory := factory{
-		HostnameService: opts.HostnameService,
-	}
-	db := &db{opts.DB, factory}
-	handler := &handler{
-		Logger:        opts.Logger,
-		handlerDB:     db,
-		handlerBroker: opts.VCSEventBroker,
-	}
+	db := &db{opts.DB, opts.HostnameService}
 	svc := &service{
-		Logger:       opts.Logger,
-		Service:      opts.VCSProviderService,
-		db:           db,
-		factory:      factory,
-		handler:      handler,
+		Logger:  opts.Logger,
+		Service: opts.VCSProviderService,
+		db:      db,
+		handler: newHandler(
+			opts.Logger,
+			opts.VCSEventBroker,
+			db,
+		),
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
 	}
 
@@ -130,7 +120,7 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("checking repository exists: %w", err)
 	}
-	hook, err := s.newHook(newHookOptions{
+	hook, err := newHook(newHookOptions{
 		identifier:    opts.RepoPath,
 		cloud:         vcsProvider.Kind,
 		vcsProviderID: vcsProvider.ID,
@@ -205,7 +195,7 @@ func (s *service) deleteUnreferencedWebhooks(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) deleteWebhook(ctx context.Context, webhook *Hook) error {
+func (s *service) deleteWebhook(ctx context.Context, webhook *hook) error {
 	if err := s.db.deleteHook(ctx, webhook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}

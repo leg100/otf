@@ -8,74 +8,72 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/vcs"
 )
 
-const (
-	// HandlerPrefix is the URL path prefix for the endpoint receiving vcs events
-	HandlerPrefix = "/webhooks/vcs"
-
-	WebhookContextKey key = 0
-)
+// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
+const handlerPrefix = "/webhooks/vcs"
 
 type (
-	// handler is the first point of entry for incoming VCS events, relaying them onto
-	// a cloud-specific handler.
+	// handler handles repohook VCS events.
 	handler struct {
 		logr.Logger
 
-		handlerBroker
+		vcs.Publisher
 		handlerDB
+		cloudHandlers *internal.SafeMap[cloud.Kind, cloudHandler]
 	}
+
+	cloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
-		getHookByID(context.Context, uuid.UUID) (*Hook, error)
+		getHookByID(context.Context, uuid.UUID) (*hook, error)
 	}
-
-	handlerBroker interface {
-		Publish(cloud.VCSEvent)
-	}
-
-	// cloudHandler extracts a cloud-specific event from the http request, converting it into a
-	// VCS event. Returns nil if the event is to be ignored.
-	cloudHandler interface {
-		HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
-	}
-
-	key int
 )
 
-func (h *handler) AddHandlers(r *mux.Router) {
-	r = r.Path(path.Join(HandlerPrefix, "{webhook_id}")).Subrouter()
-	r.Use(h.getHook)
+func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handler {
+	return &handler{
+		Logger:        logger,
+		Publisher:     publisher,
+		handlerDB:     db,
+		cloudHandlers: internal.NewSafeMap[cloud.Kind, cloudHandler](),
+	}
 }
 
-func (h *handler) getHook(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var opts struct {
-			ID uuid.UUID `schema:"webhook_id,required"`
-		}
-		if err := decode.All(&opts, r); err != nil {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
-		}
-		hook, err := h.getHookByID(r.Context(), opts.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		h.V(1).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
+func (h *handler) AddHandlers(r *mux.Router) {
+	r.Handle(path.Join(handlerPrefix, "{webhook_id}"), h)
+}
 
-		if event := hook.HandleEvent(w, r, hook.secret); event != nil {
-			// add non-cloud specific info to event before publishing
-			event.RepoID = hook.id
-			event.RepoPath = hook.identifier
-			// TODO: set oauth-token-id instead of vcs provider id
-			event.VCSProviderID = hook.vcsProviderID
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var opts struct {
+		ID uuid.UUID `schema:"webhook_id,required"`
+	}
+	if err := decode.All(&opts, r); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	hook, err := h.getHookByID(r.Context(), opts.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	h.V(2).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
-			h.Publish(*event)
-		}
-	})
+	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
+	if !ok {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	if event := cloudHandler(w, r, hook.secret); event != nil {
+		// add non-cloud specific info to event before publishing
+		event.RepoID = hook.id
+		event.RepoPath = hook.identifier
+		event.VCSProviderID = hook.vcsProviderID
+
+		h.Publish(*event)
+	}
 }
