@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
@@ -32,10 +31,7 @@ type (
 		GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 		GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 		ListWorkspaces(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error)
-		// ListWorkspacesByWebhookID retrieves workspaces by webhook ID.
-		//
-		// TODO: rename to ListConnectedWorkspaces
-		ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error)
+		ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error)
 		DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
 		SetCurrentRun(ctx context.Context, workspaceID, runID string) (*Workspace, error)
@@ -234,8 +230,8 @@ func (s *service) ListWorkspaces(ctx context.Context, opts ListOptions) (*resour
 	return s.db.list(ctx, opts)
 }
 
-func (s *service) ListWorkspacesByRepoID(ctx context.Context, repoID uuid.UUID) ([]*Workspace, error) {
-	return s.db.listByWebhookID(ctx, repoID)
+func (s *service) ListConnectedWorkspaces(ctx context.Context, vcsProviderID, repoPath string) ([]*Workspace, error) {
+	return s.db.listByConnection(ctx, vcsProviderID, repoPath)
 }
 
 func (s *service) UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateOptions) (*Workspace, error) {

@@ -189,7 +189,7 @@ func (s *service) deleteProviderWebhooks(ctx context.Context, provider *vcsprovi
 }
 
 func (s *service) deleteUnreferencedWebhooks(ctx context.Context) error {
-	hooks, err := s.db.listUnreferencedWebhooks(ctx)
+	hooks, err := s.db.listUnreferencedRepohooks(ctx)
 	if err != nil {
 		return fmt.Errorf("listing unreferenced webhooks: %w", err)
 	}

@@ -92,14 +92,14 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 	}
 
 	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		hookID, err := s.RepoService.CreateWebhook(ctx, repo.CreateWebhookOptions{
+		_, err := s.RepoService.CreateWebhook(ctx, repo.CreateWebhookOptions{
 			VCSProviderID: opts.VCSProviderID,
 			RepoPath:      opts.RepoPath,
 		})
 		if err != nil {
 			return fmt.Errorf("creating webhook: %w", err)
 		}
-		return s.db.createConnection(ctx, hookID, opts)
+		return s.db.createConnection(ctx, opts)
 	})
 	if err != nil {
 		return nil, err

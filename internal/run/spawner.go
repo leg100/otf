@@ -53,7 +53,7 @@ func (s *Spawner) handleWithError(logger logr.Logger, event cloud.VCSEvent) erro
 		return nil
 	}
 
-	workspaces, err := s.ListWorkspacesByRepoID(ctx, event.RepoID)
+	workspaces, err := s.ListConnectedWorkspaces(ctx, event.VCSProviderID, event.RepoPath)
 	if err != nil {
 		return err
 	}

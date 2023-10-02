@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
@@ -16,10 +15,11 @@ type (
 	}
 )
 
-func (db *db) createConnection(ctx context.Context, hookID uuid.UUID, opts ConnectOptions) error {
+func (db *db) createConnection(ctx context.Context, opts ConnectOptions) error {
 	q := db.Conn(ctx)
 	params := pggen.InsertRepoConnectionParams{
-		WebhookID: sql.UUID(hookID),
+		VCSProviderID: sql.String(opts.VCSProviderID),
+		RepoPath:      sql.String(opts.RepoPath),
 	}
 
 	switch opts.ConnectionType {

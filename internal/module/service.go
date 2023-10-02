@@ -300,8 +300,8 @@ func (s *service) GetModuleByID(ctx context.Context, id string) (*Module, error)
 	return module, nil
 }
 
-func (s *service) GetModuleByRepoID(ctx context.Context, id uuid.UUID) (*Module, error) {
-	return s.db.getModuleByWebhookID(ctx, id)
+func (s *service) GetModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error) {
+	return s.db.getModuleByConnection(ctx, vcsProviderID, repoPath)
 }
 
 func (s *service) DeleteModule(ctx context.Context, id string) (*Module, error) {

@@ -20,11 +20,11 @@ type (
 	}
 
 	hookRow struct {
-		WebhookID     pgtype.UUID `json:"webhook_id"`
+		RepohookID    pgtype.UUID `json:"repohook_id"`
 		VCSID         pgtype.Text `json:"vcs_id"`
 		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 		Secret        pgtype.Text `json:"secret"`
-		Identifier    pgtype.Text `json:"identifier"`
+		RepoPath      pgtype.Text `json:"repo_path"`
 		Cloud         pgtype.Text `json:"cloud"`
 	}
 )
@@ -45,7 +45,7 @@ func (db *db) GetByID(ctx context.Context, rawID string, action pubsub.DBAction)
 // called within a tx to avoid concurrent access causing unpredictible results.
 func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindWebhookByRepoAndProvider(ctx, sql.String(hook.identifier), sql.String(hook.vcsProviderID))
+	result, err := q.FindRepohookByRepoAndProvider(ctx, sql.String(hook.identifier), sql.String(hook.vcsProviderID))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -55,10 +55,10 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 
 	// not found; create instead
 
-	insertResult, err := q.InsertWebhook(ctx, pggen.InsertWebhookParams{
-		WebhookID:     sql.UUID(hook.id),
+	insertResult, err := q.InsertRepohook(ctx, pggen.InsertRepohookParams{
+		RepohookID:    sql.UUID(hook.id),
 		Secret:        sql.String(hook.secret),
-		Identifier:    sql.String(hook.identifier),
+		RepoPath:      sql.String(hook.identifier),
 		VCSID:         sql.StringPtr(hook.cloudID),
 		VCSProviderID: sql.String(hook.vcsProviderID),
 	})
@@ -70,7 +70,7 @@ func (db *db) getOrCreateHook(ctx context.Context, hook *hook) (*hook, error) {
 
 func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindWebhookByID(ctx, sql.UUID(id))
+	result, err := q.FindRepohookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -79,7 +79,7 @@ func (db *db) getHookByID(ctx context.Context, id uuid.UUID) (*hook, error) {
 
 func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindWebhooks(ctx)
+	result, err := q.FindRepohooks(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -94,9 +94,9 @@ func (db *db) listHooks(ctx context.Context) ([]*hook, error) {
 	return hooks, nil
 }
 
-func (db *db) listUnreferencedWebhooks(ctx context.Context) ([]*hook, error) {
+func (db *db) listUnreferencedRepohooks(ctx context.Context) ([]*hook, error) {
 	q := db.Conn(ctx)
-	result, err := q.FindUnreferencedWebhooks(ctx)
+	result, err := q.FindUnreferencedRepohooks(ctx)
 	if err != nil {
 		return nil, sql.Error(err)
 	}
@@ -113,7 +113,7 @@ func (db *db) listUnreferencedWebhooks(ctx context.Context) ([]*hook, error) {
 
 func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID string) error {
 	q := db.Conn(ctx)
-	_, err := q.UpdateWebhookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
+	_, err := q.UpdateRepohookVCSID(ctx, sql.String(cloudID), sql.UUID(id))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -122,7 +122,7 @@ func (db *db) updateHookCloudID(ctx context.Context, id uuid.UUID, cloudID strin
 
 func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
 	q := db.Conn(ctx)
-	_, err := q.DeleteWebhookByID(ctx, sql.UUID(id))
+	_, err := q.DeleteRepohookByID(ctx, sql.UUID(id))
 	if err != nil {
 		return sql.Error(err)
 	}
@@ -132,10 +132,10 @@ func (db *db) deleteHook(ctx context.Context, id uuid.UUID) error {
 // fromRow creates a hook from a database row
 func (db *db) fromRow(row hookRow) (*hook, error) {
 	opts := newHookOptions{
-		id:              internal.UUID(row.WebhookID.Bytes),
+		id:              internal.UUID(row.RepohookID.Bytes),
 		vcsProviderID:   row.VCSProviderID.String,
 		secret:          internal.String(row.Secret.String),
-		identifier:      row.Identifier.String,
+		identifier:      row.RepoPath.String,
 		cloud:           cloud.Kind(row.Cloud.String),
 		HostnameService: db.HostnameService,
 	}
