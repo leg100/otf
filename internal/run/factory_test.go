@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
@@ -136,7 +136,7 @@ type (
 		vcsprovider.Service
 	}
 	fakeFactoryCloudClient struct {
-		cloud.Client
+		vcs.Client
 	}
 )
 
@@ -173,18 +173,18 @@ func (f *fakeFactoryConfigurationVersionService) UploadConfig(context.Context, s
 	return nil
 }
 
-func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, string) (cloud.Client, error) {
+func (f *fakeFactoryVCSProviderService) GetVCSClient(context.Context, string) (vcs.Client, error) {
 	return &fakeFactoryCloudClient{}, nil
 }
 
-func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, cloud.GetRepoTarballOptions) ([]byte, string, error) {
+func (f *fakeFactoryCloudClient) GetRepoTarball(context.Context, vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	return nil, "", nil
 }
 
-func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (cloud.Repository, error) {
-	return cloud.Repository{}, nil
+func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (vcs.Repository, error) {
+	return vcs.Repository{}, nil
 }
 
-func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (cloud.Commit, error) {
-	return cloud.Commit{}, nil
+func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs.Commit, error) {
+	return vcs.Commit{}, nil
 }

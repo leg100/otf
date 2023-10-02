@@ -48,13 +48,10 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		}
 	)
 	m := manifest{
-		Name: "OTF",
-		URL:  fmt.Sprintf("https://%s", h.Hostname()),
-		HookAttrs: hookAttrs{
-			URL: fmt.Sprintf("https://%s/ghapp/webhook", h.Hostname()),
-		},
-		Redirect: fmt.Sprintf("https://%s%s", h.Hostname(),
-			paths.ExchangeCodeGithubApp()),
+		Name:        "OTF",
+		URL:         h.URL(""),
+		HookAttrs:   hookAttrs{URL: h.URL(appEventsPath)},
+		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},
 		Public:      false,

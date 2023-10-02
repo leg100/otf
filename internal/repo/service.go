@@ -55,7 +55,7 @@ type (
 
 	// CreateOptions are options for creating a webhook.
 	CreateOptions struct {
-		Client        cloud.Client
+		Client        vcs.Client
 		VCSProviderID string
 		RepoPath      string
 	}
@@ -108,11 +108,14 @@ func NewService(ctx context.Context, opts Options) *service {
 	return svc
 }
 
-// Connect an OTF resource to a VCS repo.
 func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error) {
 	vcsProvider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("retrieving vcs provider: %w", err)
+	}
+	if vcsProvider.GithubApp != nil {
+		// github apps don't need a webhook created on each repo.
+		return uuid.UUID{}, nil
 	}
 	client, err := s.GetVCSClient(ctx, opts.VCSProviderID)
 	if err != nil {
@@ -130,9 +133,9 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("constructing webhook: %w", err)
 	}
-	// lock webhooks table to prevent concurrent updates (a row-level lock is
+	// lock repohooks table to prevent concurrent updates (a row-level lock is
 	// insufficient)
-	err = s.db.Lock(ctx, "webhooks", func(ctx context.Context, q pggen.Querier) error {
+	err = s.db.Lock(ctx, "repohooks", func(ctx context.Context, q pggen.Querier) error {
 		hook, err = s.db.getOrCreateHook(ctx, hook)
 		if err != nil {
 			return fmt.Errorf("getting or creating webhook: %w", err)
@@ -209,7 +212,7 @@ func (s *service) deleteWebhook(ctx context.Context, webhook *hook) error {
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client from db: %w", err)
 	}
-	err = client.DeleteWebhook(ctx, cloud.DeleteWebhookOptions{
+	err = client.DeleteWebhook(ctx, vcs.DeleteWebhookOptions{
 		Repo: webhook.identifier,
 		ID:   *webhook.cloudID,
 	})

@@ -5,13 +5,13 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func TestRun(t *testing.T) {
 
 	t.Run("create run using config from repo", func(t *testing.T) {
 		// setup daemon along with fake github repo
-		repo := cloud.NewTestRepo()
+		repo := vcs.NewTestRepo()
 		daemon, _, ctx := setup(t, nil,
 			github.WithRepo(repo),
 			github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),

@@ -7,7 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/pkg/errors"
 )
 
@@ -24,9 +24,9 @@ type (
 )
 
 // sync should be called from within a tx to avoid inconsistent results.
-func (s *synchroniser) sync(ctx context.Context, client cloud.Client, hook *hook) error {
+func (s *synchroniser) sync(ctx context.Context, client vcs.Client, hook *hook) error {
 	createAndSync := func() error {
-		cloudID, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+		cloudID, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
 			Repo:     hook.identifier,
 			Secret:   hook.secret,
 			Events:   defaultEvents,
@@ -44,7 +44,7 @@ func (s *synchroniser) sync(ctx context.Context, client cloud.Client, hook *hook
 	if hook.cloudID == nil {
 		return createAndSync()
 	}
-	cloudHook, err := client.GetWebhook(ctx, cloud.GetWebhookOptions{
+	cloudHook, err := client.GetWebhook(ctx, vcs.GetWebhookOptions{
 		Repo: hook.identifier,
 		ID:   *hook.cloudID,
 	})
@@ -55,7 +55,7 @@ func (s *synchroniser) sync(ctx context.Context, client cloud.Client, hook *hook
 	}
 	// hook is present on the vcs repo, but we update it anyway just to ensure
 	// its configuration is consistent with what we have in the DB
-	err = client.UpdateWebhook(ctx, cloudHook.ID, cloud.UpdateWebhookOptions{
+	err = client.UpdateWebhook(ctx, cloudHook.ID, vcs.UpdateWebhookOptions{
 		Repo:     hook.identifier,
 		Secret:   hook.secret,
 		Events:   defaultEvents,

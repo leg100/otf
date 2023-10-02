@@ -27,7 +27,7 @@ type (
 		cloudHandlers *internal.SafeMap[cloud.Kind, CloudHandler]
 	}
 
-	CloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
+	CloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *vcs.Event
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {

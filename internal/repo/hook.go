@@ -7,12 +7,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 // defaultEvents are the VCS events that hooks subscribe to.
-var defaultEvents = []cloud.VCSEventType{
-	cloud.VCSEventTypePush,
-	cloud.VCSEventTypePull,
+var defaultEvents = []vcs.EventType{
+	vcs.EventTypePush,
+	vcs.EventTypePull,
 }
 
 type (

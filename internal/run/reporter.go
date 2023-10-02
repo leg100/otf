@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -98,31 +98,31 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	// Report the status and description of the run state
 	var (
-		status      cloud.VCSStatus
+		status      vcs.VCSStatus
 		description string
 	)
 	switch run.Status {
 	case internal.RunPending, internal.RunPlanQueued, internal.RunApplyQueued:
-		status = cloud.VCSPendingStatus
+		status = vcs.VCSPendingStatus
 	case internal.RunPlanning, internal.RunApplying, internal.RunPlanned, internal.RunConfirmed:
-		status = cloud.VCSRunningStatus
+		status = vcs.VCSRunningStatus
 	case internal.RunPlannedAndFinished:
-		status = cloud.VCSSuccessStatus
+		status = vcs.VCSSuccessStatus
 		if run.Plan.ResourceReport != nil {
 			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
 		}
 	case internal.RunApplied:
-		status = cloud.VCSSuccessStatus
+		status = vcs.VCSSuccessStatus
 		if run.Apply.ResourceReport != nil {
 			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 		}
 	case internal.RunErrored, internal.RunCanceled, internal.RunForceCanceled, internal.RunDiscarded:
-		status = cloud.VCSErrorStatus
+		status = vcs.VCSErrorStatus
 		description = run.Status.String()
 	default:
 		return fmt.Errorf("unknown run status: %s", run.Status)
 	}
-	return client.SetStatus(ctx, cloud.SetStatusOptions{
+	return client.SetStatus(ctx, vcs.SetStatusOptions{
 		Workspace:   ws.Name,
 		Ref:         cv.IngressAttributes.CommitSHA,
 		Repo:        cv.IngressAttributes.Repo,

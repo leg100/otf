@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -51,7 +52,7 @@ func TestGetRepoTarball(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	got, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: "acme/terraform",
 	})
 	require.NoError(t, err)
@@ -70,7 +71,7 @@ func TestCreateWebhook(t *testing.T) {
 		WithRepo("acme/terraform"),
 	)
 
-	_, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
+	_, err := client.CreateWebhook(ctx, vcs.CreateWebhookOptions{
 		Repo:   "acme/terraform",
 		Secret: "me-secret",
 	})

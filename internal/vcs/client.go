@@ -1,4 +1,4 @@
-package cloud
+package vcs
 
 import (
 	"context"
@@ -46,7 +46,7 @@ type (
 	Webhook struct {
 		ID       string // cloud's webhook ID
 		Repo     string // identifier is <repo_owner>/<repo_name>
-		Events   []VCSEventType
+		Events   []EventType
 		Endpoint string // the OTF URL that receives events
 	}
 
@@ -54,7 +54,7 @@ type (
 		Repo     string // repo identifier, <owner>/<repo>
 		Secret   string // secret string for generating signature
 		Endpoint string // otf's external-facing host[:port]
-		Events   []VCSEventType
+		Events   []EventType
 	}
 
 	UpdateWebhookOptions CreateWebhookOptions

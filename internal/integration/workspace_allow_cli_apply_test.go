@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ import (
 func TestIntegration_AllowCLIApply(t *testing.T) {
 	integrationTest(t)
 
-	repo := cloud.NewTestRepo()
+	repo := vcs.NewTestRepo()
 	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),

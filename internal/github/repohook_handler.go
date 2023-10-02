@@ -7,9 +7,10 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.Event {
 	event, err := handleEventWithError(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -19,7 +20,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.V
 	return event
 }
 
-func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, error) {
+func handleEventWithError(r *http.Request, secret string) (*vcs.Event, error) {
 	payload, err := github.ValidatePayload(r, []byte(secret))
 	if err != nil {
 		return nil, err
@@ -31,7 +32,7 @@ func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, erro
 	}
 
 	// convert github event to an OTF event
-	to := cloud.VCSEvent{
+	to := vcs.Event{
 		Cloud: cloud.GithubKind,
 	}
 
@@ -59,13 +60,13 @@ func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, erro
 		}
 		switch parts[1] {
 		case "tags":
-			to.Type = cloud.VCSEventTypeTag
+			to.Type = vcs.EventTypeTag
 
 			switch {
 			case event.GetCreated():
-				to.Action = cloud.VCSActionCreated
+				to.Action = vcs.ActionCreated
 			case event.GetDeleted():
-				to.Action = cloud.VCSActionDeleted
+				to.Action = vcs.ActionDeleted
 			default:
 				return nil, fmt.Errorf("no action specified for tag event")
 			}
@@ -74,8 +75,8 @@ func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, erro
 
 			return &to, nil
 		case "heads":
-			to.Type = cloud.VCSEventTypePush
-			to.Action = cloud.VCSActionCreated
+			to.Type = vcs.EventTypePush
+			to.Action = vcs.ActionCreated
 			to.Branch = parts[2]
 
 			return &to, nil
@@ -83,7 +84,7 @@ func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, erro
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
 	case *github.PullRequestEvent:
-		to.Type = cloud.VCSEventTypePull
+		to.Type = vcs.EventTypePull
 		to.PullRequestNumber = event.GetPullRequest().GetNumber()
 		to.PullRequestURL = event.GetPullRequest().GetHTMLURL()
 		to.PullRequestTitle = event.GetPullRequest().GetTitle()
@@ -94,15 +95,15 @@ func handleEventWithError(r *http.Request, secret string) (*cloud.VCSEvent, erro
 
 		switch event.GetAction() {
 		case "opened":
-			to.Action = cloud.VCSActionCreated
+			to.Action = vcs.ActionCreated
 		case "closed":
 			if event.PullRequest.GetMerged() {
-				to.Action = cloud.VCSActionMerged
+				to.Action = vcs.ActionMerged
 			} else {
-				to.Action = cloud.VCSActionDeleted
+				to.Action = vcs.ActionDeleted
 			}
 		case "synchronize":
-			to.Action = cloud.VCSActionUpdated
+			to.Action = vcs.ActionUpdated
 		default:
 			// ignore other pull request events
 			return nil, nil

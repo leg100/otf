@@ -1,4 +1,4 @@
-package cloud
+package vcs
 
 type VCSStatus string
 

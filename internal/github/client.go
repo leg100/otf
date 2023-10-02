@@ -18,6 +18,7 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
 	otfhttp "github.com/leg100/otf/internal/http"
+	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/oauth2"
 )
 
@@ -111,23 +112,23 @@ func (g *Client) GetCurrentUser(ctx context.Context) (cloud.User, error) {
 	return cloud.User{Name: guser.GetLogin()}, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repository, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return cloud.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
+		return vcs.Repository{}, fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return cloud.Repository{}, err
+		return vcs.Repository{}, err
 	}
 
-	return cloud.Repository{
+	return vcs.Repository{
 		Path:          identifier,
 		DefaultBranch: repo.GetDefaultBranch(),
 	}, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
+func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
 	repos, _, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: opts.PageSize,
@@ -146,7 +147,7 @@ func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositori
 	return names, nil
 }
 
-func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
+func (g *Client) ListTags(ctx context.Context, opts vcs.ListTagsOptions) ([]string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -175,7 +176,7 @@ func (g *Client) ExchangeCode(ctx context.Context, code string) (*github.AppConf
 	return cfg, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, string, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, opts vcs.GetRepoTarballOptions) ([]byte, string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return nil, "", fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -236,7 +237,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOp
 }
 
 // CreateWebhook creates a webhook on a github repository.
-func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
+func (g *Client) CreateWebhook(ctx context.Context, opts vcs.CreateWebhookOptions) (string, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return "", fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -245,9 +246,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSEventTypePush:
+		case vcs.EventTypePush:
 			events = append(events, "push")
-		case cloud.VCSEventTypePull:
+		case vcs.EventTypePull:
 			events = append(events, "pull_request")
 		}
 	}
@@ -267,7 +268,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOpti
 	return strconv.FormatInt(hook.GetID(), 10), nil
 }
 
-func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, id string, opts vcs.UpdateWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -281,9 +282,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.Update
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case cloud.VCSEventTypePush:
+		case vcs.EventTypePush:
 			events = append(events, "push")
-		case cloud.VCSEventTypePull:
+		case vcs.EventTypePull:
 			events = append(events, "pull_request")
 		}
 	}
@@ -303,46 +304,46 @@ func (g *Client) UpdateWebhook(ctx context.Context, id string, opts cloud.Update
 	return nil
 }
 
-func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (cloud.Webhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts vcs.GetWebhookOptions) (vcs.Webhook, error) {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
-		return cloud.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Repo)
+		return vcs.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Repo)
 	}
 
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
-		return cloud.Webhook{}, err
+		return vcs.Webhook{}, err
 	}
 
 	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return cloud.Webhook{}, internal.ErrResourceNotFound
+			return vcs.Webhook{}, internal.ErrResourceNotFound
 		}
-		return cloud.Webhook{}, err
+		return vcs.Webhook{}, err
 	}
 
-	var events []cloud.VCSEventType
+	var events []vcs.EventType
 	for _, event := range hook.Events {
 		switch event {
 		case "push":
-			events = append(events, cloud.VCSEventTypePush)
+			events = append(events, vcs.EventTypePush)
 		case "pull_request":
-			events = append(events, cloud.VCSEventTypePull)
+			events = append(events, vcs.EventTypePull)
 		}
 	}
 
 	// extracting OTF endpoint from github's config map is a bit of work...
 	rawEndpoint, ok := hook.Config["url"]
 	if !ok {
-		return cloud.Webhook{}, errors.New("missing url")
+		return vcs.Webhook{}, errors.New("missing url")
 	}
 	endpoint, ok := rawEndpoint.(string)
 	if !ok {
-		return cloud.Webhook{}, errors.New("url is not a string")
+		return vcs.Webhook{}, errors.New("url is not a string")
 	}
 
-	return cloud.Webhook{
+	return vcs.Webhook{
 		ID:       strconv.FormatInt(hook.GetID(), 10),
 		Repo:     opts.Repo,
 		Events:   events,
@@ -350,7 +351,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (
 	}, nil
 }
 
-func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOptions) error {
+func (g *Client) DeleteWebhook(ctx context.Context, opts vcs.DeleteWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -365,7 +366,7 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOpti
 	return err
 }
 
-func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
+func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error {
 	owner, name, found := strings.Cut(opts.Repo, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Repo)
@@ -373,13 +374,13 @@ func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) err
 
 	var status string
 	switch opts.Status {
-	case cloud.VCSPendingStatus, cloud.VCSRunningStatus:
+	case vcs.VCSPendingStatus, vcs.VCSRunningStatus:
 		status = "pending"
-	case cloud.VCSSuccessStatus:
+	case vcs.VCSSuccessStatus:
 		status = "success"
-	case cloud.VCSErrorStatus:
+	case vcs.VCSErrorStatus:
 		status = "error"
-	case cloud.VCSFailureStatus:
+	case vcs.VCSFailureStatus:
 		status = "failure"
 	default:
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)
@@ -450,22 +451,22 @@ listloop:
 	return files, nil
 }
 
-func (g *Client) GetCommit(ctx context.Context, repo, ref string) (cloud.Commit, error) {
+func (g *Client) GetCommit(ctx context.Context, repo, ref string) (vcs.Commit, error) {
 	owner, name, found := strings.Cut(repo, "/")
 	if !found {
-		return cloud.Commit{}, fmt.Errorf("malformed identifier: %s", repo)
+		return vcs.Commit{}, fmt.Errorf("malformed identifier: %s", repo)
 	}
 
 	commit, resp, err := g.client.Repositories.GetCommit(ctx, owner, name, ref, nil)
 	if err != nil {
-		return cloud.Commit{}, err
+		return vcs.Commit{}, err
 	}
 	defer resp.Body.Close()
 
-	return cloud.Commit{
+	return vcs.Commit{
 		SHA: commit.GetSHA(),
 		URL: commit.GetHTMLURL(),
-		Author: cloud.CommitAuthor{
+		Author: vcs.CommitAuthor{
 			Username:   commit.GetAuthor().GetLogin(),
 			AvatarURL:  commit.GetAuthor().GetAvatarURL(),
 			ProfileURL: commit.GetAuthor().GetHTMLURL(),

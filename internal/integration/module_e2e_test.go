@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,7 @@ func TestModuleE2E(t *testing.T) {
 
 	// create an otf daemon with a fake github backend, ready to serve up a repo
 	// and its contents via tarball.
-	repo := cloud.NewTestModuleRepo("aws", "mod")
+	repo := vcs.NewTestModuleRepo("aws", "mod")
 	svc, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0"),

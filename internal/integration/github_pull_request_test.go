@@ -5,9 +5,9 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ func TestGithubPullRequest(t *testing.T) {
 	// create an OTF daemon with a fake github backend, serve up a repo and its
 	// contents via tarball, and setup a fake pull request with a list of files
 	// it has changed.
-	repo := cloud.NewTestRepo()
+	repo := vcs.NewTestRepo()
 	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),

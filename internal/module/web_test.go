@@ -8,10 +8,10 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -99,8 +99,8 @@ func TestNewModule_Repo(t *testing.T) {
 	h := newTestWebHandlers(t,
 		withVCSProviders(&vcsprovider.VCSProvider{}),
 		withRepos(
-			cloud.NewTestModuleRepo("aws", "vpc"),
-			cloud.NewTestModuleRepo("aws", "s3"),
+			vcs.NewTestModuleRepo("aws", "vpc"),
+			vcs.NewTestModuleRepo("aws", "s3"),
 		),
 	)
 
@@ -241,7 +241,7 @@ func (f *fakeWebServices) ListVCSProviders(context.Context, string) ([]*vcsprovi
 	return f.vcsprovs, nil
 }
 
-func (f *fakeWebServices) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+func (f *fakeWebServices) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
 	return &fakeModulesCloudClient{repos: f.repos}, nil
 }
 
@@ -256,9 +256,9 @@ func (f *fakeWebServices) Hostname() string {
 type fakeModulesCloudClient struct {
 	repos []string
 
-	cloud.Client
+	vcs.Client
 }
 
-func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
+func (f *fakeModulesCloudClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
 	return f.repos, nil
 }

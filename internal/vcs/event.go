@@ -1,24 +1,25 @@
-package cloud
+package vcs
 
 import (
 	"github.com/google/uuid"
+	"github.com/leg100/otf/internal/cloud"
 )
 
 const (
-	VCSEventTypePull VCSEventType = iota
-	VCSEventTypePush
-	VCSEventTypeTag
+	EventTypePull EventType = iota
+	EventTypePush
+	EventTypeTag
 
-	VCSActionCreated VCSAction = iota
-	VCSActionDeleted
-	VCSActionMerged
-	VCSActionUpdated
+	ActionCreated Action = iota
+	ActionDeleted
+	ActionMerged
+	ActionUpdated
 )
 
 type (
-	// VCSEvent is a VCS event received from a cloud, e.g. a commit event from
+	// Event is a VCS event received from a cloud, e.g. a commit event from
 	// github
-	VCSEvent struct {
+	Event struct {
 		//
 		// These fields are populated by the generic webhook handler
 		//
@@ -29,10 +30,10 @@ type (
 		//
 		// These fields are populated by cloud-specific handlers
 		//
-		Cloud Kind
+		Cloud cloud.Kind
 
-		Type          VCSEventType
-		Action        VCSAction
+		Type          EventType
+		Action        Action
 		Tag           string
 		CommitSHA     string
 		CommitURL     string
@@ -52,6 +53,6 @@ type (
 		Paths []string
 	}
 
-	VCSEventType int
-	VCSAction    int
+	EventType int
+	Action    int
 )

@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/organization"
@@ -151,7 +150,7 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 	}
 
 	var (
-		client cloud.Client
+		client vcs.Client
 		tags   []string
 	)
 	setup := func() (err error) {
@@ -168,7 +167,7 @@ func (s *service) publishModule(ctx context.Context, organization string, opts P
 		if err != nil {
 			return err
 		}
-		tags, err = client.ListTags(ctx, cloud.ListTagsOptions{
+		tags, err = client.ListTags(ctx, vcs.ListTagsOptions{
 			Repo: string(opts.Repo),
 		})
 		if err != nil {
@@ -222,7 +221,7 @@ func (s *service) PublishVersion(ctx context.Context, opts PublishVersionOptions
 		return err
 	}
 
-	tarball, _, err := opts.Client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	tarball, _, err := opts.Client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: string(opts.Repo),
 		Ref:  &opts.Ref,
 	})

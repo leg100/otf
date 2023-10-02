@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,8 +30,8 @@ func TestWebhookHandler(t *testing.T) {
 		&fakeHandlerDB{
 			hook: hook,
 		})
-	handler.cloudHandlers.Set(cloud.GithubKind, func(http.ResponseWriter, *http.Request, string) *cloud.VCSEvent {
-		return &cloud.VCSEvent{}
+	handler.cloudHandlers.Set(cloud.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.Event {
+		return &vcs.Event{}
 	})
 
 	w := httptest.NewRecorder()
@@ -38,7 +39,7 @@ func TestWebhookHandler(t *testing.T) {
 	handler.ServeHTTP(w, r)
 	assert.Equal(t, 200, w.Code, "response body: %s", w.Body.String())
 
-	want := cloud.VCSEvent{RepoID: hook.id, VCSProviderID: "vcs-123", RepoPath: hook.identifier}
+	want := vcs.Event{RepoID: hook.id, VCSProviderID: "vcs-123", RepoPath: hook.identifier}
 	assert.Equal(t, want, broker.got)
 }
 
@@ -47,7 +48,7 @@ type (
 		hook *hook
 	}
 	fakeBroker struct {
-		got cloud.VCSEvent
+		got vcs.Event
 	}
 )
 
@@ -55,4 +56,4 @@ func (db *fakeHandlerDB) getHookByID(context.Context, uuid.UUID) (*hook, error) 
 	return db.hook, nil
 }
 
-func (f *fakeBroker) Publish(got cloud.VCSEvent) { f.got = got }
+func (f *fakeBroker) Publish(got vcs.Event) { f.got = got }

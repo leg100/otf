@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/gitlab"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -108,7 +109,7 @@ func (t *VCSProvider) String() string {
 	return s
 }
 
-func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
+func (t *VCSProvider) NewClient(ctx context.Context) (vcs.Client, error) {
 	switch t.Kind {
 	case cloud.GithubKind:
 		if t.GithubApp != nil {

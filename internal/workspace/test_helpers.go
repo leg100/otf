@@ -6,9 +6,9 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/resource"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/require"
 )
@@ -97,7 +97,7 @@ func (f *fakeWebService) ListTeams(context.Context, string) ([]*auth.Team, error
 	return f.teams, nil
 }
 
-func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+func (f *fakeWebService) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
 	return &fakeWebCloudClient{repos: f.repos}, nil
 }
 
@@ -140,9 +140,9 @@ func (f *fakeWebService) ListTags(context.Context, string, ListTagsOptions) (*re
 type fakeWebCloudClient struct {
 	repos []string
 
-	cloud.Client
+	vcs.Client
 }
 
-func (f *fakeWebCloudClient) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]string, error) {
+func (f *fakeWebCloudClient) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
 	return f.repos, nil
 }

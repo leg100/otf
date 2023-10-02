@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,13 +16,13 @@ import (
 func TestSynchroniser(t *testing.T) {
 	tests := []struct {
 		name  string
-		cloud cloud.Webhook // seed cloud with hook
-		got   *hook         // seed db with hook
-		want  *hook         // hook after synchronisation
+		cloud vcs.Webhook // seed cloud with hook
+		got   *hook       // seed db with hook
+		want  *hook       // hook after synchronisation
 	}{
 		{
 			name: "synchronised",
-			cloud: cloud.Webhook{
+			cloud: vcs.Webhook{
 				ID:       "123",
 				Events:   defaultEvents,
 				Endpoint: "fake-host.org/xyz",
@@ -38,7 +38,7 @@ func TestSynchroniser(t *testing.T) {
 		},
 		{
 			name:  "new hook",
-			cloud: cloud.Webhook{ID: "123"}, // new id that cloud returns
+			cloud: vcs.Webhook{ID: "123"}, // new id that cloud returns
 			got: &hook{
 				endpoint: "fake-host.org/xyz",
 			},
@@ -49,7 +49,7 @@ func TestSynchroniser(t *testing.T) {
 		},
 		{
 			name: "hook events missing on cloud",
-			cloud: cloud.Webhook{
+			cloud: vcs.Webhook{
 				ID:       "123",
 				Endpoint: "fake-host.org/xyz",
 			},

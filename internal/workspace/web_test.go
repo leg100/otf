@@ -11,10 +11,10 @@ import (
 	"github.com/antchfx/htmlquery"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -320,11 +320,11 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	ws := &Workspace{ID: "ws-123", Organization: "acme-corp"}
 	app := fakeWebHandlers(t, withWorkspaces(ws), withVCSProviders(&vcsprovider.VCSProvider{}),
 		withRepos(
-			cloud.NewTestRepo(),
-			cloud.NewTestRepo(),
-			cloud.NewTestRepo(),
-			cloud.NewTestRepo(),
-			cloud.NewTestRepo(),
+			vcs.NewTestRepo(),
+			vcs.NewTestRepo(),
+			vcs.NewTestRepo(),
+			vcs.NewTestRepo(),
+			vcs.NewTestRepo(),
 		))
 
 	q := "/?workspace_id=ws-123&vcs_provider_id=fake-provider"

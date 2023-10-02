@@ -7,6 +7,8 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
+const appEventsPath = "/github-app/events"
+
 // appEventHandler handles events from a github app installation.
 type appEventHandler struct {
 	Service
@@ -14,7 +16,7 @@ type appEventHandler struct {
 }
 
 func (h *appEventHandler) addHandlers(r *mux.Router) {
-	r.HandleFunc("/ghapp/events", h.handler)
+	r.HandleFunc(appEventsPath, h.handler)
 }
 
 func (h *appEventHandler) handler(w http.ResponseWriter, r *http.Request) {

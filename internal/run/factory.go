@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
 
@@ -65,7 +65,7 @@ func (f *factory) createConfigVersionFromVCS(ctx context.Context, ws *workspace.
 	if branch == "" {
 		branch = repo.DefaultBranch
 	}
-	tarball, ref, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
+	tarball, ref, err := client.GetRepoTarball(ctx, vcs.GetRepoTarballOptions{
 		Repo: ws.Connection.Repo,
 		Ref:  &branch,
 	})

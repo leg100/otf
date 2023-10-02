@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,20 +17,20 @@ func TestEventHandler(t *testing.T) {
 		name      string
 		eventType string
 		body      string
-		want      *cloud.VCSEvent
+		want      *vcs.Event
 	}{
 		{
 			"push",
 			"push",
 			"./testdata/github_push.json",
-			&cloud.VCSEvent{
+			&vcs.Event{
 				Cloud:           cloud.GithubKind,
-				Type:            cloud.VCSEventTypePush,
+				Type:            vcs.EventTypePush,
 				Branch:          "master",
 				DefaultBranch:   "master",
 				CommitSHA:       "42d6fc7dac35cc7945231195e248af2f6256b522",
 				CommitURL:       "https://github.com/leg100/tfc-workspaces/commit/42d6fc7dac35cc7945231195e248af2f6256b522",
-				Action:          cloud.VCSActionCreated,
+				Action:          vcs.ActionCreated,
 				Paths:           []string{"main.tf"},
 				SenderUsername:  "leg100",
 				SenderAvatarURL: "https://avatars.githubusercontent.com/u/75728?v=4",
@@ -40,9 +41,9 @@ func TestEventHandler(t *testing.T) {
 			"pull request opened",
 			"pull_request",
 			"./testdata/github_pull_opened.json",
-			&cloud.VCSEvent{
+			&vcs.Event{
 				Cloud:             cloud.GithubKind,
-				Type:              cloud.VCSEventTypePull,
+				Type:              vcs.EventTypePull,
 				Branch:            "pr-2",
 				DefaultBranch:     "master",
 				CommitSHA:         "c560613b228f5e189520fbab4078284ea8312bcb",
@@ -50,7 +51,7 @@ func TestEventHandler(t *testing.T) {
 				PullRequestNumber: 2,
 				PullRequestURL:    "https://github.com/leg100/otf-workspaces/pull/2",
 				PullRequestTitle:  "pr-2",
-				Action:            cloud.VCSActionCreated,
+				Action:            vcs.ActionCreated,
 				SenderUsername:    "leg100",
 				SenderAvatarURL:   "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:     "https://github.com/leg100",
@@ -60,9 +61,9 @@ func TestEventHandler(t *testing.T) {
 			"pull request updated",
 			"pull_request",
 			"./testdata/github_pull_update.json",
-			&cloud.VCSEvent{
+			&vcs.Event{
 				Cloud:             cloud.GithubKind,
-				Type:              cloud.VCSEventTypePull,
+				Type:              vcs.EventTypePull,
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
 				CommitSHA:         "067e2b4c6394b3dad3c0ec89ffc428ab60ae7e5d",
@@ -70,7 +71,7 @@ func TestEventHandler(t *testing.T) {
 				PullRequestNumber: 1,
 				PullRequestURL:    "https://github.com/leg100/otf-workspaces/pull/1",
 				PullRequestTitle:  "pr-1",
-				Action:            cloud.VCSActionUpdated,
+				Action:            vcs.ActionUpdated,
 				SenderUsername:    "leg100",
 				SenderAvatarURL:   "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:     "https://github.com/leg100",
@@ -80,14 +81,14 @@ func TestEventHandler(t *testing.T) {
 			"tag pushed",
 			"push",
 			"./testdata/github_push_tag.json",
-			&cloud.VCSEvent{
+			&vcs.Event{
 				Cloud:           cloud.GithubKind,
-				Type:            cloud.VCSEventTypeTag,
+				Type:            vcs.EventTypeTag,
 				Tag:             "v1.0.0",
 				DefaultBranch:   "master",
 				CommitSHA:       "07101e82c4f525d5f697111f0690bdd0ff40a865",
 				CommitURL:       "https://github.com/leg100/terraform-otf-test/commit/07101e82c4f525d5f697111f0690bdd0ff40a865",
-				Action:          cloud.VCSActionCreated,
+				Action:          vcs.ActionCreated,
 				SenderUsername:  "leg100",
 				SenderAvatarURL: "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:   "https://github.com/leg100",

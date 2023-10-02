@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +19,7 @@ func TestConnectRepoE2E(t *testing.T) {
 	// create an otf daemon with a fake github backend, serve up a repo and its
 	// contents via tarball. And register a callback to test receipt of commit
 	// statuses
-	repo := cloud.NewTestRepo()
+	repo := vcs.NewTestRepo()
 	daemon, org, ctx := setup(t, nil,
 		github.WithRepo(repo),
 		github.WithCommit("0335fb07bb0244b7a169ee89d15c7703e4aaf7de"),

@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/semver"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 )
 
@@ -23,7 +23,7 @@ type (
 	}
 )
 
-func (p *publisher) handle(event cloud.VCSEvent) {
+func (p *publisher) handle(event vcs.Event) {
 	logger := p.Logger.WithValues(
 		"sha", event.CommitSHA,
 		"type", event.Type,
@@ -38,17 +38,17 @@ func (p *publisher) handle(event cloud.VCSEvent) {
 }
 
 // handlerWithError publishes a module version in response to a vcs event.
-func (p *publisher) handleWithError(logger logr.Logger, event cloud.VCSEvent) error {
+func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	// no parent context; handler is called asynchronously
 	ctx := context.Background()
 	// give spawner unlimited powers
 	ctx = internal.AddSubjectToContext(ctx, &internal.Superuser{Username: "run-spawner"})
 
 	// only create-tag events trigger the publishing of new module version
-	if event.Type != cloud.VCSEventTypeTag {
+	if event.Type != vcs.EventTypeTag {
 		return nil
 	}
-	if event.Action != cloud.VCSActionCreated {
+	if event.Action != vcs.ActionCreated {
 		return nil
 	}
 	// only interested in tags that look like semantic versions

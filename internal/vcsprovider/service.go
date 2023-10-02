@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/internal/rbac"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/tfeapi"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -33,7 +34,7 @@ type (
 		//
 		// TODO: rename vcs provider to cloud client; the central purpose of the vcs
 		// provider is, after all, to construct a cloud client.
-		GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error)
+		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 
 		BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider])
 	}
@@ -218,7 +219,7 @@ func (a *service) GetVCSProvider(ctx context.Context, id string) (*VCSProvider, 
 	return provider, nil
 }
 
-func (a *service) GetVCSClient(ctx context.Context, providerID string) (cloud.Client, error) {
+func (a *service) GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error) {
 	provider, err := a.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return nil, err

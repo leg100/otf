@@ -5,8 +5,8 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +22,7 @@ import (
 func TestWebhook(t *testing.T) {
 	integrationTest(t)
 
-	repo := cloud.NewTestRepo()
+	repo := vcs.NewTestRepo()
 
 	// create otf daemon with fake github server, on which to create/delete
 	// webhooks.
@@ -73,7 +73,7 @@ func TestWebhook(t *testing.T) {
 func TestWebhook_Purger(t *testing.T) {
 	integrationTest(t)
 
-	repo := cloud.NewTestRepo()
+	repo := vcs.NewTestRepo()
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
