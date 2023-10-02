@@ -9,10 +9,7 @@ import (
 	"github.com/leg100/otf/internal/cloud"
 )
 
-type RepoHookHandler struct{}
-
-// HandleEvent handles incoming events from a github repo webhook
-func (RepoHookHandler) HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent {
 	event, err := handleEventWithError(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

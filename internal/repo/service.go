@@ -26,7 +26,9 @@ type (
 		// no action is taken. In any case an identifier is returned uniquely
 		// identifying the webhook.
 		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error)
-
+		// RegisterCloudHandler registers a new cloud handler, to handle VCS
+		// events for a specific cloud.
+		RegisterCloudHandler(kind cloud.Kind, h CloudHandler)
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
 
@@ -144,6 +146,10 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 		return uuid.UUID{}, err
 	}
 	return hook.id, nil
+}
+
+func (s *service) RegisterCloudHandler(kind cloud.Kind, h CloudHandler) {
+	s.handler.cloudHandlers.Set(kind, h)
 }
 
 func (s *service) deleteOrganizationWebhooks(ctx context.Context, org *organization.Organization) error {

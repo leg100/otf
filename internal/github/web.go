@@ -16,7 +16,6 @@ import (
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
-	RepoHookHandler
 
 	svc Service
 }

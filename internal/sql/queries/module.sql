@@ -45,14 +45,13 @@ SELECT
     m.status,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
-    (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
         FROM module_versions v
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
+JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = pggen.arg('organization_name')
 ;
 
@@ -66,14 +65,13 @@ SELECT
     m.status,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
-    (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
         FROM module_versions v
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
+JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = pggen.arg('organization_name')
 AND   m.name = pggen.arg('name')
 AND   m.provider = pggen.arg('provider')
@@ -89,18 +87,17 @@ SELECT
     m.status,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
-    (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
         FROM module_versions v
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
+JOIN repo_connections r USING (module_id)
 WHERE m.module_id = pggen.arg('id')
 ;
 
--- name: FindModuleByWebhookID :one
+-- name: FindModuleByConnection :one
 SELECT
     m.module_id,
     m.created_at,
@@ -110,15 +107,15 @@ SELECT
     m.status,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
-    (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
         FROM module_versions v
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
-WHERE h.webhook_id = pggen.arg('webhook_id')
+JOIN repo_connections r USING (module_id)
+WHERE r.vcs_provider_id = pggen.arg('vcs_provider_id')
+AND   r.repo_path = pggen.arg('repo_path')
 ;
 
 -- name: FindModuleByModuleVersionID :one
@@ -131,7 +128,6 @@ SELECT
     m.status,
     m.organization_name,
     (r.*)::"repo_connections" AS module_connection,
-    (h.*)::"webhooks" AS webhook,
     (
         SELECT array_agg(v.*) AS versions
         FROM module_versions v
@@ -139,7 +135,7 @@ SELECT
     ) AS versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
-LEFT JOIN (repo_connections r JOIN webhooks h USING (webhook_id)) USING (module_id)
+JOIN repo_connections r USING (module_id)
 WHERE mv.module_version_id = pggen.arg('module_version_id')
 ;
 

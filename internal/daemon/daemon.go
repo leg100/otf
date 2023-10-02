@@ -175,6 +175,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 	})
+	repoService.RegisterCloudHandler(cloud.GithubKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(cloud.GitlabKind, gitlab.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
 		Logger:             logger,

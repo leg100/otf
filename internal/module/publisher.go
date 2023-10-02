@@ -55,6 +55,8 @@ func (p *publisher) handleWithError(logger logr.Logger, event cloud.VCSEvent) er
 	if !semver.IsValid(event.Tag) {
 		return nil
 	}
+	// TODO: we're only retrieving *one* module, but can not *multiple* modules
+	// be connected to a repo?
 	module, err := p.GetModuleByRepoID(ctx, event.RepoID)
 	if err != nil {
 		return err

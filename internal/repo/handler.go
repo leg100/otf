@@ -24,10 +24,10 @@ type (
 
 		vcs.Publisher
 		handlerDB
-		cloudHandlers *internal.SafeMap[cloud.Kind, cloudHandler]
+		cloudHandlers *internal.SafeMap[cloud.Kind, CloudHandler]
 	}
 
-	cloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
+	CloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *cloud.VCSEvent
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
@@ -40,7 +40,7 @@ func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *hand
 		Logger:        logger,
 		Publisher:     publisher,
 		handlerDB:     db,
-		cloudHandlers: internal.NewSafeMap[cloud.Kind, cloudHandler](),
+		cloudHandlers: internal.NewSafeMap[cloud.Kind, CloudHandler](),
 	}
 }
 
