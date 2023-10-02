@@ -374,13 +374,13 @@ func (g *Client) SetStatus(ctx context.Context, opts vcs.SetStatusOptions) error
 
 	var status string
 	switch opts.Status {
-	case vcs.VCSPendingStatus, vcs.VCSRunningStatus:
+	case vcs.PendingStatus, vcs.RunningStatus:
 		status = "pending"
-	case vcs.VCSSuccessStatus:
+	case vcs.SuccessStatus:
 		status = "success"
-	case vcs.VCSErrorStatus:
+	case vcs.ErrorStatus:
 		status = "error"
-	case vcs.VCSFailureStatus:
+	case vcs.FailureStatus:
 		status = "failure"
 	default:
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)

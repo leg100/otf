@@ -1,11 +1,11 @@
 package vcs
 
-type VCSStatus string
+type Status string
 
 const (
-	VCSPendingStatus VCSStatus = "pending"
-	VCSRunningStatus VCSStatus = "running"
-	VCSSuccessStatus VCSStatus = "success"
-	VCSErrorStatus   VCSStatus = "error"
-	VCSFailureStatus VCSStatus = "failure"
+	PendingStatus Status = "pending"
+	RunningStatus Status = "running"
+	SuccessStatus Status = "success"
+	ErrorStatus   Status = "error"
+	FailureStatus Status = "failure"
 )

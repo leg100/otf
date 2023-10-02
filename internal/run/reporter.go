@@ -98,26 +98,26 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 
 	// Report the status and description of the run state
 	var (
-		status      vcs.VCSStatus
+		status      vcs.Status
 		description string
 	)
 	switch run.Status {
 	case internal.RunPending, internal.RunPlanQueued, internal.RunApplyQueued:
-		status = vcs.VCSPendingStatus
+		status = vcs.PendingStatus
 	case internal.RunPlanning, internal.RunApplying, internal.RunPlanned, internal.RunConfirmed:
-		status = vcs.VCSRunningStatus
+		status = vcs.RunningStatus
 	case internal.RunPlannedAndFinished:
-		status = vcs.VCSSuccessStatus
+		status = vcs.SuccessStatus
 		if run.Plan.ResourceReport != nil {
 			description = fmt.Sprintf("planned: %s", run.Plan.ResourceReport)
 		}
 	case internal.RunApplied:
-		status = vcs.VCSSuccessStatus
+		status = vcs.SuccessStatus
 		if run.Apply.ResourceReport != nil {
 			description = fmt.Sprintf("applied: %s", run.Apply.ResourceReport)
 		}
 	case internal.RunErrored, internal.RunCanceled, internal.RunForceCanceled, internal.RunDiscarded:
-		status = vcs.VCSErrorStatus
+		status = vcs.ErrorStatus
 		description = run.Status.String()
 	default:
 		return fmt.Errorf("unknown run status: %s", run.Status)

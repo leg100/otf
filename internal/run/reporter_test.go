@@ -40,7 +40,7 @@ func TestReporter_HandleRun(t *testing.T) {
 				Workspace: "dev",
 				Ref:       "abc123",
 				Repo:      "leg100/otf",
-				Status:    vcs.VCSPendingStatus,
+				Status:    vcs.PendingStatus,
 				TargetURL: "https://otf-host.org/app/runs/run-123",
 			},
 		},

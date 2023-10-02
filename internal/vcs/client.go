@@ -76,7 +76,7 @@ type (
 		Workspace   string // workspace name
 		Repo        string // <owner>/<repo>
 		Ref         string // git ref
-		Status      VCSStatus
+		Status      Status
 		TargetURL   string
 		Description string
 	}
