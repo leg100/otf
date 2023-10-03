@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/cloud"
 )
 
@@ -20,16 +19,17 @@ type (
 	// Event is a VCS event received from a cloud, e.g. a commit event from
 	// github
 	Event struct {
-		//
-		// These fields are populated by the generic webhook handler
-		//
-		RepoID        uuid.UUID
-		VCSProviderID string
-		RepoPath      string
+		EventHeader
+		EventPayload
+	}
 
-		//
-		// These fields are populated by cloud-specific handlers
-		//
+	EventHeader struct {
+		VCSProviderID string
+	}
+
+	EventPayload struct {
+		RepoPath string
+
 		Cloud cloud.Kind
 
 		Type          EventType
@@ -51,6 +51,9 @@ type (
 		// Paths of files that have been added/modified/removed. Only applicable
 		// to Push and Tag events types.
 		Paths []string
+
+		// Only set if event is from a github app
+		GithubAppInstallID *int64
 	}
 
 	EventType int

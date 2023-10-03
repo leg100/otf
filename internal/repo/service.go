@@ -38,7 +38,7 @@ type (
 
 		*db
 
-		*handler      // handles incoming vcs events
+		*handlers     // handles incoming vcs events
 		*synchroniser // synchronise hooks
 	}
 
@@ -72,7 +72,7 @@ func NewService(ctx context.Context, opts Options) *service {
 		Logger:  opts.Logger,
 		Service: opts.VCSProviderService,
 		db:      db,
-		handler: newHandler(
+		handlers: newHandler(
 			opts.Logger,
 			opts.VCSEventBroker,
 			db,
@@ -152,7 +152,7 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 }
 
 func (s *service) RegisterCloudHandler(kind cloud.Kind, h CloudHandler) {
-	s.handler.cloudHandlers.Set(kind, h)
+	s.handlers.cloudHandlers.Set(kind, h)
 }
 
 func (s *service) deleteOrganizationWebhooks(ctx context.Context, org *organization.Organization) error {

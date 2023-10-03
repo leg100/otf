@@ -57,7 +57,7 @@ func (p *publisher) handleWithError(logger logr.Logger, event vcs.Event) error {
 	}
 	// TODO: we're only retrieving *one* module, but can not *multiple* modules
 	// be connected to a repo?
-	module, err := p.GetModuleByRepoID(ctx, event.RepoID)
+	module, err := p.GetModuleByConnection(ctx, event.VCSProviderID, event.RepoPath)
 	if err != nil {
 		return err
 	}

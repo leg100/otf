@@ -32,11 +32,10 @@ type (
 	service struct {
 		logr.Logger
 
-		site            internal.Authorizer
-		organization    internal.Authorizer
-		db              *pgdb
-		web             *webHandlers
-		appEventHandler *appEventHandler
+		site         internal.Authorizer
+		organization internal.Authorizer
+		db           *pgdb
+		web          *webHandlers
 	}
 
 	Options struct {
@@ -60,16 +59,11 @@ func NewService(opts Options) *service {
 		HostnameService: opts.HostnameService,
 		svc:             &svc,
 	}
-	svc.appEventHandler = &appEventHandler{
-		Service:   &svc,
-		Publisher: opts.Publisher,
-	}
 	return &svc
 }
 
 func (a *service) AddHandlers(r *mux.Router) {
 	a.web.addHandlers(r)
-	a.appEventHandler.addHandlers(r)
 }
 
 func (a *service) CreateGithubApp(ctx context.Context, opts CreateAppOptions) (*App, error) {

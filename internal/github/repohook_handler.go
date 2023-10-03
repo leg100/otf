@@ -10,7 +10,7 @@ import (
 	"github.com/leg100/otf/internal/vcs"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.Event {
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload {
 	event, err := handleEventWithError(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -20,23 +20,23 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.Eve
 	return event
 }
 
-func handleEventWithError(r *http.Request, secret string) (*vcs.Event, error) {
+func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	payload, err := github.ValidatePayload(r, []byte(secret))
 	if err != nil {
 		return nil, err
 	}
 
-	rawEvent, err := github.ParseWebHook(github.WebHookType(r), payload)
+	raw, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
 		return nil, err
 	}
 
 	// convert github event to an OTF event
-	to := vcs.Event{
+	to := vcs.EventPayload{
 		Cloud: cloud.GithubKind,
 	}
 
-	switch event := rawEvent.(type) {
+	switch event := raw.(type) {
 	case *github.PushEvent:
 		// populate event with list of changed file paths
 		for _, c := range event.Commits {
@@ -51,6 +51,10 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.Event, error) {
 		to.SenderUsername = event.GetSender().GetLogin()
 		to.SenderAvatarURL = event.GetSender().GetAvatarURL()
 		to.SenderHTMLURL = event.GetSender().GetHTMLURL()
+
+		if install := event.GetInstallation(); install != nil {
+			to.GithubAppInstallID = install.ID
+		}
 
 		// a github.PushEvent includes tag events but OTF categorises them as separate
 		// event types
@@ -92,6 +96,10 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.Event, error) {
 		to.SenderUsername = event.GetSender().GetLogin()
 		to.SenderAvatarURL = event.GetSender().GetAvatarURL()
 		to.SenderHTMLURL = event.GetSender().GetHTMLURL()
+
+		if install := event.GetInstallation(); install != nil {
+			to.GithubAppInstallID = install.ID
+		}
 
 		switch event.GetAction() {
 		case "opened":

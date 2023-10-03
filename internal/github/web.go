@@ -13,6 +13,12 @@ import (
 	"github.com/leg100/otf/internal/http/html/paths"
 )
 
+const (
+	// GithubPath is the URL path for the endpoint receiving VCS events from the
+	// Github App
+	AppEventsPath = "/webhooks/vcs/github-app"
+)
+
 type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
@@ -50,7 +56,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	m := manifest{
 		Name:        "OTF",
 		URL:         h.URL(""),
-		HookAttrs:   hookAttrs{URL: h.URL(appEventsPath)},
+		HookAttrs:   hookAttrs{URL: h.URL(AppEventsPath)},
 		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
 		Events:      []string{"push", "pull_request"},

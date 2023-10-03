@@ -27,13 +27,16 @@ type (
 		GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 		ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 		ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, error)
+		// ListVCSProvidersByGithubAppInstall lists VCS providers using the
+		// credentials of a particular github app installation.
+		ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error)
 		DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
 		// GetVCSClient combines retrieving a vcs provider and construct a cloud
 		// client from that provider.
 		//
-		// TODO: rename vcs provider to cloud client; the central purpose of the vcs
-		// provider is, after all, to construct a cloud client.
+		// TODO: rename vcs provider to vcs client; the central purpose of the vcs
+		// provider is, after all, to construct a vcs client.
 		GetVCSClient(ctx context.Context, providerID string) (vcs.Client, error)
 
 		BeforeDeleteVCSProvider(l hooks.Listener[*VCSProvider])
@@ -198,6 +201,17 @@ func (a *service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, erro
 		return nil, err
 	}
 	a.V(9).Info("listed vcs providers", "subject", subject)
+	return providers, nil
+}
+
+// ListVCSProvidersByGithubAppInstall is unauthenticated: only for internal use.
+func (a *service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
+	providers, err := a.db.listByGithubAppInstall(ctx, installID)
+	if err != nil {
+		a.Error(err, "listing github app installation vcs providers")
+		return nil, err
+	}
+	a.V(9).Info("listed github app installation vcs providers")
 	return providers, nil
 }
 

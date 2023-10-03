@@ -17,13 +17,13 @@ func TestEventHandler(t *testing.T) {
 		name      string
 		eventType string
 		body      string
-		want      *vcs.Event
+		want      *vcs.EventPayload
 	}{
 		{
 			"push",
 			"push",
 			"./testdata/github_push.json",
-			&vcs.Event{
+			&vcs.EventPayload{
 				Cloud:           cloud.GithubKind,
 				Type:            vcs.EventTypePush,
 				Branch:          "master",
@@ -41,7 +41,7 @@ func TestEventHandler(t *testing.T) {
 			"pull request opened",
 			"pull_request",
 			"./testdata/github_pull_opened.json",
-			&vcs.Event{
+			&vcs.EventPayload{
 				Cloud:             cloud.GithubKind,
 				Type:              vcs.EventTypePull,
 				Branch:            "pr-2",
@@ -61,7 +61,7 @@ func TestEventHandler(t *testing.T) {
 			"pull request updated",
 			"pull_request",
 			"./testdata/github_pull_update.json",
-			&vcs.Event{
+			&vcs.EventPayload{
 				Cloud:             cloud.GithubKind,
 				Type:              vcs.EventTypePull,
 				Branch:            "pr-1",
@@ -81,7 +81,7 @@ func TestEventHandler(t *testing.T) {
 			"tag pushed",
 			"push",
 			"./testdata/github_push_tag.json",
-			&vcs.Event{
+			&vcs.EventPayload{
 				Cloud:           cloud.GithubKind,
 				Type:            vcs.EventTypeTag,
 				Tag:             "v1.0.0",

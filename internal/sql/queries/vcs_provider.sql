@@ -30,6 +30,12 @@ SELECT *
 FROM vcs_providers
 ;
 
+-- name: FindVCSProvidersByGithubAppInstallID :many
+SELECT *
+FROM vcs_providers
+WHERE github_app_install_id = pggen.arg('github_app_install_id')
+;
+
 -- name: FindVCSProvider :one
 SELECT *
 FROM vcs_providers

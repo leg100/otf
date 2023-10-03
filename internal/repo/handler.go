@@ -10,24 +10,38 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/vcs"
+	"github.com/leg100/otf/internal/vcsprovider"
 )
 
-// handlerPrefix is the URL path prefix for the endpoint receiving vcs events
-const handlerPrefix = "/webhooks/vcs"
+const (
+	// handlerPrefix is the URL path prefix for endpoints receiving vcs events
+	handlerPrefix = "/webhooks/vcs"
+)
 
 type (
-	// handler handles repohook VCS events.
-	handler struct {
+	// handlers handle VCS events triggered by webhooks
+	handlers struct {
 		logr.Logger
 
 		vcs.Publisher
-		handlerDB
+		github.GithubAppService
+		vcsprovider.VCSProviderService
+
 		cloudHandlers *internal.SafeMap[cloud.Kind, CloudHandler]
+
+		handlerDB
 	}
 
-	CloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *vcs.Event
+	// CloudHandler does two things:
+	// (a) handles incoming request (containing a VCS event) and sends appropriate response
+	// (b) unmarshals event from the request; if the event is irrelevant or
+	// invalid then nil is returned.
+	//
+	// TODO: rename to UnmarshalEvent (?)
+	CloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload
 
 	// handleDB is the database the handler interacts with
 	handlerDB interface {
@@ -35,8 +49,8 @@ type (
 	}
 )
 
-func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handler {
-	return &handler{
+func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
+	return &handlers{
 		Logger:        logger,
 		Publisher:     publisher,
 		handlerDB:     db,
@@ -44,11 +58,12 @@ func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *hand
 	}
 }
 
-func (h *handler) AddHandlers(r *mux.Router) {
-	r.Handle(path.Join(handlerPrefix, "{webhook_id}"), h)
+func (h *handlers) AddHandlers(r *mux.Router) {
+	r.HandleFunc(github.AppEventsPath, h.githubAppHandler)
+	r.HandleFunc(path.Join(handlerPrefix, "{webhook_id}"), h.repohookHandler)
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	var opts struct {
 		ID uuid.UUID `schema:"webhook_id,required"`
 	}
@@ -68,12 +83,40 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	if event := cloudHandler(w, r, hook.secret); event != nil {
-		// add non-cloud specific info to event before publishing
-		event.RepoID = hook.id
-		event.RepoPath = hook.identifier
-		event.VCSProviderID = hook.vcsProviderID
+	if payload := cloudHandler(w, r, hook.secret); payload != nil {
+		h.Publish(vcs.Event{
+			EventHeader: vcs.EventHeader{
+				VCSProviderID: hook.vcsProviderID,
+			},
+			EventPayload: *payload,
+		})
+	}
+}
 
-		h.Publish(*event)
+func (h *handlers) githubAppHandler(w http.ResponseWriter, r *http.Request) {
+	// retrieve github app config; if one hasn't been configured then return a
+	// 400
+	app, err := h.GetGithubApp(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// use github-specific handler to unmarshal event
+	payload := github.HandleEvent(w, r, app.WebhookSecret)
+	if payload == nil {
+		return
+	}
+	// relay a copy of the event for each vcs provider configured with the
+	// github app install that triggered the event.
+	providers, err := h.ListVCSProvidersByGithubAppInstall(r.Context(), *payload.GithubAppInstallID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, prov := range providers {
+		h.Publish(vcs.Event{
+			EventHeader:  vcs.EventHeader{VCSProviderID: prov.ID},
+			EventPayload: *payload,
+		})
 	}
 }

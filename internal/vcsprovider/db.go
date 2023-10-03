@@ -130,6 +130,24 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 	return providers, nil
 }
 
+func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
+	rows, err := db.Conn(ctx).FindVCSProvidersByGithubAppInstallID(ctx,
+		pgtype.Int8{Int: installID, Status: pgtype.Present},
+	)
+	if err != nil {
+		return nil, sql.Error(err)
+	}
+	var providers []*VCSProvider
+	for _, r := range rows {
+		provider, err := db.toProvider(ctx, pgRow(r))
+		if err != nil {
+			return nil, err
+		}
+		providers = append(providers, provider)
+	}
+	return providers, nil
+}
+
 func (db *pgdb) delete(ctx context.Context, id string) error {
 	_, err := db.Conn(ctx).DeleteVCSProviderByID(ctx, sql.String(id))
 	if err != nil {

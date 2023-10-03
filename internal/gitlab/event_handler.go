@@ -11,7 +11,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.Event {
+func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload {
 	event, err := handle(r, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -21,7 +21,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, secret string) *vcs.Eve
 	return event
 }
 
-func handle(r *http.Request, secret string) (*vcs.Event, error) {
+func handle(r *http.Request, secret string) (*vcs.EventPayload, error) {
 	if token := r.Header.Get("X-Gitlab-Token"); token != secret {
 		return nil, errors.New("token validation failed")
 	}
@@ -42,7 +42,7 @@ func handle(r *http.Request, secret string) (*vcs.Event, error) {
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &vcs.Event{
+		return &vcs.EventPayload{
 			Branch:        refParts[2],
 			CommitSHA:     event.After,
 			DefaultBranch: event.Project.DefaultBranch,
@@ -52,7 +52,7 @@ func handle(r *http.Request, secret string) (*vcs.Event, error) {
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &vcs.Event{
+		return &vcs.EventPayload{
 			Tag: refParts[2],
 			// Action:     action,
 			CommitSHA:     event.After,

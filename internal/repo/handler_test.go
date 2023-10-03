@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWebhookHandler(t *testing.T) {
+func Test_repohookHandler(t *testing.T) {
 	hook, err := newHook(newHookOptions{
 		vcsProviderID:   "vcs-123",
 		cloud:           cloud.GithubKind,
@@ -30,16 +30,21 @@ func TestWebhookHandler(t *testing.T) {
 		&fakeHandlerDB{
 			hook: hook,
 		})
-	handler.cloudHandlers.Set(cloud.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.Event {
-		return &vcs.Event{}
+	handler.cloudHandlers.Set(cloud.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.EventPayload {
+		return &vcs.EventPayload{}
 	})
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/?webhook_id=158c758a-7090-11ed-a843-d398c839c7ad", nil)
-	handler.ServeHTTP(w, r)
+	handler.repohookHandler(w, r)
 	assert.Equal(t, 200, w.Code, "response body: %s", w.Body.String())
 
-	want := vcs.Event{RepoID: hook.id, VCSProviderID: "vcs-123", RepoPath: hook.identifier}
+	want := vcs.Event{
+		EventHeader: vcs.EventHeader{
+			VCSProviderID: "vcs-123",
+		},
+		EventPayload: vcs.EventPayload{RepoPath: hook.identifier},
+	}
 	assert.Equal(t, want, broker.got)
 }
 

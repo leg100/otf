@@ -1091,6 +1091,13 @@ type Querier interface {
 	// FindVCSProvidersScan scans the result of an executed FindVCSProvidersBatch query.
 	FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSProvidersRow, error)
 
+	FindVCSProvidersByGithubAppInstallID(ctx context.Context, githubAppInstallID pgtype.Int8) ([]FindVCSProvidersByGithubAppInstallIDRow, error)
+	// FindVCSProvidersByGithubAppInstallIDBatch enqueues a FindVCSProvidersByGithubAppInstallID query into batch to be executed
+	// later by the batch.
+	FindVCSProvidersByGithubAppInstallIDBatch(batch genericBatch, githubAppInstallID pgtype.Int8)
+	// FindVCSProvidersByGithubAppInstallIDScan scans the result of an executed FindVCSProvidersByGithubAppInstallIDBatch query.
+	FindVCSProvidersByGithubAppInstallIDScan(results pgx.BatchResults) ([]FindVCSProvidersByGithubAppInstallIDRow, error)
+
 	FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderRow, error)
 	// FindVCSProviderBatch enqueues a FindVCSProvider query into batch to be executed
 	// later by the batch.
@@ -1797,6 +1804,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findVCSProvidersSQL, findVCSProvidersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVCSProviders': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVCSProvidersByGithubAppInstallIDSQL, findVCSProvidersByGithubAppInstallIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVCSProvidersByGithubAppInstallID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findVCSProviderSQL, findVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVCSProvider': %w", err)

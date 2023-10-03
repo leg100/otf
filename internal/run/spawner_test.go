@@ -28,10 +28,12 @@ func TestSpawner(t *testing.T) {
 			name: "spawn run for push to default branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
 			event: vcs.Event{
-				Type:          vcs.EventTypePush,
-				Action:        vcs.ActionCreated,
-				Branch:        "main",
-				DefaultBranch: "main",
+				EventPayload: vcs.EventPayload{
+					Type:          vcs.EventTypePush,
+					Action:        vcs.ActionCreated,
+					Branch:        "main",
+					DefaultBranch: "main",
+				},
 			},
 			spawn: true,
 		},
@@ -39,10 +41,12 @@ func TestSpawner(t *testing.T) {
 			name: "skip run for push to non-default branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
 			event: vcs.Event{
-				Type:          vcs.EventTypePush,
-				Action:        vcs.ActionCreated,
-				Branch:        "dev",
-				DefaultBranch: "main",
+				EventPayload: vcs.EventPayload{
+					Type:          vcs.EventTypePush,
+					Action:        vcs.ActionCreated,
+					Branch:        "dev",
+					DefaultBranch: "main",
+				},
 			},
 			spawn: false,
 		},
@@ -50,9 +54,11 @@ func TestSpawner(t *testing.T) {
 			name: "spawn run for push event for a workspace with user-specified branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
 			event: vcs.Event{
-				Type:   vcs.EventTypePush,
-				Action: vcs.ActionCreated,
-				Branch: "dev",
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Branch: "dev",
+				},
 			},
 			spawn: true,
 		},
@@ -60,28 +66,41 @@ func TestSpawner(t *testing.T) {
 			name: "skip run for push event for a workspace with non-matching, user-specified branch",
 			ws:   &workspace.Workspace{Connection: &workspace.Connection{Branch: "dev"}},
 			event: vcs.Event{
-				Type:   vcs.EventTypePush,
-				Action: vcs.ActionCreated,
-				Branch: "staging",
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Branch: "staging",
+				},
 			},
 			spawn: false,
 		},
 		{
-			name:  "spawn run for opened pull request",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: vcs.Event{Type: vcs.EventTypePull, Action: vcs.ActionCreated},
+			name: "spawn run for opened pull request",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type: vcs.EventTypePull, Action: vcs.ActionCreated,
+				},
+			},
 			spawn: true,
 		},
 		{
-			name:  "spawn run for update to pull request",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{}},
-			event: vcs.Event{Type: vcs.EventTypePull, Action: vcs.ActionUpdated},
+			name: "spawn run for update to pull request",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{}},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionUpdated,
+				},
+			},
 			spawn: true,
 		},
 		{
-			name:  "skip run for push event for workspace with tags regex",
-			ws:    &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: "0.1.2"}},
-			event: vcs.Event{Type: vcs.EventTypePush, Action: vcs.ActionCreated},
+			name: "skip run for push event for workspace with tags regex",
+			ws:   &workspace.Workspace{Connection: &workspace.Connection{TagsRegex: "0.1.2"}},
+			event: vcs.Event{
+				EventPayload: vcs.EventPayload{Type: vcs.EventTypePush, Action: vcs.ActionCreated},
+			},
 			spawn: false,
 		},
 		{
@@ -90,9 +109,11 @@ func TestSpawner(t *testing.T) {
 				TagsRegex: `^\d+\.\d+\.\d+$`,
 			}},
 			event: vcs.Event{
-				Type:   vcs.EventTypeTag,
-				Action: vcs.ActionCreated,
-				Tag:    "0.1.2",
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypeTag,
+					Action: vcs.ActionCreated,
+					Tag:    "0.1.2",
+				},
 			},
 			spawn: true,
 		},
@@ -102,9 +123,11 @@ func TestSpawner(t *testing.T) {
 				TagsRegex: `^\d+\.\d+\.\d+$`,
 			}},
 			event: vcs.Event{
-				Type:   vcs.EventTypeTag,
-				Action: vcs.ActionCreated,
-				Tag:    "v0.1.2",
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypeTag,
+					Action: vcs.ActionCreated,
+					Tag:    "v0.1.2",
+				},
 			},
 			spawn: false,
 		},
@@ -115,9 +138,11 @@ func TestSpawner(t *testing.T) {
 				Connection:      &workspace.Connection{},
 			},
 			event: vcs.Event{
-				Type:   vcs.EventTypePush,
-				Action: vcs.ActionCreated,
-				Paths:  []string{"/foo/bar.tf"},
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Paths:  []string{"/foo/bar.tf"},
+				},
 			},
 			spawn: true,
 		},
@@ -128,9 +153,11 @@ func TestSpawner(t *testing.T) {
 				Connection:      &workspace.Connection{},
 			},
 			event: vcs.Event{
-				Type:   vcs.EventTypePush,
-				Action: vcs.ActionCreated,
-				Paths:  []string{"README.md", ".gitignore"},
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePush,
+					Action: vcs.ActionCreated,
+					Paths:  []string{"README.md", ".gitignore"},
+				},
 			},
 			spawn: false,
 		},
@@ -141,8 +168,10 @@ func TestSpawner(t *testing.T) {
 				Connection:      &workspace.Connection{},
 			},
 			event: vcs.Event{
-				Type:   vcs.EventTypePull,
-				Action: vcs.ActionUpdated,
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionUpdated,
+				},
 			},
 			pullFiles: []string{"/foo/bar.tf"},
 			spawn:     true,
@@ -154,8 +183,10 @@ func TestSpawner(t *testing.T) {
 				Connection:      &workspace.Connection{},
 			},
 			event: vcs.Event{
-				Type:   vcs.EventTypePull,
-				Action: vcs.ActionUpdated,
+				EventPayload: vcs.EventPayload{
+					Type:   vcs.EventTypePull,
+					Action: vcs.ActionUpdated,
+				},
 			},
 			pullFiles: []string{"README.md", ".gitignore"},
 			spawn:     false,

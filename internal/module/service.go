@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/connections"
@@ -34,7 +33,7 @@ type (
 		ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 		GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
 		GetModuleByID(ctx context.Context, id string) (*Module, error)
-		GetModuleByRepoID(ctx context.Context, repoID uuid.UUID) (*Module, error)
+		GetModuleByConnection(ctx context.Context, vcsProviderID, repoPath string) (*Module, error)
 		DeleteModule(ctx context.Context, id string) (*Module, error)
 		GetModuleInfo(ctx context.Context, versionID string) (*TerraformModule, error)
 
