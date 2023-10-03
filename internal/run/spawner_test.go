@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
@@ -228,7 +227,7 @@ type fakeSpawnerServices struct {
 	RunService
 }
 
-func (f *fakeSpawnerServices) ListWorkspacesByRepoID(ctx context.Context, id uuid.UUID) ([]*workspace.Workspace, error) {
+func (f *fakeSpawnerServices) ListConnectedWorkspaces(context.Context, string, string) ([]*workspace.Workspace, error) {
 	return f.workspaces, nil
 }
 

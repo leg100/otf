@@ -4,11 +4,13 @@ import (
 	"sync"
 )
 
+// SafeMap is a concurrency-safe map
 type SafeMap[K comparable, V any] struct {
 	m  map[K]V
 	mu sync.RWMutex
 }
 
+// NewSafeMap constructs an empty SafeMap, with the given key and value types.
 func NewSafeMap[K comparable, V any]() *SafeMap[K, V] {
 	return &SafeMap[K, V]{
 		m: make(map[K]V),

@@ -54,7 +54,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		}
 	)
 	m := manifest{
-		Name:        "OTF",
+		Name:        "otf-" + internal.GenerateRandomString(4),
 		URL:         h.URL(""),
 		HookAttrs:   hookAttrs{URL: h.URL(AppEventsPath)},
 		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),

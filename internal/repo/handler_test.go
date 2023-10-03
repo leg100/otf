@@ -29,7 +29,9 @@ func Test_repohookHandler(t *testing.T) {
 		broker,
 		&fakeHandlerDB{
 			hook: hook,
-		})
+		},
+		nil,
+	)
 	handler.cloudHandlers.Set(cloud.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.EventPayload {
 		return &vcs.EventPayload{}
 	})

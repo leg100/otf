@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
@@ -51,6 +52,7 @@ type (
 		internal.HostnameService
 		VCSProviderService vcsprovider.Service
 		organization.OrganizationService
+		github.GithubAppService
 	}
 
 	// CreateOptions are options for creating a webhook.
@@ -76,6 +78,7 @@ func NewService(ctx context.Context, opts Options) *service {
 			opts.Logger,
 			opts.VCSEventBroker,
 			db,
+			opts.GithubAppService,
 		),
 		synchroniser: &synchroniser{Logger: opts.Logger, syncdb: db},
 	}

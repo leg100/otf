@@ -47,7 +47,7 @@ func (a *App) LogValue() slog.Value {
 	)
 }
 
-// AdvancedURL returns the URL for the "advanced"
+// AdvancedURL returns the URL for the "advanced" settings on github
 func (a *App) AdvancedURL() string {
 	path := fmt.Sprintf("/settings/apps/%s/advanced", a.Slug)
 	if a.Organization != nil {

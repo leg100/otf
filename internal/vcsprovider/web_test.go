@@ -86,7 +86,8 @@ func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
 	renderer, err := html.NewRenderer(false)
 	require.NoError(t, err)
 	return &webHandlers{
-		Renderer: renderer,
-		svc:      &fakeService{provider: provider},
+		Renderer:         renderer,
+		svc:              &fakeService{provider: provider},
+		GithubAppService: &fakeGithubAppService{},
 	}
 }

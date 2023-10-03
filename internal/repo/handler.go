@@ -49,12 +49,13 @@ type (
 	}
 )
 
-func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
+func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB, githubAppService github.GithubAppService) *handlers {
 	return &handlers{
-		Logger:        logger,
-		Publisher:     publisher,
-		handlerDB:     db,
-		cloudHandlers: internal.NewSafeMap[cloud.Kind, CloudHandler](),
+		Logger:           logger,
+		Publisher:        publisher,
+		GithubAppService: githubAppService,
+		handlerDB:        db,
+		cloudHandlers:    internal.NewSafeMap[cloud.Kind, CloudHandler](),
 	}
 }
 
@@ -76,7 +77,7 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	h.V(2).Info("received vcs event", "id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
+	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.identifier, "cloud", hook.cloud)
 
 	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
 	if !ok {
@@ -106,6 +107,7 @@ func (h *handlers) githubAppHandler(w http.ResponseWriter, r *http.Request) {
 	if payload == nil {
 		return
 	}
+	h.V(2).Info("received vcs event", "type", "github-app", "repo", payload.RepoPath)
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
 	providers, err := h.ListVCSProvidersByGithubAppInstall(r.Context(), *payload.GithubAppInstallID)

@@ -171,19 +171,24 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
+	app, err := h.GetGithubApp(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	providers, err := h.svc.ListVCSProviders(r.Context(), org)
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	h.Render("vcs_provider_list.tmpl", w, struct {
 		organization.OrganizationPage
-		Items []*VCSProvider
+		Items     []*VCSProvider
+		GithubApp *github.App
 	}{
 		OrganizationPage: organization.NewPage(r, "vcs providers", org),
 		Items:            providers,
+		GithubApp:        app,
 	})
 }
 

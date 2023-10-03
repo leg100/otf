@@ -24,9 +24,13 @@
       <button class="btn">New Gitlab VCS Provider (Personal Token)</button>
       <input type="hidden" name="cloud" id="cloud" value="gitlab">
     </form>
-    <form action="{{ newGithubAppVCSProviderPath $.Organization }}" method="GET">
-      <button class="btn">New Github VCS Provider (App)</button>
-    </form>
+    {{ if .GithubApp }}
+      <form action="{{ newGithubAppVCSProviderPath $.Organization }}" method="GET">
+        <button class="btn">New Github VCS Provider (App)</button>
+      </form>
+    {{ else }}
+      <span>Alternatively, <a class="underline" href="{{ newGithubAppPath }}">create a GitHub app</a> and you will be able to create VCS providers using a Github app installation.</span>
+    {{ end }}
   </div>
 {{ end }}
 

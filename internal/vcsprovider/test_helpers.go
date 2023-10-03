@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/stretchr/testify/require"
 )
@@ -45,4 +46,12 @@ func (f *fakeService) ListVCSProviders(context.Context, string) ([]*VCSProvider,
 
 func (f *fakeService) DeleteVCSProvider(context.Context, string) (*VCSProvider, error) {
 	return f.provider, nil
+}
+
+type fakeGithubAppService struct {
+	github.GithubAppService
+}
+
+func (f *fakeGithubAppService) GetGithubApp(context.Context) (*github.App, error) {
+	return nil, nil
 }
