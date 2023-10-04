@@ -32,7 +32,7 @@ SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM inserted w
 JOIN vcs_providers v USING (vcs_provider_id);`
 
@@ -50,7 +50,7 @@ type InsertRepohookRow struct {
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	RepoPath      pgtype.Text `json:"repo_path"`
-	Cloud         pgtype.Text `json:"cloud"`
+	VCSKind       pgtype.Text `json:"vcs_kind"`
 }
 
 // InsertRepohook implements Querier.InsertRepohook.
@@ -58,7 +58,7 @@ func (q *DBQuerier) InsertRepohook(ctx context.Context, params InsertRepohookPar
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRepohook")
 	row := q.conn.QueryRow(ctx, insertRepohookSQL, params.RepohookID, params.VCSID, params.VCSProviderID, params.Secret, params.RepoPath)
 	var item InsertRepohookRow
-	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 		return item, fmt.Errorf("query InsertRepohook: %w", err)
 	}
 	return item, nil
@@ -73,7 +73,7 @@ func (q *DBQuerier) InsertRepohookBatch(batch genericBatch, params InsertRepohoo
 func (q *DBQuerier) InsertRepohookScan(results pgx.BatchResults) (InsertRepohookRow, error) {
 	row := results.QueryRow()
 	var item InsertRepohookRow
-	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 		return item, fmt.Errorf("scan InsertRepohookBatch row: %w", err)
 	}
 	return item, nil
@@ -124,7 +124,7 @@ const findRepohooksSQL = `SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id);`
 
@@ -134,7 +134,7 @@ type FindRepohooksRow struct {
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	RepoPath      pgtype.Text `json:"repo_path"`
-	Cloud         pgtype.Text `json:"cloud"`
+	VCSKind       pgtype.Text `json:"vcs_kind"`
 }
 
 // FindRepohooks implements Querier.FindRepohooks.
@@ -148,7 +148,7 @@ func (q *DBQuerier) FindRepohooks(ctx context.Context) ([]FindRepohooksRow, erro
 	items := []FindRepohooksRow{}
 	for rows.Next() {
 		var item FindRepohooksRow
-		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 			return nil, fmt.Errorf("scan FindRepohooks row: %w", err)
 		}
 		items = append(items, item)
@@ -174,7 +174,7 @@ func (q *DBQuerier) FindRepohooksScan(results pgx.BatchResults) ([]FindRepohooks
 	items := []FindRepohooksRow{}
 	for rows.Next() {
 		var item FindRepohooksRow
-		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 			return nil, fmt.Errorf("scan FindRepohooksBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -191,7 +191,7 @@ const findRepohookByIDSQL = `SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE w.repohook_id = $1;`
@@ -202,7 +202,7 @@ type FindRepohookByIDRow struct {
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	RepoPath      pgtype.Text `json:"repo_path"`
-	Cloud         pgtype.Text `json:"cloud"`
+	VCSKind       pgtype.Text `json:"vcs_kind"`
 }
 
 // FindRepohookByID implements Querier.FindRepohookByID.
@@ -210,7 +210,7 @@ func (q *DBQuerier) FindRepohookByID(ctx context.Context, repohookID pgtype.UUID
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRepohookByID")
 	row := q.conn.QueryRow(ctx, findRepohookByIDSQL, repohookID)
 	var item FindRepohookByIDRow
-	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 		return item, fmt.Errorf("query FindRepohookByID: %w", err)
 	}
 	return item, nil
@@ -225,7 +225,7 @@ func (q *DBQuerier) FindRepohookByIDBatch(batch genericBatch, repohookID pgtype.
 func (q *DBQuerier) FindRepohookByIDScan(results pgx.BatchResults) (FindRepohookByIDRow, error) {
 	row := results.QueryRow()
 	var item FindRepohookByIDRow
-	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+	if err := row.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 		return item, fmt.Errorf("scan FindRepohookByIDBatch row: %w", err)
 	}
 	return item, nil
@@ -237,7 +237,7 @@ const findRepohookByRepoAndProviderSQL = `SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE repo_path = $1
@@ -249,7 +249,7 @@ type FindRepohookByRepoAndProviderRow struct {
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	RepoPath      pgtype.Text `json:"repo_path"`
-	Cloud         pgtype.Text `json:"cloud"`
+	VCSKind       pgtype.Text `json:"vcs_kind"`
 }
 
 // FindRepohookByRepoAndProvider implements Querier.FindRepohookByRepoAndProvider.
@@ -263,7 +263,7 @@ func (q *DBQuerier) FindRepohookByRepoAndProvider(ctx context.Context, repoPath 
 	items := []FindRepohookByRepoAndProviderRow{}
 	for rows.Next() {
 		var item FindRepohookByRepoAndProviderRow
-		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 			return nil, fmt.Errorf("scan FindRepohookByRepoAndProvider row: %w", err)
 		}
 		items = append(items, item)
@@ -289,7 +289,7 @@ func (q *DBQuerier) FindRepohookByRepoAndProviderScan(results pgx.BatchResults) 
 	items := []FindRepohookByRepoAndProviderRow{}
 	for rows.Next() {
 		var item FindRepohookByRepoAndProviderRow
-		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 			return nil, fmt.Errorf("scan FindRepohookByRepoAndProviderBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -306,7 +306,7 @@ const findUnreferencedRepohooksSQL = `SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE NOT EXISTS (
@@ -321,7 +321,7 @@ type FindUnreferencedRepohooksRow struct {
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	Secret        pgtype.Text `json:"secret"`
 	RepoPath      pgtype.Text `json:"repo_path"`
-	Cloud         pgtype.Text `json:"cloud"`
+	VCSKind       pgtype.Text `json:"vcs_kind"`
 }
 
 // FindUnreferencedRepohooks implements Querier.FindUnreferencedRepohooks.
@@ -335,7 +335,7 @@ func (q *DBQuerier) FindUnreferencedRepohooks(ctx context.Context) ([]FindUnrefe
 	items := []FindUnreferencedRepohooksRow{}
 	for rows.Next() {
 		var item FindUnreferencedRepohooksRow
-		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 			return nil, fmt.Errorf("scan FindUnreferencedRepohooks row: %w", err)
 		}
 		items = append(items, item)
@@ -361,7 +361,7 @@ func (q *DBQuerier) FindUnreferencedRepohooksScan(results pgx.BatchResults) ([]F
 	items := []FindUnreferencedRepohooksRow{}
 	for rows.Next() {
 		var item FindUnreferencedRepohooksRow
-		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.Cloud); err != nil {
+		if err := rows.Scan(&item.RepohookID, &item.VCSID, &item.VCSProviderID, &item.Secret, &item.RepoPath, &item.VCSKind); err != nil {
 			return nil, fmt.Errorf("scan FindUnreferencedRepohooksBatch row: %w", err)
 		}
 		items = append(items, item)

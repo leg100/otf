@@ -21,7 +21,7 @@ SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM inserted w
 JOIN vcs_providers v USING (vcs_provider_id);
 
@@ -38,7 +38,7 @@ SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id);
 
@@ -49,7 +49,7 @@ SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE w.repohook_id = pggen.arg('repohook_id');
@@ -61,7 +61,7 @@ SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE repo_path = pggen.arg('repo_path')
@@ -74,7 +74,7 @@ SELECT
     w.vcs_provider_id,
     w.secret,
     w.repo_path,
-    v.cloud
+    v.vcs_kind
 FROM repohooks w
 JOIN vcs_providers v USING (vcs_provider_id)
 WHERE NOT EXISTS (

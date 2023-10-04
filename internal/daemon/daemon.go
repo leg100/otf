@@ -295,6 +295,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				},
 			},
 			{
+				ClientConstructor: gitlab.NewOAuthClient,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GitlabHostname,
 					Name:         string(vcs.GitlabKind),

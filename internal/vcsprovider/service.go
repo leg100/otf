@@ -94,7 +94,7 @@ func NewService(opts Options) *service {
 		db: &pgdb{
 			DB:               opts.DB,
 			GithubAppService: opts.GithubAppService,
-			cloudHostnames:   cloudHostnames,
+			vcsHostnames:     cloudHostnames,
 		},
 		deleteHook:     hooks.NewHook[*VCSProvider](opts.DB),
 		cloudHostnames: cloudHostnames,

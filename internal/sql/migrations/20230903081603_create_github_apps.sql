@@ -50,7 +50,15 @@ ALTER TABLE webhooks RENAME TO repohooks;
 ALTER TABLE repohooks RENAME COLUMN webhook_id TO repohook_id;
 ALTER TABLE repohooks RENAME COLUMN identifier TO repo_path;
 
+-- rename clouds to vcs_kinds and rename vcs_provider's fk
+ALTER TABLE clouds RENAME TO vcs_kinds;
+ALTER TABLE vcs_providers RENAME COLUMN cloud TO vcs_kind;
+
 -- +goose Down
+
+-- rename vcs_kinds back to clouds and rename fk back
+ALTER TABLE vcs_kinds RENAME TO clouds;
+ALTER TABLE vcs_providers RENAME COLUMN vcs_kind TO cloud;
 
 -- rename repohooks back to webhooks, and rename columns back
 ALTER TABLE repohooks RENAME TO webhooks;

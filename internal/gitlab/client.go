@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/authenticator"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -56,6 +57,20 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 
 	return &Client{client: client}, nil
+}
+
+func NewPersonalTokenClient(hostname, token string) (vcs.Client, error) {
+	return NewClient(ClientOptions{
+		Hostname:      hostname,
+		PersonalToken: &token,
+	})
+}
+
+func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
+	return NewClient(ClientOptions{
+		Hostname:   cfg.Hostname,
+		OAuthToken: token,
+	})
 }
 
 func (g *Client) GetCurrentUser(ctx context.Context) (string, error) {

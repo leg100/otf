@@ -19,8 +19,8 @@ type (
 		*sql.DB
 		// github app service for re-constructing vcs provider from a DB query
 		github.GithubAppService
-		// map of cloud kind to cloud hostname
-		cloudHostnames map[vcs.Kind]string
+		// map of vcs kind to its hostname
+		vcsHostnames map[vcs.Kind]string
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
@@ -28,7 +28,7 @@ type (
 		Token              pgtype.Text        `json:"token"`
 		CreatedAt          pgtype.Timestamptz `json:"created_at"`
 		Name               pgtype.Text        `json:"name"`
-		Cloud              pgtype.Text        `json:"cloud"`
+		VCSKind            pgtype.Text        `json:"vcs_kind"`
 		OrganizationName   pgtype.Text        `json:"organization_name"`
 		GithubAppID        pgtype.Int8        `json:"github_app_id"`
 		GithubAppInstallID pgtype.Int8        `json:"github_app_install_id"`
@@ -47,7 +47,7 @@ func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	params := pggen.InsertVCSProviderParams{
 		VCSProviderID:    sql.String(provider.ID),
 		Name:             sql.String(provider.Name),
-		Cloud:            sql.String(string(provider.Kind)),
+		VCSKind:          sql.String(string(provider.Kind)),
 		OrganizationName: sql.String(provider.Organization),
 		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
 		Token:            sql.StringPtr(provider.Token),
@@ -160,7 +160,7 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error) {
 	opts := CreateOptions{
 		Organization: row.OrganizationName.String,
-		Kind:         vcs.Kind(row.Cloud.String),
+		Kind:         vcs.Kind(row.VCSKind.String),
 		Name:         row.Name.String,
 		// GithubAppService: db.Git
 	}
@@ -175,6 +175,6 @@ func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error)
 		ID:               &row.VCSProviderID.String,
 		CreatedAt:        internal.Time(row.CreatedAt.Time.UTC()),
 		GithubAppService: db.GithubAppService,
-		cloudHostnames:   db.cloudHostnames,
+		cloudHostnames:   db.vcsHostnames,
 	})
 }

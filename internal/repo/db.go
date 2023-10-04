@@ -25,7 +25,7 @@ type (
 		VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 		Secret        pgtype.Text `json:"secret"`
 		RepoPath      pgtype.Text `json:"repo_path"`
-		Cloud         pgtype.Text `json:"cloud"`
+		VCSKind       pgtype.Text `json:"vcs_kind"`
 	}
 )
 
@@ -136,7 +136,7 @@ func (db *db) fromRow(row hookRow) (*hook, error) {
 		vcsProviderID:   row.VCSProviderID.String,
 		secret:          internal.String(row.Secret.String),
 		identifier:      row.RepoPath.String,
-		cloud:           vcs.Kind(row.Cloud.String),
+		cloud:           vcs.Kind(row.VCSKind.String),
 		HostnameService: db.HostnameService,
 	}
 	if row.VCSID.Status == pgtype.Present {
