@@ -49,7 +49,7 @@ type (
 
 	ConnectionService Service
 
-	// Service manages webhooks
+	// Service manages connections between OTF resources and VCS repos
 	Service interface {
 		// Connect adds a connection between a VCS repo and an OTF resource. A
 		// webhook is created if one doesn't exist already.
@@ -86,6 +86,7 @@ func NewService(ctx context.Context, opts Options) *service {
 
 // Connect an OTF resource to a VCS repo.
 func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
+	// check vcs provider is valid
 	_, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)

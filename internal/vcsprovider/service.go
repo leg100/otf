@@ -54,7 +54,7 @@ type (
 		internal.HostnameService
 		github.GithubAppService
 
-		cloudHostnames map[vcs.Kind]string
+		vcsHostnames map[vcs.Kind]string
 	}
 
 	CreateOptions struct {
@@ -81,7 +81,7 @@ type (
 )
 
 func NewService(opts Options) *service {
-	cloudHostnames := map[vcs.Kind]string{
+	vcsHostnames := map[vcs.Kind]string{
 		vcs.GithubKind: opts.GithubHostname,
 		vcs.GitlabKind: opts.GitlabHostname,
 	}
@@ -94,10 +94,10 @@ func NewService(opts Options) *service {
 		db: &pgdb{
 			DB:               opts.DB,
 			GithubAppService: opts.GithubAppService,
-			vcsHostnames:     cloudHostnames,
+			vcsHostnames:     vcsHostnames,
 		},
-		deleteHook:     hooks.NewHook[*VCSProvider](opts.DB),
-		cloudHostnames: cloudHostnames,
+		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
+		vcsHostnames: vcsHostnames,
 	}
 
 	svc.web = &webHandlers{
@@ -132,7 +132,7 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 	provider, err := newProvider(ctx, newOptions{
 		CreateOptions:    opts,
 		GithubAppService: a.GithubAppService,
-		cloudHostnames:   a.cloudHostnames,
+		cloudHostnames:   a.vcsHostnames,
 	})
 	if err != nil {
 		return nil, err
