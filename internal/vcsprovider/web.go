@@ -6,12 +6,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type webHandlers struct {
@@ -37,8 +37,8 @@ func (h *webHandlers) addHandlers(r *mux.Router) {
 
 func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Organization string     `schema:"organization_name,required"`
-		Cloud        cloud.Kind `schema:"cloud,required"`
+		Organization string   `schema:"organization_name,required"`
+		Cloud        vcs.Kind `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -77,21 +77,21 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 	h.Render("vcs_provider_new_github_app.tmpl", w, struct {
 		organization.OrganizationPage
 		Installations []*github.Installation
-		Cloud         cloud.Kind
+		Cloud         vcs.Kind
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
 		Installations:    installs,
-		Cloud:            cloud.GithubKind,
+		Cloud:            vcs.GithubKind,
 	})
 }
 
 func (h *webHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		OrganizationName   string     `schema:"organization_name,required"`
-		Token              *string    `schema:"token"`
-		GithubAppInstallID *int64     `schema:"install_id"`
-		Name               string     `schema:"name"`
-		Cloud              cloud.Kind `schema:"cloud,required"`
+		OrganizationName   string   `schema:"organization_name,required"`
+		Token              *string  `schema:"token"`
+		GithubAppInstallID *int64   `schema:"install_id"`
+		Name               string   `schema:"name"`
+		Cloud              vcs.Kind `schema:"cloud,required"`
 	}
 	if err := decode.All(&params, r); err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)

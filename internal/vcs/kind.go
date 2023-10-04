@@ -1,9 +1,9 @@
-// Package cloud provides types for use with cloud providers.
-package cloud
+package vcs
 
 const (
 	GithubKind Kind = "github"
 	GitlabKind Kind = "gitlab"
 )
 
+// Kind of vcs hosting provider
 type Kind string

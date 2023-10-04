@@ -7,7 +7,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
@@ -28,8 +27,8 @@ type (
 		// identifying the webhook.
 		CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (uuid.UUID, error)
 		// RegisterCloudHandler registers a new cloud handler, to handle VCS
-		// events for a specific cloud.
-		RegisterCloudHandler(kind cloud.Kind, h CloudHandler)
+		// events for a specific vcs hosting provider.
+		RegisterCloudHandler(kind vcs.Kind, h CloudHandler)
 		deleteUnreferencedWebhooks(ctx context.Context) error
 	}
 
@@ -154,7 +153,7 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 	return hook.id, nil
 }
 
-func (s *service) RegisterCloudHandler(kind cloud.Kind, h CloudHandler) {
+func (s *service) RegisterCloudHandler(kind vcs.Kind, h CloudHandler) {
 	s.handlers.cloudHandlers.Set(kind, h)
 }
 

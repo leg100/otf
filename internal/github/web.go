@@ -117,7 +117,7 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code for credentials using an anonymous client
-	client, err := NewClient(r.Context(), ClientOptions{})
+	client, err := NewClient(ClientOptions{})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return

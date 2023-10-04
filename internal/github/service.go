@@ -121,7 +121,7 @@ func (a *service) ListInstallations(ctx context.Context) ([]*Installation, error
 	} else if err != nil {
 		return nil, err
 	}
-	client, err := NewClient(ctx, ClientOptions{
+	client, err := NewClient(ClientOptions{
 		AppCredentials: &AppCredentials{
 			ID:         app.ID,
 			PrivateKey: app.PrivateKey,
@@ -146,7 +146,7 @@ func (a *service) DeleteInstallation(ctx context.Context, installID int64) error
 	if err != nil {
 		return err
 	}
-	client, err := NewClient(ctx, ClientOptions{
+	client, err := NewClient(ClientOptions{
 		AppCredentials: &AppCredentials{
 			ID:         app.ID,
 			PrivateKey: app.PrivateKey,

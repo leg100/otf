@@ -12,7 +12,6 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/cli"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
@@ -27,6 +26,7 @@ import (
 	"github.com/leg100/otf/internal/state"
 	"github.com/leg100/otf/internal/tokens"
 	"github.com/leg100/otf/internal/variable"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -183,7 +183,7 @@ func (s *testDaemon) createVCSProvider(t *testing.T, ctx context.Context, org *o
 		Organization: org.Name,
 		// tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		Kind:  cloud.GithubKind,
+		Kind:  vcs.GithubKind,
 		Token: internal.String(uuid.NewString()),
 	})
 	require.NoError(t, err)

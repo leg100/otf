@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/daemon"
 	"github.com/leg100/otf/internal/github"
 )
@@ -22,8 +21,8 @@ func TestGithubLogin(t *testing.T) {
 			GithubClientSecret: "stub-client-secret",
 		},
 	}
-	user := cloud.User{Name: "bobby"}
-	svc, _, _ := setup(t, &cfg, github.WithUser(&user))
+	username := "bobby"
+	svc, _, _ := setup(t, &cfg, github.WithUser(&username))
 
 	browser.Run(t, nil, chromedp.Tasks{
 		// go to login page

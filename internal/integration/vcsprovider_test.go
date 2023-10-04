@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +20,7 @@ func TestVCSProvider(t *testing.T) {
 		_, err := svc.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 			Organization: org.Name,
 			Token:        internal.String(uuid.NewString()),
-			Kind:         cloud.GithubKind,
+			Kind:         vcs.GithubKind,
 		})
 		require.NoError(t, err)
 	})

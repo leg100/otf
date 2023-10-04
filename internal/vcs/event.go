@@ -1,9 +1,5 @@
 package vcs
 
-import (
-	"github.com/leg100/otf/internal/cloud"
-)
-
 const (
 	EventTypePull EventType = iota
 	EventTypePush
@@ -30,7 +26,7 @@ type (
 	EventPayload struct {
 		RepoPath string
 
-		Cloud cloud.Kind
+		VCSKind Kind
 
 		Type          EventType
 		Action        Action

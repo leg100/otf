@@ -5,11 +5,11 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -20,7 +20,7 @@ type (
 		// github app service for re-constructing vcs provider from a DB query
 		github.GithubAppService
 		// map of cloud kind to cloud hostname
-		cloudHostnames map[cloud.Kind]string
+		cloudHostnames map[vcs.Kind]string
 	}
 	// pgRow represents a database row for a vcs provider
 	pgRow struct {
@@ -160,7 +160,7 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error) {
 	opts := CreateOptions{
 		Organization: row.OrganizationName.String,
-		Kind:         cloud.Kind(row.Cloud.String),
+		Kind:         vcs.Kind(row.Cloud.String),
 		Name:         row.Name.String,
 		// GithubAppService: db.Git
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -23,10 +22,10 @@ type (
 		cloudID       *string   // cloud's hook ID; populated following synchronisation
 		vcsProviderID string
 
-		secret     string     // secret token
-		identifier string     // repo identifier: <repo_owner>/<repo_name>
-		cloud      cloud.Kind // origin of events
-		endpoint   string     // OTF URL that receives events
+		secret     string   // secret token
+		identifier string   // repo identifier: <repo_owner>/<repo_name>
+		cloud      vcs.Kind // origin of events
+		endpoint   string   // OTF URL that receives events
 	}
 
 	newHookOptions struct {
@@ -34,7 +33,7 @@ type (
 		vcsProviderID string
 		secret        *string
 		identifier    string
-		cloud         cloud.Kind
+		cloud         vcs.Kind
 		cloudID       *string // cloud's webhook id
 
 		// for building endpoint URL

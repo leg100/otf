@@ -9,7 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ import (
 func Test_repohookHandler(t *testing.T) {
 	hook, err := newHook(newHookOptions{
 		vcsProviderID:   "vcs-123",
-		cloud:           cloud.GithubKind,
+		cloud:           vcs.GithubKind,
 		HostnameService: internal.NewHostnameService("fakehost.org"),
 	})
 	require.NoError(t, err)
@@ -32,7 +31,7 @@ func Test_repohookHandler(t *testing.T) {
 		},
 		nil,
 	)
-	handler.cloudHandlers.Set(cloud.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.EventPayload {
+	handler.cloudHandlers.Set(vcs.GithubKind, func(http.ResponseWriter, *http.Request, string) *vcs.EventPayload {
 		return &vcs.EventPayload{}
 	})
 

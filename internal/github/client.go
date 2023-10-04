@@ -16,7 +16,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/authenticator"
 	otfhttp "github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/vcs"
 	"golang.org/x/oauth2"
@@ -54,9 +54,7 @@ type (
 	}
 )
 
-// NewClient etc[
-// TODO: ctx is not used, consider removing.
-func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
+func NewClient(cfg ClientOptions) (*Client, error) {
 	if cfg.Hostname == "" {
 		cfg.Hostname = DefaultHostname
 	}
@@ -78,7 +76,7 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 			return nil, err
 		}
 	case cfg.PersonalToken != nil:
-		// personal token is actually an OAuth2 access token, so wrap
+		// personal token is actually an OAuth2 *access token, so wrap
 		// inside an OAuth2 token and handle it the same as an OAuth2 token
 		cfg.OAuthToken = &oauth2.Token{AccessToken: *cfg.PersonalToken}
 		fallthrough
@@ -104,12 +102,26 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	return &Client{client: client}, nil
 }
 
-func (g *Client) GetCurrentUser(ctx context.Context) (cloud.User, error) {
+func NewPersonalTokenClient(hostname, token string) (vcs.Client, error) {
+	return NewClient(ClientOptions{
+		Hostname:      hostname,
+		PersonalToken: &token,
+	})
+}
+
+func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
+	return NewClient(ClientOptions{
+		Hostname:   cfg.Hostname,
+		OAuthToken: token,
+	})
+}
+
+func (g *Client) GetCurrentUser(ctx context.Context) (string, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
-		return cloud.User{}, err
+		return "", err
 	}
-	return cloud.User{Name: guser.GetLogin()}, nil
+	return guser.GetLogin(), nil
 }
 
 func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {

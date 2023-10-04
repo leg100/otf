@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
+	"github.com/leg100/otf/internal/vcs"
 )
 
 type (
@@ -136,7 +136,7 @@ func (db *db) fromRow(row hookRow) (*hook, error) {
 		vcsProviderID:   row.VCSProviderID.String,
 		secret:          internal.String(row.Secret.String),
 		identifier:      row.RepoPath.String,
-		cloud:           cloud.Kind(row.Cloud.String),
+		cloud:           vcs.Kind(row.Cloud.String),
 		HostnameService: db.HostnameService,
 	}
 	if row.VCSID.Status == pgtype.Present {

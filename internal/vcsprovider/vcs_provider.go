@@ -10,9 +10,7 @@ import (
 	"log/slog"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
-	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -22,9 +20,9 @@ type (
 		ID           string
 		Name         string
 		CreatedAt    time.Time
-		Organization string     // name of OTF organization
-		Kind         cloud.Kind // github/gitlab etc
-		Hostname     string     // hostname of github/gitlab etc
+		Organization string   // name of OTF organization
+		Kind         vcs.Kind // github/gitlab etc
+		Hostname     string   // hostname of github/gitlab etc
 
 		Token     *string                    // personal access token.
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
@@ -33,8 +31,8 @@ type (
 	newOptions struct {
 		CreateOptions
 
-		// map of cloud kind to hostname
-		cloudHostnames map[cloud.Kind]string
+		// map of vcs kind to hostname
+		cloudHostnames map[vcs.Kind]string
 
 		// Must be specified if GithubAppInstallID is non-nil
 		github.GithubAppService
@@ -109,26 +107,15 @@ func (t *VCSProvider) String() string {
 	return s
 }
 
-func (t *VCSProvider) NewClient(ctx context.Context) (vcs.Client, error) {
-	switch t.Kind {
-	case cloud.GithubKind:
-		if t.GithubApp != nil {
-			return github.NewClient(ctx, github.ClientOptions{
-				InstallCredentials: t.GithubApp,
-			})
-		} else if t.Token != nil {
-			return github.NewClient(ctx, github.ClientOptions{
-				PersonalToken: t.Token,
-			})
-		} else {
-			return nil, fmt.Errorf("missing credentials")
-		}
-	case cloud.GitlabKind:
-		return gitlab.NewClient(ctx, gitlab.ClientOptions{
-			PersonalToken: t.Token,
+func (t *VCSProvider) NewClient() (vcs.Client, error) {
+	if t.GithubApp != nil {
+		return github.NewClient(github.ClientOptions{
+			InstallCredentials: t.GithubApp,
 		})
-	default:
-		return nil, fmt.Errorf("unknown vcs kind: %s", t.Kind)
+	} else if t.Token != nil {
+		return vcs.GetPersonalTokenClient(t.Kind, t.Hostname, *t.Token)
+	} else {
+		return nil, fmt.Errorf("missing credentials")
 	}
 }
 

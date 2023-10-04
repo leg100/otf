@@ -16,7 +16,6 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -46,7 +45,7 @@ type (
 	TestServerOption func(*TestServer)
 
 	testdb struct {
-		user          *cloud.User
+		username      *string
 		repo          *string
 		commit        *string
 		defaultBranch *string
@@ -112,9 +111,9 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
-	if srv.user != nil {
+	if srv.username != nil {
 		mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
-			out, err := json.Marshal(&github.User{Login: internal.String(srv.user.Name)})
+			out, err := json.Marshal(&github.User{Login: srv.username})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
@@ -306,9 +305,9 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 	return &srv, u
 }
 
-func WithUser(user *cloud.User) TestServerOption {
+func WithUser(username *string) TestServerOption {
 	return func(srv *TestServer) {
-		srv.user = user
+		srv.username = username
 	}
 }
 

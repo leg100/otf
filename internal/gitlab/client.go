@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -32,10 +31,7 @@ type (
 	}
 )
 
-// NewClient ...
-//
-// TODO: ctx is not used, consider removing.
-func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
+func NewClient(cfg ClientOptions) (*Client, error) {
 	var (
 		client *gitlab.Client
 		err    error
@@ -62,12 +58,12 @@ func NewClient(ctx context.Context, cfg ClientOptions) (*Client, error) {
 	return &Client{client: client}, nil
 }
 
-func (g *Client) GetCurrentUser(ctx context.Context) (cloud.User, error) {
+func (g *Client) GetCurrentUser(ctx context.Context) (string, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
-		return cloud.User{}, err
+		return "", err
 	}
-	return cloud.User{Name: guser.Username}, nil
+	return guser.Username, nil
 }
 
 func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repository, error) {

@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/vcs"
@@ -30,7 +29,7 @@ type (
 		github.GithubAppService
 		vcsprovider.VCSProviderService
 
-		cloudHandlers *internal.SafeMap[cloud.Kind, CloudHandler]
+		cloudHandlers *internal.SafeMap[vcs.Kind, CloudHandler]
 
 		handlerDB
 	}
@@ -55,7 +54,7 @@ func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB, githu
 		Publisher:        publisher,
 		GithubAppService: githubAppService,
 		handlerDB:        db,
-		cloudHandlers:    internal.NewSafeMap[cloud.Kind, CloudHandler](),
+		cloudHandlers:    internal.NewSafeMap[vcs.Kind, CloudHandler](),
 	}
 }
 

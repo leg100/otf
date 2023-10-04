@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +23,7 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push.json",
 			&vcs.EventPayload{
-				Cloud:           cloud.GithubKind,
+				VCSKind:         vcs.GithubKind,
 				Type:            vcs.EventTypePush,
 				Branch:          "master",
 				DefaultBranch:   "master",
@@ -42,7 +41,7 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_opened.json",
 			&vcs.EventPayload{
-				Cloud:             cloud.GithubKind,
+				VCSKind:           vcs.GithubKind,
 				Type:              vcs.EventTypePull,
 				Branch:            "pr-2",
 				DefaultBranch:     "master",
@@ -62,7 +61,7 @@ func TestEventHandler(t *testing.T) {
 			"pull_request",
 			"./testdata/github_pull_update.json",
 			&vcs.EventPayload{
-				Cloud:             cloud.GithubKind,
+				VCSKind:           vcs.GithubKind,
 				Type:              vcs.EventTypePull,
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
@@ -82,7 +81,7 @@ func TestEventHandler(t *testing.T) {
 			"push",
 			"./testdata/github_push_tag.json",
 			&vcs.EventPayload{
-				Cloud:           cloud.GithubKind,
+				VCSKind:         vcs.GithubKind,
 				Type:            vcs.EventTypeTag,
 				Tag:             "v1.0.0",
 				DefaultBranch:   "master",

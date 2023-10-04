@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,13 +16,13 @@ import (
 
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
-	want := cloud.User{Name: "fake-user"}
+	want := "fake-user"
 	client := newTestServerClient(t, WithUser(&want))
 
 	got, err := client.GetCurrentUser(ctx)
 	require.NoError(t, err)
 
-	assert.Equal(t, want.Name, got.Name)
+	assert.Equal(t, want, got)
 }
 
 func TestGetRepository(t *testing.T) {
@@ -83,7 +82,7 @@ func TestCreateWebhook(t *testing.T) {
 func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
 	_, u := NewTestServer(t, opts...)
 
-	client, err := NewClient(context.Background(), ClientOptions{
+	client, err := NewClient(ClientOptions{
 		Hostname:            u.Host,
 		SkipTLSVerification: true,
 		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},

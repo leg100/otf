@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/hooks"
 	"github.com/leg100/otf/internal/http/html"
@@ -55,13 +54,13 @@ type (
 		internal.HostnameService
 		github.GithubAppService
 
-		cloudHostnames map[cloud.Kind]string
+		cloudHostnames map[vcs.Kind]string
 	}
 
 	CreateOptions struct {
 		Organization string
 		Name         string
-		Kind         cloud.Kind
+		Kind         vcs.Kind
 
 		// Specify only one of these.
 		Token              *string
@@ -82,9 +81,9 @@ type (
 )
 
 func NewService(opts Options) *service {
-	cloudHostnames := map[cloud.Kind]string{
-		cloud.GithubKind: opts.GithubHostname,
-		cloud.GitlabKind: opts.GitlabHostname,
+	cloudHostnames := map[vcs.Kind]string{
+		vcs.GithubKind: opts.GithubHostname,
+		vcs.GitlabKind: opts.GitlabHostname,
 	}
 	svc := service{
 		Logger:           opts.Logger,
@@ -238,7 +237,7 @@ func (a *service) GetVCSClient(ctx context.Context, providerID string) (vcs.Clie
 	if err != nil {
 		return nil, err
 	}
-	return provider.NewClient(ctx)
+	return provider.NewClient()
 }
 
 func (a *service) DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error) {

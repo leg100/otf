@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/vcs"
 )
@@ -184,11 +183,11 @@ func (s *Spawner) handleWithError(logger logr.Logger, event vcs.Event) error {
 			},
 		}
 		runOpts := CreateOptions{}
-		switch event.Cloud {
-		case cloud.GithubKind:
+		switch event.VCSKind {
+		case vcs.GithubKind:
 			cvOpts.Source = configversion.SourceGithub
 			runOpts.Source = SourceGithub
-		case cloud.GitlabKind:
+		case vcs.GitlabKind:
 			cvOpts.Source = configversion.SourceGitlab
 			runOpts.Source = SourceGitlab
 		}

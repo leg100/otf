@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -33,7 +32,7 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 
 	// convert github event to an OTF event
 	to := vcs.EventPayload{
-		Cloud: cloud.GithubKind,
+		VCSKind: vcs.GithubKind,
 	}
 
 	switch event := raw.(type) {

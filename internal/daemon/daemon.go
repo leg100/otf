@@ -13,7 +13,6 @@ import (
 	"github.com/leg100/otf/internal/agent"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/authenticator"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/connections"
 	"github.com/leg100/otf/internal/disco"
@@ -176,8 +175,8 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService:  vcsProviderService,
 		GithubAppService:    githubAppService,
 	})
-	repoService.RegisterCloudHandler(cloud.GithubKind, github.HandleEvent)
-	repoService.RegisterCloudHandler(cloud.GitlabKind, gitlab.HandleEvent)
+	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
+	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
 
 	connectionService := connections.NewService(ctx, connections.Options{
 		Logger:             logger,
@@ -285,10 +284,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		TokensService:   tokensService,
 		OpaqueHandlerConfigs: []authenticator.OpaqueHandlerConfig{
 			{
-				Kind: cloud.GithubKind,
+				ClientConstructor: github.NewOAuthClient,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GithubHostname,
-					Name:         string(cloud.GithubKind),
+					Name:         string(vcs.GithubKind),
 					Endpoint:     github.OAuthEndpoint,
 					Scopes:       github.OAuthScopes,
 					ClientID:     cfg.GithubClientID,
@@ -296,10 +295,9 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 				},
 			},
 			{
-				Kind: cloud.GitlabKind,
 				OAuthConfig: authenticator.OAuthConfig{
 					Hostname:     cfg.GitlabHostname,
-					Name:         string(cloud.GitlabKind),
+					Name:         string(vcs.GitlabKind),
 					Endpoint:     gitlab.OAuthEndpoint,
 					Scopes:       gitlab.OAuthScopes,
 					ClientID:     cfg.GitlabClientID,

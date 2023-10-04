@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
+	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,14 +22,14 @@ func Test_newHook(t *testing.T) {
 			name: "default",
 			opts: newHookOptions{
 				id:              &id,
-				cloud:           cloud.GithubKind,
+				cloud:           vcs.GithubKind,
 				secret:          internal.String("top-secret"),
 				HostnameService: internal.NewHostnameService("fakehost.org"),
 			},
 			want: &hook{
 				id:       id,
 				secret:   "top-secret",
-				cloud:    cloud.GithubKind,
+				cloud:    vcs.GithubKind,
 				endpoint: "https://fakehost.org/webhooks/vcs/" + id.String(),
 			},
 		},

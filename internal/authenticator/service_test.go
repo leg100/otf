@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf/internal"
-	"github.com/leg100/otf/internal/cloud"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,6 @@ func TestNewAuthenticatorService(t *testing.T) {
 		HostnameService: internal.NewHostnameService("fake-host.org"),
 		OpaqueHandlerConfigs: []OpaqueHandlerConfig{
 			{
-				Kind: cloud.GithubKind,
 				OAuthConfig: OAuthConfig{
 					ClientID:     "id-1",
 					ClientSecret: "secret-1",
