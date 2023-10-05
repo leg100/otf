@@ -44,6 +44,7 @@ type (
 		html.Renderer
 		logr.Logger
 		vcs.Publisher
+		GithubHostname string
 	}
 )
 
@@ -57,6 +58,7 @@ func NewService(opts Options) *service {
 	svc.web = &webHandlers{
 		Renderer:        opts.Renderer,
 		HostnameService: opts.HostnameService,
+		GithubHostname:  opts.GithubHostname,
 		svc:             &svc,
 	}
 	return &svc

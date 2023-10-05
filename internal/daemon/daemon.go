@@ -154,7 +154,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		DB:              db,
 		Renderer:        renderer,
 		HostnameService: hostnameService,
+		GithubHostname:  cfg.GithubHostname,
 	})
+
+	vcsEventBroker := &vcs.Broker{}
 
 	vcsProviderService := vcsprovider.NewService(vcsprovider.Options{
 		Logger:           logger,
@@ -165,6 +168,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		GithubAppService: githubAppService,
 		GithubHostname:   cfg.GithubHostname,
 		GitlabHostname:   cfg.GitlabHostname,
+		Subscriber:       vcsEventBroker,
 	})
 	repoService := repo.NewService(ctx, repo.Options{
 		Logger:              logger,
@@ -174,6 +178,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 		GithubAppService:    githubAppService,
+		VCSEventBroker:      vcsEventBroker,
 	})
 	repoService.RegisterCloudHandler(vcs.GithubKind, github.HandleEvent)
 	repoService.RegisterCloudHandler(vcs.GitlabKind, gitlab.HandleEvent)
@@ -204,7 +209,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Signer:              signer,
 		MaxConfigSize:       cfg.MaxConfigSize,
 	})
-	vcsEventBroker := &vcs.Broker{}
 
 	runService := run.NewService(run.Options{
 		Logger:                      logger,

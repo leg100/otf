@@ -110,6 +110,7 @@ func (t *VCSProvider) String() string {
 func (t *VCSProvider) NewClient() (vcs.Client, error) {
 	if t.GithubApp != nil {
 		return github.NewClient(github.ClientOptions{
+			Hostname:           t.Hostname,
 			InstallCredentials: t.GithubApp,
 		})
 	} else if t.Token != nil {

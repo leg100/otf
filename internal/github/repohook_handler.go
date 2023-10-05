@@ -125,6 +125,15 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 		to.CommitURL = event.GetRepo().GetHTMLURL() + "/commit/" + to.CommitSHA
 
 		return &to, nil
+	case *github.InstallationEvent:
+		// ignore events other than uninstallation events
+		if event.GetAction() != "deleted" {
+			return nil, nil
+		}
+		to.Action = vcs.ActionDeleted
+		to.Type = vcs.EventTypeInstallation
+		to.GithubAppInstallID = event.GetInstallation().ID
+		return &to, nil
 	default:
 		return nil, nil
 	}

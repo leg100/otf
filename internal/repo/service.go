@@ -76,6 +76,7 @@ func NewService(ctx context.Context, opts Options) *service {
 		handlers: newHandler(
 			opts.Logger,
 			opts.VCSEventBroker,
+			opts.VCSProviderService,
 			db,
 			opts.GithubAppService,
 		),

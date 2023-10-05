@@ -23,7 +23,8 @@ type webHandlers struct {
 	html.Renderer
 	internal.HostnameService
 
-	svc Service
+	svc            Service
+	GithubHostname string
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -64,6 +65,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		Permissions: map[string]string{
 			"checks":        "write",
 			"contents":      "read",
+			"metadata":      "read",
 			"pull_requests": "write",
 			"statuses":      "write",
 		},
@@ -76,10 +78,12 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("ghapp_register.tmpl", w, struct {
 		html.SitePage
-		Manifest string
+		Manifest       string
+		GithubHostname string
 	}{
-		SitePage: html.NewSitePage(r, "select app owner"),
-		Manifest: string(marshaled),
+		SitePage:       html.NewSitePage(r, "select app owner"),
+		Manifest:       string(marshaled),
+		GithubHostname: h.GithubHostname,
 	})
 }
 
@@ -98,12 +102,14 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("github_apps_get.tmpl", w, struct {
 		html.SitePage
-		App           *App
-		Installations []*Installation
+		App            *App
+		Installations  []*Installation
+		GithubHostname string
 	}{
-		SitePage:      html.NewSitePage(r, "github app"),
-		App:           app,
-		Installations: installs,
+		SitePage:       html.NewSitePage(r, "github app"),
+		App:            app,
+		Installations:  installs,
+		GithubHostname: h.GithubHostname,
 	})
 }
 
@@ -159,7 +165,13 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	// render a small templated flash message
 	buf := new(bytes.Buffer)
-	err = h.RenderTemplate("github_delete_message.tmpl", buf, app)
+	err = h.RenderTemplate("github_delete_message.tmpl", buf, struct {
+		GithubHostname string
+		*App
+	}{
+		GithubHostname: h.GithubHostname,
+		App:            app,
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 	}

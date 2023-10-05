@@ -39,7 +39,7 @@ type (
 	// (b) unmarshals event from the request; if the event is irrelevant or
 	// invalid then nil is returned.
 	//
-	// TODO: rename to UnmarshalEvent (?)
+	// TODO: rename to EventUnmarshaler (?)
 	CloudHandler func(w http.ResponseWriter, r *http.Request, secret string) *vcs.EventPayload
 
 	// handleDB is the database the handler interacts with
@@ -48,13 +48,14 @@ type (
 	}
 )
 
-func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB, githubAppService github.GithubAppService) *handlers {
+func newHandler(logger logr.Logger, publisher vcs.Publisher, provider vcsprovider.VCSProviderService, db handlerDB, githubAppService github.GithubAppService) *handlers {
 	return &handlers{
-		Logger:           logger,
-		Publisher:        publisher,
-		GithubAppService: githubAppService,
-		handlerDB:        db,
-		cloudHandlers:    internal.NewSafeMap[vcs.Kind, CloudHandler](),
+		Logger:             logger,
+		Publisher:          publisher,
+		GithubAppService:   githubAppService,
+		VCSProviderService: provider,
+		handlerDB:          db,
+		cloudHandlers:      internal.NewSafeMap[vcs.Kind, CloudHandler](),
 	}
 }
 
@@ -94,9 +95,11 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) githubAppHandler(w http.ResponseWriter, r *http.Request) {
+	// permit handler to talk to services
+	ctx := internal.AddSubjectToContext(r.Context(), &internal.Superuser{Username: "github-app-event-handler"})
 	// retrieve github app config; if one hasn't been configured then return a
 	// 400
-	app, err := h.GetGithubApp(r.Context())
+	app, err := h.GetGithubApp(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -109,7 +112,7 @@ func (h *handlers) githubAppHandler(w http.ResponseWriter, r *http.Request) {
 	h.V(2).Info("received vcs event", "type", "github-app", "repo", payload.RepoPath)
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
-	providers, err := h.ListVCSProvidersByGithubAppInstall(r.Context(), *payload.GithubAppInstallID)
+	providers, err := h.ListVCSProvidersByGithubAppInstall(ctx, *payload.GithubAppInstallID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

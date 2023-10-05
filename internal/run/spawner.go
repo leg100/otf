@@ -21,7 +21,6 @@ type (
 		WorkspaceService
 		VCSProviderService
 		RunService
-		vcs.Subscriber
 	}
 )
 

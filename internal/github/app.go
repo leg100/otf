@@ -39,6 +39,16 @@ func newApp(opts CreateAppOptions) *App {
 
 func (a *App) String() string { return a.Slug }
 
+// URL returns the app's URL on GitHub
+func (a *App) URL(hostname string) string {
+	return "https://" + hostname + "/apps/" + a.Slug
+}
+
+// NewInstallURL returns the GitHub URL for creating a new install of the app.
+func (a *App) NewInstallURL(hostname string) string {
+	return "https://" + hostname + "/apps/" + a.Slug + "/installations/new"
+}
+
 // LogValue implements slog.LogValuer.
 func (a *App) LogValue() slog.Value {
 	return slog.GroupValue(
@@ -48,10 +58,10 @@ func (a *App) LogValue() slog.Value {
 }
 
 // AdvancedURL returns the URL for the "advanced" settings on github
-func (a *App) AdvancedURL() string {
+func (a *App) AdvancedURL(hostname string) string {
 	path := fmt.Sprintf("/settings/apps/%s/advanced", a.Slug)
 	if a.Organization != nil {
 		path = fmt.Sprintf("/organizations/%s%s", *a.Organization, path)
 	}
-	return fmt.Sprintf("https://github.com%s", path)
+	return fmt.Sprintf("https://%s%s", hostname, path)
 }

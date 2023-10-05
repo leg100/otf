@@ -19,7 +19,9 @@ type webHandlers struct {
 	internal.HostnameService
 	github.GithubAppService
 
-	svc Service
+	svc            Service
+	GithubHostname string
+	GitlabHostname string
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -51,6 +53,7 @@ func (h *webHandlers) newPersonalToken(w http.ResponseWriter, r *http.Request) {
 		VCSProvider *VCSProvider
 		FormAction  string
 		EditMode    bool
+		TokensURL   string
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
 		VCSProvider:      &VCSProvider{Kind: params.Cloud},
@@ -68,6 +71,11 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app, err := h.GetGithubApp(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	installs, err := h.ListInstallations(r.Context())
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusInternalServerError)
@@ -76,12 +84,16 @@ func (h *webHandlers) newGithubApp(w http.ResponseWriter, r *http.Request) {
 
 	h.Render("vcs_provider_new_github_app.tmpl", w, struct {
 		organization.OrganizationPage
-		Installations []*github.Installation
-		Cloud         vcs.Kind
+		App            *github.App
+		Installations  []*github.Installation
+		Cloud          vcs.Kind
+		GithubHostname string
 	}{
 		OrganizationPage: organization.NewPage(r, "new vcs provider", params.Organization),
+		App:              app,
 		Installations:    installs,
 		Cloud:            vcs.GithubKind,
+		GithubHostname:   h.GithubHostname,
 	})
 }
 

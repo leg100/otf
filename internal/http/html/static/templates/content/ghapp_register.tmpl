@@ -4,7 +4,7 @@
 
 {{ define "content" }}
   <script src="{{ addHash "/static/js/ghapp_register.js" }}"></script>
-  <div x-data="register">
+  <div x-data="register({{ .GithubHostname }})">
     <form class="flex flex-col gap-4" :action="action" method="post">
       <div class="field">
         <label for="organization">Organization</label>

@@ -74,6 +74,7 @@ type (
 		html.Renderer
 		logr.Logger
 		github.GithubAppService
+		vcs.Subscriber
 
 		GithubHostname string
 		GitlabHostname string
@@ -99,18 +100,36 @@ func NewService(opts Options) *service {
 		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
 		vcsHostnames: vcsHostnames,
 	}
-
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
 		HostnameService:  opts.HostnameService,
 		GithubAppService: opts.GithubAppService,
+		GithubHostname:   opts.GithubHostname,
+		GitlabHostname:   opts.GitlabHostname,
 		svc:              &svc,
 	}
 	svc.api = &tfe{
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-
+	// delete vcs providers whenever their github app is uninstalled
+	opts.Subscribe(func(event vcs.Event) {
+		// ignore events other than uninstallation events
+		if event.Type != vcs.EventTypeInstallation && event.Action != vcs.ActionDeleted {
+			return
+		}
+		ctx := context.Background()
+		providers, err := svc.ListVCSProvidersByGithubAppInstall(ctx, *event.GithubAppInstallID)
+		if err != nil {
+			return
+		}
+		for _, prov := range providers {
+			_, err = svc.DeleteVCSProvider(ctx, prov.ID)
+			if err != nil {
+				return
+			}
+		}
+	})
 	return &svc
 }
 

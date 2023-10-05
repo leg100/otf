@@ -4,6 +4,7 @@ const (
 	EventTypePull EventType = iota
 	EventTypePush
 	EventTypeTag
+	EventTypeInstallation // github-app installation
 
 	ActionCreated Action = iota
 	ActionDeleted

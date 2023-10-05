@@ -26,6 +26,7 @@ func Test_repohookHandler(t *testing.T) {
 	handler := newHandler(
 		logr.Discard(),
 		broker,
+		nil,
 		&fakeHandlerDB{
 			hook: hook,
 		},
