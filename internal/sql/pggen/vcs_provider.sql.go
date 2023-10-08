@@ -17,6 +17,7 @@ const insertVCSProviderSQL = `INSERT INTO vcs_providers (
     name,
     vcs_kind,
     token,
+    github_app_id,
     organization_name
 ) VALUES (
     $1,
@@ -24,7 +25,8 @@ const insertVCSProviderSQL = `INSERT INTO vcs_providers (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 );`
 
 type InsertVCSProviderParams struct {
@@ -33,13 +35,14 @@ type InsertVCSProviderParams struct {
 	Name             pgtype.Text
 	VCSKind          pgtype.Text
 	Token            pgtype.Text
+	GithubAppID      pgtype.Int8
 	OrganizationName pgtype.Text
 }
 
 // InsertVCSProvider implements Querier.InsertVCSProvider.
 func (q *DBQuerier) InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertVCSProvider")
-	cmdTag, err := q.conn.Exec(ctx, insertVCSProviderSQL, params.VCSProviderID, params.CreatedAt, params.Name, params.VCSKind, params.Token, params.OrganizationName)
+	cmdTag, err := q.conn.Exec(ctx, insertVCSProviderSQL, params.VCSProviderID, params.CreatedAt, params.Name, params.VCSKind, params.Token, params.GithubAppID, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertVCSProvider: %w", err)
 	}
@@ -48,7 +51,7 @@ func (q *DBQuerier) InsertVCSProvider(ctx context.Context, params InsertVCSProvi
 
 // InsertVCSProviderBatch implements Querier.InsertVCSProviderBatch.
 func (q *DBQuerier) InsertVCSProviderBatch(batch genericBatch, params InsertVCSProviderParams) {
-	batch.Queue(insertVCSProviderSQL, params.VCSProviderID, params.CreatedAt, params.Name, params.VCSKind, params.Token, params.OrganizationName)
+	batch.Queue(insertVCSProviderSQL, params.VCSProviderID, params.CreatedAt, params.Name, params.VCSKind, params.Token, params.GithubAppID, params.OrganizationName)
 }
 
 // InsertVCSProviderScan implements Querier.InsertVCSProviderScan.
@@ -76,6 +79,7 @@ type FindVCSProvidersByOrganizationRow struct {
 	Name             pgtype.Text        `json:"name"`
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	GithubApp        *GithubApps        `json:"github_app"`
 	GithubAppInstall *GithubAppInstalls `json:"github_app_install"`
 }
@@ -93,7 +97,7 @@ func (q *DBQuerier) FindVCSProvidersByOrganization(ctx context.Context, organiza
 	githubAppInstallRow := q.types.newGithubAppInstalls()
 	for rows.Next() {
 		var item FindVCSProvidersByOrganizationRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByOrganization row: %w", err)
 		}
 		if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -127,7 +131,7 @@ func (q *DBQuerier) FindVCSProvidersByOrganizationScan(results pgx.BatchResults)
 	githubAppInstallRow := q.types.newGithubAppInstalls()
 	for rows.Next() {
 		var item FindVCSProvidersByOrganizationRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByOrganizationBatch row: %w", err)
 		}
 		if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -159,6 +163,7 @@ type FindVCSProvidersRow struct {
 	Name             pgtype.Text        `json:"name"`
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	GithubApp        *GithubApps        `json:"github_app"`
 	GithubAppInstall *GithubAppInstalls `json:"github_app_install"`
 }
@@ -176,7 +181,7 @@ func (q *DBQuerier) FindVCSProviders(ctx context.Context) ([]FindVCSProvidersRow
 	githubAppInstallRow := q.types.newGithubAppInstalls()
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProviders row: %w", err)
 		}
 		if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -210,7 +215,7 @@ func (q *DBQuerier) FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSPro
 	githubAppInstallRow := q.types.newGithubAppInstalls()
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersBatch row: %w", err)
 		}
 		if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -243,6 +248,7 @@ type FindVCSProvidersByGithubAppInstallIDRow struct {
 	Name             pgtype.Text        `json:"name"`
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	GithubApp        *GithubApps        `json:"github_app"`
 	GithubAppInstall *GithubAppInstalls `json:"github_app_install"`
 }
@@ -260,7 +266,7 @@ func (q *DBQuerier) FindVCSProvidersByGithubAppInstallID(ctx context.Context, in
 	githubAppInstallRow := q.types.newGithubAppInstalls()
 	for rows.Next() {
 		var item FindVCSProvidersByGithubAppInstallIDRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByGithubAppInstallID row: %w", err)
 		}
 		if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -294,7 +300,7 @@ func (q *DBQuerier) FindVCSProvidersByGithubAppInstallIDScan(results pgx.BatchRe
 	githubAppInstallRow := q.types.newGithubAppInstalls()
 	for rows.Next() {
 		var item FindVCSProvidersByGithubAppInstallIDRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersByGithubAppInstallIDBatch row: %w", err)
 		}
 		if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -327,6 +333,7 @@ type FindVCSProviderRow struct {
 	Name             pgtype.Text        `json:"name"`
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	GithubApp        *GithubApps        `json:"github_app"`
 	GithubAppInstall *GithubAppInstalls `json:"github_app_install"`
 }
@@ -338,7 +345,7 @@ func (q *DBQuerier) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Te
 	var item FindVCSProviderRow
 	githubAppRow := q.types.newGithubApps()
 	githubAppInstallRow := q.types.newGithubAppInstalls()
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 		return item, fmt.Errorf("query FindVCSProvider: %w", err)
 	}
 	if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -361,7 +368,7 @@ func (q *DBQuerier) FindVCSProviderScan(results pgx.BatchResults) (FindVCSProvid
 	var item FindVCSProviderRow
 	githubAppRow := q.types.newGithubApps()
 	githubAppInstallRow := q.types.newGithubAppInstalls()
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 		return item, fmt.Errorf("scan FindVCSProviderBatch row: %w", err)
 	}
 	if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -390,6 +397,7 @@ type FindVCSProviderForUpdateRow struct {
 	Name             pgtype.Text        `json:"name"`
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 	GithubApp        *GithubApps        `json:"github_app"`
 	GithubAppInstall *GithubAppInstalls `json:"github_app_install"`
 }
@@ -401,7 +409,7 @@ func (q *DBQuerier) FindVCSProviderForUpdate(ctx context.Context, vcsProviderID 
 	var item FindVCSProviderForUpdateRow
 	githubAppRow := q.types.newGithubApps()
 	githubAppInstallRow := q.types.newGithubAppInstalls()
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 		return item, fmt.Errorf("query FindVCSProviderForUpdate: %w", err)
 	}
 	if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -424,7 +432,7 @@ func (q *DBQuerier) FindVCSProviderForUpdateScan(results pgx.BatchResults) (Find
 	var item FindVCSProviderForUpdateRow
 	githubAppRow := q.types.newGithubApps()
 	githubAppInstallRow := q.types.newGithubAppInstalls()
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, githubAppRow, githubAppInstallRow); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID, githubAppRow, githubAppInstallRow); err != nil {
 		return item, fmt.Errorf("scan FindVCSProviderForUpdateBatch row: %w", err)
 	}
 	if err := githubAppRow.AssignTo(&item.GithubApp); err != nil {
@@ -455,6 +463,7 @@ type UpdateVCSProviderRow struct {
 	Name             pgtype.Text        `json:"name"`
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
 }
 
 // UpdateVCSProvider implements Querier.UpdateVCSProvider.
@@ -462,7 +471,7 @@ func (q *DBQuerier) UpdateVCSProvider(ctx context.Context, params UpdateVCSProvi
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateVCSProvider")
 	row := q.conn.QueryRow(ctx, updateVCSProviderSQL, params.Name, params.Token, params.VCSProviderID)
 	var item UpdateVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID); err != nil {
 		return item, fmt.Errorf("query UpdateVCSProvider: %w", err)
 	}
 	return item, nil
@@ -477,7 +486,7 @@ func (q *DBQuerier) UpdateVCSProviderBatch(batch genericBatch, params UpdateVCSP
 func (q *DBQuerier) UpdateVCSProviderScan(results pgx.BatchResults) (UpdateVCSProviderRow, error) {
 	row := results.QueryRow()
 	var item UpdateVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.VCSKind, &item.OrganizationName, &item.GithubAppID); err != nil {
 		return item, fmt.Errorf("scan UpdateVCSProviderBatch row: %w", err)
 	}
 	return item, nil

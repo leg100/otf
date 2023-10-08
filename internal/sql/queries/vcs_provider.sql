@@ -5,6 +5,7 @@ INSERT INTO vcs_providers (
     name,
     vcs_kind,
     token,
+    github_app_id,
     organization_name
 ) VALUES (
     pggen.arg('vcs_provider_id'),
@@ -12,6 +13,7 @@ INSERT INTO vcs_providers (
     pggen.arg('name'),
     pggen.arg('vcs_kind'),
     pggen.arg('token'),
+    pggen.arg('github_app_id'),
     pggen.arg('organization_name')
 );
 

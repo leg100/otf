@@ -21,9 +21,12 @@ CREATE TABLE IF NOT EXISTS github_app_installs (
     CHECK ((username IS NOT NULL AND organization IS NULL) OR (username IS NULL AND organization IS NOT NULL))
 );
 
--- vcs provider token is no longer mandatory
+-- vcs provider token is no longer mandatory; and add an fk to github app, so that when a github app is deleted so is the vcs provider
 ALTER TABLE vcs_providers
-    ALTER COLUMN token DROP NOT NULL;
+    ALTER COLUMN token DROP NOT NULL,
+    ADD COLUMN github_app_id BIGINT,
+    ADD CONSTRAINT github_app_id_fk FOREIGN KEY (github_app_id)
+        REFERENCES github_apps ON UPDATE CASCADE ON DELETE CASCADE;
 
 -- alter repo_connections, swapping fk to webhooks with fk to vcs providers;
 -- and copy repo path from webhooks to repo_connections
@@ -82,9 +85,10 @@ ALTER TABLE repo_connections
     ADD CONSTRAINT webhook_id_fk FOREIGN KEY (webhook_id)
         REFERENCES webhooks ON UPDATE CASCADE ON DELETE CASCADE;
 
--- make token mandatory on vcs providers
+-- make token mandatory on vcs providers, and drop github app fk
 ALTER TABLE vcs_providers
-    ALTER COLUMN token SET NOT NULL;
+    ALTER COLUMN token SET NOT NULL,
+    DROP COLUMN github_app_id;
 
 -- remove github tables
 DROP TABLE IF EXISTS github_app_installs;

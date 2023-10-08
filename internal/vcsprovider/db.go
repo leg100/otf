@@ -26,6 +26,7 @@ type (
 		Name             pgtype.Text              `json:"name"`
 		VCSKind          pgtype.Text              `json:"vcs_kind"`
 		OrganizationName pgtype.Text              `json:"organization_name"`
+		GithubAppID      pgtype.Int8              `json:"github_app_id"`
 		GithubApp        *pggen.GithubApps        `json:"github_app"`
 		GithubAppInstall *pggen.GithubAppInstalls `json:"github_app_install"`
 	}
@@ -41,14 +42,20 @@ func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DB
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
 	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
+		params := pggen.InsertVCSProviderParams{
 			VCSProviderID:    sql.String(provider.ID),
 			Name:             sql.String(provider.Name),
 			VCSKind:          sql.String(string(provider.Kind)),
 			OrganizationName: sql.String(provider.Organization),
 			CreatedAt:        sql.Timestamptz(provider.CreatedAt),
 			Token:            sql.StringPtr(provider.Token),
-		})
+		}
+		if provider.GithubApp != nil {
+			params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Present}
+		} else {
+			params.GithubAppID = pgtype.Int8{Status: pgtype.Null}
+		}
+		_, err := db.Conn(ctx).InsertVCSProvider(ctx, params)
 		if err != nil {
 			return err
 		}

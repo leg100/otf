@@ -15,10 +15,12 @@
         </div>
         <div>
           {{ template "identifier" . }}
-          <form action="{{ deleteGithubAppPath (toString .ID) }}" method="POST">
-            <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-            <input type="hidden" name="id" value="{{ .ID }}">
-          </form>
+          {{ if $.CanDeleteApp }}
+            <form action="{{ deleteGithubAppPath (toString .ID) }}" method="POST">
+              <button class="btn-danger" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+              <input type="hidden" name="id" value="{{ .ID }}">
+            </form>
+          {{ end }}
         </div>
       </div>
     </div>
@@ -51,7 +53,12 @@
     {{ end }}
   {{ else }}
     <span>
-      No GitHub app found. Create an app <a class="underline" href="{{ newGithubAppPath }}">here</a>.
+      No GitHub app found.
+      {{ if .CanCreateApp }}
+        Create an app <a class="underline" href="{{ newGithubAppPath }}">here</a>.
+      {{ else }}
+        To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/latest/auth/site_admins/">site admin</a> role.
+      {{ end }}
     </span>
   {{ end }}
 {{ end }}

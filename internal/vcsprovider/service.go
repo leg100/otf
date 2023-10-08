@@ -101,20 +101,23 @@ func NewService(opts Options) *service {
 		Service:   &svc,
 		Responder: opts.Responder,
 	}
-	// delete vcs providers whenever their github app is uninstalled
+	// delete vcs providers when a github app is uninstalled
 	opts.Subscribe(func(event vcs.Event) {
 		// ignore events other than uninstallation events
-		if event.Type != vcs.EventTypeInstallation && event.Action != vcs.ActionDeleted {
+		if event.Type != vcs.EventTypeInstallation || event.Action != vcs.ActionDeleted {
 			return
 		}
-		ctx := context.Background()
+		// create user with unlimited permissions
+		user := &internal.Superuser{Username: "vcs-provider-service"}
+		ctx := internal.AddSubjectToContext(context.Background(), user)
+		// list all vcsproviders using the app install
 		providers, err := svc.ListVCSProvidersByGithubAppInstall(ctx, *event.GithubAppInstallID)
 		if err != nil {
 			return
 		}
+		// and delete them
 		for _, prov := range providers {
-			_, err = svc.DeleteVCSProvider(ctx, prov.ID)
-			if err != nil {
+			if _, err = svc.DeleteVCSProvider(ctx, prov.ID); err != nil {
 				return
 			}
 		}

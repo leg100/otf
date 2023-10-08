@@ -8,9 +8,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/http/decode"
 	"github.com/leg100/otf/internal/http/html"
 	"github.com/leg100/otf/internal/http/html/paths"
+	"github.com/leg100/otf/internal/rbac"
 )
 
 const (
@@ -101,16 +103,26 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		h.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	h.Render("github_apps_get.tmpl", w, struct {
 		html.SitePage
 		App            *App
 		Installations  []*Installation
 		GithubHostname string
+		CanCreateApp   bool
+		CanDeleteApp   bool
 	}{
 		SitePage:       html.NewSitePage(r, "github app"),
 		App:            app,
 		Installations:  installs,
 		GithubHostname: h.GithubHostname,
+		CanCreateApp:   user.CanAccessSite(rbac.CreateGithubAppAction),
+		CanDeleteApp:   user.CanAccessSite(rbac.DeleteGithubAppAction),
 	})
 }
 

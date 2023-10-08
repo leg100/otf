@@ -29,7 +29,7 @@ type (
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
 	}
 
-	// factory produces vcs providers
+	// factory produces VCS providers
 	factory struct {
 		github.GithubAppService
 
