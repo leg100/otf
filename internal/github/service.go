@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -27,6 +28,8 @@ type (
 
 		ListInstallations(ctx context.Context) ([]*Installation, error)
 		DeleteInstallation(ctx context.Context, installID int64) error
+
+		GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error)
 	}
 
 	service struct {
@@ -141,6 +144,40 @@ func (a *service) ListInstallations(ctx context.Context) ([]*Installation, error
 		to[i] = &Installation{Installation: f}
 	}
 	return to, nil
+}
+
+func (a *service) GetInstallCredentials(ctx context.Context, installID int64) (*InstallCredentials, error) {
+	app, err := a.db.get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	appCreds := AppCredentials{
+		ID:         app.ID,
+		PrivateKey: app.PrivateKey,
+	}
+	client, err := NewClient(ClientOptions{
+		AppCredentials: &appCreds,
+	})
+	if err != nil {
+		return nil, err
+	}
+	install, err := client.GetInstallation(ctx, installID)
+	if err != nil {
+		return nil, err
+	}
+	creds := InstallCredentials{
+		ID:             installID,
+		AppCredentials: appCreds,
+	}
+	switch install.GetTargetType() {
+	case "Organization":
+		creds.Organization = install.GetAccount().Login
+	case "User":
+		creds.User = install.GetAccount().Login
+	default:
+		return nil, fmt.Errorf("unexpected target type: %s", install.GetTargetType())
+	}
+	return &creds, nil
 }
 
 func (a *service) DeleteInstallation(ctx context.Context, installID int64) error {

@@ -20,7 +20,7 @@ func TestVCSProvider(t *testing.T) {
 		_, err := svc.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
 			Organization: org.Name,
 			Token:        internal.String(uuid.NewString()),
-			Kind:         vcs.GithubKind,
+			Kind:         vcs.KindPtr(vcs.GithubKind),
 		})
 		require.NoError(t, err)
 	})

@@ -53,18 +53,7 @@ type (
 
 		internal.HostnameService
 		github.GithubAppService
-
-		vcsHostnames map[vcs.Kind]string
-	}
-
-	CreateOptions struct {
-		Organization string
-		Name         string
-		Kind         vcs.Kind
-
-		// Specify only one of these.
-		Token              *string
-		GithubAppInstallID *int64
+		*factory
 	}
 
 	Options struct {
@@ -82,9 +71,10 @@ type (
 )
 
 func NewService(opts Options) *service {
-	vcsHostnames := map[vcs.Kind]string{
-		vcs.GithubKind: opts.GithubHostname,
-		vcs.GitlabKind: opts.GitlabHostname,
+	factory := factory{
+		GithubAppService: opts.GithubAppService,
+		GithubHostname:   opts.GithubHostname,
+		GitlabHostname:   opts.GitlabHostname,
 	}
 	svc := service{
 		Logger:           opts.Logger,
@@ -92,13 +82,12 @@ func NewService(opts Options) *service {
 		GithubAppService: opts.GithubAppService,
 		site:             &internal.SiteAuthorizer{Logger: opts.Logger},
 		organization:     &organization.Authorizer{Logger: opts.Logger},
+		factory:          &factory,
 		db: &pgdb{
-			DB:               opts.DB,
-			GithubAppService: opts.GithubAppService,
-			vcsHostnames:     vcsHostnames,
+			DB:      opts.DB,
+			factory: &factory,
 		},
-		deleteHook:   hooks.NewHook[*VCSProvider](opts.DB),
-		vcsHostnames: vcsHostnames,
+		deleteHook: hooks.NewHook[*VCSProvider](opts.DB),
 	}
 	svc.web = &webHandlers{
 		Renderer:         opts.Renderer,
@@ -148,11 +137,7 @@ func (a *service) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*V
 		return nil, err
 	}
 
-	provider, err := newProvider(ctx, newOptions{
-		CreateOptions:    opts,
-		GithubAppService: a.GithubAppService,
-		cloudHostnames:   a.vcsHostnames,
-	})
+	provider, err := a.newProvider(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

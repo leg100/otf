@@ -132,3 +132,49 @@ func (q *DBQuerier) DeleteGithubAppScan(results pgx.BatchResults) (DeleteGithubA
 	}
 	return item, nil
 }
+
+const insertGithubAppInstallSQL = `INSERT INTO github_app_installs (
+    github_app_id,
+    install_id,
+    username,
+    organization,
+    vcs_provider_id
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5
+);`
+
+type InsertGithubAppInstallParams struct {
+	GithubAppID   pgtype.Int8
+	InstallID     pgtype.Int8
+	Username      pgtype.Text
+	Organization  pgtype.Text
+	VCSProviderID pgtype.Text
+}
+
+// InsertGithubAppInstall implements Querier.InsertGithubAppInstall.
+func (q *DBQuerier) InsertGithubAppInstall(ctx context.Context, params InsertGithubAppInstallParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertGithubAppInstall")
+	cmdTag, err := q.conn.Exec(ctx, insertGithubAppInstallSQL, params.GithubAppID, params.InstallID, params.Username, params.Organization, params.VCSProviderID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertGithubAppInstall: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertGithubAppInstallBatch implements Querier.InsertGithubAppInstallBatch.
+func (q *DBQuerier) InsertGithubAppInstallBatch(batch genericBatch, params InsertGithubAppInstallParams) {
+	batch.Queue(insertGithubAppInstallSQL, params.GithubAppID, params.InstallID, params.Username, params.Organization, params.VCSProviderID)
+}
+
+// InsertGithubAppInstallScan implements Querier.InsertGithubAppInstallScan.
+func (q *DBQuerier) InsertGithubAppInstallScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertGithubAppInstallBatch: %w", err)
+	}
+	return cmdTag, err
+}

@@ -7,3 +7,5 @@ const (
 
 // Kind of vcs hosting provider
 type Kind string
+
+func KindPtr(k Kind) *Kind { return &k }

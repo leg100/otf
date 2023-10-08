@@ -16,13 +16,12 @@
       <div class="field">
         <label for="install_id">Installation</label>
         <select class="w-48" name="install_id" id="select-install-id">
-          {{ range .Installations }}
+          {{ range . }}
             <option value="{{ .ID }}">{{ .String }}</option>
           {{ end }}
         </select>
         <span class="description">Select a Github App installation.</span>
       </div>
-      <input type="hidden" name="cloud" id="cloud" value="{{ .Cloud }}">
       <button class="btn w-32" id="create-vcs-provider-button">Create</button>
     </form>
   {{ else }}

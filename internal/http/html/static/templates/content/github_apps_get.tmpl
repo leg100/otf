@@ -8,7 +8,7 @@
       <div class="widget">
         <div>
           <span>
-            <a class="flex underline gap-1 items-center" href="{{ .URL .GithubHostname }}" target="GithubTab">
+            <a class="flex underline gap-1 items-center" href="{{ .URL $.GithubHostname }}" target="GithubTab">
               {{ .String }}<img class="h-4" src="{{ addHash "/static/images/external_link_icon.svg" }}">
             </a>
           </span>
@@ -24,7 +24,7 @@
     </div>
     <hr class="my-4">
     <h3 class="font-semibold text-lg">Installations</h3>
-    <form action="{{ .NewInstallURL .GithubHostname }}" method="GET" target="GithubTab">
+    <form action="{{ .NewInstallURL $.GithubHostname }}" method="GET" target="GithubTab">
       <button class="btn w-32 flex gap-1 items-center justify-center">
         Install<img class="h-4" src="{{ addHash "/static/images/external_link_icon.svg" }}">
       </button>

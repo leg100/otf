@@ -3,8 +3,8 @@
 {{ define "content-header-title" }}Create Github App{{ end }}
 
 {{ define "content" }}
-  <script src="{{ addHash "/static/js/ghapp_register.js" }}"></script>
-  <div x-data="register({{ .GithubHostname }})">
+  <script src="{{ addHash "/static/js/github_apps_new.js" }}"></script>
+  <div x-data="action('{{ .GithubHostname }}')">
     <form class="flex flex-col gap-4" :action="action" method="post">
       <div class="field">
         <label for="organization">Organization</label>

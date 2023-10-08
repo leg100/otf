@@ -20,27 +20,31 @@ type (
 		ID           string
 		Name         string
 		CreatedAt    time.Time
-		Organization string   // name of OTF organization
-		Kind         vcs.Kind // github/gitlab etc
-		Hostname     string   // hostname of github/gitlab etc
+		Organization string // name of OTF organization
+		Hostname     string // hostname of github/gitlab etc
 
-		Token     *string                    // personal access token.
+		Kind  vcs.Kind // github/gitlab etc. Not necessary if GithubApp is non-nil.
+		Token *string  // personal access token.
+
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
 	}
 
-	newOptions struct {
-		CreateOptions
-
-		// map of vcs kind to hostname
-		cloudHostnames map[vcs.Kind]string
-
-		// Must be specified if GithubAppInstallID is non-nil
+	// factory produces vcs providers
+	factory struct {
 		github.GithubAppService
 
-		// These fields are only needed for re-creating a vcs provider from a DB
-		// query
-		ID        *string
-		CreatedAt *time.Time
+		GithubHostname string
+		GitlabHostname string
+	}
+
+	CreateOptions struct {
+		Organization string
+		Name         string
+		Kind         *vcs.Kind
+
+		// Specify either token or github app install ID
+		Token              *string
+		GithubAppInstallID *int64
 	}
 
 	UpdateOptions struct {
@@ -49,44 +53,60 @@ type (
 	}
 )
 
-func newProvider(ctx context.Context, opts newOptions) (*VCSProvider, error) {
+func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
+	var (
+		creds *github.InstallCredentials
+		err   error
+	)
+	if opts.GithubAppInstallID != nil {
+		creds, err = f.GetInstallCredentials(ctx, *opts.GithubAppInstallID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return f.newWithGithubCredentials(ctx, opts, creds)
+}
+
+func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
 		ID:           internal.NewID("vcs"),
 		Name:         opts.Name,
 		CreatedAt:    internal.CurrentTimestamp(),
 		Organization: opts.Organization,
-		Kind:         opts.Kind,
-	}
-	host, ok := opts.cloudHostnames[opts.Kind]
-	if !ok {
-		return nil, fmt.Errorf("cloud kind %s has no hostname", opts.Kind)
-	}
-	provider.Hostname = host
-	if opts.ID != nil {
-		provider.ID = *opts.ID
-	}
-	if opts.CreatedAt != nil {
-		provider.CreatedAt = *opts.CreatedAt
 	}
 	if opts.Token != nil {
+		if opts.Kind == nil {
+			return nil, errors.New("must specify both token and kind")
+		}
+		provider.Kind = *opts.Kind
+		switch provider.Kind {
+		case vcs.GithubKind:
+			provider.Hostname = f.GithubHostname
+		case vcs.GitlabKind:
+			provider.Hostname = f.GitlabHostname
+		default:
+			return nil, errors.New("no hostname found for vcs kind")
+		}
 		if err := provider.setToken(*opts.Token); err != nil {
 			return nil, err
 		}
-	} else if opts.GithubAppInstallID != nil {
-		app, err := opts.GetGithubApp(ctx)
-		if err != nil {
-			return nil, err
-		}
-		provider.GithubApp = &github.InstallCredentials{
-			ID: *opts.GithubAppInstallID,
-			AppCredentials: github.AppCredentials{
-				ID:         app.ID,
-				PrivateKey: app.PrivateKey,
-			},
-		}
+	} else if creds != nil {
+		provider.GithubApp = creds
+		provider.Kind = vcs.GithubKind
+		provider.Hostname = f.GithubHostname
 	} else {
 		return nil, errors.New("must specify either token or github app installation ID")
 	}
+	return provider, nil
+}
+
+func (f *factory) fromDB(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials, id string, createdAt time.Time) (*VCSProvider, error) {
+	provider, err := f.newWithGithubCredentials(ctx, opts, creds)
+	if err != nil {
+		return nil, err
+	}
+	provider.ID = id
+	provider.CreatedAt = createdAt
 	return provider, nil
 }
 

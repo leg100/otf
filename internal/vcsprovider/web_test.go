@@ -1,25 +1,27 @@
 package vcsprovider
 
 import (
-	"fmt"
+	"context"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
-	"github.com/leg100/otf/internal/http/html"
-	"github.com/leg100/otf/internal/organization"
+	gogithub "github.com/google/go-github/v55/github"
+	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/testutils"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestVCSProvider_NewHandler(t *testing.T) {
-	org := organization.NewTestOrganization(t)
-	svc := fakeWebServices(t, newTestVCSProvider(t, org))
+func TestVCSProvider_newPersonalToken(t *testing.T) {
+	svc := &webHandlers{
+		Renderer: testutils.NewRenderer(t),
+	}
 
-	for _, cloud := range []string{"github", "gitlab"} {
-		t.Run(cloud, func(t *testing.T) {
-			q := "/?organization_name=acme-corp&cloud=" + cloud
+	for _, kind := range []string{"github", "gitlab"} {
+		t.Run(kind, func(t *testing.T) {
+			q := "/?organization_name=acme-corp&kind=" + kind
 			r := httptest.NewRequest("GET", q, nil)
 			w := httptest.NewRecorder()
 			svc.newPersonalToken(w, r)
@@ -28,66 +30,102 @@ func TestVCSProvider_NewHandler(t *testing.T) {
 	}
 }
 
-func TestCreateVCSProviderHandler(t *testing.T) {
-	org := organization.NewTestOrganization(t)
-	svc := fakeWebServices(t, newTestVCSProvider(t, org))
+func TestVCSProvider_newGithubApp(t *testing.T) {
+	svc := &webHandlers{
+		Renderer: testutils.NewRenderer(t),
+		GithubAppService: &fakeGithubAppService{
+			app: &github.App{},
+			installs: []*github.Installation{{
+				Installation: &gogithub.Installation{ID: internal.Int64(123)},
+			}},
+		},
+	}
 
-	form := strings.NewReader(url.Values{
+	q := "/?organization_name=acme-corp&"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	svc.newGithubApp(w, r)
+	assert.Equal(t, 200, w.Code, w.Body.String())
+}
+
+func TestCreateVCSProviderHandler(t *testing.T) {
+	svc := &webHandlers{
+		Renderer:         testutils.NewRenderer(t),
+		GithubAppService: &fakeGithubAppService{},
+		svc:              &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
+	}
+
+	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/create", strings.NewReader(url.Values{
 		"organization_name": {"acme-corp"},
 		"token":             {"secret-token"},
 		"name":              {"my-new-vcs-provider"},
-		"cloud":             {"fake-cloud"},
-	}.Encode())
-
-	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/create", form)
+		"kind":              {"fake-cloud"},
+	}.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 	w := httptest.NewRecorder()
+
 	svc.create(w, r)
 
-	if assert.Equal(t, 302, w.Code) {
-		redirect, err := w.Result().Location()
-		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/app/organizations/%s/vcs-providers", org.Name), redirect.Path)
-	} else {
-		t.Log(w.Body.String())
-	}
+	testutils.AssertRedirect(t, w, "/app/organizations/acme-corp/vcs-providers")
 }
 
 func TestListVCSProvidersHandler(t *testing.T) {
-	org := organization.NewTestOrganization(t)
-	app := fakeWebServices(t, newTestVCSProvider(t, org))
+	svc := &webHandlers{
+		Renderer:         testutils.NewRenderer(t),
+		GithubAppService: &fakeGithubAppService{},
+		svc:              &fakeService{provider: &VCSProvider{Organization: "acme-corp"}},
+	}
 
 	r := httptest.NewRequest("GET", "/?organization_name=acme-corp", nil)
 	w := httptest.NewRecorder()
-	app.list(w, r)
+	svc.list(w, r)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, 200, w.Code, w.Body.String())
 }
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
-	org := organization.NewTestOrganization(t)
-	app := fakeWebServices(t, newTestVCSProvider(t, org))
+	svc := &webHandlers{
+		svc: &fakeService{provider: &VCSProvider{Organization: "acme"}},
+	}
 
-	form := strings.NewReader(url.Values{
+	r := httptest.NewRequest("POST", "/?", strings.NewReader(url.Values{
 		"vcs_provider_id": {"fake-id"},
-	}.Encode())
-
-	r := httptest.NewRequest("POST", "/?", form)
+	}.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 	w := httptest.NewRecorder()
-	app.delete(w, r)
+	svc.delete(w, r)
 
-	assert.Equal(t, 302, w.Code)
+	testutils.AssertRedirect(t, w, "/app/organizations/acme/vcs-providers")
 }
 
-func fakeWebServices(t *testing.T, provider *VCSProvider) *webHandlers {
-	renderer, err := html.NewRenderer(false)
-	require.NoError(t, err)
-	return &webHandlers{
-		Renderer:         renderer,
-		svc:              &fakeService{provider: provider},
-		GithubAppService: &fakeGithubAppService{},
-	}
+type fakeService struct {
+	provider *VCSProvider
+
+	Service
+}
+
+func (f *fakeService) CreateVCSProvider(ctx context.Context, opts CreateOptions) (*VCSProvider, error) {
+	return f.provider, nil
+}
+
+func (f *fakeService) ListVCSProviders(context.Context, string) ([]*VCSProvider, error) {
+	return []*VCSProvider{f.provider}, nil
+}
+
+func (f *fakeService) DeleteVCSProvider(context.Context, string) (*VCSProvider, error) {
+	return f.provider, nil
+}
+
+type fakeGithubAppService struct {
+	app      *github.App
+	installs []*github.Installation
+	github.GithubAppService
+}
+
+func (f *fakeGithubAppService) GetGithubApp(context.Context) (*github.App, error) {
+	return f.app, nil
+}
+
+func (f *fakeGithubAppService) ListInstallations(context.Context) ([]*github.Installation, error) {
+	return f.installs, nil
 }

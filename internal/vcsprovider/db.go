@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
@@ -17,21 +16,18 @@ type (
 	pgdb struct {
 		// provides access to generated SQL queries
 		*sql.DB
-		// github app service for re-constructing vcs provider from a DB query
-		github.GithubAppService
-		// map of vcs kind to its hostname
-		vcsHostnames map[vcs.Kind]string
+		*factory
 	}
-	// pgRow represents a database row for a vcs provider
-	pgRow struct {
-		VCSProviderID      pgtype.Text        `json:"vcs_provider_id"`
-		Token              pgtype.Text        `json:"token"`
-		CreatedAt          pgtype.Timestamptz `json:"created_at"`
-		Name               pgtype.Text        `json:"name"`
-		VCSKind            pgtype.Text        `json:"vcs_kind"`
-		OrganizationName   pgtype.Text        `json:"organization_name"`
-		GithubAppID        pgtype.Int8        `json:"github_app_id"`
-		GithubAppInstallID pgtype.Int8        `json:"github_app_install_id"`
+	// pgrow represents a database row for a vcs provider
+	pgrow struct {
+		VCSProviderID    pgtype.Text              `json:"vcs_provider_id"`
+		Token            pgtype.Text              `json:"token"`
+		CreatedAt        pgtype.Timestamptz       `json:"created_at"`
+		Name             pgtype.Text              `json:"name"`
+		VCSKind          pgtype.Text              `json:"vcs_kind"`
+		OrganizationName pgtype.Text              `json:"organization_name"`
+		GithubApp        *pggen.GithubApps        `json:"github_app"`
+		GithubAppInstall *pggen.GithubAppInstalls `json:"github_app_install"`
 	}
 )
 
@@ -44,22 +40,32 @@ func (db *pgdb) GetByID(ctx context.Context, providerID string, action pubsub.DB
 }
 
 func (db *pgdb) create(ctx context.Context, provider *VCSProvider) error {
-	params := pggen.InsertVCSProviderParams{
-		VCSProviderID:    sql.String(provider.ID),
-		Name:             sql.String(provider.Name),
-		VCSKind:          sql.String(string(provider.Kind)),
-		OrganizationName: sql.String(provider.Organization),
-		CreatedAt:        sql.Timestamptz(provider.CreatedAt),
-		Token:            sql.StringPtr(provider.Token),
-	}
-	if provider.GithubApp != nil {
-		params.GithubAppID = pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Present}
-		params.GithubAppInstallID = pgtype.Int8{Int: provider.GithubApp.ID, Status: pgtype.Present}
-	} else {
-		params.GithubAppID = pgtype.Int8{Status: pgtype.Null}
-		params.GithubAppInstallID = pgtype.Int8{Status: pgtype.Null}
-	}
-	_, err := db.Conn(ctx).InsertVCSProvider(ctx, params)
+	err := db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		_, err := db.Conn(ctx).InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
+			VCSProviderID:    sql.String(provider.ID),
+			Name:             sql.String(provider.Name),
+			VCSKind:          sql.String(string(provider.Kind)),
+			OrganizationName: sql.String(provider.Organization),
+			CreatedAt:        sql.Timestamptz(provider.CreatedAt),
+			Token:            sql.StringPtr(provider.Token),
+		})
+		if err != nil {
+			return err
+		}
+		if provider.GithubApp != nil {
+			_, err := db.Conn(ctx).InsertGithubAppInstall(ctx, pggen.InsertGithubAppInstallParams{
+				GithubAppID:   pgtype.Int8{Int: provider.GithubApp.AppCredentials.ID, Status: pgtype.Present},
+				InstallID:     pgtype.Int8{Int: provider.GithubApp.ID, Status: pgtype.Present},
+				Username:      sql.StringPtr(provider.GithubApp.User),
+				Organization:  sql.StringPtr(provider.GithubApp.Organization),
+				VCSProviderID: sql.String(provider.ID),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	return err
 }
 
@@ -70,7 +76,7 @@ func (db *pgdb) update(ctx context.Context, id string, fn func(*VCSProvider) err
 		if err != nil {
 			return sql.Error(err)
 		}
-		provider, err = db.toProvider(ctx, pgRow(row))
+		provider, err = db.toProvider(ctx, pgrow(row))
 		if err != nil {
 			return err
 		}
@@ -95,7 +101,7 @@ func (db *pgdb) get(ctx context.Context, id string) (*VCSProvider, error) {
 	if err != nil {
 		return nil, sql.Error(err)
 	}
-	return db.toProvider(ctx, pgRow(row))
+	return db.toProvider(ctx, pgrow(row))
 }
 
 func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
@@ -105,7 +111,7 @@ func (db *pgdb) list(ctx context.Context) ([]*VCSProvider, error) {
 	}
 	var providers []*VCSProvider
 	for _, r := range rows {
-		provider, err := db.toProvider(ctx, pgRow(r))
+		provider, err := db.toProvider(ctx, pgrow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +127,7 @@ func (db *pgdb) listByOrganization(ctx context.Context, organization string) ([]
 	}
 	var providers []*VCSProvider
 	for _, r := range rows {
-		provider, err := db.toProvider(ctx, pgRow(r))
+		provider, err := db.toProvider(ctx, pgrow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +145,7 @@ func (db *pgdb) listByGithubAppInstall(ctx context.Context, installID int64) ([]
 	}
 	var providers []*VCSProvider
 	for _, r := range rows {
-		provider, err := db.toProvider(ctx, pgRow(r))
+		provider, err := db.toProvider(ctx, pgrow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -157,24 +163,32 @@ func (db *pgdb) delete(ctx context.Context, id string) error {
 }
 
 // unmarshal a vcs provider row from the database.
-func (db *pgdb) toProvider(ctx context.Context, row pgRow) (*VCSProvider, error) {
+func (db *pgdb) toProvider(ctx context.Context, row pgrow) (*VCSProvider, error) {
 	opts := CreateOptions{
 		Organization: row.OrganizationName.String,
-		Kind:         vcs.Kind(row.VCSKind.String),
 		Name:         row.Name.String,
 		// GithubAppService: db.Git
 	}
 	if row.Token.Status == pgtype.Present {
 		opts.Token = &row.Token.String
+		kind := vcs.Kind(row.VCSKind.String)
+		opts.Kind = &kind
 	}
-	if row.GithubAppID.Status == pgtype.Present {
-		opts.GithubAppInstallID = &row.GithubAppInstallID.Int
+	var creds *github.InstallCredentials
+	if row.GithubApp != nil {
+		creds = &github.InstallCredentials{
+			ID: row.GithubAppInstall.InstallID.Int,
+			AppCredentials: github.AppCredentials{
+				ID:         row.GithubApp.GithubAppID.Int,
+				PrivateKey: row.GithubApp.PrivateKey.String,
+			},
+		}
+		if row.GithubAppInstall.Username.Status == pgtype.Present {
+			creds.User = &row.GithubAppInstall.Username.String
+		}
+		if row.GithubAppInstall.Organization.Status == pgtype.Present {
+			creds.Organization = &row.GithubAppInstall.Organization.String
+		}
 	}
-	return newProvider(ctx, newOptions{
-		CreateOptions:    opts,
-		ID:               &row.VCSProviderID.String,
-		CreatedAt:        internal.Time(row.CreatedAt.Time.UTC()),
-		GithubAppService: db.GithubAppService,
-		cloudHostnames:   db.vcsHostnames,
-	})
+	return db.fromDB(ctx, opts, creds, row.VCSProviderID.String, row.CreatedAt.Time.UTC())
 }

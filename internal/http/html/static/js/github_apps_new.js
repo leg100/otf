@@ -1,5 +1,5 @@
 document.addEventListener('alpine:init', () => {
-  Alpine.data('register', (hostname) => ({
+  Alpine.data('action', (hostname) => ({
     organization: '',
     get action() {
       if (this.organization === '') {

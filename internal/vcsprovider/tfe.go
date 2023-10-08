@@ -100,7 +100,7 @@ func (a *tfe) createOAuthClient(w http.ResponseWriter, r *http.Request) {
 		Name:         *params.Name,
 		Organization: org,
 		Token:        params.OAuthToken,
-		Kind:         vcs.GithubKind,
+		Kind:         vcs.KindPtr(vcs.GithubKind),
 	})
 	if err != nil {
 		tfeapi.Error(w, err)

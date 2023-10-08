@@ -172,6 +172,13 @@ type Querier interface {
 	// DeleteGithubAppScan scans the result of an executed DeleteGithubAppBatch query.
 	DeleteGithubAppScan(results pgx.BatchResults) (DeleteGithubAppRow, error)
 
+	InsertGithubAppInstall(ctx context.Context, params InsertGithubAppInstallParams) (pgconn.CommandTag, error)
+	// InsertGithubAppInstallBatch enqueues a InsertGithubAppInstall query into batch to be executed
+	// later by the batch.
+	InsertGithubAppInstallBatch(batch genericBatch, params InsertGithubAppInstallParams)
+	// InsertGithubAppInstallScan scans the result of an executed InsertGithubAppInstallBatch query.
+	InsertGithubAppInstallScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	InsertIngressAttributes(ctx context.Context, params InsertIngressAttributesParams) (pgconn.CommandTag, error)
 	// InsertIngressAttributesBatch enqueues a InsertIngressAttributes query into batch to be executed
 	// later by the batch.
@@ -1091,10 +1098,10 @@ type Querier interface {
 	// FindVCSProvidersScan scans the result of an executed FindVCSProvidersBatch query.
 	FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSProvidersRow, error)
 
-	FindVCSProvidersByGithubAppInstallID(ctx context.Context, githubAppInstallID pgtype.Int8) ([]FindVCSProvidersByGithubAppInstallIDRow, error)
+	FindVCSProvidersByGithubAppInstallID(ctx context.Context, installID pgtype.Int8) ([]FindVCSProvidersByGithubAppInstallIDRow, error)
 	// FindVCSProvidersByGithubAppInstallIDBatch enqueues a FindVCSProvidersByGithubAppInstallID query into batch to be executed
 	// later by the batch.
-	FindVCSProvidersByGithubAppInstallIDBatch(batch genericBatch, githubAppInstallID pgtype.Int8)
+	FindVCSProvidersByGithubAppInstallIDBatch(batch genericBatch, installID pgtype.Int8)
 	// FindVCSProvidersByGithubAppInstallIDScan scans the result of an executed FindVCSProvidersByGithubAppInstallIDBatch query.
 	FindVCSProvidersByGithubAppInstallIDScan(results pgx.BatchResults) ([]FindVCSProvidersByGithubAppInstallIDRow, error)
 
@@ -1411,6 +1418,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteGithubAppSQL, deleteGithubAppSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteGithubApp': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertGithubAppInstallSQL, insertGithubAppInstallSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertGithubAppInstall': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
@@ -1893,6 +1903,24 @@ type ConfigurationVersionStatusTimestamps struct {
 	Timestamp              pgtype.Timestamptz `json:"timestamp"`
 }
 
+// GithubAppInstalls represents the Postgres composite type "github_app_installs".
+type GithubAppInstalls struct {
+	GithubAppID   pgtype.Int8 `json:"github_app_id"`
+	InstallID     pgtype.Int8 `json:"install_id"`
+	Username      pgtype.Text `json:"username"`
+	Organization  pgtype.Text `json:"organization"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+}
+
+// GithubApps represents the Postgres composite type "github_apps".
+type GithubApps struct {
+	GithubAppID   pgtype.Int8 `json:"github_app_id"`
+	WebhookSecret pgtype.Text `json:"webhook_secret"`
+	PrivateKey    pgtype.Text `json:"private_key"`
+	Slug          pgtype.Text `json:"slug"`
+	Organization  pgtype.Text `json:"organization"`
+}
+
 // IngressAttributes represents the Postgres composite type "ingress_attributes".
 type IngressAttributes struct {
 	Branch                 pgtype.Text `json:"branch"`
@@ -2123,6 +2151,32 @@ func (tr *typeResolver) newConfigurationVersionStatusTimestamps() pgtype.ValueTr
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+	)
+}
+
+// newGithubAppInstalls creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'github_app_installs'.
+func (tr *typeResolver) newGithubAppInstalls() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"github_app_installs",
+		compositeField{"github_app_id", "int8", &pgtype.Int8{}},
+		compositeField{"install_id", "int8", &pgtype.Int8{}},
+		compositeField{"username", "text", &pgtype.Text{}},
+		compositeField{"organization", "text", &pgtype.Text{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+	)
+}
+
+// newGithubApps creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'github_apps'.
+func (tr *typeResolver) newGithubApps() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"github_apps",
+		compositeField{"github_app_id", "int8", &pgtype.Int8{}},
+		compositeField{"webhook_secret", "text", &pgtype.Text{}},
+		compositeField{"private_key", "text", &pgtype.Text{}},
+		compositeField{"slug", "text", &pgtype.Text{}},
+		compositeField{"organization", "text", &pgtype.Text{}},
 	)
 }
 

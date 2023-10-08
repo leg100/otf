@@ -26,6 +26,14 @@ type (
 	// Client is a wrapper around the upstream go-github client
 	Client struct {
 		client *github.Client
+
+		// if authenticated as an installation the username of the account into
+		// which the app is installed; mutually exclusive with
+		// installOrganization.
+		installUser *string
+		// if authenticated as an installation the name of the organization into
+		// which the app is installed; mutually exclusive with installUser.
+		installOrganization *string
 	}
 
 	ClientOptions struct {
@@ -42,14 +50,24 @@ type (
 	// Credentials for authenticating as an app:
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-a-github-app
 	AppCredentials struct {
-		ID         int64
+		// Github app ID
+		ID int64
+		// Private key in PEM format
 		PrivateKey string
 	}
 
 	// Credentials for authenticating as an app installation:
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app#authentication-as-an-app-installation
 	InstallCredentials struct {
+		// Github installation ID
 		ID int64
+		// Github username if installed in a user account; mutually exclusive
+		// with Organization
+		User *string
+		// Github organization if installed in an organization; mutually
+		// exclusive with User
+		Organization *string
+
 		AppCredentials
 	}
 )
@@ -62,6 +80,9 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	var (
 		tripper = otfhttp.DefaultTransport(cfg.SkipTLSVerification)
 		err     error
+
+		installUser         *string
+		installOrganization *string
 	)
 	switch {
 	case cfg.AppCredentials != nil:
@@ -75,6 +96,8 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
+		installUser = cfg.InstallCredentials.User
+		installOrganization = cfg.InstallCredentials.Organization
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
 		// inside an OAuth2 token and handle it the same as an OAuth2 token
@@ -99,7 +122,11 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 			return nil, err
 		}
 	}
-	return &Client{client: client}, nil
+	return &Client{
+		client:              client,
+		installUser:         installUser,
+		installOrganization: installOrganization,
+	}, nil
 }
 
 func NewPersonalTokenClient(hostname, token string) (vcs.Client, error) {
@@ -140,21 +167,40 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repo
 	}, nil
 }
 
+// ListRepositories lists repositories belonging to the authenticated entity: if
+// authenticated using a user's oauth token or PAT then their repos are listed;
+// if authenticated using a github installation then repos that the installation
+// has access to are listed.
 func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
-	repos, _, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
-		ListOptions: github.ListOptions{
-			PerPage: opts.PageSize,
-		},
-		// retrieve repositories in order of most recently pushed to
-		Sort: "pushed",
-	})
+	var (
+		repos    []*github.Repository
+		username string
+		err      error
+	)
+	switch {
+	case g.installOrganization != nil:
+		repos, _, err = g.client.Repositories.ListByOrg(ctx, *g.installOrganization, &github.RepositoryListByOrgOptions{
+			ListOptions: github.ListOptions{PerPage: opts.PageSize},
+			// retrieve repositories in order of most recently pushed to
+			Sort: "pushed",
+		})
+	case g.installUser != nil:
+		username = *g.installUser
+		fallthrough
+	default:
+		// empty username means the currently authenticated user
+		repos, _, err = g.client.Repositories.List(ctx, username, &github.RepositoryListOptions{
+			ListOptions: github.ListOptions{PerPage: opts.PageSize},
+			// retrieve repositories in order of most recently pushed to
+			Sort: "pushed",
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	var names []string
-	for _, repo := range repos {
-		names = append(names, repo.GetFullName())
+	names := make([]string, len(repos))
+	for i, repo := range repos {
+		names[i] = repo.GetFullName()
 	}
 	return names, nil
 }
@@ -495,6 +541,16 @@ func (g *Client) ListInstallations(ctx context.Context) ([]*github.Installation,
 	defer resp.Body.Close()
 
 	return installs, err
+}
+
+func (g *Client) GetInstallation(ctx context.Context, installID int64) (*github.Installation, error) {
+	install, resp, err := g.client.Apps.GetInstallation(ctx, installID)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return install, err
 }
 
 // DeleteInstallation deletes an installation of a github app with the given

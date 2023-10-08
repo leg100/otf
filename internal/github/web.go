@@ -57,6 +57,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 	m := manifest{
 		Name:        "otf-" + internal.GenerateRandomString(4),
 		URL:         h.URL(""),
+		SetupURL:    h.URL(paths.GithubApps()),
 		HookAttrs:   hookAttrs{URL: h.URL(AppEventsPath)},
 		Redirect:    h.URL(paths.ExchangeCodeGithubApp()),
 		Description: "Trigger terraform runs in OTF from GitHub",
@@ -76,7 +77,7 @@ func (h *webHandlers) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render("ghapp_register.tmpl", w, struct {
+	h.Render("github_apps_new.tmpl", w, struct {
 		html.SitePage
 		Manifest       string
 		GithubHostname string
