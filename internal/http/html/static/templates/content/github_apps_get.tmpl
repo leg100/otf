@@ -55,7 +55,7 @@
     <span>
       No GitHub app found.
       {{ if .CanCreateApp }}
-        Create an app <a class="underline" href="{{ newGithubAppPath }}">here</a>.
+        Create an app <a id="new-github-app-link" class="underline" href="{{ newGithubAppPath }}">here</a>.
       {{ else }}
         To create an app you need to possess the <a class="underline" href="https://docs.otf.ninja/latest/auth/site_admins/">site admin</a> role.
       {{ end }}

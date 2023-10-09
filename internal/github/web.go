@@ -27,6 +27,9 @@ type webHandlers struct {
 
 	svc            Service
 	GithubHostname string
+
+	// toggle skipping TLS on connections to github (for testing purposes)
+	GithubSkipTLS bool
 }
 
 func (h *webHandlers) addHandlers(r *mux.Router) {
@@ -136,7 +139,10 @@ func (h *webHandlers) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code for credentials using an anonymous client
-	client, err := NewClient(ClientOptions{})
+	client, err := NewClient(ClientOptions{
+		Hostname:            h.GithubHostname,
+		SkipTLSVerification: h.GithubSkipTLS,
+	})
 	if err != nil {
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
