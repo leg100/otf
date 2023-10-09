@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/organization"
-	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/sql/pggen"
 	"github.com/leg100/otf/internal/vcs"
@@ -29,7 +28,9 @@ type (
 		// RegisterCloudHandler registers a new cloud handler, to handle VCS
 		// events for a specific vcs hosting provider.
 		RegisterCloudHandler(kind vcs.Kind, h CloudHandler)
-		deleteUnreferencedWebhooks(ctx context.Context) error
+		// DeleteUnreferencedWebhooks deletes any repohooks no longer used
+		// by a VCS connection
+		DeleteUnreferencedWebhooks(ctx context.Context) error
 	}
 
 	service struct {
@@ -46,7 +47,6 @@ type (
 		logr.Logger
 
 		*sql.DB
-		*pubsub.Broker
 		VCSEventBroker *vcs.Broker
 		internal.HostnameService
 		VCSProviderService vcsprovider.Service
@@ -92,22 +92,6 @@ func NewService(ctx context.Context, opts Options) *service {
 	// organizations cascades deletion of VCS providers (see above).
 	opts.OrganizationService.BeforeDeleteOrganization(svc.deleteOrganizationWebhooks)
 
-	// Register with broker - when a repo connection is deleted in postgres, a
-	// postgres trigger sends a message to the broker, which calls this function
-	// to convert the message into an event. The purger subsystem then uses this
-	// event to delete the corresponding webhook if it is no longer in use.
-	deleteEventFunc := func(ctx context.Context, rawWebhookID string, action pubsub.DBAction) (any, error) {
-		webhookID, err := uuid.Parse(rawWebhookID)
-		if err != nil {
-			return nil, err
-		}
-		if action != pubsub.DeleteDBAction {
-			return nil, fmt.Errorf("trigger not registered for action: %s", action)
-		}
-		return &repoConnectionEvent{webhookID: webhookID}, nil
-	}
-	opts.Register("repo_connections", pubsub.GetterFunc(deleteEventFunc))
-
 	return svc
 }
 
@@ -129,9 +113,10 @@ func (s *service) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) 
 		return uuid.UUID{}, fmt.Errorf("checking repository exists: %w", err)
 	}
 	hook, err := newHook(newHookOptions{
-		identifier:    opts.RepoPath,
-		cloud:         vcsProvider.Kind,
-		vcsProviderID: vcsProvider.ID,
+		identifier:      opts.RepoPath,
+		cloud:           vcsProvider.Kind,
+		vcsProviderID:   vcsProvider.ID,
+		HostnameService: s.HostnameService,
 	})
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("constructing webhook: %w", err)
@@ -158,6 +143,19 @@ func (s *service) RegisterCloudHandler(kind vcs.Kind, h CloudHandler) {
 	s.handlers.cloudHandlers.Set(kind, h)
 }
 
+func (s *service) DeleteUnreferencedWebhooks(ctx context.Context) error {
+	hooks, err := s.db.listUnreferencedRepohooks(ctx)
+	if err != nil {
+		return fmt.Errorf("listing unreferenced webhooks: %w", err)
+	}
+	for _, h := range hooks {
+		if err := s.deleteRepohook(ctx, h); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *service) deleteOrganizationWebhooks(ctx context.Context, org *organization.Organization) error {
 	providers, err := s.ListVCSProviders(ctx, org.Name)
 	if err != nil {
@@ -170,7 +168,7 @@ func (s *service) deleteOrganizationWebhooks(ctx context.Context, org *organizat
 	for _, p := range providers {
 		for _, h := range hooks {
 			if h.vcsProviderID == p.ID {
-				if err := s.deleteWebhook(ctx, h); err != nil {
+				if err := s.deleteRepohook(ctx, h); err != nil {
 					return err
 				}
 			}
@@ -186,7 +184,7 @@ func (s *service) deleteProviderWebhooks(ctx context.Context, provider *vcsprovi
 	}
 	for _, h := range hooks {
 		if h.vcsProviderID == provider.ID {
-			if err := s.deleteWebhook(ctx, h); err != nil {
+			if err := s.deleteRepohook(ctx, h); err != nil {
 				return err
 			}
 		}
@@ -194,35 +192,22 @@ func (s *service) deleteProviderWebhooks(ctx context.Context, provider *vcsprovi
 	return nil
 }
 
-func (s *service) deleteUnreferencedWebhooks(ctx context.Context) error {
-	hooks, err := s.db.listUnreferencedRepohooks(ctx)
-	if err != nil {
-		return fmt.Errorf("listing unreferenced webhooks: %w", err)
-	}
-	for _, h := range hooks {
-		if err := s.deleteWebhook(ctx, h); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *service) deleteWebhook(ctx context.Context, webhook *hook) error {
-	if err := s.db.deleteHook(ctx, webhook.id); err != nil {
+func (s *service) deleteRepohook(ctx context.Context, repohook *hook) error {
+	if err := s.db.deleteHook(ctx, repohook.id); err != nil {
 		return fmt.Errorf("deleting webhook from db: %w", err)
 	}
-	client, err := s.GetVCSClient(ctx, webhook.vcsProviderID)
+	client, err := s.GetVCSClient(ctx, repohook.vcsProviderID)
 	if err != nil {
 		return fmt.Errorf("retrieving vcs client from db: %w", err)
 	}
 	err = client.DeleteWebhook(ctx, vcs.DeleteWebhookOptions{
-		Repo: webhook.identifier,
-		ID:   *webhook.cloudID,
+		Repo: repohook.identifier,
+		ID:   *repohook.cloudID,
 	})
 	if err != nil {
-		s.Error(err, "deleting webhook", "repo", webhook.identifier, "cloud", webhook.cloud)
+		s.Error(err, "deleting webhook", "repo", repohook.identifier, "cloud", repohook.cloud)
 	} else {
-		s.V(0).Info("deleted webhook", "repo", webhook.identifier, "cloud", webhook.cloud)
+		s.V(0).Info("deleted webhook", "repo", repohook.identifier, "cloud", repohook.cloud)
 	}
 	// Failure to delete the webhook from the cloud provider is not deemed a
 	// fatal error.

@@ -58,6 +58,9 @@ ALTER TABLE repohooks RENAME COLUMN identifier TO repo_path;
 ALTER TABLE clouds RENAME TO vcs_kinds;
 ALTER TABLE vcs_providers RENAME COLUMN cloud TO vcs_kind;
 
+-- remove trigger function
+DROP FUNCTION IF EXISTS repo_connections_notify_event CASCADE;
+
 -- +goose Down
 
 -- rename vcs_kinds back to clouds and rename fk back

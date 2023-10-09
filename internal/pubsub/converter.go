@@ -22,8 +22,8 @@ type (
 	GetterFunc func(context.Context, string, DBAction) (any, error)
 )
 
-func (f GetterFunc) GetByID(ctx context.Context, workspaceID string, action DBAction) (any, error) {
-	return f(ctx, workspaceID, action)
+func (f GetterFunc) GetByID(ctx context.Context, id string, action DBAction) (any, error) {
+	return f(ctx, id, action)
 }
 
 func newConverter() *converter {

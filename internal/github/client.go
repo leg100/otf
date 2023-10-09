@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"sort"
 
 	"errors"
 	"fmt"
@@ -27,13 +28,8 @@ type (
 	Client struct {
 		client *github.Client
 
-		// if authenticated as an installation the username of the account into
-		// which the app is installed; mutually exclusive with
-		// installOrganization.
-		installUser *string
-		// if authenticated as an installation the name of the organization into
-		// which the app is installed; mutually exclusive with installUser.
-		installOrganization *string
+		// whether authenticated using an installation access token
+		iat bool
 	}
 
 	ClientOptions struct {
@@ -81,8 +77,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 		tripper = otfhttp.DefaultTransport(cfg.SkipTLSVerification)
 		err     error
 
-		installUser         *string
-		installOrganization *string
+		iat bool
 	)
 	switch {
 	case cfg.AppCredentials != nil:
@@ -91,13 +86,12 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 			return nil, err
 		}
 	case cfg.InstallCredentials != nil:
+		iat = true
 		creds := cfg.InstallCredentials
 		tripper, err = ghinstallation.New(tripper, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
-		installUser = cfg.InstallCredentials.User
-		installOrganization = cfg.InstallCredentials.Organization
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
 		// inside an OAuth2 token and handle it the same as an OAuth2 token
@@ -122,11 +116,7 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 			return nil, err
 		}
 	}
-	return &Client{
-		client:              client,
-		installUser:         installUser,
-		installOrganization: installOrganization,
-	}, nil
+	return &Client{client: client, iat: iat}, nil
 }
 
 func NewPersonalTokenClient(hostname, token string) (vcs.Client, error) {
@@ -171,32 +161,51 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (vcs.Repo
 // authenticated using a user's oauth token or PAT then their repos are listed;
 // if authenticated using a github installation then repos that the installation
 // has access to are listed.
+//
+
+// ListRepositories has different behaviour depending on the authentication:
+// (a) if authenticated as an app installation then repositories accessible to
+// the installation are listed; *all* repos are listed, in order of last pushed
+// to.
+// (b) if authenticated using a personal access token then repositories
+// belonging to the user are listed; only the first page of repos is listed,
+// those that have most recently been pushed to.
 func (g *Client) ListRepositories(ctx context.Context, opts vcs.ListRepositoriesOptions) ([]string, error) {
 	var (
-		repos    []*github.Repository
-		username string
-		err      error
+		repos []*github.Repository
 	)
-	switch {
-	case g.installOrganization != nil:
-		repos, _, err = g.client.Repositories.ListByOrg(ctx, *g.installOrganization, &github.RepositoryListByOrgOptions{
+	if g.iat {
+		// Apps.ListRepos endpoint does not support ordering on the server-side,
+		// so instead we request *all* repos, page-by-page, and then sort
+		// client-side.
+		var page = 1
+		for {
+			result, resp, err := g.client.Apps.ListRepos(ctx, &github.ListOptions{
+				PerPage: opts.PageSize,
+				Page:    page,
+			})
+			if err != nil {
+				return nil, err
+			}
+			repos = append(repos, result.Repositories...)
+			if resp.NextPage != 0 {
+				page = resp.NextPage
+			} else {
+				break
+			}
+		}
+		// sort repositories in order of most recently pushed to
+		sort.Slice(repos, func(i, j int) bool { return repos[i].GetPushedAt().After(repos[j].GetPushedAt().Time) })
+	} else {
+		var err error
+		repos, _, err = g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 			ListOptions: github.ListOptions{PerPage: opts.PageSize},
 			// retrieve repositories in order of most recently pushed to
 			Sort: "pushed",
 		})
-	case g.installUser != nil:
-		username = *g.installUser
-		fallthrough
-	default:
-		// empty username means the currently authenticated user
-		repos, _, err = g.client.Repositories.List(ctx, username, &github.RepositoryListOptions{
-			ListOptions: github.ListOptions{PerPage: opts.PageSize},
-			// retrieve repositories in order of most recently pushed to
-			Sort: "pushed",
-		})
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 	names := make([]string, len(repos))
 	for i, repo := range repos {

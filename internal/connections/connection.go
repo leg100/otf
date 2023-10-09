@@ -64,6 +64,7 @@ type (
 	Options struct {
 		logr.Logger
 		vcsprovider.VCSProviderService
+		repo.RepoService
 		*sql.DB
 	}
 
@@ -78,27 +79,31 @@ type (
 
 func NewService(ctx context.Context, opts Options) *service {
 	return &service{
-		Logger:  opts.Logger,
-		Service: opts.VCSProviderService,
-		db:      &db{opts.DB},
+		Logger:      opts.Logger,
+		Service:     opts.VCSProviderService,
+		RepoService: opts.RepoService,
+		db:          &db{opts.DB},
 	}
 }
 
 // Connect an OTF resource to a VCS repo.
 func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection, error) {
 	// check vcs provider is valid
-	_, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
+	provider, err := s.GetVCSProvider(ctx, opts.VCSProviderID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving vcs provider: %w", err)
 	}
 
 	err = s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-		_, err := s.RepoService.CreateWebhook(ctx, repo.CreateWebhookOptions{
-			VCSProviderID: opts.VCSProviderID,
-			RepoPath:      opts.RepoPath,
-		})
-		if err != nil {
-			return fmt.Errorf("creating webhook: %w", err)
+		// github app vcs provider does not require a repohook to be created
+		if provider.GithubApp == nil {
+			_, err := s.RepoService.CreateWebhook(ctx, repo.CreateWebhookOptions{
+				VCSProviderID: opts.VCSProviderID,
+				RepoPath:      opts.RepoPath,
+			})
+			if err != nil {
+				return fmt.Errorf("creating webhook: %w", err)
+			}
 		}
 		return s.db.createConnection(ctx, opts)
 	})
@@ -113,5 +118,15 @@ func (s *service) Connect(ctx context.Context, opts ConnectOptions) (*Connection
 
 // Disconnect resource from repo
 func (s *service) Disconnect(ctx context.Context, opts DisconnectOptions) error {
-	return s.db.deleteConnection(ctx, opts)
+	return s.db.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
+		if err := s.db.deleteConnection(ctx, opts); err != nil {
+			return err
+		}
+		// now that a connection has been deleted, also delete any webhooks that
+		// are no longer referenced by connections
+		if err := s.RepoService.DeleteUnreferencedWebhooks(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
 }

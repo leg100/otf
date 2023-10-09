@@ -174,7 +174,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:              logger,
 		DB:                  db,
 		HostnameService:     hostnameService,
-		Broker:              broker,
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 		GithubAppService:    githubAppService,
@@ -187,6 +186,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Logger:             logger,
 		DB:                 db,
 		VCSProviderService: vcsProviderService,
+		RepoService:        repoService,
 	})
 
 	workspaceService := workspace.NewService(workspace.Options{
@@ -439,16 +439,6 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 				HostnameService:             d.HostnameService,
 				ConfigurationVersionService: d.ConfigurationVersionService,
 				WorkspaceService:            d.WorkspaceService,
-			},
-		},
-		{
-			Name:   "webhook purger",
-			Logger: d.Logger,
-			System: &repo.Purger{
-				Logger:     d.Logger.WithValues("component", "purger"),
-				Subscriber: d.Broker,
-				Service:    d.RepoService,
-				DB:         d.DB,
 			},
 		},
 		{

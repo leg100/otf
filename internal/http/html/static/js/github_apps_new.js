@@ -1,6 +1,8 @@
 document.addEventListener('alpine:init', () => {
-  Alpine.data('action', (hostname) => ({
+  Alpine.data('action', (hostname, manifest) => ({
     organization: '',
+    manifest: JSON.parse(manifest),
+    public: false,
     get action() {
       if (this.organization === '') {
         return "https://" + hostname + "/settings/apps/new"
