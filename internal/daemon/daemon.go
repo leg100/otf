@@ -64,6 +64,7 @@ type (
 		logs.LogsService
 		notifications.NotificationService
 		connections.ConnectionService
+		github.GithubAppService
 
 		Handlers []internal.Handlers
 
@@ -373,6 +374,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		LogsService:                 logsService,
 		RepoService:                 repoService,
 		NotificationService:         notificationService,
+		GithubAppService:            githubAppService,
 		Broker:                      broker,
 		DB:                          db,
 		agent:                       agent,

@@ -58,7 +58,26 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			githubHostname := githubStub(t, tt.path, tt.public)
+			githubHostname := func(t *testing.T, path string, public bool) string {
+				mux := http.NewServeMux()
+				mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+					type manifest struct {
+						Public bool `json:"public"`
+					}
+					var params struct {
+						Manifest manifest
+					}
+					require.NoError(t, decode.All(&params, r))
+					assert.Equal(t, public, params.Manifest.Public)
+				})
+				stub := httptest.NewTLSServer(mux)
+				t.Cleanup(stub.Close)
+
+				u, err := url.Parse(stub.URL)
+				require.NoError(t, err)
+				return u.Host
+			}(t, tt.path, tt.public)
+
 			daemon, _, _ := setup(t, &config{Config: daemon.Config{GithubHostname: githubHostname}})
 			tasks := chromedp.Tasks{
 				// go to site settings page
@@ -79,25 +98,4 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			browser.Run(t, ctx, tasks)
 		})
 	}
-
-}
-
-func githubStub(t *testing.T, path string, public bool) string {
-	mux := http.NewServeMux()
-	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		type manifest struct {
-			Public bool `json:"public"`
-		}
-		var params struct {
-			Manifest manifest
-		}
-		require.NoError(t, decode.All(&params, r))
-		assert.Equal(t, public, params.Manifest.Public)
-	})
-	stub := httptest.NewTLSServer(mux)
-	t.Cleanup(stub.Close)
-
-	u, err := url.Parse(stub.URL)
-	require.NoError(t, err)
-	return u.Host
 }

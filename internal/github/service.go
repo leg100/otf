@@ -35,6 +35,8 @@ type (
 	service struct {
 		logr.Logger
 
+		GithubHostname string
+
 		site         internal.Authorizer
 		organization internal.Authorizer
 		db           *pgdb
@@ -53,10 +55,11 @@ type (
 
 func NewService(opts Options) *service {
 	svc := service{
-		Logger:       opts.Logger,
-		site:         &internal.SiteAuthorizer{Logger: opts.Logger},
-		organization: &organization.Authorizer{Logger: opts.Logger},
-		db:           &pgdb{opts.DB},
+		Logger:         opts.Logger,
+		GithubHostname: opts.GithubHostname,
+		site:           &internal.SiteAuthorizer{Logger: opts.Logger},
+		organization:   &organization.Authorizer{Logger: opts.Logger},
+		db:             &pgdb{opts.DB},
 	}
 	svc.web = &webHandlers{
 		Renderer:        opts.Renderer,
@@ -126,12 +129,7 @@ func (a *service) ListInstallations(ctx context.Context) ([]*Installation, error
 	} else if err != nil {
 		return nil, err
 	}
-	client, err := NewClient(ClientOptions{
-		AppCredentials: &AppCredentials{
-			ID:         app.ID,
-			PrivateKey: app.PrivateKey,
-		},
-	})
+	client, err := a.newClient(app)
 	if err != nil {
 		return nil, err
 	}
@@ -151,13 +149,7 @@ func (a *service) GetInstallCredentials(ctx context.Context, installID int64) (*
 	if err != nil {
 		return nil, err
 	}
-	appCreds := AppCredentials{
-		ID:         app.ID,
-		PrivateKey: app.PrivateKey,
-	}
-	client, err := NewClient(ClientOptions{
-		AppCredentials: &appCreds,
-	})
+	client, err := a.newClient(app)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +158,11 @@ func (a *service) GetInstallCredentials(ctx context.Context, installID int64) (*
 		return nil, err
 	}
 	creds := InstallCredentials{
-		ID:             installID,
-		AppCredentials: appCreds,
+		ID: installID,
+		AppCredentials: AppCredentials{
+			ID:         app.ID,
+			PrivateKey: app.PrivateKey,
+		},
 	}
 	switch install.GetTargetType() {
 	case "Organization":
@@ -185,12 +180,7 @@ func (a *service) DeleteInstallation(ctx context.Context, installID int64) error
 	if err != nil {
 		return err
 	}
-	client, err := NewClient(ClientOptions{
-		AppCredentials: &AppCredentials{
-			ID:         app.ID,
-			PrivateKey: app.PrivateKey,
-		},
-	})
+	client, err := a.newClient(app)
 	if err != nil {
 		return err
 	}
@@ -198,4 +188,15 @@ func (a *service) DeleteInstallation(ctx context.Context, installID int64) error
 		return err
 	}
 	return nil
+}
+
+func (a *service) newClient(app *App) (*Client, error) {
+	return NewClient(ClientOptions{
+		Hostname:            a.GithubHostname,
+		SkipTLSVerification: true,
+		AppCredentials: &AppCredentials{
+			ID:         app.ID,
+			PrivateKey: app.PrivateKey,
+		},
+	})
 }

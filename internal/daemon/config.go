@@ -38,6 +38,7 @@ type Config struct {
 	DisableScheduler             bool
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
+	SkipTLSVerification          bool
 
 	tokens.GoogleIAPConfig
 }
