@@ -31,6 +31,8 @@ type (
 	stepsBuilder struct {
 		*run.Run
 		*environment
+
+		terraformPath string
 	}
 
 	runner struct {
@@ -106,7 +108,8 @@ func (r *runner) cancel(force bool) {
 }
 
 func (b *stepsBuilder) downloadTerraform(ctx context.Context) error {
-	_, err := b.Download(ctx, b.version, b.out)
+	var err error
+	b.terraformPath, err = b.Download(ctx, b.version, b.out)
 	return err
 }
 
@@ -163,7 +166,7 @@ func (b *stepsBuilder) writeTerraformVars(ctx context.Context) error {
 }
 
 func (b *stepsBuilder) terraformInit(ctx context.Context) error {
-	return b.executeTerraform([]string{"init"})
+	return b.executor.execute([]string{b.terraformPath, "init"})
 }
 
 func (b *stepsBuilder) terraformPlan(ctx context.Context) error {
@@ -172,7 +175,7 @@ func (b *stepsBuilder) terraformPlan(ctx context.Context) error {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+planFilename)
-	return b.executeTerraform(args)
+	return b.executor.execute(append([]string{b.terraformPath}, args...))
 }
 
 func (b *stepsBuilder) terraformApply(ctx context.Context) (err error) {
@@ -208,12 +211,15 @@ func (b *stepsBuilder) terraformApply(ctx context.Context) (err error) {
 		args = append(args, "-destroy")
 	}
 	args = append(args, planFilename)
-	return b.executeTerraform(args)
+	return b.executor.execute(append([]string{b.terraformPath}, args...))
 }
 
 func (b *stepsBuilder) convertPlanToJSON(ctx context.Context) error {
 	args := []string{"show", "-json", planFilename}
-	return b.executeTerraform(args, redirectStdout(jsonPlanFilename))
+	return b.executor.execute(
+		append([]string{b.terraformPath}, args...),
+		redirectStdout(jsonPlanFilename),
+	)
 }
 
 func (b *stepsBuilder) uploadPlan(ctx context.Context) error {

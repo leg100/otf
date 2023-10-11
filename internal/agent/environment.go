@@ -24,7 +24,6 @@ import (
 type environment struct {
 	client
 	logr.Logger
-	Downloader // Downloader for workers to download terraform cli on demand
 
 	steps []step // sequence of steps to execute
 
@@ -86,21 +85,19 @@ func newEnvironment(
 	})
 
 	env := &environment{
-		Logger:     logger,
-		client:     agent,
-		Downloader: agent,
-		out:        writer,
-		workdir:    wd,
-		variables:  variables,
-		ctx:        ctx,
-		runner:     &runner{out: writer},
+		Logger:    logger,
+		client:    agent,
+		out:       writer,
+		workdir:   wd,
+		variables: variables,
+		ctx:       ctx,
+		runner:    &runner{out: writer},
 		executor: &executor{
-			Config:              agent.Config,
-			TerraformPathFinder: agent.TerraformPathFinder,
-			version:             ws.TerraformVersion,
-			out:                 writer,
-			envs:                envs,
-			workdir:             wd,
+			Config:  agent.Config,
+			version: ws.TerraformVersion,
+			out:     writer,
+			envs:    envs,
+			workdir: wd,
 		},
 	}
 

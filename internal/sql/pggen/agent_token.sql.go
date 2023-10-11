@@ -468,6 +468,27 @@ type Querier interface {
 	// UpdatePlanJSONByIDScan scans the result of an executed UpdatePlanJSONByIDBatch query.
 	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	UpdateLatestTerraformVersion(ctx context.Context, version pgtype.Text) (pgconn.CommandTag, error)
+	// UpdateLatestTerraformVersionBatch enqueues a UpdateLatestTerraformVersion query into batch to be executed
+	// later by the batch.
+	UpdateLatestTerraformVersionBatch(batch genericBatch, version pgtype.Text)
+	// UpdateLatestTerraformVersionScan scans the result of an executed UpdateLatestTerraformVersionBatch query.
+	UpdateLatestTerraformVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	UpdateLatestTerraformVersionCheckpoint(ctx context.Context) (pgconn.CommandTag, error)
+	// UpdateLatestTerraformVersionCheckpointBatch enqueues a UpdateLatestTerraformVersionCheckpoint query into batch to be executed
+	// later by the batch.
+	UpdateLatestTerraformVersionCheckpointBatch(batch genericBatch)
+	// UpdateLatestTerraformVersionCheckpointScan scans the result of an executed UpdateLatestTerraformVersionCheckpointBatch query.
+	UpdateLatestTerraformVersionCheckpointScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindLatestTerraformVersion(ctx context.Context) (FindLatestTerraformVersionRow, error)
+	// FindLatestTerraformVersionBatch enqueues a FindLatestTerraformVersion query into batch to be executed
+	// later by the batch.
+	FindLatestTerraformVersionBatch(batch genericBatch)
+	// FindLatestTerraformVersionScan scans the result of an executed FindLatestTerraformVersionBatch query.
+	FindLatestTerraformVersionScan(results pgx.BatchResults) (FindLatestTerraformVersionRow, error)
+
 	InsertRepoConnection(ctx context.Context, params InsertRepoConnectionParams) (pgconn.CommandTag, error)
 	// InsertRepoConnectionBatch enqueues a InsertRepoConnection query into batch to be executed
 	// later by the batch.
@@ -1509,6 +1530,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updatePlanJSONByIDSQL, updatePlanJSONByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanJSONByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateLatestTerraformVersionSQL, updateLatestTerraformVersionSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateLatestTerraformVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateLatestTerraformVersionCheckpointSQL, updateLatestTerraformVersionCheckpointSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateLatestTerraformVersionCheckpoint': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findLatestTerraformVersionSQL, findLatestTerraformVersionSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindLatestTerraformVersion': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertRepoConnectionSQL, insertRepoConnectionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRepoConnection': %w", err)

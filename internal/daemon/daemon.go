@@ -25,6 +25,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
@@ -60,6 +61,7 @@ type (
 		repo.RepoService
 		logs.LogsService
 		notifications.NotificationService
+		//releases.ReleasesService
 
 		Handlers []internal.Handlers
 
@@ -237,6 +239,10 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:    workspaceService,
 		RunService:          runService,
 	})
+	releasesService := releases.NewService(releases.Options{
+		Logger: logger,
+		DB:     db,
+	})
 
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
@@ -249,6 +255,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
+			ReleasesService:             releasesService,
 		},
 		*cfg.AgentConfig,
 	)
@@ -326,10 +333,11 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		LogsService:                 logsService,
 		RepoService:                 repoService,
 		NotificationService:         notificationService,
-		Broker:                      broker,
-		DB:                          db,
-		agent:                       agent,
-		cloudService:                cloudService,
+		//ReleasesService:             releasesService,
+		Broker:       broker,
+		DB:           db,
+		agent:        agent,
+		cloudService: cloudService,
 	}, nil
 }
 

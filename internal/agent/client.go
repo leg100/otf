@@ -2,12 +2,14 @@ package agent
 
 import (
 	"context"
+	"io"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -40,6 +42,7 @@ type (
 		DeleteStateVersion(ctx context.Context, svID string) error
 		DownloadState(ctx context.Context, svID string) ([]byte, error)
 		Hostname() string
+		Download(ctx context.Context, version string, logger io.Writer) (string, error)
 
 		tokens.RunTokenService
 		internal.PutChunkService
@@ -53,6 +56,7 @@ type (
 		workspace.WorkspaceService
 		internal.HostnameService
 		configversion.ConfigurationVersionService
+		releases.ReleasesService
 		run.RunService
 		logs.LogsService
 	}
@@ -69,6 +73,7 @@ type (
 		*workspaceClient
 		*runClient
 		*logsClient
+		*releasesClient
 	}
 
 	stateClient     = state.Client
@@ -78,12 +83,13 @@ type (
 	workspaceClient = workspace.Client
 	runClient       = run.Client
 	logsClient      = logs.Client
+	releasesClient  = releases.Client
 )
 
 // New constructs a client that uses http to remotely invoke OTF
 // services.
-func newClient(config http.Config) (*remoteClient, error) {
-	httpClient, err := http.NewClient(config)
+func newClient(config ExternalConfig) (*remoteClient, error) {
+	httpClient, err := http.NewClient(config.HTTPConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +101,8 @@ func newClient(config http.Config) (*remoteClient, error) {
 		variableClient:  &variableClient{JSONAPIClient: httpClient},
 		tokensClient:    &tokensClient{JSONAPIClient: httpClient},
 		workspaceClient: &workspaceClient{JSONAPIClient: httpClient},
-		runClient:       &runClient{JSONAPIClient: httpClient, Config: config},
+		runClient:       &runClient{JSONAPIClient: httpClient, Config: config.HTTPConfig},
 		logsClient:      &logsClient{JSONAPIClient: httpClient},
+		releasesClient:  releases.NewClient(httpClient, config.TerraformBinDir),
 	}, nil
 }

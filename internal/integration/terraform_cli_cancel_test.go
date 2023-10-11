@@ -41,7 +41,7 @@ data "http" "wait" {
 `, srv.URL))
 	svc.tfcli(t, ctx, "init", config)
 
-	tfpath := downloadTerraform(t, ctx, nil)
+	tfpath := svc.downloadTerraform(t, ctx, nil)
 
 	// Invoke terraform plan
 	_, token := svc.createToken(t, ctx, nil)
