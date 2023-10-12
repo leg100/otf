@@ -14,7 +14,10 @@ import (
 	"github.com/leg100/otf/internal/sql/pggen"
 )
 
-const DefaultTerraformVersion = "1.5.2"
+const (
+	DefaultTerraformVersion = "1.5.2"
+	LatestVersionString     = "latest"
+)
 
 type (
 	ReleasesService = Service
@@ -48,9 +51,9 @@ func NewService(opts Options) *service {
 	svc := &service{
 		Logger:        opts.Logger,
 		DB:            opts.DB,
-		downloader:    newDownloader(opts.TerraformBinDir),
 		latestChecker: latestChecker{latestEndpoint},
 	}
+	svc.downloader = newDownloader(opts.TerraformBinDir, svc)
 	svc.api = &api{svc}
 
 	return svc
@@ -58,17 +61,6 @@ func NewService(opts Options) *service {
 
 func (s *service) AddHandlers(r *mux.Router) {
 	s.api.addHandlers(r)
-}
-
-func (s *service) Download(ctx context.Context, version string, logger io.Writer) (string, error) {
-	if version == "latest" {
-		var err error
-		version, _, err = s.getLatest(ctx)
-		if err != nil {
-			return "", err
-		}
-	}
-	return s.downloader.Download(ctx, version, logger)
 }
 
 func (s *service) StartLatestChecker(ctx context.Context) {

@@ -3,7 +3,7 @@ package releases
 import (
 	"bytes"
 	"context"
-	"io"
+	"time"
 
 	"github.com/leg100/otf/internal"
 )
@@ -15,26 +15,21 @@ type Client struct {
 }
 
 func NewClient(client internal.JSONAPIClient, destdir string) *Client {
-	return &Client{
+	c := &Client{
 		JSONAPIClient: client,
-		downloader:    newDownloader(destdir),
 	}
+	c.downloader = newDownloader(destdir, c)
+	return c
 }
 
-// Download specified version of terraform. A network request is only made if
-// "latest" is specified because only otfd knows the latest version.
-func (c *Client) Download(ctx context.Context, version string, logger io.Writer) (string, error) {
-	if version != "latest" {
-		return c.downloader.Download(ctx, version, logger)
-	}
-
+func (c *Client) getLatest(ctx context.Context) (string, time.Time, error) {
 	req, err := c.NewRequest("GET", "releases/latest", nil)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	v := new(bytes.Buffer)
 	if err = c.Do(ctx, req, v); err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
-	return v.String(), nil
+	return v.String(), time.Time{}, nil
 }

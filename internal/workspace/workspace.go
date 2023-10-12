@@ -489,10 +489,13 @@ func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {
+	if v == releases.LatestVersionString {
+		ws.TerraformVersion = v
+		return nil
+	}
 	if !semver.IsValid(v) {
 		return internal.ErrInvalidTerraformVersion
 	}
-
 	// only accept terraform versions above the minimum requirement.
 	//
 	// NOTE: we make an exception for the specific versions posted by the go-tfe
