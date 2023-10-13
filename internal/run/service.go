@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
 	"github.com/leg100/otf/internal/rbac"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/sql"
@@ -98,6 +99,7 @@ type (
 		WorkspaceService
 		ConfigurationVersionService
 		VCSProviderService
+		releases.ReleasesService
 
 		logr.Logger
 		internal.Cache
@@ -130,6 +132,7 @@ func NewService(opts Options) *service {
 		opts.WorkspaceService,
 		opts.ConfigurationVersionService,
 		opts.VCSProviderService,
+		opts.ReleasesService,
 	}
 
 	svc.web = &webHandlers{

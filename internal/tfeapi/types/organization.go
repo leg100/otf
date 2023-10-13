@@ -28,6 +28,8 @@ type Organization struct {
 	TrialExpiresAt                                    time.Time                `jsonapi:"attribute" json:"trial-expires-at"`
 	TwoFactorConformant                               bool                     `jsonapi:"attribute" json:"two-factor-conformant"`
 	SendPassingStatusesForUntriggeredSpeculativePlans bool                     `jsonapi:"attribute" json:"send-passing-statuses-for-untriggered-speculative-plans"`
+	RemainingTestableCount                            int                      `jsonapi:"attribute" json:"remaining-testable-count"`
+
 	// Note: This will be false for TFE versions older than v202211, where the setting was introduced.
 	// On those TFE versions, safe delete does not exist, so ALL deletes will be force deletes.
 	AllowForceDeleteWorkspaces bool `jsonapi:"attribute" json:"allow-force-delete-workspaces"`

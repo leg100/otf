@@ -35,6 +35,7 @@ func newFromJSONAPI(from *types.Run) *Run {
 		TargetAddrs:            from.TargetAddrs,
 		WorkspaceID:            from.Workspace.ID,
 		ConfigurationVersionID: from.ConfigurationVersion.ID,
+		TerraformVersion:       from.TerraformVersion,
 		// TODO: unmarshal plan and apply relations
 	}
 }

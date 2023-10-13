@@ -1,4 +1,4 @@
-package agent
+package releases
 
 import (
 	"archive/zip"
@@ -23,14 +23,14 @@ type download struct {
 	client    *http.Client
 }
 
-func (d *download) download() error {
+func (d *download) download(ctx context.Context) error {
 	if internal.Exists(d.dest) {
 		return nil
 	}
 
-	zipfile, err := d.getZipfile()
+	zipfile, err := d.getZipfile(ctx)
 	if err != nil {
-		return fmt.Errorf("downloading zipfile: %w", err)
+		return fmt.Errorf("downloading zipfile from %s: %w", d.src, err)
 	}
 	defer os.Remove(zipfile)
 
@@ -45,9 +45,8 @@ func (d *download) download() error {
 	return nil
 }
 
-func (d *download) getZipfile() (string, error) {
-	// TODO: why no context?
-	req, err := http.NewRequestWithContext(context.Background(), "GET", d.src, nil)
+func (d *download) getZipfile(ctx context.Context) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", d.src, nil)
 	if err != nil {
 		return "", fmt.Errorf("building request: %w", err)
 	}

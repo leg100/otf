@@ -35,10 +35,8 @@ type agent struct {
 	logr.Logger
 
 	client
-	spooler              // spools new run events
-	*terminator          // terminates runs
-	Downloader           // terraform cli downloader
-	*TerraformPathFinder // determines destination dir for terraform bins
+	spooler     // spools new run events
+	*terminator // terminates runs
 
 	envs []string // terraform environment variables
 }
@@ -61,17 +59,13 @@ func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
 		logger.V(0).Info("enabled debug mode")
 	}
 
-	pathFinder := newTerraformPathFinder(cfg.TerraformBinDir)
-
 	agent := &agent{
-		client:              app,
-		Config:              cfg,
-		Logger:              logger,
-		envs:                DefaultEnvs,
-		spooler:             newSpooler(app, logger, cfg),
-		terminator:          newTerminator(),
-		Downloader:          NewDownloader(pathFinder),
-		TerraformPathFinder: pathFinder,
+		client:     app,
+		Config:     cfg,
+		Logger:     logger,
+		envs:       DefaultEnvs,
+		spooler:    newSpooler(app, logger, cfg),
+		terminator: newTerminator(),
 	}
 
 	if cfg.PluginCache {
@@ -89,7 +83,7 @@ func NewAgent(logger logr.Logger, app client, cfg Config) (*agent, error) {
 // via http
 func NewExternalAgent(ctx context.Context, logger logr.Logger, cfg ExternalConfig) (*agent, error) {
 	// Sends unauthenticated ping to server
-	app, err := newClient(cfg.HTTPConfig)
+	app, err := newClient(cfg)
 	if err != nil {
 		return nil, err
 	}

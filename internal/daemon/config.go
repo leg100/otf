@@ -37,6 +37,8 @@ type Config struct {
 	DisableScheduler             bool
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
+	// skip checks for latest terraform version
+	DisableLatestChecker *bool
 
 	tokens.GoogleIAPConfig
 }

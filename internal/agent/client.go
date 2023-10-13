@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf/internal/http"
 	"github.com/leg100/otf/internal/logs"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/state"
@@ -43,6 +44,7 @@ type (
 
 		tokens.RunTokenService
 		internal.PutChunkService
+		releases.Downloader
 	}
 
 	// LocalClient is the client for an internal agent.
@@ -53,6 +55,7 @@ type (
 		workspace.WorkspaceService
 		internal.HostnameService
 		configversion.ConfigurationVersionService
+		releases.Downloader
 		run.RunService
 		logs.LogsService
 	}
@@ -69,6 +72,7 @@ type (
 		*workspaceClient
 		*runClient
 		*logsClient
+		releases.Downloader
 	}
 
 	stateClient     = state.Client
@@ -82,20 +86,21 @@ type (
 
 // New constructs a client that uses http to remotely invoke OTF
 // services.
-func newClient(config http.Config) (*remoteClient, error) {
-	httpClient, err := http.NewClient(config)
+func newClient(config ExternalConfig) (*remoteClient, error) {
+	httpClient, err := http.NewClient(config.HTTPConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &remoteClient{
 		Client:          httpClient,
+		Downloader:      releases.NewDownloader(config.TerraformBinDir),
 		stateClient:     &stateClient{JSONAPIClient: httpClient},
 		configClient:    &configClient{JSONAPIClient: httpClient},
 		variableClient:  &variableClient{JSONAPIClient: httpClient},
 		tokensClient:    &tokensClient{JSONAPIClient: httpClient},
 		workspaceClient: &workspaceClient{JSONAPIClient: httpClient},
-		runClient:       &runClient{JSONAPIClient: httpClient, Config: config},
+		runClient:       &runClient{JSONAPIClient: httpClient, Config: config.HTTPConfig},
 		logsClient:      &logsClient{JSONAPIClient: httpClient},
 	}, nil
 }

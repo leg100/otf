@@ -44,6 +44,14 @@ func TestNewWorkspace(t *testing.T) {
 			want: internal.ErrInvalidName,
 		},
 		{
+			name: "specifying latest for terraform version",
+			opts: CreateOptions{
+				Name:             internal.String("my-workspace"),
+				Organization:     internal.String("my-org"),
+				TerraformVersion: internal.String("latest"),
+			},
+		},
+		{
 			name: "bad terraform version",
 			opts: CreateOptions{
 				Name:             internal.String("my-workspace"),

@@ -3,6 +3,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"testing"
@@ -21,6 +22,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/sql"
 	"github.com/leg100/otf/internal/state"
@@ -39,6 +41,8 @@ type (
 		*github.TestServer
 		// event subscription for test to use.
 		sub <-chan pubsub.Event
+		// releases service to allow tests to download terraform
+		releases.ReleasesService
 	}
 
 	// configures the daemon for integration tests
@@ -46,6 +50,8 @@ type (
 		daemon.Config
 		// skip creation of default organization
 		skipDefaultOrganization bool
+		// customise path in which terraform bins are saved
+		terraformBinDir string
 	}
 )
 
@@ -65,6 +71,11 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	if cfg.Secret == nil {
 		cfg.Secret = sharedSecret
 	}
+	// Unless test has specified otherwise, disable checking for latest
+	// terraform version
+	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
+		cfg.DisableLatestChecker = internal.Bool(true)
+	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"
@@ -78,7 +89,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	var logger logr.Logger
 	if _, ok := os.LookupEnv("OTF_INTEGRATION_TEST_ENABLE_LOGGER"); ok {
 		var err error
-		logger, err = logr.New(&logr.Config{Verbosity: 1, Format: "default"})
+		logger, err = logr.New(&logr.Config{Verbosity: 9, Format: "default"})
 		require.NoError(t, err)
 	} else {
 		logger = logr.Discard()
@@ -115,10 +126,17 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	sub, err := d.Broker.Subscribe(ctx, "")
 	require.NoError(t, err)
 
+	releasesService := releases.NewService(releases.Options{
+		Logger:          logger,
+		DB:              d.DB,
+		TerraformBinDir: cfg.terraformBinDir,
+	})
+
 	daemon := &testDaemon{
-		Daemon:     d,
-		TestServer: githubServer,
-		sub:        sub,
+		Daemon:          d,
+		TestServer:      githubServer,
+		ReleasesService: releasesService,
+		sub:             sub,
 	}
 
 	// create a dedicated user account and context for test to use.
@@ -438,7 +456,7 @@ func (s *testDaemon) tfcli(t *testing.T, ctx context.Context, command, configPat
 func (s *testDaemon) tfcliWithError(t *testing.T, ctx context.Context, command, configPath string, args ...string) (string, error) {
 	t.Helper()
 
-	tfpath := downloadTerraform(t, ctx, nil)
+	tfpath := s.downloadTerraform(t, ctx, nil)
 
 	// Create user token expressly for the terraform cli
 	user := userFromContext(t, ctx)
@@ -475,4 +493,15 @@ func (s *testDaemon) otfcli(t *testing.T, ctx context.Context, args ...string) s
 
 	require.NoError(t, err, "otf cli failed: %s", buf.String())
 	return buf.String()
+}
+
+func (s *testDaemon) downloadTerraform(t *testing.T, ctx context.Context, version *string) string {
+	t.Helper()
+
+	if version == nil {
+		version = internal.String(releases.DefaultTerraformVersion)
+	}
+	tfpath, err := s.Download(ctx, *version, io.Discard)
+	require.NoError(t, err)
+	return tfpath
 }

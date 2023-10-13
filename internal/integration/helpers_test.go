@@ -3,14 +3,11 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
-	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
 )
 
@@ -82,15 +79,4 @@ func userFromContext(t *testing.T, ctx context.Context) *auth.User {
 	user, err := auth.UserFromContext(ctx)
 	require.NoError(t, err)
 	return user
-}
-
-func downloadTerraform(t *testing.T, ctx context.Context, version *string) string {
-	t.Helper()
-
-	if version == nil {
-		version = internal.String(workspace.DefaultTerraformVersion)
-	}
-	tfpath, err := tfDownloader.Download(ctx, *version, io.Discard)
-	require.NoError(t, err)
-	return tfpath
 }

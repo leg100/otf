@@ -1,0 +1,95 @@
+{
+  "builds": [
+    {
+      "arch": "amd64",
+      "os": "darwin",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_darwin_amd64.zip"
+    },
+    {
+      "arch": "arm64",
+      "os": "darwin",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_darwin_arm64.zip"
+    },
+    {
+      "arch": "386",
+      "os": "freebsd",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_freebsd_386.zip"
+    },
+    {
+      "arch": "amd64",
+      "os": "freebsd",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_freebsd_amd64.zip"
+    },
+    {
+      "arch": "arm",
+      "os": "freebsd",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_freebsd_arm.zip"
+    },
+    {
+      "arch": "386",
+      "os": "linux",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_386.zip"
+    },
+    {
+      "arch": "amd64",
+      "os": "linux",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_amd64.zip"
+    },
+    {
+      "arch": "arm",
+      "os": "linux",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_arm.zip"
+    },
+    {
+      "arch": "arm64",
+      "os": "linux",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_linux_arm64.zip"
+    },
+    {
+      "arch": "386",
+      "os": "openbsd",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_openbsd_386.zip"
+    },
+    {
+      "arch": "amd64",
+      "os": "openbsd",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_openbsd_amd64.zip"
+    },
+    {
+      "arch": "amd64",
+      "os": "solaris",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_solaris_amd64.zip"
+    },
+    {
+      "arch": "386",
+      "os": "windows",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_windows_386.zip"
+    },
+    {
+      "arch": "amd64",
+      "os": "windows",
+      "url": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_windows_amd64.zip"
+    }
+  ],
+  "is_prerelease": false,
+  "license_class": "oss",
+  "name": "terraform",
+  "status": {
+    "state": "supported",
+    "timestamp_updated": "2023-10-10T17:43:14.551Z"
+  },
+  "timestamp_created": "2023-10-10T17:43:14.551Z",
+  "timestamp_updated": "2023-10-10T17:43:14.551Z",
+  "url_changelog": "https://github.com/hashicorp/terraform/blob/v1.6/CHANGELOG.md",
+  "url_docker_registry_dockerhub": "https://hub.docker.com/r/hashicorp/terraform",
+  "url_docker_registry_ecr": "https://gallery.ecr.aws/hashicorp/terraform",
+  "url_license": "https://github.com/hashicorp/terraform/blob/main/LICENSE",
+  "url_project_website": "https://www.terraform.io",
+  "url_shasums": "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_SHA256SUMS",
+  "url_shasums_signatures": [
+    "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_SHA256SUMS.sig",
+    "https://releases.hashicorp.com/terraform/1.6.1/terraform_1.6.1_SHA256SUMS.72D7468F.sig"
+  ],
+  "url_source_repository": "https://github.com/hashicorp/terraform",
+  "version": "1.6.1"
+}
