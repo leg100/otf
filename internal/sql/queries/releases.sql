@@ -1,11 +1,17 @@
+-- name: InsertLatestTerraformVersion :exec
+INSERT INTO latest_terraform_version (
+    version,
+    checkpoint
+) VALUES (
+    pggen.arg('version'),
+    current_timestamp
+);
+
 -- name: UpdateLatestTerraformVersion :exec
 UPDATE latest_terraform_version
-SET version = pggen.arg('version');
+SET version = pggen.arg('version'),
+    checkpoint = current_timestamp;
 
--- name: UpdateLatestTerraformVersionCheckpoint :exec
-UPDATE latest_terraform_version
-SET checkpoint = current_timestamp;
-
--- name: FindLatestTerraformVersion :one
+-- name: FindLatestTerraformVersion :many
 SELECT *
 FROM latest_terraform_version;

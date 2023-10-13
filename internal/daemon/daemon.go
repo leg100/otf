@@ -61,7 +61,6 @@ type (
 		repo.RepoService
 		logs.LogsService
 		notifications.NotificationService
-		//releases.ReleasesService
 
 		Handlers []internal.Handlers
 
@@ -168,7 +167,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		OrganizationService: orgService,
 		VCSProviderService:  vcsProviderService,
 	})
-
+	releasesService := releases.NewService(releases.Options{
+		Logger: logger,
+		DB:     db,
+	})
+	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
+		releasesService.StartLatestChecker(ctx)
+	}
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
 		DB:                  db,
@@ -203,6 +208,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Cache:                       cache,
 		Subscriber:                  repoService,
 		Signer:                      signer,
+		ReleasesService:             releasesService,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -239,10 +245,6 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		WorkspaceService:    workspaceService,
 		RunService:          runService,
 	})
-	releasesService := releases.NewService(releases.Options{
-		Logger: logger,
-		DB:     db,
-	})
 
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
@@ -255,7 +257,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
-			ReleasesService:             releasesService,
+			Downloader:                  releasesService,
 		},
 		*cfg.AgentConfig,
 	)

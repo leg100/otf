@@ -4,14 +4,14 @@ package releases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/logr"
+	"github.com/leg100/otf/internal/semver"
 	"github.com/leg100/otf/internal/sql"
-	"github.com/leg100/otf/internal/sql/pggen"
 )
 
 const (
@@ -23,21 +23,26 @@ type (
 	ReleasesService = Service
 
 	Service interface {
+		// GetLatest returns the latest version of terraform along with the
+		// time when the latest version was last determined.
+		GetLatest(ctx context.Context) (string, time.Time, error)
+
+		Downloader
+	}
+
+	Downloader interface {
 		// Download a terraform release with the given version and log progress
 		// updates to logger. Once complete, the path to the release executable
 		// is returned.
-		Download(ctx context.Context, version string, logger io.Writer) (string, error)
-		// getLatest returns the latest version of terraform along with the
-		// time when the latest version was last determined.
-		getLatest(ctx context.Context) (string, time.Time, error)
+		Download(ctx context.Context, version string, w io.Writer) (string, error)
 	}
+
 	service struct {
 		logr.Logger
-		*sql.DB
 		*downloader
-		*api
-
 		latestChecker
+
+		db *db
 	}
 	Options struct {
 		logr.Logger
@@ -50,49 +55,41 @@ type (
 func NewService(opts Options) *service {
 	svc := &service{
 		Logger:        opts.Logger,
-		DB:            opts.DB,
+		db:            &db{opts.DB},
 		latestChecker: latestChecker{latestEndpoint},
+		downloader:    NewDownloader(opts.TerraformBinDir),
 	}
-	svc.downloader = newDownloader(opts.TerraformBinDir, svc)
-	svc.api = &api{svc}
-
 	return svc
 }
 
-func (s *service) AddHandlers(r *mux.Router) {
-	s.api.addHandlers(r)
-}
-
+// StartLatestChecker starts the latest checker go routine, checking the Hashicorp
+// API endpoint for a new latest version.
 func (s *service) StartLatestChecker(ctx context.Context) {
 	check := func() {
 		err := func() error {
-			current, checkpoint, err := s.getLatest(ctx)
+			before, checkpoint, err := s.GetLatest(ctx)
 			if err != nil {
 				return err
 			}
-			newer, checked, err := s.latestChecker.check(checkpoint, current)
+			after, err := s.latestChecker.check(checkpoint)
 			if err != nil {
 				return err
 			}
-			return s.Tx(ctx, func(ctx context.Context, q pggen.Querier) error {
-				if checked {
-					// endpoint was checked; update checkpoint in database
-					_, err := q.UpdateLatestTerraformVersionCheckpoint(ctx)
-					if err != nil {
-						return err
-					}
-					s.Info("checked latest terraform version", "before", current, "after", newer)
-				}
-				if newer != "" {
-					// newer version found; update version in database
-					_, err := q.UpdateLatestTerraformVersion(ctx, sql.String(newer))
-					if err != nil {
-						return err
-					}
-					s.Info("updated latest terraform version", "before", current, "after", newer)
-				}
+			if after == "" {
+				// check was skipped (too early)
 				return nil
-			})
+			}
+			// perform sanity check
+			if n := semver.Compare(after, before); n <= 0 {
+				return fmt.Errorf("endpoint returned older version: before: %s; after: %s", before, after)
+			}
+			// update db (even if version hasn't changed we need to update the
+			// checkpoint)
+			if err := s.db.updateLatestVersion(ctx, after); err != nil {
+				return err
+			}
+			s.V(1).Info("checked latest terraform version", "before", before, "after", after)
+			return nil
 		}()
 		if err != nil {
 			s.Error(err, "checking latest terraform version")
@@ -115,17 +112,17 @@ func (s *service) StartLatestChecker(ctx context.Context) {
 	}()
 }
 
-// getLatest returns the latest terraform version and the time when it was
+// GetLatest returns the latest terraform version and the time when it was
 // fetched; if it has not yet been fetched then the default version is returned
 // instead along with zero time.
-func (s *service) getLatest(ctx context.Context) (string, time.Time, error) {
-	row, err := s.Conn(ctx).FindLatestTerraformVersion(ctx)
-	if errors.Is(sql.Error(err), internal.ErrResourceNotFound) {
+func (s *service) GetLatest(ctx context.Context) (string, time.Time, error) {
+	latest, checkpoint, err := s.db.getLatest(ctx)
+	if errors.Is(err, internal.ErrResourceNotFound) {
 		// no latest version has yet been persisted to the database so return
 		// the default version instead
 		return DefaultTerraformVersion, time.Time{}, nil
 	} else if err != nil {
 		return "", time.Time{}, err
 	}
-	return row.Version.String, row.Checkpoint.Time, nil
+	return latest, checkpoint, nil
 }

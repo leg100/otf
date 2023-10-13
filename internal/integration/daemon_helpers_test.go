@@ -71,6 +71,11 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	if cfg.Secret == nil {
 		cfg.Secret = sharedSecret
 	}
+	// Unless test has specified otherwise, disable checking for latest
+	// terraform version
+	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
+		cfg.DisableLatestChecker = internal.Bool(true)
+	}
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"

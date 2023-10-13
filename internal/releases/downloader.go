@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"time"
 
 	"github.com/leg100/otf/internal"
 )
@@ -24,18 +23,12 @@ type downloader struct {
 	host    string        // server hosting binaries
 	client  *http.Client  // client for downloading from server via http
 	mu      chan struct{} // ensures only one download at a time
-
-	getter latestVersionGetter // retrieves latest version
 }
 
-type latestVersionGetter interface {
-	getLatest(context.Context) (string, time.Time, error)
-}
-
-// newDownloader constructs a terraform downloader. Pass a path finder to
+// NewDownloader constructs a terraform downloader. Pass a path finder to
 // customise the location to which the bins are persisted, or pass nil to use
 // the default.
-func newDownloader(destdir string, getter latestVersionGetter) *downloader {
+func NewDownloader(destdir string) *downloader {
 	if destdir == "" {
 		destdir = defaultTerraformBinDir
 	}
@@ -48,7 +41,6 @@ func newDownloader(destdir string, getter latestVersionGetter) *downloader {
 		destdir: destdir,
 		client:  &http.Client{},
 		mu:      mu,
-		getter:  getter,
 	}
 }
 
@@ -57,13 +49,6 @@ func newDownloader(destdir string, getter latestVersionGetter) *downloader {
 // another Download is requested then it'll be made to wait until the
 // former has finished.
 func (d *downloader) Download(ctx context.Context, version string, w io.Writer) (string, error) {
-	if version == LatestVersionString {
-		var err error
-		version, _, err = d.getter.getLatest(ctx)
-		if err != nil {
-			return "", err
-		}
-	}
 	if internal.Exists(d.dest(version)) {
 		return d.dest(version), nil
 	}
@@ -80,7 +65,7 @@ func (d *downloader) Download(ctx context.Context, version string, w io.Writer) 
 		src:     d.src(version),
 		dest:    d.dest(version),
 		client:  d.client,
-	}).download()
+	}).download(ctx)
 
 	d.mu <- struct{}{}
 

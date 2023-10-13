@@ -24,7 +24,7 @@ func TestDownloader(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	dl := newDownloader(t.TempDir(), nil)
+	dl := NewDownloader(t.TempDir())
 	dl.host = u.Host
 	dl.client = &http.Client{
 		Transport: otfhttp.DefaultTransport(true),

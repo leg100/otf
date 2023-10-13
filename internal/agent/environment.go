@@ -94,7 +94,7 @@ func newEnvironment(
 		runner:    &runner{out: writer},
 		executor: &executor{
 			Config:  agent.Config,
-			version: ws.TerraformVersion,
+			version: run.TerraformVersion,
 			out:     writer,
 			envs:    envs,
 			workdir: wd,

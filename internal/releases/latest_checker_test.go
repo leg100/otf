@@ -14,16 +14,12 @@ import (
 
 func Test_latestChecker(t *testing.T) {
 	tests := []struct {
-		name    string
-		last    time.Time // last time checked
-		current string    // current version
-
-		newer   string // newer version found
-		checked bool   // whether endpoint was checked
+		name string
+		last time.Time // last time checked
+		got  string    // version returned
 	}{
-		{"no check needed", time.Now(), "1.6.1", "", false},
-		{"checked, no newer version", time.Time{}, "1.6.1", "", true},
-		{"checked, newer version", time.Time{}, "1.6.0", "1.6.1", true},
+		{"skip check", time.Now(), ""},
+		{"perform check", time.Time{}, "1.6.1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -42,10 +38,9 @@ func Test_latestChecker(t *testing.T) {
 				return u.String()
 			}()
 
-			newer, checked, err := latestChecker{endpoint}.check(tt.last, tt.current)
+			v, err := latestChecker{endpoint}.check(tt.last)
 			require.NoError(t, err)
-			assert.Equal(t, tt.checked, checked)
-			assert.Equal(t, tt.newer, newer)
+			assert.Equal(t, tt.got, v)
 		})
 	}
 }
