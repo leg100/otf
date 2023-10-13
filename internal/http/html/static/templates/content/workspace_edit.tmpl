@@ -74,7 +74,7 @@
       <label for="terraform-version">Terraform version</label>
       <input class="text-input w-48" type="text" name="terraform_version" id="terraform-version" value="{{ .Workspace.TerraformVersion }}" required title="Must provide version in the format <major>.<minor>.<patch>">
       <span class="description">
-        The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically.
+        The version of Terraform to use for this workspace. Upon creating this workspace, the default version was selected and will be used until it is changed manually. It will not upgrade automatically unless you specify <span class="bg-gray-200">latest</span>, in which case the latest version of terraform is used.
       </span>
     </div>
     <div class="field">
