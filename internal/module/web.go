@@ -113,7 +113,9 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 
 	switch module.Status {
 	case ModuleStatusSetupComplete:
-		readme = html.MarkdownToHTML(tfmod.readme)
+		if tfmod != nil {
+			readme = html.MarkdownToHTML(tfmod.readme)
+		}
 	}
 
 	h.Render("module_get.tmpl", w, struct {

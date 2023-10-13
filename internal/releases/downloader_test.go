@@ -1,4 +1,4 @@
-package agent
+package releases
 
 import (
 	"bytes"
@@ -24,8 +24,7 @@ func TestDownloader(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	pathFinder := newTerraformPathFinder(t.TempDir())
-	dl := NewDownloader(pathFinder)
+	dl := NewDownloader(t.TempDir())
 	dl.host = u.Host
 	dl.client = &http.Client{
 		Transport: otfhttp.DefaultTransport(true),

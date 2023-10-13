@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf/internal/configversion"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/workspace"
 )
@@ -15,6 +16,7 @@ type factory struct {
 	WorkspaceService
 	ConfigurationVersionService
 	VCSProviderService
+	releases.ReleasesService
 }
 
 // NewRun constructs a new run using the provided options.
@@ -26,6 +28,12 @@ func (f *factory) NewRun(ctx context.Context, workspaceID string, opts CreateOpt
 	org, err := f.GetOrganization(ctx, ws.Organization)
 	if err != nil {
 		return nil, err
+	}
+	if ws.TerraformVersion == releases.LatestVersionString {
+		ws.TerraformVersion, _, err = f.GetLatest(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// There are two possibilities for the ConfigurationVersionID value:

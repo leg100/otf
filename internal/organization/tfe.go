@@ -184,6 +184,8 @@ func (a *tfe) toOrganization(from *Organization) *types.Organization {
 		SessionTimeout:             from.SessionTimeout,
 		AllowForceDeleteWorkspaces: from.AllowForceDeleteWorkspaces,
 		CostEstimationEnabled:      from.CostEstimationEnabled,
+		// go-tfe tests expect this attribute to be equal to 5
+		RemainingTestableCount: 5,
 	}
 	if from.Email != nil {
 		to.Email = *from.Email

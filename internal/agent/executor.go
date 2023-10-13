@@ -19,7 +19,6 @@ type (
 	// executor executes processes.
 	executor struct {
 		Config
-		*TerraformPathFinder
 
 		version string // terraform cli version
 		out     io.Writer
@@ -77,12 +76,6 @@ func (e *executor) execute(args []string, opts ...executionOption) error {
 		return err
 	}
 	return nil
-}
-
-// executeTerraform executes a terraform process
-func (e *executor) executeTerraform(args []string, opts ...executionOption) error {
-	args = append([]string{e.TerraformPath(e.version)}, args...)
-	return e.execute(args, opts...)
 }
 
 func (e *execution) execute(args []string) error {

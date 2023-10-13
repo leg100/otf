@@ -39,6 +39,8 @@ type Config struct {
 	RestrictOrganizationCreation bool
 	SiteAdmins                   []string
 	SkipTLSVerification          bool
+	// skip checks for latest terraform version
+	DisableLatestChecker *bool
 
 	tokens.GoogleIAPConfig
 }

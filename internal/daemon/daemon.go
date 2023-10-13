@@ -27,6 +27,7 @@ import (
 	"github.com/leg100/otf/internal/notifications"
 	"github.com/leg100/otf/internal/organization"
 	"github.com/leg100/otf/internal/pubsub"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/repo"
 	"github.com/leg100/otf/internal/run"
 	"github.com/leg100/otf/internal/scheduler"
@@ -189,7 +190,13 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		VCSProviderService: vcsProviderService,
 		RepoService:        repoService,
 	})
-
+	releasesService := releases.NewService(releases.Options{
+		Logger: logger,
+		DB:     db,
+	})
+	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
+		releasesService.StartLatestChecker(ctx)
+	}
 	workspaceService := workspace.NewService(workspace.Options{
 		Logger:              logger,
 		DB:                  db,
@@ -225,6 +232,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 		Cache:                       cache,
 		VCSEventSubscriber:          vcsEventBroker,
 		Signer:                      signer,
+		ReleasesService:             releasesService,
 	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
@@ -275,6 +283,7 @@ func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
 			ConfigurationVersionService: configService,
 			RunService:                  runService,
 			LogsService:                 logsService,
+			Downloader:                  releasesService,
 		},
 		*cfg.AgentConfig,
 	)

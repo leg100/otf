@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/agent"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/variable"
 	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/require"
@@ -18,18 +19,18 @@ import (
 func TestIntegration_RunCancel(t *testing.T) {
 	integrationTest(t)
 
-	daemon, org, ctx := setup(t, nil)
-
 	// stage a fake terraform bin that sleeps until it receives an interrupt
 	// signal
 	bins := filepath.Join(t.TempDir(), "bins")
-	dst := filepath.Join(bins, workspace.DefaultTerraformVersion, "terraform")
+	dst := filepath.Join(bins, releases.DefaultTerraformVersion, "terraform")
 	err := os.MkdirAll(filepath.Dir(dst), 0o755)
 	require.NoError(t, err)
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	err = os.Symlink(filepath.Join(wd, "testdata/cancelme"), dst)
 	require.NoError(t, err)
+
+	daemon, org, ctx := setup(t, &config{terraformBinDir: dst})
 
 	// run a temporary http server as a means of communicating with the fake
 	// bin

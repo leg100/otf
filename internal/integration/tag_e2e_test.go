@@ -36,7 +36,7 @@ terraform {
 resource "null_resource" "tags_e2e" {}
 `, daemon.Hostname(), org.Name))
 
-	tfpath := downloadTerraform(t, ctx, nil)
+	tfpath := daemon.downloadTerraform(t, ctx, nil)
 
 	// run terraform init
 	_, token := daemon.createToken(t, ctx, nil)

@@ -13,6 +13,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/leg100/otf/internal"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/resource"
 	"github.com/leg100/otf/internal/semver"
 )
@@ -23,9 +24,7 @@ const (
 	AgentExecutionMode  ExecutionMode = "agent"
 
 	DefaultAllowDestroyPlan = true
-
 	MinTerraformVersion     = "1.2.0"
-	DefaultTerraformVersion = "1.5.2"
 )
 
 var (
@@ -202,7 +201,7 @@ func NewWorkspace(opts CreateOptions) (*Workspace, error) {
 		UpdatedAt:          internal.CurrentTimestamp(),
 		AllowDestroyPlan:   DefaultAllowDestroyPlan,
 		ExecutionMode:      RemoteExecutionMode,
-		TerraformVersion:   DefaultTerraformVersion,
+		TerraformVersion:   releases.DefaultTerraformVersion,
 		SpeculativeEnabled: true,
 		Organization:       *opts.Organization,
 	}
@@ -490,10 +489,13 @@ func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
 }
 
 func (ws *Workspace) setTerraformVersion(v string) error {
+	if v == releases.LatestVersionString {
+		ws.TerraformVersion = v
+		return nil
+	}
 	if !semver.IsValid(v) {
 		return internal.ErrInvalidTerraformVersion
 	}
-
 	// only accept terraform versions above the minimum requirement.
 	//
 	// NOTE: we make an exception for the specific versions posted by the go-tfe

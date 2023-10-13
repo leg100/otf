@@ -3,10 +3,12 @@ package run
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/configversion"
 	"github.com/leg100/otf/internal/organization"
+	"github.com/leg100/otf/internal/releases"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/leg100/otf/internal/vcsprovider"
 	"github.com/leg100/otf/internal/workspace"
@@ -22,6 +24,7 @@ func TestFactory(t *testing.T) {
 			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{})
@@ -39,6 +42,7 @@ func TestFactory(t *testing.T) {
 			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{Speculative: true},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{})
@@ -52,6 +56,7 @@ func TestFactory(t *testing.T) {
 			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{PlanOnly: internal.Bool(true)})
@@ -65,6 +70,7 @@ func TestFactory(t *testing.T) {
 			&organization.Organization{},
 			&workspace.Workspace{AutoApply: true},
 			&configversion.ConfigurationVersion{},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{})
@@ -78,6 +84,7 @@ func TestFactory(t *testing.T) {
 			&organization.Organization{},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{
@@ -93,6 +100,7 @@ func TestFactory(t *testing.T) {
 			&organization.Organization{CostEstimationEnabled: true},
 			&workspace.Workspace{},
 			&configversion.ConfigurationVersion{},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{})
@@ -108,6 +116,7 @@ func TestFactory(t *testing.T) {
 				Connection: &workspace.Connection{},
 			},
 			&configversion.ConfigurationVersion{},
+			"",
 		)
 
 		got, err := f.NewRun(ctx, "", CreateOptions{})
@@ -116,6 +125,20 @@ func TestFactory(t *testing.T) {
 		// fake config version service sets the config version ID to "created"
 		// if it was newly created
 		assert.Equal(t, "created", got.ConfigurationVersionID)
+	})
+
+	t.Run("get latest version", func(t *testing.T) {
+		f := newTestFactory(
+			&organization.Organization{},
+			&workspace.Workspace{TerraformVersion: releases.LatestVersionString},
+			&configversion.ConfigurationVersion{},
+			"1.2.3",
+		)
+
+		got, err := f.NewRun(ctx, "", CreateOptions{})
+		require.NoError(t, err)
+
+		assert.Equal(t, "1.2.3", got.TerraformVersion)
 	})
 }
 
@@ -138,14 +161,19 @@ type (
 	fakeFactoryCloudClient struct {
 		vcs.Client
 	}
+	fakeReleasesService struct {
+		latestVersion string
+		releases.ReleasesService
+	}
 )
 
-func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion) *factory {
+func newTestFactory(org *organization.Organization, ws *workspace.Workspace, cv *configversion.ConfigurationVersion, latestVersion string) *factory {
 	return &factory{
 		OrganizationService:         &fakeFactoryOrganizationService{org: org},
 		WorkspaceService:            &fakeFactoryWorkspaceService{ws: ws},
 		ConfigurationVersionService: &fakeFactoryConfigurationVersionService{cv: cv},
 		VCSProviderService:          &fakeFactoryVCSProviderService{},
+		ReleasesService:             &fakeReleasesService{latestVersion: latestVersion},
 	}
 }
 
@@ -187,4 +215,8 @@ func (f *fakeFactoryCloudClient) GetRepository(context.Context, string) (vcs.Rep
 
 func (f *fakeFactoryCloudClient) GetCommit(context.Context, string, string) (vcs.Commit, error) {
 	return vcs.Commit{}, nil
+}
+
+func (f *fakeReleasesService) GetLatest(context.Context) (string, time.Time, error) {
+	return f.latestVersion, time.Time{}, nil
 }

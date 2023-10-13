@@ -31,7 +31,7 @@ func TestTerraformLogin(t *testing.T) {
 	require.NoError(t, err)
 	killBrowserPath := path.Join(wd, "./fixtures/kill-browser")
 
-	tfpath := downloadTerraform(t, ctx, nil)
+	tfpath := svc.downloadTerraform(t, ctx, nil)
 
 	e, tferr, err := expect.SpawnWithArgs(
 		[]string{tfpath, "login", svc.Hostname()},
