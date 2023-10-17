@@ -11,6 +11,7 @@ import (
 
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/github"
+	"github.com/leg100/otf/internal/gitlab"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -27,14 +28,17 @@ type (
 		Token *string  // personal access token.
 
 		GithubApp *github.InstallCredentials // mutually exclusive with Token.
+
+		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
 	}
 
 	// factory produces VCS providers
 	factory struct {
 		github.GithubAppService
 
-		GithubHostname string
-		GitlabHostname string
+		githubHostname      string
+		gitlabHostname      string
+		skipTLSVerification bool // toggle skipping verification of VCS host's TLS cert.
 	}
 
 	CreateOptions struct {
@@ -69,10 +73,11 @@ func (f *factory) newProvider(ctx context.Context, opts CreateOptions) (*VCSProv
 
 func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptions, creds *github.InstallCredentials) (*VCSProvider, error) {
 	provider := &VCSProvider{
-		ID:           internal.NewID("vcs"),
-		Name:         opts.Name,
-		CreatedAt:    internal.CurrentTimestamp(),
-		Organization: opts.Organization,
+		ID:                  internal.NewID("vcs"),
+		Name:                opts.Name,
+		CreatedAt:           internal.CurrentTimestamp(),
+		Organization:        opts.Organization,
+		skipTLSVerification: f.skipTLSVerification,
 	}
 	if opts.Token != nil {
 		if opts.Kind == nil {
@@ -81,9 +86,9 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 		provider.Kind = *opts.Kind
 		switch provider.Kind {
 		case vcs.GithubKind:
-			provider.Hostname = f.GithubHostname
+			provider.Hostname = f.githubHostname
 		case vcs.GitlabKind:
-			provider.Hostname = f.GitlabHostname
+			provider.Hostname = f.gitlabHostname
 		default:
 			return nil, errors.New("no hostname found for vcs kind")
 		}
@@ -93,7 +98,7 @@ func (f *factory) newWithGithubCredentials(ctx context.Context, opts CreateOptio
 	} else if creds != nil {
 		provider.GithubApp = creds
 		provider.Kind = vcs.GithubKind
-		provider.Hostname = f.GithubHostname
+		provider.Hostname = f.githubHostname
 	} else {
 		return nil, errors.New("must specify either token or github app installation ID")
 	}
@@ -130,11 +135,24 @@ func (t *VCSProvider) String() string {
 func (t *VCSProvider) NewClient() (vcs.Client, error) {
 	if t.GithubApp != nil {
 		return github.NewClient(github.ClientOptions{
-			Hostname:           t.Hostname,
-			InstallCredentials: t.GithubApp,
+			Hostname:            t.Hostname,
+			InstallCredentials:  t.GithubApp,
+			SkipTLSVerification: t.skipTLSVerification,
 		})
 	} else if t.Token != nil {
-		return vcs.GetPersonalTokenClient(t.Kind, t.Hostname, *t.Token)
+		opts := vcs.NewTokenClientOptions{
+			Hostname:            t.Hostname,
+			Token:               *t.Token,
+			SkipTLSVerification: t.skipTLSVerification,
+		}
+		switch t.Kind {
+		case vcs.GithubKind:
+			return github.NewTokenClient(opts)
+		case vcs.GitlabKind:
+			return gitlab.NewTokenClient(opts)
+		default:
+			return nil, fmt.Errorf("unknown kind: %s", t.Kind)
+		}
 	} else {
 		return nil, fmt.Errorf("missing credentials")
 	}

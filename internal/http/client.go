@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"time"
 
 	"github.com/DataDog/jsonapi"
-	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/leg100/otf/internal"
 )
@@ -52,12 +50,6 @@ func NewClient(config Config) (*Client, error) {
 		return nil, fmt.Errorf("missing API token")
 	}
 
-	if config.HTTPClient == nil {
-		transport := cleanhttp.DefaultPooledTransport()
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: config.Insecure}
-		config.HTTPClient = &http.Client{Transport: transport}
-	}
-
 	// Create the client.
 	client := &Client{
 		baseURL:      baseURL,
@@ -68,7 +60,7 @@ func NewClient(config Config) (*Client, error) {
 	client.http = &retryablehttp.Client{
 		CheckRetry:   client.retryHTTPCheck,
 		ErrorHandler: retryablehttp.PassthroughErrorHandler,
-		HTTPClient:   config.HTTPClient,
+		HTTPClient:   &http.Client{Transport: config.Transport},
 		RetryWaitMin: 100 * time.Millisecond,
 		RetryWaitMax: 400 * time.Millisecond,
 		RetryMax:     30,

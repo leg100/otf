@@ -77,8 +77,9 @@ func TestIntegration_VCSProviderAppUI(t *testing.T) {
 	// create github stub server and return its hostname.
 	githubHostname := func(t *testing.T) string {
 		install := &gogithub.Installation{
-			ID:      internal.Int64(123),
-			Account: &gogithub.User{Login: internal.String("leg100")},
+			ID:         internal.Int64(123),
+			Account:    &gogithub.User{Login: internal.String("leg100")},
+			TargetType: internal.String("User"),
 		}
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/v3/app/installations", func(w http.ResponseWriter, r *http.Request) {

@@ -59,17 +59,19 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	return &Client{client: client}, nil
 }
 
-func NewPersonalTokenClient(hostname, token string) (vcs.Client, error) {
+func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		Hostname:      hostname,
-		PersonalToken: &token,
+		Hostname:            opts.Hostname,
+		PersonalToken:       &opts.Token,
+		SkipTLSVerification: opts.SkipTLSVerification,
 	})
 }
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		Hostname:   cfg.Hostname,
-		OAuthToken: token,
+		Hostname:            cfg.Hostname,
+		OAuthToken:          token,
+		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
 }
 

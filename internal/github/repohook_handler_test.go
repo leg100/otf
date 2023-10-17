@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v41/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +25,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				VCSKind:         vcs.GithubKind,
 				Type:            vcs.EventTypePush,
+				RepoPath:        "leg100/tfc-workspaces",
 				Branch:          "master",
 				DefaultBranch:   "master",
 				CommitSHA:       "42d6fc7dac35cc7945231195e248af2f6256b522",
@@ -43,6 +44,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				VCSKind:           vcs.GithubKind,
 				Type:              vcs.EventTypePull,
+				RepoPath:          "leg100/otf-workspaces",
 				Branch:            "pr-2",
 				DefaultBranch:     "master",
 				CommitSHA:         "c560613b228f5e189520fbab4078284ea8312bcb",
@@ -63,6 +65,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				VCSKind:           vcs.GithubKind,
 				Type:              vcs.EventTypePull,
+				RepoPath:          "leg100/otf-workspaces",
 				Branch:            "pr-1",
 				DefaultBranch:     "master",
 				CommitSHA:         "067e2b4c6394b3dad3c0ec89ffc428ab60ae7e5d",
@@ -83,6 +86,7 @@ func TestEventHandler(t *testing.T) {
 			&vcs.EventPayload{
 				VCSKind:         vcs.GithubKind,
 				Type:            vcs.EventTypeTag,
+				RepoPath:        "leg100/terraform-otf-test",
 				Tag:             "v1.0.0",
 				DefaultBranch:   "master",
 				CommitSHA:       "07101e82c4f525d5f697111f0690bdd0ff40a865",
@@ -105,7 +109,7 @@ func TestEventHandler(t *testing.T) {
 			r.Header.Add(github.EventTypeHeader, tt.eventType)
 			w := httptest.NewRecorder()
 			got := HandleEvent(w, r, "")
-			assert.Equal(t, 202, w.Code)
+			assert.Equal(t, 202, w.Code, w.Body.String())
 			assert.Equal(t, tt.want, got)
 		})
 	}

@@ -51,7 +51,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = pggen.arg('organization_name')
 ;
 
@@ -71,7 +71,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = pggen.arg('organization_name')
 AND   m.name = pggen.arg('name')
 AND   m.provider = pggen.arg('provider')
@@ -93,7 +93,7 @@ SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE m.module_id = pggen.arg('id')
 ;
 
@@ -135,7 +135,7 @@ SELECT
     ) AS versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE mv.module_version_id = pggen.arg('module_version_id')
 ;
 

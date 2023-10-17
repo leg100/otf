@@ -2,7 +2,6 @@
 package github
 
 import (
-	"github.com/leg100/otf/internal/vcs"
 	oauth2github "golang.org/x/oauth2/github"
 )
 
@@ -17,7 +16,3 @@ var (
 	// stopped sync'ing org and team memberships from github.
 	OAuthScopes = []string{"user:email", "read:org"}
 )
-
-func init() {
-	vcs.RegisterPersonalTokenClientConstructor(vcs.GithubKind, NewPersonalTokenClient)
-}

@@ -74,11 +74,14 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	}
 	// build http roundtripper using provided credentials
 	var (
-		tripper = otfhttp.DefaultTransport(cfg.SkipTLSVerification)
+		tripper = otfhttp.DefaultTransport
 		err     error
 
 		iat bool
 	)
+	if cfg.SkipTLSVerification {
+		tripper = otfhttp.InsecureTransport
+	}
 	switch {
 	case cfg.AppCredentials != nil:
 		tripper, err = ghinstallation.NewAppsTransport(tripper, cfg.AppCredentials.ID, []byte(cfg.AppCredentials.PrivateKey))
@@ -119,17 +122,19 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	return &Client{client: client, iat: iat}, nil
 }
 
-func NewPersonalTokenClient(hostname, token string) (vcs.Client, error) {
+func NewTokenClient(opts vcs.NewTokenClientOptions) (vcs.Client, error) {
 	return NewClient(ClientOptions{
-		Hostname:      hostname,
-		PersonalToken: &token,
+		Hostname:            opts.Hostname,
+		PersonalToken:       &opts.Token,
+		SkipTLSVerification: opts.SkipTLSVerification,
 	})
 }
 
 func NewOAuthClient(cfg authenticator.OAuthConfig, token *oauth2.Token) (authenticator.IdentityProviderClient, error) {
 	return NewClient(ClientOptions{
-		Hostname:   cfg.Hostname,
-		OAuthToken: token,
+		Hostname:            cfg.Hostname,
+		OAuthToken:          token,
+		SkipTLSVerification: cfg.SkipTLSVerification,
 	})
 }
 

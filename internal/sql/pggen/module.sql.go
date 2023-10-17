@@ -140,7 +140,7 @@ const listModulesByOrganizationSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
 ;`
 
@@ -235,7 +235,7 @@ const findModuleByNameSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE m.organization_name = $1
 AND   m.name = $2
 AND   m.provider = $3
@@ -316,7 +316,7 @@ const findModuleByIDSQL = `SELECT
         WHERE v.module_id = m.module_id
     ) AS versions
 FROM modules m
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE m.module_id = $1
 ;`
 
@@ -464,7 +464,7 @@ const findModuleByModuleVersionIDSQL = `SELECT
     ) AS versions
 FROM modules m
 JOIN module_versions mv USING (module_id)
-JOIN repo_connections r USING (module_id)
+LEFT JOIN repo_connections r USING (module_id)
 WHERE mv.module_version_id = $1
 ;`
 

@@ -64,7 +64,6 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	if cfg == nil {
 		cfg = &config{}
 	}
-
 	// Setup database if not specified
 	if cfg.Database == "" {
 		cfg.Database = sql.NewTestDB(t)
@@ -78,6 +77,10 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 	if cfg.DisableLatestChecker == nil || !*cfg.DisableLatestChecker {
 		cfg.DisableLatestChecker = internal.Bool(true)
 	}
+	// Skip TLS verification for tests because they'll be standing up various
+	// stub TLS servers with self-certified certs.
+	cfg.SkipTLSVerification = true
+
 	daemon.ApplyDefaults(&cfg.Config)
 	cfg.SSL = true
 	cfg.CertFile = "./fixtures/cert.pem"
@@ -85,7 +88,7 @@ func setup(t *testing.T, cfg *config, gopts ...github.TestServerOption) (*testDa
 
 	// Start stub github server, unless test has set its own github stub
 	var githubServer *github.TestServer
-	if cfg.GithubHostname != "" {
+	if cfg.GithubHostname == "" {
 		var githubURL *url.URL
 		githubServer, githubURL = github.NewTestServer(t, gopts...)
 		cfg.GithubHostname = githubURL.Host
@@ -432,7 +435,6 @@ func (s *testDaemon) startAgent(t *testing.T, ctx context.Context, organization 
 	cfg.HTTPConfig = http.NewConfig()
 	cfg.HTTPConfig.Token = string(token)
 	cfg.HTTPConfig.Address = s.Hostname()
-	cfg.HTTPConfig.Insecure = true // daemon uses self-signed cert
 
 	agent, err := agent.NewExternalAgent(ctx, logger, cfg)
 	require.NoError(t, err)

@@ -1,12 +1,14 @@
 package vcs
 
+import "errors"
+
 const (
-	EventTypePull EventType = iota
+	EventTypePull EventType = iota + 1
 	EventTypePush
 	EventTypeTag
 	EventTypeInstallation // github-app installation
 
-	ActionCreated Action = iota
+	ActionCreated Action = iota + 1
 	ActionDeleted
 	ActionMerged
 	ActionUpdated
@@ -56,3 +58,22 @@ type (
 	EventType int
 	Action    int
 )
+
+func (e EventPayload) Validate() error {
+	if e.VCSKind == "" {
+		return errors.New("event missing vcs kind")
+	}
+	if e.Type == 0 {
+		return errors.New("event missing event type")
+	}
+	if e.Action == 0 {
+		return errors.New("event missing event action")
+	}
+	switch e.Type {
+	case EventTypePush, EventTypePull, EventTypeTag:
+		if e.RepoPath == "" {
+			return errors.New("event missing repo path")
+		}
+	}
+	return nil
+}

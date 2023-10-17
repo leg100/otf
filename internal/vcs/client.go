@@ -27,6 +27,14 @@ type (
 		GetCommit(ctx context.Context, repo, ref string) (Commit, error)
 	}
 
+	// NewTokenClientOptions are options for creating a client using a personal
+	// access token (PAT).
+	NewTokenClientOptions struct {
+		Token               string
+		Hostname            string
+		SkipTLSVerification bool
+	}
+
 	GetRepoTarballOptions struct {
 		Repo string  // repo identifier, <owner>/<repo>
 		Ref  *string // branch/tag/SHA ref, nil means default branch

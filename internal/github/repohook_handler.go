@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v41/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal/vcs"
 )
 
@@ -43,6 +43,7 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 			to.Paths = append(to.Paths, c.Modified...)
 			to.Paths = append(to.Paths, c.Removed...)
 		}
+		to.RepoPath = event.GetRepo().GetFullName()
 		to.CommitSHA = event.GetAfter()
 		to.CommitURL = event.GetHeadCommit().GetURL()
 		to.DefaultBranch = event.GetRepo().GetDefaultBranch()
@@ -76,18 +77,17 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 
 			to.Tag = parts[2]
 
-			return &to, nil
 		case "heads":
 			to.Type = vcs.EventTypePush
 			to.Action = vcs.ActionCreated
 			to.Branch = parts[2]
 
-			return &to, nil
 		default:
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
 	case *github.PullRequestEvent:
 		to.Type = vcs.EventTypePull
+		to.RepoPath = event.GetRepo().GetFullName()
 		to.PullRequestNumber = event.GetPullRequest().GetNumber()
 		to.PullRequestURL = event.GetPullRequest().GetHTMLURL()
 		to.PullRequestTitle = event.GetPullRequest().GetTitle()
@@ -123,8 +123,6 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 		// commit-url isn't provided in a pull-request event so one is
 		// constructed instead
 		to.CommitURL = event.GetRepo().GetHTMLURL() + "/commit/" + to.CommitSHA
-
-		return &to, nil
 	case *github.InstallationEvent:
 		// ignore events other than uninstallation events
 		if event.GetAction() != "deleted" {
@@ -133,8 +131,11 @@ func handleEventWithError(r *http.Request, secret string) (*vcs.EventPayload, er
 		to.Action = vcs.ActionDeleted
 		to.Type = vcs.EventTypeInstallation
 		to.GithubAppInstallID = event.GetInstallation().ID
-		return &to, nil
 	default:
 		return nil, nil
 	}
+	if err := to.Validate(); err != nil {
+		return nil, err
+	}
+	return &to, nil
 }

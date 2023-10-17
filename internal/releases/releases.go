@@ -80,7 +80,7 @@ func (s *service) StartLatestChecker(ctx context.Context) {
 				return nil
 			}
 			// perform sanity check
-			if n := semver.Compare(after, before); n <= 0 {
+			if n := semver.Compare(after, before); n < 0 {
 				return fmt.Errorf("endpoint returned older version: before: %s; after: %s", before, after)
 			}
 			// update db (even if version hasn't changed we need to update the
