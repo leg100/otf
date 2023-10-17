@@ -37,6 +37,7 @@ func TestGithubPullRequest(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// send events
 	events := []struct {
 		path   string
 		commit string

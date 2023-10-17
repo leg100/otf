@@ -40,6 +40,7 @@ type (
 
 		*httptest.Server
 		*testdb
+		mux *http.ServeMux
 	}
 
 	TestServerOption func(*TestServer)
@@ -82,13 +83,13 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		testdb:        &testdb{},
 		statuses:      make(chan *github.StatusEvent, 999),
 		WebhookEvents: make(chan webhookEvent, 999),
+		mux:           http.NewServeMux(),
 	}
 	for _, o := range opts {
 		o(&srv)
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
+	srv.mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Add("state", r.URL.Query().Get("state"))
 		q.Add("code", internal.GenerateRandomString(10))
@@ -105,21 +106,21 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 
 		http.Redirect(w, r, callback.String(), http.StatusFound)
 	})
-	mux.HandleFunc("/login/oauth/access_token", func(w http.ResponseWriter, r *http.Request) {
+	srv.mux.HandleFunc("/login/oauth/access_token", func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "stub_token"})
 		require.NoError(t, err)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
 	if srv.username != nil {
-		mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&github.User{Login: srv.username})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
 	}
-	mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
+	srv.mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
 		repos := []*github.Repository{{FullName: srv.repo}}
 		out, err := json.Marshal(repos)
 		require.NoError(t, err)
@@ -127,7 +128,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		w.Write(out)
 	})
 	if srv.repo != nil {
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
 			var refs []*github.Reference
 			for _, ref := range srv.refs {
 				refs = append(refs, &github.Reference{Ref: internal.String(ref)})
@@ -137,19 +138,19 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo, func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo, func(w http.ResponseWriter, r *http.Request) {
 			repo := &github.Repository{FullName: srv.repo, DefaultBranch: srv.defaultBranch}
 			out, err := json.Marshal(repo)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/tarball/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/tarball/", func(w http.ResponseWriter, r *http.Request) {
 			link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
 			http.Redirect(w, r, link.String(), http.StatusFound)
 		})
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#create-a-repository-webhook
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			var opts struct {
 				Events []string `json:"events"`
 				Config struct {
@@ -188,7 +189,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#get-a-repository-webhook
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#update-a-repository-webhook
 		// https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#delete-a-repository-webhook
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case "PATCH":
 				var opts struct {
@@ -240,7 +241,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			}
 		})
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
 			var commit github.StatusEvent
 			if err := json.NewDecoder(r.Body).Decode(&commit); err != nil {
 				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -250,7 +251,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			w.WriteHeader(http.StatusCreated)
 		})
 		// https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests-files
-		mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/pulls/"+srv.pullNumber+"/files", func(w http.ResponseWriter, r *http.Request) {
 			var commits []*github.CommitFile
 			for _, f := range srv.pullFiles {
 				commits = append(commits, &github.CommitFile{
@@ -267,7 +268,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		})
 		if srv.commit != nil {
 			// https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit
-			mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
+			srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/commits/"+*srv.commit, func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Commit{
 					SHA: internal.String(*srv.commit),
 					URL: internal.String(*srv.url + "/" + *srv.repo),
@@ -286,17 +287,17 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 	}
 
 	if srv.tarball != nil {
-		mux.HandleFunc("/mytarball", func(w http.ResponseWriter, r *http.Request) {
+		srv.mux.HandleFunc("/mytarball", func(w http.ResponseWriter, r *http.Request) {
 			w.Write(srv.tarball)
 		})
 	}
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	srv.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		t.Logf("github server received request for non-existent path: %s", r.URL.Path)
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	srv.Server = httptest.NewTLSServer(mux)
+	srv.Server = httptest.NewTLSServer(srv.mux)
 	t.Cleanup(srv.Close)
 	srv.url = &srv.URL
 
@@ -348,6 +349,12 @@ func WithArchive(tarball []byte) TestServerOption {
 	}
 }
 
+func WithHandler(path string, h http.HandlerFunc) TestServerOption {
+	return func(srv *TestServer) {
+		srv.mux.HandleFunc(path, h)
+	}
+}
+
 func (s *TestServer) HasWebhook() bool {
 	return s.testdb.webhook != nil
 }
@@ -357,26 +364,7 @@ func (s *TestServer) SendEvent(t *testing.T, event GithubEvent, payload []byte) 
 	t.Helper()
 
 	require.True(t, s.HasWebhook())
-
-	// generate signature for push event
-	mac := hmac.New(sha256.New, []byte(s.testdb.webhook.secret))
-	mac.Write(payload)
-	sig := mac.Sum(nil)
-
-	req, err := http.NewRequest("POST", s.testdb.webhook.Config["url"].(string), bytes.NewReader(payload))
-	require.NoError(t, err)
-	req.Header.Add("Content-type", "application/json")
-	req.Header.Add("X-GitHub-Event", string(event))
-	req.Header.Add("X-Hub-Signature-256", "sha256="+hex.EncodeToString(sig))
-
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-
-	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
-		response, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
-		t.Fatal(string(response))
-	}
+	SendEventRequest(t, event, s.testdb.webhook.Config["url"].(string), s.testdb.webhook.secret, payload)
 }
 
 // GetStatus retrieves a commit status event off the queue, timing out after 10
@@ -394,4 +382,29 @@ func (s *TestServer) GetStatus(t *testing.T, ctx context.Context) *github.Status
 		t.Fatalf("github server: waiting to receive commit status: %s", ctx.Err().Error())
 	}
 	return nil
+}
+
+// SendEventRequest sends a GitHub event via a http request to the url, signed with the secret,
+func SendEventRequest(t *testing.T, event GithubEvent, url, secret string, payload []byte) {
+	t.Helper()
+
+	// generate signature
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	sig := mac.Sum(nil)
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	require.NoError(t, err)
+	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("X-GitHub-Event", string(event))
+	req.Header.Add("X-Hub-Signature-256", "sha256="+hex.EncodeToString(sig))
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
+		response, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		t.Fatal(string(response))
+	}
 }

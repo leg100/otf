@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v55/github"
+	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/vcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,6 +36,26 @@ func TestEventHandler(t *testing.T) {
 				SenderUsername:  "leg100",
 				SenderAvatarURL: "https://avatars.githubusercontent.com/u/75728?v=4",
 				SenderHTMLURL:   "https://github.com/leg100",
+			},
+		},
+		{
+			"push from github app install",
+			"push",
+			"./testdata/github_app_push.json",
+			&vcs.EventPayload{
+				VCSKind:            vcs.GithubKind,
+				Type:               vcs.EventTypePush,
+				RepoPath:           "leg100/otf-workspaces",
+				Branch:             "master",
+				DefaultBranch:      "master",
+				CommitSHA:          "0a2d223fa1a3844480e3b7716cf87aacb658b91f",
+				CommitURL:          "https://github.com/leg100/otf-workspaces/commit/0a2d223fa1a3844480e3b7716cf87aacb658b91f",
+				Action:             vcs.ActionCreated,
+				Paths:              []string{},
+				SenderUsername:     "leg100",
+				SenderAvatarURL:    "https://avatars.githubusercontent.com/u/75728?v=4",
+				SenderHTMLURL:      "https://github.com/leg100",
+				GithubAppInstallID: internal.Int64(42997659),
 			},
 		},
 		{

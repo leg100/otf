@@ -91,10 +91,15 @@ func NewClient(cfg ClientOptions) (*Client, error) {
 	case cfg.InstallCredentials != nil:
 		iat = true
 		creds := cfg.InstallCredentials
-		tripper, err = ghinstallation.New(tripper, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
+		installTransport, err := ghinstallation.New(tripper, creds.AppCredentials.ID, creds.ID, []byte(creds.AppCredentials.PrivateKey))
 		if err != nil {
 			return nil, err
 		}
+		// ghinstallation defaults to https://api.github.com
+		if cfg.Hostname != DefaultHostname {
+			installTransport.BaseURL = (&url.URL{Scheme: "https", Path: "/api/v3", Host: cfg.Hostname}).String()
+		}
+		tripper = installTransport
 	case cfg.PersonalToken != nil:
 		// personal token is actually an OAuth2 *access token, so wrap
 		// inside an OAuth2 token and handle it the same as an OAuth2 token

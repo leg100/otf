@@ -214,12 +214,17 @@ func (a *service) ListAllVCSProviders(ctx context.Context) ([]*VCSProvider, erro
 
 // ListVCSProvidersByGithubAppInstall is unauthenticated: only for internal use.
 func (a *service) ListVCSProvidersByGithubAppInstall(ctx context.Context, installID int64) ([]*VCSProvider, error) {
-	providers, err := a.db.listByGithubAppInstall(ctx, installID)
+	subject, err := internal.SubjectFromContext(ctx)
 	if err != nil {
-		a.Error(err, "listing github app installation vcs providers")
 		return nil, err
 	}
-	a.V(9).Info("listed github app installation vcs providers")
+
+	providers, err := a.db.listByGithubAppInstall(ctx, installID)
+	if err != nil {
+		a.Error(err, "listing github app installation vcs providers", "subject", subject, "install", installID)
+		return nil, err
+	}
+	a.V(9).Info("listed github app installation vcs providers", "count", len(providers), "subject", subject, "install", installID)
 	return providers, nil
 }
 

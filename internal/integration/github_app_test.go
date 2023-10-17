@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,10 +10,16 @@ import (
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
+	gogithub "github.com/google/go-github/v55/github"
 	"github.com/leg100/otf/internal"
 	"github.com/leg100/otf/internal/auth"
 	"github.com/leg100/otf/internal/daemon"
+	"github.com/leg100/otf/internal/github"
 	"github.com/leg100/otf/internal/http/decode"
+	"github.com/leg100/otf/internal/run"
+	"github.com/leg100/otf/internal/testutils"
+	"github.com/leg100/otf/internal/vcsprovider"
+	"github.com/leg100/otf/internal/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -97,5 +104,71 @@ func TestIntegration_GithubAppNewUI(t *testing.T) {
 			tasks = append(tasks, chromedp.Click(`//button[text()='Create']`))
 			browser.Run(t, ctx, tasks)
 		})
+	}
+}
+
+// TestIntegration_GithubApp_Event demonstrates an event from a github
+// app installation triggering a run.
+func TestIntegration_GithubApp_Event(t *testing.T) {
+	integrationTest(t)
+
+	daemon, org, ctx := setup(t, nil,
+		github.WithRepo("leg100/otf-workspaces"),
+		github.WithArchive(testutils.ReadFile(t, "../testdata/github.tar.gz")),
+		github.WithHandler("/api/v3/app/installations/42997659", func(w http.ResponseWriter, r *http.Request) {
+			out, err := json.Marshal(&gogithub.Installation{
+				ID:         internal.Int64(42997659),
+				Account:    &gogithub.User{Login: internal.String("leg100")},
+				TargetType: internal.String("User"),
+			})
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		}),
+		github.WithHandler("/api/v3/app/installations/42997659/access_tokens", func(w http.ResponseWriter, r *http.Request) {
+			out, err := json.Marshal(&gogithub.InstallationToken{})
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		}),
+	)
+	// creating a github app requires site-admin role
+	ctx = internal.AddSubjectToContext(ctx, &auth.SiteAdmin)
+	// create an OTF daemon with a fake github backend, and serve up a repo and
+	// its contents via tarball.
+	_, err := daemon.CreateGithubApp(ctx, github.CreateAppOptions{
+		// any key will do, the stub github server won't actually authenticate it.
+		PrivateKey:    string(testutils.ReadFile(t, "./fixtures/key.pem")),
+		Slug:          "test-app",
+		WebhookSecret: "secret",
+	})
+	require.NoError(t, err)
+
+	provider, err := daemon.CreateVCSProvider(ctx, vcsprovider.CreateOptions{
+		Organization:       org.Name,
+		GithubAppInstallID: internal.Int64(42997659),
+	})
+	require.NoError(t, err)
+
+	// create and connect a workspace to a repo using the app install
+	_, err = daemon.CreateWorkspace(ctx, workspace.CreateOptions{
+		Name:         internal.String("dev"),
+		Organization: internal.String(org.Name),
+		ConnectOptions: &workspace.ConnectOptions{
+			VCSProviderID: &provider.ID,
+			RepoPath:      internal.String("leg100/otf-workspaces"),
+		},
+	})
+	require.NoError(t, err)
+
+	// send event
+	push := testutils.ReadFile(t, "./fixtures/github_app_push.json")
+	github.SendEventRequest(t, github.PushEvent, daemon.HostnameService.URL(github.AppEventsPath), "secret", push)
+
+	// wait for run to be created
+	for event := range daemon.sub {
+		if _, ok := event.Payload.(*run.Run); ok {
+			return
+		}
 	}
 }

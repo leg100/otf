@@ -170,12 +170,19 @@ func (t *VCSProvider) Update(opts UpdateOptions) error {
 
 // LogValue implements slog.LogValuer.
 func (t *VCSProvider) LogValue() slog.Value {
-	return slog.GroupValue(
+	attrs := []slog.Attr{
 		slog.String("id", t.ID),
 		slog.String("organization", t.Organization),
 		slog.String("name", t.String()),
 		slog.String("kind", string(t.Kind)),
-	)
+	}
+	if t.GithubApp != nil {
+		attrs = append(attrs, slog.Int64("github_install_id", t.GithubApp.ID))
+	}
+	if t.Token != nil {
+		attrs = append(attrs, slog.String("token", "****"))
+	}
+	return slog.GroupValue(attrs...)
 }
 
 func (t *VCSProvider) setToken(token string) error {
